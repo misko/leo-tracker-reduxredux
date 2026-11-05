@@ -5,18 +5,21 @@ import hashlib
 import numpy as np
 
 from leo.analysis.research.grouped_prediction import (
+    geometry_partition_schedule,
     grouped_split,
     replay_split,
     shifted_geometry_partition_schedule,
 )
 
 
-def partition_schedule(times, focus):
+def partition_schedule(times, focus, *, shifted_origin=True):
     """Original three distinct shifted holdouts, selected without RF values."""
     pool = [20261029, 94721, 4081] + np.random.default_rng(20261029).integers(
         0, 2**31 - 1, 64
     ).tolist()
-    plan = shifted_geometry_partition_schedule(times, focus, seeds=pool)
+    plan = (shifted_geometry_partition_schedule if shifted_origin else geometry_partition_schedule)(
+        times, focus, seeds=pool
+    )
     receipt = dict(
         seed_pool=pool,
         schedule=plan,
@@ -27,6 +30,8 @@ def partition_schedule(times, focus):
         ).hexdigest(),
         target_times_s=np.asarray(focus).tolist(),
     )
+    if not shifted_origin:
+        receipt.pop("target_times_s")
     return ([r["seed"] for r in plan["selected"]] if plan["ready"] else []), receipt
 
 
@@ -44,10 +49,8 @@ def require_distinct_annotation(result, protocol):
         signatures = []
         for f, r in zip(result["folds"], selected, strict=True):
             if f["seed"] != r["seed"] or any(
-                
-                    f["split"].get(k) != r.get(k)
-                    for k in ("held_blocks", "block_origin_s", "block_s", "guard_s")
-                
+                f["split"].get(k) != r.get(k)
+                for k in ("held_blocks", "block_origin_s", "block_s", "guard_s")
             ):
                 raise ValueError("shifted annotation does not replay its frozen schedule")
             train, held = replay_split(focus, f["split"])

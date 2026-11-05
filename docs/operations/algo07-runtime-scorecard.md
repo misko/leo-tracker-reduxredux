@@ -134,6 +134,15 @@ deadline policy and later recovery/publication qualification remain open.
 
 ## Measured improvements within the pipeline
 
+The [conditional gap components](../../reports/2026_11_05_algo07v3_gap/README.md)
+match fresh DS26-0012 preparation/annotation and conditional fits/exact audits,
+including numerical receipts. Both arms recover the same 95 points with fixed
+receiver coefficients; the default six joint fits/audits remain exact. Observed
+reference/candidate annotation times are 49.039/33.064 s and fit/audit times are
+33.171/26.544 s. These concurrent component runs are not a benchmark or a
+complete-path speedup. The gap controller, later recovery, full DS26 and final
+publication remain unfinished; complete-path matched scans remain zero.
+
 The [conditional replay extraction](../../reports/2026_11_05_algo07v3_replay/README.md)
 matches DS26-0044's complete annotation replay and DS26-0002's conditional
 selection/receipts, preserving the previously qualified predictive prefix.

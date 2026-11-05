@@ -8,12 +8,17 @@ import numpy as np
 from scipy.optimize import minimize
 
 from leo.analysis.localization_v3 import numerical_policy as numerics
+from leo.analysis.localization_v3.conditional_satellite import (
+    attach_conditional_satellite_refresh,
+    exact_shared_replay,
+)
 from leo.analysis.localization_v3.event_position import (
     attach_event_predictive,
     cached,
     make_event_problem,
     summary,
 )
+from leo.analysis.localization_v3.gap_fragments import gap_context, source_digest
 from leo.analysis.localization_v3.history_policy import pair_passes
 from leo.analysis.localization_v3.new_family import NewFamily, resolution_audit
 from leo.analysis.localization_v3.position import fit
@@ -45,7 +50,7 @@ def attach_recovery_predictive(p, entries, powers):
     return attach_event_predictive(p, entries, powers)
 
 
-def _problem(d, arm, reference, entries):
+def _problem(d, arm, reference, entries, *, conditional_families=None):
     kwargs = {"base_problem_factory": d["problem_factory"]} if "problem_factory" in d else {}
     p = make_event_problem(
         d["scan"],
@@ -61,6 +66,8 @@ def _problem(d, arm, reference, entries):
     )
     numerics.check_problem(d, p)
     attach_recovery_predictive(p, entries, d["powers"])
+    if conditional_families is not None:
+        attach_conditional_satellite_refresh(p, entries, d["powers"], conditional_families)
     return cached(p)
 
 
@@ -83,7 +90,17 @@ def _targets(context, inventory, annotations, *, shared):
             raise ValueError("identity not supported under supplied validation")
         if result.get("graph_bundle") or protocol.get("measurement_refinement"):
             raise ValueError("This stage requires original graph or inactive-fragment evidence")
-        if result.get("inactive_graph_fragment"):
+        if "gap_source" in validation:
+            source = validation["gap_source"]
+            if source_digest(source) != protocol["target"]["gap_source_sha256"]:
+                raise ValueError("gap source changed since annotation")
+            d, target = gap_context(
+                d, inventory, source, result["track_id"], d["native_observations"]
+            )
+            for key in ("track_id", "track_index", "component", "observation_ids"):
+                if target[key] != protocol["target"][key]:
+                    raise ValueError("gap target changed since annotation")
+        elif result.get("inactive_graph_fragment"):
             d, target = inactive_fragment_context(d, inventory, result["track_id"])
             for key in ("track_id", "component", "parent_track_index", "observation_ids"):
                 if target[key] != protocol["target"][key]:
@@ -135,7 +152,7 @@ def _targets(context, inventory, annotations, *, shared):
     return d, targets, receipts, fragments, count
 
 
-def fit_shared(context, inventory, annotations):
+def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh=False):
     d, targets, receipts, fragments, count = _targets(context, inventory, annotations, shared=True)
     protocol = dict(
         targets=targets,
@@ -157,15 +174,21 @@ def fit_shared(context, inventory, annotations):
         future_TLE=False,
         target_orbit_prior=False,
         shared_satellite_refresh=False,
-        conditional_satellite_refresh=False,
+        conditional_satellite_refresh=conditional_satellite_refresh,
         inactive_graph_member_as_predictive=True,
         inactive_fragment_sources=fragments,
         graph_bundle_sources=[],
-        excluded_predictive_parameter_uncertainty_conditioned_away=False,
+        excluded_predictive_parameter_uncertainty_conditioned_away=conditional_satellite_refresh,
         native_branches=None,
         native_sources=[],
         original_graph_count=count,
     )
+    native = any("gap_source" in a for a in annotations)
+    if native:
+        protocol["inactive_graph_member_as_predictive"] = False
+        protocol["native_sources"] = [
+            a["protocol"]["target"]["gap_source_sha256"] for a in annotations
+        ]
     result = dict(protocol=protocol)
     variants = [("control", [])] + [(f"target_{k}", [t]) for k, t in enumerate(targets)]
     if len(targets) > 1:
@@ -175,7 +198,17 @@ def fit_shared(context, inventory, annotations):
         for arm in ARMS:
             x, reference, history = np.zeros(2), np.zeros(len(d["means"])), []
             for _ in range(5):
-                p = _problem(d, arm, reference, entries)
+                p = _problem(
+                    d,
+                    arm,
+                    reference,
+                    entries,
+                    conditional_families=(
+                        [t["candidate_index"] for t in targets]
+                        if conditional_satellite_refresh
+                        else None
+                    ),
+                )
                 fitted = fit(p, x, iterations=48)
                 x = np.asarray(fitted["parameters"])
                 reference, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], reference)
@@ -227,10 +260,20 @@ def fit_shared(context, inventory, annotations):
                         )
                     )
                 row["target_diagnostics"] = diagnostics
+                if native:
+                    row["native_target_diagnostics"] = diagnostics
+            if conditional_satellite_refresh:
+                row["shared_satellite_replay"] = exact_shared_replay(p, x, entries)
             pair[arm] = row
         valid = pair_passes(pair, include_linear=True) and all(
             r["lost_points"] == 0 and r["final_phase_change_s"] <= 0.01 for r in pair.values()
         )
+        if conditional_satellite_refresh:
+            valid = valid and all(
+                r["shared_satellite_replay"]["phases_in_bounds"]
+                and r["shared_satellite_replay"]["maximum_phase_linearization_error_hz"] <= 1
+                for r in pair.values()
+            )
         result[name] = dict(
             arms=pair,
             baseline=inventory["policy"],
@@ -245,7 +288,7 @@ def fit_shared(context, inventory, annotations):
             position_fit="regional_unconstrained",
             target_orbit_prior=False,
             shared_satellite_refresh=False,
-            conditional_satellite_refresh=False,
+            conditional_satellite_refresh=conditional_satellite_refresh,
             no_production_change=True,
         )
     return result
@@ -396,7 +439,17 @@ def audit_inclusion(context, inventory, annotations, trial, *, shared):
         saved = trial[role]
         entries = d["entries"] + (saved["target_entries"] if shared else [])
         for arm, v in saved["arms"].items():
-            p = _problem(d, arm, v["phase_reference"], entries)
+            p = _problem(
+                d,
+                arm,
+                v["phase_reference"],
+                entries,
+                conditional_families=(
+                    [t["candidate_index"] for t in targets]
+                    if shared and trial["protocol"].get("conditional_satellite_refresh")
+                    else None
+                ),
+            )
             x = np.array(v["endpoint_east_north_km"])
             objective = p.calculate(x)["negative_twice_elbo"]
             _, _, ids, owners = memberships(original_graph_view(p, count), x, entries)

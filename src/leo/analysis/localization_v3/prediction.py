@@ -12,6 +12,7 @@ from scipy.linalg import cho_solve
 from scipy.stats import norm
 from scipy.stats import t as student
 
+from leo.analysis.localization_v3 import numerical_policy as numerics
 from leo.analysis.localization_v3.event_position import (
     attach_event_predictive,
     cached,
@@ -102,14 +103,21 @@ def fit_training(
             events or [],
             base_problem_factory=factory,
         )
+        numerics.check_problem(d, p)
         if predictive:
             attach_event_predictive(p, d["entries"], powers)
         cached(p)
         f = fit(p, x, iterations=48)
         x = np.asarray(f["parameters"])
-        phase, check = phase_refresh(
-            p.state(x)["phases"][p.labels], reference, limit_s=reference_limit_s
-        )
+        policy = d.get("numerical_policy")
+        if policy is None:
+            phase, check = phase_refresh(
+                p.state(x)["phases"][p.labels], reference, limit_s=reference_limit_s
+            )
+        else:
+            phase, check = policy.refresh(
+                p, p.state(x)["phases"][p.labels], reference, limit_s=reference_limit_s
+            )
         if reference_limit_s > 15:
             domain = reference_domain(p.sky["time_s"], p.flat_times, p.flat_labels, phase)
             if not domain["in_domain"]:

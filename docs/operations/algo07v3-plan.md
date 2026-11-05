@@ -58,7 +58,13 @@ adoption. DS26-0044 annotation replay matches exactly; a fresh DS26-0002 prefix
 and two-target numerical controller matches independent individual references
 and all numerical receipts. Broader replay branches, timeout checkpoints and
 ordinary-clock admission remain unqualified.
-Inactive-fragment and successful shared inclusion qualification, fresh joint
+The [conditional gap components](../../reports/2026_11_05_algo07v3_gap/README.md)
+now reproduce DS26-0012 timing-only preparation, fresh independent annotation,
+conditional shared-family fits and exact owner/orbit audits in both arms. All
+scientific fingerprints and numerical receipts match; 95 points are recovered
+with receiver coefficients unchanged. Gap eligibility/admission/selection and
+application integration remain unfinished. Broader inactive-fragment/shared
+inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,
 reassociation and publication remain unfinished; full DS26 localization parity
 is still open.

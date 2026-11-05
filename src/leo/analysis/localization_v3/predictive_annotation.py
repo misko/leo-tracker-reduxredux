@@ -30,6 +30,8 @@ def annotate(
     folds=3,
     phase_step=0.1,
     on_proposal=None,
+    target_record=None,
+    shifted_origin=True,
 ):
     """Original production nomination and three distinct shifted-block checks.
 
@@ -39,7 +41,11 @@ def annotate(
     """
     d = context
     p0, _ = d["problems"]["c0"]
-    if inactive_fragment:
+    if target_record is not None:
+        if inactive_fragment or target_record["track_id"] != track_id:
+            raise ValueError("explicit target must belong to this prepared predictive view")
+        target = target_record
+    elif inactive_fragment:
         d, target = inactive_fragment_context(d, inventory, track_id)
     else:
         target = next(
@@ -50,7 +56,7 @@ def annotate(
     check_predictive_role(p0, i, True)
     full_times = np.r_[p0.flat_times, track["times"]]
     n = len(p0.flat_times)
-    seeds, plan = partition_schedule(full_times, track["times"])
+    seeds, plan = partition_schedule(full_times, track["times"], shifted_origin=shifted_origin)
     protocol = dict(
         target=target,
         seed_list=seeds[:folds],
@@ -77,6 +83,9 @@ def annotate(
     )
     results, nominations, attempts = [], {}, {}
     for seed in seeds[:folds]:
+        if not shifted_origin and len(np.unique(np.floor(track["times"] / 12))) < 3:
+            attempts[seed] = dict(status="insufficient_group_support", seed=seed)
+            continue
         train, held, split = planned_split(full_times, track["times"], seed, plan)
         train_target, held_target = train[n:], held[n:]
         if train_target.sum() < 8 or held_target.sum() < 4:
