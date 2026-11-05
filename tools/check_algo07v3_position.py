@@ -83,7 +83,7 @@ def run(args):
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
     annotation_mode = args.predictive_annotation or args.predictive_inclusion
-    recovery_mode = args.predictive_recovery or args.numerical_recovery
+    recovery_mode = args.predictive_recovery or args.numerical_recovery or args.gap_recovery
     inventory_mode = args.recovery_inventory or annotation_mode or recovery_mode
     cavity_mode = args.cavity_policy or inventory_mode
     signed_mode = args.signed_policy or cavity_mode
@@ -223,7 +223,7 @@ def run(args):
                                 recovered = recover_tracks(recovery_context, inventory_result,
                                     run_stage=complete_stage, discovery_allowed=lambda: True)
                                 result['predictive_recovery'] = fingerprint(recovered)
-                                if args.numerical_recovery:
+                                if args.numerical_recovery or args.gap_recovery:
                                     from leo.analysis.localization_v3.numerical_recovery import (
                                         replay_recovery,
                                     )
@@ -236,10 +236,25 @@ def run(args):
                                                   type(error).__name__, str(error), flush=True)
                                             return False, None
 
-                                    replay = replay_recovery(recovery_context, inventory_result,
-                                        recovered, completed_stages, run_stage=numerical_stage,
-                                        discovery_allowed=lambda: True, clock=time.monotonic,
-                                        charge_reused=lambda _: None)
+                                    if args.gap_recovery:
+                                        from leo.application.localization_v3 import (
+                                            recover_gap_tracks, recover_numerical_checkpoint,
+                                        )
+
+                                        prepared_recovery = dict(recovery_context=recovery_context,
+                                            inventory=inventory_result)
+                                        predictive = dict(status='predictive_recovery_evaluated',
+                                            recovery=recovered, completed_stages=completed_stages)
+                                        numerical = recover_numerical_checkpoint(prepared_recovery,
+                                            predictive, run_stage=numerical_stage,
+                                            discovery_allowed=lambda: True, clock=time.monotonic,
+                                            charge_reused=lambda _: None)
+                                        replay = numerical['recovery']
+                                    else:
+                                        replay = replay_recovery(recovery_context, inventory_result,
+                                            recovered, completed_stages, run_stage=numerical_stage,
+                                            discovery_allowed=lambda: True, clock=time.monotonic,
+                                            charge_reused=lambda _: None)
                                     # All-work qualification: logical charge is not admission.
                                     # Keep deterministic scientific reuse decisions separately.
                                     result['numerical_recovery'] = fingerprint({
@@ -249,6 +264,25 @@ def run(args):
                                             'charged_original_seconds',
                                             'additional_logical_seconds', 'reuse_wall_seconds')}
                                         for row in replay['stage_replay']]
+                                    if args.gap_recovery:
+                                        def gap_stage(name, operation, cap):
+                                            started_stage = time.monotonic()
+                                            value = operation()
+                                            if time.monotonic() - started_stage >= cap:
+                                                raise TimeoutError('gap stage exceeded its cap')
+                                            print('gap stage complete', name, flush=True)
+                                            return True, value
+
+                                        gaps = recover_gap_tracks(prepared_recovery, numerical,
+                                            observations, run_stage=gap_stage,
+                                            clock=time.monotonic, maximum_seconds=1200)
+                                        if gaps['status'] != 'gap_recovery_evaluated':
+                                            raise ValueError('gap source checkpoint incomplete')
+                                        gap_result = dict(gaps['recovery'])
+                                        gap_result['stages'] = [
+                                            {k:v for k,v in row.items() if k != 'seconds'}
+                                            for row in gap_result['stages']]
+                                        result['gap_recovery'] = fingerprint(gap_result)
                             if annotation_mode:
                                 from leo.analysis.localization_v3.predictive_annotation import (
                                     annotate,
@@ -337,7 +371,9 @@ def run(args):
         signed_policy=signed_mode, cavity_policy=cavity_mode,
         recovery_inventory=inventory_mode, scan_identities=args.scan_identities,
         predictive_annotation=annotation_mode, predictive_inclusion=args.predictive_inclusion,
-        predictive_recovery=recovery_mode, numerical_recovery=args.numerical_recovery,
+        predictive_recovery=recovery_mode,
+        numerical_recovery=args.numerical_recovery or args.gap_recovery,
+        gap_recovery=args.gap_recovery,
         recovery_admission=('all predeclared targets; test harness only'
                             if recovery_mode else None),
         target_rank=args.target_rank,
@@ -385,6 +421,8 @@ if __name__ == '__main__':
                       help='Test harness: complete all predeclared recovery work; no time-based omissions')
     mode.add_argument('--numerical-recovery', action='store_true',
                       help='Test harness: fresh predictive loop then conditional numerical replay')
+    mode.add_argument('--gap-recovery', action='store_true',
+                      help='Test harness: fresh prefix through owned numerical and gap checkpoints')
     parser.add_argument('--target-rank', type=int, default=0)
     parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)

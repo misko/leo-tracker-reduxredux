@@ -1,0 +1,161 @@
+{
+  "scope": "Ordered gap controller and implemented scientific prefix only",
+  "complete_path_matched_scans": 0,
+  "complete_path_speedup": null,
+  "controller": {
+    "exact": true,
+    "target_points": 95,
+    "parent_points": 98,
+    "norad": 63635,
+    "owned_points": {
+      "c0": 2569,
+      "fitted_c": 2569
+    }
+  },
+  "integrated_prefix": {
+    "prefix_exact": true,
+    "eligible_parents": 1,
+    "stages": 1,
+    "qualified": false,
+    "protected_points": {
+      "c0": 2783,
+      "fitted_c": 2783
+    },
+    "resulting_points": {
+      "c0": 2783,
+      "fitted_c": 2783
+    }
+  },
+  "observed_seconds": {
+    "reference": 41.06401612982154,
+    "candidate": 34.766176289878786,
+    "prefix": 375.0659844093025
+  },
+  "controlled_speed_benchmark": false,
+  "application_tests": {
+    "current": {
+      "tests": 272,
+      "failures": 10,
+      "errors": 2,
+      "cases": {
+        "tests.application.test_capture_only_reprocess::test_expired_recording_cannot_enter_an_online_graph[StandardReprocessService]": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml'"
+        },
+        "tests.application.test_capture_only_reprocess::test_expired_recording_cannot_enter_an_online_graph[ResearchReprocessService]": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml'"
+        },
+        "tests.application.test_capture_only_reprocess::test_manual_native_action_is_explicit_and_evidence_only": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml'"
+        },
+        "tests.application.test_capture_only_reprocess::test_research_action_directs_current_manifest_to_standard_native": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml'"
+        },
+        "tests.application.test_hard60_b7::test_failed_fitted_prerequisite_stops_and_retains_each_arms_qualified_result": {
+          "kind": "failure",
+          "message": "ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)"
+        },
+        "tests.application.test_hard60_runner::test_single_method_resumes_and_applies_identical_policy_to_both_arms[False]": {
+          "kind": "failure",
+          "message": "ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)"
+        },
+        "tests.application.test_hard60_runner::test_single_method_resumes_and_applies_identical_policy_to_both_arms[True]": {
+          "kind": "failure",
+          "message": "ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)"
+        },
+        "tests.application.test_host_adaptive_analysis::test_failed_later_native_visit_preserves_earlier_checkpoint": {
+          "kind": "failure",
+          "message": "TypeError: test_failed_later_native_visit_preserves_earlier_checkpoint.<locals>.fail() got an unexpected keyword argument 'search_geometry'"
+        },
+        "tests.application.test_shared_orbit_replay::test_lanes_preserve_every_observation_and_full_shared_calibration": {
+          "kind": "error",
+          "message": "failed on setup with \"ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)\""
+        },
+        "tests.application.test_shared_orbit_replay::test_selected_b_reconstruction_keeps_frozen_contrast_and_rejects_changed_fit": {
+          "kind": "error",
+          "message": "failed on setup with \"ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)\""
+        },
+        "tests.application.test_standard_presentation_production::test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable": {
+          "kind": "failure",
+          "message": "FileNotFoundError: [Errno 2] No such file or directory: 'corpus/goldens/trial-132-standard-v2-one-second-frozen.json'"
+        },
+        "tests.application.test_standard_presentation_production::test_queued_standard_run_is_pending_not_unavailable": {
+          "kind": "failure",
+          "message": "FileNotFoundError: [Errno 2] No such file or directory: 'corpus/goldens/trial-132-standard-v2-one-second-frozen.json'"
+        }
+      }
+    },
+    "prior_eager": {
+      "tests": 270,
+      "failures": 10,
+      "errors": 2,
+      "cases": {
+        "tests.application.test_capture_only_reprocess::test_expired_recording_cannot_enter_an_online_graph[StandardReprocessService]": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml'"
+        },
+        "tests.application.test_capture_only_reprocess::test_expired_recording_cannot_enter_an_online_graph[ResearchReprocessService]": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml'"
+        },
+        "tests.application.test_capture_only_reprocess::test_manual_native_action_is_explicit_and_evidence_only": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml'"
+        },
+        "tests.application.test_capture_only_reprocess::test_research_action_directs_current_manifest_to_standard_native": {
+          "kind": "failure",
+          "message": "leo.domain.profiles.ProfileDocumentError: cannot load capture profile /srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/profiles/starlink-ch4-lower-5m-60s-device-axis-v3.yaml'"
+        },
+        "tests.application.test_hard60_b7::test_failed_fitted_prerequisite_stops_and_retains_each_arms_qualified_result": {
+          "kind": "failure",
+          "message": "ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)"
+        },
+        "tests.application.test_hard60_runner::test_single_method_resumes_and_applies_identical_policy_to_both_arms[False]": {
+          "kind": "failure",
+          "message": "ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)"
+        },
+        "tests.application.test_hard60_runner::test_single_method_resumes_and_applies_identical_policy_to_both_arms[True]": {
+          "kind": "failure",
+          "message": "ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)"
+        },
+        "tests.application.test_host_adaptive_analysis::test_failed_later_native_visit_preserves_earlier_checkpoint": {
+          "kind": "failure",
+          "message": "TypeError: test_failed_later_native_visit_preserves_earlier_checkpoint.<locals>.fail() got an unexpected keyword argument 'search_geometry'"
+        },
+        "tests.application.test_shared_orbit_replay::test_lanes_preserve_every_observation_and_full_shared_calibration": {
+          "kind": "error",
+          "message": "failed on setup with \"ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)\""
+        },
+        "tests.application.test_shared_orbit_replay::test_selected_b_reconstruction_keeps_frozen_contrast_and_rejects_changed_fit": {
+          "kind": "error",
+          "message": "failed on setup with \"ImportError: cannot import name '_regional_orbits' from 'leo.analysis' (/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/__init__.py)\""
+        },
+        "tests.application.test_standard_presentation_production::test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable": {
+          "kind": "failure",
+          "message": "FileNotFoundError: [Errno 2] No such file or directory: 'corpus/goldens/trial-132-standard-v2-one-second-frozen.json'"
+        },
+        "tests.application.test_standard_presentation_production::test_queued_standard_run_is_pending_not_unavailable": {
+          "kind": "failure",
+          "message": "FileNotFoundError: [Errno 2] No such file or directory: 'corpus/goldens/trial-132-standard-v2-one-second-frozen.json'"
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "reference": {
+      "path": "/srv/bulk/leo/research/algo07v3-20261104/gap-controller002/reference.json",
+      "sha256": "9568fb3039013b37118ab960f5ed25df2610cbd804ff81433fd1d1117db64f63"
+    },
+    "candidate": {
+      "path": "/srv/bulk/leo/research/algo07v3-20261104/gap-controller002/candidate.json",
+      "sha256": "9568fb3039013b37118ab960f5ed25df2610cbd804ff81433fd1d1117db64f63"
+    },
+    "prefix": {
+      "path": "/srv/bulk/leo/research/algo07v3-20261104/gap-controller003/prefix-candidate.json",
+      "sha256": "c26667e5895dcd92a7b7c463dd83ab5fda5882a8ef6fedef9b7921da19949f4a"
+    }
+  }
+}

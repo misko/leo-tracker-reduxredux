@@ -290,3 +290,58 @@ def test_numerical_application_uses_owned_checkpoint_and_retains_future_policy_b
     assert calls == [(('owned', 'evidence', 'incumbent', 'records'), ports)]
     assert result['status'] == 'numerical_recovery_evaluated'
     assert result['recovery_complete'] is False
+
+
+def test_numerical_checkpoint_keeps_completed_annotations_even_when_selection_falls_back(monkeypatch):
+    annotation = dict(result=dict(track_id='rejected-parent'))
+
+    def replay(*args, run_stage, **kwargs):
+        run_stage('target-0-annotation', lambda: annotation)
+        run_stage('target-0-inclusion', lambda: 'failed-fit')
+        return dict(decision='ALGO03_fallback')
+
+    monkeypatch.setattr(app, 'replay_recovery', replay)
+    result = app.recover_numerical_checkpoint(
+        dict(recovery_context={}, inventory={}),
+        dict(status='predictive_recovery_evaluated', recovery={}, completed_stages={}),
+        run_stage=lambda name, operation: (True, operation()) if name.endswith('annotation') else (False, None),
+        discovery_allowed=lambda: True, clock=lambda: 0., charge_reused=lambda _: None)
+    assert result['completed_stages'] == {'target-0-annotation': annotation}
+    assert result['recovery']['decision'] == 'ALGO03_fallback'
+
+
+def test_gap_application_uses_numerical_rejections_and_actually_selected_owners(monkeypatch):
+    calls = []
+    monkeypatch.setattr(app, 'recover_gaps', lambda *a, **kw: calls.append((a, kw)) or dict(candidate=None))
+    original = {arm: dict(owners={'original': 1}) for arm in ('c0', 'fitted_c')}
+    selected = {arm: dict(owners={'original': 1, 'retained': 2}) for arm in ('c0', 'fitted_c')}
+    annotation = dict(result=dict(track_id='parent'))
+    attempts = dict(attempts=['numerical-attempt'])
+    previous = dict(candidate=attempts, retained=dict(source_support=original, attempts=[]),
+                    selected=dict(arms=selected))
+    numerical = dict(status='numerical_recovery_evaluated', recovery=previous,
+                     completed_stages={'target-0-annotation': annotation, 'target-0-audit': {}})
+    prepared = dict(recovery_context='owned-context', inventory=dict(
+        inventory=dict(policy='original-calibration'), publication_support=original))
+    ports = dict(run_stage='stage', clock='clock', maximum_seconds=900)
+    result = app.recover_gap_tracks(prepared, numerical, 'native-points', **ports)
+    args, kwargs = calls.pop()
+    assert args == ('owned-context', dict(policy='original-calibration', publication_support=original),
+                    'native-points', attempts, {'parent': annotation},
+                    {arm: selected[arm]['owners'] for arm in selected})
+    assert kwargs == ports
+    assert result['incumbent'] is previous
+    assert result['status'] == 'gap_recovery_evaluated' and not result['recovery_complete']
+    previous['selected'] = None
+    app.recover_gap_tracks(prepared, numerical, 'native-points', **ports)
+    assert calls[0][0][-1] == {arm: original[arm]['owners'] for arm in original}
+
+
+def test_gap_application_reports_missing_numerical_checkpoint_without_fabricating_attempts(monkeypatch):
+    monkeypatch.setattr(app, 'recover_gaps', lambda *a, **kw: pytest.fail('no source attempts'))
+    previous = dict(candidate=dict(failure='inventory failed'))
+    result = app.recover_gap_tracks({},
+        dict(status='numerical_recovery_evaluated', recovery=previous), [],
+        run_stage=None, clock=None)
+    assert result['status'] == 'gap_source_incomplete'
+    assert result['incumbent'] is previous and result['recovery'] is None

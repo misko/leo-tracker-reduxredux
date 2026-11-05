@@ -62,8 +62,13 @@ The [conditional gap components](../../reports/2026_11_05_algo07v3_gap/README.md
 now reproduce DS26-0012 timing-only preparation, fresh independent annotation,
 conditional shared-family fits and exact owner/orbit audits in both arms. All
 scientific fingerprints and numerical receipts match; 95 points are recovered
-with receiver coefficients unchanged. Gap eligibility/admission/selection and
-application integration remain unfinished. Broader inactive-fragment/shared
+with receiver coefficients unchanged. The [owned gap controller and application
+checkpoint](../../reports/2026_11_05_algo07v3_gap_controller/README.md) now match the
+original controller on that fixture. A fresh DS26-0002 prefix through gap recovery
+preserves every earlier numerical result and all 2,783 owners in each arm.
+Application imports now avoid unrelated concrete adapters, with public exports
+preserved. Production cancellation, final proof publication and broader gap
+branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,
 reassociation and publication remain unfinished; full DS26 localization parity

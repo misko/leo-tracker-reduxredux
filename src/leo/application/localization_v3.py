@@ -10,6 +10,7 @@ import json
 from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 from leo.analysis.localization_v3.elements import ElementParser
 from leo.analysis.localization_v3.family_cavity import cavity_policy, nominate_families
+from leo.analysis.localization_v3.gap_controller import recover_gaps
 from leo.analysis.localization_v3.history_policy import history_policy
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
@@ -22,7 +23,18 @@ from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.signed_context import signed_context
 from leo.analysis.localization_v3.tracks import prepare_tracks
-from leo.operations.localization_v3_inputs import prepare_initial_sky, prepare_phase_history
+
+
+def prepare_initial_sky(*args, **kwargs):
+    """Load the owned archive adapter only at the input-preparation boundary."""
+    from leo.operations.localization_v3_inputs import prepare_initial_sky as prepare
+    return prepare(*args, **kwargs)
+
+
+def prepare_phase_history(*args, **kwargs):
+    """Fitting an already prepared scan does not import operational adapters."""
+    from leo.operations.localization_v3_inputs import prepare_phase_history as prepare
+    return prepare(*args, **kwargs)
 
 
 def prepare_native_scan(document, archive, track_config, *,
@@ -198,3 +210,47 @@ def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
         predictive['recovery'], predictive['completed_stages'], run_stage=run_stage,
         discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused)
     return dict(status='numerical_recovery_evaluated', recovery=result, recovery_complete=False)
+
+
+def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
+                                 discovery_allowed, clock, charge_reused):
+    """Retain completed numerical annotations, including on incumbent fallback."""
+    completed = {}
+
+    def captured(name, operation):
+        ok, value = run_stage(name, operation)
+        if ok:
+            completed[name] = value
+        return ok, value
+
+    result = recover_numerical_tracks(prepared_recovery, predictive, run_stage=captured,
+        discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused)
+    return dict(result, completed_stages=completed)
+
+
+def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage, clock,
+                       maximum_seconds=1200):
+    """Use numerical attempts but protect owners of the actually adopted fit.
+
+    This is an owned scientific checkpoint, not a published legacy terminal.
+    Final proof validation and later recovery/publication remain separate.
+    """
+    if numerical['status'] != 'numerical_recovery_evaluated':
+        return dict(status=numerical['status'], recovery=None, recovery_complete=False)
+    previous = numerical['recovery']
+    if 'attempts' not in previous['candidate']:
+        return dict(status='gap_source_incomplete', recovery=None, incumbent=previous,
+                    recovery_complete=False)
+    support = (previous['selected']['arms'] if previous.get('selected')
+               else previous['retained']['source_support'])
+    owners = {arm: support[arm]['owners'] for arm in ('c0', 'fitted_c')}
+    annotations = {value['result']['track_id']: value
+                   for name, value in numerical['completed_stages'].items()
+                   if name.endswith('-annotation')}
+    evidence = prepared_recovery['inventory']
+    inventory = dict(evidence['inventory'], publication_support=evidence['publication_support'])
+    result = recover_gaps(prepared_recovery['recovery_context'], inventory, observations,
+        previous['candidate'], annotations, owners, run_stage=run_stage, clock=clock,
+        maximum_seconds=maximum_seconds)
+    return dict(status='gap_recovery_evaluated', recovery=result, incumbent=previous,
+                recovery_complete=False)

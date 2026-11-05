@@ -134,14 +134,25 @@ deadline policy and later recovery/publication qualification remain open.
 
 ## Measured improvements within the pipeline
 
+The [owned gap-controller iteration](../../reports/2026_11_05_algo07v3_gap_controller/README.md)
+matches the complete frozen-context DS26-0012 controller proof, all four stages
+and numerical receipts. Observed reference/candidate durations are 41.064/34.766 s,
+not a controlled benchmark. The fresh DS26-0002 implemented fitting prefix through
+gap recovery takes 375.066 s, preserves the previously qualified numerical prefix
+exactly and retains all 2,783 owners per arm. It finds no proper fragment to add.
+This excludes native preparation, ALGO06/07 and publication, so no complete-path
+ratio is available. The first integrated run caught eager concrete-adapter imports;
+lazy public exports and deferred preparation adapters fixed the boundary without
+weakening the dependency guard. Complete-path matched scans remain zero.
+
 The [conditional gap components](../../reports/2026_11_05_algo07v3_gap/README.md)
 match fresh DS26-0012 preparation/annotation and conditional fits/exact audits,
 including numerical receipts. Both arms recover the same 95 points with fixed
 receiver coefficients; the default six joint fits/audits remain exact. Observed
 reference/candidate annotation times are 49.039/33.064 s and fit/audit times are
 33.171/26.544 s. These concurrent component runs are not a benchmark or a
-complete-path speedup. The gap controller, later recovery, full DS26 and final
-publication remain unfinished; complete-path matched scans remain zero.
+complete-path speedup. That component check did not qualify controller integration,
+later recovery, full DS26 or final publication; complete-path matched scans remain zero.
 
 The [conditional replay extraction](../../reports/2026_11_05_algo07v3_replay/README.md)
 matches DS26-0044's complete annotation replay and DS26-0002's conditional
