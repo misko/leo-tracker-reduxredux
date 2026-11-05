@@ -43,7 +43,8 @@ def test_owned_kernel_is_the_full_scan_qualified_prototype(oracle, monkeypatch):
     )
 
 
-def test_owned_solver_is_the_full_scan_qualified_upper_root_prototype():
+def test_prevariance_solver_is_the_full_scan_qualified_upper_root_prototype():
+    import algo07v3_prevariance_hierarchical_oracle as prevariance
     from probe_algo07v3_upper_root import candidate_function
 
     _, _, expected = candidate_function()
@@ -51,6 +52,18 @@ def test_owned_solver_is_the_full_scan_qualified_upper_root_prototype():
         "a5546d39b4b3484f358794881649e161e81addfeb7eab97de866d31dde17d944"
     )
     expected = expected.replace("solve_factor(", "_solve_factor(")
+    assert ast.dump(ast.parse(inspect.getsource(prevariance.hierarchical_bound))) == ast.dump(
+        ast.parse(expected)
+    )
+
+
+def test_owned_solver_is_the_two_scan_qualified_variance_prototype():
+    from probe_algo07v3_variance_groups import candidate_function
+
+    _, _, expected = candidate_function()
+    assert hashlib.sha256(expected.encode()).hexdigest() == (
+        "7bab33ce76fda0bc07895b2d2cbfdfd7c2cf028ef078b9baf2d19f5e2b6dc439"
+    )
     assert ast.dump(ast.parse(inspect.getsource(hierarchical_bound))) == ast.dump(
         ast.parse(expected)
     )

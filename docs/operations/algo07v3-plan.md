@@ -4,11 +4,18 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest implementation: [bounded variance integration](../../reports/2026_11_05_algo07v3_variance_integration/README.md).
+The owned module is byte-identical to the prototype with exact complete outputs
+on DS26-0002 and DS26-0066, including accepted guarded reassociation. All 833
+component tests pass; a fresh direct isolated CLI verification also passes
+exactly in 243.059 s (correctness against a reused reference, not a speed pair).
+No production change or cumulative speed claim.
+
 Latest [CPU-accounted repeat](../../reports/2026_11_05_algo07v3_native_canary/variance-cpu-pair/README.md)
 is exact, with wall time **244.383 → 234.399 s** and process CPU **271.20 → 259.14 s**.
 Keep the preceding slower pair; this is evidence for a modest optimization,
-not a cumulative claim. DS26-0066 variance correctness expansion is running.
-The prototype remains external. A separate [family-arm concurrency prototype](../../reports/2026_11_05_algo07v3_parallel_family/README.md)
+not a cumulative claim. DS26-0066 variance correctness expansion also passes;
+development integration is recorded above. A separate [family-arm concurrency prototype](../../reports/2026_11_05_algo07v3_parallel_family/README.md)
 has three passing tests and a complete exact native/PNG probe. Its family stage
 observes 28.147 → 18.560 s wall time with 28.142 → 29.955 s CPU work. It needs a
 full CLI/publication pair and broader cases before integration.

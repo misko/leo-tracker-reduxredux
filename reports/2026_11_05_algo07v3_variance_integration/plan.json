@@ -1,0 +1,57 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "0,1,2",
+    "sh",
+    "tools/qualify_algo07v3_cli.sh",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/cli",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/request.json",
+    "run",
+    "1200"
+  ],
+  "compare_command": [
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "tools/compare_algo07v3_runs.py",
+    "--baseline-request",
+    "/srv/bulk/leo-dev/algo07v3-variance-cpu-pair-20261105/baseline-request.json",
+    "--baseline-timing",
+    "/srv/bulk/leo-dev/algo07v3-variance-cpu-pair-20261105/baseline/attempt/supervisor.json",
+    "--candidate-request",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/request.json",
+    "--candidate-timing",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/cli/attempt/supervisor.json",
+    "--output",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/comparison.json"
+  ],
+  "source_bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py": "3b02974c822ef2504422dcdb85f10d16198ec8df2ef35936119e42a97877dab2",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/candidate-kernel.py": "3b02974c822ef2504422dcdb85f10d16198ec8df2ef35936119e42a97877dab2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07v3_prevariance_hierarchical_oracle.py": "a3b2657850022d034fae7ee87f8023b806ab21ac77b85ad4bb8ae5e66e2a8ac1",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_variance_groups.py": "d2aa781f87c6399d0ae17e23ac0dd693da8e943ab0f967bbd8210d756f978751",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_variance.py": "06f45ba58db0dab060c2f4d1d6dc1f4c936d5aa500da43daf5b6a7cc99e092b0",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/request.json": "8a0ea5277a9ca24ec659b46a49e47eb8ca096e3056da7dbefe91352b63a7f8de",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/tests.xml": "d8897064efe2ea7ba5b8148ca14837984f65c577766d83d31bf424df6386dc7c",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/focused-tests.xml": "15a2aec5459cdbee2796008aeb22e69511eddfc07277e09735583ac80e1401ed",
+    "/srv/bulk/leo-dev/algo07v3-variance-integrated-20261105/baseline-hierarchical.py": "2f087156e85ac3a101eac64eac41c8288c4808f32ecf67eac766e50811547340",
+    "/srv/bulk/leo-dev/algo07v3-variance-cpu-pair-20261105/baseline-request.json": "a3edb7ba6580d9fb9592defd807788fb7798240d10c8220a12fc78acc0645c16",
+    "/srv/bulk/leo-dev/algo07v3-variance-cpu-pair-20261105/baseline/attempt/supervisor.json": "5eb5b36bece953548c65859d99471a87eee72bb7e34fe686a2b35008f60cdf8e"
+  },
+  "tests": 833,
+  "focused_tests": 76,
+  "owned_module_byte_identical_to_qualified_prototype": true,
+  "performance_comparison": false,
+  "reference_reused_for_science_only": true,
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "production_modified": false
+}

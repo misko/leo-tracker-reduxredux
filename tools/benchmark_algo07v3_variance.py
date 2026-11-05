@@ -7,10 +7,9 @@ import time
 from pathlib import Path
 
 import numpy as np
+from algo07v3_prevariance_hierarchical_oracle import hierarchical_bound
 from probe_algo07v3_assembly import exact_result
 from probe_algo07v3_variance_groups import candidate_function
-
-from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 
 
 def main():

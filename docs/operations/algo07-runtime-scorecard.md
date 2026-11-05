@@ -4,6 +4,14 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [development integration](../../reports/2026_11_05_algo07v3_variance_integration/README.md):
+bounded variance batching is enabled in the owned CLI. Its module bytes match
+the prototype with exact complete outputs on DS26-0002 and DS26-0066; 833
+component tests pass. A fresh direct isolated CLI verification passes exactly
+in **243.059 s** against a reused reference; this is not another matched speed pair.
+The modest CPU-accounted timing gain and the earlier regression below are both
+retained. This is not a deployment, population or cumulative speed qualification.
+
 Latest [family-arm concurrency probe](../../reports/2026_11_05_algo07v3_parallel_family/README.md)
 matches the full native scientific snapshot and all eight PNGs. Family-stage
 wall time is **28.147 → 18.560 s (34.06% lower)**, with parent/child CPU
@@ -16,8 +24,8 @@ Latest [CPU-accounted variance repeat](../../reports/2026_11_05_algo07v3_native_
 is exact and observes **244.383 → 234.399 s (4.09% lower)**, with total process
 CPU **271.20 → 259.14 s (4.45% lower)**. Maximum reported RSS rises 3.24%.
 This supports further qualification of a modest gain; the slower first pair
-below remains part of the evidence. A fresh DS26-0066 correctness comparison
-is running. No runtime integration, deployment or cumulative speed claim.
+below remains part of the evidence. DS26-0066 also matches exactly. Development
+integration is recorded above; no deployment or cumulative speed claim.
 
 Latest complete-path [variance-batching pair](../../reports/2026_11_05_algo07v3_native_canary/variance-pair/README.md)
 is exact but slower: **270.732 → 388.845 s (+43.63%)**. Unchanged stages also slow

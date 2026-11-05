@@ -2,6 +2,13 @@
 
 2026-11-05 progress snapshot. Development only; no deployment.
 
+Latest state: the bounded variance candidate is now [integrated in the
+development CLI](../2026_11_05_algo07v3_variance_integration/README.md), with 833
+passing tests and module bytes identical to the two-scan qualified prototype.
+Its fresh direct CLI execution also passes exactly in 243.059 s (a correctness
+run against a reused reference). The experiments below describe
+the external candidate before integration; production remains unchanged.
+
 Both the pre-optimization standalone baseline and integrated solver have completed
 DS26-0066 from native GLRT through all artifacts and atomic publication.
 **All scientific outputs, both calibration arms, eight PNGs, grid/path data and
@@ -119,7 +126,7 @@ the candidate is **43.63% slower: 270.732 → 388.845 s**. Several unchanged sta
 also ran slower. This regression remains in the evidence. The reverse-order
 [CPU-accounted repeat](variance-cpu-pair/README.md) also passes exactly and gives
 **244.383 → 234.399 s (4.09% lower)**. Total user plus system CPU decreases
-**271.20 → 259.14 s (4.45%)**. The prototype is not integrated.
+**271.20 → 259.14 s (4.45%)**. Integration status is recorded above.
 Nine additional tests pass at the memory boundary and on strided inputs.
 
 | Complete DS26-0002 pair | Baseline wall s | Candidate wall s | Interpretation |
@@ -135,9 +142,11 @@ Maximum reported RSS in the repeat rises from 2,407,056 to 2,485,072 KiB (3.24%)
 It is a per-process maximum, not the sum of all concurrent workers' memory.
 
 The decision is to continue qualification, not promote on one favorable pair.
-A fresh DS26-0066 candidate is now running against its completed integrated
-scientific reference. That comparison expands correctness coverage; because
-the reference is reused, it will not be a new matched performance experiment.
+The fresh DS26-0066 candidate has now passed exactly against its completed
+integrated scientific reference, including accepted guarded reassociation.
+[Comparison](variance-ds26-0066/comparison.json). Its 855.082-second run expands
+correctness coverage; because the reference is reused, it is not a matched
+performance experiment.
 [Native probe receipt](variance-probe.json),
 [native scientific/source binding](variance-native-receipt.json).
 Raw evidence: `/srv/bulk/leo-dev/algo07v3-variance-groups-20261105`.
@@ -148,8 +157,8 @@ The runtime remains at the previously qualified
 
 Extend the completed DS26-0066 checks to further native cases and
 the full DS26 denominator: **159 fast members, 158 available inputs and one
-unavailable member**. The variance prototype requires complete-path and broader-case
-evidence before integration. Ordinary production admission,
+unavailable member**. Variance batching is integrated after two native cases and
+a fresh direct CLI check; population qualification is still open. Ordinary production admission,
 historical metadata semantics and the cumulative 10× target remain open.
 
 The [renderer](render.py) verifies source/input bindings, successful execution

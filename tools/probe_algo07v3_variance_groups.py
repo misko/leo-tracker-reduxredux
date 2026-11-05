@@ -14,13 +14,14 @@ import sys
 import time
 from pathlib import Path
 
+import algo07v3_prevariance_hierarchical_oracle as reference_kernel
 from probe_algo07v3_factor_reuse import FactorProbe
 
 from leo.analysis.localization_v3 import hierarchical
 
 
 def candidate_function():
-    source = inspect.getsource(hierarchical.hierarchical_bound)
+    source = inspect.getsource(reference_kernel.hierarchical_bound)
     setup = "    def posterior(weight, precision, covariance):"
     reduction = (
         "        variance = np.array(\n"
@@ -47,7 +48,7 @@ def candidate_function():
             variance[group_indices] = np.sum(products, axis=(1, 2))
         for group_index, covariance_index, variance_matrix in variance_individual:
             variance[group_index] = np.sum(covariance[covariance_index] * variance_matrix)""")
-    namespace = dict(vars(hierarchical))
+    namespace = dict(vars(reference_kernel))
     exec(compile(code, "<equal-width-variance-reductions>", "exec"), namespace)
     return namespace["hierarchical_bound"], source, code
 
@@ -65,7 +66,8 @@ def main():
     if not forwarded:
         parser.error("Engine arguments required after --")
     candidate, source, code = candidate_function()
-    original = hierarchical.hierarchical_bound
+    original = reference_kernel.hierarchical_bound
+    runtime_function = hierarchical.hierarchical_bound
     probe = FactorProbe(original, candidate)
     hierarchical.hierarchical_bound = probe
     tool = Path(__file__).with_name("check_algo07v3_engine.py")
@@ -76,7 +78,7 @@ def main():
         complete = True
     finally:
         sys.argv = old_argv
-        hierarchical.hierarchical_bound = original
+        hierarchical.hierarchical_bound = runtime_function
         result = dict(
             complete=complete, calls=probe.calls, failures=probe.failures,
             exact=complete and probe.calls > 0 and not probe.failures,

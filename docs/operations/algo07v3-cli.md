@@ -1,5 +1,11 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Latest development change: [bounded variance batching](../../reports/2026_11_05_algo07v3_variance_integration/README.md)
+is enabled. The module matches the prototype qualified on two native scans;
+833 component tests pass. A fresh direct isolated run verifies integration
+exactly through all science, both arms, eight PNGs, grid/path and publication.
+Production remains unchanged and the command still supports validation-all-work only.
+
 Current qualification: [all 17 mapped scientific audit sections](../../reports/2026_11_05_algo07v3_factor_reuse/README.md)
 match on DS26-0002, including explicitly accounted original-worker context
 construction counters. This does not qualify other scans, ordinary admission

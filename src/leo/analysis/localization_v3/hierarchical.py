@@ -92,6 +92,18 @@ def hierarchical_bound(
     )
     right_sides = np.concatenate([b for _, _, _, b in blocks])
 
+    by_width = {}
+    for k, (columns, index, matrix, _) in enumerate(blocks):
+        by_width.setdefault(len(columns), []).append((k, columns, index, matrix.T))
+    variance_blocks, variance_individual = [], []
+    for block_width, rows in by_width.items():
+        if len(rows) > 1 and len(rows) * block_width**2 * 8 <= 1024**2:
+            variance_blocks.append((
+                np.array([r[0] for r in rows]), np.stack([r[1] for r in rows]),
+                np.ascontiguousarray(np.stack([r[3] for r in rows]))))
+        else:
+            variance_individual.extend((r[0], r[2], r[3]) for r in rows)
+
     def posterior(weight, precision, covariance):
         gram, rhs = np.diag(precision), np.zeros(width)
         block_weight = power * weight
@@ -125,9 +137,12 @@ def hierarchical_bound(
         precision[selected] = v[prior[selected]]
         coefficient, covariance, _ = posterior(weight, precision, True)
         native = (y - u @ coefficient) / s
-        variance = np.array(
-            [np.sum(covariance[index] * matrix.T) for _, index, matrix, _ in blocks]
-        )
+        variance = np.empty(len(blocks))
+        for group_indices, columns, variance_matrices in variance_blocks:
+            products = covariance[columns[:, :, None], columns[:, None, :]] * variance_matrices
+            variance[group_indices] = np.sum(products, axis=(1, 2))
+        for group_index, covariance_index, variance_matrix in variance_individual:
+            variance[group_index] = np.sum(covariance[covariance_index] * variance_matrix)
         energy = np.bincount(g, weights=native**2) + np.maximum(0, variance)
         next_rate = beta0 + power * energy / 2
         prior_energy = np.bincount(
