@@ -5,8 +5,14 @@ import numpy as np
 from leo.analysis.localization_v3.conservative_recovery import retained_metrics
 from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.analysis.localization_v3.marginal import JointMarginal
+from leo.analysis.localization_v3.orbit_modes import build_modes
 from leo.analysis.localization_v3.position import NormalPosition, fit
 from leo.analysis.localization_v3.retained_position import phase_widths
+from leo.analysis.research.orbital_support import (
+    include_active_orbital_uncertainty,
+    include_predictive_orbital_uncertainty,
+    restrict_to_active_orbital_support,
+)
 
 
 def problem(scan, node, arm, keep, reference=None):
@@ -46,8 +52,25 @@ def forecast_phase_mean(receipts, shrinkage):
     return np.asarray(means)
 
 
-def make_problem(scan, node, keep, arm, reference, weights, means, multiplier, nu):
+def make_problem(scan, node, keep, arm, reference, weights, means, multiplier, nu, *,
+                 support_policy='nominal', extra_orbital_families=(),
+                 predictive_orbital_families=()):
+    if support_policy not in ('nominal', 'active', 'active_uncertainty'):
+        raise ValueError('unknown physical orbital support policy')
     p = problem(scan, node, arm, keep, reference)
+    if support_policy == 'active':
+        restrict_to_active_orbital_support(p)
+    elif support_policy == 'active_uncertainty':
+        include_active_orbital_uncertainty(p,
+            lambda supported: build_modes(scan, p.labels, supported, 'physical'))
+    if extra_orbital_families:
+        include_active_orbital_uncertainty(p,
+            lambda supported: build_modes(scan, p.labels, supported, 'physical'),
+            families=extra_orbital_families)
+    if predictive_orbital_families:
+        include_predictive_orbital_uncertainty(p,
+            lambda supported: build_modes(scan, p.labels, supported, 'physical'),
+            predictive_orbital_families)
     p.phase_sigma *= multiplier
     begin = p.hardware.shape[1] + p.smooth.shape[1]
     width = begin + len(p.labels) + 3 * len(p.supported) + len(p.members)

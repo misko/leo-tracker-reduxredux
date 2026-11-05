@@ -14,6 +14,7 @@ from leo.analysis.localization_v3.history_policy import history_policy
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.phase_prior import forecast
+from leo.analysis.localization_v3.predictive_annotation import annotate
 from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.signed_context import signed_context
@@ -134,4 +135,15 @@ def prepare_track_recovery(prepared, signed, cavity, *, identities):
     context, result = prepare_recovery(signed['signed_context']['scan'], cavity['cavity_fit'],
         prepared['tracks']['observations'], identities=identities)
     return dict(status='track_recovery_prepared', recovery_context=context, inventory=result,
+                recovery_complete=False)
+
+
+def annotate_recovery_target(prepared_recovery, target, *, on_proposal=None):
+    """Test a nominated curve predictively; do not authorize position inclusion."""
+    if prepared_recovery['status'] != 'track_recovery_prepared':
+        return dict(status=prepared_recovery['status'], annotation=None, recovery_complete=False)
+    result = annotate(prepared_recovery['recovery_context'],
+        prepared_recovery['inventory']['inventory'], target['track_id'],
+        inactive_fragment=target['inactive_fragment'], on_proposal=on_proposal)
+    return dict(status='predictive_annotation_evaluated', annotation=result,
                 recovery_complete=False)

@@ -13,6 +13,30 @@ from leo.analysis.localization_v3.history_position import forecast_phase_mean, m
 from tests.analysis.test_localization_v3_position import prepared
 
 
+def test_optional_orbit_prior_adds_variance_without_learning_multiple_owner_claim(monkeypatch):
+    from leo.analysis.localization_v3 import history_position
+    from leo.analysis.research.orbital_support import requires_multiple_orbital_owners
+
+    scan, node = prepared()
+    scan.previous_sources = {}
+    scan.elements = {'99999': dict(provenance=dict(element_epoch_utc_ns=0))}
+    def modes(actual, labels, supported, kind):
+        assert actual is scan and supported == [0] and kind == 'physical'
+        return dict(time_s=scan.sky['time_s'],
+            position_km=np.repeat(scan.sky['position_km'],3,axis=0),
+            velocity_km_s=np.repeat(scan.sky['velocity_km_s'],3,axis=0)), []
+    monkeypatch.setattr(history_position,'build_modes',modes)
+    args = (scan,node,np.ones(41,bool),'c0',np.zeros(1),np.ones(1),np.zeros(1),1.,4.)
+    nominal = make_problem(*args)
+    prior = make_problem(*args,support_policy='active_uncertainty')
+    assert nominal.supported == [] and prior.supported == [0]
+    assert not requires_multiple_orbital_owners(prior,0)
+    assert len(prior.calculate(np.zeros(2))['coefficient']) == (
+        len(nominal.calculate(np.zeros(2))['coefficient'])+3)
+    with pytest.raises(ValueError,match='unknown physical orbital support'):
+        make_problem(*args,support_policy='unqualified')
+
+
 def test_family_support_uses_active_receiver_owners_and_conditional_confidence():
     rows = [dict(candidate_index=0) for _ in range(3)]
     tracks = [dict(receiver=1, channel=1), dict(receiver=1, channel=2), dict(receiver=2, channel=1)]

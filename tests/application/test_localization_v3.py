@@ -10,6 +10,19 @@ def test_recovery_inventory_keeps_incomplete_cavity_out_of_recovery():
     assert result['status'] == 'cavity_incomplete' and not result['recovery_complete']
 
 
+def test_annotation_returns_no_position_inclusion_authority(monkeypatch):
+    context, inventory, target = object(), object(), dict(track_id='track', inactive_fragment=True)
+    def annotate(actual, inv, tid, **kwargs):
+        assert actual is context and inv is inventory and tid == 'track'
+        assert kwargs['inactive_fragment'] is True
+        return dict(result=dict(no_accepted_associations=True))
+    monkeypatch.setattr(app,'annotate',annotate)
+    result = app.annotate_recovery_target(dict(status='track_recovery_prepared',
+        recovery_context=context,inventory=dict(inventory=inventory)),target)
+    assert result['annotation']['result']['no_accepted_associations']
+    assert not result['recovery_complete']
+
+
 def test_recovery_inventory_receives_owned_scan_and_native_points(monkeypatch):
     scan, observations, cavity = object(), [], dict(status='complete')
     def prepare(actual_scan, selected, points, *, identities):

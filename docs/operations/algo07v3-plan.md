@@ -34,8 +34,13 @@ references and archived cavity scientific values. The
 [recovery-inventory extraction](../../reports/2026_11_05_algo07v3_inventory/README.md)
 adds independent selected-incumbent replay, native-point ownership, protected
 publication support and ordered recovery targets. All three scans match the
-frozen ALGO03 inventory with production session identities. Later predictive
-recovery policies, reassociation and publication remain unfinished;
+frozen ALGO03 inventory with production session identities. The
+[predictive-annotation extraction](../../reports/2026_11_05_algo07v3_annotation/README.md)
+adds timestamp-only distinct holdouts, training-only causal nomination, shared
+and new-family predictive covariance, and identity consensus. Complete annotation
+of the largest target in each of the three scans matches the frozen reference,
+including supported, residual-failing and unstable identities. Position inclusion,
+later recovery policies, reassociation and publication remain unfinished;
 full DS26 localization parity is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing

@@ -106,6 +106,15 @@ inventory starts from a saved cavity decision, so their durations have different
 scopes and are not a speed comparison. Later predictive recovery, subsequent
 policies and publication remain before complete-path qualification.
 
+The [predictive-annotation extraction](../../reports/2026_11_05_algo07v3_annotation/README.md)
+reproduces complete annotation of the largest remaining target in each of these
+three scans. This includes every proposal, held prediction and both c arms, with
+one supported identity and two rejected cases. Candidate timings include the
+entire implemented prefix; the external reference starts from an archived cavity
+decision. These remain unequal-scope timings, not a speedup measurement.
+Shared/new-family position inclusion and the later policy/publication stages
+are still outstanding.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

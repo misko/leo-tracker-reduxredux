@@ -16,6 +16,7 @@ from leo.analysis.localization_v3.retained_position import (
 )
 from leo.analysis.localization_v3.tracks import active_curvature as raw_curvature
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
+from leo.analysis.research.orbital_support import requires_multiple_orbital_owners
 from leo.analysis.research.phase_linear_geometry import (
     phase_linear_frequency,
     prepare_phase_geometry,
@@ -169,7 +170,7 @@ def retained_metrics(p, x):
         for row in rows:
             if (
                 row["compatible"]
-                and row["candidate_index"] in p.supported
+                and requires_multiple_orbital_owners(p, row["candidate_index"])
                 and len(owners[row["candidate_index"]]) < 2
             ):
                 row["compatible"] = False

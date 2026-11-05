@@ -64,6 +64,11 @@ def test_masked_bad_prefix_is_neither_gated_nor_counted():
     assert result['associated_original_percent'] == 50.
     with pytest.raises(ValueError, match='multiple accepted owners'):
         policy.coverage([row, row], [track], set(track['observation_ids']))
+    p.supported = [0]
+    p.orbital_owner_gate_families = set()
+    assert policy.retained_metrics(p, np.zeros(2))['accepted_points'] == 12
+    p.orbital_owner_gate_families = {0}
+    assert policy.retained_metrics(p, np.zeros(2))['accepted_points'] == 0
 
 
 def test_salvage_supports_are_whole_prefix_or_suffix_with_minimum_twelve_points():

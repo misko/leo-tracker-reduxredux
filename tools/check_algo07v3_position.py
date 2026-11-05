@@ -82,7 +82,8 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    cavity_mode = args.cavity_policy or args.recovery_inventory
+    inventory_mode = args.recovery_inventory or args.predictive_annotation
+    cavity_mode = args.cavity_policy or inventory_mode
     signed_mode = args.signed_policy or cavity_mode
     history_mode = args.history_policy or signed_mode
     if args.initial_search or args.conservative or history_mode:
@@ -180,7 +181,7 @@ def run(args):
                         selected = cavity_policy(context, nominations)
                         result['cavity_policy'] = fingerprint(selected)
                         print('cavity position', selected['status'], flush=True)
-                        if args.recovery_inventory:
+                        if inventory_mode:
                             if args.side != 'candidate' or not args.scan_identities:
                                 raise ValueError('Inventory mode requires candidate and scan IDs; '
                                                  'use the separate inventory oracle for reference')
@@ -188,11 +189,24 @@ def run(args):
                                 prepare_recovery,
                             )
 
-                            _, inventory_result = prepare_recovery(scan, selected, observations,
+                            recovery_context, inventory_result = prepare_recovery(
+                                scan, selected, observations,
                                 identities=args.scan_identities)
                             result['recovery_inventory'] = fingerprint(inventory_result)
                             print('recovery inventory', inventory_result['eligible_targets'],
                                   flush=True)
+                            if args.predictive_annotation:
+                                from leo.analysis.localization_v3.predictive_annotation import (
+                                    annotate,
+                                )
+
+                                target = inventory_result['selected_targets'][args.target_rank]
+                                annotation = annotate(recovery_context,
+                                    inventory_result['inventory'], target['track_id'],
+                                    inactive_fragment=target['inactive_fragment'],
+                                    on_proposal=lambda seed, q: print(
+                                        'predictive proposal', seed, q['norad'], flush=True))
+                                result['predictive_annotation'] = fingerprint(annotation)
         else:
             result = fingerprint(initial)
     elif args.discovery:
@@ -257,7 +271,8 @@ def run(args):
         discovery=args.discovery, initial_search=args.initial_search,
         conservative=args.conservative, history_policy=history_mode,
         signed_policy=signed_mode, cavity_policy=cavity_mode,
-        recovery_inventory=args.recovery_inventory, scan_identities=args.scan_identities,
+        recovery_inventory=inventory_mode, scan_identities=args.scan_identities,
+        predictive_annotation=args.predictive_annotation, target_rank=args.target_rank,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
@@ -296,6 +311,8 @@ if __name__ == '__main__':
     mode.add_argument('--signed-policy', action='store_true')
     mode.add_argument('--cavity-policy', action='store_true')
     mode.add_argument('--recovery-inventory', action='store_true')
+    mode.add_argument('--predictive-annotation', action='store_true')
+    parser.add_argument('--target-rank', type=int, default=0)
     parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
