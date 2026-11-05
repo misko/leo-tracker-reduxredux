@@ -12,8 +12,13 @@ prepared-input run completes with its earlier science unchanged. Owned plot
 preparation reproduces all eight PNGs and all 179 grid points exactly on
 the DS26-0084 retained-baseline fixture. The owned recorded path now passes that
 same comparison, and a fresh DS26-0002 run connects numerical recovery through
-all eight PNGs with every earlier scientific output unchanged. Complete native
-input/publication integration, full DS26 equivalence, cancellation qualification and the
+all eight PNGs with every earlier scientific output unchanged. A new owned native
+entry point now connects track construction and causal preparation to that same
+numerical and presentation path; prepared and native inputs reproduce the entire
+DS26-0002 audit and eight PNGs exactly. See the
+[native-engine report](../../reports/2026_11_05_algo07v3_native_engine/README.md)
+for independent isolation evidence, 543 passing tests and explicit stage clocks.
+Atomic publication, full DS26 equivalence, cancellation qualification and the
 10× complete-path metric remain unfinished or unproven. This is not yet the
 complete standalone production engine.
 

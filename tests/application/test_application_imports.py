@@ -14,7 +14,9 @@ def guard(event, args):
         raise RuntimeError("Unrelated adapter loaded: " + args[0])
 sys.addaudithook(guard)
 from leo.application.localization_v3 import recover_numerical_checkpoint, recover_gap_tracks
+from leo.application.localization_v3_engine import infer_prepared, run_native
 assert callable(recover_numerical_checkpoint) and callable(recover_gap_tracks)
+assert callable(infer_prepared) and callable(run_native)
 """
     result = subprocess.run([sys.executable, "-B", "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

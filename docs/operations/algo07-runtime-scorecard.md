@@ -4,6 +4,19 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest native-engine milestone: [native GLRT through eight figures](../../reports/2026_11_05_algo07v3_native_engine/README.md).
+The owned application entry point completes DS26-0002 native preparation,
+all numerical policies, 179 grid locations and eight PNGs in **311.064 s**.
+The entire comparison output matches the prior connected run. This includes
+native preparation but excludes qualification serialization, atomic publication,
+capture and native GLRT extraction. There is no matched complete-path baseline
+and no speed ratio. Predictive recovery accounts for 106.894 s, initial fitting
+46.639 s and conservative fitting 27.820 s; grid evidence and rendering account
+for 19.404 and 5.586 s. The report verifies a separate isolated native run with
+older installations/results hidden and network access unavailable. There are
+543 passing focused tests. Publication and production execution control remain
+unfinished; complete-path matched scans remain zero, and no deployment occurred.
+
 Latest connected presentation milestone: [fresh numerical state through eight figures](../../reports/2026_11_05_algo07v3_connected_presentation/README.md).
 DS26-0002 completes prepared-input inference, an owned recorded path, all 179
 grid locations and eight PNGs in **484.617 s** under shared-host load. Every
