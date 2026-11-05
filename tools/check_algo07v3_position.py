@@ -82,7 +82,8 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    history_mode = args.history_policy or args.signed_policy
+    signed_mode = args.signed_policy or args.cavity_policy
+    history_mode = args.history_policy or signed_mode
     if args.initial_search or args.conservative or history_mode:
         if (args.conservative or history_mode) and (args.rounds, args.iterations) != (5, 48):
             raise ValueError('Recovery comparisons require full production fitting budgets')
@@ -144,7 +145,7 @@ def run(args):
                     history_result = reference_history_policy(scan, recovery, raw, forecast,
                                                                digest(history_path))
                 result['history_policy'] = fingerprint(history_result)
-                if args.signed_policy:
+                if signed_mode:
                     scan = final_scan()
                     if args.side == 'candidate':
                         from leo.analysis.localization_v3.signed_context import signed_context
@@ -159,6 +160,25 @@ def run(args):
                             raw, forecast, observations, case='SCAN',
                             history_sha256=digest(history_path))
                     result['signed_policy'] = fingerprint(signed_snapshot(context))
+                    if args.cavity_policy:
+                        if args.side == 'candidate':
+                            from leo.analysis.localization_v3.family_cavity import (
+                                cavity_policy,
+                                nominate_families,
+                            )
+                        else:
+                            from algo07v3_cavity_oracle import (
+                                reference_cavity_policy as cavity_policy,
+                            )
+                            from algo07v3_cavity_oracle import (
+                                reference_nominate_families as nominate_families,
+                            )
+                        nominations = nominate_families(context)
+                        result['cavity_nominations'] = fingerprint(nominations)
+                        print('cavity nominations', nominations['status'], flush=True)
+                        selected = cavity_policy(context, nominations)
+                        result['cavity_policy'] = fingerprint(selected)
+                        print('cavity position', selected['status'], flush=True)
         else:
             result = fingerprint(initial)
     elif args.discovery:
@@ -222,7 +242,7 @@ def run(args):
         output_sha256=digest(args.output), rounds=args.rounds, iterations=args.iterations,
         discovery=args.discovery, initial_search=args.initial_search,
         conservative=args.conservative, history_policy=history_mode,
-        signed_policy=args.signed_policy,
+        signed_policy=signed_mode, cavity_policy=args.cavity_policy,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
@@ -233,7 +253,9 @@ def run(args):
               if (args.initial_search or args.conservative or history_mode)
               and args.side == 'reference' else []),
             *([sys.modules['algo07v3_signed_oracle'].__file__]
-              if args.signed_policy and args.side == 'reference' else []))},
+              if signed_mode and args.side == 'reference' else []),
+            *([sys.modules['algo07v3_cavity_oracle'].__file__]
+              if args.cavity_policy and args.side == 'reference' else []))},
         inputs={name:digest(args.source/name) for name in ('tracks.json', 'bank.npz',
                'nominal_elements.json', 'radio_noise.json', 'previous.tle')})
     with args.output.with_suffix('.receipt.json').open('x') as stream:
@@ -257,6 +279,7 @@ if __name__ == '__main__':
     mode.add_argument('--conservative', action='store_true')
     mode.add_argument('--history-policy', action='store_true')
     mode.add_argument('--signed-policy', action='store_true')
+    mode.add_argument('--cavity-policy', action='store_true')
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     run(parser.parse_args())

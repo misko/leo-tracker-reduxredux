@@ -90,6 +90,14 @@ Observed reference/v3 durations are 144.529/187.646, 128.169/220.619 and
 batch; no optimization or controlled regression ratio is established. Cavity
 selection and the remaining recovery/publication path are still incomplete.
 
+The [family-cavity extraction](../../reports/2026_11_05_algo07v3_cavity/README.md)
+extends exact fresh and archived comparisons through full-catalogue family
+nomination and paired replacement selection on the same three scans. Observed
+reference/v3 durations are 113.085/114.265, 164.741/164.528 and 232.013/231.927
+seconds. Both sides use the numerical in-memory harness under concurrent load;
+these are not production worker timings or a qualified speedup. Recovery
+inventory, later policies and publication remain before complete-path testing.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

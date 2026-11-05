@@ -177,3 +177,21 @@ def test_signed_application_binds_native_inputs_and_keeps_later_recovery_open(mo
     assert prepared['phase_forecast'] == {}
     assert app.fit_signed_policy(dict(status='no_active_curvature'), {}, {}, region) == dict(
         status='no_active_curvature', signed_context=None, recovery_complete=False)
+
+
+def test_cavity_application_uses_owned_context_and_does_not_claim_recovery_completion(monkeypatch):
+    context = dict(case='SCAN')
+    nomination = dict(status='complete', families=[])
+    def nominate(d):
+        assert d is context
+        return nomination
+    def select(d, n):
+        assert d is context and n is nomination
+        return dict(status='complete', accepted=False)
+    monkeypatch.setattr(app, 'nominate_families', nominate)
+    monkeypatch.setattr(app, 'cavity_policy', select)
+    result = app.fit_family_cavity(dict(status='signed_policy_evaluated', signed_context=context))
+    assert result['cavity_fit']['accepted'] is False and result['nominations'] is nomination
+    assert result['recovery_complete'] is False
+    assert app.fit_family_cavity(dict(status='no_active_curvature')) == dict(
+        status='no_active_curvature', nominations=None, cavity_fit=None, recovery_complete=False)

@@ -27,8 +27,11 @@ and archived production scientific values. The
 [signed-prior extraction](../../reports/2026_11_04_algo07v3_signed/README.md)
 adds signed historical qualification and matched-arm refitting. Its complete
 numerical context matches fresh references and archived incumbents on all three
-cases. Family-cavity selection, later recovery, reassociation and publication
-remain unfinished;
+cases. The [family-cavity extraction](../../reports/2026_11_05_algo07v3_cavity/README.md)
+adds complete-family exclusion, full-catalogue nomination, paired replacement
+trials and the production equal-prior adoption rule. All three scans match fresh
+references and archived cavity scientific values. Recovery inventory, the later
+recovery policies, reassociation and publication remain unfinished;
 full DS26 localization parity is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing

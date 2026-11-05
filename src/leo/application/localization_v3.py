@@ -1,14 +1,15 @@
 """Standalone preparation and initial regional position search.
 
 No earlier ALGO jobs or result stores are inputs. Initial, conservative and
-family/history and signed-prior fitting are included; later ordered recovery
-remains unfinished.
+family/history, signed-prior and family-cavity fitting are included; later
+ordered recovery remains unfinished.
 """
 import hashlib
 import json
 
 from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 from leo.analysis.localization_v3.elements import ElementParser
+from leo.analysis.localization_v3.family_cavity import cavity_policy, nominate_families
 from leo.analysis.localization_v3.history_policy import history_policy
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
@@ -110,3 +111,15 @@ def fit_signed_policy(prepared, conservative, family, search_region, *, noise_sh
         case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],
         history_sha256=history_sha256)
     return dict(status='signed_policy_evaluated', signed_context=result, recovery_complete=False)
+
+
+def fit_family_cavity(signed):
+    """Nominate and fit complete-family alternatives from the owned signed context."""
+    if signed['status'] != 'signed_policy_evaluated':
+        return dict(status=signed['status'], nominations=None, cavity_fit=None,
+                    recovery_complete=False)
+    context = signed['signed_context']
+    nominations = nominate_families(context)
+    result = cavity_policy(context, nominations)
+    return dict(status='family_cavity_evaluated', nominations=nominations, cavity_fit=result,
+                recovery_complete=False)
