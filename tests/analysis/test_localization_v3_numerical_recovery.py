@@ -44,6 +44,23 @@ def routes(monkeypatch, *, shared=True):
     monkeypatch.setattr(replay, "shared_family_route", lambda *a: shared)
 
 
+@pytest.mark.parametrize("admitted", [True, False])
+def test_only_adopted_numerical_likelihood_replaces_checkpoint(monkeypatch, admitted):
+    evidence, incumbent, candidate, saved = fixture()
+    if not admitted:
+        candidate["selected"]["arms"]["c0"]["owners"].pop("prior")
+
+    def recover(*args, on_selection, **kwargs):
+        on_selection({"chosen": "numerical"})
+        return candidate
+
+    monkeypatch.setattr(replay, "recover_tracks", recover)
+    states = []
+    result = run(evidence, incumbent, saved, on_selection=states.append)
+    assert states == ([{"chosen": "numerical"}] if admitted else [])
+    assert (result["decision"] == "ALGO04_additive") is admitted
+
+
 def run(evidence, incumbent, saved, **kwargs):
     return replay.replay_recovery(
         {},

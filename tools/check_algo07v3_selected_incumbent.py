@@ -265,6 +265,20 @@ def run(args):
         tool=binding(__file__),
         output=binding(args.output),
     )
+    if args.preflight_packet:
+        if not args.preflight:
+            raise ValueError("Raw packet export requires preflight comparison mode")
+        import numpy as np
+
+        args.preflight_packet.write_text(
+            json.dumps(
+                result["preflight"],
+                allow_nan=False,
+                default=lambda value: np.asarray(value).tolist(),
+            )
+            + "\n"
+        )
+        receipt["preflight_packet"] = binding(args.preflight_packet)
     args.output.with_suffix(".receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(
         json.dumps(
@@ -283,6 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("--side", choices=["reference", "candidate"], required=True)
     parser.add_argument("--mode", choices=["baseline", "selected", "gap"], required=True)
     parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--preflight-packet", type=Path)
     for name in ("input", "inventory", "trial", "decision"):
         parser.add_argument("--" + name, type=Path)
     for name in ("runtime", "output"):
@@ -290,4 +305,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.output.exists() or args.output.with_suffix(".receipt.json").exists():
         raise ValueError("Reconstruction output exists")
+    if args.preflight_packet and args.preflight_packet.exists():
+        raise ValueError("Preflight packet output exists")
     run(args)

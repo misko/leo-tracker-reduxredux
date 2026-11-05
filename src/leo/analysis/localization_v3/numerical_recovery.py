@@ -63,6 +63,7 @@ def replay_recovery(
     discovery_allowed,
     clock,
     charge_reused,
+    on_selection=None,
 ):
     """Replay the completed original schedule, then perform additive adoption.
 
@@ -176,13 +177,22 @@ def replay_recovery(
     if "inventory" not in stages:
         raise ValueError("completed inventory and its original duration are required")
     ok, _ = stage("inventory", lambda: None)
+    selected_state = []
     if ok:
         candidate = recover_tracks(
-            numerical_context, narrowed, run_stage=stage, discovery_allowed=discovery_allowed
+            numerical_context,
+            narrowed,
+            run_stage=stage,
+            discovery_allowed=discovery_allowed,
+            **({"on_selection": selected_state.append} if on_selection is not None else {}),
         )
     else:
         candidate = dict(selected=None, decision="ALGO02_fallback", failure="Inventory failed")
     admitted, reason = additive_admission(incumbent, candidate)
+    if admitted and on_selection is not None:
+        if len(selected_state) != 1:
+            raise ValueError("Adopted numerical likelihood checkpoint missing")
+        on_selection(selected_state[0])
     return dict(
         decision="ALGO04_additive" if admitted else "ALGO03_fallback",
         selected=copy.deepcopy(candidate["selected"] if admitted else incumbent.get("selected")),

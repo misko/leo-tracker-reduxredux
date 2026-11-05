@@ -6,6 +6,8 @@ The admission port is queried for each target, preserving explicit omissions.
 Neither port may use a reference position or known localization error.
 """
 
+from copy import deepcopy
+
 from leo.analysis.localization_v3.joint_recovery import (
     audit_joint,
     fit_joint,
@@ -29,7 +31,7 @@ ARMS = ("c0", "fitted_c")
 METHODS = ("control", "factorized", "joint")
 
 
-def recover_tracks(context, evidence, *, run_stage, discovery_allowed):
+def recover_tracks(context, evidence, *, run_stage, discovery_allowed, on_selection=None):
     """Evaluate original target order and at most one disjoint new-family pair.
 
     Timing policy is deliberately not invented inside the numerical implementation.
@@ -52,6 +54,7 @@ def recover_tracks(context, evidence, *, run_stage, discovery_allowed):
         matched_c_arms=True,
     )
     qualified, records = [], {}
+    selected_state = None
 
     def stage(name, operation):
         ok, value = run_stage(name, operation)
@@ -169,11 +172,23 @@ def recover_tracks(context, evidence, *, run_stage, discovery_allowed):
             if candidate:
                 qualified.append(candidate)
                 records[id(candidate)] = dict(
-                    trial=chosen_trial, audit=chosen_audit, annotation=vote
+                    trial=chosen_trial,
+                    audit=chosen_audit,
+                    annotation=vote,
+                    annotation_source=annotation,
                 )
         # Original policy chooses the first qualified target in predeclared order.
         if qualified:
             result.update(selected=qualified[0], decision="ALGO03_single")
+            record = records[id(qualified[0])]
+            selected_state = dict(
+                selection=dict(kind=qualified[0]["kind"], trial=record["trial"]),
+                annotations=(
+                    [record["annotation_source"]]
+                    if record["trial"].get("protocol", {}).get("inactive_fragment_sources")
+                    else []
+                ),
+            )
         pair = joint_pair(qualified)
         if pair:
             ok, probe = stage(
@@ -201,6 +216,13 @@ def recover_tracks(context, evidence, *, run_stage, discovery_allowed):
                         > result["selected"]["arms"]["c0"]["added_points"]
                     ):
                         result.update(decision="ALGO03_joint", selected=candidate)
+                        selected_state = dict(
+                            selection=dict(
+                                kind="joint",
+                                trials={a: experiment["joint"][a]["trial"] for a in ARMS},
+                            ),
+                            annotations=[],
+                        )
         if result["selected"]:
             for arm in ARMS:
                 if any(
@@ -213,4 +235,21 @@ def recover_tracks(context, evidence, *, run_stage, discovery_allowed):
         result.update(
             decision="ALGO02_fallback", selected=None, failure=f"{type(error).__name__}: {error}"
         )
+    if on_selection is not None:
+        if result["selected"]:
+            state = dict(
+                selected_state,
+                arms=result["selected"]["arms"],
+                owners={a: r["owners"] for a, r in result["selected"]["arms"].items()},
+            )
+        else:
+            state = dict(
+                selection=None,
+                annotations=[],
+                arms=inventory["policy"],
+                owners={a: r["owners"] for a, r in result["source_support"].items()},
+            )
+        # Publication of the checkpoint cannot mutate the decision or its inputs.
+        # Callback failures propagate; they are not scientific fallback decisions.
+        on_selection(deepcopy(state))
     return result

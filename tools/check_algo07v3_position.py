@@ -32,6 +32,10 @@ def signed_snapshot(context):
 
 
 def run(args):
+    if args.residual_screen:
+        args.additional_preflight = True
+    if args.additional_preflight:
+        args.gap_recovery = True
     if args.side == 'candidate':
         from check_algo07v3_track_preparation import deny_legacy
 
@@ -220,8 +224,10 @@ def run(args):
                                         seconds=time.monotonic()-began_stage)
                                     return True, value
 
+                                selected_states = []
                                 recovered = recover_tracks(recovery_context, inventory_result,
-                                    run_stage=complete_stage, discovery_allowed=lambda: True)
+                                    run_stage=complete_stage, discovery_allowed=lambda: True,
+                                    on_selection=selected_states.append)
                                 result['predictive_recovery'] = fingerprint(recovered)
                                 if args.numerical_recovery or args.gap_recovery:
                                     from leo.analysis.localization_v3.numerical_recovery import (
@@ -238,13 +244,16 @@ def run(args):
 
                                     if args.gap_recovery:
                                         from leo.application.localization_v3 import (
-                                            recover_gap_tracks, recover_numerical_checkpoint,
+                                            prepare_additional_checkpoint, recover_gap_checkpoint,
+                                            recover_numerical_checkpoint,
                                         )
 
-                                        prepared_recovery = dict(recovery_context=recovery_context,
+                                        prepared_recovery = dict(status='track_recovery_prepared',
+                                            recovery_context=recovery_context,
                                             inventory=inventory_result)
                                         predictive = dict(status='predictive_recovery_evaluated',
-                                            recovery=recovered, completed_stages=completed_stages)
+                                            recovery=recovered, completed_stages=completed_stages,
+                                            selected_state=selected_states[0])
                                         numerical = recover_numerical_checkpoint(prepared_recovery,
                                             predictive, run_stage=numerical_stage,
                                             discovery_allowed=lambda: True, clock=time.monotonic,
@@ -273,7 +282,7 @@ def run(args):
                                             print('gap stage complete', name, flush=True)
                                             return True, value
 
-                                        gaps = recover_gap_tracks(prepared_recovery, numerical,
+                                        gaps = recover_gap_checkpoint(prepared_recovery, numerical,
                                             observations, run_stage=gap_stage,
                                             clock=time.monotonic, maximum_seconds=1200)
                                         if gaps['status'] != 'gap_recovery_evaluated':
@@ -283,6 +292,37 @@ def run(args):
                                             {k:v for k,v in row.items() if k != 'seconds'}
                                             for row in gap_result['stages']]
                                         result['gap_recovery'] = fingerprint(gap_result)
+                                        if args.additional_preflight:
+                                            additional = prepare_additional_checkpoint(
+                                                prepared_recovery, read('tracks.json'), metadata,
+                                                gaps, identities=sorted(args.scan_identities))
+                                            if additional['status'] != 'additional_recovery_prepared':
+                                                raise ValueError('selected checkpoint did not prepare')
+                                            selected = additional['residual_context']
+                                            result['additional_recovery'] = fingerprint(dict(
+                                                status=additional['status'],
+                                                inventory=additional['residual_inventory'],
+                                                preflight=additional['preflight'],
+                                                selected_owners=gaps['selected_state']['owners'],
+                                                families=[f.receipt for f in selected['families']],
+                                                replay_checks=selected['replay_checks'],
+                                                recovery_complete=False))
+                                            if args.residual_screen:
+                                                from leo.application.localization_v3 import (
+                                                    screen_additional_recovery,
+                                                )
+                                                catalogue = json.loads(args.recovery_catalogue.read_text())
+                                                screened = screen_additional_recovery(additional,
+                                                    catalogue, region, on_target=lambda row: print(
+                                                        'residual screen', row['source']['fragment_id'],
+                                                        len(row['finalists']), flush=True))
+                                                result['residual_screen'] = fingerprint(screened)
+                                            if args.preflight_packet:
+                                                with args.preflight_packet.open('x') as stream:
+                                                    json.dump(additional['preflight'], stream,
+                                                        default=lambda value: np.asarray(value).tolist(),
+                                                        allow_nan=False)
+                                                    stream.write('\n')
                             if annotation_mode:
                                 from leo.analysis.localization_v3.predictive_annotation import (
                                     annotate,
@@ -374,6 +414,13 @@ def run(args):
         predictive_recovery=recovery_mode,
         numerical_recovery=args.numerical_recovery or args.gap_recovery,
         gap_recovery=args.gap_recovery,
+        additional_preflight=args.additional_preflight,
+        residual_screen=args.residual_screen,
+        recovery_catalogue=(dict(path=str(args.recovery_catalogue),
+                                  sha256=digest(args.recovery_catalogue))
+                            if args.recovery_catalogue else None),
+        preflight_packet=(dict(path=str(args.preflight_packet), sha256=digest(args.preflight_packet))
+                          if args.preflight_packet else None),
         recovery_admission=('all predeclared targets; test harness only'
                             if recovery_mode else None),
         target_rank=args.target_rank,
@@ -423,8 +470,19 @@ if __name__ == '__main__':
                       help='Test harness: fresh predictive loop then conditional numerical replay')
     mode.add_argument('--gap-recovery', action='store_true',
                       help='Test harness: fresh prefix through owned numerical and gap checkpoints')
+    mode.add_argument('--additional-preflight', action='store_true',
+                      help='Test harness: bind selected checkpoints and prepare residual screening')
+    mode.add_argument('--residual-screen', action='store_true',
+                      help='Test harness: fresh implemented prefix through causal residual screen')
+    parser.add_argument('--recovery-catalogue', type=Path)
+    parser.add_argument('--preflight-packet', type=Path)
     parser.add_argument('--target-rank', type=int, default=0)
     parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
-    run(parser.parse_args())
+    args = parser.parse_args()
+    if args.residual_screen and args.recovery_catalogue is None:
+        parser.error('--residual-screen requires --recovery-catalogue')
+    if args.preflight_packet and not (args.additional_preflight or args.residual_screen):
+        parser.error('--preflight-packet requires a preflight-producing mode')
+    run(args)

@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+import pytest
+
 from leo.analysis.localization_v3 import recovery_controller as controller
 
 
@@ -55,6 +57,44 @@ def setup(monkeypatch, *, shared=False):
 
 def execute(name, operation):
     return True, operation()
+
+
+def test_selected_checkpoint_preserves_exact_trial_and_cannot_mutate_decision(monkeypatch):
+    evidence = setup(monkeypatch, shared=True)
+    states = []
+    result = controller.recover_tracks(
+        {}, evidence, run_stage=execute, discovery_allowed=lambda: True, on_selection=states.append
+    )
+    assert len(states) == 1
+    state = states[0]
+    assert state["selection"] == dict(kind="shared_family", trial=dict(index=0))
+    assert state["owners"] == {a: {"old": 1, "n0": 2} for a in controller.ARMS}
+    state["arms"]["c0"]["owners"]["old"] = 99
+    assert result["selected"]["arms"]["c0"]["owners"]["old"] == 1
+
+
+def test_no_addition_checkpoint_is_the_original_published_support(monkeypatch):
+    evidence = setup(monkeypatch, shared=True)
+    states = []
+    result = controller.recover_tracks(
+        {}, evidence, run_stage=execute, discovery_allowed=lambda: False, on_selection=states.append
+    )
+    assert result["selected"] is None
+    assert states[0]["selection"] is None
+    assert states[0]["arms"] == evidence["inventory"]["policy"]
+    assert states[0]["owners"] == {a: {"old": 1} for a in controller.ARMS}
+
+
+def test_checkpoint_sink_failure_is_not_hidden_as_scientific_fallback(monkeypatch):
+    evidence = setup(monkeypatch, shared=True)
+
+    def fail(state):
+        raise RuntimeError("checkpoint storage failed")
+
+    with pytest.raises(RuntimeError, match="checkpoint storage failed"):
+        controller.recover_tracks(
+            {}, evidence, run_stage=execute, discovery_allowed=lambda: True, on_selection=fail
+        )
 
 
 def test_omitted_targets_are_explicit_and_first_qualified_is_retained(monkeypatch):
@@ -115,13 +155,19 @@ def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatc
 
     monkeypatch.setattr(controller, "fit_joint", fit)
     monkeypatch.setattr(controller, "audit_joint", audit)
+    states = []
     result = controller.recover_tracks(
-        {}, evidence, run_stage=execute, discovery_allowed=lambda: True
+        {}, evidence, run_stage=execute, discovery_allowed=lambda: True, on_selection=states.append
     )
     assert len(calls) == 12
     assert result["decision"] == "ALGO03_joint"
     assert result["selected"]["arms"]["c0"]["added_points"] == 2
     assert result["selected"]["arms"]["c0"]["owners"] == {"old": 1, "n0": 2, "n1": 3}
+    assert states[0]["selection"]["kind"] == "joint"
+    assert set(states[0]["selection"]["trials"]) == {"c0", "fitted_c"}
+    assert all(
+        t["result"]["history"][-1]["success"] for t in states[0]["selection"]["trials"].values()
+    )
 
 
 def test_changed_protected_owner_forces_original_fallback(monkeypatch):

@@ -41,6 +41,19 @@ def prepare(reader, cutoff):
                                       screen_latitude_deg=10., screen_longitude_deg=20.)
 
 
+def test_recovery_catalogue_keeps_causal_48_to_72_hour_evidence(monkeypatch):
+    hour = 3600*1_000_000_000
+    cutoff, reader, reads = fixture(monkeypatch, [(-60*hour, 230.5),
+                                                (hour, 233.1), (-80*hour, 229.)])
+    result = inputs.prepare_recovery_catalogue(reader, cutoff)
+    assert result['cutoff_utc_ns'] == cutoff and set(result['elements']) == {'44714'}
+    row = result['elements']['44714']
+    assert row['collected_utc_ns'] == cutoff-60*hour
+    assert 48*hour < cutoff-row['element_epoch_utc_ns'] <= 72*hour
+    assert len(reads) == 1
+    assert parse_element_sets('\n'.join(row['lines'])).satellite_numbers == (44714,)
+
+
 def test_latest_and_previous_are_causal_and_distinct(monkeypatch):
     cutoff, reader, reads = fixture(monkeypatch, [(-2000, 231.9), (-1000, 232.5),
                                                  (-500, 234), (100, 232.9)])

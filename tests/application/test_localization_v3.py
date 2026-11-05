@@ -307,9 +307,10 @@ def test_recovery_application_keeps_caller_admission_and_later_policies_explicit
 def test_predictive_checkpoint_keeps_only_completed_stages_and_inventory_duration(monkeypatch):
     values = iter([1., 4., 7.])
 
-    def recover(d, e, *, run_stage, discovery_allowed):
+    def recover(d, e, *, run_stage, discovery_allowed, on_selection):
         assert run_stage('done', lambda: {'scientific': True}) == (True, {'scientific': True})
         assert run_stage('failed', lambda: None) == (False, None)
+        on_selection({'selection': None})
         return dict(selected=None)
 
     monkeypatch.setattr(app, 'recover_tracks', recover)
@@ -319,6 +320,7 @@ def test_predictive_checkpoint_keeps_only_completed_stages_and_inventory_duratio
         discovery_allowed=lambda: True, clock=lambda: next(values), inventory_seconds=2.)
     assert set(result['completed_stages']) == {'inventory', 'done'}
     assert result['completed_stages']['done']['seconds'] == 3.
+    assert result['selected_state'] == {'selection': None}
     assert result['completed_stages']['inventory']['seconds'] == 2.
     assert result['recovery_complete'] is False
 

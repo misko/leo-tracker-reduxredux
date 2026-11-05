@@ -14,6 +14,22 @@ from leo.operations.causal_tle_catalogue import causal_catalogue
 from leo.sky.propagation import parse_element_sets
 
 
+def prepare_recovery_catalogue(reader, cutoff_utc_ns):
+    """Read the original 72-hour newest-causal catalogue through the archive port."""
+    result = causal_catalogue(reader, cutoff_utc_ns, maximum_age_s=72*3600)
+    elements = {}
+    for number, satellite, provenance in zip(result.catalogue.satellite_numbers,
+            result.catalogue.satellites, result.provenance, strict=True):
+        row = dict(provenance, lines=list(export_tle(satellite)))
+        for key in ('element_epoch_utc_ns', 'collected_utc_ns'):
+            if not 0 <= cutoff_utc_ns-row[key] <= 72*3600*1_000_000_000:
+                raise ValueError('Noncausal recovery catalogue member')
+        validate_elements(dict(lines=row['lines'], provenance=provenance), cutoff_utc_ns)
+        elements[str(number)] = row
+    return dict(case='SCAN', cutoff_utc_ns=cutoff_utc_ns,
+                snapshot_count=result.snapshot_count, elements=elements)
+
+
 def validate_elements(record, cutoff):
     provenance = record['provenance']
     for key in ('element_epoch_utc_ns', 'collected_utc_ns'):

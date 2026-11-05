@@ -134,6 +134,17 @@ deadline policy and later recovery/publication qualification remain open.
 
 ## Measured improvements within the pipeline
 
+The [checkpoint/residual-screen iteration](../../reports/2026_11_05_algo07v3_residual_screen/README.md)
+adds the adopted raw-likelihood handoff and the 72-hour / 30-second causal screen.
+Eight target screens match exactly, including three passes; no new associations
+are credited before position acceptance. Catalogue reference/candidate observations
+are 6.747/6.037 s; isolated screens are 16.311/16.449 s and 24.869/24.326 s.
+These are overlapping shared-host observations, not controlled speedups. The fresh
+DS26-0002 implemented fitting prefix through screening takes 243.577 s and preserves
+the prior scientific prefix exactly. It excludes preparation, later position trials,
+final reassociation and publication. Complete-path matched scans remain zero; no
+complete-path ratio is available.
+
 The [selected-likelihood/preflight iteration](../../reports/2026_11_05_algo07v3_selected_incumbent/README.md)
 matches four frozen-context branches on three scans, including both-arm selected
 likelihoods, nearby-position probes, native residual ranking and corrected target

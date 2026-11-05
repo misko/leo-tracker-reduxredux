@@ -73,8 +73,15 @@ and prepares the remaining native evidence for additional-family recovery. All
 four real-fixture branches match frozen ALGO06 exactly in both arms, including
 nearby-position likelihood probes, complete residual ranking and corrected target
 arrays through the owned application entry point. The joint fixture's 17 incidental
-extensions per arm remain uncredited. Selected checkpoint binding, causal catalogue
-screening and subsequent fits remain unfinished. Production cancellation, final proof
+extensions per arm remain uncredited. The [selected checkpoint and residual screen
+iteration](../../reports/2026_11_05_algo07v3_residual_screen/README.md) now carries the
+actually adopted raw likelihood through predictive, numerical and gap decisions.
+The fresh DS26-0002 prefix preserves all earlier science and 2,783 owners per arm;
+484 incidental extensions remain uncredited. Its residual screen and two isolated
+screen fixtures match exactly on eight targets, including three passes. The owned
+72-hour catalogue adapter also matches. Additional-family position fits, final
+guarded reassociation, full-population checkpoints and publication remain unfinished.
+Production cancellation, final proof
 publication and broader gap branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,

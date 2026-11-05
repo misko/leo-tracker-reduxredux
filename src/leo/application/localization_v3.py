@@ -177,12 +177,13 @@ def include_recovery_target(prepared_recovery, annotated):
     return dict(status='predictive_inclusion_evaluated', inclusion=result, recovery_complete=False)
 
 
-def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed):
+def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed, on_selection=None):
     """Run ordered recovery with explicit caller-owned admission and execution."""
     if prepared_recovery['status'] != 'track_recovery_prepared':
         return dict(status=prepared_recovery['status'], recovery=None, recovery_complete=False)
     result = recover_tracks(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
-                            run_stage=run_stage, discovery_allowed=discovery_allowed)
+                            run_stage=run_stage, discovery_allowed=discovery_allowed,
+                            **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='predictive_recovery_evaluated', recovery=result, recovery_complete=False)
 
 
@@ -190,6 +191,7 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
                                   inventory_seconds):
     """Keep owned stage values for the immediately following numerical policy."""
     completed = {'inventory': dict(value=prepared_recovery['inventory'], seconds=inventory_seconds)}
+    selection = []
 
     def captured(name, operation):
         began = clock()
@@ -199,18 +201,21 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
         return ok, value
 
     result = recover_predictive_tracks(prepared_recovery, run_stage=captured,
-                                      discovery_allowed=discovery_allowed)
-    return dict(result, completed_stages=completed)
+                                      discovery_allowed=discovery_allowed,
+                                      on_selection=selection.append)
+    return dict(result, completed_stages=completed,
+                selected_state=selection[0] if selection else None)
 
 
 def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
-                             discovery_allowed, clock, charge_reused):
+                             discovery_allowed, clock, charge_reused, on_selection=None):
     """Replay the owned checkpoint and retain the exact incumbent on rejection."""
     if predictive['status'] != 'predictive_recovery_evaluated':
         return dict(status=predictive['status'], recovery=None, recovery_complete=False)
     result = replay_recovery(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
         predictive['recovery'], predictive['completed_stages'], run_stage=run_stage,
-        discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused)
+        discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused,
+        **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='numerical_recovery_evaluated', recovery=result, recovery_complete=False)
 
 
@@ -218,6 +223,7 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
                                  discovery_allowed, clock, charge_reused):
     """Retain completed numerical annotations, including on incumbent fallback."""
     completed = {}
+    selection = []
 
     def captured(name, operation):
         ok, value = run_stage(name, operation)
@@ -226,12 +232,14 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
         return ok, value
 
     result = recover_numerical_tracks(prepared_recovery, predictive, run_stage=captured,
-        discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused)
-    return dict(result, completed_stages=completed)
+        discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused,
+        on_selection=selection.append)
+    return dict(result, completed_stages=completed,
+                selected_state=selection[0] if selection else predictive.get('selected_state'))
 
 
 def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage, clock,
-                       maximum_seconds=1200):
+                       maximum_seconds=1200, on_selection=None):
     """Use numerical attempts but protect owners of the actually adopted fit.
 
     This is an owned scientific checkpoint, not a published legacy terminal.
@@ -253,9 +261,75 @@ def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage,
     inventory = dict(evidence['inventory'], publication_support=evidence['publication_support'])
     result = recover_gaps(prepared_recovery['recovery_context'], inventory, observations,
         previous['candidate'], annotations, owners, run_stage=run_stage, clock=clock,
-        maximum_seconds=maximum_seconds)
+        maximum_seconds=maximum_seconds,
+        **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='gap_recovery_evaluated', recovery=result, incumbent=previous,
                 recovery_complete=False)
+
+
+def recover_gap_checkpoint(prepared_recovery, numerical, observations, *, run_stage, clock,
+                           maximum_seconds=1200):
+    """Keep the chosen gap likelihood; rejection retains the numerical incumbent."""
+    selection = []
+    result = recover_gap_tracks(prepared_recovery, numerical, observations, run_stage=run_stage,
+        clock=clock, maximum_seconds=maximum_seconds, on_selection=selection.append)
+    return dict(result, selected_state=selection[0] if selection else numerical.get('selected_state'))
+
+
+def prepare_additional_checkpoint(prepared_recovery, native, scan_receipt, checkpoint, *, identities):
+    """Bind the selected owned likelihood to the separately retained scientific proof."""
+    if checkpoint['status'] != 'gap_recovery_evaluated':
+        return dict(status=checkpoint['status'], residual_context=None,
+                    residual_inventory=None, preflight=None, recovery_complete=False)
+    state = checkpoint.get('selected_state')
+    if state is None:
+        raise ValueError('Selected likelihood checkpoint missing')
+    gaps, previous = checkpoint['recovery'], checkpoint['incumbent']
+    if gaps['candidate'] is not None:
+        expected = gaps['candidate']['trial']['arms']
+        expected_owners = {a: r['proposed_owners'] for a, r in expected.items()}
+        kind = 'gap_conditional'
+    elif previous.get('selected'):
+        expected = previous['selected']['arms']
+        expected_owners = {a: r['owners'] for a, r in expected.items()}
+        kind = previous['selected']['kind']
+    else:
+        expected = prepared_recovery['inventory']['inventory']['policy']
+        expected_owners = {a: r['owners'] for a, r in previous['retained']['source_support'].items()}
+        kind = None
+    if state['owners'] != expected_owners or (
+        state['selection']['kind'] if state['selection'] else None) != kind:
+        raise ValueError('Selected likelihood does not bind to the adopted ownership/kind')
+    for arm in ('c0', 'fitted_c'):
+        for key in ('endpoint_latlon', 'endpoint_east_north_km', 'negative_twice_elbo'):
+            if key in expected[arm] and _selected_value(state['arms'][arm][key]) != _selected_value(expected[arm][key]):
+                raise ValueError('Selected likelihood does not bind to the adopted ' + key)
+    if kind == 'gap_conditional' and previous.get('selected'):
+        raise ValueError('Gap over separately recovered family requires explicit composition')
+    return prepare_additional_recovery(prepared_recovery, native, scan_receipt,
+        arms=state['arms'], owners=state['owners'], identities=identities,
+        selection=state['selection'], annotations=state['annotations'])
+
+
+def _selected_value(value):
+    """Compare owned array/list selected endpoint values without tolerance."""
+    return value.tolist() if hasattr(value, 'tolist') else value
+
+
+def prepare_additional_catalogue(archive, cutoff_utc_ns):
+    """Read the owned recovery catalogue only at the operational boundary."""
+    from leo.operations.localization_v3_inputs import prepare_recovery_catalogue
+    return prepare_recovery_catalogue(archive, cutoff_utc_ns)
+
+
+def screen_additional_recovery(prepared, catalogue, search_region, *, on_target=None):
+    """Apply the deployed 72-hour / 30-second screen without a recency penalty."""
+    if prepared['status'] != 'additional_recovery_prepared':
+        return dict(status=prepared['status'], screen=None, recovery_complete=False)
+    from leo.analysis.localization_v3.residual_screen import screen_candidates
+    result = screen_candidates(prepared['preflight'], catalogue, search_region,
+                               policy='72h_30s', on_target=on_target)
+    return dict(status='additional_candidates_screened', screen=result, recovery_complete=False)
 
 
 def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,

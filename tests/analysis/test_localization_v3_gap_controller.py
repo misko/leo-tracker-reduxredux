@@ -101,6 +101,28 @@ def test_original_stage_order_caps_and_paired_publication_proof(monkeypatch):
     assert len(result["numerical_receipts"]) == 3
 
 
+def test_gap_checkpoint_keeps_full_chosen_likelihood_and_isolated_ownership(monkeypatch):
+    data = fixture(monkeypatch)
+    states = []
+    result = run(data, on_selection=states.append)
+    assert len(states) == 1
+    state = states[0]
+    assert state["selection"]["kind"] == "gap_conditional"
+    assert state["selection"]["trial"] == data[5]
+    assert state["arms"] == data[5]["target_0"]["arms"]
+    assert len(state["annotations"]) == 1
+    state["owners"]["c0"]["old"] = 99
+    assert result["candidate"]["trial"]["arms"]["c0"]["proposed_owners"]["old"] == 10
+
+
+def test_rejected_gap_does_not_publish_selected_checkpoint(monkeypatch):
+    data = fixture(monkeypatch)
+    data[6]["all_verified"] = False
+    states = []
+    assert run(data, on_selection=states.append)["candidate"] is None
+    assert states == []
+
+
 @pytest.mark.parametrize(
     "excluded",
     [

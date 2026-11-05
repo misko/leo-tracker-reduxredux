@@ -6,6 +6,7 @@ pass. Stage execution/cancellation and the monotonic clock are explicit ports.
 """
 
 import math
+from copy import deepcopy
 
 from leo.analysis.localization_v3.gap_fragments import prepare_gap
 from leo.analysis.localization_v3.gap_recovery import annotate_gap, audit_gap, fit_gap
@@ -110,6 +111,7 @@ def recover_gaps(
     run_stage,
     clock,
     maximum_seconds=1200,
+    on_selection=None,
 ):
     """Use original eligibility/order/caps and select exactly one qualified fit.
 
@@ -140,6 +142,7 @@ def recover_gaps(
     previous = began
     targets = eligible(decision, annotations, incumbent_owners)
     rows, stages, excluded, candidates, receipts = [], [], [], {}, {}
+    selected_states = {}
 
     def stage(name, operation, cap):
         nonlocal previous
@@ -224,9 +227,19 @@ def recover_gaps(
                 rows.append(row)
                 if qualification["qualified"]:
                     candidates[(tid, bid)] = compact(fit, audit, identity, universe, parent_ids)
+                    if on_selection is not None:
+                        selected_states[(tid, bid)] = dict(
+                            selection=dict(kind="gap_conditional", trial=trial),
+                            annotations=[annotation],
+                            arms=fit["arms"],
+                            owners={a: r["proposed_owners"] for a, r in fit["arms"].items()},
+                        )
     except TimeoutError as error:
         excluded.append(dict(budget_exhausted=str(error)))
     chosen = select(rows)
+    if chosen and on_selection is not None:
+        checkpoint = selected_states[(chosen["track_id"], chosen["branch_id"])]
+        on_selection(deepcopy(checkpoint))
     return dict(
         selected=chosen,
         candidate=candidates[(chosen["track_id"], chosen["branch_id"])] if chosen else None,
