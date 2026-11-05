@@ -232,6 +232,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
         map_initial_arms=map_initial_arms,
         map_predictive_folds=map_predictive_folds,
         map_family_arms=map_initial_arms,
+        map_recovery_arms=map_initial_arms,
     )
     result = run_native(
         native,

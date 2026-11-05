@@ -33,6 +33,7 @@ class ExecutionPorts:
     map_initial_arms: Callable | None = None
     map_predictive_folds: Callable | None = None
     map_family_arms: Callable | None = None
+    map_recovery_arms: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -163,6 +164,11 @@ def infer_prepared(
             discovery_allowed=execution.discovery_allowed,
             clock=execution.clock,
             inventory_seconds=inventory_seconds,
+            **(
+                {"map_inclusion_arms": execution.map_recovery_arms}
+                if execution.map_recovery_arms
+                else {}
+            ),
             **(
                 {"map_annotation_folds": execution.map_predictive_folds}
                 if execution.map_predictive_folds

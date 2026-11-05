@@ -5,6 +5,10 @@ description: Profile and accelerate the standard fast-scan ALGO07 pipeline while
 
 # Profile ALGO07
 
+For the owned standalone ALGO07v3 pipeline, use
+[profile-algo07v3](../profile-algo07v3/SKILL.md). The commands below primarily
+cover the historical worker chain and native IQ detector.
+
 Use the repository CLI `python -m leo.cli.algo07_profile`. Read
 [the benchmark protocol](../../../docs/operations/algo07-runtime-benchmark.md)
 before freezing a baseline or interpreting a speedup.

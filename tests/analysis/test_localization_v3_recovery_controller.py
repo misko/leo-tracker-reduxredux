@@ -59,6 +59,27 @@ def execute(name, operation):
     return True, operation()
 
 
+@pytest.mark.parametrize('shared', [False, True])
+def test_inclusion_executor_keeps_target_order_and_reaches_retry(monkeypatch, shared):
+    evidence = setup(monkeypatch, shared=shared)
+    mapper, calls = object(), []
+
+    def fit(d, inv, annotations, **kwargs):
+        assert kwargs['map_arms'] is mapper
+        index = int(annotations[0]['result']['folds'][0][-1])
+        calls.append((index, kwargs.get('optimizer', 'lbfgsb')))
+        return dict(index=index, control={}, new_family={})
+
+    monkeypatch.setattr(controller, 'fit_shared', fit)
+    monkeypatch.setattr(controller, 'fit_new', fit)
+    monkeypatch.setattr(controller, 'single_candidate', lambda *a: None)
+    monkeypatch.setattr(controller, 'numerical_only', lambda *a: True)
+    controller.recover_tracks({}, evidence, run_stage=execute, discovery_allowed=lambda: True,
+                              map_inclusion_arms=mapper)
+    assert calls == ([(0, 'lbfgsb'), (1, 'lbfgsb')] if shared else
+                     [(0, 'lbfgsb'), (0, 'powell'), (1, 'lbfgsb'), (1, 'powell')])
+
+
 def test_fold_executor_is_forwarded_without_reordering_target_decisions(monkeypatch):
     evidence = setup(monkeypatch, shared=True)
     mapper, calls = object(), []

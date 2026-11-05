@@ -152,7 +152,8 @@ def _targets(context, inventory, annotations, *, shared):
     return d, targets, receipts, fragments, count
 
 
-def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh=False):
+def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh=False,
+               map_arms=None):
     d, targets, receipts, fragments, count = _targets(context, inventory, annotations, shared=True)
     protocol = dict(
         targets=targets,
@@ -194,8 +195,9 @@ def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh
     if len(targets) > 1:
         variants.append(("combined", targets))
     for name, extras in variants:
-        entries, pair = d["entries"] + extras, {}
-        for arm in ARMS:
+        entries = d["entries"] + extras
+
+        def fit_arm(arm, entries=entries, extras=extras):
             x, reference, history = np.zeros(2), np.zeros(len(d["means"])), []
             for _ in range(5):
                 p = _problem(
@@ -264,7 +266,11 @@ def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh
                     row["native_target_diagnostics"] = diagnostics
             if conditional_satellite_refresh:
                 row["shared_satellite_replay"] = exact_shared_replay(p, x, entries)
-            pair[arm] = row
+            return row
+
+        # Numerical replay maintains ordered mutable receipts in the parent.
+        mapper = map if d.get("numerical_policy") is not None else (map_arms or map)
+        pair = dict(zip(ARMS, mapper(fit_arm, ARMS), strict=True))
         valid = pair_passes(pair, include_linear=True) and all(
             r["lost_points"] == 0 and r["final_phase_change_s"] <= 0.01 for r in pair.values()
         )
@@ -294,7 +300,7 @@ def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh
     return result
 
 
-def fit_new(context, inventory, annotations, *, optimizer="lbfgsb"):
+def fit_new(context, inventory, annotations, *, optimizer="lbfgsb", map_arms=None):
     if optimizer not in ("lbfgsb", "powell"):
         raise ValueError("unknown matched position optimizer")
     d, targets, _, fragments, count = _targets(context, inventory, annotations, shared=False)
@@ -326,8 +332,7 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb"):
     )
     result = dict(protocol=protocol)
     for variant, include in [("control", False), ("new_family", True)]:
-        pair = {}
-        for arm in ARMS:
+        def fit_arm(arm, include=include):
             x, reference, history = np.zeros(2), np.zeros(len(d["means"])), []
             for _ in range(5):
                 p = _problem(d, arm, reference, d["entries"])
@@ -395,7 +400,10 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb"):
                 added_points=len(ids - old),
                 lost_points=len(old - ids),
             )
-            pair[arm] = row
+            return row
+
+        mapper = map if d.get("numerical_policy") is not None else (map_arms or map)
+        pair = dict(zip(ARMS, mapper(fit_arm, ARMS), strict=True))
         valid = pair_passes(pair, include_linear=True) and all(
             v["lost_points"] == 0
             and v["history"][-1]["success"]

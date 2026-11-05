@@ -1,5 +1,15 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Latest [recovery-arm scheduling change](../../reports/2026_11_05_algo07v3_recovery_arms/README.md)
+passes 882 tests and an isolated exact native comparison, including both arms,
+eight PNGs and publication. Complete observed time is **229.888 → 202.201 s**;
+predictive recovery is **69.319 → 45.570 s**. Original inclusion trials and their
+existing retry use two owned children; targets, variants, gates and later
+numerical replay remain sequential. Mutable numerical-policy receipts explicitly
+force serial fitting. Production and ordinary-admission qualification are unchanged.
+Use the [profiling skill](../../.agents/skills/profile-algo07v3/SKILL.md) for the
+repeatable measurement/qualification workflow.
+
 Latest [original-versus-v3 evidence](../../reports/2026_11_05_algo07v3_cumulative_repeat/README.md)
 now compares fresh complete executions: original **642.886 s**, v3 before/after
 **440.510 / 226.531 s**. Both v3 runs match all public fields, both arms, eight

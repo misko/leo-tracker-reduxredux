@@ -32,7 +32,8 @@ METHODS = ("control", "factorized", "joint")
 
 
 def recover_tracks(
-    context, evidence, *, run_stage, discovery_allowed, on_selection=None, map_annotation_folds=None
+    context, evidence, *, run_stage, discovery_allowed, on_selection=None,
+    map_annotation_folds=None, map_inclusion_arms=None
 ):
     """Evaluate original target order and at most one disjoint new-family pair.
 
@@ -132,7 +133,8 @@ def recover_tracks(
             ok, trial = stage(
                 f"target-{index}-inclusion",
                 lambda shared=shared, annotation=annotation: (fit_shared if shared else fit_new)(
-                    context, inventory, [annotation]
+                    context, inventory, [annotation],
+                    **({"map_arms": map_inclusion_arms} if map_inclusion_arms else {}),
                 ),
             )
             if not ok:
@@ -158,7 +160,8 @@ def recover_tracks(
                 ok, retry = stage(
                     f"target-{index}-retry",
                     lambda annotation=annotation: fit_new(
-                        context, inventory, [annotation], optimizer="powell"
+                        context, inventory, [annotation], optimizer="powell",
+                        **({"map_arms": map_inclusion_arms} if map_inclusion_arms else {}),
                     ),
                 )
                 if ok:

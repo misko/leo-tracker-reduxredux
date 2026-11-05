@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest incremental [recovery-arm iteration](../../reports/2026_11_05_algo07v3_recovery_arms/README.md):
+fresh DS26-0002 runs take **229.888 → 202.201 s (12.04% lower)**. Predictive
+recovery takes **69.319 → 45.570 s**; reported total CPU is **261.39 s on both
+sides**. All scientific values, both arms, eight PNGs and publication match
+exactly; 882 tests pass. Unchanged initial fitting also improves, so not all of
+the wall difference is attributable to the change. This is a one-scan incremental
+observation, not a new cumulative or population qualification. The new
+[profiling skill](../../.agents/skills/profile-algo07v3/SKILL.md) records separate
+parent/child profiles and recovery substages. Production remains unchanged.
+
 Updated 2026-11-05. **Fresh cumulative same-scan observations are now available:**
 original ALGO07 **642.886 s**, standalone v3 **440.510 s before** and **226.531 s
 after** the reference, observed ratios **1.459× / 2.838×**. Both v3 executions

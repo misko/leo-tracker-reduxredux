@@ -1,0 +1,68 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_recovery_arms/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/candidate-request.json",
+      "run",
+      "1200"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-src/leo/analysis/localization_v3/recovery_inclusion.py": "93b7f6871b5884f5f09c994fe883799ed9d3192de9ef6e4677d640d02851e5bc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_inclusion.py": "c870e6097b42aeb568ccae8dcd588c29346625687c44114bffdd7326b84175d0",
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-src/leo/analysis/localization_v3/recovery_controller.py": "1d22811a59b588d7b77daf96f8b478798e24ab1cb252eeeccfdb1cd63d054ffb",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py": "9a17385cbde9d6dbfa53ae5d67ab56778d0ba10b49c8024e657a0b5ea81a4c16",
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-src/leo/application/localization_v3.py": "d93419f570ecca58be184c62ca790b4f666c74d1052434094cc831df5e9b2597",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "a849df8b002e650f4cb6ce1f8a079fab0687616eb4a3e8723eb0abde03a4f754",
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-src/leo/application/localization_v3_engine.py": "2734f3935058db2fb08c7f00b095de683fb8e69c3eadd13dd75675bca0f38d5e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "2ffa716b2cbbcd408861dd4f3aba5c9b8068eebe901fdb856e2e196a39e311a6",
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-src/leo/operations/localization_v3_job.py": "63faecf43822d3e4c7620d2f68fe8b5be35297ffeb0def64382f2cb98a4d1340",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_job.py": "d60d07e6c7d81417ec5e5cc750cfe3934cae5bd3eeff27c485dc7c2d0fe41652",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_recovery_arms/run_pair.py": "be16249b9dfa2705718a84bd3f4e9a99eec12983b1460a3fb3284c05a3ca87cb",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_recovery_arms/run_baseline.sh": "d59c3a557b913cb5824b7112bad84016b553c4dd393d5782435843af5f3ea458",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/baseline-request.json": "9218591418e7a4af5dbe0a0eeb736bcf829c87e68b92782108517681586f5608",
+    "/srv/bulk/leo-dev/algo07v3-recovery-arms-20261105/candidate-request.json": "fef435cd187964a401501559a1f30663937f41303c75e00ba8758f6579953126"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

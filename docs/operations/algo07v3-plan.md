@@ -4,6 +4,15 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest incremental qualification: [profile-driven recovery concurrency](../../reports/2026_11_05_algo07v3_recovery_arms/README.md)
+takes **229.888 → 202.201 s** on a fresh DS26-0002 pair, with exact science,
+both arms, eight PNGs and publication. All 882 component tests pass. Original
+recovery arms use the existing bounded executor; mutable numerical replay stays
+serial. The new profiling skill records per-process profiles and recovery
+substage costs. Full DS26, ordinary admission and the 10× target remain open;
+production is unchanged. The next measured opportunity is repeated orbital
+interpolation in screening, subject to an exact bounded-state prototype.
+
 Latest cumulative evidence: [fresh original/v3 timing and metadata audit](../../reports/2026_11_05_algo07v3_cumulative_repeat/README.md).
 Original ALGO07 takes **642.886 s**; v3 executions before/after it take
 **440.510 / 226.531 s**, with all public artifacts and all 17 scientific audit

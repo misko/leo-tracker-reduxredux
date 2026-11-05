@@ -180,7 +180,8 @@ def include_recovery_target(prepared_recovery, annotated):
 
 
 def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed,
-                              on_selection=None, map_annotation_folds=None):
+                              on_selection=None, map_annotation_folds=None,
+                              map_inclusion_arms=None):
     """Run ordered recovery with explicit caller-owned admission and execution."""
     if prepared_recovery['status'] != 'track_recovery_prepared':
         return dict(status=prepared_recovery['status'], recovery=None, recovery_complete=False)
@@ -188,12 +189,15 @@ def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed
                             run_stage=run_stage, discovery_allowed=discovery_allowed,
                             **({'map_annotation_folds': map_annotation_folds}
                                if map_annotation_folds else {}),
+                            **({'map_inclusion_arms': map_inclusion_arms}
+                               if map_inclusion_arms else {}),
                             **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='predictive_recovery_evaluated', recovery=result, recovery_complete=False)
 
 
 def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_allowed, clock,
-                                  inventory_seconds, map_annotation_folds=None):
+                                  inventory_seconds, map_annotation_folds=None,
+                                  map_inclusion_arms=None):
     """Keep owned stage values for the immediately following numerical policy."""
     completed = {'inventory': dict(value=prepared_recovery['inventory'], seconds=inventory_seconds)}
     selection = []
@@ -208,6 +212,8 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
     result = recover_predictive_tracks(prepared_recovery, run_stage=captured,
                                       discovery_allowed=discovery_allowed,
                                       on_selection=selection.append,
+                                      **({'map_inclusion_arms': map_inclusion_arms}
+                                         if map_inclusion_arms else {}),
                                       **({'map_annotation_folds': map_annotation_folds}
                                          if map_annotation_folds else {}))
     return dict(result, completed_stages=completed,

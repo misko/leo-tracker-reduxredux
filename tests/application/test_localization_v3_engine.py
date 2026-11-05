@@ -72,6 +72,21 @@ def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch):
             assert 'map_annotation_folds' not in kwargs
 
 
+def test_recovery_arm_executor_is_scoped_to_original_predictive_checkpoint(monkeypatch):
+    from dataclasses import replace
+
+    prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
+    mapper = object()
+    execution = replace(execution, map_recovery_arms=mapper)
+    engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
+                          collect_history=object(), execution=execution)
+    for name, _, kwargs in calls:
+        if name == 'recover_predictive_checkpoint':
+            assert kwargs['map_inclusion_arms'] is mapper
+        else:
+            assert 'map_inclusion_arms' not in kwargs
+
+
 def fixture(monkeypatch, *, selected=False, fault=None):
     region = SearchRegion((37.906, -122.545))
     prepared = dict(
