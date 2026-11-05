@@ -106,3 +106,14 @@ Do not combine later numerical-replay substage rows with predictive timings.
 Use the unchanged-source parity helper above to verify science and eight PNGs.
 See `reports/2026_11_05_algo07v3_predictive_profile/README.md` for the qualified
 example and a renderer that exports compact child summaries and a stage plot.
+
+For exact-family gate replay, `tools/benchmark_algo07v3_family_gates.py` runs
+fresh native inference and alternates complete old/new inclusion audits on each
+live context. Use `--request REQUEST --output FRESH_DIRECTORY --repeats 3
+--timeout 900` with CPUs 0–2 and one BLAS thread; audit trials pin one CPU and
+restore affinity afterward. Require every full audit fingerprint to match,
+then compare final science/eight PNGs with the unchanged-source parity helper.
+Repeated trials copy the numerical policy so their problem/refresh receipts
+cannot append to the normal run's ordered log; keep this isolation and its test.
+The overall clock contains repeated audits and is not a pipeline speed result.
+Keep these trials sequential with fresh full-run timing comparisons.

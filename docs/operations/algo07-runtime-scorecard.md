@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest [fixed-audit gate reuse](../../reports/2026_11_05_algo07v3_family_gate_reuse/README.md)
+reduces the sum of four complete audit means **7.718 → 2.386 s (69.09% lower)**,
+with CPU **7.715 → 2.385 s**, across 24 exact alternating executions. Final
+scientific audits, both arms and all eight PNGs also match the ordinary candidate.
+The fresh full DS26-0002 pair is **281.351 → 315.061 s**, however: **33.710 s
+longer**, ratio **0.893×**. Unchanged initial search rises **24.869 → 41.078 s**;
+no complete-pipeline speedup is established. The report retains host evidence,
+the failed first benchmark's receipt-mutation diagnosis and the corrected rerun.
+Production is unchanged; a reversed full pair and another branch case remain next.
+
 Latest [conservative-arm concurrency](../../reports/2026_11_05_algo07v3_conservative_arms/README.md)
 measures **73.595 → 46.980 s (36.16% lower)** for complete prepared conservative
 recovery on DS26-0066, across three alternating exact pairs. Parent-plus-child

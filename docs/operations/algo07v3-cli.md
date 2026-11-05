@@ -1,5 +1,15 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The latest [family-gate reuse iteration](../../reports/2026_11_05_algo07v3_family_gate_reuse/README.md)
+computes unaffected residual gates once per fixed inclusion-audit problem and
+updates only the satellite whose orbit is being replayed. All saved gates,
+failures, diagnostic witnesses and ordering are retained. A fresh DS26-0002
+pair matches both calibration arms, scientific audits, eight PNGs and public
+grid/path exactly. Its complete times are **281.351 → 315.061 s**; unchanged
+stages slow substantially, so this is not a pipeline-speedup claim. The report
+separates alternating audit measurements from this full-run observation.
+Production and ordinary-admission qualification remain unchanged.
+
 The owned CLI now maps conservative c=0/fitted-c fits through its existing
 ordered executor. Rejection masks, salvage and callbacks remain sequential;
 only compact fit/metric records cross the process boundary. The

@@ -33,7 +33,7 @@ from leo.analysis.localization_v3.recovery_fragments import (
     inactive_fragment_context,
     original_graph_view,
 )
-from leo.analysis.localization_v3.recovery_gates import exact_gate_replay
+from leo.analysis.localization_v3.recovery_gates import exact_gate_replay, gate_slacks
 from leo.analysis.localization_v3.recovery_inventory import memberships
 from leo.analysis.localization_v3.recovery_partitions import require_distinct_annotation
 from leo.analysis.research.grouped_prediction import identity_consensus
@@ -495,9 +495,15 @@ def audit_inclusion(context, inventory, annotations, trial, *, shared):
             }
             labels.update(e["candidate_index"] for e in entries)
             exact = []
+            # Each replay changes only one family's orbit. Evaluate unchanged
+            # gates once at this fixed arm/role/position, retaining every key.
+            base_slacks = gate_slacks(p, x, entries) if labels else None
             for j in sorted(labels):
                 p.explicit_phase_family = j
-                exact.append(dict(norad=int(p.scan.norads[j]), **exact_gate_replay(p, x, entries)))
+                exact.append(dict(
+                    norad=int(p.scan.norads[j]),
+                    **exact_gate_replay(p, x, entries, base_slacks=base_slacks),
+                ))
             _, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], p.reference)
             old_changes = owner_changes(incumbent[arm], owners)
             control_changes = owner_changes(controls[arm], owners)

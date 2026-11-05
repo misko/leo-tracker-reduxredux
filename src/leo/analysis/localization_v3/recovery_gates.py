@@ -10,13 +10,15 @@ from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
 from leo.analysis.research.retained_track_likelihood import profile, whitening
 
 
-def gate_slacks(p, x, entries=()):
+def gate_slacks(p, x, entries=(), *, family=None):
     """Every original profile, conditional, alias, elevation and support gate."""
     scan, c, state = (p.scan, p.calculate(x), p.state(x))
     frequency, elevation = p.conditional_frequency(x)
     slacks = {}
     owners = {}
     for row, i, sl, alias in zip(p.rows, p.members, p.slices, p.alias, strict=True):
+        if family is not None and row["candidate_index"] != family:
+            continue
         t, active = (scan.tracks[i], p.keep[sl])
         if not active.any():
             continue
@@ -45,6 +47,8 @@ def gate_slacks(p, x, entries=()):
         if j in owners:
             slacks["support/" + str(j)] = float(len(owners[j]) - 1.5)
     for entry, sl in zip(entries, getattr(p, "linear_slices", []), strict=True):
+        if family is not None and entry["candidate_index"] != family:
+            continue
         t = scan.tracks[entry["track_index"]]
         raw = c["linear_raw_prediction_residual_hz"][sl]
         terms = profile(
@@ -101,8 +105,13 @@ def family_event_frequency(p, x, track, label):
     return design @ coefficient / (track["rf_hz"] / 11500000000.0)
 
 
-def exact_gate_replay(p, z, entries):
-    """Keep every fitted coefficient; replace only the selected family's orbit."""
+def exact_gate_replay(p, z, entries, *, base_slacks=None):
+    """Keep fitted coefficients; replace only the selected family's orbit.
+
+    Optional base slacks must be freshly computed for this same fixed problem,
+    position and entries before any orbit replacement. Only that family's
+    residuals/elevations change; every other gate retains its original value.
+    """
     c = p.calculate(z)
     j = p.explicit_phase_family
     frequency, elevation = p.conditional_frequency(z)
@@ -149,7 +158,11 @@ def exact_gate_replay(p, z, entries):
     )
     p.conditional_frequency = lambda _: (frequency, elevation)
     try:
-        gates = gate_slacks(p, z, entries)
+        if base_slacks is None:
+            gates = gate_slacks(p, z, entries)
+        else:
+            gates = dict(base_slacks)
+            gates.update(gate_slacks(p, z, entries, family=j))
     finally:
         p.calculate = calculate
         p.conditional_frequency = conditional_frequency
