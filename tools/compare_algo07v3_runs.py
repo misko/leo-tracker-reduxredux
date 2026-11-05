@@ -51,6 +51,15 @@ def scientific_values(a, b):
     same(*stages, "Ordered stages")
 
 
+def module_changes(a, b, expected_changed, expected_added):
+    same(set(a) - set(b), set(), "Removed implementation modules")
+    added = set(b) - set(a)
+    same(added, set(expected_added), "Declared added modules")
+    changed = {k for k in set(a) & set(b) if a[k] != b[k]}
+    same(changed, set(expected_changed), "Declared source changes")
+    return changed, added
+
+
 def compare(args):
     requests = [json.loads(p.read_bytes()) for p in (args.baseline_request, args.candidate_request)]
     matched_requests(*requests)
@@ -97,9 +106,11 @@ def compare(args):
     ]
     same(*configs, "Numerical configuration")
     modules = [x["provenance"]["modules"] for x in (a, b)]
-    same(set(modules[0]), set(modules[1]), "Loaded module set")
-    changes = {k for k in modules[0] if modules[0][k] != modules[1][k]}
-    same(changes, {"leo.analysis.localization_v3.hierarchical"}, "Declared source changes")
+    changes, added = module_changes(
+        *modules,
+        args.changed_module or ["leo.analysis.localization_v3.hierarchical"],
+        args.added_module,
+    )
     public = [FastStandardAnalysisStore(r["output_root"]) for r in requests]
     documents = []
     for store, result in zip(public, saved, strict=True):
@@ -133,6 +144,7 @@ def compare(args):
     return dict(
         exact_owned_science_and_artifacts=True,
         source_changes=sorted(changes),
+        added_modules=sorted(added),
         observed_process_seconds={
             s: r["process_seconds"] for s, r in zip(("baseline", "optimized"), clocks, strict=True)
         },
@@ -165,6 +177,8 @@ if __name__ == "__main__":
         "output",
     ):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--changed-module", action="append", default=None)
+    parser.add_argument("--added-module", action="append", default=[])
     args = parser.parse_args()
     result = compare(args)
     with args.output.open("x") as stream:

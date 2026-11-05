@@ -79,6 +79,30 @@ def test_supervisor_refuses_unbounded_deadline(tmp_path, timeout):
         supervise(["must-not-launch"], log=log, timeout=timeout, environment={})
 
 
+def test_supervisor_timeout_cleans_up_actual_owned_pair(tmp_path):
+    code = (
+        'import os,signal,time\n'
+        'from pathlib import Path\n'
+        'from leo.operations.localization_v3_parallel import map_initial_arms\n'
+        'from leo.operations.localization_v3_job import JobInterrupted\n'
+        'def interrupted(*args): raise JobInterrupted("cancel")\n'
+        'signal.signal(signal.SIGTERM, interrupted)\n'
+        'def fit(arm):\n'
+        ' signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+        f' Path({str(tmp_path)!r}, arm).write_text(str(os.getpid()))\n'
+        ' time.sleep(60)\n'
+        'try: map_initial_arms(fit, ("c0", "fitted_c"))\n'
+        'except JobInterrupted: pass\n'
+    )
+    with (tmp_path / 'log').open('wb') as log:
+        result = supervise([sys.executable, '-B', '-c', code], log=log, timeout=1.5,
+                            environment=os.environ.copy(), grace=1.)
+    assert result['status'] == 'timed_out'
+    for arm in ('c0', 'fitted_c'):
+        with pytest.raises(ProcessLookupError):
+            os.kill(int((tmp_path / arm).read_text()), 0)
+
+
 def test_supervisor_cancellation_reaps_worker(tmp_path):
     from leo.operations.localization_v3_job import JobInterrupted
 

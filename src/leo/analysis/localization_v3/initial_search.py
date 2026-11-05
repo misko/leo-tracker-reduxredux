@@ -11,13 +11,31 @@ from leo.analysis.localization_v3.families import AnchoredFamilies
 from leo.analysis.localization_v3.position import NormalPosition, fit, refreshed
 
 
+def fit_initial_arm(scan, sigma, node, arm, *, rounds, iterations):
+    """One independent cold-branch fit; execution and ordering belong to the caller."""
+    p, result, history = refreshed(scan, sigma, node, arm,
+                                   rounds=rounds, iterations=iterations)
+    x = result['parameters']
+    legacy = dict(rows=p.rows, state=p.state(x), aliases=p.alias,
+                  east_north_km=x, fits=[result])
+    metrics = actual_metrics(p, legacy, arm, x)
+    extended = extend_associations(p, x, metrics)
+    return dict(fit=result, phase_rounds=history, state=p.state(x),
+                reference=p.reference, metrics=metrics,
+                all_graph_associations=extended,
+                profile_gradient=None,
+                conditional_residual_hz=p.calculate(x)['conditional_residual_hz'])
+
+
 def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
-                   iterations=48, on_branch=None):
+                   iterations=48, on_branch=None, map_arms=None):
     """Fit matched c arms; select their common hypothesis using only the c0 score.
 
     Defaults are the original complete initial-search budgets. Smaller explicit
     budgets support bounded component comparisons, not production qualification.
     ``on_branch`` is an optional progress sink called after each completed pair.
+    ``map_arms`` may execute the two pure fits concurrently, but must return
+    their values in input order or raise. The default is ordinary serial map.
     """
     if any(not isinstance(n, int) or isinstance(n, bool) or n < 1
            for n in (seed_budget, branch_budget, rounds, iterations)):
@@ -53,20 +71,11 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
     selected = sorted(scored, key=lambda r: r[0])[:branch_budget]
     choices = []
     for index, (score, node) in enumerate(selected):
-        pair = {}
-        for arm in ('c0', 'fitted_c'):
-            p, result, history = refreshed(scan, sigma, node, arm,
-                                           rounds=rounds, iterations=iterations)
-            x = result['parameters']
-            legacy = dict(rows=p.rows, state=p.state(x), aliases=p.alias,
-                          east_north_km=x, fits=[result])
-            metrics = actual_metrics(p, legacy, arm, x)
-            extended = extend_associations(p, x, metrics)
-            pair[arm] = dict(fit=result, phase_rounds=history, state=p.state(x),
-                              reference=p.reference, metrics=metrics,
-                              all_graph_associations=extended,
-                              profile_gradient=None,
-                              conditional_residual_hz=p.calculate(x)['conditional_residual_hz'])
+        arms = ('c0', 'fitted_c')
+        mapped = (map if map_arms is None else map_arms)(
+            lambda arm, node=node: fit_initial_arm(scan, sigma, node, arm,
+                                        rounds=rounds, iterations=iterations), arms)
+        pair = dict(zip(arms, mapped, strict=True))
         choice = dict(hypothesis=index, center_score=score, node=node, arms=pair)
         choices.append(choice)
         if on_branch is not None:

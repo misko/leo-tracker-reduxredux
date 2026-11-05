@@ -7,7 +7,8 @@ from leo.analysis.localization_v3 import initial_search as policy
 from leo.analysis.localization_v3.region import SearchRegion
 
 
-def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch):
+@pytest.mark.parametrize('use_port', [False, True])
+def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch, use_port):
     scan = SimpleNamespace(search_region=SearchRegion((10., 20.)), norads=np.arange(3))
     candidates = [dict(center_score=float(i), seed=dict(rows=[dict(component=str(i),
         candidate_index=i, candidate_norad=100+i)], state={'beta': np.ones(8)*999}),
@@ -50,7 +51,13 @@ def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch):
     monkeypatch.setattr(policy, 'actual_metrics', lambda *a: {})
     monkeypatch.setattr(policy, 'extend_associations', lambda *a: {})
     monkeypatch.setattr(policy, 'fit', lambda p, **kw: dict(index=p.index))
-    result = policy.initial_search(scan, 150., on_branch=notices.append)
+    mapped = []
+    def mapper(operation, arms):
+        mapped.append(tuple(arms))
+        return [operation(arm) for arm in arms]
+    result = policy.initial_search(scan, 150., on_branch=notices.append,
+                                   map_arms=mapper if use_port else None)
+    assert mapped == ([('c0', 'fitted_c')] * 3 if use_port else [])
     assert corners == [(-12.5, -12.5), (-12.5, 12.5), (12.5, -12.5), (12.5, 12.5)]
     assert result['unique_RF_hypotheses'] == 3  # Corner aliases deduplicate.
     assert len(notices) == result['fully_fitted_hypotheses'] == 3
@@ -68,3 +75,28 @@ def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch):
 def test_invalid_budgets_fail_before_any_search(bad):
     with pytest.raises(ValueError, match='integer'):
         policy.initial_search(None, 150., rounds=bad)
+
+
+def test_extracted_fit_body_matches_the_qualified_external_prototype():
+    import ast
+    import hashlib
+    import inspect
+
+    import algo07v3_initial_oracle as oracle
+    from probe_algo07v3_parallel_initial import transformed_function
+
+    assert hashlib.sha256(inspect.getsource(oracle.initial_search).encode()).hexdigest() == (
+        'a7ce607c47ef66b84d460e13fe77e04427d6401e0ebc4f494790e0ed9cee1aea')
+    # Capture compiled helper AST from the same extraction as the measured probe.
+    captured = []
+    import builtins
+    from unittest.mock import patch
+    original = builtins.compile
+    def record(source, filename, *args, **kwargs):
+        if filename == '<extracted-initial-arm>':
+            captured.append(source.body[0].body)
+        return original(source, filename, *args, **kwargs)
+    with patch('builtins.compile', record):
+        transformed_function(oracle, None)
+    actual = ast.parse(inspect.getsource(policy.fit_initial_arm)).body[0].body[1:]
+    assert [ast.dump(n) for n in actual] == [ast.dump(n) for n in captured[0]]

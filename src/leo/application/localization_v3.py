@@ -17,12 +17,12 @@ from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.numerical_recovery import replay_recovery
 from leo.analysis.localization_v3.phase_prior import forecast
 from leo.analysis.localization_v3.predictive_annotation import annotate
-from leo.analysis.localization_v3.recovery_inclusion import include_annotation
 from leo.analysis.localization_v3.recovery_controller import recover_tracks
+from leo.analysis.localization_v3.recovery_inclusion import include_annotation
 from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
 from leo.analysis.localization_v3.residual_preflight import preflight, rank_targets
-from leo.analysis.localization_v3.selected_incumbent import reconstruct_incumbent
 from leo.analysis.localization_v3.scan import ScanLikelihood
+from leo.analysis.localization_v3.selected_incumbent import reconstruct_incumbent
 from leo.analysis.localization_v3.signed_context import signed_context
 from leo.analysis.localization_v3.tracks import prepare_tracks
 
@@ -57,7 +57,8 @@ def prepare_native_scan(document, archive, track_config, *,
                 phase_history=history, phase_forecast=forecast(history))
 
 
-def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branch=None):
+def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branch=None,
+                         map_arms=None):
     """Run the original full initial-search budgets on native prepared evidence.
 
     Use the original previous-orbit prior at this stage. The separately prepared
@@ -67,7 +68,8 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], initial_fit=None, recovery_complete=False)
     scan = _context(prepared, search_region, noise_sha256, genuine=False)
-    result = initial_search(scan, scan.radio_sigma_hz, on_branch=on_branch)
+    execution = {} if map_arms is None else dict(map_arms=map_arms)
+    result = initial_search(scan, scan.radio_sigma_hz, on_branch=on_branch, **execution)
     return dict(status='initial_position_fitted', initial_fit=result, recovery_complete=False)
 
 
@@ -177,7 +179,8 @@ def include_recovery_target(prepared_recovery, annotated):
     return dict(status='predictive_inclusion_evaluated', inclusion=result, recovery_complete=False)
 
 
-def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed, on_selection=None):
+def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed,
+                              on_selection=None):
     """Run ordered recovery with explicit caller-owned admission and execution."""
     if prepared_recovery['status'] != 'track_recovery_prepared':
         return dict(status=prepared_recovery['status'], recovery=None, recovery_complete=False)
@@ -273,10 +276,12 @@ def recover_gap_checkpoint(prepared_recovery, numerical, observations, *, run_st
     selection = []
     result = recover_gap_tracks(prepared_recovery, numerical, observations, run_stage=run_stage,
         clock=clock, maximum_seconds=maximum_seconds, on_selection=selection.append)
-    return dict(result, selected_state=selection[0] if selection else numerical.get('selected_state'))
+    return dict(result,
+                selected_state=selection[0] if selection else numerical.get('selected_state'))
 
 
-def prepare_additional_checkpoint(prepared_recovery, native, scan_receipt, checkpoint, *, identities):
+def prepare_additional_checkpoint(prepared_recovery, native, scan_receipt, checkpoint, *,
+                                  identities):
     """Bind the selected owned likelihood to the separately retained scientific proof."""
     if checkpoint['status'] != 'gap_recovery_evaluated':
         return dict(status=checkpoint['status'], residual_context=None,
@@ -295,14 +300,16 @@ def prepare_additional_checkpoint(prepared_recovery, native, scan_receipt, check
         kind = previous['selected']['kind']
     else:
         expected = prepared_recovery['inventory']['inventory']['policy']
-        expected_owners = {a: r['owners'] for a, r in previous['retained']['source_support'].items()}
+        expected_owners = {a: r['owners']
+                           for a, r in previous['retained']['source_support'].items()}
         kind = None
     if state['owners'] != expected_owners or (
         state['selection']['kind'] if state['selection'] else None) != kind:
         raise ValueError('Selected likelihood does not bind to the adopted ownership/kind')
     for arm in ('c0', 'fitted_c'):
         for key in ('endpoint_latlon', 'endpoint_east_north_km', 'negative_twice_elbo'):
-            if key in expected[arm] and _selected_value(state['arms'][arm][key]) != _selected_value(expected[arm][key]):
+            if (key in expected[arm] and _selected_value(state['arms'][arm][key])
+                    != _selected_value(expected[arm][key])):
                 raise ValueError('Selected likelihood does not bind to the adopted ' + key)
     if kind == 'gap_conditional' and previous.get('selected'):
         raise ValueError('Gap over separately recovered family requires explicit composition')
@@ -388,7 +395,8 @@ def screen_reassociation_candidates(prepared, ranked, catalogue, scan_receipt, *
     from leo.analysis.localization_v3.reassociation_admission import admit
     result = admit(prepared['context'], prepared['owners'], ranked['targets'], catalogue,
                    scan_receipt, on_target=on_target)
-    return dict(status='reassociation_candidates_screened', admission=result, recovery_complete=False)
+    return dict(status='reassociation_candidates_screened', admission=result,
+                recovery_complete=False)
 
 
 def fit_reassociation(prepared, screened, catalogue, scan_receipt, collect_history,

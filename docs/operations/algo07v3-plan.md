@@ -4,6 +4,14 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest owned integration: [bounded concurrent initial fits](../../reports/2026_11_05_algo07v3_owned_parallel/README.md)
+are now connected through the development CLI, with 691 passing tests and exact
+fresh scientific/publication comparisons. Initial search takes 39.453 → 26.903 s;
+complete supervised native-to-publication time takes 287.835 → 286.322 s in one
+shared-host pair. The 0.53% total reduction is the relevant observation, not the
+31.8% stage reduction. Production remains unchanged. Full DS26 equivalence,
+historical mappings, production admission and the 10× target remain open.
+
 Latest external experiment: [parallel initial c arms](../../reports/2026_11_05_algo07v3_parallel_initial/README.md)
 reduce initial-stage ABBA means 38.928 → 27.731 s (28.76%) on two performance
 cores, preserving every scientific field and callback. A full native-to-PNG

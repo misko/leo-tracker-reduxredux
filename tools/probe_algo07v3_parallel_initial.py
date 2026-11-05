@@ -100,9 +100,9 @@ def parallel_pair(scan, sigma, node, rounds, iterations):
 
 def run(args):
     global _ARM_FUNCTION, _CPUS
+    import algo07v3_initial_oracle as module
     from check_algo07v3_scan_likelihood import fingerprint
 
-    from leo.analysis.localization_v3 import initial_search as module
     from leo.analysis.localization_v3.region import SearchRegion
     from leo.analysis.polynomial_tracklets import TrackConfig
     from leo.application import localization_v3 as application
@@ -138,7 +138,7 @@ def run(args):
             )
         )
         for side in ("serial", "parallel", "parallel", "serial"):
-            application.initial_search = original if side == "serial" else candidate
+            application.initial_search = module.initial_search if side == "serial" else candidate
             notices = []
             _PAIR_EVENTS.clear()
             began = time.perf_counter()

@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 import pytest
-from compare_algo07v3_runs import matched_requests, scientific_values
+from compare_algo07v3_runs import matched_requests, module_changes, scientific_values
 
 
 def test_only_output_destination_may_change_between_requests():
@@ -37,3 +37,14 @@ def test_non_audit_evidence_and_stage_inventory_are_not_omitted():
     ):
         with pytest.raises(ValueError):
             scientific_values(a, dict(b, **{key: value}))
+
+
+def test_only_declared_loaded_source_changes_and_additions_are_allowed():
+    a = dict(job='old', science='same')
+    b = dict(job='new', science='same', executor='added')
+    assert module_changes(a, b, ['job'], ['executor']) == ({'job'}, {'executor'})
+    for changed in (dict(b, science='changed'), dict(b, unexpected='added'), {'job': 'new'}):
+        with pytest.raises(ValueError):
+            module_changes(a, changed, ['job'], ['executor'])
+    with pytest.raises(ValueError):
+        module_changes(a, b, ['job'], [])

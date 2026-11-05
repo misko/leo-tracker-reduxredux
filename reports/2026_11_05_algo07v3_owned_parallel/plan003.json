@@ -1,0 +1,33 @@
+{
+  "order": [
+    "serial",
+    "parallel"
+  ],
+  "affinity": [
+    0,
+    1
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "baseline_job_commit": "35518f147",
+  "baseline_job_sha256": "358aca54a6c8a965bcc71817a00e7540d2c8c8d1f40f5903acc72981e9095014",
+  "source_hashes": {
+    "src/leo/analysis/localization_v3/initial_search.py": "dcd98f3ea29c5be0f76a13271f74b8637b6e04f20200c5a6204f54bee4ec190a",
+    "src/leo/application/localization_v3.py": "8103e617d85394ceb95eb0eb1fc7336a9e7474199c50580cb0b8030a549d6298",
+    "src/leo/application/localization_v3_engine.py": "f77e177615aafa8b7d59e08eb506cce9511f248b813ae6a26d2c4aeb4ae8197b",
+    "src/leo/operations/localization_v3_job.py": "1bed6277eb25f86f17925d50ecef7005a670cef6dc237dccbf9e6cee985e6bea",
+    "src/leo/operations/localization_v3_parallel.py": "ac6219556dc1e1d16e3c617c4ba6ae63db33b79c1e6f6f29e8cb103ecee347b8",
+    "tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2"
+  },
+  "comparison_changed_modules": [
+    "leo.operations.localization_v3_job"
+  ],
+  "comparison_added_modules": [
+    "__mp_main__",
+    "leo.operations.localization_v3_parallel"
+  ],
+  "scope": "fresh native GLRT through scientific storage, eight PNGs and atomic WebUI manifest; excludes capture and GLRT detection",
+  "production_changed": false,
+  "revision_note": "Successful worker exit waits use the owning stage/job deadline, with no extra 200 ms completion gate; cleanup grace applies only after cancellation.",
+  "source_audit_note": "multiprocessing adds __mp_main__, a verified alias with the same path/hash as existing __main__; first comparison correctly rejected the undeclared alias before publication checks. No scientific tolerance or source-removal gate changed."
+}

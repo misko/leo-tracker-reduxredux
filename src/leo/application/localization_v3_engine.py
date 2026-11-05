@@ -30,6 +30,7 @@ class ExecutionPorts:
     discovery_allowed: Callable
     charge_reused: Callable
     clock: Callable
+    map_initial_arms: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -111,7 +112,12 @@ def infer_prepared(
 
     initial = step(
         "initial",
-        lambda: policy.fit_initial_position(prepared, region, noise_sha256=noise_sha),
+        lambda: policy.fit_initial_position(
+            prepared,
+            region,
+            noise_sha256=noise_sha,
+            **({"map_arms": execution.map_initial_arms} if execution.map_initial_arms else {}),
+        ),
         "initial_position_fitted",
     )
     conservative = step(

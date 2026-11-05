@@ -63,6 +63,11 @@ test; runtime import/read guards remain active.
 
 ## Reproduction
 
+This historical report binds source at commit `35518f147`. Use that checkout to
+rerun its hash-bound verifier. Later integration preserves the original search
+body in the external `tools/algo07v3_initial_oracle.py`; subsequent tool revisions
+have new hashes and do not rewrite these original receipts.
+
 From the checkout root, using the pinned environment and a fresh output path:
 
 ```sh

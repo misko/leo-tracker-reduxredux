@@ -198,6 +198,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
     from leo.analysis.localization_v3.region import SearchRegion
     from leo.analysis.polynomial_tracklets import TrackConfig
     from leo.application.localization_v3_engine import ExecutionPorts, run_native
+    from leo.operations.localization_v3_parallel import map_initial_arms
     from leo.operations.tle_archive import TleArchiveReader
 
     native = read_bound(request["native_input"])
@@ -226,7 +227,10 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
             value = operation()
         return True, value
 
-    ports = ExecutionPorts(stage, gap, lambda: True, lambda _: None, time.monotonic)
+    ports = ExecutionPorts(
+        stage, gap, lambda: True, lambda _: None, time.monotonic,
+        map_initial_arms=map_initial_arms,
+    )
     result = run_native(
         native,
         TleArchiveReader(Path(request["tle_root"])),

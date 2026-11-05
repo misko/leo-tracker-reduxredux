@@ -4,6 +4,17 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest owned integration:
+[concurrent initial fits through publication](../../reports/2026_11_05_algo07v3_owned_parallel/README.md).
+The fresh serial/current CLI pair preserves all owned scientific and published
+outputs exactly. Initial search takes **39.453 → 26.903 s**, while the complete
+supervised native-to-publication process takes **287.835 → 286.322 s (0.53% less;
+1.0053× observed)**. Saving/publication took longer in the second run. This is a
+single shared-host pair, not dataset-qualified end-to-end improvement. The
+runtime port is now enabled in the development CLI, with 691 passing focused
+tests including actual worker failure/cancellation cleanup. Production is
+unchanged. Predictive recovery remains the largest stage at about 95 s.
+
 Latest concurrency experiment:
 [independent initial c arms](../../reports/2026_11_05_algo07v3_parallel_initial/README.md).
 Four ABBA runs give **38.928 → 27.731 s (28.76% less)** for the full initial-search

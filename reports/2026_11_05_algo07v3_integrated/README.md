@@ -88,6 +88,9 @@ and this inventory is not a numerical evaluation of all 159 members.
 
 ## Reproduction and remaining gates
 
+This historical report binds source at commit `c7dff8652`. Replay its source-bound
+verifier from that checkout; later comparator revisions have different hashes.
+
 The immutable local evidence root is
 `/srv/bulk/leo-dev/algo07v3-integrated-20261105`. It contains requests, frozen
 kernels, worker logs, supervision receipts, resource observations and test XML.

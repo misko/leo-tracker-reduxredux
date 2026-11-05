@@ -26,6 +26,22 @@ FUNCTIONS = [
 ]
 
 
+def test_initial_executor_port_is_forwarded_only_to_initial_search(monkeypatch):
+    from dataclasses import replace
+
+    prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
+    def mapper(operation, arms):
+        return list(map(operation, arms))
+    execution = replace(execution, map_initial_arms=mapper)
+    engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
+                          collect_history=object(), execution=execution)
+    for name, _, kwargs in calls:
+        if name == 'fit_initial_position':
+            assert kwargs['map_arms'] is mapper
+        else:
+            assert 'map_arms' not in kwargs
+
+
 def fixture(monkeypatch, *, selected=False, fault=None):
     region = SearchRegion((37.906, -122.545))
     prepared = dict(

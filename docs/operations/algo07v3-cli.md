@@ -3,6 +3,11 @@
 The owned command is `leo-algo07v3` after installing this checkout, or
 `PYTHONPATH=src python -B -m leo.cli.algo07v3` from its root. It starts one owned
 worker. It does not invoke earlier ALGO executables or consume their results.
+Fresh runs now execute each initial branch's independent c=0 and fitted-c fits
+in two owned child processes. The parent returns their results in the original
+order; branch selection, phase rounds, budgets and zero-phase controls are
+unchanged. Direct numerical calls remain serial unless supplied the execution
+port. The request schema and published contracts are unchanged.
 The command is currently qualified for **validation-all-work** only. It is not a
 deployed service or a claim of equivalence to production wall-clock admission.
 
@@ -75,7 +80,15 @@ supervisor pins BLAS thread counts to one and enforces `--timeout` over the chil
 process, including its imports, numerical work and publication. Accepted limits
 are positive and at most 7,200 seconds. The default is 1,200 seconds.
 
-On timeout it sends termination to the entire worker process group, waits up to
+The pair adapter uses Linux `fork` from a single Python-thread owner. It shares
+the scan copy-on-write and inherits the worker's CPU affinity; it does not expand
+that CPU allowance. At most two numerical children run for an initial pair.
+Successful fits wait for normal worker exit under the existing job/stage deadline,
+without a new short completion cutoff. A child crash, serialization error or
+incomplete result aborts the job and cannot become a scientific rejection.
+Parent interruption terminates, kills if necessary and reaps both children.
+
+On timeout the supervisor sends termination to the entire worker process group, waits up to
 two seconds, then kills remaining descendants and reaps the direct child. A
 timeout returns exit code 124. Parent cancellation cleans up the same group and
 returns 130. SIGKILL of the supervisor itself is outside this adapter's cleanup

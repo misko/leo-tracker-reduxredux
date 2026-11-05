@@ -160,6 +160,22 @@ def test_initial_fit_preserves_prior_stage_and_does_not_claim_final_completion(m
         status='no_active_curvature', initial_fit=None, recovery_complete=False)
 
 
+def test_initial_fit_forwards_executor_without_changing_budgets(monkeypatch):
+    from types import SimpleNamespace
+
+    scan = SimpleNamespace(radio_sigma_hz=150.)
+    monkeypatch.setattr(app, '_context', lambda *a, **kw: scan)
+    mapper, marker = object(), object()
+    def search(actual_scan, sigma, **kwargs):
+        assert actual_scan is scan and sigma == 150.
+        assert kwargs == dict(on_branch=marker, map_arms=mapper)
+        return {'selected_hypothesis': 1}
+    monkeypatch.setattr(app, 'initial_search', search)
+    result = app.fit_initial_position({'status': 'inputs_prepared'}, object(),
+                                      on_branch=marker, map_arms=mapper)
+    assert result['initial_fit'] == {'selected_hypothesis': 1}
+
+
 def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatch):
     from types import SimpleNamespace
 

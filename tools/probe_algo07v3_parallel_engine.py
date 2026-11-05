@@ -17,7 +17,8 @@ import probe_algo07v3_parallel_initial as experiment
 
 
 def run(args):
-    from leo.analysis.localization_v3 import initial_search
+    import algo07v3_initial_oracle as initial_search
+
     from leo.application import localization_v3
 
     affinity = os.sched_getaffinity(0)

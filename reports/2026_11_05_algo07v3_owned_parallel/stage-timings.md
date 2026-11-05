@@ -1,0 +1,22 @@
+| Stage | Serial (s) | Parallel initial arms (s) |
+| --- | ---: | ---: |
+| native_preparation | 8.423 | 8.305 |
+| recovery_catalogue | 5.374 | 5.436 |
+| initial | 39.453 | 26.903 |
+| conservative | 23.762 | 24.061 |
+| family | 18.921 | 19.310 |
+| signed | 2.361 | 2.514 |
+| cavity | 7.806 | 8.034 |
+| inventory | 0.207 | 0.210 |
+| predictive | 95.168 | 95.321 |
+| numerical | 16.543 | 17.460 |
+| gap | 0.001 | 0.001 |
+| residual | 0.193 | 0.188 |
+| residual_screen | 18.236 | 19.235 |
+| addition | 0.003 | 0.002 |
+| incumbent | 0.280 | 0.280 |
+| ranking | 7.500 | 7.347 |
+| admission | 10.974 | 12.271 |
+| final | 0.063 | 0.066 |
+| plot_evidence | 17.164 | 17.269 |
+| png_rendering | 5.569 | 5.512 |

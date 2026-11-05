@@ -3,10 +3,9 @@
 import inspect
 from types import SimpleNamespace
 
+import algo07v3_initial_oracle as initial_search
 import pytest
 from probe_algo07v3_parallel_initial import ARMS, transformed_function
-
-from leo.analysis.localization_v3 import initial_search
 
 
 def test_extracted_arm_runs_original_body_and_returns_complete_result(monkeypatch):

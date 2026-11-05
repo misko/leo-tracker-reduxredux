@@ -37,6 +37,23 @@ def request_fixture(tmp_path):
     )
 
 
+def test_fresh_job_wires_owned_pair_executor(tmp_path, monkeypatch):
+    from leo.application import localization_v3_engine as engine
+    from leo.operations import localization_v3_job as job
+    from leo.operations.localization_v3_parallel import map_initial_arms
+
+    request = request_fixture(tmp_path)
+    monkeypatch.setattr(job, 'read_bound', lambda record: (
+        {'source': {'session_id': 'session'}} if record is request['native_input']
+        else {'config': {}}))
+    def run(*args, **kwargs):
+        assert kwargs['execution'].map_initial_arms is map_initial_arms
+        return {'status': 'no_active_curvature'}
+    monkeypatch.setattr(engine, 'run_native', run)
+    result = execute(request)
+    assert result['published'] is False
+
+
 def save_fixture(request):
     evidence, pngs = evidence_fixture()
     evidence["provenance"]["request_sha256"] = canonical_digest(request)
