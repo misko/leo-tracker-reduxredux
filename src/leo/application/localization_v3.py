@@ -332,6 +332,29 @@ def screen_additional_recovery(prepared, catalogue, search_region, *, on_target=
     return dict(status='additional_candidates_screened', screen=result, recovery_complete=False)
 
 
+def fit_additional_recovery(prepared, screened, catalogue, observations, *, clock, on_arm=None):
+    """Fit matched control/addition from the owned selected-state reconstruction.
+
+    This is a qualified conditional trial, not final guarded reassociation or
+    publication. No older result directory is an input to the fitting controller.
+    """
+    if prepared['status'] != 'additional_recovery_prepared':
+        return dict(status=prepared['status'], recovery=None, recovery_complete=False)
+    if screened['status'] != 'additional_candidates_screened':
+        return dict(status=screened['status'], recovery=None, recovery_complete=False)
+    packet, screen = prepared['preflight'], screened['screen']
+    if (screen['case'] != packet['case'] or
+        [t['source'] for t in screen['targets']] != [t['source'] for t in packet['targets']]):
+        raise ValueError('Residual screen does not bind to the prepared native targets')
+    if catalogue['cutoff_utc_ns'] != packet['scan_receipt']['cutoff_utc_ns']:
+        raise ValueError('Residual catalogue cutoff changed after screening')
+    from leo.analysis.localization_v3.additional_recovery import recover_additional
+    result = recover_additional(prepared['context_factory'], prepared['incumbent_owners'],
+        screen, catalogue, observations, family_count=len(prepared['residual_context']['families']),
+        policy='72h_30s', clock=clock, on_arm=on_arm)
+    return dict(status='additional_position_evaluated', recovery=result, recovery_complete=False)
+
+
 def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
                                 arms, owners, identities, selection=None, annotations=()):
     """Replay an explicitly chosen owned likelihood and rank remaining evidence.
@@ -343,10 +366,13 @@ def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
     if prepared_recovery['status'] != 'track_recovery_prepared':
         return dict(status=prepared_recovery['status'], residual_context=None,
                     residual_inventory=None, preflight=None, recovery_complete=False)
-    context = reconstruct_incumbent(prepared_recovery['recovery_context'], arms, owners,
-        selection=selection, inventory=prepared_recovery['inventory']['inventory'],
-        annotations=annotations, observations=native['observations'])
+    def fresh():
+        return reconstruct_incumbent(prepared_recovery['recovery_context'], arms, owners,
+            selection=selection, inventory=prepared_recovery['inventory']['inventory'],
+            annotations=annotations, observations=native['observations'])
+    context = fresh()
     ranked = rank_targets(native['tracks'], native['observations'], owners, identities)
     packet = preflight(context, ranked['targets'], scan_receipt)
     return dict(status='additional_recovery_prepared', residual_context=context,
-                residual_inventory=ranked, preflight=packet, recovery_complete=False)
+                residual_inventory=ranked, preflight=packet, recovery_complete=False,
+                context_factory=fresh, incumbent_owners=owners)

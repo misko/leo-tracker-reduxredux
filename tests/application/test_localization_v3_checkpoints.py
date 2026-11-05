@@ -158,3 +158,71 @@ def test_incomplete_preflight_cannot_enter_screen():
     result = app.screen_additional_recovery(dict(status="cavity_incomplete"), {}, None)
     assert result["status"] == "cavity_incomplete" and result["screen"] is None
     assert not result["recovery_complete"]
+
+
+def position_inputs():
+    packet = dict(
+        case="SCAN",
+        targets=[dict(source=dict(fragment_id="a"))],
+        scan_receipt=dict(cutoff_utc_ns=123),
+    )
+    prepared = dict(
+        status="additional_recovery_prepared",
+        preflight=packet,
+        context_factory=object(),
+        incumbent_owners={"c0": {}, "fitted_c": {}},
+        residual_context=dict(families=[object()]),
+    )
+    screened = dict(
+        status="additional_candidates_screened",
+        screen=dict(case="SCAN", targets=deepcopy(packet["targets"])),
+    )
+    return prepared, screened, dict(cutoff_utc_ns=123)
+
+
+def test_additional_fit_uses_owned_reconstruction_and_original_policy(monkeypatch):
+    from leo.analysis.localization_v3 import additional_recovery
+
+    prepared, screened, catalogue = position_inputs()
+    observations, clock, sink = [], object(), object()
+
+    def fit(factory, owners, screen, cat, obs, **kwargs):
+        assert factory is prepared["context_factory"]
+        assert owners is prepared["incumbent_owners"] and screen is screened["screen"]
+        assert cat is catalogue and obs is observations
+        assert kwargs == dict(family_count=1, policy="72h_30s", clock=clock, on_arm=sink)
+        return {"conditional_recovery": True}
+
+    monkeypatch.setattr(additional_recovery, "recover_additional", fit)
+    result = app.fit_additional_recovery(
+        prepared, screened, catalogue, observations, clock=clock, on_arm=sink
+    )
+    assert result["status"] == "additional_position_evaluated"
+    assert result["recovery"]["conditional_recovery"] and not result["recovery_complete"]
+
+
+@pytest.mark.parametrize("fault", ["case", "target", "catalogue", "incomplete"])
+def test_changed_screen_or_catalogue_cannot_authorize_fit(monkeypatch, fault):
+    from leo.analysis.localization_v3 import additional_recovery
+
+    prepared, screened, catalogue = position_inputs()
+    monkeypatch.setattr(
+        additional_recovery,
+        "recover_additional",
+        lambda *a, **kw: pytest.fail("Mismatched evidence used"),
+    )
+    if fault == "case":
+        screened["screen"]["case"] = "OTHER"
+    elif fault == "target":
+        screened["screen"]["targets"][0]["source"]["fragment_id"] = "other"
+    elif fault == "catalogue":
+        catalogue["cutoff_utc_ns"] += 1
+    else:
+        screened["status"] = "incomplete"
+        assert (
+            app.fit_additional_recovery(prepared, screened, catalogue, [], clock=None)["recovery"]
+            is None
+        )
+        return
+    with pytest.raises(ValueError, match="Residual"):
+        app.fit_additional_recovery(prepared, screened, catalogue, [], clock=None)

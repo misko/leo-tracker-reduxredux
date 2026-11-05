@@ -79,8 +79,13 @@ actually adopted raw likelihood through predictive, numerical and gap decisions.
 The fresh DS26-0002 prefix preserves all earlier science and 2,783 owners per arm;
 484 incidental extensions remain uncredited. Its residual screen and two isolated
 screen fixtures match exactly on eight targets, including three passes. The owned
-72-hour catalogue adapter also matches. Additional-family position fits, final
-guarded reassociation, full-population checkpoints and publication remain unfinished.
+72-hour catalogue adapter also matches. The [additional-family position stage](../../reports/2026_11_05_algo07v3_additional_position/README.md)
+now reproduces DS26-0086's complete matched control/addition exactly, qualifying
+26 points for NORAD 67652 and preserving 3,285 incumbent owners in both arms.
+The application is connected through this stage; its fresh DS26-0002 no-addition
+branch preserves the entire earlier prefix and correctly excludes an existing
+family. Accepted additions from fresh native inputs across the population, final
+guarded reassociation and publication remain unqualified or unfinished.
 Production cancellation, final proof
 publication and broader gap branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint

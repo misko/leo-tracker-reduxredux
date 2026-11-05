@@ -32,6 +32,8 @@ def signed_snapshot(context):
 
 
 def run(args):
+    if args.additional_position:
+        args.residual_screen = True
     if args.residual_screen:
         args.additional_preflight = True
     if args.additional_preflight:
@@ -317,6 +319,13 @@ def run(args):
                                                         'residual screen', row['source']['fragment_id'],
                                                         len(row['finalists']), flush=True))
                                                 result['residual_screen'] = fingerprint(screened)
+                                                if args.additional_position:
+                                                    from leo.application.localization_v3 import fit_additional_recovery
+                                                    result['additional_position'] = fingerprint(fit_additional_recovery(
+                                                        additional, screened, catalogue, observations,
+                                                        clock=time.monotonic, on_arm=lambda tag, arm, row: print(
+                                                            'additional position', tag, arm,
+                                                            row['all_checked_gates_pass'], flush=True)))
                                             if args.preflight_packet:
                                                 with args.preflight_packet.open('x') as stream:
                                                     json.dump(additional['preflight'], stream,
@@ -416,6 +425,7 @@ def run(args):
         gap_recovery=args.gap_recovery,
         additional_preflight=args.additional_preflight,
         residual_screen=args.residual_screen,
+        additional_position=args.additional_position,
         recovery_catalogue=(dict(path=str(args.recovery_catalogue),
                                   sha256=digest(args.recovery_catalogue))
                             if args.recovery_catalogue else None),
@@ -474,6 +484,8 @@ if __name__ == '__main__':
                       help='Test harness: bind selected checkpoints and prepare residual screening')
     mode.add_argument('--residual-screen', action='store_true',
                       help='Test harness: fresh implemented prefix through causal residual screen')
+    mode.add_argument('--additional-position', action='store_true',
+                      help='Test harness: fresh prefix through matched additional-family position trials')
     parser.add_argument('--recovery-catalogue', type=Path)
     parser.add_argument('--preflight-packet', type=Path)
     parser.add_argument('--target-rank', type=int, default=0)
@@ -481,8 +493,8 @@ if __name__ == '__main__':
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     args = parser.parse_args()
-    if args.residual_screen and args.recovery_catalogue is None:
-        parser.error('--residual-screen requires --recovery-catalogue')
-    if args.preflight_packet and not (args.additional_preflight or args.residual_screen):
+    if (args.residual_screen or args.additional_position) and args.recovery_catalogue is None:
+        parser.error('Residual screening/position requires --recovery-catalogue')
+    if args.preflight_packet and not (args.additional_preflight or args.residual_screen or args.additional_position):
         parser.error('--preflight-packet requires a preflight-producing mode')
     run(args)

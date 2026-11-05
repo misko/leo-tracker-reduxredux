@@ -197,6 +197,16 @@ round, cap 240). Conditional replay, later policies, full DS26 and publication
 remain incomplete. A first strict comparison failed on stage-specific contraction
 order; preserving the frozen orders fixed it without relaxing equivalence.
 
+The [owned additional-family position stage](../../reports/2026_11_05_algo07v3_additional_position/README.md)
+matches the complete DS26-0086 control and candidate exactly in both arms, adding
+the same 26 points to its 3,285 incumbent owners. Reference/candidate observations
+are **295.876/283.929 seconds**; these overlapping shared-host runs are not a
+controlled speed benchmark. A fresh connected DS26-0002 prefix takes **260.781
+seconds**, preserves all earlier science, and correctly skips an already
+represented family. It excludes native preparation, final guarded reassociation
+and all artifact publication. Complete-path matched scans remain zero and no
+end-to-end ratio is available. The focused suite passes 397 tests.
+
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
 |---|---:|---:|---:|---|
 | Final ALGO07 numerical worker, two-family case, iteration 002 | 779.063 s | 420.000 s | 1.855× | Full worker; exact scientific comparison; profiled overlapping runs on shared host |
