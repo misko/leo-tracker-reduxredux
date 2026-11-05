@@ -54,6 +54,17 @@ def main(pair, variance):
     tests = list(ET.parse(variance / "tests-gated.xml").getroot().iter("testsuite"))
     assert sum(int(s.attrib["tests"]) for s in tests) == 24
     assert all(int(s.attrib[k]) == 0 for s in tests for k in ("errors", "failures", "skipped"))
+    probe = read(variance / "probe.json")
+    receipt = read(variance / "native/result.receipt.json")
+    assert probe["complete"] and probe["exact"] and not probe["failures"]
+    assert probe["calls"] == 6772
+    assert probe["tool_sha256"] == synthetic["candidate_tool_sha256"]
+    assert probe["reference_sha256"] == synthetic["reference_sha256"]
+    assert probe["candidate_sha256"] == synthetic["candidate_sha256"]
+    assert sha(repo / "tools/check_algo07v3_engine.py") == probe["engine_tool_sha256"]
+    assert sha(variance / "native/result.json") == receipt["output_sha256"] == (
+        "4f7c74a132b415e9bd6e130dcbc0d7082fa72c822d53f76810f8a9fa13323d68"
+    )
     request = str(pair / "candidate/attempt/request.json").encode()
     active = []
     for entry in Path("/proc").iterdir():
@@ -75,6 +86,8 @@ def main(pair, variance):
         profile=dict(successful_samples=samples, reported_errors=errors, nonblocking=True,
                      duration_seconds=45, rate_hz=49, sampled_process_seconds=weight, top_leaf=top),
         synthetic_exact=True, variance_tests=24, variance_enabled_in_runtime=False,
+        variance_native_exact=True, variance_native_calls=probe["calls"],
+        variance_component_seconds=probe["component_seconds"],
         full_dataset_equivalence=False, cumulative_speedup=None, production_modified=False,
     )
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -87,6 +100,8 @@ def main(pair, variance):
         "synthetic-ungated.json": variance / "synthetic.json",
         "synthetic-gated.json": variance / "synthetic-gated.json",
         "tests.xml": variance / "tests-gated.xml",
+        "variance-probe.json": variance / "probe.json",
+        "variance-native-receipt.json": variance / "native/result.receipt.json",
     }.items():
         (out / name).write_bytes(source.read_bytes())
     import matplotlib

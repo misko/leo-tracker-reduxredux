@@ -4,14 +4,21 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest exact-call result: [bounded variance batching](../../reports/2026_11_05_algo07v3_native_canary/README.md)
+matches all 6,772 native calls and the full scientific/PNG snapshot. Alternating
+kernel time decreases **124.650 → 110.722 s (11.17%)**. The 420.642 s diagnostic
+duplicates kernel work and is not normal runtime. The prototype remains external;
+DS26-0066's integrated-solver comparison is still running. No cumulative gain is claimed.
+
 Current [larger native canary](../../reports/2026_11_05_algo07v3_native_canary/README.md):
 DS26-0066's pre-optimization baseline completes in **900.763 s**, including
 422.640 s predictive recovery and 163.899 s initial search. It selects guarded
 reassociation and retains 2,770 points in both arms. The integrated candidate
 is running; there is no pair result or speed claim yet. A short sampling profile
 and differing preparation timings make attribution particularly unsuitable.
-An external bounded variance-batching prototype passes 24 exact synthetic tests
-and is in native qualification; it is not enabled in the CLI. Production is unchanged.
+An external bounded variance-batching prototype passes 24 exact synthetic tests;
+its completed native probe is recorded above. It is not enabled in the CLI.
+Production is unchanged.
 
 Latest development [solver integration](../../reports/2026_11_05_algo07v3_solver_integration/README.md):
 upper-root solves and removal of overwritten Gaussian calculations are now in

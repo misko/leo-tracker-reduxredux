@@ -4,12 +4,17 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest native prototype: bounded variance batching now matches all 6,772 calls
+and the full DS26-0002 scientific/PNG snapshot, saving 11.17% of alternating kernel
+compute. See the [canary report](../../reports/2026_11_05_algo07v3_native_canary/README.md).
+It is not integrated; the frozen DS26-0066 solver comparison remains active.
+
 Latest coverage expansion: [DS26-0066 native canary and variance prototype](../../reports/2026_11_05_algo07v3_native_canary/README.md).
 The standalone pre-optimization baseline completes through guarded reassociation
 and publication in 900.763 s; its integrated counterpart is running. This is a
 more demanding native recovery case, not yet a completed equivalence pair.
-A bounded equal-shape variance prototype passes 24 exact tests and is being
-checked on a full native run. Runtime source is unchanged from the preceding
+A bounded equal-shape variance prototype passes 24 exact tests and has completed
+the native probe recorded above. Runtime source is unchanged from the preceding
 solver integration. No deployment or cumulative speed claim.
 
 Latest implementation: [solver integration](../../reports/2026_11_05_algo07v3_solver_integration/README.md).

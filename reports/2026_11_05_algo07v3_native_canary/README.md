@@ -88,20 +88,33 @@ layouts, dense and sparse support, repeated block widths, empty-column groups,
 and immutable inputs. They retain exact dtype/shape/byte comparison; no tolerance
 was added. [Test results](tests.xml).
 
-A bounded complete native DS26-0002 exact-call probe is running at
-`/srv/bulk/leo-dev/algo07v3-variance-groups-20261105` on CPU 4. It executes both
-kernels on every input, so its eventual total runtime cannot be interpreted as
-normal pipeline latency. No native pass or runtime integration is claimed yet.
-The production and development numerical kernels remain at the previously
-qualified [solver integration](../2026_11_05_algo07v3_solver_integration/README.md).
+The bounded complete native DS26-0002 exact-call probe subsequently **completed
+and passed** on CPU 4. All **6,772 calls** retain every field's shape, dtype and
+bytes. The complete native scientific snapshot and all eight PNG hashes remain
+the same qualified comparison digest, including both calibration arms and all
+179 diagnostic grid locations.
+
+| Alternating native kernel measurement | Current integrated kernel | Bounded variance batching |
+| --- | ---: | ---: |
+| Summed computation | 124.650 s | **110.722 s** |
+| Observed component reduction | — | **13.927 s / 11.17%** |
+
+The 420.642-second diagnostic executes both kernels and compares every result;
+it is not normal pipeline latency or a complete-path speed ratio. The prototype
+is not integrated while the separate DS26-0066 comparison is still running.
+[Native probe receipt](variance-probe.json),
+[native scientific/source binding](variance-native-receipt.json).
+Raw evidence: `/srv/bulk/leo-dev/algo07v3-variance-groups-20261105`.
+The runtime remains at the previously qualified
+[solver integration](../2026_11_05_algo07v3_solver_integration/README.md).
 
 ## Remaining qualification
 
 Finish the DS26-0066 pair and compare all science, both arms, eight PNGs and
 publication sidecars. Then extend the same checks to further native cases and
 the full DS26 denominator: **159 fast members, 158 available inputs and one
-unavailable member**. The variance prototype requires its own native exactness
-and complete-path evidence before integration. Ordinary production admission,
+unavailable member**. The variance prototype requires complete-path and broader-case
+evidence before integration. Ordinary production admission,
 historical metadata semantics and the cumulative 10× target remain open.
 
 The [renderer](render.py) verifies source/input bindings, successful baseline
