@@ -2,12 +2,12 @@
 
 import copy
 
+import algo07v3_prefamily_policy_oracle as history_policy
 import numpy as np
 import pytest
 from check_algo07v3_scan_likelihood import fingerprint
 from probe_algo07v3_parallel_family import transformed_functions
 
-from leo.analysis.localization_v3 import history_policy
 from leo.operations.localization_v3_parallel import ParallelFitFailure, map_initial_arms
 from tests.analysis.test_localization_v3_position import prepared
 

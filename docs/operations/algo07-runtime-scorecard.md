@@ -4,6 +4,16 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [family concurrency integration](../../reports/2026_11_05_algo07v3_family_integration/README.md)
+passes 843 component tests and a fresh isolated complete-path comparison.
+Observed time is **245.714 → 228.848 s (6.86% lower)** and total process CPU is
+**272.02 → 259.99 s**. Both arms, all science, eight PNG bytes, grid/path and
+publication match exactly. Family-stage time is **17.675 → 11.301 s**;
+unchanged initial fitting also improves **26.495 → 22.482 s**, so not all of the
+total difference is attributable to family scheduling. This single shared-host
+pair is not a cumulative legacy-to-v3 or population-wide speedup. Production is
+unchanged. Earlier entries below preserve their historical status and limitations.
+
 Latest [development integration](../../reports/2026_11_05_algo07v3_variance_integration/README.md):
 bounded variance batching is enabled in the owned CLI. Its module bytes match
 the prototype with exact complete outputs on DS26-0002 and DS26-0066; 833

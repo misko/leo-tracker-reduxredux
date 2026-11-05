@@ -15,9 +15,9 @@ import sys
 import time
 from pathlib import Path
 
+import algo07v3_prefamily_policy_oracle as policy
 from check_algo07v3_scan_likelihood import fingerprint
 
-from leo.analysis.localization_v3 import history_policy as policy
 from leo.operations.localization_v3_parallel import map_initial_arms
 
 
@@ -64,7 +64,8 @@ def main():
     if not forwarded:
         parser.error("Engine arguments required after --")
     from leo.application import localization_v3 as application
-    original = application.history_policy
+    original = policy.history_policy
+    runtime_function = application.history_policy
     rows, pairs = [], []
 
     def mapper(operation, arms):
@@ -105,7 +106,7 @@ def main():
         runpy.run_path(str(tool), run_name="__main__")
         complete = True
     finally:
-        application.history_policy = original
+        application.history_policy = runtime_function
         sys.argv = old_argv
         result = dict(complete=complete, exact=complete and bool(rows)
                       and all(r["exact"] for r in rows), comparisons=rows, pairs=pairs,

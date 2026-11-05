@@ -42,6 +42,21 @@ def test_initial_executor_port_is_forwarded_only_to_initial_search(monkeypatch):
             assert 'map_arms' not in kwargs
 
 
+def test_family_executor_is_scoped_to_family_policy(monkeypatch):
+    from dataclasses import replace
+
+    prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
+    mapper = object()
+    execution = replace(execution, map_family_arms=mapper)
+    engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
+                          collect_history=object(), execution=execution)
+    for name, _, kwargs in calls:
+        if name == 'fit_family_policy':
+            assert kwargs['map_arms'] is mapper
+        else:
+            assert 'map_arms' not in kwargs
+
+
 def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch):
     from dataclasses import replace
 

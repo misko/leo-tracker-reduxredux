@@ -209,7 +209,8 @@ def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatc
     assert contexts[0] is not contexts[1]
 
 
-def test_family_policy_binds_owned_history_without_mutating_forecast(monkeypatch):
+@pytest.mark.parametrize('parallel', [False, True])
+def test_family_policy_binds_owned_history_without_mutating_forecast(monkeypatch, parallel):
     import hashlib
     import json
 
@@ -217,6 +218,7 @@ def test_family_policy_binds_owned_history_without_mutating_forecast(monkeypatch
                     phase_forecast=dict(strictly_pre_RF=True),
                     sky=dict(metadata=dict(cutoff_utc_ns=90)))
     scan, conservative, region = object(), {}, object()
+    extra = dict(map_arms=object()) if parallel else {}
 
     def context(p, r, noise, *, genuine):
         assert p is prepared and r is region and genuine
@@ -225,13 +227,13 @@ def test_family_policy_binds_owned_history_without_mutating_forecast(monkeypatch
     def policy(s, c, raw, forecast, **kwargs):
         assert s is scan and c is conservative and raw is prepared['phase_history']
         digest = hashlib.sha256((json.dumps(raw, sort_keys=True)+'\n').encode()).hexdigest()
-        assert kwargs == dict(case='SCAN', cutoff_utc_ns=90, history_sha256=digest)
+        assert kwargs == dict(case='SCAN', cutoff_utc_ns=90, history_sha256=digest, **extra)
         assert forecast['history_sha256'] == digest
         return dict(status='accepted', fallback='curved_pair')
 
     monkeypatch.setattr(app, '_context', context)
     monkeypatch.setattr(app, 'history_policy', policy)
-    result = app.fit_family_policy(prepared, conservative, region)
+    result = app.fit_family_policy(prepared, conservative, region, **extra)
     assert result['family_fit']['fallback'] == 'curved_pair'
     assert result['recovery_complete'] is False
     assert 'history_sha256' not in prepared['phase_forecast']

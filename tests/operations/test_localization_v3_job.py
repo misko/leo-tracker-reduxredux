@@ -49,6 +49,7 @@ def test_fresh_job_wires_owned_pair_executor(tmp_path, monkeypatch):
     def run(*args, **kwargs):
         assert kwargs['execution'].map_initial_arms is map_initial_arms
         assert kwargs['execution'].map_predictive_folds is map_predictive_folds
+        assert kwargs['execution'].map_family_arms is map_initial_arms
         return {'status': 'no_active_curvature'}
     monkeypatch.setattr(engine, 'run_native', run)
     result = execute(request)

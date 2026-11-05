@@ -19,7 +19,9 @@ from leo.analysis.localization_v3.retained_position import phase_widths
 ARMS = ("c0", "fitted_c")
 
 
-def history_policy(scan, original, raw, forecast, *, case, cutoff_utc_ns, history_sha256):
+def history_policy(
+    scan, original, raw, forecast, *, case, cutoff_utc_ns, history_sha256, map_arms=None
+):
     """Fit curved families and conditionally add predictive linear evidence.
 
     Region and history provenance enter explicitly. This produces the initial
@@ -57,7 +59,9 @@ def history_policy(scan, original, raw, forecast, *, case, cutoff_utc_ns, histor
     )
     _, receipts = phase_widths(scan, p.labels)
     means = forecast_phase_mean(receipts, model["shrinkage"])
-    curved, keep, history = history_fit(scan, node, original_keep, powers, means, model)
+    curved, keep, history = history_fit(
+        scan, node, original_keep, powers, means, model, map_arms=map_arms
+    )
     common.update(
         weights=powers,
         confidence=confidence,
@@ -95,9 +99,10 @@ def history_policy(scan, original, raw, forecast, *, case, cutoff_utc_ns, histor
     )
     x = np.asarray(saved["endpoint_east_north_km"])
     entries = select_entries(p, x, retained_metrics(p, x))
-    linear = {
-        arm: linear_refit(scan, node, keep, powers, means, model, arm, entries) for arm in ARMS
-    }
+    mapper = map if map_arms is None else map_arms
+    linear = dict(zip(ARMS, mapper(
+        lambda arm: linear_refit(scan, node, keep, powers, means, model, arm, entries),
+        ARMS), strict=True))
     policy, accepted = paired_policy(curved, linear, half_width_km=scan.search_region.half_width_km)
     return dict(
         common,
@@ -184,19 +189,19 @@ def paired_policy(curved, linear, *, half_width_km=12.5):
     return (linear if accepted else curved), accepted
 
 
-def history_fit(scan, node, original_keep, powers, means, model):
+def history_fit(scan, node, original_keep, powers, means, model, *, map_arms=None):
 
     base = problem(scan, node, "c0", original_keep)
     keep = np.array(original_keep, bool, copy=True)
     steps = []
     pair = None
+    mapper = map if map_arms is None else map_arms
     for epoch in range(4):
         if not keep.any():
             break
-        pair = {
-            arm: refit(scan, node, keep, arm, powers, means, model["multiplier"], model["nu"])
-            for arm in ARMS
-        }
+        pair = dict(zip(ARMS, mapper(
+            lambda arm: refit(scan, node, keep, arm, powers, means,
+                              model["multiplier"], model["nu"]), ARMS), strict=True))
         failed = {
             r["component"]
             for arm in ARMS

@@ -99,7 +99,7 @@ def _context(prepared, search_region, noise_sha256, *, genuine):
         previous_sources=receipt['sources'] if genuine else receipt.get('sources'))
 
 
-def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=None):
+def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=None, map_arms=None):
     """Bind owned in-memory history and evaluate the original paired family policy."""
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], family_fit=None, recovery_complete=False)
@@ -107,7 +107,7 @@ def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=Non
     scan = _context(prepared, search_region, noise_sha256, genuine=True)
     result = history_policy(scan, conservative, history, phase_forecast,
         case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],
-        history_sha256=history_sha256)
+        history_sha256=history_sha256, **({'map_arms': map_arms} if map_arms is not None else {}))
     return dict(status='family_policy_evaluated', family_fit=result, recovery_complete=False)
 
 

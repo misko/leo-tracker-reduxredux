@@ -1,0 +1,66 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_family_integration/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/candidate-request.json",
+      "run",
+      "1200"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-src/leo/analysis/localization_v3/history_policy.py": "18ec75adb06516797b362fa499c7f86f7d51a31accbfb47f95bda0099c4c6008",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/history_policy.py": "429c230cb01438a4889f6e77256b7f00df4435b3522632bbef8cc2a83d223ca1",
+    "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-src/leo/application/localization_v3.py": "f925e5701e59964c314987be91c4b7cc426074a2924a162e915a1676abe310ce",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "d93419f570ecca58be184c62ca790b4f666c74d1052434094cc831df5e9b2597",
+    "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-src/leo/application/localization_v3_engine.py": "438d47ad29c4d952ef555c53c4da087129e00b12432c5fd94738fd1027b9b962",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "2734f3935058db2fb08c7f00b095de683fb8e69c3eadd13dd75675bca0f38d5e",
+    "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-src/leo/operations/localization_v3_job.py": "8ba4258f4b1897c1477cba2a6dbafabcf276a6ec7af9586fd4d14ebbbce38249",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_job.py": "63faecf43822d3e4c7620d2f68fe8b5be35297ffeb0def64382f2cb98a4d1340",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_family_integration/run_pair.py": "e2e7b4ee468d05537807accedf1b08fa04f5b8aeb11bdec34b16b1bd09cd842a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_family_integration/run_baseline.sh": "b8ce10212c1f025d1f6bbb3cf96219a8bb98efd834208e502c3052cab58202c1",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/baseline-request.json": "39c52e07825831eeb4d64ae83ab71dc27825d51c02a876e04a16ffaca17bc758",
+    "/srv/bulk/leo-dev/algo07v3-family-integration-20261105/candidate-request.json": "1c1f854453ad461b5515ffac205ad7b3b04b257ef463ce7124aec0c4fa1bc524"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

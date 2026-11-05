@@ -4,6 +4,17 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest implementation: [family concurrency integration](../../reports/2026_11_05_algo07v3_family_integration/README.md).
+The owned CLI runs the independent family c arms concurrently, preserving paired
+gates and sequential mask updates. All 843 component tests pass; a fresh isolated
+serial/current comparison is exact through all science, both arms, eight PNGs,
+grid/path and publication. Observed time **245.714 → 228.848 s** includes gains
+in unchanged stages, so the full 6.86% reduction cannot be assigned to this
+optimization. Family-stage time falls **17.675 → 11.301 s**. Full DS26, broader
+accepted branches, historical metadata, production admission and cumulative
+performance remain open. No deployment. Earlier milestones retain their
+historical status; the current state is recorded here.
+
 Latest implementation: [bounded variance integration](../../reports/2026_11_05_algo07v3_variance_integration/README.md).
 The owned module is byte-identical to the prototype with exact complete outputs
 on DS26-0002 and DS26-0066, including accepted guarded reassociation. All 833

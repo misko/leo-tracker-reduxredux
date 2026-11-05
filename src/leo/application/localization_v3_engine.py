@@ -32,6 +32,7 @@ class ExecutionPorts:
     clock: Callable
     map_initial_arms: Callable | None = None
     map_predictive_folds: Callable | None = None
+    map_family_arms: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -131,7 +132,8 @@ def infer_prepared(
     family = step(
         "family",
         lambda: policy.fit_family_policy(
-            prepared, conservative["conservative_fit"], region, noise_sha256=noise_sha
+            prepared, conservative["conservative_fit"], region, noise_sha256=noise_sha,
+            **({"map_arms": execution.map_family_arms} if execution.map_family_arms else {}),
         ),
         "family_policy_evaluated",
     )

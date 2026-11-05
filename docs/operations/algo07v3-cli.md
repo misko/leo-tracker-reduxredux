@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Latest development change: [concurrent family fits](../../reports/2026_11_05_algo07v3_family_integration/README.md)
+are wired into the owned CLI. All 843 component tests pass, and a fresh isolated
+serial/concurrent comparison is exact through both arms, all eight PNGs, grid/path
+and publication. Observed total time is **245.714 → 228.848 s (6.86% lower)**;
+unchanged stages also improve, so this is not wholly attributable to the change.
+Family fitting takes **17.675 → 11.301 s**. The two independent arms use the
+existing ordered executor; rejection rounds and acceptance remain sequential.
+Production remains unchanged; full DS26 and ordinary admission remain open.
+
 Latest development change: [bounded variance batching](../../reports/2026_11_05_algo07v3_variance_integration/README.md)
 is enabled. The module matches the prototype qualified on two native scans;
 833 component tests pass. A fresh direct isolated run verifies integration
