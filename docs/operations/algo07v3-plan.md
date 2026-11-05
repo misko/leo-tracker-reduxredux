@@ -4,6 +4,14 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest coverage expansion: [DS26-0066 native canary and variance prototype](../../reports/2026_11_05_algo07v3_native_canary/README.md).
+The standalone pre-optimization baseline completes through guarded reassociation
+and publication in 900.763 s; its integrated counterpart is running. This is a
+more demanding native recovery case, not yet a completed equivalence pair.
+A bounded equal-shape variance prototype passes 24 exact tests and is being
+checked on a full native run. Runtime source is unchanged from the preceding
+solver integration. No deployment or cumulative speed claim.
+
 Latest implementation: [solver integration](../../reports/2026_11_05_algo07v3_solver_integration/README.md).
 The owned CLI now uses the exact upper-root solver and omits overwritten Gaussian
 posteriors. All 1,692 affected native calculations and the fresh combined
