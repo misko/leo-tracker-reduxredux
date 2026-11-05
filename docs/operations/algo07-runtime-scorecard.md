@@ -4,6 +4,16 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest development [solver integration](../../reports/2026_11_05_algo07v3_solver_integration/README.md):
+upper-root solves and removal of overwritten Gaussian calculations are now in
+the owned CLI. A fresh isolated execution takes **264.356 s** and exactly
+matches all science, both c arms, eight PNGs and published artifacts. This is
+a correctness run, not a new matched speed pair. The Gaussian change separately
+saves 7.640 s across 1,692 exactly compared calls; do not add component savings
+to older complete-path timings. The broad suite passes **820 tests**. A fresh
+DS26-0066 baseline/integrated comparison is running. No deployment; population,
+ordinary admission and the cumulative speed metric remain unqualified.
+
 Latest [upper-root complete-path pair](../../reports/2026_11_05_algo07v3_factor_reuse/upper-root.md):
 baseline **266.242 s**, candidate **252.572 s**, an observed **5.13% reduction**
 (1.054×) from native GLRT ready through all artifacts and atomic publication.

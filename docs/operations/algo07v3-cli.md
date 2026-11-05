@@ -3,11 +3,11 @@
 Current qualification: [all 17 mapped scientific audit sections](../../reports/2026_11_05_algo07v3_factor_reuse/README.md)
 match on DS26-0002, including explicitly accounted original-worker context
 construction counters. This does not qualify other scans, ordinary admission
-or excluded operational metadata. The factorization prototypes remain external;
-the owned CLI continues to use its previously integrated numerical kernel.
-The [upper-root follow-up](../../reports/2026_11_05_algo07v3_factor_reuse/upper-root.md)
-has now passed one exact isolated complete-path comparison, with an observed
-5.13% lower runtime; it remains an external prototype, not the CLI default.
+or excluded operational metadata. The [solver integration](../../reports/2026_11_05_algo07v3_solver_integration/README.md)
+now enables upper-root factor reuse and removal of overwritten Gaussian
+posteriors in the owned development CLI. The combined isolated execution exactly
+matches scientific/publication outputs and 820 tests pass. Its 264.356-second
+observation is not a matched speed benchmark. Production remains unchanged.
 
 The owned command is `leo-algo07v3` after installing this checkout, or
 `PYTHONPATH=src python -B -m leo.cli.algo07v3` from its root. It starts one owned

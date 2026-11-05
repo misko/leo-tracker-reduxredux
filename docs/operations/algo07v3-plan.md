@@ -4,6 +4,15 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest implementation: [solver integration](../../reports/2026_11_05_algo07v3_solver_integration/README.md).
+The owned CLI now uses the exact upper-root solver and omits overwritten Gaussian
+posteriors. All 1,692 affected native calculations and the fresh combined
+scientific/publication comparison match exactly. The broad suite passes 820
+tests. The integrated observation is 264.356 s, not a new matched speed claim.
+A second native scan, DS26-0066, is running through both pre-optimization and
+integrated paths. Full population, other accepted native branches, metadata,
+production admission and the cumulative 10× target remain open. No deployment.
+
 Latest experiment: [upper-root exact solve](../../reports/2026_11_05_algo07v3_factor_reuse/upper-root.md).
 All 6,772 native calls and the complete isolated publication pair match exactly.
 The alternating kernel measurement saves 11.63%; one candidate-first full pair

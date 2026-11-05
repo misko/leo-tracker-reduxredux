@@ -3,8 +3,16 @@
 from math import lgamma
 
 import numpy as np
+from scipy.linalg.lapack import dgetrf, dgetrs
 
 gammaln = np.vectorize(lgamma, otypes=[float])
+
+
+def _solve_factor(lu, pivots, rhs):
+    result, info = dgetrs(lu, pivots, rhs)
+    if info:
+        raise np.linalg.LinAlgError(f"DGETRS failed: {info}")
+    return result
 
 
 def hierarchical_bound(
@@ -90,10 +98,19 @@ def hierarchical_bound(
         np.add.at(gram.ravel(), matrix_indices, block_weight[matrix_groups] * matrices)
         np.add.at(rhs, rhs_indices, block_weight[rhs_groups] * right_sides)
         root = np.linalg.cholesky(gram)
-        mean = np.linalg.solve(root.T, np.linalg.solve(root, rhs))
+        # Reuse lower-root LU for the original separate right-hand sides. The
+        # upper root is already a valid LU representation with identity pivots.
+        lu, pivots, info = dgetrf(root) if width else (root, None, 0)
+        if info != 0:
+            raise np.linalg.LinAlgError('DGETRF failed')
+        mean = (
+            _solve_factor(root.T, np.arange(width, dtype=np.int32),
+                          _solve_factor(lu, pivots, rhs))
+            if width else rhs.copy()
+        )
         cov = None
         if covariance:
-            inv_root = np.linalg.solve(root, identity)
+            inv_root = _solve_factor(lu, pivots, identity) if width else identity.copy()
             cov = inv_root.T @ inv_root
             # Iterative callers need only the moments; the volume is used once,
             # after convergence. Keep the final determinant arithmetic unchanged.

@@ -15,6 +15,8 @@ import textwrap
 import time
 from pathlib import Path
 
+import algo07v3_presolver_discovery_likelihood_oracle as discovery_reference
+import algo07v3_presolver_position_oracle as normal_reference
 from probe_algo07v3_assembly import exact_result
 
 from leo.analysis.localization_v3.discovery_likelihood import DiscoveryPosition
@@ -22,7 +24,10 @@ from leo.analysis.localization_v3.position import NormalPosition
 
 
 def candidate_function(cls):
-    original = cls.calculate
+    original = {
+        NormalPosition: normal_reference.NormalPosition.calculate,
+        DiscoveryPosition: discovery_reference.DiscoveryPosition.calculate,
+    }[cls]
     source = textwrap.dedent(inspect.getsource(original))
     needle = "JointMarginal.calculate(self, x)"
     if source.count(needle) != 1:
@@ -53,7 +58,7 @@ def main():
 
     def make_probe(cls):
         original, candidate, source, code = candidate_function(cls)
-        originals[cls] = original
+        originals[cls] = cls.calculate
         row = dict(calls=0, seconds=dict(reference=0.0, candidate=0.0), failures=[],
                    reference_sha256=hashlib.sha256(source.encode()).hexdigest(),
                    candidate_sha256=hashlib.sha256(code.encode()).hexdigest())

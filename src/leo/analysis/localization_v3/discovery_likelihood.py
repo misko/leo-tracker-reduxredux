@@ -15,7 +15,8 @@ class DiscoveryPosition(NormalPosition):
                          reference=reference)
 
     def calculate(self, x):
-        result = JointMarginal.calculate(self, x)
+        # The hierarchical result replaces every Gaussian posterior field.
+        result = JointMarginal.calculate(self, x, geometry_only=True)
         features = result['features']
         stop = features.shape[1] - len(self.members)
         features = np.column_stack((features[:, :stop], np.empty((len(self.flat_times), 0)),

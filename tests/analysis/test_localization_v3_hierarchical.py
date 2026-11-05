@@ -28,6 +28,8 @@ def oracle():
 
 
 def test_owned_kernel_is_the_full_scan_qualified_prototype(oracle, monkeypatch):
+    import algo07v3_presolver_hierarchical_oracle as presolver
+
     monkeypatch.setitem(sys.modules, "algo07v3_hierarchical_oracle", oracle)
     path = (
         Path(__file__).resolve().parents[2] / "reports/2026_11_05_algo07v3_pair/probe_assembly.py"
@@ -36,6 +38,19 @@ def test_owned_kernel_is_the_full_scan_qualified_prototype(oracle, monkeypatch):
     assert hashlib.sha256(expected.encode()).hexdigest() == (
         "4c17f814642726de73e9ca2497af943c6b05e33b9dfa19a70e836e3fabc08042"
     )
+    assert ast.dump(ast.parse(inspect.getsource(presolver.hierarchical_bound))) == ast.dump(
+        ast.parse(expected)
+    )
+
+
+def test_owned_solver_is_the_full_scan_qualified_upper_root_prototype():
+    from probe_algo07v3_upper_root import candidate_function
+
+    _, _, expected = candidate_function()
+    assert hashlib.sha256(expected.encode()).hexdigest() == (
+        "a5546d39b4b3484f358794881649e161e81addfeb7eab97de866d31dde17d944"
+    )
+    expected = expected.replace("solve_factor(", "_solve_factor(")
     assert ast.dump(ast.parse(inspect.getsource(hierarchical_bound))) == ast.dump(
         ast.parse(expected)
     )

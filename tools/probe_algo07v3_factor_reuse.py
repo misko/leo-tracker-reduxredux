@@ -1,7 +1,7 @@
 """External exact-call probe for root factorization reuse on the owned kernel.
 
 This changes no installed/runtime source. Every likelihood call executes the
-current implementation and the candidate with alternating order. A scientific
+frozen pre-solver implementation and the candidate with alternating order. A scientific
 difference aborts the diagnostic instead of becoming an ordinary fit rejection.
 """
 
@@ -14,6 +14,7 @@ import sys
 import time
 from pathlib import Path
 
+import algo07v3_presolver_hierarchical_oracle as reference_kernel
 import numpy as np
 from probe_algo07v3_assembly import AssemblyProbe
 from scipy.linalg.lapack import dgetrf, dgetrs
@@ -29,7 +30,7 @@ def solve_factor(lu, pivots, rhs):
 
 
 def candidate_function():
-    source = inspect.getsource(hierarchical.hierarchical_bound)
+    source = inspect.getsource(reference_kernel.hierarchical_bound)
     mean = "mean = np.linalg.solve(root.T, np.linalg.solve(root, rhs))"
     inverse = "inv_root = np.linalg.solve(root, identity)"
     if source.count(mean) != 1 or source.count(inverse) != 1:
@@ -44,7 +45,7 @@ def candidate_function():
     ).replace(
         inverse, "inv_root = solve_factor(lu, pivots, identity) if width else identity.copy()"
     )
-    namespace = dict(vars(hierarchical), dgetrf=dgetrf, solve_factor=solve_factor)
+    namespace = dict(vars(reference_kernel), dgetrf=dgetrf, solve_factor=solve_factor)
     exec(compile(code, "<owned-kernel-factor-reuse>", "exec"), namespace)
     return namespace["hierarchical_bound"], source, code
 
@@ -76,7 +77,8 @@ def main():
     if not forwarded:
         parser.error("Native qualification arguments required after --")
     candidate, old_source, new_source = candidate_function()
-    original = hierarchical.hierarchical_bound
+    original = reference_kernel.hierarchical_bound
+    runtime_function = hierarchical.hierarchical_bound
     probe = FactorProbe(original, candidate)
     hierarchical.hierarchical_bound = probe
     tool = Path(__file__).with_name("check_algo07v3_engine.py")
@@ -89,7 +91,7 @@ def main():
         complete = True
     finally:
         sys.argv = original_argv
-        hierarchical.hierarchical_bound = original
+        hierarchical.hierarchical_bound = runtime_function
         result = dict(
             complete=complete,
             calls=probe.calls,

@@ -42,7 +42,8 @@ class NormalPosition(JointMarginal):
         self.noise_volume = float(2 * np.log(self.point_noise[self.keep] / 40).sum())
 
     def calculate(self, x):
-        result = JointMarginal.calculate(self, x)
+        # The hierarchical result replaces every Gaussian posterior field.
+        result = JointMarginal.calculate(self, x, geometry_only=True)
         features = result['features']
         scales = np.ones(features.shape[1])
         raw = self.values - self.q * result['intercept']
