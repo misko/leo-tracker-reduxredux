@@ -1,4 +1,4 @@
-"""Bounded process execution for the two independent initial calibration fits.
+"""Bounded process execution for independent calibration fits and grouped folds.
 
 Linux fork shares the large read-only scan until either worker writes its own
 cache. No global task, worker pool thread or scientific result file is needed.
@@ -68,12 +68,35 @@ def map_initial_arms(operation, arms):
     arms = tuple(arms)
     if arms != ("c0", "fitted_c") or not callable(operation):
         raise ValueError("Exactly the ordered c0/fitted_c pair is required")
+    return _ordered(operation, arms)
+
+
+def map_predictive_folds(operation, seeds):
+    """Run at most the three predeclared grouped folds, retaining their order."""
+    seeds = tuple(seeds)
+    if len(seeds) > 3 or not callable(operation):
+        raise ValueError("At most three predeclared predictive folds are supported")
+    if len(seeds) < 2:
+        return [operation(seed) for seed in seeds]
+    return _ordered(operation, seeds)
+
+
+def _ordered(operation, items):
+    try:
+        return _execute(operation, items)
+    except Exception as error:
+        # Process/pipe startup and transport failures are operational failures,
+        # just like child crashes. They must bypass scientific fallback gates.
+        raise ParallelFitFailure(f"Parallel execution failed: {error}") from error
+
+
+def _execute(operation, items):
     if threading.current_thread() is not threading.main_thread() or threading.active_count() != 1:
         raise ParallelFitFailure("Forked fitting requires a single-threaded job owner")
     context = multiprocessing.get_context("fork")
-    processes, receivers, pending, results = [], [], {}, [None, None]
+    processes, receivers, pending, results = [], [], {}, [None] * len(items)
     try:
-        for index, arm in enumerate(arms):
+        for index, item in enumerate(items):
             receive, send = context.Pipe(duplex=False)
             receivers.append(receive)
             # Defer cancellation across process creation/registration so an
@@ -81,7 +104,7 @@ def map_initial_arms(operation, arms):
             previous = signal.pthread_sigmask(signal.SIG_BLOCK, _INTERRUPTS)
             try:
                 process = context.Process(
-                    target=_invoke, args=(operation, arm, receive, send, previous)
+                    target=_invoke, args=(operation, item, receive, send, previous)
                 )
                 processes.append(process)
                 process.start()
@@ -97,20 +120,20 @@ def map_initial_arms(operation, arms):
                         complete, value = receive.recv()
                     except (EOFError, OSError) as error:
                         raise ParallelFitFailure(
-                            "Initial fit ended without a complete result"
+                            "Numerical child ended without a complete result"
                         ) from error
                     if not complete:
-                        raise ParallelFitFailure(f"{arms[index]} fit failed:\n{value}")
+                        raise ParallelFitFailure(f"{items[index]} numerical task failed:\n{value}")
                     results[index] = value
                     del pending[index]
                 elif process.sentinel in ready:
-                    raise ParallelFitFailure("Initial fit process exited without a result")
+                    raise ParallelFitFailure("Numerical child process exited without a result")
         for process in processes:
             # Successful work has no new local deadline. The owning job/stage
             # timer still interrupts this wait and triggers bounded cleanup.
             process.join()
             if process.exitcode != 0:
-                raise ParallelFitFailure("Initial fit did not exit cleanly after its result")
+                raise ParallelFitFailure("Numerical child did not exit cleanly after its result")
         return results
     finally:
         for receive in receivers:

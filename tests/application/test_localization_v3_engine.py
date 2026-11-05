@@ -42,6 +42,21 @@ def test_initial_executor_port_is_forwarded_only_to_initial_search(monkeypatch):
             assert 'map_arms' not in kwargs
 
 
+def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch):
+    from dataclasses import replace
+
+    prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
+    mapper = object()
+    execution = replace(execution,map_predictive_folds=mapper)
+    engine.infer_prepared(prepared,region,catalogue,identities=['scan'],
+                          collect_history=object(),execution=execution)
+    for name, _, kwargs in calls:
+        if name == 'recover_predictive_checkpoint':
+            assert kwargs['map_annotation_folds'] is mapper
+        else:
+            assert 'map_annotation_folds' not in kwargs
+
+
 def fixture(monkeypatch, *, selected=False, fault=None):
     region = SearchRegion((37.906, -122.545))
     prepared = dict(

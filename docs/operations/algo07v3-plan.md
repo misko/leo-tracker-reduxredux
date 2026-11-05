@@ -4,6 +4,17 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest implementation: [concurrent predictive folds](../../reports/2026_11_05_algo07v3_predictive_parallel/README.md).
+Independent ordinary annotation folds now use up to three owned processes;
+stateful replays/callbacks and adoption remain serial. The fresh native pair
+preserves all scientific/publication outputs. Three full-proposal fixture
+comparisons also match their historical references exactly. Component latency
+improves, but total timing is **293.750 → 444.458 s** under changed production
+load, so no complete-path gain is established. The suite has 703 passing tests
+plus five comparator tests. Process-start errors cannot become scientific
+rejections. Production is unchanged; comparable-resource repeats, all DS26,
+historical mappings, admission semantics and the tenfold target remain open.
+
 Latest owned integration: [bounded concurrent initial fits](../../reports/2026_11_05_algo07v3_owned_parallel/README.md)
 are now connected through the development CLI, with 691 passing tests and exact
 fresh scientific/publication comparisons. Initial search takes 39.453 → 26.903 s;

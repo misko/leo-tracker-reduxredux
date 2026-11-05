@@ -31,6 +31,7 @@ class ExecutionPorts:
     charge_reused: Callable
     clock: Callable
     map_initial_arms: Callable | None = None
+    map_predictive_folds: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -160,6 +161,11 @@ def infer_prepared(
             discovery_allowed=execution.discovery_allowed,
             clock=execution.clock,
             inventory_seconds=inventory_seconds,
+            **(
+                {"map_annotation_folds": execution.map_predictive_folds}
+                if execution.map_predictive_folds
+                else {}
+            ),
         ),
         "predictive_recovery_evaluated",
     )

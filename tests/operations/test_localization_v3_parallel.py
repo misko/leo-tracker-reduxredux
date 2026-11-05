@@ -9,7 +9,11 @@ import numpy as np
 import pytest
 
 from leo.operations.localization_v3_job import StageDeadline, stage_deadline
-from leo.operations.localization_v3_parallel import ParallelFitFailure, map_initial_arms
+from leo.operations.localization_v3_parallel import (
+    ParallelFitFailure,
+    map_initial_arms,
+    map_predictive_folds,
+)
 
 ARMS = ("c0", "fitted_c")
 
@@ -97,7 +101,7 @@ def test_successful_worker_teardown_is_not_an_extra_scientific_deadline(tmp_path
 
         def __del__(self):
             time.sleep(0.35)
-            (tmp_path / (self.arm + '-exited')).write_text('done')
+            (tmp_path / (self.arm + "-exited")).write_text("done")
 
     def operation(arm):
         synchronize(tmp_path, arm)
@@ -105,7 +109,7 @@ def test_successful_worker_teardown_is_not_an_extra_scientific_deadline(tmp_path
 
     with stage_deadline(3):
         assert map_initial_arms(operation, ARMS) == list(ARMS)
-    assert all((tmp_path / (a + '-exited')).exists() for a in ARMS)
+    assert all((tmp_path / (a + "-exited")).exists() for a in ARMS)
     assert_reaped([tmp_path / a for a in ARMS])
 
 
@@ -133,8 +137,9 @@ def test_failed_second_start_reaps_first_child(monkeypatch):
             return process
 
     monkeypatch.setattr(adapter.multiprocessing, "get_context", lambda name: Context())
-    with pytest.raises(OSError, match="second fork failed"):
+    with pytest.raises(ParallelFitFailure, match="second fork failed") as failure:
         map_initial_arms(lambda arm: time.sleep(60), ARMS)
+    assert isinstance(failure.value.__cause__, OSError)
     assert len(started) == 1
     with pytest.raises(ProcessLookupError):
         os.kill(started[0], 0)
@@ -158,7 +163,69 @@ def test_threaded_owner_is_refused_before_fork():
         thread.join()
 
 
+def test_pipe_allocation_failure_cannot_become_a_scientific_fallback(monkeypatch):
+    from leo.operations import localization_v3_parallel as adapter
+
+    class Context:
+        @staticmethod
+        def Pipe(**kwargs):
+            raise OSError("pipe allocation failed")
+
+    monkeypatch.setattr(adapter.multiprocessing, "get_context", lambda name: Context())
+    with pytest.raises(ParallelFitFailure, match="pipe allocation failed"):
+        try:
+            map_predictive_folds(lambda seed: seed, [13, 9, 4])
+        except Exception:
+            pytest.fail("Process infrastructure failure became a scientific rejection")
+
+
 @pytest.mark.parametrize("arms", [[], ["c0"], ["fitted_c", "c0"], ["c0", "fitted_c", "extra"]])
 def test_only_declared_matched_pair_is_admitted(arms):
     with pytest.raises(ValueError, match="ordered"):
         map_initial_arms(lambda arm: arm, arms)
+
+
+def test_three_folds_run_concurrently_and_return_original_seed_order(tmp_path):
+    seeds = (13, 9, 4)
+
+    def operation(seed):
+        (tmp_path / str(seed)).write_text(str(os.getpid()))
+        until = time.monotonic() + 2
+        while not all((tmp_path / str(v)).exists() for v in seeds):
+            if time.monotonic() >= until:
+                raise RuntimeError("All folds must start before any completes")
+            time.sleep(0.001)
+        return dict(seed=seed, values=np.array([seed, seed + 1.0], dtype="<f8"))
+
+    with stage_deadline(3):
+        rows = map_predictive_folds(operation, seeds)
+    assert [r["seed"] for r in rows] == list(seeds)
+    assert len({int((tmp_path / str(s)).read_text()) for s in seeds}) == 3
+    assert_reaped([tmp_path / str(s) for s in seeds])
+
+
+def test_failed_fold_reaps_all_three_workers(tmp_path):
+    seeds = (13, 9, 4)
+
+    def operation(seed):
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        (tmp_path / str(seed)).write_text(str(os.getpid()))
+        until = time.monotonic() + 2
+        while not all((tmp_path / str(v)).exists() for v in seeds):
+            if time.monotonic() >= until:
+                raise RuntimeError("All folds did not start")
+            time.sleep(0.001)
+        if seed == 9:
+            raise ValueError("fold failed")
+        time.sleep(60)
+
+    with stage_deadline(4), pytest.raises(ParallelFitFailure, match="fold failed"):
+        map_predictive_folds(operation, seeds)
+    assert_reaped([tmp_path / str(s) for s in seeds])
+
+
+def test_fold_work_is_bounded_and_empty_or_single_fold_needs_no_process():
+    assert map_predictive_folds(lambda seed: os.getpid(), []) == []
+    assert map_predictive_folds(lambda seed: os.getpid(), [13]) == [os.getpid()]
+    with pytest.raises(ValueError, match="three"):
+        map_predictive_folds(lambda seed: seed, range(4))

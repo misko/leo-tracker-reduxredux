@@ -8,6 +8,15 @@ in two owned child processes. The parent returns their results in the original
 order; branch selection, phase rounds, budgets and zero-phase controls are
 unchanged. Direct numerical calls remain serial unless supplied the execution
 port. The request schema and published contracts are unchanged.
+Ordinary predictive annotation also executes its at-most-three predeclared
+randomized grouped folds in owned child processes and merges complete results
+in the original seed order. Targets, inclusion trials and adoption remain
+sequential. Numerical replays with mutable policy receipts and calls with a
+proposal callback keep serial execution. Initial-arm and fold concurrency do
+not overlap: at most three fit children are active, each with one BLAS thread
+and the job's inherited CPU affinity. Failed or interrupted children abort the
+stage and are reaped; incomplete folds cannot become scientific rejections.
+
 The command is currently qualified for **validation-all-work** only. It is not a
 deployed service or a claim of equivalence to production wall-clock admission.
 

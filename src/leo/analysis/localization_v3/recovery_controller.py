@@ -31,7 +31,9 @@ ARMS = ("c0", "fitted_c")
 METHODS = ("control", "factorized", "joint")
 
 
-def recover_tracks(context, evidence, *, run_stage, discovery_allowed, on_selection=None):
+def recover_tracks(
+    context, evidence, *, run_stage, discovery_allowed, on_selection=None, map_annotation_folds=None
+):
     """Evaluate original target order and at most one disjoint new-family pair.
 
     Timing policy is deliberately not invented inside the numerical implementation.
@@ -111,6 +113,7 @@ def recover_tracks(context, evidence, *, run_stage, discovery_allowed, on_select
                     inventory,
                     target["track_id"],
                     inactive_fragment=target["inactive_fragment"],
+                    **({"map_folds": map_annotation_folds} if map_annotation_folds else {}),
                 ),
             )
             if not ok:

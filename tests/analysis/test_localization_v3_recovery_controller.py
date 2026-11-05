@@ -59,6 +59,27 @@ def execute(name, operation):
     return True, operation()
 
 
+def test_fold_executor_is_forwarded_without_reordering_target_decisions(monkeypatch):
+    evidence = setup(monkeypatch, shared=True)
+    mapper, calls = object(), []
+
+    def annotate(d, inv, tid, **kwargs):
+        assert kwargs["map_folds"] is mapper
+        calls.append(tid)
+        return dict(result=dict(folds=[tid]), protocol={})
+
+    monkeypatch.setattr(controller, "annotate", annotate)
+    result = controller.recover_tracks(
+        {},
+        evidence,
+        run_stage=execute,
+        discovery_allowed=lambda: True,
+        map_annotation_folds=mapper,
+    )
+    assert calls == ["t0", "t1"]
+    assert result["selected"]["targets"][0]["norad"] == 2
+
+
 def test_selected_checkpoint_preserves_exact_trial_and_cannot_mutate_decision(monkeypatch):
     evidence = setup(monkeypatch, shared=True)
     states = []

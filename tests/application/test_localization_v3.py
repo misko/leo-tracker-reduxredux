@@ -341,6 +341,21 @@ def test_predictive_checkpoint_keeps_only_completed_stages_and_inventory_duratio
     assert result['recovery_complete'] is False
 
 
+def test_predictive_checkpoint_forwards_fold_executor_through_application(monkeypatch):
+    mapper, calls = object(), []
+
+    def recover(context, evidence, **kwargs):
+        calls.append(kwargs['map_annotation_folds'])
+        return dict(selected=None)
+
+    monkeypatch.setattr(app, 'recover_tracks', recover)
+    prepared = dict(status='track_recovery_prepared', recovery_context={}, inventory={})
+    app.recover_predictive_checkpoint(prepared, run_stage=lambda n, f: (True, f()),
+        discovery_allowed=lambda: True, clock=lambda: 0., inventory_seconds=0.,
+        map_annotation_folds=mapper)
+    assert calls == [mapper]
+
+
 def test_numerical_application_uses_owned_checkpoint_and_retains_future_policy_boundary(monkeypatch):
     calls = []
     monkeypatch.setattr(app, 'replay_recovery', lambda *a, **kw: calls.append((a, kw)) or

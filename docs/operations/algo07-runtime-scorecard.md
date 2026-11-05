@@ -4,6 +4,20 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest development integration:
+[concurrent predictive folds](../../reports/2026_11_05_algo07v3_predictive_parallel/README.md).
+The fresh standalone pair preserves all owned scientific outputs and artifacts
+exactly. Its observed complete times are **293.750 → 444.458 s**, with sharply
+increased production load during the candidate; this is **not evidence of a
+total speedup**. Unchanged stages also slow. Three independent frozen-context
+annotation comparisons preserve every proposal record and take 17.420 → 6.261 s,
+16.930 → 6.131 s and 46.320 → 26.958 s. Their summed CPU time increases about
+4.6%; these are multicore component-latency gains, not a pipeline throughput
+claim. There are 703 passing focused tests and five additional comparator tests.
+Infrastructure startup failures now abort instead of becoming scientific
+rejections. No deployment occurred. Controlled total-runtime repeats, full DS26
+and production admission remain open; all earlier observations are retained.
+
 Latest owned integration:
 [concurrent initial fits through publication](../../reports/2026_11_05_algo07v3_owned_parallel/README.md).
 The fresh serial/current CLI pair preserves all owned scientific and published
