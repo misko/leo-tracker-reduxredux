@@ -100,9 +100,46 @@ inputs and immutable geometry are the next opportunities to measure before
 changing any operation ordering or introducing caches. The new clocks close
 the prior profiler's missing wrapper attribution.
 
+### Repeated-input measurement: a limited caching opportunity
+
+The subsequent [observational probe](../../tools/profile_algo07v3_repeats.py)
+executes every original hierarchical call. It changes no numerical operation and
+does not reuse any answer. Its complete scientific output, 179 grid locations
+and eight PNGs still match the same exact comparison digest. The
+[profile](repetition-profile.json) records **6,772 calls, 5,933 distinct input
+digests and 177.020 s spent inside the likelihood**. Probe bookkeeping costs
+another 8.276 s. Its prepared-input-through-rendering observation is 354.558 s;
+qualification output/checks bring that to 360.905 s. This is not a speed test.
+
+| Hypothetical LRU entries | Repeated calls | Compute spent on those calls (s) |
+|---|---:|---:|
+| 8 | 425 | 12.739 |
+| 32 | 508 | 14.425 |
+| 128 | 510 | 14.465 |
+| 512 | 589 | 18.001 |
+| 2,048 | 834 | 24.081 |
+
+The digest includes parameter values, array dtype, shape and bytes, but ignores
+array strides. These are optimistic reuse opportunities, not a proof that all
+such calls can be cached bit-exactly. A real cache must preserve layout-sensitive
+arithmetic and protect arrays from callers that mutate posterior results. Its
+copying, lookup and retained-memory costs are excluded from the table.
+
+Even the 2,048-entry estimate covers only 13.6% of measured likelihood compute.
+A 128-entry cache covers 8.2%. Therefore broad result memoization is **not** the
+main route to the requested 10× improvement. No cache is enabled or promoted.
+Prioritize completing publication for a valid full-path benchmark, then measure
+and optimize the distinct-input likelihood and phase-geometry work. Alternative
+linear solvers cannot be assumed equivalent: changed floating-point results fail
+the existing exact-output requirement.
+
+Two probe tests verify that every call still executes, mutations cannot become
+cached answers, input changes alter the digest and bounded LRU counts are correct.
+
 ## Validation and remaining work
 
-The focused component suite passes **543 tests**, with no skips or failures.
+The focused component suite passes **543 tests**, with no skips or failures;
+the separate observational-probe suite adds **2 passing tests**.
 Runner tests cover policy order and inputs, cutoff mismatch, incomplete-stage
 failure, accepted and rejected state transfer, native no-curvature exit, lazy
 history, finite clocks and evaluation-reference separation. Import tests reject

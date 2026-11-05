@@ -75,17 +75,39 @@ def main():
     assert manifest["snapshot_count"] == isolation["snapshot_count"] == 38
     inputs["isolation"] = dict(path=str(isolation_file), sha256=digest(isolation_file))
     inputs["isolation-inputs"] = dict(path=str(manifest_path), sha256=digest(manifest_path))
+    repeat_path = ROOT / "repeats001/profile.json"
+    repeats = json.loads(repeat_path.read_text())
+    repeated_output = ROOT / "repeats001/engine/result.json"
+    checked(repeated_output)
+    assert digest(repeated_output) == expected
+    assert repeats["qualification_completed"] is True
+    assert repeats["numerical_calls_skipped"] == 0
+    assert repeats["probe_sha256"] == digest(REPO / "tools/profile_algo07v3_repeats.py")
+    assert repeats["engine_tool_sha256"] == digest(REPO / "tools/check_algo07v3_engine.py")
+    for label, path in (
+        ("repetition-profile", repeat_path), ("repetition-result", repeated_output),
+        ("repetition-receipt", repeated_output.with_suffix(".receipt.json")),
+    ):
+        inputs[label] = dict(path=str(path), sha256=digest(path))
+    (OUT / "repetition-profile.json").write_text(json.dumps(repeats, indent=2) + "\n")
     tests = ROOT / "engine001/tests.xml"
     suite = ET.parse(tests).getroot().find("testsuite")
     assert all(suite.attrib[k] == "0" for k in ("failures", "errors", "skipped"))
     inputs["tests"] = dict(path=str(tests), sha256=digest(tests))
+    probe_tests = ROOT / "repeats001/tests.xml"
+    probe_suite = ET.parse(probe_tests).getroot().find("testsuite")
+    assert all(probe_suite.attrib[k] == "0" for k in ("failures", "errors", "skipped"))
+    assert probe_suite.attrib["tests"] == "2"
+    inputs["probe-tests"] = dict(path=str(probe_tests), sha256=digest(probe_tests))
     summary = dict(
         cases=rows,
         dataset_case="DS26-0002",
         tests=int(suite.attrib["tests"]),
+        probe_tests=int(probe_suite.attrib["tests"]),
         native_to_png_exact=True,
         isolated_native_to_png_exact=True,
         isolation=isolation,
+        repetition_probe_exact=True,
         publication_qualified=False,
         complete_path_matched_scans=0,
         end_to_end_speedup=None,

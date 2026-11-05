@@ -16,6 +16,12 @@ for 19.404 and 5.586 s. The report verifies a separate isolated native run with
 older installations/results hidden and network access unavailable. There are
 543 passing focused tests. Publication and production execution control remain
 unfinished; complete-path matched scans remain zero, and no deployment occurred.
+The subsequent exact-output observational probe finds 6,772 hierarchical calls
+and 5,933 distinct input digests. A hypothetical 128-entry LRU covers only
+14.465 s of 177.020 s measured likelihood compute; 2,048 entries cover 24.081 s,
+before real cache costs and layout checks. Simple result caching is therefore a
+limited opportunity, not the 10× route. No cache is enabled. See the native-engine
+report for the complete measurements and two additional probe tests.
 
 Latest connected presentation milestone: [fresh numerical state through eight figures](../../reports/2026_11_05_algo07v3_connected_presentation/README.md).
 DS26-0002 completes prepared-input inference, an owned recorded path, all 179
