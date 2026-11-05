@@ -20,7 +20,10 @@ def flag(value):
 
 def compare(reference, candidate):
     expected = {m + "-" + a for m in ("control", "factorized", "joint") for a in ("c0", "fitted_c")}
-    if set(reference) != {"geometry", "records"} or set(reference["records"]) != expected:
+    fields = {"geometry", "records"}
+    if "numerical_policy" in reference:
+        fields.add("numerical_policy")
+    if set(reference) != fields or set(reference["records"]) != expected:
         raise ValueError("Complete six-fit reference required")
     difference = first_difference(reference, candidate)
     if difference:
@@ -37,6 +40,7 @@ def compare(reference, candidate):
     return dict(
         exact=True,
         complete_six_fit_experiment=True,
+        numerical_policy="numerical_policy" in reference,
         numerical_only_retry_eligible=bool(physical and failed),
         control_and_joint_pass=all(
             flag(records[m + "-" + a]["audit"]["RF_qualified_arm"])

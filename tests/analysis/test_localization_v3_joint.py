@@ -12,7 +12,8 @@ from leo.analysis.localization_v3.joint_density import two_family_phase_evidence
 from leo.analysis.localization_v3.joint_recovery import joint_numerical_only, scoped_membership
 
 
-def test_shared_receiver_covariance_matches_direct_gaussian_integration():
+@pytest.mark.parametrize("optimized", [True, False])
+def test_shared_receiver_covariance_matches_direct_gaussian_integration(optimized):
     rng = np.random.default_rng(93)
     y = [rng.normal(size=3), rng.normal(size=2)]
     means = [rng.normal(size=(3, 3)), rng.normal(size=(4, 2))]
@@ -33,12 +34,26 @@ def test_shared_receiver_covariance_matches_direct_gaussian_integration():
                 + priors[1][j]
             )
     for chunk in (4, 32768):
-        r = two_family_phase_evidence(y, means, base, modes, priors, visible, max_pairs=chunk)
+        r = two_family_phase_evidence(
+            y, means, base, modes, priors, visible, max_pairs=chunk, optimize_contractions=optimized
+        )
         assert r["negative_twice_log_density"] == pytest.approx(-2 * logsumexp(table), abs=1e-11)
         np.testing.assert_allclose(
             r["phase_marginals"][0], np.exp(table - logsumexp(table)).sum(axis=1), atol=1e-12
         )
         assert r["receiver_covariance_integrated_once"]
+
+
+def test_joint_contraction_order_follows_the_stage_policy(monkeypatch):
+    from leo.analysis.localization_v3.numerical_policy import NumericalPolicy
+
+    calls = []
+    monkeypatch.setattr(
+        joint_recovery, "two_family_phase_evidence", lambda *a, **kw: calls.append((a, kw))
+    )
+    joint_recovery.joint_density({}, "inputs")
+    joint_recovery.joint_density({"numerical_policy": NumericalPolicy()}, "inputs")
+    assert calls == [(("inputs",), {}), (("inputs",), {"optimize_contractions": False})]
 
 
 def test_scoped_joint_audit_rejects_unscored_points_entering_fit():

@@ -6,13 +6,23 @@ from scipy.special import logsumexp
 
 
 def two_family_phase_evidence(
-    observed, means, base_covariance, modes, log_priors, visible, *, max_pairs=32768
+    observed,
+    means,
+    base_covariance,
+    modes,
+    log_priors,
+    visible,
+    *,
+    max_pairs=32768,
+    optimize_contractions=True,
 ):
     """Integrate independent orbit modes and phases, retaining cross-family covariance.
 
     The base covariance contains measurement/track noise and a single shared
     calibration covariance. No fitted calibration mean is changed. Work arrays
     are chunked; the log phase table is retained for exact marginalization.
+    Contraction order is explicit: the pinned ALGO03 worker uses optimized
+    contractions, while the pinned ALGO04 worker uses direct contractions.
     """
     if any(len(v) != 2 for v in (observed, means, modes, log_priors, visible)) or max_pairs < 1:
         raise ValueError("exactly two families and a positive chunk budget required")
@@ -83,13 +93,17 @@ def two_family_phase_evidence(
         gram = np.empty((*shape, d1 + d2, d1 + d2))
         gram[:, :, :d1, :d1] = g1[start:end, None]
         gram[:, :, d1:, d1:] = g2[None]
-        off = np.einsum("ian,jnb->ijab", cross[start:end], u2, optimize=True)
+        off = np.einsum("ian,jnb->ijab", cross[start:end], u2, optimize=optimize_contractions)
         gram[:, :, :d1, d1:] = off
         gram[:, :, d1:, :d1] = off.swapaxes(-1, -2)
         rhs = np.concatenate(
             (
-                h1[start:end, None] + np.einsum("ian,jn->ija", cross[start:end], r2, optimize=True),
-                h2[None] + np.einsum("jna,in->ija", u2, projected[start:end], optimize=True),
+                h1[start:end, None]
+                + np.einsum("ian,jn->ija", cross[start:end], r2, optimize=optimize_contractions),
+                h2[None]
+                + np.einsum(
+                    "jna,in->ija", u2, projected[start:end], optimize=optimize_contractions
+                ),
             ),
             axis=-1,
         )

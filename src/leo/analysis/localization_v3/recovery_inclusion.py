@@ -7,6 +7,7 @@ worker orchestration and time-budget admission are outside this module.
 import numpy as np
 from scipy.optimize import minimize
 
+from leo.analysis.localization_v3 import numerical_policy as numerics
 from leo.analysis.localization_v3.event_position import (
     attach_event_predictive,
     cached,
@@ -15,7 +16,6 @@ from leo.analysis.localization_v3.event_position import (
 )
 from leo.analysis.localization_v3.history_policy import pair_passes
 from leo.analysis.localization_v3.new_family import NewFamily, resolution_audit
-from leo.analysis.localization_v3.phase_reference import phase_refresh
 from leo.analysis.localization_v3.position import fit
 from leo.analysis.localization_v3.prediction import check_predictive_role
 from leo.analysis.localization_v3.recovery_acceptance import (
@@ -59,6 +59,7 @@ def _problem(d, arm, reference, entries):
         [],
         **kwargs,
     )
+    numerics.check_problem(d, p)
     attach_recovery_predictive(p, entries, d["powers"])
     return cached(p)
 
@@ -177,7 +178,7 @@ def fit_shared(context, inventory, annotations):
                 p = _problem(d, arm, reference, entries)
                 fitted = fit(p, x, iterations=48)
                 x = np.asarray(fitted["parameters"])
-                reference, check = phase_refresh(p.state(x)["phases"][p.labels], reference)
+                reference, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], reference)
                 history.append(dict(endpoint_east_north_km=x, fit=fitted, **check))
             row = summary(p, x, entries)
             _, _, ids, owners = memberships(original_graph_view(p, count), x, entries)
@@ -298,7 +299,9 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb"):
                     )
 
                 if optimizer == "lbfgsb":
-                    opt = minimize(
+                    opt = numerics.minimize(
+                        d,
+                        minimize,
                         objective,
                         x,
                         method="L-BFGS-B",
@@ -308,7 +311,9 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb"):
                         ),
                     )
                 else:
-                    opt = minimize(
+                    opt = numerics.minimize(
+                        d,
+                        minimize,
                         objective,
                         x,
                         method="Powell",
@@ -316,7 +321,7 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb"):
                         options=dict(maxiter=48, maxfev=240, ftol=1e-10, xtol=1e-5),
                     )
                 x = np.asarray(opt.x)
-                reference, check = phase_refresh(p.state(x)["phases"][p.labels], reference)
+                reference, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], reference)
                 history.append(
                     dict(
                         endpoint_east_north_km=x,
@@ -432,7 +437,7 @@ def audit_inclusion(context, inventory, annotations, trial, *, shared):
             for j in sorted(labels):
                 p.explicit_phase_family = j
                 exact.append(dict(norad=int(p.scan.norads[j]), **exact_gate_replay(p, x, entries)))
-            _, check = phase_refresh(p.state(x)["phases"][p.labels], p.reference)
+            _, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], p.reference)
             old_changes = owner_changes(incumbent[arm], owners)
             control_changes = owner_changes(controls[arm], owners)
             if shared:

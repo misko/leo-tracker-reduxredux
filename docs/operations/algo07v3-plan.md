@@ -48,6 +48,12 @@ results. The [ordered/joint recovery extraction](../../reports/2026_11_05_algo07
 adds the controller and shared-covariance two-family fits/audits. All six initial
 fits and all six matched Powell retries match on a frozen numerical fixture;
 the fresh DS26-0002 target loop matches its independently qualified references.
+The [numerical-policy extraction](../../reports/2026_11_05_algo07v3_numerical/README.md)
+adds centered capped derivatives, bank-checked 30-second references and explicit
+stage-specific contraction order. All six numerical fits/audits and numerical
+receipts match frozen ALGO04; the original six predictive fits remain exact.
+Conditional annotation replay, stage reuse and additive incumbent adoption are
+still required before this becomes the complete numerical-recovery policy.
 Inactive-fragment and successful shared inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,
 reassociation and publication remain unfinished; full DS26 localization parity

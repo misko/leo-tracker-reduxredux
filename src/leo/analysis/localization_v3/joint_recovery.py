@@ -6,10 +6,10 @@ import numpy as np
 from scipy.linalg import block_diag, cho_solve
 from scipy.optimize import minimize
 
+from leo.analysis.localization_v3 import numerical_policy as numerics
 from leo.analysis.localization_v3.event_position import cached, make_event_problem, summary
 from leo.analysis.localization_v3.joint_density import two_family_phase_evidence
 from leo.analysis.localization_v3.new_family import NewFamily
-from leo.analysis.localization_v3.phase_reference import phase_refresh
 from leo.analysis.localization_v3.predictive_linear import geometry_features, linear_geometry
 from leo.analysis.localization_v3.recovery_acceptance import owner_changes
 from leo.analysis.localization_v3.recovery_gates import exact_gate_replay
@@ -27,6 +27,15 @@ from leo.analysis.research.predictive_track import (
     receiver_design,
 )
 from leo.analysis.research.retained_track_likelihood import PERIOD, profile
+
+
+def joint_density(d, *inputs):
+    policy = d.get("numerical_policy")
+    if policy is None:
+        return two_family_phase_evidence(*inputs)
+    return two_family_phase_evidence(
+        *inputs, optimize_contractions=policy.joint_contraction_optimized
+    )
 
 
 def joint_inputs(families, p, x, powers, old_entries):
@@ -96,7 +105,7 @@ def joint_inputs(families, p, x, powers, old_entries):
 def evidence(families, p, x, d, method):
     inputs = joint_inputs(families, p, x, d["powers"], d["entries"])
     if method == "joint":
-        return two_family_phase_evidence(*inputs)["negative_twice_log_density"]
+        return joint_density(d, *inputs)["negative_twice_log_density"]
     y, means, covariance, modes, priors, visible = inputs
     n = len(y[0])
     return sum(
@@ -124,7 +133,7 @@ def at_phases(families, phases):
 
 
 def joint_diagnostics(families, p, x, d, refine=False):
-    full = two_family_phase_evidence(*joint_inputs(families, p, x, d["powers"], d["entries"]))
+    full = joint_density(d, *joint_inputs(families, p, x, d["powers"], d["entries"]))
     phases = np.array(
         [f.phases[k] for f, k in zip(families, full["joint_map_indices"], strict=True)]
     )
@@ -133,7 +142,7 @@ def joint_diagnostics(families, p, x, d, refine=False):
 
         def score(z):
             fs = at_phases(families, z)
-            r = two_family_phase_evidence(*joint_inputs(fs, p, x, d["powers"], d["entries"]))
+            r = joint_density(d, *joint_inputs(fs, p, x, d["powers"], d["entries"]))
             return r["negative_twice_log_density"] - 2 * sum(
                 (f.distribution.logpdf(v) for f, v in zip(families, z, strict=True))
             )
@@ -151,7 +160,7 @@ def joint_diagnostics(families, p, x, d, refine=False):
         phases = opt.x
         refine_success = bool(opt.success)
     fs = at_phases(families, phases)
-    point = two_family_phase_evidence(*joint_inputs(fs, p, x, d["powers"], d["entries"]))
+    point = joint_density(d, *joint_inputs(fs, p, x, d["powers"], d["entries"]))
     c = p.curved_calculate(x) if d["entries"] else p.calculate(x)
     coefficient = c["coefficient"].copy()
     gates, diagnostics = ([], [])
@@ -302,7 +311,7 @@ def probe_joint(d, inclusions, phase_step=0.0625):
             if np.max(abs(z)) > 12.5:
                 raise ValueError("local probe leaves regional box")
             inputs = joint_inputs(families, p, z, d["powers"], d["entries"])
-            joint = two_family_phase_evidence(*inputs)
+            joint = joint_density(d, *inputs)
             y, m, b, u, lp, v = inputs
             n1, individual = len(y[0]), []
             for k, sl in enumerate((slice(0, n1), slice(n1, len(b)))):
@@ -437,6 +446,7 @@ def _fit_lbfgsb(d, targets, arm, method, phase_step):
             [],
             **kw,
         )
+        numerics.check_problem(d, p)
         attach_event_predictive(p, d["entries"], d["powers"])
         cached(p)
 
@@ -446,7 +456,9 @@ def _fit_lbfgsb(d, targets, arm, method, phase_step):
             addition = 0.0 if method == "control" else evidence(families, p, z, d, method)
             return c["negative_twice_elbo"] + penalty + addition
 
-        opt = minimize(
+        opt = numerics.minimize(
+            d,
+            minimize,
             objective,
             x,
             method="L-BFGS-B",
@@ -454,7 +466,7 @@ def _fit_lbfgsb(d, targets, arm, method, phase_step):
             options=dict(maxiter=48, maxfun=240, eps=0.001, ftol=1e-10, gtol=0.0001, maxls=20),
         )
         x = np.asarray(opt.x)
-        reference, check = phase_refresh(p.state(x)["phases"][p.labels], reference)
+        reference, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], reference)
         row = dict(
             endpoint_east_north_km=x,
             objective=float(opt.fun),
@@ -473,8 +485,8 @@ def _fit_lbfgsb(d, targets, arm, method, phase_step):
     result["factorized_evidence"] = evidence(families, p, x, d, "factorized")
     if method != "control":
         result["negative_twice_elbo"] += result[method + "_evidence"]
-    result["joint_phase_result"] = two_family_phase_evidence(
-        *joint_inputs(families, p, x, d["powers"], d["entries"])
+    result["joint_phase_result"] = joint_density(
+        d, *joint_inputs(families, p, x, d["powers"], d["entries"])
     )
     result["joint_phase_grid_s"] = [f.phases for f in families]
     result["association_authorized"] = False
@@ -511,6 +523,7 @@ def _fit_powell(d, targets, arm, method, phase_step):
             [],
             **kw,
         )
+        numerics.check_problem(d, p)
         attach_event_predictive(p, d["entries"], d["powers"])
         cached(p)
 
@@ -523,7 +536,9 @@ def _fit_powell(d, targets, arm, method, phase_step):
                 + (0.0 if method == "control" else evidence(families, p, z, d, method))
             )
 
-        opt = minimize(
+        opt = numerics.minimize(
+            d,
+            minimize,
             objective,
             x,
             method="Powell",
@@ -531,7 +546,7 @@ def _fit_powell(d, targets, arm, method, phase_step):
             options=dict(maxiter=48, maxfev=240, ftol=1e-10, xtol=1e-05),
         )
         x = np.asarray(opt.x)
-        reference, check = phase_refresh(p.state(x)["phases"][p.labels], reference)
+        reference, check = numerics.refresh(d, p, p.state(x)["phases"][p.labels], reference)
         row = dict(
             endpoint_east_north_km=x,
             objective=float(opt.fun),
@@ -554,8 +569,8 @@ def _fit_powell(d, targets, arm, method, phase_step):
     if method != "control":
         result["negative_twice_elbo"] += result[method + "_evidence"]
     result.update(
-        joint_phase_result=two_family_phase_evidence(
-            *joint_inputs(families, p, x, d["powers"], d["entries"])
+        joint_phase_result=joint_density(
+            d, *joint_inputs(families, p, x, d["powers"], d["entries"])
         ),
         joint_phase_grid_s=[f.phases for f in families],
         association_authorized=False,
@@ -584,6 +599,7 @@ def audit_joint(d, inv, trial, control_audit=None):
         [],
         **kw,
     )
+    numerics.check_problem(d, p)
     attach_event_predictive(p, d["entries"], d["powers"])
     cached(p)
     x = np.array(saved["endpoint_east_north_km"])
@@ -664,7 +680,7 @@ def audit_joint(d, inv, trial, control_audit=None):
     for j in sorted(labels):
         p.explicit_phase_family = j
         exact.append(dict(norad=int(p.scan.norads[j]), **exact_gate_replay(p, x, d["entries"])))
-    _, phase = phase_refresh(p.state(x)["phases"][p.labels], p.reference)
+    _, phase = numerics.refresh(d, p, p.state(x)["phases"][p.labels], p.reference)
     changed = owner_changes(old_owners, owners)
     base_pass = bool(
         not changed

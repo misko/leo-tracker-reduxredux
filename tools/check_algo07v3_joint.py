@@ -12,6 +12,7 @@ import inspect
 import json
 import sys
 import time
+from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,6 +21,11 @@ from check_algo07v3_scan_likelihood import fingerprint
 
 
 def run(args):
+    with ExitStack() as stack:
+        return run_with_policy(args, stack)
+
+
+def run_with_policy(args, stack):
     if args.side == "candidate":
         from check_algo07v3_track_preparation import deny_legacy
 
@@ -82,6 +88,20 @@ def run(args):
         context = recovery_context(scan, cavity)
     else:
         context = load_case(source.parent, source.name)
+    numerical_receipt = None
+    if args.numerical:
+        if args.side == "candidate":
+            from leo.analysis.localization_v3.numerical_policy import NumericalPolicy
+
+            policy = NumericalPolicy(reference_limit_s=30, centered_lbfgsb=True)
+            context = dict(context, numerical_policy=policy)
+            numerical_receipt = policy.receipt
+        else:
+            from algo04_numerical_helper import patched_stages
+
+            numerical_receipt = stack.enter_context(
+                patched_stages(reference_limit_s=30, centered_lbfgsb=True)
+            )
     fixture_inventory = read(args.inventory)
     probe = dict(
         protocol={
@@ -217,6 +237,19 @@ def run(args):
             records[key] = dict(result=trial["result"], audit=audit)
             print(key, audit["RF_qualified_arm"], flush=True)
     result = dict(geometry=geometry, records=records)
+    if numerical_receipt is not None:
+        result["numerical_policy"] = {
+            k: numerical_receipt[k]
+            for k in (
+                "reference_limit_s",
+                "centered_lbfgsb",
+                "extra_optimizer_rounds",
+                "physical_priors_and_target_phase_support_unchanged",
+                "reference_updates",
+                "optimizer_calls",
+                "problem_count",
+            )
+        }
     args.output.write_text(json.dumps(fingerprint(result), sort_keys=True, allow_nan=False) + "\n")
 
     def binding(path):
@@ -251,6 +284,7 @@ def run(args):
         tool=binding(__file__),
         output=binding(args.output),
         optimizer=args.optimizer,
+        numerical=args.numerical,
         method=args.method,
         arm=args.arm,
         scope="Frozen-context joint stage component only",
@@ -268,6 +302,11 @@ if __name__ == "__main__":
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--side", choices=["candidate", "reference"], required=True)
     parser.add_argument("--optimizer", choices=["lbfgsb", "powell"], default="lbfgsb")
+    parser.add_argument(
+        "--numerical",
+        action="store_true",
+        help="Apply the frozen ALGO04 numerical policy on both sides",
+    )
     parser.add_argument("--method", choices=["control", "factorized", "joint"])
     parser.add_argument("--arm", choices=["c0", "fitted_c"])
     args = parser.parse_args()

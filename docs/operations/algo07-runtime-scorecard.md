@@ -134,6 +134,17 @@ deadline policy and later recovery/publication qualification remain open.
 
 ## Measured improvements within the pipeline
 
+The [numerical-policy extraction](../../reports/2026_11_05_algo07v3_numerical/README.md)
+matches all six frozen ALGO04 component fits/audits, including every orbital
+posterior coefficient and numerical receipt. Original predictive policy
+reference/v3 durations are 65.473/64.782 seconds; numerical-policy durations are
+196.220/118.357 seconds. These overlapping shared-host runs are not a controlled
+speed benchmark and cannot establish an end-to-end ratio. The numerical policy
+performs 740 physical objective evaluations across 30 rounds (maximum 45 per
+round, cap 240). Conditional replay, later policies, full DS26 and publication
+remain incomplete. A first strict comparison failed on stage-specific contraction
+order; preserving the frozen orders fixed it without relaxing equivalence.
+
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
 |---|---:|---:|---:|---|
 | Final ALGO07 numerical worker, two-family case, iteration 002 | 779.063 s | 420.000 s | 1.855× | Full worker; exact scientific comparison; profiled overlapping runs on shared host |

@@ -44,3 +44,16 @@ def test_hashed_boolean_is_checked_not_treated_as_a_truthy_dictionary():
     value["sha256"] = "invalid"
     with pytest.raises(ValueError, match="fingerprinted boolean"):
         flag(value)
+
+
+def test_numerical_receipt_is_required_and_compared_exactly():
+    reference = experiment()
+    reference["numerical_policy"] = dict(problem_count=36, reference_updates=[], optimizer_calls=[])
+    assert compare(reference, deepcopy(reference))["numerical_policy"]
+    candidate = deepcopy(reference)
+    candidate["numerical_policy"]["problem_count"] += 1
+    with pytest.raises(ValueError, match="Joint scientific"):
+        compare(reference, candidate)
+    candidate.pop("numerical_policy")
+    with pytest.raises(ValueError, match="Joint scientific"):
+        compare(reference, candidate)
