@@ -3,8 +3,11 @@ import numpy as np
 
 from leo.analysis.localization_v3.families import AnchoredFamilies
 from leo.analysis.localization_v3.orbit_modes import build_modes
-from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
-from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
+from leo.analysis.research.continuous_curve_fit import (
+    paired_phase_states,
+    phase_frequency_from_states,
+)
+from leo.analysis.research.prepared_phase_geometry import prepare_phase_geometry
 from leo.analysis.research.retained_track_likelihood import PERIOD
 
 
@@ -50,6 +53,36 @@ def integrated_gaussian(raw, features, sigma):
 def absolute_phase_linearization(frequency, derivative, reference):
     """Intercept for an absolute zero-mean phase prior, even after relinearizing."""
     return np.asarray(frequency) - np.asarray(derivative) * np.asarray(reference)
+
+
+def _phase_geometry(problem, xy):
+    """Reuse position-independent states within the same fixed phase problem.
+
+    Orbit arrays are fixed inputs and are replaced when their histories change.
+    Keep their references, not recyclable IDs, and snapshot the smaller grids
+    so shallow copies and in-place reference updates cannot retain stale states.
+    """
+    buffers = tuple(bank[key] for bank in (problem.sky, problem.mode_bank)
+                    for key in ('time_s', 'position_km', 'velocity_km_s'))
+    grid = tuple((a.dtype.str, a.shape, a.tobytes()) for a in
+                 map(np.asarray, (problem.flat_times, problem.flat_labels, problem.reference)))
+    cached = getattr(problem, '_fixed_phase_geometry_cache', None)
+    if (cached is None or grid != cached[1] or
+            not all(a is b for a, b in zip(buffers, cached[0], strict=True))):
+        center = prepare_phase_geometry(problem.sky, problem.mode_bank,
+                                        problem.flat_times, problem.flat_labels, problem.reference)
+        states = [paired_phase_states(problem.sky, problem.flat_times,
+                                      problem.flat_labels, problem.reference + offset)
+                  for offset in (0.01, -0.01)]
+        for pair in states:
+            for value in pair:
+                value.setflags(write=False)
+        cached = buffers, grid, center, states
+        problem._fixed_phase_geometry_cache = cached
+    coordinates = problem.scan.search_region.latlon(xy)
+    frequency, elevation, modes = cached[2].evaluate(*coordinates)
+    plus, minus = [phase_frequency_from_states(*state, *coordinates)[0] for state in cached[3]]
+    return frequency, elevation, (plus - minus) / (2 * 0.01), modes
 
 
 class JointMarginal:
@@ -127,30 +160,13 @@ class JointMarginal:
     def calculate(self, x, *, geometry_only=False):
         xy = np.asarray(x)[:2]
         scales = np.exp(x[2:]) if self.variant == "empirical" else np.ones(3)
-        frequency, elevation = paired_phase_frequency(
-            self.sky, self.flat_times, self.flat_labels, self.reference,
-            *self.scan.search_region.latlon(xy)
-        )
-        h = 0.01
-        plus = paired_phase_frequency(
-            self.sky, self.flat_times, self.flat_labels, self.reference + h,
-            *self.scan.search_region.latlon(xy)
-        )[0]
-        minus = paired_phase_frequency(
-            self.sky, self.flat_times, self.flat_labels, self.reference - h,
-            *self.scan.search_region.latlon(xy)
-        )[0]
-        derivative = (plus - minus) / (2 * h)
+        frequency, elevation, derivative, modes = _phase_geometry(self, xy)
         intercept = absolute_phase_linearization(
             frequency, derivative, self.reference[self.flat_labels]
         )
         phases = np.zeros((len(frequency), len(self.labels)))
         phases[np.arange(len(frequency)), self.flat_labels] = (
             self.q * derivative * self.phase_sigma[self.flat_labels]
-        )
-        modes = paired_frequency_modes(
-            self.sky, self.mode_bank, self.flat_times, self.flat_labels, self.reference,
-            *self.scan.search_region.latlon(xy)
         )
         orbital = np.zeros((len(frequency), 3 * len(self.supported)))
         for k, j in enumerate(self.supported_local):

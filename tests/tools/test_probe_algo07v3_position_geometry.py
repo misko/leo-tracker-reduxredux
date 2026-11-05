@@ -5,7 +5,6 @@ import probe_algo07v3_position_geometry as probe
 import pytest
 from check_algo07v3_scan_likelihood import fingerprint
 
-from leo.analysis.localization_v3.marginal import JointMarginal
 from leo.analysis.localization_v3.position import NormalPosition
 from tests.analysis.test_localization_v3_position import prepared
 
@@ -31,7 +30,7 @@ def test_complete_calculation_matches_with_phase_and_buffer_changes(fitted_c, ge
             p = copy.copy(p)
             p.reference = p.reference - 0.1
         for x in ([0., 0.], [2., -3.], [-11., 12.]):
-            expected = JointMarginal.calculate(p, x, geometry_only=geometry_only)
+            expected = probe.original.JointMarginal.calculate(p, x, geometry_only=geometry_only)
             actual = candidate(p, x, geometry_only=geometry_only)
             assert fingerprint(actual) == fingerprint(expected)
 

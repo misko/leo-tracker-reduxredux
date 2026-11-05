@@ -10,10 +10,10 @@ import textwrap
 import time
 from pathlib import Path
 
+import algo07v3_preposition_geometry_oracle as original
 import numpy as np
 from check_algo07v3_scan_likelihood import fingerprint
 
-from leo.analysis.localization_v3 import marginal
 from leo.analysis.localization_v3.position import NormalPosition
 from leo.analysis.localization_v3.region import SearchRegion
 from leo.analysis.research.continuous_curve_fit import (
@@ -53,14 +53,18 @@ def geometry(problem, xy):
 
 
 def candidate_function():
-    source = textwrap.dedent(inspect.getsource(marginal.JointMarginal.calculate))
+    oracle = Path(original.__file__)
+    if hashlib.sha256(oracle.read_bytes()).hexdigest() != (
+            '38535668aa81bb2116250225c457721b91a77fbd81084e8675a109ad3aa21c3f'):
+        raise ValueError('Frozen original geometry calculator changed')
+    source = textwrap.dedent(inspect.getsource(original.JointMarginal.calculate))
     begin = source.index('    frequency, elevation = paired_phase_frequency(')
     end = source.index('    intercept = absolute_phase_linearization(', begin)
     mode_begin = source.index('    modes = paired_frequency_modes(')
     mode_end = source.index('    orbital = np.zeros(', mode_begin)
     code = (source[:begin] + '    frequency, elevation, derivative, modes = geometry(self, xy)\n'
             + source[end:mode_begin] + source[mode_end:])
-    namespace = dict(vars(marginal), geometry=geometry)
+    namespace = dict(vars(original), geometry=geometry)
     exec(compile(code, '<fixed-phase-position-geometry>', 'exec'), namespace)
     return namespace['calculate'], source, code
 
@@ -75,7 +79,7 @@ def main():
     if os.environ.get('OPENBLAS_NUM_THREADS') != '1':
         parser.error('Pin OPENBLAS_NUM_THREADS=1 before starting Python')
     files = [*Path('src').rglob('*.py'), args.request, Path(__file__),
-             Path('tools/check_algo07v3_scan_likelihood.py')]
+             Path('tools/check_algo07v3_scan_likelihood.py'), Path(original.__file__)]
     bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
     request = json.loads(args.request.read_bytes())
     if runtime_versions() != request['runtime']:
@@ -90,7 +94,7 @@ def main():
     winner = next(row for row in initial['choices']
                   if row['hypothesis'] == initial['selected_hypothesis'])
     candidate, source, code = candidate_function()
-    functions = dict(baseline=marginal.JointMarginal.calculate, candidate=candidate)
+    functions = dict(baseline=original.JointMarginal.calculate, candidate=candidate)
     positions = np.random.default_rng(20261105).uniform(-12.5, 12.5, (50, 2))
     results = []
     for arm in ('c0', 'fitted_c'):

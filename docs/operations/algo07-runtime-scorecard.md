@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest [fixed-phase position geometry](../../reports/2026_11_05_algo07v3_position_geometry/README.md)
+is integrated in development after an exact native DS26-0002 comparison.
+Observed full-path time is **258.526 → 188.557 s** and process CPU
+**364.570 → 252.550 s**. Both arms, all scientific audits, eight PNG bytes and
+publication grid/path match. Unchanged preparation and catalogue loading also
+speed up, so the observed 27.06% reduction is not wholly attributable to the edit.
+The candidate passes 636 broad tests and 14 overlapping focused tests.
+Twelve alternating complete five-round position fits are exact: `c=0` averages
+**2.073090 → 1.866552 s (9.96% lower)** and fitted `c`
+**2.048970 → 1.856914 s (9.37% lower)**, with comparable CPU reductions.
+Those are prepared-fit gains, excluding discovery, recovery and publication.
+Production is unchanged; broader branch coverage and stable cumulative timing
+remain open. The report separates geometry-only from complete-fit measurements.
+
 The [gate follow-up](../../reports/2026_11_05_algo07v3_gate_followup/README.md)
 adds an exact reversed DS26-0002 pair. Full ABBA order is now **281.351 / 315.061 /
 229.958 / 316.503 s**. Cross-pair aggregation and the second-scan DS26-0066

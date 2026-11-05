@@ -1,5 +1,13 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [fixed-phase geometry iteration](../../reports/2026_11_05_algo07v3_position_geometry/README.md)
+reuses position-independent orbital interpolation inside each position problem.
+It preserves every position projection, derivative operation, prior, optimizer
+budget and phase refresh. DS26-0002 matches both arms, all science, eight PNGs
+and publication exactly; 636 broad tests pass. Observed complete time is
+**258.526 → 188.557 s**, with shared-host variation in unchanged stages.
+This is development qualification, not deployment or a population speed claim.
+
 The latest [family-gate reuse iteration](../../reports/2026_11_05_algo07v3_family_gate_reuse/README.md)
 computes unaffected residual gates once per fixed inclusion-audit problem and
 updates only the satellite whose orbit is being replayed. All saved gates,

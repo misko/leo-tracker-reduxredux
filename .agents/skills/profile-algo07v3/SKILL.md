@@ -124,5 +124,17 @@ Use `--request REQUEST --output FRESH_JSON`, one CPU and one BLAS thread, outsid
 full-pipeline timing runs. It alternates three pairs for each c arm over 50 fixed
 seeded regional points, requiring exact full geometry/features. Timing includes
 first preparation but excludes problem construction, fitting and publication.
-It is not enabled in runtime and does not qualify a pipeline speedup. Inspect
-phase/grid/buffer invalidation tests and run a fresh native canary before adoption.
+Its historical geometry-only timings do not qualify a pipeline speedup. The
+owned calculator now includes the qualified fixed-phase cache; this external
+probe retains the frozen original calculator and experimental function explicitly.
+Inspect phase/grid/buffer invalidation tests and native receipts when changing it.
+
+For complete fixed-phase geometry impact, use
+`tools/benchmark_algo07v3_position_geometry.py --request REQUEST --output NEW_JSON`
+with one CPU, one BLAS thread and an external `timeout -k 2 360`. It alternates
+three old/new pairs for each c arm, executing all five phase-refresh rounds with
+48 optimizer iterations per round on a saved initial hypothesis. Each trial
+builds a fresh scan context outside the timer. Full fit/history/state/calculation
+fingerprints must match; the temporary calculator substitution is restored even
+on failure. Keep this benchmark sequential with full-pipeline timing runs.
+This measures a prepared position fit, not discovery, recovery or publication.
