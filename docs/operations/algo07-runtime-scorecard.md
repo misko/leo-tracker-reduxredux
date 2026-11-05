@@ -4,6 +4,14 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [factorization-reuse experiment](../../reports/2026_11_05_algo07v3_factor_reuse/README.md):
+all 6,772 native likelihood calls and the complete scientific/PNG snapshot are
+exact. Interleaved component time is **163.053 → 159.250 s (2.33% less)**.
+The 536.354 s diagnostic executes both kernels and is not normal runtime.
+A separate complete isolated pair is underway; no total gain or runtime
+integration is claimed. Historical audit coverage increased to 16/17. Broad
+and follow-up tests cover 750 distinct cases. Production remains unchanged.
+
 Latest [reverse-order repeat and historical audits](../../reports/2026_11_05_algo07v3_repeat_audits/README.md):
 standalone serial folds **284.846 s**, concurrent folds **258.638 s** (**9.20% less;
 1.1013× observed**) with exact science, both arms and all PNG bytes. Concurrent

@@ -196,6 +196,79 @@ def compare_handoff_no_addition(original_input, original_replay, additional, can
     compare_persisted(expected, fingerprint(candidate))
 
 
+def compare_additional_preparation(original_input, inventory, preflight, protocol, candidate):
+    """Compare the complete selected-one-family residual preparation boundary."""
+    selected = original_input["selected"]
+    if selected is None or selected["kind"] != "new_family":
+        raise ValueError("Other incumbent kinds require independent preparation mappings")
+    if original_input["gap_selected"] is not None:
+        raise ValueError("Gap additions require an independent family preparation mapping")
+    if set(inventory) != {"fragments", "summary"}:
+        raise ValueError("Unknown residual inventory fields")
+    if "seconds" not in preflight:
+        raise ValueError("Missing original preflight timing field")
+    expected = dict(
+        status="additional_recovery_prepared",
+        inventory=dict(
+            inventory,
+            targets=original_input["targets"],
+            eligible_targets=original_input["eligible_targets"],
+        ),
+        preflight={k: v for k, v in preflight.items() if k != "seconds"},
+        selected_owners=original_input["baseline_owners"],
+        families=[protocol["family_prior"]],
+        replay_checks=preflight["checks"],
+        recovery_complete=False,
+    )
+    compare_persisted(expected, fingerprint(candidate))
+
+
+def map_preflight_metadata(receipt, root, request):
+    """Bind the original file receipts before mapping its compact native view."""
+    retained = {
+        "origin_utc_ns",
+        "cutoff_utc_ns",
+        "regional_center",
+        "reference_position_used",
+        "candidate_count",
+        "previous_count",
+        "snapshot_count",
+    }
+    files = {
+        "bank_sha256": "worker/inference/SCAN/bank.npz",
+        "latest_tle_sha256": "worker/inference/SCAN/selected.tle",
+        "previous_tle_sha256": "worker/inference/causal_prior/SCAN/previous.tle",
+    }
+    constants = dict(
+        radius_km=250.0,
+        candidate_filter="regional elevation >= -12deg; no whitelist",
+        search_center=request["search_center"],
+        search_box_width_km=25.0,
+        previous_prior_repair="reject epoch differences under one second",
+    )
+    epochs = {"latest_max_epoch_utc_ns", "latest_max_collection_utc_ns"}
+    if set(receipt) != retained | set(files) | set(constants) | epochs:
+        raise ValueError("Unknown preflight metadata fields")
+    if any(receipt[k] != v for k, v in constants.items()):
+        raise ValueError("Original preparation policy differs from the native request")
+    if receipt["regional_center"] != request["screen_center"]:
+        raise ValueError("Original screening center differs")
+    if any(receipt[k] > receipt["cutoff_utc_ns"] for k in epochs):
+        raise ValueError("Original catalogue is not causal")
+    folder = root / "ALGO02"
+    descriptor = json.loads((folder / "descriptor.json").read_bytes())
+    if descriptor["input_sha256"] != request["identity"]["input_sha256"]:
+        raise ValueError("Different native input in original preparation")
+    for key, relative in files.items():
+        bound_link(
+            str(Path(descriptor["source_worker_root"]) / Path(relative).relative_to("worker")),
+            descriptor,
+            folder,
+            receipt[key],
+        )
+    return {k: receipt[k] for k in retained}
+
+
 def compare_signed_snapshot(reference, candidate, root):
     """Restore only the explicitly persisted node/unchanged-arm boundaries.
 
@@ -581,6 +654,56 @@ def compare(args):
             stage="ALGO05",
             file="worker/recovery/decision.json",
             scope="Prepare-only branch with unchanged full parent supports",
+            metadata_semantics_qualified=False,
+        )
+    additional_documents = {}
+    additional_files = []
+
+    def check_additional_preparation():
+        for key, path in (
+            ("input", "worker/recovery/inputs/SCAN.json"),
+            ("inventory", "worker/recovery/residual-inventory.json"),
+            ("preflight", "worker/recovery/preflight/SCAN.json"),
+        ):
+            value, descriptor = read_export(args.reference_evidence, "ALGO06", path)
+            same(descriptor["input_sha256"], request["identity"]["input_sha256"])
+            additional_documents[key] = value
+            additional_files.append(path)
+        selected = additional_documents["input"]["selected"]
+        if selected is None or selected["kind"] != "new_family":
+            raise ValueError("Other incumbent kinds require independent preparation mappings")
+        protocols = [p for p in selected["source_receipts"] if p.endswith("/protocol.json")]
+        if len(protocols) != 1:
+            raise ValueError("Exactly one bound selected-family protocol required")
+        path = protocols[0]
+        relative = bound_link(
+            path, descriptor, args.reference_evidence / "ALGO06", selected["source_receipts"][path]
+        )
+        protocol, _ = read_export(args.reference_evidence, "ALGO06", relative)
+        additional_files.append(relative)
+        preflight = dict(additional_documents["preflight"])
+        preflight["scan_receipt"] = map_preflight_metadata(
+            preflight["scan_receipt"], args.reference_evidence, request
+        )
+        compare_additional_preparation(
+            additional_documents["input"],
+            additional_documents["inventory"],
+            preflight,
+            protocol,
+            evidence["audit"]["additional_recovery"],
+        )
+
+    check("policy/additional_recovery", check_additional_preparation)
+    if checks["policy/additional_recovery"]:
+        policies["additional_recovery"] = dict(
+            stage="ALGO06",
+            file=additional_files[0],
+            supporting_files=additional_files[1:],
+            scope="Complete one-family residual preparation; no gap additions",
+            excluded_bookkeeping=["preflight/seconds"],
+            mapped_metadata=(
+                "Original bank/TLE bytes bound; policy constants and causal maxima checked"
+            ),
             metadata_semantics_qualified=False,
         )
     handoff_documents = {}

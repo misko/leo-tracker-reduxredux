@@ -3,6 +3,58 @@ import pytest
 from compare_algo07v3_published import exact_persisted, mapped_predictive, read_export
 
 
+@pytest.mark.parametrize(
+    "changed", [None, "owners", "prior", "replay", "targets", "unknown", "gap", "kind"]
+)
+def test_additional_preparation_compares_all_fields_and_rejects_other_branches(changed):
+    from copy import deepcopy
+
+    from compare_algo07v3_published import compare_additional_preparation
+
+    owners = {a: {"point": 123} for a in ("c0", "fitted_c")}
+    targets = [{"observations": ["a", "b"]}]
+    original = dict(
+        selected={"kind": "new_family"},
+        gap_selected=None,
+        targets=targets,
+        eligible_targets=1,
+        baseline_owners=owners,
+    )
+    inventory = dict(fragments=targets, summary={"count": 1})
+    preflight = dict(checks={"c0": 0.0, "fitted_c": 1e-7}, corrected=[1.0, 2.0], seconds=12.0)
+    protocol = dict(family_prior={"phase_sigma": 2.0})
+    candidate = deepcopy(
+        dict(
+            status="additional_recovery_prepared",
+            inventory=dict(inventory, targets=targets, eligible_targets=1),
+            preflight={k: v for k, v in preflight.items() if k != "seconds"},
+            selected_owners=owners,
+            families=[protocol["family_prior"]],
+            replay_checks=preflight["checks"],
+            recovery_complete=False,
+        )
+    )
+    if changed == "owners":
+        candidate["selected_owners"]["fitted_c"]["point"] = 456
+    if changed == "prior":
+        candidate["families"][0]["phase_sigma"] += 1e-12
+    if changed == "replay":
+        candidate["replay_checks"]["c0"] += 1e-12
+    if changed == "targets":
+        candidate["inventory"]["targets"].pop()
+    if changed == "unknown":
+        candidate["new_field"] = True
+    if changed == "gap":
+        original["gap_selected"] = {"selected": True}
+    if changed == "kind":
+        original["selected"]["kind"] = "two_family"
+    if changed is None:
+        compare_additional_preparation(original, inventory, preflight, protocol, candidate)
+    else:
+        with pytest.raises(ValueError):
+            compare_additional_preparation(original, inventory, preflight, protocol, candidate)
+
+
 def test_persisted_comparison_checks_every_scientific_value():
     old = dict(case="SCAN", phase=[1.0, 2.0], owners={"point": 69333}, score=1.0)
     new = dict(phase=np.array([1.0, 2.0]), owners={"point": 69333}, score=1.0)
@@ -14,6 +66,68 @@ def test_persisted_comparison_checks_every_scientific_value():
     ):
         with pytest.raises(ValueError):
             exact_persisted(old, changed, {"case"})
+
+
+@pytest.mark.parametrize("changed", [None, "bytes", "hash", "policy", "epoch", "unknown", "center"])
+def test_preflight_metadata_mapping_binds_files_policy_and_causality(tmp_path, changed):
+    import hashlib
+    import json
+
+    from compare_algo07v3_published import map_preflight_metadata
+
+    request = dict(
+        search_center=[37.0, -122.0],
+        screen_center=[37.5, -122.0],
+        identity={"input_sha256": "input"},
+    )
+    receipt = dict(
+        origin_utc_ns=12,
+        cutoff_utc_ns=10,
+        regional_center=request["screen_center"],
+        reference_position_used=False,
+        candidate_count=2,
+        previous_count=2,
+        snapshot_count=1,
+        radius_km=250.0,
+        candidate_filter="regional elevation >= -12deg; no whitelist",
+        search_center=request["search_center"],
+        search_box_width_km=25.0,
+        previous_prior_repair="reject epoch differences under one second",
+        latest_max_epoch_utc_ns=9,
+        latest_max_collection_utc_ns=8,
+    )
+    files = {}
+    for key, path in (
+        ("bank_sha256", "worker/inference/SCAN/bank.npz"),
+        ("latest_tle_sha256", "worker/inference/SCAN/selected.tle"),
+        ("previous_tle_sha256", "worker/inference/causal_prior/SCAN/previous.tle"),
+    ):
+        dest = tmp_path / "ALGO02" / path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(path.encode())
+        receipt[key] = hashlib.sha256(dest.read_bytes()).hexdigest()
+        files[path] = "sha256:" + receipt[key]
+    (tmp_path / "ALGO02/descriptor.json").write_text(
+        json.dumps(dict(files=files, input_sha256="input", source_worker_root="/original/worker"))
+    )
+    if changed == "bytes":
+        dest.write_bytes(b"changed")
+    if changed == "hash":
+        receipt["bank_sha256"] = "different"
+    if changed == "policy":
+        receipt["radius_km"] = 251.0
+    if changed == "epoch":
+        receipt["latest_max_epoch_utc_ns"] = 11
+    if changed == "unknown":
+        receipt["new_field"] = True
+    if changed == "center":
+        request["screen_center"] = [38.0, -122.0]
+    if changed:
+        with pytest.raises(ValueError):
+            map_preflight_metadata(receipt, tmp_path, request)
+    else:
+        value = map_preflight_metadata(receipt, tmp_path, request)
+        assert len(value) == 7 and value["candidate_count"] == 2
 
 
 def test_unknown_or_missing_bookkeeping_does_not_silently_disappear():

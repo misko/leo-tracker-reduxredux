@@ -4,6 +4,13 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest experiment: [exact root-factorization reuse](../../reports/2026_11_05_algo07v3_factor_reuse/README.md).
+All 6,772 native likelihood calls and the complete snapshot match; component
+compute decreases 2.33%, with no complete-path gain established yet. A fresh
+isolated pair is underway; the candidate remains external to the runtime.
+Historical checks cover 16/17 sections; numerical recovery, metadata semantics,
+other branches, population and deadline qualification remain open. No deployment.
+
 Latest qualification: [reverse-order timing repeat and expanded audits](../../reports/2026_11_05_algo07v3_repeat_audits/README.md).
 The serial/concurrent standalone pair is exact and takes **284.846 / 258.638 s**
 (9.20% less elapsed time). This is a single shared-host observation, not the
