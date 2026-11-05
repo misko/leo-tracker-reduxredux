@@ -4,6 +4,16 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest exact numerical experiment:
+[full-scan assembly probe](../../reports/2026_11_05_algo07v3_assembly/README.md).
+All 6,772 paired likelihood calls and the complete native scientific/figure
+snapshot match exactly. Summed component time is 192.753 → 181.576 s (5.80%
+less), **not a complete-path speedup**. The prototype remains outside the runtime.
+The fresh reference comparison now covers 11 of 17 audit sections; six mappings,
+metadata semantics and population/production-budget gates remain open. There are
+642 passing focused tests. A separate exact factorization-reuse microbenchmark
+shows small variable timings, including one slowdown; it is also experimental.
+
 Latest fresh reference/native pair:
 [DS26-0002 sequential observations](../../reports/2026_11_05_algo07v3_pair/README.md).
 The frozen ALGO07 chain takes **675.455 s** and native v3 **504.041 s** including

@@ -97,27 +97,33 @@ def read_export(root, stage, relative):
     return json.loads(raw), descriptor
 
 
+def bound_link(path, descriptor, folder, expected=None):
+    """Verify a legacy path against its public export, never open that legacy path."""
+    relative = str(Path("worker") / Path(path).relative_to(descriptor["source_worker_root"]))
+    files = {
+        name: sha
+        for name, sha in descriptor["files"].items()
+        if name == relative or name.startswith(relative + "/")
+    }
+    if not files:
+        raise ValueError("Predictive trial has no bound reference evidence")
+    if expected is not None and files != {relative: "sha256:" + expected}:
+        raise ValueError("Source receipt differs from its export")
+    for name, sha in files.items():
+        exported = (folder / name).resolve(strict=True)
+        if not exported.is_relative_to(folder.resolve()):
+            raise ValueError("Source link escaped export")
+        if "sha256:" + hashlib.sha256(exported.read_bytes()).hexdigest() != sha:
+            raise ValueError("Source bytes changed")
+    return relative
+
+
 def mapped_predictive(original, descriptor, folder):
     """Map only the known process/file representation; verify discarded file links."""
     original = deepcopy(original)
 
     def bound_path(path, expected=None):
-        relative = str(Path("worker") / Path(path).relative_to(descriptor["source_worker_root"]))
-        files = {
-            name: sha
-            for name, sha in descriptor["files"].items()
-            if name == relative or name.startswith(relative + "/")
-        }
-        if not files:
-            raise ValueError("Predictive trial has no bound reference evidence")
-        if expected is not None and files != {relative: "sha256:" + expected}:
-            raise ValueError("Predictive source receipt differs from its export")
-        for name, sha in files.items():
-            path = (folder / name).resolve(strict=True)
-            if not path.is_relative_to(folder.resolve()):
-                raise ValueError("Predictive source link escaped export")
-            if "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() != sha:
-                raise ValueError("Predictive source bytes changed")
+        return bound_link(path, descriptor, folder, expected)
 
     if original["selected"] is not None:
         selected = original["selected"]
@@ -146,6 +152,95 @@ def mapped_predictive(original, descriptor, folder):
         for name in labels:
             del row[name]
     return original
+
+
+def compare_trigger(original, candidate):
+    if set(original) != {"ranking", "selected"}:
+        raise ValueError("Unknown reassociation trigger representation")
+    expected = dict(
+        status="reassociation_targets_ranked",
+        ranking=original["ranking"],
+        targets=original["selected"],
+        recovery_complete=False,
+    )
+    compare_persisted(expected, fingerprint(candidate))
+
+
+def mapped_propagation(original, descriptor, folder):
+    propagation = deepcopy(original)
+    for key in ("catalogue", "input"):
+        bound_link(
+            propagation.pop(key + "_path"),
+            descriptor,
+            folder,
+            propagation.pop(key + "_sha256"),
+        )
+    return propagation
+
+
+def compare_screen_no_admission(original, screens, candidate, descriptor, folder):
+    if original["selected"] is not None or original["records"] or original["guards"]:
+        raise ValueError("Admitted or guarded proposals require independent screen mappings")
+    if set(screens) != set(map(str, original["targets"])):
+        raise ValueError("Missing or extra family screen")
+    screens = deepcopy(screens)
+    for screen in screens.values():
+        if set(screen["cavity"]) != {"c0", "fitted_c"}:
+            raise ValueError("Matched cavity arms required")
+        for arm in screen["cavity"].values():
+            # Exact schema comparison below rejects every other additional field.
+            del arm["seconds"]
+    expected = dict(
+        status="reassociation_candidates_screened",
+        recovery_complete=False,
+        admission=dict(
+            status="screened",
+            targets=original["targets"],
+            catalogue_eligibility=mapped_propagation(
+                original["catalogue_eligibility"], descriptor, folder
+            ),
+            propagation_failures=original["propagation_failures"],
+            screens=screens,
+            shared={},
+            guards={},
+            admitted=[],
+        ),
+    )
+    compare_persisted(expected, fingerprint(candidate))
+
+
+def compare_final_fallback(original, candidate, descriptor, folder):
+    """Compare the completed no-proposal branch; accepted-fit mapping stays open."""
+    if set(candidate) != {"status", "recovery", "recovery_complete"}:
+        raise ValueError("Unknown final checkpoint representation")
+    if (
+        candidate["status"] != "reassociation_evaluated"
+        or candidate["recovery_complete"] is not True
+    ):
+        raise ValueError("Final checkpoint is incomplete")
+    value = candidate["recovery"]
+    for row in (original, value):
+        if row["selected"] is not None or row["records"] or row["review"]:
+            raise ValueError("Accepted or reviewed proposals require independent fit mappings")
+        if row["execution_status"] != "complete":
+            raise ValueError("Final numerical execution incomplete")
+    if value["control_fits"] or value["candidate_fits"]:
+        raise ValueError("Unmapped intermediate fits exist")
+    original = deepcopy(original)
+    original["catalogue_eligibility"] = mapped_propagation(
+        original["catalogue_eligibility"], descriptor, folder
+    )
+    protocol = "worker/recovery/candidate/protocol.json"
+    protocol_sha = "sha256:" + original["protocol_sha256"]
+    if descriptor["files"][protocol] != protocol_sha:
+        raise ValueError("Final protocol receipt differs from export")
+    if "sha256:" + hashlib.sha256((folder / protocol).read_bytes()).hexdigest() != protocol_sha:
+        raise ValueError("Final protocol bytes changed")
+    exact_persisted(
+        original,
+        {k: v for k, v in value.items() if k not in {"control_fits", "candidate_fits"}},
+        {"case", "seconds", "protocol_sha256"},
+    )
 
 
 def compare(args):
@@ -244,6 +339,7 @@ def compare(args):
     original, descriptor = read_export(
         args.reference_evidence, "ALGO03", "worker/recovery/decision.json"
     )
+    same(descriptor["input_sha256"], request["identity"]["input_sha256"])
     mapped = mapped_predictive(original, descriptor, args.reference_evidence / "ALGO03")
     excluded = {
         "baseline",
@@ -273,6 +369,59 @@ def compare(args):
             "inventory identity labels",
         ],
     )
+    for name, relative in (
+        ("reassociation_trigger", "worker/recovery/candidate/SCAN/trigger.json"),
+        (
+            "reassociation_complete",
+            "worker/recovery/candidate/SCAN/worker_result.json",
+        ),
+    ):
+        original, descriptor = read_export(args.reference_evidence, "ALGO07", relative)
+        same(descriptor["input_sha256"], request["identity"]["input_sha256"])
+        if name == "reassociation_trigger":
+            check(
+                "policy/" + name,
+                lambda o=original: compare_trigger(o, evidence["audit"]["reassociation_trigger"]),
+            )
+        else:
+            check(
+                "policy/" + name,
+                lambda o=original, d=descriptor: compare_final_fallback(
+                    o,
+                    evidence["audit"]["reassociation_complete"],
+                    d,
+                    args.reference_evidence / "ALGO07",
+                ),
+            )
+            screens = {}
+            for target in original["targets"]:
+                file = f"worker/recovery/candidate/SCAN/{target}/screen.json"
+                screens[str(target)], _ = read_export(args.reference_evidence, "ALGO07", file)
+            check(
+                "policy/reassociation_screen",
+                lambda o=original, d=descriptor, s=screens: compare_screen_no_admission(
+                    o,
+                    s,
+                    evidence["audit"]["reassociation_screen"],
+                    d,
+                    args.reference_evidence / "ALGO07",
+                ),
+            )
+            if checks["policy/reassociation_screen"]:
+                policies["reassociation_screen"] = dict(
+                    stage="ALGO07",
+                    file=relative,
+                    scope="No-admission family screens",
+                    excluded_bookkeeping=["cavity/c0/seconds", "cavity/fitted_c/seconds"],
+                    metadata_semantics_qualified=False,
+                )
+        if checks["policy/" + name]:
+            policies[name] = dict(
+                stage="ALGO07",
+                file=relative,
+                scope="Complete ranking" if name.endswith("trigger") else "No-proposal fallback",
+                metadata_semantics_qualified=False,
+            )
     missing = sorted(set(evidence["audit"]) - set(policies))
     reference_clock = json.loads(args.reference_timing.read_bytes())
     candidate_clock = json.loads(args.candidate_timing.read_bytes())
@@ -284,6 +433,22 @@ def compare(args):
     ):
         raise ValueError("Fresh completed executions required for timing observations")
     return dict(
+        input_bindings={
+            name: dict(
+                path=str(path), sha256="sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+            )
+            for name, path in {
+                "request": args.request,
+                "reference_timing": args.reference_timing,
+                "candidate_timing": args.candidate_timing,
+                "comparison_tool": Path(__file__),
+                **{
+                    "export_" + stage: args.reference_evidence / stage / "descriptor.json"
+                    for stage in {row["stage"] for row in policies.values()}
+                },
+            }.items()
+        },
+        candidate_scientific_receipt_sha256=saved["sha256"],
         checks=checks,
         errors=errors,
         mapped_policies=policies,

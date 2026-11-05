@@ -46,6 +46,15 @@ new native science also matches its previous native qualification. There are
 622 passing focused tests. A bit-exact scatter-assembly prototype is measured
 only as an external experiment and remains disabled in the runtime.
 
+The subsequent [full-scan assembly experiment](../../reports/2026_11_05_algo07v3_assembly/README.md)
+now compares all 6,772 likelihood calls exactly and reproduces the entire native
+scientific/figure snapshot. Its 5.80% component saving is not a complete-path
+speedup; runtime integration and ordinary timing remain next steps. Three more
+fresh-reference mappings pass (ranking, no-admission screening and final fallback),
+bringing coverage to 11 of 17 sections on this case. Six mappings, metadata
+semantics, accepted branches and population/deadline qualification remain open.
+The focused suite now passes 642 tests. No deployment occurred.
+
 The [connected presentation report](../../reports/2026_11_05_algo07v3_connected_presentation/README.md)
 records the fresh prepared-input-to-PNG run, exact numerical regression, owned
 path projection, and 515 passing tests. Its 484.617-second observation excludes

@@ -55,17 +55,148 @@ def test_failed_process_cannot_be_mapped_to_completed_science(tmp_path):
         mapped_predictive(original, {}, tmp_path)
 
 
+def test_trigger_checks_full_ranking_including_unselected_families():
+    from compare_algo07v3_published import compare_trigger
+
+    original = dict(ranking=[dict(norad=1, score=2.0), dict(norad=2, score=1.0)], selected=[1])
+    candidate = dict(
+        status="reassociation_targets_ranked",
+        ranking=original["ranking"],
+        targets=[1],
+        recovery_complete=False,
+    )
+    compare_trigger(original, candidate)
+    with pytest.raises(ValueError):
+        compare_trigger(original, dict(candidate, ranking=[dict(norad=1, score=2.0)]))
+    with pytest.raises(ValueError):
+        compare_trigger(original, dict(candidate, targets=[2]))
+
+
+@pytest.fixture
+def final_fallback(tmp_path):
+    import hashlib
+    from copy import deepcopy
+
+    descriptor = dict(source_worker_root="/source", files={})
+    for name in ("catalogue.json", "input.json", "candidate/protocol.json"):
+        path = tmp_path / "worker/recovery" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{}")
+        descriptor["files"][str(path.relative_to(tmp_path))] = (
+            "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+        )
+    sha = hashlib.sha256(b"{}").hexdigest()
+    original = dict(
+        selected=None,
+        records=[],
+        review=[],
+        execution_status="complete",
+        final=dict(c0=dict(x=[1.0, 2.0]), fitted_c=dict(x=[2.0, 3.0])),
+        catalogue_eligibility=dict(
+            candidate_count=11,
+            catalogue_path="/source/recovery/catalogue.json",
+            catalogue_sha256=sha,
+            input_path="/source/recovery/input.json",
+            input_sha256=sha,
+        ),
+        case="SCAN",
+        seconds=1.0,
+        protocol_sha256=sha,
+    )
+    value = deepcopy(original)
+    for key in ("case", "seconds", "protocol_sha256"):
+        del value[key]
+    for key in ("catalogue_path", "catalogue_sha256", "input_path", "input_sha256"):
+        del value["catalogue_eligibility"][key]
+    value.update(control_fits={}, candidate_fits={})
+    candidate = dict(status="reassociation_evaluated", recovery_complete=True, recovery=value)
+    return original, candidate, descriptor, tmp_path
+
+
+def test_final_fallback_checks_all_results_and_bound_files(final_fallback):
+    from compare_algo07v3_published import compare_final_fallback
+
+    compare_final_fallback(*final_fallback)
+    original, candidate, descriptor, folder = final_fallback
+    candidate["recovery"]["final"]["c0"]["x"][0] += 1e-10
+    with pytest.raises(ValueError):
+        compare_final_fallback(*final_fallback)
+
+
+@pytest.mark.parametrize("field", ["control_fits", "candidate_fits", "records", "review"])
+def test_final_mapping_rejects_uncovered_fit_branches(final_fallback, field):
+    from compare_algo07v3_published import compare_final_fallback
+
+    final_fallback[1]["recovery"][field] = {"unmapped": 1}
+    with pytest.raises(ValueError):
+        compare_final_fallback(*final_fallback)
+
+
+def test_final_mapping_rejects_changed_source_link(final_fallback):
+    from compare_algo07v3_published import compare_final_fallback
+
+    (final_fallback[3] / "worker/recovery/catalogue.json").write_text('{"changed": true}')
+    with pytest.raises(ValueError, match="Source bytes changed"):
+        compare_final_fallback(*final_fallback)
+
+
+def test_no_admission_screen_checks_rejected_candidates_and_both_cavities(final_fallback):
+    from copy import deepcopy
+
+    from compare_algo07v3_published import compare_screen_no_admission
+
+    original, final, descriptor, folder = final_fallback
+    original.update(targets=[1], guards={}, propagation_failures=[])
+    screens = {
+        "1": dict(
+            cavity={a: dict(seconds=1.0, objective=5.0) for a in ("c0", "fitted_c")},
+            proposals=[dict(norad=2, passed=False, score=4.0)],
+        )
+    }
+    candidate = dict(
+        status="reassociation_candidates_screened",
+        recovery_complete=False,
+        admission=dict(
+            status="screened",
+            targets=[1],
+            catalogue_eligibility=final["recovery"]["catalogue_eligibility"],
+            propagation_failures=[],
+            screens=deepcopy(screens),
+            shared={},
+            guards={},
+            admitted=[],
+        ),
+    )
+    for arm in candidate["admission"]["screens"]["1"]["cavity"].values():
+        del arm["seconds"]
+    compare_screen_no_admission(original, screens, candidate, descriptor, folder)
+    changed = deepcopy(candidate)
+    changed["admission"]["screens"]["1"]["proposals"][0]["score"] += 1e-10
+    with pytest.raises(ValueError):
+        compare_screen_no_admission(original, screens, changed, descriptor, folder)
+    changed = deepcopy(candidate)
+    del changed["admission"]["screens"]["1"]["cavity"]["c0"]
+    with pytest.raises(ValueError):
+        compare_screen_no_admission(original, screens, changed, descriptor, folder)
+    with pytest.raises(ValueError, match="Missing or extra"):
+        compare_screen_no_admission(original, {}, candidate, descriptor, folder)
+
+
 @pytest.mark.parametrize("width", [0, 3, 12])
 @pytest.mark.parametrize("order", ["C", "F"])
-def test_experimental_scatter_preserves_exact_assembly_across_sparse_shapes(width, order):
+@pytest.mark.parametrize("experiment", ["scatter", "factor_reuse"])
+def test_experimental_kernels_preserve_exact_results_across_sparse_shapes(width, order, experiment):
     import runpy
     from pathlib import Path
 
     from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 
-    path = (
-        Path(__file__).resolve().parents[2] / "reports/2026_11_05_algo07v3_pair/probe_assembly.py"
+    relative = (
+        "reports/2026_11_05_algo07v3_pair/probe_assembly.py"
+        if experiment == "scatter"
+        else "reports/2026_11_05_algo07v3_assembly/probe_factor_reuse.py"
     )
+    path = Path(__file__).resolve().parents[2] / relative
     candidate, _, _ = runpy.run_path(str(path))["candidate_function"]()
     rng = np.random.default_rng(177)
     features = rng.normal(size=(21, width))
