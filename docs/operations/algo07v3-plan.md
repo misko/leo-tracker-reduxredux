@@ -4,6 +4,17 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest milestone: the [scatter kernel is integrated](../../reports/2026_11_05_algo07v3_integrated/README.md).
+Two fresh comparisons preserve the complete owned science and publication
+exactly. There are 670 passing tests and 12/17 fresh historical audit mappings.
+The three pinned-core timing observations (753.412 / 392.368 / 670.025 s) are
+confounded by host load and do not establish a complete-path speedup. All 159
+DS26 fast members remain in the denominator; 158 have available native inputs.
+Population, accepted-branch, remaining historical mappings, metadata semantics
+and production-admission qualification remain open. The runtime kernel is enabled
+in development only; no deployment. Earlier milestones below retain their
+historical scope and status.
+
 Current implementation status, 2026-11-05: the owned application is connected
 through final guarded numerical reassociation, including causal-history
 completion and matched replacement/control fitting. DS26-0066's final numerical

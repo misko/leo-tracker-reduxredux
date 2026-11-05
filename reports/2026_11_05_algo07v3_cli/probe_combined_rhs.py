@@ -11,9 +11,8 @@ import json
 import time
 from pathlib import Path
 
+import algo07v3_hierarchical_oracle as hierarchical
 import numpy as np
-
-from leo.analysis.localization_v3 import hierarchical
 
 
 def run(fixture):

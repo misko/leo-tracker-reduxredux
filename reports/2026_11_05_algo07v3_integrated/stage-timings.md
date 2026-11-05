@@ -1,0 +1,22 @@
+| Stage | First baseline (s) | Optimized (s) | Repeated baseline (s) |
+| --- | ---: | ---: | ---: |
+| native_preparation | 11.116 | 11.415 | 11.092 |
+| recovery_catalogue | 6.923 | 6.961 | 6.850 |
+| initial | 83.317 | 57.184 | 61.557 |
+| conservative | 76.545 | 33.707 | 39.771 |
+| family | 59.218 | 25.478 | 29.797 |
+| signed | 8.933 | 2.776 | 7.049 |
+| cavity | 22.475 | 10.722 | 10.885 |
+| inventory | 0.551 | 0.285 | 0.289 |
+| predictive | 287.854 | 129.945 | 251.556 |
+| numerical | 47.944 | 22.365 | 47.545 |
+| gap | 0.003 | 0.002 | 0.003 |
+| residual | 0.458 | 0.255 | 0.458 |
+| residual_screen | 59.489 | 22.326 | 63.268 |
+| addition | 0.004 | 0.003 | 0.006 |
+| incumbent | 0.522 | 0.377 | 0.703 |
+| ranking | 19.480 | 10.006 | 22.771 |
+| admission | 21.143 | 13.430 | 32.031 |
+| final | 0.124 | 0.097 | 0.199 |
+| plot_evidence | 28.539 | 24.659 | 52.915 |
+| png_rendering | 7.213 | 7.161 | 11.111 |

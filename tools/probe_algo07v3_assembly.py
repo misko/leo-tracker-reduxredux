@@ -64,13 +64,16 @@ def main():
         forwarded = forwarded[1:]
     if not forwarded:
         parser.error("Native qualification arguments required after --")
+    from algo07v3_hierarchical_oracle import hierarchical_bound as reference
+
     from leo.analysis.localization_v3 import hierarchical
 
     experiment = (
         Path(__file__).resolve().parents[1] / "reports/2026_11_05_algo07v3_pair/probe_assembly.py"
     )
     candidate, old_source, new_source = runpy.run_path(str(experiment))["candidate_function"]()
-    probe = AssemblyProbe(hierarchical.hierarchical_bound, candidate)
+    original_function = hierarchical.hierarchical_bound
+    probe = AssemblyProbe(reference, candidate)
     hierarchical.hierarchical_bound = probe
     tool = Path(__file__).with_name("check_algo07v3_engine.py")
     original_argv = sys.argv
@@ -82,7 +85,7 @@ def main():
         complete = True
     finally:
         sys.argv = original_argv
-        hierarchical.hierarchical_bound = probe.reference
+        hierarchical.hierarchical_bound = original_function
         result = dict(
             complete=complete,
             calls=probe.calls,

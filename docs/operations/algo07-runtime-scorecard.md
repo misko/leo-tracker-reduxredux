@@ -4,6 +4,18 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest integration: [standalone scatter kernel](../../reports/2026_11_05_algo07v3_integrated/README.md).
+Two fresh previous-kernel/current-kernel comparisons have exact owned science,
+both arms, 179 grid points and all eight PNGs. Observed process times are
+753.412 / 392.368 / 670.025 s (baseline / optimized / repeated baseline), pinned
+to efficiency core 23. Both baselines experienced different host load; these
+ratios are **not a qualified speedup**. The earlier 5.80% interleaved component
+saving remains the better kernel evidence. The kernel is enabled in development,
+with 670 passing focused tests and 12/17 historical audit mappings. DS26 retains
+159 fast members, 158 available native inputs and one missing native run.
+Full-cohort, accepted-branch, metadata and production-budget gates remain open.
+No deployment occurred. Earlier entries below describe their historical states.
+
 Latest exact numerical experiment:
 [full-scan assembly probe](../../reports/2026_11_05_algo07v3_assembly/README.md).
 All 6,772 paired likelihood calls and the complete native scientific/figure

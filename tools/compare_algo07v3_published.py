@@ -166,6 +166,57 @@ def compare_trigger(original, candidate):
     compare_persisted(expected, fingerprint(candidate))
 
 
+def compare_gap_no_split(original, candidate, descriptor, folder):
+    """Verify the complete prepare-only branch using its original native supports."""
+    if original["selected"] is not None or original["candidate"] is not None:
+        raise ValueError("Selected gap branches require independent fit mappings")
+    if original["trials"] or original["excluded"]:
+        raise ValueError("Fitted or excluded gap branches require independent mappings")
+    mapped = deepcopy(original)
+    targets, stages = [], []
+    for i, stage in enumerate(original["stages"]):
+        if set(stage) != {"command", "returncode", "seconds", "timeout_s"}:
+            raise ValueError("Unknown gap process receipt")
+        command = stage["command"]
+        if (
+            len(command) != 6
+            or command[1] != "-B"
+            or command[3] != "prepare"
+            or not command[2].endswith("/algo05_gap_stage.py")
+            or stage["returncode"] != 0
+        ):
+            raise ValueError("Completed gap preparation required")
+        source_relative = bound_link(command[4], descriptor, folder)
+        source = json.loads((folder / source_relative).read_bytes())
+        if set(source) != {"track_id", "points", "inventory", "validation"}:
+            raise ValueError("Unknown gap source representation")
+        for key in ("inventory", "validation"):
+            bound_link(source[key], descriptor, folder)
+        prepared_relative = bound_link(command[5], descriptor, folder)
+        prepared = folder / prepared_relative
+        protocol = json.loads((prepared / "protocol.json").read_bytes())
+        for path, sha in protocol["input_sha256"].items():
+            bound_link(path, descriptor, folder, sha)
+        branches = json.loads((prepared / "branches.json").read_bytes())["branches"]
+        parent = protocol["parent_observation_ids"]
+        if len(parent) != source["points"] or len(set(parent)) != len(parent):
+            raise ValueError("Gap parent support differs")
+        if any(
+            len(b["observation_ids"]) != len(parent) or set(b["observation_ids"]) != set(parent)
+            for b in branches
+        ):
+            raise ValueError("Actual split branches require independent mappings")
+        targets.append({k: source[k] for k in ("track_id", "points")})
+        stages.append(
+            dict(name=f"gap-{i}-prepare", status="complete", timeout_s=stage["timeout_s"])
+        )
+    mapped.update(stages=stages, targets=targets, numerical_receipts={})
+    actual = deepcopy(candidate)
+    for stage in actual["stages"]:
+        del stage["seconds"]
+    compare_persisted(mapped, fingerprint(actual))
+
+
 def mapped_propagation(original, descriptor, folder):
     propagation = deepcopy(original)
     for key in ("catalogue", "input"):
@@ -422,6 +473,26 @@ def compare(args):
                 scope="Complete ranking" if name.endswith("trigger") else "No-proposal fallback",
                 metadata_semantics_qualified=False,
             )
+    original, descriptor = read_export(
+        args.reference_evidence, "ALGO05", "worker/recovery/decision.json"
+    )
+    same(descriptor["input_sha256"], request["identity"]["input_sha256"])
+    check(
+        "policy/gap_recovery",
+        lambda: compare_gap_no_split(
+            original,
+            evidence["audit"]["gap_recovery"],
+            descriptor,
+            args.reference_evidence / "ALGO05",
+        ),
+    )
+    if checks["policy/gap_recovery"]:
+        policies["gap_recovery"] = dict(
+            stage="ALGO05",
+            file="worker/recovery/decision.json",
+            scope="Prepare-only branch with unchanged full parent supports",
+            metadata_semantics_qualified=False,
+        )
     missing = sorted(set(evidence["audit"]) - set(policies))
     reference_clock = json.loads(args.reference_timing.read_bytes())
     candidate_clock = json.loads(args.candidate_timing.read_bytes())

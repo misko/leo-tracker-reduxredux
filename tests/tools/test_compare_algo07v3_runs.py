@@ -1,0 +1,39 @@
+import copy
+
+import numpy as np
+import pytest
+from compare_algo07v3_runs import matched_requests, scientific_values
+
+
+def test_only_output_destination_may_change_between_requests():
+    a = dict(output_root="/old", execution_policy="validation-all-work", prior=[1.0, 2.0])
+    b = dict(a, output_root="/new")
+    matched_requests(a, b)
+    with pytest.raises(ValueError):
+        matched_requests(a, a)
+    with pytest.raises(ValueError):
+        matched_requests(a, dict(b, prior=[1.0, 2.00001]))
+    with pytest.raises(ValueError):
+        matched_requests(a, dict(b, surprise=True))
+
+
+def test_non_audit_evidence_and_stage_inventory_are_not_omitted():
+    a = dict(
+        preparation=dict(x=np.array([1.0])),
+        selected=dict(owners={"p": 12}),
+        stage_timings=[dict(stage="initial", seconds=1.0)],
+        audit={},
+        presentation={},
+        provenance={},
+    )
+    b = copy.deepcopy(a)
+    b["stage_timings"][0]["seconds"] = 3.0
+    scientific_values(a, b)
+    for key, value in (
+        ("preparation", dict(x=np.array([1.000000001]))),
+        ("selected", dict(owners={"p": 13})),
+        ("stage_timings", [dict(stage="initial", seconds=1.0, unreviewed=True)]),
+        ("stage_timings", []),
+    ):
+        with pytest.raises(ValueError):
+            scientific_values(a, dict(b, **{key: value}))

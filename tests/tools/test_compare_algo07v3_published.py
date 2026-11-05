@@ -211,3 +211,81 @@ def test_experimental_kernels_preserve_exact_results_across_sparse_shapes(width,
     for key in original:
         a, b = np.asarray(original[key]), np.asarray(actual[key])
         assert a.dtype == b.dtype and a.shape == b.shape and a.tobytes() == b.tobytes(), key
+
+
+def test_gap_prepare_only_mapping_verifies_native_support_and_process(tmp_path):
+    import hashlib
+    import json
+    from copy import deepcopy
+
+    from compare_algo07v3_published import compare_gap_no_split
+
+    descriptor = dict(source_worker_root="/worker", files={})
+
+    def write(relative, value):
+        path = tmp_path / "worker" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        raw = json.dumps(value).encode()
+        path.write_bytes(raw)
+        sha = hashlib.sha256(raw).hexdigest()
+        descriptor["files"]["worker/" + relative] = "sha256:" + sha
+        return sha
+
+    sha = write("inventory.json", {})
+    write("validation/result.json", {})
+    write(
+        "target/source.json",
+        dict(
+            track_id="t",
+            points=2,
+            inventory="/worker/inventory.json",
+            validation="/worker/validation",
+        ),
+    )
+    write(
+        "target/gap/protocol.json",
+        dict(parent_observation_ids=["p", "q"], input_sha256={"/worker/inventory.json": sha}),
+    )
+    write("target/gap/branches.json", dict(branches=[dict(observation_ids=["p", "q"])]))
+    stage = dict(
+        command=[
+            "python",
+            "-B",
+            "/old/algo05_gap_stage.py",
+            "prepare",
+            "/worker/target/source.json",
+            "/worker/target/gap",
+        ],
+        returncode=0,
+        seconds=1.0,
+        timeout_s=180,
+    )
+    original = dict(
+        selected=None,
+        candidate=None,
+        trials=[],
+        excluded=[],
+        stages=[stage],
+        no_GPS_inference=True,
+        causal_only=True,
+    )
+    candidate = dict(
+        original,
+        stages=[dict(name="gap-0-prepare", status="complete", seconds=0.5, timeout_s=180)],
+        targets=[dict(track_id="t", points=2)],
+        numerical_receipts={},
+    )
+    compare_gap_no_split(original, candidate, descriptor, tmp_path)
+    for changed in (
+        dict(candidate, targets=[dict(track_id="t", points=1)]),
+        dict(candidate, numerical_receipts={"unmapped": 1}),
+    ):
+        with pytest.raises(ValueError):
+            compare_gap_no_split(original, changed, descriptor, tmp_path)
+    failed = deepcopy(original)
+    failed["stages"][0]["returncode"] = 1
+    with pytest.raises(ValueError, match="Completed"):
+        compare_gap_no_split(failed, candidate, descriptor, tmp_path)
+    write("target/gap/branches.json", dict(branches=[dict(observation_ids=["p"])]))
+    with pytest.raises(ValueError, match="Actual split"):
+        compare_gap_no_split(original, candidate, descriptor, tmp_path)

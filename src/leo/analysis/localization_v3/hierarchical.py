@@ -1,4 +1,5 @@
 """Original grouped Gaussian/Gamma likelihood, preserving arithmetic and stopping rules."""
+
 from math import lgamma
 
 import numpy as np
@@ -70,11 +71,24 @@ def hierarchical_bound(
         local = a[use][:, columns]
         blocks.append((columns, np.ix_(columns, columns), local.T @ local, local.T @ r[use]))
 
+    # Concatenation retains group order, and add.at retains each entry's addition
+    # order. Fancy-index += cannot replace it: several blocks share entries.
+    matrix_indices = np.concatenate([(c[:, None] * width + c).ravel() for c, _, _, _ in blocks])
+    matrix_groups = np.concatenate(
+        [np.full(m.size, k, dtype=int) for k, (_, _, m, _) in enumerate(blocks)]
+    )
+    matrices = np.concatenate([m.ravel() for _, _, m, _ in blocks])
+    rhs_indices = np.concatenate([c for c, _, _, _ in blocks])
+    rhs_groups = np.concatenate(
+        [np.full(len(c), k, dtype=int) for k, (c, _, _, _) in enumerate(blocks)]
+    )
+    right_sides = np.concatenate([b for _, _, _, b in blocks])
+
     def posterior(weight, precision, covariance):
         gram, rhs = np.diag(precision), np.zeros(width)
-        for w, (cols, index, matrix, b) in zip(power * weight, blocks, strict=True):
-            gram[index] += w * matrix
-            rhs[cols] += w * b
+        block_weight = power * weight
+        np.add.at(gram.ravel(), matrix_indices, block_weight[matrix_groups] * matrices)
+        np.add.at(rhs, rhs_indices, block_weight[rhs_groups] * right_sides)
         root = np.linalg.cholesky(gram)
         mean = np.linalg.solve(root.T, np.linalg.solve(root, rhs))
         cov = None
@@ -162,4 +176,3 @@ def hierarchical_bound(
         precision_iterations=len(history),
         final_log_precision_change=history[-1],
     )
-
