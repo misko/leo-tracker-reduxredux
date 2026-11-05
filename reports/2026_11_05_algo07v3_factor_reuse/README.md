@@ -3,6 +3,13 @@
 2026-11-05. External experiment; the numerical runtime and production remain
 unchanged. Complete-pipeline speedup is not established by this experiment.
 
+Follow-up completed: the [upper-root optimization](upper-root.md) preserves every
+native likelihood call and all complete published outputs. Its independent
+kernel measurement saves 11.63%; one candidate-first native-to-publication pair
+takes **266.242 → 252.572 s (5.13% less)**. This remains a single-scan observation,
+not a qualified cumulative or dataset-wide gain. The original experiment below
+retains its own results and limitations.
+
 The factorization-reuse candidate matches **all 6,772 likelihood calls** in a
 complete native DS26-0002 run. Every field's dtype, shape and bytes match. The
 complete scientific snapshot, both c arms, all 179 grid locations, recorded
@@ -146,9 +153,9 @@ Next: the transpose of the Cholesky root is already upper triangular. An externa
 follow-up supplies it to the same LAPACK solve with identity pivots, avoiding a
 second redundant factorization while keeping right-hand sides separate. It
 passes [32 synthetic exactness cases](upper-synthetic.json) and eight regression
-tests. Its complete native exact-call probe is running at
-`/srv/bulk/leo-dev/algo07v3-upper-root-20261105`; no native pass or speed claim
-is made for it yet. Neither factorization variant is enabled in the runtime.
+tests. Its native probe and isolated complete-path pair subsequently completed;
+see the [follow-up report](upper-root.md) for the exact results and expanded
+14-test suite. Neither factorization variant is enabled in the runtime.
 The full DS26 denominator, metadata, production deadlines and cumulative 10×
 target remain open. No deployment.
 

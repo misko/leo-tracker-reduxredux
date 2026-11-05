@@ -1,0 +1,22 @@
+| Stage | Baseline (s) | Upper-root candidate (s) |
+| --- | ---: | ---: |
+| native_preparation | 8.504 | 8.252 |
+| recovery_catalogue | 5.580 | 5.460 |
+| initial | 27.130 | 24.913 |
+| conservative | 23.890 | 23.020 |
+| family | 19.160 | 17.604 |
+| signed | 2.450 | 2.400 |
+| cavity | 7.798 | 7.633 |
+| inventory | 0.206 | 0.197 |
+| predictive | 82.720 | 73.723 |
+| numerical | 17.128 | 15.465 |
+| gap | 0.001 | 0.001 |
+| residual | 0.194 | 0.193 |
+| residual_screen | 17.901 | 18.349 |
+| addition | 0.002 | 0.002 |
+| incumbent | 0.270 | 0.260 |
+| ranking | 7.259 | 6.885 |
+| admission | 10.910 | 10.516 |
+| final | 0.072 | 0.063 |
+| plot_evidence | 17.211 | 15.629 |
+| png_rendering | 5.619 | 5.565 |

@@ -4,6 +4,16 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [upper-root complete-path pair](../../reports/2026_11_05_algo07v3_factor_reuse/upper-root.md):
+baseline **266.242 s**, candidate **252.572 s**, an observed **5.13% reduction**
+(1.054×) from native GLRT ready through all artifacts and atomic publication.
+All science, both calibration arms, eight PNGs and grid/path artifacts match.
+The independent alternating exact-call measurement saves 11.63% in the kernel.
+One shared-host pair on DS26-0002 supports this prototype, not a cumulative or
+dataset-wide speed claim. It remains external; 14 focused tests pass. A second
+prototype removes overwritten Gaussian solves and has 12 passing focused tests;
+its complete native probe is running. Production is unchanged.
+
 Completed [factor-reuse pair and 17-section audit](../../reports/2026_11_05_algo07v3_factor_reuse/README.md):
 both isolated native-to-publication runs are exact, including all PNGs. Times
 are **380.865 / 264.616 s**, but baseline CPU pressure was much higher; the
@@ -13,7 +23,8 @@ All 17 mapped scientific audit sections match on DS26-0002; original worker
 context construction counters are independently traced and explicitly mapped.
 Operational metadata, broader branches, full DS26 and production admission stay
 open. The broad suite has 777 passing tests; eight tests cover a separate new
-upper-root prototype whose complete native probe is ongoing. No deployment.
+upper-root prototype whose subsequently completed evidence is linked above.
+No deployment.
 
 Latest [factorization-reuse experiment](../../reports/2026_11_05_algo07v3_factor_reuse/README.md):
 all 6,772 native likelihood calls and the complete scientific/PNG snapshot are
