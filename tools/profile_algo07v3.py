@@ -42,24 +42,38 @@ def timed(operation, rows, name, *args):
                          children_cpu_seconds=after[1] - before[1], completed=complete))
 
 
-def profile_worker(root):
+def profile_worker(root, only_stage=None):
+    from leo.application import localization_v3 as policy
     from leo.application import localization_v3_engine as engine
     from leo.operations import localization_v3_parallel as parallel
 
     original_run, original_invoke = engine.run_native, parallel._invoke
+    original_predictive = policy.recover_predictive_checkpoint
     rows = []
+    active = only_stage is None
+    stage_name = None
+
+    def recovery_stage(operation, name, *args):
+        nonlocal stage_name
+        previous, stage_name = stage_name, name
+        try:
+            return timed(operation, rows, name, name, *args)
+        finally:
+            stage_name = previous
 
     def observed(*args, **kwargs):
         ports = kwargs['execution']
         kwargs['execution'] = dataclasses.replace(
             ports,
-            run_stage=lambda name, op: timed(ports.run_stage, rows, name, name, op),
-            run_gap_stage=lambda name, op, cap: timed(
-                ports.run_gap_stage, rows, name, name, op, cap),
+            run_stage=lambda name, op: recovery_stage(ports.run_stage, name, op),
+            run_gap_stage=lambda name, op, cap: recovery_stage(
+                ports.run_gap_stage, name, op, cap),
         )
         return original_run(*args, **kwargs)
 
     def invoke(*args):
+        if not active:
+            return original_invoke(*args)
         # Replace the inherited parent's profiler, retaining separate child files.
         profile.disable()
         child_profile = cProfile.Profile()
@@ -69,16 +83,40 @@ def profile_worker(root):
         finally:
             child_profile.disable()
             child_profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
+            operation, item = args[:2]
+            name = getattr(operation, '__qualname__', type(operation).__name__)
+            defaults = getattr(operation, '__defaults__', None)
+            metadata = dict(stage=stage_name, operation=name,
+                            item=item if isinstance(item, (str, int, bool)) else repr(type(item)))
+            if 'fit_new.<locals>.fit_arm' in name and defaults:
+                metadata['variant'] = 'new_family' if defaults[0] else 'control'
+            if 'fit_shared.<locals>.fit_arm' in name and defaults:
+                metadata['extra_count'] = len(defaults[-1])
+            write(root / f'profile-{os.getpid()}.json', metadata)
+
+    def predictive(*args, **kwargs):
+        nonlocal active
+        active = True
+        profile.enable()
+        try:
+            return original_predictive(*args, **kwargs)
+        finally:
+            profile.disable()
+            active = False
 
     engine.run_native, parallel._invoke = observed, invoke
     profile = cProfile.Profile()
-    profile.enable()
+    if only_stage is None:
+        profile.enable()
+    else:
+        policy.recover_predictive_checkpoint = predictive
     try:
         return worker(root / 'request.json', root / 'worker.json', False)
     finally:
         profile.disable()
         profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
         engine.run_native, parallel._invoke = original_run, original_invoke
+        policy.recover_predictive_checkpoint = original_predictive
         write(root / 'recovery-substages.json', rows)
 
 
@@ -96,9 +134,12 @@ def launch(args):
     bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
     write(root / 'plan.json', dict(bindings=bindings, affinity=sorted(os.sched_getaffinity(0)),
                                   timeout_seconds=args.timeout, profiled=True,
+                                  only_stage=getattr(args, 'only_stage', None),
                                   production_modified=False))
     write(root / 'resources-start.json', resources())
     command = [sys.executable, '-B', str(Path(__file__).resolve()), '--worker', str(root)]
+    if getattr(args, 'only_stage', None):
+        command += ['--only-stage', args.only_stage]
     environment = dict(os.environ, OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1',
                        MKL_NUM_THREADS='1', PYTHONDONTWRITEBYTECODE='1')
     with (root / 'worker.log').open('xb') as log:
@@ -126,9 +167,10 @@ def main():
     parser.add_argument('--output', type=Path)
     parser.add_argument('--timeout', type=float, default=1200)
     parser.add_argument('--worker', type=Path, help=argparse.SUPPRESS)
+    parser.add_argument('--only-stage', choices=['predictive'])
     args = parser.parse_args()
     if args.worker:
-        return profile_worker(args.worker)
+        return profile_worker(args.worker, args.only_stage)
     if not args.request or not args.output:
         parser.error('--request and --output required')
     return launch(args)

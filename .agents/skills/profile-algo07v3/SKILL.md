@@ -97,3 +97,12 @@ stage evidence, not fresh full inference. The complete-run recipe in
 `reports/2026_11_05_algo07v3_conservative_arms/run_pair.py` supports
 `--candidate-first`; run a fresh normal pair followed by a fresh reversed pair
 to record ABBA order. Retain all four complete timings and cross-pair exactness.
+
+To isolate predictive recovery, add `--only-stage predictive` to the profiler.
+The full pipeline still runs, but cProfile is active only during that stage and
+its forked children. Each child has a matching `profile-PID.json` naming its
+target/substage, arm or fold seed, and control/new-family variant where applicable.
+Do not combine later numerical-replay substage rows with predictive timings.
+Use the unchanged-source parity helper above to verify science and eight PNGs.
+See `reports/2026_11_05_algo07v3_predictive_profile/README.md` for the qualified
+example and a renderer that exports compact child summaries and a stage plot.

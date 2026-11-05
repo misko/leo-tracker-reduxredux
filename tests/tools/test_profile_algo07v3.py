@@ -41,3 +41,30 @@ def test_forked_workers_replace_inherited_profiler_and_write_independent_profile
     profiles = list(tmp_path.glob('profile-*.pstats'))
     assert len(profiles) == 3
     assert all(pstats.Stats(str(p)).total_calls > 0 for p in profiles)
+
+
+def test_predictive_only_profiles_and_labels_its_children(monkeypatch, tmp_path):
+    import json
+
+    from leo.application import localization_v3 as policy
+    from leo.operations.localization_v3_parallel import map_initial_arms
+
+    calls = []
+
+    def predictive(*args, **kwargs):
+        return map_initial_arms(lambda arm: arm, ('c0', 'fitted_c'))
+
+    def worker(*args):
+        calls.append(map_initial_arms(lambda arm: arm, ('c0', 'fitted_c')))
+        assert not list(tmp_path.glob('profile-*.json'))
+        calls.append(policy.recover_predictive_checkpoint())
+        return 0
+
+    monkeypatch.setattr(policy, 'recover_predictive_checkpoint', predictive)
+    monkeypatch.setattr(profiler, 'worker', worker)
+    assert profiler.profile_worker(tmp_path, 'predictive') == 0
+    assert policy.recover_predictive_checkpoint is predictive
+    metadata = [json.loads(p.read_text()) for p in tmp_path.glob('profile-*.json')]
+    assert sorted(r['item'] for r in metadata) == ['c0', 'fitted_c']
+    assert len(list(tmp_path.glob('profile-*.pstats'))) == 3
+    assert calls == [['c0', 'fitted_c'], ['c0', 'fitted_c']]
