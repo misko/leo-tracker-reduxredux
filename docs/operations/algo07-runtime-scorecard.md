@@ -134,6 +134,16 @@ deadline policy and later recovery/publication qualification remain open.
 
 ## Measured improvements within the pipeline
 
+The [selected-likelihood/preflight iteration](../../reports/2026_11_05_algo07v3_selected_incumbent/README.md)
+matches four frozen-context branches on three scans, including both-arm selected
+likelihoods, nearby-position probes, native residual ranking and corrected target
+arrays. The owned application runs with old installations hidden. Component
+reference/candidate observations are baseline 3.965/3.304 s, single-family
+5.098/4.255 s, joint-family 4.711/3.920 s and conditional-gap 4.041/3.323 s.
+These concurrent shared-host observations are not controlled speedups. No new
+position fitting or association is performed by this stage. Full-path matched
+scans remain zero; the complete processing metric is unchanged and unavailable.
+
 The [owned gap-controller iteration](../../reports/2026_11_05_algo07v3_gap_controller/README.md)
 matches the complete frozen-context DS26-0012 controller proof, all four stages
 and numerical receipts. Observed reference/candidate durations are 41.064/34.766 s,

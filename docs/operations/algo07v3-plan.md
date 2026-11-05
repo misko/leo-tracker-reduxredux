@@ -67,8 +67,15 @@ checkpoint](../../reports/2026_11_05_algo07v3_gap_controller/README.md) now matc
 original controller on that fixture. A fresh DS26-0002 prefix through gap recovery
 preserves every earlier numerical result and all 2,783 owners in each arm.
 Application imports now avoid unrelated concrete adapters, with public exports
-preserved. Production cancellation, final proof publication and broader gap
-branches still need qualification. Broader inactive-fragment/shared
+preserved. The [selected-likelihood and residual preflight extraction](../../reports/2026_11_05_algo07v3_selected_incumbent/README.md)
+now reconstructs baseline, new-family, joint-family and conditional-gap states
+and prepares the remaining native evidence for additional-family recovery. All
+four real-fixture branches match frozen ALGO06 exactly in both arms, including
+nearby-position likelihood probes, complete residual ranking and corrected target
+arrays through the owned application entry point. The joint fixture's 17 incidental
+extensions per arm remain uncredited. Selected checkpoint binding, causal catalogue
+screening and subsequent fits remain unfinished. Production cancellation, final proof
+publication and broader gap branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,
 reassociation and publication remain unfinished; full DS26 localization parity

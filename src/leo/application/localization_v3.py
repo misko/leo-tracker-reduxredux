@@ -20,6 +20,8 @@ from leo.analysis.localization_v3.predictive_annotation import annotate
 from leo.analysis.localization_v3.recovery_inclusion import include_annotation
 from leo.analysis.localization_v3.recovery_controller import recover_tracks
 from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
+from leo.analysis.localization_v3.residual_preflight import preflight, rank_targets
+from leo.analysis.localization_v3.selected_incumbent import reconstruct_incumbent
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.signed_context import signed_context
 from leo.analysis.localization_v3.tracks import prepare_tracks
@@ -254,3 +256,23 @@ def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage,
         maximum_seconds=maximum_seconds)
     return dict(status='gap_recovery_evaluated', recovery=result, incumbent=previous,
                 recovery_complete=False)
+
+
+def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
+                                arms, owners, identities, selection=None, annotations=()):
+    """Replay an explicitly chosen owned likelihood and rank remaining evidence.
+
+    The caller supplies the selected stage's full scientific data, not a legacy
+    terminal or a path. This does not run catalogue screening or accept a new
+    association. Selection/checkpoint binding remains the caller's responsibility.
+    """
+    if prepared_recovery['status'] != 'track_recovery_prepared':
+        return dict(status=prepared_recovery['status'], residual_context=None,
+                    residual_inventory=None, preflight=None, recovery_complete=False)
+    context = reconstruct_incumbent(prepared_recovery['recovery_context'], arms, owners,
+        selection=selection, inventory=prepared_recovery['inventory']['inventory'],
+        annotations=annotations, observations=native['observations'])
+    ranked = rank_targets(native['tracks'], native['observations'], owners, identities)
+    packet = preflight(context, ranked['targets'], scan_receipt)
+    return dict(status='additional_recovery_prepared', residual_context=context,
+                residual_inventory=ranked, preflight=packet, recovery_complete=False)

@@ -5,6 +5,50 @@ from leo.application import localization_v3 as app
 from tests.analysis.test_localization_v3_tracks import native_document
 
 
+def test_additional_recovery_keeps_incomplete_inputs_out_of_screening():
+    result = app.prepare_additional_recovery(dict(status='cavity_incomplete'), {}, {},
+        arms={}, owners={}, identities=[])
+    assert result['status'] == 'cavity_incomplete'
+    assert result['residual_context'] is None and result['preflight'] is None
+    assert not result['recovery_complete']
+
+
+def test_additional_recovery_passes_full_selected_likelihood_and_native_evidence(monkeypatch):
+    original, reconstructed = object(), object()
+    native = dict(tracks=['original graph'], observations=['native points'])
+    evidence = dict(inventory={'original': True})
+    arms, owners = {'selected': 'arms'}, {'selected': 'owners'}
+    selection, annotations, receipt = {'kind': 'new_family'}, ['annotation'], {'origin': 123}
+
+    def replay(context, supplied_arms, supplied_owners, **kwargs):
+        assert context is original and supplied_arms is arms and supplied_owners is owners
+        assert kwargs['selection'] is selection and kwargs['annotations'] is annotations
+        assert kwargs['inventory'] is evidence['inventory']
+        assert kwargs['observations'] is native['observations']
+        return reconstructed
+
+    def rank(tracks, observations, selected_owners, identities):
+        assert tracks is native['tracks'] and observations is native['observations']
+        assert selected_owners is owners and identities == ['scan']
+        return dict(targets=['remaining fragment'])
+
+    def prepare(context, targets, metadata):
+        assert context is reconstructed and targets == ['remaining fragment']
+        assert metadata is receipt
+        return {'corrected': True}
+
+    monkeypatch.setattr(app, 'reconstruct_incumbent', replay)
+    monkeypatch.setattr(app, 'rank_targets', rank)
+    monkeypatch.setattr(app, 'preflight', prepare)
+    result = app.prepare_additional_recovery(dict(status='track_recovery_prepared',
+        recovery_context=original, inventory=evidence), native, receipt,
+        arms=arms, owners=owners, identities=['scan'], selection=selection,
+        annotations=annotations)
+    assert result['status'] == 'additional_recovery_prepared'
+    assert result['preflight'] == {'corrected': True}
+    assert not result['recovery_complete']
+
+
 def test_recovery_inventory_keeps_incomplete_cavity_out_of_recovery():
     result = app.prepare_track_recovery({}, {}, dict(cavity_fit=None), identities=['scan'])
     assert result['status'] == 'cavity_incomplete' and not result['recovery_complete']
