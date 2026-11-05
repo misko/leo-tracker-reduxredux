@@ -27,6 +27,17 @@ def main(pair, variance):
     assert clock["returncode"] == 0 and clock["status"] == "exited"
     assert clock["worker"]["status"] == "complete" and not clock["worker"]["resumed"]
     assert all(read(pair / "baseline/isolation.json")["checks"].values())
+    comparison = read(pair / "comparison.json")
+    assert comparison["exact_owned_science_and_artifacts"] and comparison["both_c_arms"]
+    assert comparison["source_changes"] == sorted(plan["changed_modules"])
+    assert comparison["added_modules"] == []
+    for path, digest in comparison["input_bindings"].items():
+        assert sha(path) == digest
+    candidate_clock = read(pair / "candidate/attempt/supervisor.json")
+    assert candidate_clock["status"] == "exited" and candidate_clock["returncode"] == 0
+    assert candidate_clock["worker"]["status"] == "complete"
+    assert not candidate_clock["worker"]["resumed"]
+    assert all(read(pair / "candidate/isolation.json")["checks"].values())
     rows = [json.loads(s) for s in (pair / "baseline/attempt/worker.log").read_text().splitlines()]
     stages = {r["stage"]: r["seconds"] for r in rows if r.get("event") == "stage"}
     profile = read(pair / "baseline-sampling.json")
@@ -65,24 +76,20 @@ def main(pair, variance):
     assert sha(variance / "native/result.json") == receipt["output_sha256"] == (
         "4f7c74a132b415e9bd6e130dcbc0d7082fa72c822d53f76810f8a9fa13323d68"
     )
-    request = str(pair / "candidate/attempt/request.json").encode()
-    active = []
-    for entry in Path("/proc").iterdir():
-        if entry.name.isdigit():
-            try:
-                cmd = (entry / "cmdline").read_bytes()
-            except (FileNotFoundError, PermissionError, ProcessLookupError):
-                continue
-            if request in cmd and b"_worker" in cmd and b"leo.cli.algo07v3" in cmd:
-                active.append(int(entry.name))
-    assert active or (pair / "candidate/attempt/supervisor.json").exists()
+    candidate_rows = [json.loads(s)
+                      for s in (pair / "candidate/attempt/worker.log").read_text().splitlines()]
+    candidate_stages = {r["stage"]: r["seconds"] for r in candidate_rows
+                        if r.get("event") == "stage"}
+    assert list(candidate_stages) == list(stages)
     summary = dict(
         observed_utc=datetime.now(UTC).isoformat(), baseline_complete=True,
         baseline_native_process_seconds=clock["process_seconds"], baseline_stages=stages,
         baseline_selected_model=clock["worker"]["publication"]["selected_model"],
         baseline_arms=clock["worker"]["publication"]["arms"],
-        candidate_active_processes=active,
-        pair_comparison_complete=(pair / "comparison.json").exists(),
+        candidate_native_process_seconds=candidate_clock["process_seconds"],
+        candidate_stages=candidate_stages, pair_comparison_complete=True,
+        exact_science_and_publication=True,
+        observed_reduction_percent=100*(1-candidate_clock["process_seconds"]/clock["process_seconds"]),
         profile=dict(successful_samples=samples, reported_errors=errors, nonblocking=True,
                      duration_seconds=45, rate_hz=49, sampled_process_seconds=weight, top_leaf=top),
         synthetic_exact=True, variance_tests=24, variance_enabled_in_runtime=False,
@@ -95,6 +102,9 @@ def main(pair, variance):
         "pair-plan.json": pair / "plan.json",
         "baseline-supervisor.json": pair / "baseline/attempt/supervisor.json",
         "baseline-isolation.json": pair / "baseline/isolation.json",
+        "candidate-supervisor.json": pair / "candidate/attempt/supervisor.json",
+        "candidate-isolation.json": pair / "candidate/isolation.json",
+        "comparison.json": pair / "comparison.json",
         "baseline-sampling.json": pair / "baseline-sampling.json",
         "sampling.log": pair.parent / "baseline-sampling.log",
         "synthetic-ungated.json": variance / "synthetic.json",
@@ -116,12 +126,25 @@ def main(pair, variance):
     axes[1].set(title="45-second sampling window · leaf frames",
                 xlabel="Share of sampled weight (%)")
     fig.text(0.5, 0.025, "Baseline only · sampled run is not a clean benchmark · "
-             f"{errors} sampling errors · candidate comparison pending", ha="center", fontsize=9)
+             f"{errors} sampling errors · complete pair exact", ha="center", fontsize=9)
     fig.tight_layout(rect=(0, .07, 1, 1))
     fig.savefig(out / "baseline-bottleneck.png", dpi=160)
     plt.close(fig)
-    print(json.dumps({k: v for k, v in summary.items()
-                      if k not in ("baseline_stages", "baseline_arms", "profile")}, indent=2))
+    fig, ax = plt.subplots(figsize=(9, 5))
+    bars = ax.bar(["Pre-optimization baseline", "Integrated solver"],
+                  [clock["process_seconds"], candidate_clock["process_seconds"]],
+                  color=["#888888", "#3465a4"])
+    ax.bar_label(bars, fmt="%.1f s", padding=3)
+    ax.set(title="DS26-0066 · exact native science and publication",
+           ylabel="Native GLRT ready → supervisor exit (seconds)", ylim=(0, 1050))
+    fig.text(.5, .025, "Observed 15.46% reduction · shared host · baseline sampled · "
+             "not a cumulative speed claim",
+             ha="center", fontsize=9)
+    fig.tight_layout(rect=(0, .07, 1, 1))
+    fig.savefig(out / "pair-runtime.png", dpi=160)
+    plt.close(fig)
+    omitted = ("baseline_stages", "candidate_stages", "baseline_arms", "profile")
+    print(json.dumps({k: v for k, v in summary.items() if k not in omitted}, indent=2))
 
 
 if __name__ == "__main__":

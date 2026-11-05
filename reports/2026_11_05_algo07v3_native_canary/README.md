@@ -2,12 +2,25 @@
 
 2026-11-05 progress snapshot. Development only; no deployment.
 
-The pre-optimization standalone baseline has completed DS26-0066 from native
-GLRT through all artifacts and atomic publication. It selects the guarded
-reassociation result and retains **2,770 points (70.5373%)**, 89 components and
-20 satellites in both calibration arms. The integrated candidate is still
-running; **this report does not claim a completed pair or native equivalence
-for this scan**. See the observation timestamp/processes in [summary](summary.json).
+Both the pre-optimization standalone baseline and integrated solver have completed
+DS26-0066 from native GLRT through all artifacts and atomic publication.
+**All scientific outputs, both calibration arms, eight PNGs, grid/path data and
+published fields match exactly.** Both select the guarded reassociation result
+and retain **2,770 points (70.5373%)**, 89 components and 20 satellites per arm.
+This extends native branch coverage to accepted guarded reassociation; it does
+not establish full historical ALGO07 or dataset-wide equivalence.
+[Exact comparison](comparison.json), [summary](summary.json).
+
+| Complete native-to-publication run | Observed elapsed time |
+| --- | ---: |
+| Pre-optimization standalone baseline | 900.763 s |
+| Integrated solver | **761.514 s** |
+| Observed reduction | **139.249 s / 15.46%** |
+
+![Completed pair runtime with qualification limits](pair-runtime.png)
+
+These are shared-host observations and the baseline was sampled by a profiler.
+They are not a controlled dataset-wide or cumulative speed claim.
 
 This scan was selected to extend branch coverage: the older frozen final-stage
 fixture had an accepted satellite replacement. The fresh input bundle includes
@@ -50,7 +63,7 @@ sampling observations, not exact function timers or a complete execution profile
 The profile supports continued work on repeated hierarchical calculations.
 It also makes this baseline unsuitable for a clean performance benchmark.
 The integrated run's unchanged preparation stages were slower than the baseline,
-providing another warning about shared-host timing attribution. The eventual
+providing another warning about shared-host timing attribution. The completed
 scientific comparison remains meaningful; a cumulative speed claim remains open.
 
 ## Prototype: batch independent variance reductions with identical shapes
@@ -101,7 +114,7 @@ the same qualified comparison digest, including both calibration arms and all
 
 The 420.642-second diagnostic executes both kernels and compares every result;
 it is not normal pipeline latency or a complete-path speed ratio. The prototype
-is not integrated while the separate DS26-0066 comparison is still running.
+is not integrated; it still needs a full owned CLI/publication comparison.
 [Native probe receipt](variance-probe.json),
 [native scientific/source binding](variance-native-receipt.json).
 Raw evidence: `/srv/bulk/leo-dev/algo07v3-variance-groups-20261105`.
@@ -110,13 +123,12 @@ The runtime remains at the previously qualified
 
 ## Remaining qualification
 
-Finish the DS26-0066 pair and compare all science, both arms, eight PNGs and
-publication sidecars. Then extend the same checks to further native cases and
+Extend the completed DS26-0066 checks to further native cases and
 the full DS26 denominator: **159 fast members, 158 available inputs and one
 unavailable member**. The variance prototype requires complete-path and broader-case
 evidence before integration. Ordinary production admission,
 historical metadata semantics and the cumulative 10× target remain open.
 
-The [renderer](render.py) verifies source/input bindings, successful baseline
-execution, live candidate processes or a terminal receipt, profile accounting,
+The [renderer](render.py) verifies source/input bindings, successful execution
+and exact comparison of both runs, isolation checks, profile accounting,
 synthetic bindings and the 24-test receipt before producing this snapshot.

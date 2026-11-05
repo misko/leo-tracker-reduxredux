@@ -7,12 +7,14 @@ architecture; its existing evidence remains useful and its failures remain open.
 Latest native prototype: bounded variance batching now matches all 6,772 calls
 and the full DS26-0002 scientific/PNG snapshot, saving 11.17% of alternating kernel
 compute. See the [canary report](../../reports/2026_11_05_algo07v3_native_canary/README.md).
-It is not integrated; the frozen DS26-0066 solver comparison remains active.
+It is not integrated; the frozen DS26-0066 solver comparison has completed exactly.
 
 Latest coverage expansion: [DS26-0066 native canary and variance prototype](../../reports/2026_11_05_algo07v3_native_canary/README.md).
 The standalone pre-optimization baseline completes through guarded reassociation
-and publication in 900.763 s; its integrated counterpart is running. This is a
-more demanding native recovery case, not yet a completed equivalence pair.
+and publication in 900.763 s; its integrated counterpart completes in 761.514 s.
+All science, both arms, eight PNGs and publication fields match exactly on this
+more demanding native recovery case. The observed 15.46% reduction is confounded
+by shared-host conditions and baseline profiling; it is not a cumulative speed claim.
 A bounded equal-shape variance prototype passes 24 exact tests and has completed
 the native probe recorded above. Runtime source is unchanged from the preceding
 solver integration. No deployment or cumulative speed claim.
@@ -22,8 +24,9 @@ The owned CLI now uses the exact upper-root solver and omits overwritten Gaussia
 posteriors. All 1,692 affected native calculations and the fresh combined
 scientific/publication comparison match exactly. The broad suite passes 820
 tests. The integrated observation is 264.356 s, not a new matched speed claim.
-A second native scan, DS26-0066, is running through both pre-optimization and
-integrated paths. Full population, other accepted native branches, metadata,
+A second native scan, DS26-0066, now matches through both pre-optimization and
+integrated paths, including accepted guarded reassociation. Full population,
+other accepted native branches, metadata,
 production admission and the cumulative 10× target remain open. No deployment.
 
 Latest experiment: [upper-root exact solve](../../reports/2026_11_05_algo07v3_factor_reuse/upper-root.md).

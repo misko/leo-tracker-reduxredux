@@ -8,14 +8,15 @@ Latest exact-call result: [bounded variance batching](../../reports/2026_11_05_a
 matches all 6,772 native calls and the full scientific/PNG snapshot. Alternating
 kernel time decreases **124.650 → 110.722 s (11.17%)**. The 420.642 s diagnostic
 duplicates kernel work and is not normal runtime. The prototype remains external;
-DS26-0066's integrated-solver comparison is still running. No cumulative gain is claimed.
+DS26-0066's integrated-solver comparison is complete and exact. No cumulative gain is claimed.
 
 Current [larger native canary](../../reports/2026_11_05_algo07v3_native_canary/README.md):
 DS26-0066's pre-optimization baseline completes in **900.763 s**, including
 422.640 s predictive recovery and 163.899 s initial search. It selects guarded
 reassociation and retains 2,770 points in both arms. The integrated candidate
-is running; there is no pair result or speed claim yet. A short sampling profile
-and differing preparation timings make attribution particularly unsuitable.
+completes in **761.514 s**, with exact science, both arms, all eight PNGs and
+publication fields. The observed reduction is **15.46%**; a short baseline
+sampling profile and differing preparation timings prevent controlled attribution.
 An external bounded variance-batching prototype passes 24 exact synthetic tests;
 its completed native probe is recorded above. It is not enabled in the CLI.
 Production is unchanged.
@@ -27,7 +28,7 @@ matches all science, both c arms, eight PNGs and published artifacts. This is
 a correctness run, not a new matched speed pair. The Gaussian change separately
 saves 7.640 s across 1,692 exactly compared calls; do not add component savings
 to older complete-path timings. The broad suite passes **820 tests**. A fresh
-DS26-0066 baseline/integrated comparison is running. No deployment; population,
+DS26-0066 baseline/integrated comparison is now exact as recorded above. No deployment; population,
 ordinary admission and the cumulative speed metric remain unqualified.
 
 Latest [upper-root complete-path pair](../../reports/2026_11_05_algo07v3_factor_reuse/upper-root.md):
