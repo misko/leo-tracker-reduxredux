@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Latest [reassociation geometry reuse](../../reports/2026_11_05_algo07v3_reassociation_geometry/README.md)
+shares phase interpolation while retaining independent cavity positions and
+the original arm-major nomination order. The report records fresh complete
+DS26-0066 qualification, including accepted guarded reassociation, both arms,
+science, eight PNGs and publication. The component suite passes 926 tests.
+Production and ordinary-admission qualification remain unchanged.
+Observed time **549.558 → 653.906 s** is slower on this changing-load host;
+exactness passes, but a performance improvement is not established.
+
 Latest [residual-screen geometry reuse](../../reports/2026_11_05_algo07v3_screen_geometry/README.md)
 interpolates each phase once for both receiver-position arms, retaining exact
 Doppler arithmetic and every candidate/holdout check. A complete isolated

@@ -4,6 +4,18 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest iteration: [reassociation phase reuse](../../reports/2026_11_05_algo07v3_reassociation_geometry/README.md)
+extends the preceding optimization and qualifies a fresh DS26-0066 complete
+baseline/candidate pair, exercising accepted guarded reassociation. The report
+retains both-arm exactness and all publication checks; 926 component tests pass.
+Next, profile the harder scan's initial, conservative and predictive fitting
+costs before choosing another optimization. Full DS26, ordinary admission and
+10× remain open; production is unchanged. Earlier entries retain their
+historical scope.
+The latest pair is slower (**549.558 → 653.906 s**) while unchanged stages also
+regress under increased CPU pressure. Qualify its performance with alternating
+component measurements and a controlled full repeat before claiming savings.
+
 Latest exact optimization: [streamed residual-screen phase reuse](../../reports/2026_11_05_algo07v3_screen_geometry/README.md).
 Three alternating prepared-screen pairs average **17.997 → 12.203 s**, with
 exact complete-screen outputs. Full isolated DS26-0002 science/publication is

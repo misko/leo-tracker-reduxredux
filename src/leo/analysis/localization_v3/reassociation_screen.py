@@ -6,8 +6,8 @@ from scipy.optimize import minimize
 from leo.analysis.localization_v3.phase_reference import phase_refresh
 from leo.analysis.localization_v3.reassociation_context import build, objective
 from leo.analysis.localization_v3.reassociation_predictive import fit_predict, masks
+from leo.analysis.localization_v3.screen_geometry import phase_frequency_grids
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
-from leo.analysis.research.orbit_phase_geometry import phase_frequency_grid
 from leo.analysis.research.track_recovery_diagnostics import profile_rate
 
 ARMS = ("c0", "fitted_c")
@@ -78,7 +78,7 @@ def screen(d, n, nums, bank):
     cavity = {}
     values = {}
     nominees = {n}
-    coarse = []
+    coarse_by_arm = {a: [] for a in ARMS}
     longest = sorted(range(len(tracks)), key=lambda k: -sum(tracks[k][1]))[:2]
     for a in ARMS:
         cav = refit(d, a, d["problems"]["fitted_c"][1], omit=n, rounds=15)
@@ -100,30 +100,33 @@ def screen(d, n, nums, bank):
                 for tr in [p.scan.tracks[i]]
             ]
         )
-        for k in longest:
-            ii = np.flatnonzero(groups == k)
-            ii = ii[np.unique(np.linspace(0, len(ii) - 1, min(16, len(ii))).astype(int))]
-            best = np.full(len(nums), np.inf)
-            for phi in np.arange(-30, 31, 2):
-                f, e = phase_frequency_grid(
-                    bank, ts[ii], *d["scan"].search_region.latlon(x), phase_seconds=phi
-                )
+    positions = [d["scan"].search_region.latlon(np.array(cavity[a]["x"])) for a in ARMS]
+    for k in longest:
+        ii = np.flatnonzero(groups == k)
+        ii = ii[np.unique(np.linspace(0, len(ii) - 1, min(16, len(ii))).astype(int))]
+        best = {a: np.full(len(nums), np.inf) for a in ARMS}
+        for phi in np.arange(-30, 31, 2):
+            grids = phase_frequency_grids(bank, ts[ii], positions, phase_seconds=phi)
+            for a, (f, e) in zip(ARMS, grids, strict=True):
                 cost = (
                     profile_rate(
                         values[a][ii], f * q[ii], ts[ii], rate_sigma_hz_s=0.5, bias_sigma_hz=300
                     )["cost"]
                     + (phi / 5) ** 2
                 )
-                best = np.minimum(best, np.where(e.min(axis=1) >= 0, cost, np.inf))
-            finalists = [int(j) for j in np.argsort(best)[:2] if np.isfinite(best[j])]
+                best[a] = np.minimum(best[a], np.where(e.min(axis=1) >= 0, cost, np.inf))
+        for a in ARMS:
+            finalists = [int(j) for j in np.argsort(best[a])[:2] if np.isfinite(best[a][j])]
             nominees.update(int(nums[j]) for j in finalists)
-            coarse.append(
+            coarse_by_arm[a].append(
                 dict(
                     arm=a,
                     track=d["scan"].tracks[tracks[k][0]]["key"],
-                    nominees=[dict(norad=int(nums[j]), score=float(best[j])) for j in finalists],
+                    nominees=[dict(norad=int(nums[j]), score=float(best[a][j])) for j in finalists],
                 )
             )
+    # Preserve the original arm-major receipt order despite shared interpolation.
+    coarse = [row for a in ARMS for row in coarse_by_arm[a]]
     raw = {}
     whole = {}
     folds = []

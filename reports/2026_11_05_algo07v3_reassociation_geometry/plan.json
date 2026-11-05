@@ -1,0 +1,61 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_reassociation_geometry/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/candidate-request.json",
+      "run",
+      "1200"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/baseline-src/leo/analysis/localization_v3/reassociation_screen.py": "1a4bdceb73c75a3638c63f0fff74ea34cf1a5b4932c54f9fd29f1cca102b8750",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/reassociation_screen.py": "6eec3e076e8515d282694d58f649778d144a7e5342f51f3dc297400b3458a0b7",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_reassociation_geometry/run_pair.py": "810c274531e4fba6775370650d0302a7b271bfbce80a1f071cdbf60f46ba96d9",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_reassociation_geometry/run_baseline.sh": "1e37f97f1f36fc2d73d601d6f3a826f2e3006066be75a0a5e19af6190abc8bba",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066/input-bindings.json": "25c6fff9072daf8495e698d726bed4df38957e3a0391b9cdd544ee66a7dc6d65",
+    "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/baseline-request.json": "8ad318422d742aa465d5446139ffda1d2f2263a07125e70525adc3067246cd0f",
+    "/srv/bulk/leo-dev/algo07v3-reassociation-geometry-20261105/candidate-request.json": "59a233ab3172d6b08946d7ff9c2c1759c5f98dfef0dcbb2b1fd49c2c088dafa4"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

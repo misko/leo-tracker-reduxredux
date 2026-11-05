@@ -1,5 +1,17 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest [reassociation interpolation iteration](../../reports/2026_11_05_algo07v3_reassociation_geometry/README.md)
+extends shared orbital interpolation to the two cavity-position arms. Its report
+retains a fresh complete DS26-0066 pair, exact comparison, stage costs and host
+receipts. This accepted-reassociation case broadens coverage beyond DS26-0002;
+926 component tests pass. A single shared-host pair does not establish an
+attributable or population speedup. Production remains unchanged.
+
+This pair is **549.558 → 653.906 s (104.348 s longer; 0.840× ratio)** despite
+exact outputs. Unchanged predictive and residual-screen stages also slow down
+as host CPU pressure rises. No speedup is established for this iteration;
+retain the regression and require controlled repeats before a performance claim.
+
 Latest [residual-screen interpolation reuse](../../reports/2026_11_05_algo07v3_screen_geometry/README.md):
 three alternating native prepared-screen pairs average **17.997 → 12.203 s
 (32.19% lower)**, with exact results throughout. A fresh complete DS26-0002 pair
