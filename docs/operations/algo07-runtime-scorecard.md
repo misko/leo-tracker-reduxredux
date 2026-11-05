@@ -4,6 +4,18 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest fresh reference/native pair:
+[DS26-0002 sequential observations](../../reports/2026_11_05_algo07v3_pair/README.md).
+The frozen ALGO07 chain takes **675.455 s** and native v3 **504.041 s** including
+startup, with exact public outputs, all eight PNGs and 179 grid points. Eight
+direct scientific audit sections also match; nine mappings and metadata-link
+qualification remain open. The observed ratio is 1.340× (25.38% less time), **not
+a fully qualified speedup**. Host load changed and reference export overlapped
+early candidate work. One complete pair now has exact public outputs; fully
+audited complete-path matched scans remain zero. The earlier 373.342 s candidate
+observation is retained and is not substituted into this pair. There are 622
+passing focused tests. An exact scatter-assembly prototype remains experimental.
+
 Latest standalone CLI milestone:
 [fresh run and input-free publication recovery](../../reports/2026_11_05_algo07v3_cli/README.md).
 The explicit all-work validation CLI completes DS26-0002 native-to-publication
@@ -89,7 +101,7 @@ matched scans remain zero.
 
 | Metric | Starting baseline | Current / candidate | Paired speedup |
 |---|---:|---:|---:|
-| Native GLRT ready → all standard web artifacts published, excluding queue waits | No matched complete reference | 371.153 s current worker; 373.342 s including startup; isolated all-work validation | Unavailable: no matched pair |
+| Native GLRT ready → all standard web artifacts published, excluding queue waits | 675.455 s fresh reference, 300 s grid budget | 504.041 s fresh v3 process; exact public artifacts, eight direct science mappings | Observed 1.340×; unqualified pending remaining audit mappings and controlled repeats |
 | Recorded IQ ready → all standard web artifacts published, including unchanged detector and excluding queue waits | Not measured as one complete matched run | Not measured as one complete matched run | Unavailable |
 | Capture start → all standard web artifacts published, including acquisition and queue waits | No matched baseline/current cohort | No matched baseline/current cohort | Unavailable |
 | ALGO07* versus its frozen ALGO07 reference, GLRT-ready through publication | 912.576 s observed; grid incomplete | 887.264 s observed; full grid | Unqualified: unequal completed grid work |

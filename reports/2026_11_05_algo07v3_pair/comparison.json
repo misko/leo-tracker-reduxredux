@@ -1,0 +1,139 @@
+{
+  "checks": {
+    "observations": true,
+    "tracks": true,
+    "public_document": true,
+    "PNG/ch1-4-all": true,
+    "PNG/ch5-8-all": true,
+    "PNG/ch1-4-unassociated": true,
+    "PNG/ch5-8-unassociated": true,
+    "PNG/ch1-4-residuals": true,
+    "PNG/ch5-8-residuals": true,
+    "PNG/track-rms": true,
+    "PNG/position": true,
+    "grid": true,
+    "complete_grid": true,
+    "path": true,
+    "policy/initial": true,
+    "policy/recovery": true,
+    "policy/history_policy": true,
+    "policy/cavity_nominations": true,
+    "policy/cavity_policy": true,
+    "policy/residual_screen": true,
+    "policy/additional_position": true,
+    "policy/predictive_recovery": true
+  },
+  "errors": {},
+  "mapped_policies": {
+    "initial": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN/fit_radio_noise.json",
+      "excluded_bookkeeping": [
+        "case",
+        "input_read_paths",
+        "noise_features_sha256",
+        "noise_mode",
+        "physical_prior_previous_tle_path",
+        "seconds",
+        "source_sha256"
+      ]
+    },
+    "recovery": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN/result.json",
+      "excluded_bookkeeping": [
+        "algorithm",
+        "case",
+        "seconds",
+        "source_sha256"
+      ]
+    },
+    "history_policy": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN/algo02_result.json",
+      "excluded_bookkeeping": [
+        "algorithm",
+        "baseline_sha256",
+        "case",
+        "engine_sha256",
+        "history_forecast_sha256",
+        "history_sha256",
+        "seconds"
+      ]
+    },
+    "cavity_nominations": {
+      "stage": "ALGO02",
+      "file": "worker/inference/family_cavity/SCAN_nominations.json",
+      "excluded_bookkeeping": [
+        "seconds"
+      ]
+    },
+    "cavity_policy": {
+      "stage": "ALGO02",
+      "file": "worker/inference/family_cavity/position/SCAN.json",
+      "excluded_bookkeeping": [
+        "nomination_sha256",
+        "seconds"
+      ]
+    },
+    "residual_screen": {
+      "stage": "ALGO06",
+      "file": "worker/recovery/screen/SCAN/result.json",
+      "excluded_bookkeeping": [
+        "seconds"
+      ]
+    },
+    "additional_position": {
+      "stage": "ALGO06",
+      "file": "worker/recovery/position/SCAN/result.json",
+      "excluded_bookkeeping": [
+        "seconds"
+      ]
+    },
+    "predictive_recovery": {
+      "stage": "ALGO03",
+      "file": "worker/recovery/decision.json",
+      "excluded_bookkeeping": [
+        "baseline",
+        "job_id",
+        "limitations",
+        "maximum_seconds",
+        "policy",
+        "production_changed",
+        "ranking",
+        "seconds",
+        "shadow_only",
+        "source_support_receipt"
+      ],
+      "mapped_fields": [
+        "trial/source receipt paths verified",
+        "retry paths verified then mapped to boolean",
+        "inventory is separate owned stage",
+        "stage process accounting",
+        "inventory identity labels"
+      ]
+    }
+  },
+  "missing_audit_mappings": [
+    "additional_recovery",
+    "gap_recovery",
+    "numerical_recovery",
+    "reassociation_complete",
+    "reassociation_handoff",
+    "reassociation_screen",
+    "reassociation_trigger",
+    "recovery_inventory",
+    "signed_policy"
+  ],
+  "all_checked_values_exact": true,
+  "full_intermediate_equivalence": false,
+  "remaining_gate": "Map remaining audits and independently qualify excluded metadata links",
+  "latency_observations": {
+    "reference_seconds": 675.4547985605896,
+    "native_v3_process_seconds": 504.0405425457284,
+    "native_v3_worker_seconds": 501.59622192475945
+  },
+  "qualified_speedup": null,
+  "full_dataset_equivalence": false,
+  "production_modified": false
+}

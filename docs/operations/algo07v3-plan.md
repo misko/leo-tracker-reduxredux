@@ -36,6 +36,16 @@ hidden. These are unpaired observations, not a speed ratio. Full DS26 equivalenc
 ordinary-clock admission qualification and the 10× complete-path metric remain
 unfinished or unproven. This is not yet the complete qualified production engine.
 
+The [first fresh reference/native timing pair](../../reports/2026_11_05_algo07v3_pair/README.md)
+now observes 675.455 s for the original chain and 504.041 s for native v3. Both
+complete identical public outputs, eight PNGs and all 179 grid points. Eight
+scientific audit sections match directly, while nine mappings and metadata
+bindings remain open. The observed ratio is not a qualified speedup: shared-host
+load changed and full intermediate qualification remains incomplete. The full
+new native science also matches its previous native qualification. There are
+622 passing focused tests. A bit-exact scatter-assembly prototype is measured
+only as an external experiment and remains disabled in the runtime.
+
 The [connected presentation report](../../reports/2026_11_05_algo07v3_connected_presentation/README.md)
 records the fresh prepared-input-to-PNG run, exact numerical regression, owned
 path projection, and 515 passing tests. Its 484.617-second observation excludes
