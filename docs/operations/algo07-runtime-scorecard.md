@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [gate follow-up](../../reports/2026_11_05_algo07v3_gate_followup/README.md)
+adds an exact reversed DS26-0002 pair. Full ABBA order is now **281.351 / 315.061 /
+229.958 / 316.503 s**. Both pair comparisons pass; cross-pair/two-scan aggregation
+awaits the running DS26-0066 comparison. The 85.103-second variation between
+candidate executions precludes attributing the complete difference to gate reuse.
+An external, unintegrated fixed-phase geometry probe averages **0.250763 →
+0.167064 s per 50 evaluations (33.38% lower)**, with 600 exact component evaluations
+and five passing focused tests. This is not a full-fit or pipeline speedup.
+
 Latest [fixed-audit gate reuse](../../reports/2026_11_05_algo07v3_family_gate_reuse/README.md)
 reduces the sum of four complete audit means **7.718 → 2.386 s (69.09% lower)**,
 with CPU **7.715 → 2.385 s**, across 24 exact alternating executions. Final

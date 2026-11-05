@@ -117,3 +117,12 @@ Repeated trials copy the numerical policy so their problem/refresh receipts
 cannot append to the normal run's ordered log; keep this isolation and its test.
 The overall clock contains repeated audits and is not a pipeline speed result.
 Keep these trials sequential with fresh full-run timing comparisons.
+
+The external `tools/probe_algo07v3_position_geometry.py` experiment compares
+fixed-phase prepared geometry with the original `JointMarginal.calculate`.
+Use `--request REQUEST --output FRESH_JSON`, one CPU and one BLAS thread, outside
+full-pipeline timing runs. It alternates three pairs for each c arm over 50 fixed
+seeded regional points, requiring exact full geometry/features. Timing includes
+first preparation but excludes problem construction, fitting and publication.
+It is not enabled in runtime and does not qualify a pipeline speedup. Inspect
+phase/grid/buffer invalidation tests and run a fresh native canary before adoption.

@@ -1,0 +1,63 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_family_gate_reuse/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/candidate-request.json",
+      "run",
+      "1200"
+    ]
+  },
+  "sequence": [
+    "candidate",
+    "baseline"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline-src/leo/analysis/localization_v3/recovery_gates.py": "00b7b96155438e28147343c6ccdc73a878c39a0d142508ad76d37fd872fc9fef",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_gates.py": "bea40c8ffbad50361329ccc66ad118fe344b49d1c9d9a83dc239962bd3db5d47",
+    "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline-src/leo/analysis/localization_v3/recovery_inclusion.py": "c870e6097b42aeb568ccae8dcd588c29346625687c44114bffdd7326b84175d0",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_inclusion.py": "8fa9f5d99880af530bbfcc5a7aa0252778797569af1fc1509968b515731ff025",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_family_gate_reuse/run_pair.py": "1379aa499965ccf4679dce13c67c019e058170eaa7b90952ab5215687ac88431",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_family_gate_reuse/run_baseline.sh": "14d8f27705087e25832f40702c4e7f5016fe5d173e807740647a9b850c10478e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/baseline-request.json": "e4517627122b9b56e3bae8be99f6c11389224018b30c9c50f2370f1aec6761c1",
+    "/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse/candidate-request.json": "e4ab5fc4f385c15a7b98c338d64feaa4a60ea320f944daee29c52acce8f0d5c5"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}
