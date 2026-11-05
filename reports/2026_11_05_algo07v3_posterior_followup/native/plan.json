@@ -1,0 +1,60 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_posterior_followup/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_posterior_followup/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/baseline-src/leo/analysis/localization_v3/hierarchical.py": "3b02974c822ef2504422dcdb85f10d16198ec8df2ef35936119e42a97877dab2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py": "3b02974c822ef2504422dcdb85f10d16198ec8df2ef35936119e42a97877dab2",
+    "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/candidate-src/leo/analysis/localization_v3/hierarchical.py": "21c5947b4888f9602365af8b4b87a58af4d6becbf1a34ca682cd0d3a63172919",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_posterior_followup/run_pair.py": "7bc1b5a4c4a0cf7baf16f13fd95483b3f87e6931f595a73bb77fea87b456e8d8",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_posterior_followup/run_baseline.sh": "9e1378b86742ce8dfdfb98613bc922971d52b02576735b7416112d258a2cd145",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/baseline-request.json": "17f40ace1d59dc043831501dc80c5d9cd87024eee465a764d26e483c871e82bc",
+    "/srv/bulk/leo-dev/algo07v3-variance-indices-native-20261105/candidate-request.json": "2cca5682c4b0e4228278f3049b17d454ce732db3f1aca56770a661691936544d"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

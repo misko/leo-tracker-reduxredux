@@ -104,6 +104,11 @@ def hierarchical_bound(
         else:
             variance_individual.extend((r[0], r[2], r[3]) for r in rows)
 
+    variance_blocks = [
+        (group_indices, columns[:, :, None] * width + columns[:, None, :], matrices)
+        for group_indices, columns, matrices in variance_blocks
+    ]
+
     def posterior(weight, precision, covariance):
         gram, rhs = np.diag(precision), np.zeros(width)
         block_weight = power * weight
@@ -138,8 +143,8 @@ def hierarchical_bound(
         coefficient, covariance, _ = posterior(weight, precision, True)
         native = (y - u @ coefficient) / s
         variance = np.empty(len(blocks))
-        for group_indices, columns, variance_matrices in variance_blocks:
-            products = covariance[columns[:, :, None], columns[:, None, :]] * variance_matrices
+        for group_indices, indices, variance_matrices in variance_blocks:
+            products = covariance.ravel()[indices] * variance_matrices
             variance[group_indices] = np.sum(products, axis=(1, 2))
         for group_index, covariance_index, variance_matrix in variance_individual:
             variance[group_index] = np.sum(covariance[covariance_index] * variance_matrix)

@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+The [covariance-index iteration](../../reports/2026_11_05_algo07v3_posterior_followup/README.md)
+is integrated in development. Eight complete slow DS26-0066 training fits are
+exact: `c=0` averages **49.519 → 47.269 s (4.54% lower)** and fitted `c`
+**63.691 → 59.875 s (5.99% lower)**, with comparable CPU savings. A fresh full
+DS26-0002 pair is exact through all science, both arms, eight PNGs and public
+grid/path: **312.944 → 232.515 s**. Host variation prevents attributing the full
+25.70% reduction to the change. **727 tests pass**. An ordered-assembly candidate
+was exact but slightly slower and remains external. Production, full DS26 and
+stable cumulative original-ALGO07 qualification remain unchanged.
+
 The external [initial branch-queue experiment](../../reports/2026_11_05_algo07v3_branch_queue/README.md)
 preserves six complete DS26-0002 initial-search results. Mean elapsed time is
 **26.781 → 25.195 s**, but mean CPU is **38.633 → 41.907 s** and one pair

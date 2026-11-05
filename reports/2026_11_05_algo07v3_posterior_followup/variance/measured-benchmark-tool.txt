@@ -1,0 +1,110 @@
+"""Compare a covariance-index prototype on the measured slow DS26 training fold."""
+
+import argparse
+import hashlib
+import json
+import os
+import statistics
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import numpy as np
+from check_algo07v3_scan_likelihood import fingerprint
+from probe_algo07v3_annotation_arms import fold_inputs, load_context
+from probe_algo07v3_variance_indices import candidate_function
+
+from leo.analysis.localization_v3 import event_position, hierarchical, history_position, prediction
+from leo.analysis.localization_v3.recovery_partitions import planned_split
+from leo.operations.localization_v3_job import runtime_versions
+
+
+@contextmanager
+def kernel(operation):
+    originals = [(m, m.hierarchical_bound) for m in (history_position, event_position)]
+    try:
+        for module, _ in originals:
+            module.hierarchical_bound = operation
+        yield
+    finally:
+        for module, original in originals:
+            module.hierarchical_bound = original
+
+
+def trial(d, keep, arm, operation):
+    with kernel(operation):
+        began, cpu = time.perf_counter(), time.process_time()
+        p, x, meta = prediction.fit_training(d, d['node'], keep, arm, record_optimizer=True)
+        elapsed, cpu_seconds = time.perf_counter() - began, time.process_time() - cpu
+        signature = fingerprint(dict(x=x, meta=meta, reference=p.reference,
+                                     state=p.state(x), calculate=p.calculate(x)))
+    return dict(seconds=elapsed, cpu_seconds=cpu_seconds, signature=signature)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--request', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--repeats', type=int, choices=range(1, 4), default=3)
+    args = parser.parse_args()
+    if os.environ.get('OPENBLAS_NUM_THREADS') != '1' or len(os.sched_getaffinity(0)) != 1:
+        parser.error('Pin one CPU and one BLAS thread')
+    args.output.mkdir(exist_ok=False)
+    paths = [*Path('src').rglob('*.py'), args.request, Path(__file__),
+             Path('tools/probe_algo07v3_variance_indices.py'),
+             Path('tools/probe_algo07v3_annotation_arms.py'),
+             Path('tools/probe_algo07v3_discovery_schedule.py'),
+             Path('tools/check_algo07v3_scan_likelihood.py')]
+    bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    request = json.loads(args.request.read_bytes())
+    if runtime_versions() != request['runtime']:
+        raise ValueError('Match the frozen numerical runtime')
+    candidate, original, transformed = candidate_function()
+    (args.output / 'original.txt').write_text(original)
+    (args.output / 'candidate.txt').write_text(transformed)
+    (args.output / 'plan.json').write_text(json.dumps(dict(
+        bindings=bindings, affinity=sorted(os.sched_getaffinity(0)), blas_threads=1,
+        phase_rounds=5, optimizer_iterations=48, target_index=1, fold_index=1,
+        repeats=args.repeats, runtime_modified=False), indent=2) + '\n')
+    rows = []
+    for arm in ('c0', 'fitted_c'):
+        expected = None
+        for pair in range(args.repeats):
+            order = ('baseline', 'candidate') if pair % 2 == 0 else ('candidate', 'baseline')
+            for side in order:
+                d, inv, receipt = load_context(request)
+                d, i, full, n, seed, plan = fold_inputs(d, inv, 1, 1)
+                train, _, split = planned_split(full, d['scan'].tracks[i]['times'], seed, plan)
+                keep = d['keep'] & train[:n]
+                before = fingerprint((d['node'], keep))
+                operation = hierarchical.hierarchical_bound if side == 'baseline' else candidate
+                result = trial(d, keep, arm, operation)
+                assert before == fingerprint((d['node'], keep))
+                if expected is None:
+                    expected = result['signature']
+                row = dict(arm=arm, pair=pair, side=side, **result,
+                           exact=result['signature'] == expected,
+                           scientific_receipt=receipt, seed=int(seed),
+                           training_points=int(np.sum(keep)), split=split)
+                rows.append(row)
+                (args.output / f'{arm}-{pair}-{side}.json').write_text(
+                    json.dumps(row, indent=2) + '\n')
+                print(json.dumps({k: row[k] for k in ('arm', 'pair', 'side', 'seconds',
+                                                     'cpu_seconds', 'exact')}), flush=True)
+                if not row['exact']:
+                    raise ValueError('Complete training fit changed; retain failed receipt')
+    assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest() == sha
+               for p, sha in bindings.items())
+    means = {arm: {side: {key: statistics.mean(r[key] for r in rows
+                                              if r['arm'] == arm and r['side'] == side)
+                          for key in ('seconds', 'cpu_seconds')}
+                   for side in ('baseline', 'candidate')} for arm in ('c0', 'fitted_c')}
+    result = dict(rows=rows, means=means, exact=True, bindings=bindings,
+                  prepared_training_benchmark=True, full_pipeline_speedup=None,
+                  production_modified=False)
+    (args.output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
+    print(json.dumps(means), flush=True)
+
+
+if __name__ == '__main__':
+    main()

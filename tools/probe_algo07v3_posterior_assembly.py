@@ -1,0 +1,130 @@
+"""External exact experiment: ordered bincount assembly of posterior normal equations."""
+
+import argparse
+import hashlib
+import inspect
+import json
+import os
+import statistics
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import algo07v3_preindex_hierarchical_oracle as hierarchical
+from check_algo07v3_scan_likelihood import fingerprint
+
+from leo.analysis.localization_v3 import position
+from leo.analysis.localization_v3.region import SearchRegion
+from leo.application.localization_v3 import _context
+from leo.application.localization_v3_engine import _json_value
+from leo.operations.localization_v3_job import runtime_versions
+from leo.storage.localization_v3 import LocalizationV3Store
+
+
+def candidate_function():
+    source = inspect.getsource(hierarchical.hierarchical_bound)
+    before = '''        gram, rhs = np.diag(precision), np.zeros(width)
+        block_weight = power * weight
+        np.add.at(gram.ravel(), matrix_indices, block_weight[matrix_groups] * matrices)
+        np.add.at(rhs, rhs_indices, block_weight[rhs_groups] * right_sides)'''
+    setup = '    def posterior(weight, precision, covariance):'
+    if source.count(before) != 1 or source.count(setup) != 1:
+        raise ValueError('Review changed posterior assembly before probing')
+    indices = '    gram_indices = np.r_[np.arange(width) * (width + 1), matrix_indices]\n\n'
+    replacement = '''        block_weight = power * weight
+        gram = np.bincount(
+            gram_indices, weights=np.r_[precision, block_weight[matrix_groups] * matrices],
+            minlength=width * width).astype(float, copy=False).reshape(width, width)
+        rhs = np.bincount(rhs_indices, weights=block_weight[rhs_groups] * right_sides,
+                          minlength=width).astype(float, copy=False)'''
+    code = source.replace(setup, indices + setup).replace(before, replacement)
+    scope = dict(vars(hierarchical))
+    exec(compile(code, '<ordered-posterior-assembly>', 'exec'), scope)
+    return scope['hierarchical_bound'], source, code
+
+
+@contextmanager
+def kernel(function):
+    original = position.hierarchical_bound
+    try:
+        position.hierarchical_bound = function
+        yield
+    finally:
+        position.hierarchical_bound = original
+
+
+def trial(scan, node, arm, function):
+    with kernel(function):
+        began, cpu = time.perf_counter(), time.process_time()
+        problem, fit, history = position.refreshed(scan, scan.radio_sigma_hz, node, arm)
+        seconds, cpu_seconds = time.perf_counter() - began, time.process_time() - cpu
+        x = fit['parameters']
+        signature = fingerprint(dict(fit=fit, history=history, reference=problem.reference,
+                                     state=problem.state(x), calculated=problem.calculate(x)))
+    return dict(seconds=seconds, cpu_seconds=cpu_seconds, signature=signature)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--request', required=True, type=Path)
+    parser.add_argument('--output', required=True, type=Path)
+    args = parser.parse_args()
+    if os.environ.get('OPENBLAS_NUM_THREADS') != '1' or len(os.sched_getaffinity(0)) != 1:
+        parser.error('Pin one CPU and one BLAS thread')
+    args.output.mkdir(exist_ok=False)
+    paths = [*Path('src').rglob('*.py'), Path(__file__), args.request, Path(hierarchical.__file__),
+             Path('tools/check_algo07v3_scan_likelihood.py')]
+    bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    request = json.loads(args.request.read_bytes())
+    if runtime_versions() != request['runtime']:
+        raise ValueError('Match the frozen numerical runtime')
+    saved = LocalizationV3Store(request['output_root']).load(request['identity']['run_id'])
+    prepared, initial = saved['evidence']['preparation'], saved['evidence']['audit']['initial']
+    input_signature = fingerprint(prepared)
+    noise = (json.dumps(prepared['noise'], default=_json_value,
+                       sort_keys=True, allow_nan=False) + '\n').encode()
+    winner = next(row for row in initial['choices']
+                  if row['hypothesis'] == initial['selected_hypothesis'])
+    candidate, original, transformed = candidate_function()
+    (args.output / 'original.txt').write_text(original)
+    (args.output / 'candidate.txt').write_text(transformed)
+    (args.output / 'plan.json').write_text(json.dumps(dict(
+        bindings=bindings, affinity=sorted(os.sched_getaffinity(0)), blas_threads=1,
+        phase_rounds=5, position_iterations=48, scientific_receipt=saved['sha256'],
+        runtime_modified=False), indent=2) + '\n')
+    functions = dict(baseline=hierarchical.hierarchical_bound, candidate=candidate)
+    rows = []
+    for arm in ('c0', 'fitted_c'):
+        expected = None
+        for pair in range(3):
+            order = ('baseline', 'candidate') if pair % 2 == 0 else ('candidate', 'baseline')
+            for side in order:
+                scan = _context(prepared, SearchRegion(tuple(request['search_center'])),
+                                hashlib.sha256(noise).hexdigest(), genuine=True)
+                value = trial(scan, winner['node'], arm, functions[side])
+                if expected is None:
+                    expected = value['signature']
+                row = dict(arm=arm, pair=pair, side=side, **value,
+                           exact=value['signature'] == expected)
+                rows.append(row)
+                (args.output / f'{arm}-{pair}-{side}.json').write_text(
+                    json.dumps(row, indent=2) + '\n')
+                print(json.dumps({k: v for k, v in row.items() if k != 'signature'}), flush=True)
+                if not row['exact']:
+                    raise ValueError('Complete refreshed fit changed; retain failed receipt')
+    assert fingerprint(prepared) == input_signature
+    assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest() == sha
+               for p, sha in bindings.items())
+    means = {arm: {side: {key: statistics.mean(r[key] for r in rows
+                                              if r['arm'] == arm and r['side'] == side)
+                          for key in ('seconds', 'cpu_seconds')} for side in functions}
+             for arm in ('c0', 'fitted_c')}
+    result = dict(rows=rows, means=means, exact=True, bindings=bindings,
+                  prepared_fit_benchmark=True, full_pipeline_speedup=None,
+                  production_modified=False)
+    (args.output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
+    print(json.dumps(means), flush=True)
+
+
+if __name__ == '__main__':
+    main()

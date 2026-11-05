@@ -166,3 +166,19 @@ qualification. Use its `run_pair.py`/`run_baseline.sh` for seven
 declared module overlays and its renderer for complete timing receipts. Profiler
 child metadata now identifies training tasks as `[seed, arm]`. Keep numerical
 replay/callbacks serial and preserve the three-live-worker cap when iterating.
+
+For posterior-loop changes, measure complete fits as well as array kernels.
+`tools/probe_algo07v3_posterior_assembly.py --request REQUEST --output FRESH_DIRECTORY`
+alternates three full five-round initial fits per arm; the ordered-bincount
+prototype is exact but slower on DS26-0002 and remains external.
+`tools/benchmark_algo07v3_training_kernel.py --request REQUEST --output FRESH_DIRECTORY
+--repeats 2` targets the previously profiled slow DS26-0066 target-1/fold-1
+training fits. Pin one CPU and one BLAS thread, with a 900-second external bound.
+It preserves optimizer histories, final state and complete likelihood in both
+arms, constructs fresh contexts outside timing and restores kernel aliases on
+failure. Its covariance-index candidate is now integrated after exact DS26-0002
+native qualification and 727 tests; prepared DS26-0066 training gains are
+4.54–5.99%. The helper uses the frozen pre-index oracle so future runs remain
+old/new comparisons. The posterior-followup report retains the measured helper
+bytes and both source strings, and provides the private-overlay native runner.
+Prepared-fit gains do not establish a capture-to-publication or population gain.

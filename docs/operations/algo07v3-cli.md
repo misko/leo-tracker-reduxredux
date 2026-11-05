@@ -1,5 +1,13 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [covariance-index optimization](../../reports/2026_11_05_algo07v3_posterior_followup/README.md)
+precomputes covariance gather indices once per likelihood call while preserving
+every numerical operation and convergence rule. It passes 727 tests and a fresh
+exact DS26-0002 native comparison, including both arms, all science, eight PNGs
+and public grid/path. Controlled DS26-0066 training fits are 4.54–5.99% faster.
+Observed full native time is **312.944 → 232.515 s**, with host variation;
+this is development qualification, not deployment or a population speed claim.
+
 The [bounded annotation-training queue](../../reports/2026_11_05_algo07v3_annotation_training/README.md)
 schedules fold/arm training fits through at most three live workers, followed
 by the original fold scoring. Numerical replay and callbacks remain serial.
