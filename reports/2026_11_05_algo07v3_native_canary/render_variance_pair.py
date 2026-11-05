@@ -11,7 +11,7 @@ def read(path):
     return json.loads(path.read_bytes())
 
 
-def main(root, boundaries, name):
+def main(root, boundaries, report_name):
     plan = read(root / "plan.json")
     comparison = read(root / "comparison.json")
     for bindings in (plan["bindings"], comparison["input_bindings"]):
@@ -34,9 +34,9 @@ def main(root, boundaries, name):
         rows = [json.loads(s) for s in (root / arm / "attempt/worker.log").read_text().splitlines()]
         stages[arm] = {r["stage"]: r["seconds"] for r in rows if r.get("event") == "stage"}
     assert list(stages["baseline"]) == list(stages["candidate"])
-    if not name or Path(name).name != name or name in (".", ".."):
+    if not report_name or Path(report_name).name != report_name or report_name in (".", ".."):
         raise ValueError("A single fresh report-directory name is required")
-    out = Path(__file__).resolve().parent / name
+    out = Path(__file__).resolve().parent / report_name
     out.mkdir(exist_ok=False)
     for name in ("plan.json", "comparison.json"):
         (out / name).write_bytes((root / name).read_bytes())
@@ -96,6 +96,7 @@ def main(root, boundaries, name):
     table = "\n".join(f"| {name} | {stages['baseline'][name]:.3f} | "
                       f"{stages['candidate'][name]:.3f} |" for name in stages["baseline"])
     first = plan["sequence"][0]
+    runner = "run_variance_cpu_pair.py" if cpu else "run_variance_pair.py"
     cpu_table = ""
     if cpu:
         cpu_table = ("\n| GNU time accounting | User CPU s | System CPU s | Max RSS KiB |\n"
@@ -151,7 +152,7 @@ Full DS26 retains 159 fast members, 158 available
 inputs and one unavailable member. Ordinary admission, full historical
 metadata qualification and the cumulative tenfold target remain open.
 
-Reproduce with [pair runner](../run_variance_pair.py) and
+Reproduce with [pair runner](../{runner}) and
 [renderer](../render_variance_pair.py); immutable inputs and sources are recorded
 in [plan](plan.json). Raw evidence: `{root}`.
 """

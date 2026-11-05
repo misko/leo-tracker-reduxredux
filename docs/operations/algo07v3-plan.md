@@ -4,10 +4,17 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest [CPU-accounted repeat](../../reports/2026_11_05_algo07v3_native_canary/variance-cpu-pair/README.md)
+is exact, with wall time **244.383 → 234.399 s** and process CPU **271.20 → 259.14 s**.
+Keep the preceding slower pair; this is evidence for a modest optimization,
+not a cumulative claim. DS26-0066 variance correctness expansion is running.
+The prototype remains external. A separate independent-family-arm concurrency
+prototype has three passing tests and is undergoing a native exact-output probe.
+
 Latest whole-path [variance pair](../../reports/2026_11_05_algo07v3_native_canary/variance-pair/README.md)
 matches exactly but runs **270.732 → 388.845 s (43.63% slower)**. Keep this
 negative result alongside the kernel saving. The prototype is not integrated;
-a reverse-order CPU-accounted repeat is running to investigate timing attribution.
+the completed reverse-order CPU-accounted repeat is recorded above.
 
 Latest native prototype: bounded variance batching now matches all 6,772 calls
 and the full DS26-0002 scientific/PNG snapshot, saving 11.17% of alternating kernel

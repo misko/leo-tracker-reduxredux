@@ -116,9 +116,28 @@ The 420.642-second diagnostic executes both kernels and compares every result;
 it is not normal pipeline latency or a complete-path speed ratio. The subsequent
 [full owned CLI/publication pair](variance-pair/README.md) passes exactly, but
 the candidate is **43.63% slower: 270.732 → 388.845 s**. Several unchanged stages
-also ran slower. This regression remains in the evidence; a reverse-order repeat
-with whole-process CPU accounting is underway. The prototype is not integrated.
+also ran slower. This regression remains in the evidence. The reverse-order
+[CPU-accounted repeat](variance-cpu-pair/README.md) also passes exactly and gives
+**244.383 → 234.399 s (4.09% lower)**. Total user plus system CPU decreases
+**271.20 → 259.14 s (4.45%)**. The prototype is not integrated.
 Nine additional tests pass at the memory boundary and on strided inputs.
+
+| Complete DS26-0002 pair | Baseline wall s | Candidate wall s | Interpretation |
+| --- | ---: | ---: | --- |
+| Candidate first | 270.732 | 388.845 | 43.63% slower under differing host conditions |
+| Baseline first, CPU accounted | 244.383 | 234.399 | 4.09% lower wall time; 4.45% lower CPU time |
+
+The repeat's CPU-pressure snapshots remain below 0.4% at 10 seconds and below
+0.2% at 60 seconds. The first candidate's 60-second pressure grows from 6.71%
+to 12.16%, and unchanged stages also slow down. This supports host interference
+as a contributor; it does not isolate every cause of the earlier regression.
+Maximum reported RSS in the repeat rises from 2,407,056 to 2,485,072 KiB (3.24%).
+It is a per-process maximum, not the sum of all concurrent workers' memory.
+
+The decision is to continue qualification, not promote on one favorable pair.
+A fresh DS26-0066 candidate is now running against its completed integrated
+scientific reference. That comparison expands correctness coverage; because
+the reference is reused, it will not be a new matched performance experiment.
 [Native probe receipt](variance-probe.json),
 [native scientific/source binding](variance-native-receipt.json).
 Raw evidence: `/srv/bulk/leo-dev/algo07v3-variance-groups-20261105`.

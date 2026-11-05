@@ -1,0 +1,51 @@
+{
+  "command": [
+    "timeout",
+    "1200",
+    "taskset",
+    "-c",
+    "4,5,6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "tools/probe_algo07v3_parallel_family.py",
+    "--receipt",
+    "/srv/bulk/leo-dev/algo07v3-parallel-family-20261105/probe.json",
+    "--",
+    "--native-input",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/native.json",
+    "--input-sha256",
+    "sha256:d07ccf9ae98391197d52fc9d837806700bee6cef6814ea2e2ea003bdee533be9",
+    "--track-config",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/config.json",
+    "--tle-root",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/tle",
+    "--screen-center",
+    "37.5",
+    "-122",
+    "--search-center",
+    "37.906",
+    "-122.545",
+    "--scan-identities",
+    "fast-af5f79e905d946a6e38f9e3e8243460c",
+    "--output",
+    "/srv/bulk/leo-dev/algo07v3-parallel-family-20261105/native"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_parallel_family.py": "336a2767912d6240d9131c352b595bb52138b13249ea191bae70beb06b2cf0a4",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/history_policy.py": "18ec75adb06516797b362fa499c7f86f7d51a31accbfb47f95bda0099c4c6008",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_parallel.py": "42481069dedd6f575f29f303eaa1f2107afe14b560d00de9f0256cbd38b07387",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/check_algo07v3_engine.py": "10ca3178ec1ee5f1ccf17555617fb0ef6de147c153a4e437c74d42e60e639d54",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tests/tools/test_algo07v3_parallel_family.py": "479517de4b2c812fee94ff8654854bf84392f6122046d403a5a2b2680fb135de",
+    "/srv/bulk/leo-dev/algo07v3-parallel-family-tests002-20261105.xml": "f98ebd8520e539abf1122849a89e4da9c57578b0cb9ba391544a037f5cd45826",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681"
+  },
+  "reference_for_postrun_comparison": "/srv/bulk/leo-dev/algo07v3-variance-groups-20261105/native/result.json",
+  "cpus": [
+    4,
+    5,
+    6
+  ],
+  "blas_threads": 1,
+  "production_modified": false,
+  "enabled_in_runtime": false
+}

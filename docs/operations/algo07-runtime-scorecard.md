@@ -4,11 +4,18 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [CPU-accounted variance repeat](../../reports/2026_11_05_algo07v3_native_canary/variance-cpu-pair/README.md)
+is exact and observes **244.383 → 234.399 s (4.09% lower)**, with total process
+CPU **271.20 → 259.14 s (4.45% lower)**. Maximum reported RSS rises 3.24%.
+This supports further qualification of a modest gain; the slower first pair
+below remains part of the evidence. A fresh DS26-0066 correctness comparison
+is running. No runtime integration, deployment or cumulative speed claim.
+
 Latest complete-path [variance-batching pair](../../reports/2026_11_05_algo07v3_native_canary/variance-pair/README.md)
 is exact but slower: **270.732 → 388.845 s (+43.63%)**. Unchanged stages also slow
 down, so this observation cannot identify the cause. The optimization remains
-external; a reverse-order repeat now records process CPU time as well as wall
-latency. Nine new boundary tests pass. No speed gain or promotion is claimed.
+external; the reverse-order repeat is recorded above. Nine new boundary tests
+pass. This first pair supplies no speed gain or promotion evidence.
 
 Latest exact-call result: [bounded variance batching](../../reports/2026_11_05_algo07v3_native_canary/README.md)
 matches all 6,772 native calls and the full scientific/PNG snapshot. Alternating
