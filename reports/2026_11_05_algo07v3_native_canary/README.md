@@ -113,8 +113,12 @@ the same qualified comparison digest, including both calibration arms and all
 | Observed component reduction | — | **13.927 s / 11.17%** |
 
 The 420.642-second diagnostic executes both kernels and compares every result;
-it is not normal pipeline latency or a complete-path speed ratio. The prototype
-is not integrated; it still needs a full owned CLI/publication comparison.
+it is not normal pipeline latency or a complete-path speed ratio. The subsequent
+[full owned CLI/publication pair](variance-pair/README.md) passes exactly, but
+the candidate is **43.63% slower: 270.732 → 388.845 s**. Several unchanged stages
+also ran slower. This regression remains in the evidence; a reverse-order repeat
+with whole-process CPU accounting is underway. The prototype is not integrated.
+Nine additional tests pass at the memory boundary and on strided inputs.
 [Native probe receipt](variance-probe.json),
 [native scientific/source binding](variance-native-receipt.json).
 Raw evidence: `/srv/bulk/leo-dev/algo07v3-variance-groups-20261105`.

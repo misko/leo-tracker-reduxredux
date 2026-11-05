@@ -9,6 +9,13 @@ posteriors in the owned development CLI. The combined isolated execution exactly
 matches scientific/publication outputs and 820 tests pass. Its 264.356-second
 observation is not a matched speed benchmark. Production remains unchanged.
 
+A second complete isolated comparison, [DS26-0066](../../reports/2026_11_05_algo07v3_native_canary/README.md),
+now passes exactly against the pre-optimization standalone engine, including
+accepted guarded reassociation, both arms, all eight PNGs and public fields.
+Observed times are 900.763 / 761.514 seconds; baseline profiling and shared-host
+conditions prevent treating this as a controlled speedup. This broadens native
+branch coverage but does not establish whole-population or historical equivalence.
+
 The owned command is `leo-algo07v3` after installing this checkout, or
 `PYTHONPATH=src python -B -m leo.cli.algo07v3` from its root. It starts one owned
 worker. It does not invoke earlier ALGO executables or consume their results.

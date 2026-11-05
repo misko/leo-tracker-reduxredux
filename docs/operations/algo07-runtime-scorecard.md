@@ -4,6 +4,12 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest complete-path [variance-batching pair](../../reports/2026_11_05_algo07v3_native_canary/variance-pair/README.md)
+is exact but slower: **270.732 → 388.845 s (+43.63%)**. Unchanged stages also slow
+down, so this observation cannot identify the cause. The optimization remains
+external; a reverse-order repeat now records process CPU time as well as wall
+latency. Nine new boundary tests pass. No speed gain or promotion is claimed.
+
 Latest exact-call result: [bounded variance batching](../../reports/2026_11_05_algo07v3_native_canary/README.md)
 matches all 6,772 native calls and the full scientific/PNG snapshot. Alternating
 kernel time decreases **124.650 → 110.722 s (11.17%)**. The 420.642 s diagnostic

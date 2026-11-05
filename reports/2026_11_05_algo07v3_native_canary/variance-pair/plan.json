@@ -1,0 +1,54 @@
+{
+  "commands": {
+    "candidate": [
+      "sh",
+      "reports/2026_11_05_algo07v3_factor_reuse/run_kernel.sh",
+      "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/candidate-kernel.py",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "baseline": [
+      "sh",
+      "reports/2026_11_05_algo07v3_factor_reuse/run_kernel.sh",
+      "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/baseline-kernel.py",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "candidate",
+    "baseline"
+  ],
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_native_canary/run_variance_pair.py": "7583922a478e02fba3547b443288c8e0743558a9b09e9d8477a5acee3ee42431",
+    "/srv/bulk/leo-dev/algo07v3-variance-groups-20261105/probe.json": "0a82eb45a877b5a32160e11792df2c42563a5f85d31eaaa27475be66cdd1f1a7",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_variance_groups.py": "af7161bc6a79504265233aee1506fac7291297735afdc5f5729750f20020f512",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_factor_reuse/run_kernel.sh": "2d286e2839a5299a2e6a57d306666d683423fc881bcb12b69836a96436aca2eb",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py": "2f087156e85ac3a101eac64eac41c8288c4808f32ecf67eac766e50811547340",
+    "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/candidate-kernel.py": "3b02974c822ef2504422dcdb85f10d16198ec8df2ef35936119e42a97877dab2",
+    "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/candidate-request.json": "9555f1c9dafe6e7d9dbf0222740e0acf57343323c2838ced83628162faf80852",
+    "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/baseline-kernel.py": "2f087156e85ac3a101eac64eac41c8288c4808f32ecf67eac766e50811547340",
+    "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/baseline-request.json": "a22ca6e946271f01008e3f0cc1612f6d46de09c0273021d0684288732a1d3177"
+  },
+  "production_modified": false,
+  "enabled_in_runtime": false,
+  "qualified_speedup": null,
+  "base_commit": "ca9e45756604bfb97ba3306ed49ed59a3c41fa9d"
+}

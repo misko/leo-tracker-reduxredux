@@ -4,6 +4,11 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest whole-path [variance pair](../../reports/2026_11_05_algo07v3_native_canary/variance-pair/README.md)
+matches exactly but runs **270.732 → 388.845 s (43.63% slower)**. Keep this
+negative result alongside the kernel saving. The prototype is not integrated;
+a reverse-order CPU-accounted repeat is running to investigate timing attribution.
+
 Latest native prototype: bounded variance batching now matches all 6,772 calls
 and the full DS26-0002 scientific/PNG snapshot, saving 11.17% of alternating kernel
 compute. See the [canary report](../../reports/2026_11_05_algo07v3_native_canary/README.md).
