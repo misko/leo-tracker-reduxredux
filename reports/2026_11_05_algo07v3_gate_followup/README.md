@@ -73,15 +73,34 @@ The raw probe is
 The reversed pair is
 `/srv/bulk/leo-dev/algo07v3-family-gates-20261105-r2/reverse`.
 
-## Validation in progress
+## Completed second-scan qualification
 
-The DS26-0066 baseline/candidate pair is running at
-`/srv/bulk/leo-dev/algo07v3-family-gates-0066-20261105`. This case exercises
-accepted guarded reassociation. Its comparison and timing conclusions are
-pending; the two-scan renderer must not run until both executions and the exact
-comparison complete. Each run retains the existing 1,200-second outer bound,
-three-CPU affinity and one BLAS thread. Old installations/reports are hidden,
-network access is isolated, and frozen native inputs are read-only.
+DS26-0066 exercises accepted guarded reassociation. Its fresh baseline and
+candidate both completed, with exact scientific outputs, both calibration arms,
+all eight PNGs and public position grid/path values.
+
+| Scan | Baseline | Candidate | Observed difference |
+| --- | ---: | ---: | ---: |
+| DS26-0066 | 607.804 s | 597.093 s | 10.711 s shorter (1.76%) |
+
+This is one shared-host pair, not an attributable or dataset-wide speedup. The
+two-scan renderer also checks all four DS26-0002 outputs against each other:
+all six completed runs pass their respective scan's exact comparison. The
+runtime observations and component improvements remain separate evidence.
+
+![Complete native-input-to-publication timing observations](runtime.png)
+
+The raw second-scan pair is retained at
+`/srv/bulk/leo-dev/algo07v3-family-gates-0066-20261105`. Each run uses the same
+1,200-second outer bound, three-CPU affinity and one BLAS thread. Old
+installations/reports are hidden, network access is isolated, and frozen native
+inputs are read-only. The committed `summary.json`, comparison receipts,
+supervisor records and resource snapshots retain the measured evidence.
+
+Qualification covers two DS26 scans. Full DS26 qualification, full historical
+equivalence and production admission remain open. No deployment is included.
+
+## Next measured opportunities
 
 The next larger scheduling opportunity is independent initial-discovery seeds
 and branch/arm fits. An earlier DS26-0002 parent profile measured 45.102 seconds

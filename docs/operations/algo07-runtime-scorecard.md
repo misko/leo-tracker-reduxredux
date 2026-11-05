@@ -2,8 +2,11 @@
 
 The [gate follow-up](../../reports/2026_11_05_algo07v3_gate_followup/README.md)
 adds an exact reversed DS26-0002 pair. Full ABBA order is now **281.351 / 315.061 /
-229.958 / 316.503 s**. Both pair comparisons pass; cross-pair/two-scan aggregation
-awaits the running DS26-0066 comparison. The 85.103-second variation between
+229.958 / 316.503 s**. Cross-pair aggregation and the second-scan DS26-0066
+comparison pass: all six runs preserve each scan's scientific outputs, both arms
+and all eight PNGs. DS26-0066 takes **607.804 → 597.093 s** (10.711 s shorter),
+an observation rather than an attributable or dataset-wide speedup.
+The 85.103-second variation between
 candidate executions precludes attributing the complete difference to gate reuse.
 An external, unintegrated fixed-phase geometry probe averages **0.250763 →
 0.167064 s per 50 evaluations (33.38% lower)**, with 600 exact component evaluations
@@ -17,7 +20,8 @@ The fresh full DS26-0002 pair is **281.351 → 315.061 s**, however: **33.710 s
 longer**, ratio **0.893×**. Unchanged initial search rises **24.869 → 41.078 s**;
 no complete-pipeline speedup is established. The report retains host evidence,
 the failed first benchmark's receipt-mutation diagnosis and the corrected rerun.
-Production is unchanged; a reversed full pair and another branch case remain next.
+Production is unchanged; the reversed full pair and second branch case are
+reported in the completed follow-up above.
 
 Latest [conservative-arm concurrency](../../reports/2026_11_05_algo07v3_conservative_arms/README.md)
 measures **73.595 → 46.980 s (36.16% lower)** for complete prepared conservative
