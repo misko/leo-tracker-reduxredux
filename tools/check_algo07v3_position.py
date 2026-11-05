@@ -32,6 +32,8 @@ def signed_snapshot(context):
 
 
 def run(args):
+    if args.reassociation_complete:
+        args.reassociation_screen = True
     if args.reassociation_screen:
         args.reassociation_trigger = True
     if args.reassociation_trigger:
@@ -343,11 +345,26 @@ def run(args):
                                                         result['reassociation_trigger'] = fingerprint(ranked)
                                                         if args.reassociation_screen:
                                                             from leo.application.localization_v3 import screen_reassociation_candidates
-                                                            result['reassociation_screen'] = fingerprint(
-                                                                screen_reassociation_candidates(final_context,
+                                                            final_screen = screen_reassociation_candidates(final_context,
                                                                     ranked, catalogue, metadata,
                                                                     on_target=lambda row: print('reassociation screen',
-                                                                        row['target'], len(row['admitted']), flush=True)))
+                                                                        row['target'], len(row['admitted']), flush=True))
+                                                            result['reassociation_screen'] = fingerprint(final_screen)
+                                                            if args.reassociation_complete:
+                                                                from leo.application.localization_v3 import fit_reassociation
+                                                                from leo.analysis.localization_v3.reassociation_history import select_history
+                                                                def collect_history(request):
+                                                                    if args.reassociation_history_bank is None:
+                                                                        raise ValueError('Admitted candidate requires --reassociation-history-bank')
+                                                                    bank = json.loads(args.reassociation_history_bank.read_text())
+                                                                    return select_history(bank, request)
+                                                                result['reassociation_complete'] = fingerprint(
+                                                                    fit_reassociation(final_context, final_screen,
+                                                                        catalogue, metadata, collect_history,
+                                                                        on_fit=lambda row: print('final fit',
+                                                                            row['target'], row['proposal'],
+                                                                            row['fit']['arm'], row['fit']['start'],
+                                                                            row['fit']['status'], flush=True)))
                                             if args.preflight_packet:
                                                 with args.preflight_packet.open('x') as stream:
                                                     json.dump(additional['preflight'], stream,
@@ -450,6 +467,9 @@ def run(args):
         additional_position=args.additional_position,
         reassociation_trigger=args.reassociation_trigger,
         reassociation_screen=args.reassociation_screen,
+        reassociation_complete=args.reassociation_complete,
+        reassociation_history_bank=(dict(path=str(args.reassociation_history_bank),
+            sha256=digest(args.reassociation_history_bank)) if args.reassociation_history_bank else None),
         recovery_catalogue=(dict(path=str(args.recovery_catalogue),
                                   sha256=digest(args.recovery_catalogue))
                             if args.recovery_catalogue else None),
@@ -514,6 +534,9 @@ if __name__ == '__main__':
                       help='Test harness: fresh prefix through exact final-stage handoff and RF trigger')
     mode.add_argument('--reassociation-screen', action='store_true',
                       help='Test harness: fresh prefix through final causal nomination and receiver guard')
+    mode.add_argument('--reassociation-complete', action='store_true',
+                      help='Test harness: connected numerical pipeline including final guarded refits')
+    parser.add_argument('--reassociation-history-bank', type=Path)
     parser.add_argument('--recovery-catalogue', type=Path)
     parser.add_argument('--preflight-packet', type=Path)
     parser.add_argument('--target-rank', type=int, default=0)
@@ -521,8 +544,8 @@ if __name__ == '__main__':
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     args = parser.parse_args()
-    if (args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen) and args.recovery_catalogue is None:
+    if (args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen or args.reassociation_complete) and args.recovery_catalogue is None:
         parser.error('Residual screening/position requires --recovery-catalogue')
-    if args.preflight_packet and not (args.additional_preflight or args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen):
+    if args.preflight_packet and not (args.additional_preflight or args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen or args.reassociation_complete):
         parser.error('--preflight-packet requires a preflight-producing mode')
     run(args)

@@ -4,6 +4,16 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest v3 milestone: [complete final numerical reassociation](../../reports/2026_11_05_algo07v3_reassociation_final/README.md).
+The owned final numerical worker and all eight matched fits reproduce the frozen
+DS26-0066 research canary exactly. The connected DS26-0002 prepared-input path
+now completes final numerical recovery in **273.407 s**, with earlier outputs
+unchanged. This excludes input preparation and all WebUI artifact publication;
+it is not a complete-path speedup. The final-worker comparison uses fixture
+reconstruction differently on the two sides and runs concurrently, so its
+elapsed times must not be converted into a performance ratio. Complete-path
+matched scans remain zero.
+
 ## Primary metrics
 
 | Metric | Starting baseline | Current / candidate | Paired speedup |

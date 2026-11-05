@@ -292,3 +292,44 @@ def test_incomplete_trigger_cannot_enter_candidate_discovery():
         dict(status="reassociation_prepared"), dict(status="incomplete"), {}, {}
     )
     assert result["admission"] is None and result["status"] == "incomplete"
+
+
+def test_final_fitting_uses_owned_selected_baseline(monkeypatch):
+    from leo.analysis.localization_v3 import reassociation_recovery
+
+    prepared = dict(
+        status="reassociation_prepared", context=object(), arms=object(), owners=object()
+    )
+    screened = dict(status="reassociation_candidates_screened", admission=object())
+    baseline, collector = object(), object()
+    catalogue, receipt = dict(cutoff_utc_ns=12), dict(cutoff_utc_ns=12)
+
+    def baseline_for(arms, owners):
+        assert (arms, owners) == (prepared["arms"], prepared["owners"])
+        return baseline
+
+    def recover(*args, **kwargs):
+        assert args == (
+            prepared["context"],
+            prepared["owners"],
+            baseline,
+            screened["admission"],
+            catalogue,
+            receipt,
+            collector,
+        )
+        return dict(execution_status="complete")
+
+    monkeypatch.setattr(reassociation_recovery, "baseline_from_selected", baseline_for)
+    monkeypatch.setattr(reassociation_recovery, "recover", recover)
+    result = app.fit_reassociation(prepared, screened, catalogue, receipt, collector)
+    assert result["status"] == "reassociation_evaluated" and result["recovery_complete"]
+    with pytest.raises(ValueError, match="cutoff changed"):
+        app.fit_reassociation(prepared, screened, catalogue, dict(cutoff_utc_ns=13), collector)
+
+
+def test_incomplete_screen_cannot_enter_matched_reassociation_fitting():
+    result = app.fit_reassociation(
+        dict(status="reassociation_prepared"), dict(status="incomplete"), {}, {}, None
+    )
+    assert result["status"] == "incomplete" and not result["recovery_complete"]

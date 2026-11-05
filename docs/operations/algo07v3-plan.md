@@ -5,10 +5,13 @@ are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
 Current implementation status, 2026-11-05: the owned application is connected
-through final-stage causal candidate screening and receiver-shared predictive
-admission. Matched replacement/control fitting, causal-history completion and
-all artifact publication still need integration and qualification. Full DS26
-equivalence and the 10× complete-path metric remain unproven.
+through final guarded numerical reassociation, including causal-history
+completion and matched replacement/control fitting. DS26-0066's final numerical
+worker and all eight fits match frozen ALGO07 exactly; a connected DS26-0002
+prepared-input run completes with its earlier science unchanged. Artifact
+generation/publication, full DS26 equivalence, cancellation qualification and the
+10× complete-path metric remain unfinished or unproven. This is not yet the
+complete standalone production engine.
 
 Implementation has begun: see the [first extraction and geometry-reuse report](../../reports/2026_11_04_algo07v3_start/README.md).
 This is component progress, not completion of the standalone engine or its gates.
@@ -109,8 +112,17 @@ Production cancellation, final proof
 publication and broader gap branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,
-reassociation and publication remain unfinished; full DS26 localization parity
-is still open.
+reassociation and publication remained unfinished at that milestone.
+The [complete final numerical stage](../../reports/2026_11_05_algo07v3_reassociation_final/README.md)
+now owns causal-history completion, family remapping, matched constrained fits
+and the guarded decision controller. The DS26-0066 research canary exactly
+reproduces the frozen final numerical worker and all eight individual fits,
+selecting 62025 → 68047 with 2,770 retained owners per arm and 170 reassigned
+points. Its public terminal is unavailable, so publication preflight is explicitly
+outside this comparison. The connected DS26-0002 prepared-input run finishes
+numerical recovery in 273.407 seconds, preserves all earlier scientific fields
+and retains 2,783 owners per arm without replacement. The suite passes 483 tests.
+Full DS26 localization/publication parity and complete-path speed remain open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times

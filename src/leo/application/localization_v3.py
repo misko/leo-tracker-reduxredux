@@ -391,6 +391,29 @@ def screen_reassociation_candidates(prepared, ranked, catalogue, scan_receipt, *
     return dict(status='reassociation_candidates_screened', admission=result, recovery_complete=False)
 
 
+def fit_reassociation(prepared, screened, catalogue, scan_receipt, collect_history,
+                      *, on_fit=None, on_record=None):
+    """Finish matched identity repair; publication remains a separate boundary."""
+    for result, status in ((prepared, 'reassociation_prepared'),
+                           (screened, 'reassociation_candidates_screened')):
+        if result['status'] != status:
+            return dict(status=result['status'], recovery=None, recovery_complete=False)
+    if catalogue['cutoff_utc_ns'] != scan_receipt['cutoff_utc_ns']:
+        raise ValueError('Reassociation catalogue cutoff changed')
+    from leo.analysis.localization_v3.reassociation_recovery import baseline_from_selected, recover
+    baseline = baseline_from_selected(prepared['arms'], prepared['owners'])
+    result = recover(prepared['context'], prepared['owners'], baseline, screened['admission'],
+                     catalogue, scan_receipt, collect_history, on_fit=on_fit, on_record=on_record)
+    return dict(status='reassociation_evaluated', recovery=result,
+                recovery_complete=result['execution_status'] == 'complete')
+
+
+def prepare_reassociation_history(archive, cutoff_utc_ns):
+    """Build the final-stage history bank through the owned read-only archive port."""
+    from leo.operations.localization_v3_history import collect_versions
+    return collect_versions(archive, cutoff_utc_ns)
+
+
 def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
                                 arms, owners, identities, selection=None, annotations=()):
     """Replay an explicitly chosen owned likelihood and rank remaining evidence.
