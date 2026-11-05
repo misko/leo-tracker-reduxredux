@@ -75,12 +75,18 @@ class LocalizationV3Store:
         )
         return dict(receipt=receipt, sha256=canonical_digest(receipt))
 
-    def load(self, run_id):
+    def receipt(self, run_id):
+        """Read the committed identity without treating a missing archive as absent work."""
         folder = self._folder(run_id)
         manifest = confined_path(self.root, folder / "manifest.json", must_exist=True)
         receipt = validate(json.loads(manifest.read_bytes()))
         if receipt["run_id"] != run_id:
             raise ValueError("Standalone result belongs to another run")
+        return dict(receipt=receipt, sha256=canonical_digest(receipt))
+
+    def load(self, run_id):
+        folder = self._folder(run_id)
+        receipt = self.receipt(run_id)["receipt"]
         path = confined_path(
             self.root, folder / (receipt["result_sha256"][7:] + ".zip"), must_exist=True
         )

@@ -7,8 +7,9 @@ PNG products before `publish_saved` exposes the existing WebUI manifest.
 No earlier algorithm terminal, store or worker is required.
 
 This implements the persistence/publication boundary. It does not yet provide
-the production job scheduler, qualified deadline/cancellation adapter or a
-production run CLI. The qualification tool deliberately uses all-work execution.
+the production job scheduler or ordinary-clock admission qualification. The
+[owned run/resume CLI](algo07v3-cli.md) now supplies tested process deadlines and
+publication recovery under an explicit all-work validation policy.
 Deployment remains disabled pending the plan's scientific and operational gates.
 
 ## Result contract
