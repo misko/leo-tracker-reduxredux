@@ -1,5 +1,12 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [reassociation timing follow-up](../../reports/2026_11_05_algo07v3_reassociation_benchmark/README.md)
+alternates complete screens from live native DS26-0066 inference. Twelve exact
+executions average **16.253 → 11.407 s** per two-target screen set. Final science
+and eight PNGs remain exact against the unchanged owned result. The new
+`tools/benchmark_algo07v3_reassociation.py` also profiles conservative recovery;
+its total instrumented time is not a complete-path speed benchmark.
+
 Latest [reassociation geometry reuse](../../reports/2026_11_05_algo07v3_reassociation_geometry/README.md)
 shares phase interpolation while retaining independent cavity positions and
 the original arm-major nomination order. The report records fresh complete

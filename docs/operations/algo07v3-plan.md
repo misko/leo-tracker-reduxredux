@@ -4,6 +4,15 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+The [alternating reassociation follow-up](../../reports/2026_11_05_algo07v3_reassociation_benchmark/README.md)
+now establishes exact component savings: **16.253 → 11.407 s** across two
+DS26-0066 targets, with all 12 screens and final science/eight PNGs exact.
+Conservative recovery spends **42.765/55.625 profiled seconds** in paired fits
+and rejection rounds. Next, prototype independent conservative-arm concurrency
+with compact child results, sequential masks/salvage and existing cancellation
+semantics; qualify the complete stage and a fresh native publication pair.
+The prior full-run slowdown remains unresolved as a complete-path speed claim.
+
 Latest iteration: [reassociation phase reuse](../../reports/2026_11_05_algo07v3_reassociation_geometry/README.md)
 extends the preceding optimization and qualifies a fresh DS26-0066 complete
 baseline/candidate pair, exercising accepted guarded reassociation. The report

@@ -1,0 +1,260 @@
+{
+  "scan": "DS26-0066",
+  "exact": true,
+  "means": {
+    "baseline": {
+      "seconds": 16.252520239601534,
+      "cpu_seconds": 16.251040387333337
+    },
+    "candidate": {
+      "seconds": 11.40736023336649,
+      "cpu_seconds": 11.405674164666664
+    }
+  },
+  "totals": {
+    "baseline": {
+      "seconds": [
+        16.06548250000924,
+        16.45475705806166,
+        16.2373211607337
+      ],
+      "cpu_seconds": [
+        16.06468301000001,
+        16.452659030000007,
+        16.235779121999997
+      ]
+    },
+    "candidate": {
+      "seconds": [
+        11.511844591237605,
+        11.278281418606639,
+        11.431954690255225
+      ],
+      "cpu_seconds": [
+        11.51126146499999,
+        11.274743209999997,
+        11.431017819000004
+      ]
+    }
+  },
+  "wall_reduction_percent": 29.811745715776038,
+  "cpu_reduction_percent": 29.815729375968637,
+  "targets": [
+    62025,
+    63649
+  ],
+  "conservative_profile": [
+    {
+      "children_cpu_seconds": 0.0,
+      "completed": true,
+      "name": "conservative",
+      "seconds": 55.62528774514794,
+      "self_cpu_seconds": 55.618083
+    }
+  ],
+  "profile_functions": [
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py",
+      "line": 76,
+      "function": "refit_initial_position",
+      "calls": 1,
+      "self_seconds": 5.6478000000000004e-05,
+      "cumulative_seconds": 55.623779589
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/conservative_recovery.py",
+      "line": 30,
+      "function": "conservative_recovery",
+      "calls": 1,
+      "self_seconds": 0.0010290710000000001,
+      "cumulative_seconds": 54.155682329
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/position.py",
+      "line": 44,
+      "function": "calculate",
+      "calls": 1546,
+      "self_seconds": 1.4620053940000002,
+      "cumulative_seconds": 45.940667824
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/position.py",
+      "line": 68,
+      "function": "fit",
+      "calls": 45,
+      "self_seconds": 0.0008069580000000001,
+      "cumulative_seconds": 43.392509452000006
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/conservative_recovery.py",
+      "line": 208,
+      "function": "fit_and_gate",
+      "calls": 2,
+      "self_seconds": 0.000726518,
+      "cumulative_seconds": 42.764794514
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/position.py",
+      "line": 64,
+      "function": "residual",
+      "calls": 1411,
+      "self_seconds": 0.019166945,
+      "cumulative_seconds": 42.565241464
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/retained_position.py",
+      "line": 50,
+      "function": "calculate",
+      "calls": 1381,
+      "self_seconds": 0.006336882,
+      "cumulative_seconds": 42.464232541
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/continuous_curve_fit.py",
+      "line": 102,
+      "function": "bounded_gauss_newton",
+      "calls": 45,
+      "self_seconds": 0.021462779,
+      "cumulative_seconds": 42.217135323
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/conservative_recovery.py",
+      "line": 204,
+      "function": "causal_fit",
+      "calls": 8,
+      "self_seconds": 7.0133e-05,
+      "cumulative_seconds": 42.033753697
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/retained_position.py",
+      "line": 91,
+      "function": "fit_position",
+      "calls": 8,
+      "self_seconds": 0.0036590000000000004,
+      "cumulative_seconds": 42.033683564
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py",
+      "line": 18,
+      "function": "hierarchical_bound",
+      "calls": 1546,
+      "self_seconds": 10.391371145,
+      "cumulative_seconds": 38.649697063000005
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py",
+      "line": 107,
+      "function": "posterior",
+      "calls": 40668,
+      "self_seconds": 10.565968872000001,
+      "cumulative_seconds": 25.840671192000002
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/conservative_recovery.py",
+      "line": 238,
+      "function": "salvage",
+      "calls": 1,
+      "self_seconds": 0.696457721,
+      "cumulative_seconds": 11.186406137
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py",
+      "line": 11,
+      "function": "_solve_factor",
+      "calls": 120458,
+      "self_seconds": 10.933276524,
+      "cumulative_seconds": 10.933276524
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/marginal.py",
+      "line": 127,
+      "function": "calculate",
+      "calls": 1546,
+      "self_seconds": 0.6885293170000001,
+      "cumulative_seconds": 5.713163512
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/retained_position.py",
+      "line": 178,
+      "function": "repaired_fit",
+      "calls": 1,
+      "self_seconds": 0.000237872,
+      "cumulative_seconds": 3.492138623
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/retained_track_likelihood.py",
+      "line": 27,
+      "function": "profile",
+      "calls": 23951,
+      "self_seconds": 2.601251877,
+      "cumulative_seconds": 3.474306474
+    },
+    {
+      "file": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/linalg/_linalg.py",
+      "line": 789,
+      "function": "cholesky",
+      "calls": 40780,
+      "self_seconds": 2.8679713860000002,
+      "cumulative_seconds": 3.143257627
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/continuous_curve_fit.py",
+      "line": 13,
+      "function": "paired_phase_states",
+      "calls": 8449,
+      "self_seconds": 2.4119266880000003,
+      "cumulative_seconds": 3.1217484840000003
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/continuous_curve_fit.py",
+      "line": 47,
+      "function": "paired_phase_frequency",
+      "calls": 5293,
+      "self_seconds": 0.019868566,
+      "cumulative_seconds": 2.602993562
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/polynomial_satellite_diagnostics.py",
+      "line": 10,
+      "function": "batch_noise_screen",
+      "calls": 24399,
+      "self_seconds": 0.877971477,
+      "cumulative_seconds": 2.411799702
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_uncertainty.py",
+      "line": 86,
+      "function": "paired_frequency_modes",
+      "calls": 1578,
+      "self_seconds": 0.035582794,
+      "cumulative_seconds": 1.8531232590000002
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/phase_linear_geometry.py",
+      "line": 21,
+      "function": "prepare_phase_geometry",
+      "calls": 18,
+      "self_seconds": 0.048388769000000005,
+      "cumulative_seconds": 1.7957175600000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "calls": 877105,
+      "self_seconds": 1.6541308000000001,
+      "cumulative_seconds": 1.6541308000000001
+    },
+    {
+      "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py",
+      "line": 16,
+      "function": "phase_shifted_states",
+      "calls": 58,
+      "self_seconds": 1.284003374,
+      "cumulative_seconds": 1.631728534
+    }
+  ],
+  "instrumented_total_seconds": 628.3870328487828,
+  "full_pipeline_speedup": null,
+  "production_modified": false
+}

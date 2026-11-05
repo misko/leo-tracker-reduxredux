@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest [alternating reassociation benchmark](../../reports/2026_11_05_algo07v3_reassociation_benchmark/README.md)
+resolves the component timing question: DS26-0066 complete screens average
+**16.253 → 11.407 s (29.81% lower)** over three alternating pairs, with CPU
+**16.251 → 11.406 s**. All 12 screens and final both-arm science/eight PNGs
+are exact. This is about 4.85 seconds of component savings, not a new complete-path
+ratio. The previous full-run regression below remains valid evidence. Conservative
+profiling identifies 42.765 of 55.625 seconds in paired rejection/refitting;
+independent-arm concurrency is the next measured opportunity. Production unchanged.
+
 Latest [reassociation interpolation iteration](../../reports/2026_11_05_algo07v3_reassociation_geometry/README.md)
 extends shared orbital interpolation to the two cavity-position arms. Its report
 retains a fresh complete DS26-0066 pair, exact comparison, stage costs and host

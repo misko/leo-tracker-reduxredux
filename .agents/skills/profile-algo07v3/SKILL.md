@@ -74,3 +74,15 @@ the frozen original screen with the current one. Run with `--request REQUEST
 external `timeout -k 2 360`. It checks every complete screen against the saved
 result and verifies inputs remain unchanged. Its prepared-component times do
 not replace a fresh complete-pipeline comparison.
+
+For reassociation screening, use `tools/benchmark_algo07v3_reassociation.py`
+with `--request REQUEST --output FRESH_DIRECTORY --repeats 3 --timeout 1200`.
+It runs fresh native inference, captures each live family-omitted screen, then
+alternates the frozen serial implementation and the current one on one CPU.
+Every complete screen must match the original invocation. It also profiles
+conservative recovery separately. The overall instrumented clock includes
+repeated screens and cProfile overhead, so it is not a full-pipeline speed
+benchmark. Verify its final science and eight PNGs against the unchanged owned
+request using the explicit entry-point-alias audit in
+`reports/2026_11_05_algo07v3_recovery_arms/profile_parity.py`. Keep numerical
+inputs and runtime sources unchanged until both the run and parity check finish.
