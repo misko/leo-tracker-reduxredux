@@ -4,6 +4,14 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [family-arm concurrency probe](../../reports/2026_11_05_algo07v3_parallel_family/README.md)
+matches the full native scientific snapshot and all eight PNGs. Family-stage
+wall time is **28.147 → 18.560 s (34.06% lower)**, with parent/child CPU
+**28.142 → 29.955 s (6.44% higher)**. This trades extra CPU for stage latency;
+it is not a complete-path speedup. The 489.988 s diagnostic runs both methods.
+Three focused tests pass. Full CLI/publication and broader-case checks remain
+before integration; production is unchanged.
+
 Latest [CPU-accounted variance repeat](../../reports/2026_11_05_algo07v3_native_canary/variance-cpu-pair/README.md)
 is exact and observes **244.383 → 234.399 s (4.09% lower)**, with total process
 CPU **271.20 → 259.14 s (4.45% lower)**. Maximum reported RSS rises 3.24%.

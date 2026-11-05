@@ -8,8 +8,10 @@ Latest [CPU-accounted repeat](../../reports/2026_11_05_algo07v3_native_canary/va
 is exact, with wall time **244.383 → 234.399 s** and process CPU **271.20 → 259.14 s**.
 Keep the preceding slower pair; this is evidence for a modest optimization,
 not a cumulative claim. DS26-0066 variance correctness expansion is running.
-The prototype remains external. A separate independent-family-arm concurrency
-prototype has three passing tests and is undergoing a native exact-output probe.
+The prototype remains external. A separate [family-arm concurrency prototype](../../reports/2026_11_05_algo07v3_parallel_family/README.md)
+has three passing tests and a complete exact native/PNG probe. Its family stage
+observes 28.147 → 18.560 s wall time with 28.142 → 29.955 s CPU work. It needs a
+full CLI/publication pair and broader cases before integration.
 
 Latest whole-path [variance pair](../../reports/2026_11_05_algo07v3_native_canary/variance-pair/README.md)
 matches exactly but runs **270.732 → 388.845 s (43.63% slower)**. Keep this

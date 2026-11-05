@@ -1,0 +1,54 @@
+{
+  "scope": "DS26-0066 variance correctness expansion against completed integrated native reference",
+  "command": [
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/candidate-process-time.txt",
+    "sh",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_factor_reuse/run_kernel.sh",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/candidate-kernel.py",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/candidate",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/request.json",
+    "1200",
+    "0,1,2"
+  ],
+  "compare_command": [
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py",
+    "--baseline-request",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066-pair/candidate-request.json",
+    "--baseline-timing",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066-pair/candidate/attempt/supervisor.json",
+    "--candidate-request",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/request.json",
+    "--candidate-timing",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/candidate/attempt/supervisor.json",
+    "--output",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/comparison.json"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/request.json": "dbd1d81c42c6405ef2baa0a7fa095d88263f827ed4a0350069e841d4e7185228",
+    "/srv/bulk/leo-dev/algo07v3-variance-canary-20261105/candidate-kernel.py": "3b02974c822ef2504422dcdb85f10d16198ec8df2ef35936119e42a97877dab2",
+    "/srv/bulk/leo-dev/algo07v3-variance-pair-20261105/comparison.json": "9cbd889f07913764e19a88627b33eaf0d0fb098d1cee549a78c0dcf6ff4bd1b9",
+    "/srv/bulk/leo-dev/algo07v3-variance-cpu-pair-20261105/comparison.json": "6882667a73bb269bcca6ea438092757b0cad3a85b97f51862ab37ffba058fb6b",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066-pair/candidate-request.json": "b221d7397ca20df5c997f31ea5dfb13760f0a2aeff7668d991c7de2d0dbd618b",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066-pair/candidate/attempt/supervisor.json": "163f2b579ac3e8b8061c1efc34aa3dd65fe61830c1238faf1347568ffed12008",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_factor_reuse/run_kernel.sh": "2d286e2839a5299a2e6a57d306666d683423fc881bcb12b69836a96436aca2eb",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc"
+  },
+  "performance_comparison": false,
+  "reference_reused_for_science_only": true,
+  "production_modified": false,
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200
+}
