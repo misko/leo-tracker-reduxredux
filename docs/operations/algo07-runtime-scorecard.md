@@ -123,6 +123,15 @@ seconds. These scopes differ, so no speed ratio is valid. The multi-target/joint
 controller, remaining recovery policies and publication still precede any
 complete-path speed qualification.
 
+The [ordered/joint recovery extraction](../../reports/2026_11_05_algo07v3_joint/README.md)
+adds exact two-family covariance, all six initial fits/audits and all six matched
+Powell retries on an explicit numerical fixture. Initial reference/v3 durations
+are 66.013/63.933 seconds; Powell durations are 131.868/133.712 seconds. These
+are comparable component scopes under shared-host load, not a controlled speedup
+or complete-path measurement. The fresh DS26-0002 controller loop separately
+matches the qualified individual references; fresh joint target selection,
+deadline policy and later recovery/publication qualification remain open.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

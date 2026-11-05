@@ -83,7 +83,7 @@ def run(args):
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
     annotation_mode = args.predictive_annotation or args.predictive_inclusion
-    inventory_mode = args.recovery_inventory or annotation_mode
+    inventory_mode = args.recovery_inventory or annotation_mode or args.predictive_recovery
     cavity_mode = args.cavity_policy or inventory_mode
     signed_mode = args.signed_policy or cavity_mode
     history_mode = args.history_policy or signed_mode
@@ -196,6 +196,24 @@ def run(args):
                             result['recovery_inventory'] = fingerprint(inventory_result)
                             print('recovery inventory', inventory_result['eligible_targets'],
                                   flush=True)
+                            if args.predictive_recovery:
+                                from leo.analysis.localization_v3.recovery_controller import (
+                                    recover_tracks,
+                                )
+
+                                def complete_stage(name, operation):
+                                    try:
+                                        value = operation()
+                                    except Exception as error:
+                                        print('recovery stage failed', name, type(error).__name__,
+                                              str(error), flush=True)
+                                        return False, None
+                                    print('recovery stage complete', name, flush=True)
+                                    return True, value
+
+                                recovered = recover_tracks(recovery_context, inventory_result,
+                                    run_stage=complete_stage, discovery_allowed=lambda: True)
+                                result['predictive_recovery'] = fingerprint(recovered)
                             if annotation_mode:
                                 from leo.analysis.localization_v3.predictive_annotation import (
                                     annotate,
@@ -284,6 +302,9 @@ def run(args):
         signed_policy=signed_mode, cavity_policy=cavity_mode,
         recovery_inventory=inventory_mode, scan_identities=args.scan_identities,
         predictive_annotation=annotation_mode, predictive_inclusion=args.predictive_inclusion,
+        predictive_recovery=args.predictive_recovery,
+        recovery_admission=('all predeclared targets; test harness only'
+                            if args.predictive_recovery else None),
         target_rank=args.target_rank,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
@@ -325,6 +346,8 @@ if __name__ == '__main__':
     mode.add_argument('--recovery-inventory', action='store_true')
     mode.add_argument('--predictive-annotation', action='store_true')
     mode.add_argument('--predictive-inclusion', action='store_true')
+    mode.add_argument('--predictive-recovery', action='store_true',
+                      help='Test harness: complete all predeclared recovery work; no time-based omissions')
     parser.add_argument('--target-rank', type=int, default=0)
     parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)

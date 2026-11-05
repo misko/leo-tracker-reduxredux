@@ -245,3 +245,16 @@ def test_inclusion_application_passes_protected_support_without_mutating_invento
     assert 'publication_support' not in evidence['inventory']
     assert app.include_recovery_target({}, dict(status='cavity_incomplete')) == dict(
         status='cavity_incomplete', inclusion=None, recovery_complete=False)
+
+
+def test_recovery_application_keeps_caller_admission_and_later_policies_explicit(monkeypatch):
+    context, evidence, stage, admission = object(), object(), object(), object()
+    def recover(d, e, *, run_stage, discovery_allowed):
+        assert d is context and e is evidence
+        assert run_stage is stage and discovery_allowed is admission
+        return dict(decision='ALGO03_single')
+    monkeypatch.setattr(app, 'recover_tracks', recover)
+    result = app.recover_predictive_tracks(dict(status='track_recovery_prepared',
+        recovery_context=context, inventory=evidence), run_stage=stage, discovery_allowed=admission)
+    assert result['recovery']['decision'] == 'ALGO03_single'
+    assert result['recovery_complete'] is False

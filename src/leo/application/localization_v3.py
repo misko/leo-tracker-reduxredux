@@ -16,6 +16,7 @@ from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.phase_prior import forecast
 from leo.analysis.localization_v3.predictive_annotation import annotate
 from leo.analysis.localization_v3.recovery_inclusion import include_annotation
+from leo.analysis.localization_v3.recovery_controller import recover_tracks
 from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.signed_context import signed_context
@@ -159,3 +160,12 @@ def include_recovery_target(prepared_recovery, annotated):
     result = include_annotation(prepared_recovery['recovery_context'],inventory,
                                 annotated['annotation'])
     return dict(status='predictive_inclusion_evaluated', inclusion=result, recovery_complete=False)
+
+
+def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed):
+    """Run ordered recovery with explicit caller-owned admission and execution."""
+    if prepared_recovery['status'] != 'track_recovery_prepared':
+        return dict(status=prepared_recovery['status'], recovery=None, recovery_complete=False)
+    result = recover_tracks(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
+                            run_stage=run_stage, discovery_allowed=discovery_allowed)
+    return dict(status='predictive_recovery_evaluated', recovery=result, recovery_complete=False)

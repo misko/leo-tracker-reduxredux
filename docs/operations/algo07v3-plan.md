@@ -44,9 +44,14 @@ including supported, residual-failing and unstable identities. The
 adds shared/new-family position trials, exact orbit/owner replay, scoped adoption
 and matched numerical retry. DS26-0002's shared rejection and new-family retry
 acceptance match the frozen reference exactly, including unchanged earlier
-results. Inactive-fragment and successful shared inclusion qualification, the
-multi-target/joint controller, later recovery policies, reassociation and
-publication remain unfinished; full DS26 localization parity is still open.
+results. The [ordered/joint recovery extraction](../../reports/2026_11_05_algo07v3_joint/README.md)
+adds the controller and shared-covariance two-family fits/audits. All six initial
+fits and all six matched Powell retries match on a frozen numerical fixture;
+the fresh DS26-0002 target loop matches its independently qualified references.
+Inactive-fragment and successful shared inclusion qualification, fresh joint
+target-loop qualification, ordinary-clock admission, later recovery policies,
+reassociation and publication remain unfinished; full DS26 localization parity
+is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times
