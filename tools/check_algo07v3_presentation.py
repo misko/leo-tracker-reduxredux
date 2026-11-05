@@ -67,6 +67,7 @@ def run(args):
         from leo.analysis.localization_v3.selected_incumbent import reconstruct_incumbent
         from leo.presentation.fast_standard_analysis import render
         from leo.presentation.localization_v3 import prepare_packet
+        from leo.presentation.localization_v3_path import recorded_decision_path
 
         def fresh():
             return reconstruct_incumbent(
@@ -90,14 +91,21 @@ def run(args):
             read(root / "catalogues/SCAN.json") if qualified_addition else None,
             evidence["observations"],
         )
+        position_path = recorded_decision_path(
+            restored["context"]["saved"],
+            restored["context"]["scan"].search_region,
+            additional=recovery,
+        )
+        if position_path != authority["position_path"]:
+            raise ValueError("Owned decision path differs from the published reference")
         packet = prepare_packet(
             restored["context"],
             restored["owners"],
             restored["arms"],
             evidence["observations"],
             evidence["tracks"],
-            selected_model=authority["selected"]["model_version"],
-            position_path=authority["position_path"],
+            selected_model=position_path["selected_model"],
+            position_path=position_path,
             grid_seconds=args.grid_seconds,
         )
     prepared_seconds = time.monotonic() - began

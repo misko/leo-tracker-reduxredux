@@ -31,7 +31,64 @@ def signed_snapshot(context):
     return result
 
 
+def present_owned_result(directory, prepared, final, retained, native, *, cavity,
+                         predictive, numerical, gap, additional):
+    """Render fresh numerical state; no historical result or evaluation site input."""
+    from dataclasses import asdict, is_dataclass
+
+    import numpy as np
+
+    from leo.presentation.fast_standard_analysis import render
+    from leo.presentation.localization_v3 import prepare_packet
+    from leo.presentation.localization_v3_path import recorded_decision_path
+
+    if final['status'] != 'reassociation_evaluated' or not final['recovery_complete']:
+        raise ValueError('Complete final recovery required for this qualification run')
+    recovery = final['recovery']
+    if recovery['selected'] is None:
+        if retained:
+            raise ValueError('Rejected recovery transferred selected state')
+        context, expected, owners = (prepared[k] for k in ('context', 'arms', 'owners'))
+    else:
+        if len(retained) != 1:
+            raise ValueError('One selected numerical state required')
+        context, expected = retained[0]
+        owners = {arm: row['proposed_owners'] for arm, row in expected.items()}
+    for arm, (_, x) in context['problems'].items():
+        if not np.array_equal(x, recovery['final'][arm]['x']):
+            raise ValueError('Presentation state differs from final numerical position')
+        if len(owners[arm]) != recovery['final'][arm]['associated']:
+            raise ValueError('Presentation ownership differs from final numerical result')
+    path = recorded_decision_path(cavity, context['scan'].search_region,
+        predictive=predictive, numerical=numerical, gap=gap,
+        additional=additional, reassociation=recovery)
+    packet = prepare_packet(context, owners, expected, native['observations'], native['tracks'],
+        selected_model=path['selected_model'], position_path=path)
+    products = render(packet, title='ALGO07v3 standalone qualification', evaluation_reference=None)
+    directory.mkdir(exist_ok=False)
+    for name, png in products.items():
+        (directory / (name + '.png')).write_bytes(png)
+    for name, value in (('position-path', path), ('position-grid', packet['position_grid'])):
+        (directory / (name + '.json')).write_text(json.dumps(value, allow_nan=False) + '\n')
+
+    def science(value):
+        if is_dataclass(value):
+            return science(asdict(value))
+        if isinstance(value, dict):
+            return {k: science(v) for k, v in value.items() if k != 'elapsed_seconds'}
+        if isinstance(value, (list, tuple)):
+            return [science(v) for v in value]
+        return value
+
+    return dict(packet=fingerprint(science(packet)),
+        products={name: hashlib.sha256(png).hexdigest() for name, png in products.items()},
+        grid_complete=packet['position_grid']['complete'],
+        grid_points=packet['position_grid']['evaluated_points'])
+
+
 def run(args):
+    if args.presentation:
+        args.reassociation_complete = True
     if args.reassociation_complete:
         args.reassociation_screen = True
     if args.reassociation_screen:
@@ -193,6 +250,7 @@ def run(args):
                         result['cavity_nominations'] = fingerprint(nominations)
                         print('cavity nominations', nominations['status'], flush=True)
                         selected = cavity_policy(context, nominations)
+                        cavity_result = selected
                         result['cavity_policy'] = fingerprint(selected)
                         print('cavity position', selected['status'], flush=True)
                         if inventory_mode:
@@ -358,13 +416,23 @@ def run(args):
                                                                         raise ValueError('Admitted candidate requires --reassociation-history-bank')
                                                                     bank = json.loads(args.reassociation_history_bank.read_text())
                                                                     return select_history(bank, request)
-                                                                result['reassociation_complete'] = fingerprint(
-                                                                    fit_reassociation(final_context, final_screen,
+                                                                retained = []
+                                                                final_result = fit_reassociation(final_context, final_screen,
                                                                         catalogue, metadata, collect_history,
+                                                                        on_selected=(lambda state, pair: retained.append((state, pair)))
+                                                                            if args.presentation else None,
                                                                         on_fit=lambda row: print('final fit',
                                                                             row['target'], row['proposal'],
                                                                             row['fit']['arm'], row['fit']['start'],
-                                                                            row['fit']['status'], flush=True)))
+                                                                            row['fit']['status'], flush=True))
+                                                                result['reassociation_complete'] = fingerprint(final_result)
+                                                                if args.presentation:
+                                                                    result['presentation'] = present_owned_result(
+                                                                        args.presentation_directory, final_context,
+                                                                        final_result, retained, read('tracks.json'),
+                                                                        cavity=cavity_result, predictive=recovered,
+                                                                        numerical=replay, gap=gaps['recovery'],
+                                                                        additional=additional_position['recovery'])
                                             if args.preflight_packet:
                                                 with args.preflight_packet.open('x') as stream:
                                                     json.dump(additional['preflight'], stream,
@@ -468,6 +536,7 @@ def run(args):
         reassociation_trigger=args.reassociation_trigger,
         reassociation_screen=args.reassociation_screen,
         reassociation_complete=args.reassociation_complete,
+        presentation=args.presentation,
         reassociation_history_bank=(dict(path=str(args.reassociation_history_bank),
             sha256=digest(args.reassociation_history_bank)) if args.reassociation_history_bank else None),
         recovery_catalogue=(dict(path=str(args.recovery_catalogue),
@@ -536,6 +605,9 @@ if __name__ == '__main__':
                       help='Test harness: fresh prefix through final causal nomination and receiver guard')
     mode.add_argument('--reassociation-complete', action='store_true',
                       help='Test harness: connected numerical pipeline including final guarded refits')
+    mode.add_argument('--presentation', action='store_true',
+                      help='Test harness: fresh numerical pipeline, recorded path, grid and all PNGs')
+    parser.add_argument('--presentation-directory', type=Path)
     parser.add_argument('--reassociation-history-bank', type=Path)
     parser.add_argument('--recovery-catalogue', type=Path)
     parser.add_argument('--preflight-packet', type=Path)
@@ -544,6 +616,12 @@ if __name__ == '__main__':
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     args = parser.parse_args()
+    if args.presentation:
+        if args.side != 'candidate' or args.presentation_directory is None:
+            parser.error('--presentation requires candidate and --presentation-directory')
+        if args.presentation_directory.exists():
+            parser.error('--presentation-directory must be new')
+        args.reassociation_complete = True
     if (args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen or args.reassociation_complete) and args.recovery_catalogue is None:
         parser.error('Residual screening/position requires --recovery-catalogue')
     if args.preflight_packet and not (args.additional_preflight or args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen or args.reassociation_complete):

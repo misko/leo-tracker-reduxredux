@@ -9,11 +9,18 @@ through final guarded numerical reassociation, including causal-history
 completion and matched replacement/control fitting. DS26-0066's final numerical
 worker and all eight fits match frozen ALGO07 exactly; a connected DS26-0002
 prepared-input run completes with its earlier science unchanged. Owned plot
-preparation now reproduces all eight PNGs and all 179 grid points exactly on
-the DS26-0084 retained-baseline fixture. Fresh-run recorded-path construction,
-complete publication, full DS26 equivalence, cancellation qualification and the
+preparation reproduces all eight PNGs and all 179 grid points exactly on
+the DS26-0084 retained-baseline fixture. The owned recorded path now passes that
+same comparison, and a fresh DS26-0002 run connects numerical recovery through
+all eight PNGs with every earlier scientific output unchanged. Complete native
+input/publication integration, full DS26 equivalence, cancellation qualification and the
 10× complete-path metric remain unfinished or unproven. This is not yet the
 complete standalone production engine.
+
+The [connected presentation report](../../reports/2026_11_05_algo07v3_connected_presentation/README.md)
+records the fresh prepared-input-to-PNG run, exact numerical regression, owned
+path projection, and 515 passing tests. Its 484.617-second observation excludes
+native preparation and publication; it is not an end-to-end speedup measurement.
 
 Implementation has begun: see the [first extraction and geometry-reuse report](../../reports/2026_11_04_algo07v3_start/README.md).
 This is component progress, not completion of the standalone engine or its gates.
@@ -131,9 +138,10 @@ the existing PNG renderer. DS26-0084 matches the complete frozen plot packet,
 179/179 conditional grid locations and all eight PNG bytes. Selected endpoint
 likelihoods can be transferred from final fitting without another optimization;
 enabling this transfer preserves the complete DS26-0066 accepted-replacement
-result exactly. The suite passes 496 tests. The fixture's recorded path still
-comes from its public terminal; fresh owned audit-to-path assembly, publication
-and broader artifact branches remain to be connected and qualified.
+result exactly. That milestone passed 496 tests and used a path from the public
+terminal. The connected-presentation milestone above replaces that path input
+with owned decision projection and reaches 515 tests; publication and broader
+artifact branches remain to be connected and qualified.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times

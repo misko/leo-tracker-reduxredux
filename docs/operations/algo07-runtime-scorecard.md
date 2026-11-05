@@ -4,6 +4,15 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest connected presentation milestone: [fresh numerical state through eight figures](../../reports/2026_11_05_algo07v3_connected_presentation/README.md).
+DS26-0002 completes prepared-input inference, an owned recorded path, all 179
+grid locations and eight PNGs in **484.617 s** under shared-host load. Every
+earlier numerical output is unchanged; both arms retain 2,783/4,211 points.
+This excludes native preparation and atomic WebUI publication and has no matched
+full reference, so it establishes no speedup. The separate DS26-0084 comparison
+remains byte-exact with the owned path enabled. There are 515 passing focused
+tests. Complete-path matched scans remain zero; no deployment occurred.
+
 Latest presentation milestone: [owned selected-fit plot preparation](../../reports/2026_11_05_algo07v3_presentation/README.md).
 On DS26-0084, all plot data, 179/179 grid locations and eight PNG bytes match the
 frozen renderer exactly. Reference/candidate fixture-to-PNG observations are
