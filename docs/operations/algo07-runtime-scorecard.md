@@ -4,6 +4,16 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest [reverse-order repeat and historical audits](../../reports/2026_11_05_algo07v3_repeat_audits/README.md):
+standalone serial folds **284.846 s**, concurrent folds **258.638 s** (**9.20% less;
+1.1013× observed**) with exact science, both arms and all PNG bytes. Concurrent
+ran first, on the same three CPUs/BLAS settings; the host remained shared.
+This is one native-GLRT-to-publication pair, not a cumulative legacy-to-v3 or
+dataset-wide speedup. The first slower, load-confounded pair below remains valid
+evidence. Historical audit coverage is now 15/17, with no differences in checked
+values; 725 tests pass. Remaining audit/metadata, population and admission gates
+are open. Production is unchanged.
+
 Latest development integration:
 [concurrent predictive folds](../../reports/2026_11_05_algo07v3_predictive_parallel/README.md).
 The fresh standalone pair preserves all owned scientific outputs and artifacts

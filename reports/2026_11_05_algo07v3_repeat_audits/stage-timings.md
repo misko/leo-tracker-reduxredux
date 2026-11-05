@@ -1,0 +1,22 @@
+| Stage | Serial folds (s) | Concurrent folds (s) |
+| --- | ---: | ---: |
+| native_preparation | 8.386 | 8.322 |
+| recovery_catalogue | 5.421 | 5.417 |
+| initial | 28.018 | 25.784 |
+| conservative | 23.872 | 23.410 |
+| family | 18.905 | 18.931 |
+| signed | 2.451 | 2.532 |
+| cavity | 7.823 | 7.861 |
+| inventory | 0.204 | 0.205 |
+| predictive | 98.951 | 79.151 |
+| numerical | 17.243 | 16.462 |
+| gap | 0.001 | 0.001 |
+| residual | 0.199 | 0.191 |
+| residual_screen | 19.012 | 18.382 |
+| addition | 0.003 | 0.002 |
+| incumbent | 0.289 | 0.273 |
+| ranking | 7.248 | 7.338 |
+| admission | 12.719 | 10.832 |
+| final | 0.062 | 0.065 |
+| plot_evidence | 17.540 | 17.771 |
+| png_rendering | 5.539 | 5.665 |

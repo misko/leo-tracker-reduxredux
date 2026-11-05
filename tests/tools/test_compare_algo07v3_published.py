@@ -73,6 +73,171 @@ def test_trigger_checks_full_ranking_including_unselected_families():
 
 
 @pytest.fixture
+def no_addition_handoff():
+    original = dict(
+        baseline_arms={a: dict(endpoint=[1.0, 2.0], objective=3.0) for a in ("c0", "fitted_c")},
+        baseline_owners={a: {"point": 12} for a in ("c0", "fitted_c")},
+    )
+    replay = dict(
+        pre_recovery={"c0": 0.0, "fitted_c": 0.0},
+        recovery={"status": "fallback"},
+        rebuilt={"c0": 0.0, "fitted_c": 0.0},
+    )
+    decision = dict(
+        status="no_qualified_new_family", excluded=[{"norad": 12}], eligible_proposals=0
+    )
+    additional = dict(decisions={"72h_30s": decision}, trials={}, control=None)
+    candidate = dict(
+        arms=original["baseline_arms"],
+        owners=original["baseline_owners"],
+        replay=dict(replay, recovery=decision),
+        status="reassociation_prepared",
+        recovery_complete=False,
+    )
+    return original, replay, additional, candidate
+
+
+def test_handoff_checks_both_arms_owners_and_expanded_rejection(no_addition_handoff):
+    from copy import deepcopy
+
+    from compare_algo07v3_published import compare_handoff_no_addition
+
+    original, replay, additional, candidate = no_addition_handoff
+    compare_handoff_no_addition(original, replay, additional, candidate)
+    for field, arm, key, value in (
+        ("arms", "c0", "objective", 3.000000001),
+        ("arms", "fitted_c", "endpoint", [1.0, 2.1]),
+        ("owners", "c0", "point", 13),
+        ("owners", "fitted_c", "point", 13),
+    ):
+        changed = deepcopy(candidate)
+        changed[field][arm][key] = value
+        with pytest.raises(ValueError):
+            compare_handoff_no_addition(original, replay, additional, changed)
+    changed = deepcopy(candidate)
+    changed["replay"]["recovery"]["excluded"] = []
+    with pytest.raises(ValueError):
+        compare_handoff_no_addition(original, replay, additional, changed)
+
+
+@pytest.mark.parametrize("kind", ["trial", "control", "accepted", "replay"])
+def test_handoff_refuses_unmapped_additions_or_replay_fields(no_addition_handoff, kind):
+    from compare_algo07v3_published import compare_handoff_no_addition
+
+    original, replay, additional, candidate = no_addition_handoff
+    if kind == "trial":
+        additional["trials"] = {"new": {}}
+    elif kind == "control":
+        additional["control"] = {}
+    elif kind == "accepted":
+        additional["decisions"]["72h_30s"]["status"] = "qualified"
+    else:
+        replay["new_field"] = True
+    with pytest.raises(ValueError):
+        compare_handoff_no_addition(original, replay, additional, candidate)
+
+
+@pytest.fixture
+def reconstructed_oracle(tmp_path):
+    import hashlib
+    import json
+
+    root = tmp_path / "export"
+    source = root / "ALGO02/worker/inference/SCAN"
+    source.mkdir(parents=True)
+    data = source / "input.json"
+    data.write_text("{}")
+    module = tmp_path / "frozen.py"
+    module.write_text("# original numerical source\n")
+    value = dict(owners={"point": 12}, score=1.0)
+    output = tmp_path / "oracle.json"
+    from check_algo07v3_scan_likelihood import fingerprint
+
+    output.write_text(json.dumps(fingerprint(value)))
+
+    def binding(path):
+        return dict(path=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+
+    (root / "ALGO02/descriptor.json").write_text(
+        json.dumps(
+            dict(files={"worker/inference/SCAN/input.json": "sha256:" + binding(data)["sha256"]})
+        )
+    )
+    receipt = dict(
+        source=str(source),
+        output=binding(output),
+        tool=binding(module),
+        inputs=[binding(data)],
+        modules={"original": binding(module)},
+        scan_identities=["scan"],
+    )
+    output.with_suffix(".receipt.json").write_text(json.dumps(receipt))
+    return value, output, root, data, module
+
+
+@pytest.mark.parametrize("changed", [None, "value", "input", "source", "output", "identity"])
+def test_oracle_mapping_requires_every_value_and_bound_inputs(reconstructed_oracle, changed):
+    from compare_algo07v3_published import compare_reconstructed_oracle
+
+    value, output, root, data, module = reconstructed_oracle
+    identities = ["scan"]
+    if changed == "value":
+        value["owners"]["point"] = 13
+    elif changed == "input":
+        data.write_text('{"changed": true}')
+    elif changed == "source":
+        module.write_text("# changed source\n")
+    elif changed == "output":
+        output.write_text("{}")
+    elif changed == "identity":
+        identities = ["other scan"]
+    if changed:
+        with pytest.raises(ValueError):
+            compare_reconstructed_oracle(value, output, root, identities)
+    else:
+        compare_reconstructed_oracle(value, output, root, identities)
+
+
+@pytest.mark.parametrize("changed", [None, "node", "arms", "signed", "base"])
+def test_signed_restoration_checks_values_and_keeps_computed_state_exact(monkeypatch, changed):
+    from copy import deepcopy
+
+    import compare_algo07v3_published as module
+    from check_algo07v3_scan_likelihood import fingerprint
+
+    node, arms = dict(innovations=[1.0, 2.0]), dict(c0={"x": [1.0, 2.0]})
+    persisted = dict(
+        node=node, arms=arms, signed={"accepted": False, "policy_arms": arms}, base=np.array([3.0])
+    )
+    reference = fingerprint(persisted)
+    candidate = deepcopy(persisted)
+    candidate["node"]["innovations"] = np.array([1.0, 2.0])
+    candidate["arms"] = {"c0": {"x": np.array([1.0, 2.0])}}
+    candidate["signed"]["policy_arms"] = deepcopy(candidate["arms"])
+    monkeypatch.setattr(
+        module,
+        "read_export",
+        lambda root, stage, path: (
+            {"final_node": node} if path.endswith("/result.json") else {"baseline_arms": arms},
+            {},
+        ),
+    )
+    if changed == "node":
+        candidate["node"]["innovations"][0] += 1e-12
+    elif changed == "arms":
+        candidate["arms"]["c0"]["x"][0] += 1e-12
+    elif changed == "signed":
+        candidate["signed"]["policy_arms"]["c0"]["x"][0] += 1e-12
+    elif changed == "base":
+        candidate["base"][0] += 1e-12
+    if changed:
+        with pytest.raises(ValueError):
+            module.compare_signed_snapshot(reference, candidate, None)
+    else:
+        module.compare_signed_snapshot(reference, candidate, None)
+
+
+@pytest.fixture
 def final_fallback(tmp_path):
     import hashlib
     from copy import deepcopy

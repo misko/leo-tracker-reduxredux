@@ -166,6 +166,96 @@ def compare_trigger(original, candidate):
     compare_persisted(expected, fingerprint(candidate))
 
 
+def compare_handoff_no_addition(original_input, original_replay, additional, candidate):
+    """Map the complete retained incumbent using the bound input and replay.
+
+    The old final-stage replay abbreviates the no-addition reason to 'fallback'.
+    Its preceding persisted ALGO06 decision contains the full reason retained
+    by v3. Compare that document too; do not drop the richer v3 receipt.
+    """
+    if set(additional["decisions"]) != {"72h_30s"}:
+        raise ValueError("Unknown additional policy at reassociation handoff")
+    decision = additional["decisions"]["72h_30s"]
+    if (
+        decision["status"] != "no_qualified_new_family"
+        or additional["trials"]
+        or additional["control"] is not None
+    ):
+        raise ValueError("Additional fit branches require independent handoff mappings")
+    if set(original_replay) != {"pre_recovery", "recovery", "rebuilt"}:
+        raise ValueError("Unknown reassociation replay fields")
+    if original_replay["recovery"] != {"status": "fallback"}:
+        raise ValueError("Expected independently recorded no-addition fallback")
+    expected = dict(
+        arms=original_input["baseline_arms"],
+        owners=original_input["baseline_owners"],
+        replay=dict(original_replay, recovery=decision),
+        status="reassociation_prepared",
+        recovery_complete=False,
+    )
+    compare_persisted(expected, fingerprint(candidate))
+
+
+def compare_signed_snapshot(reference, candidate, root):
+    """Restore only the explicitly persisted node/unchanged-arm boundaries.
+
+    The fixture oracle reads these blocks from JSON, which cannot retain NumPy
+    scalar/array types. Every value is independently checked against the bound
+    persisted document using the existing lossless array restoration rule.
+    Newly computed context, priors and likelihoods remain fingerprint-exact.
+    """
+    actual = fingerprint(candidate)
+    original, _ = read_export(root, "ALGO02", "worker/inference/SCAN/result.json")
+    node = original["final_node"]
+    if reference["node"] != fingerprint(node):
+        raise ValueError("Frozen signed node is not the persisted source node")
+    compare_persisted(node, actual["node"], "signed/node")
+    actual["node"] = reference["node"]
+    if reference["signed"]["accepted"] is False:
+        cavity, _ = read_export(root, "ALGO02", "worker/inference/family_cavity/position/SCAN.json")
+        arms = cavity["baseline_arms"]
+        for parent, key in ((reference, "arms"), (reference["signed"], "policy_arms")):
+            if parent[key] != fingerprint(arms):
+                raise ValueError("Unchanged signed arms differ from persisted incumbent")
+        compare_persisted(arms, actual["arms"], "signed/arms")
+        compare_persisted(arms, actual["signed"]["policy_arms"], "signed/policy_arms")
+        actual["arms"] = reference["arms"]
+        actual["signed"]["policy_arms"] = reference["signed"]["policy_arms"]
+    if reference != actual:
+        raise ValueError("Complete signed context differs after lossless persisted restoration")
+
+
+def compare_reconstructed_oracle(candidate, path, root, identities, *, signed=False):
+    """Verify a frozen reconstruction's input/source bindings and every field."""
+    raw = path.read_bytes()
+    receipt = json.loads(path.with_suffix(".receipt.json").read_bytes())
+    folder = (root / "ALGO02").resolve(strict=True)
+    descriptor = json.loads((folder / "descriptor.json").read_bytes())
+    if Path(receipt["source"]).resolve() != folder / "worker/inference/SCAN":
+        raise ValueError("Oracle reconstructed a different reference export")
+    if Path(receipt["output"]["path"]).resolve() != path.resolve():
+        raise ValueError("Oracle output path differs")
+    if hashlib.sha256(raw).hexdigest() != receipt["output"]["sha256"]:
+        raise ValueError("Oracle output changed")
+    if "scan_identities" in receipt and receipt["scan_identities"] != identities:
+        raise ValueError("Oracle scan identities differ")
+    if not receipt["inputs"] or not receipt["modules"]:
+        raise ValueError("Complete oracle input/source bindings required")
+    for binding in receipt["inputs"]:
+        actual = Path(binding["path"]).resolve(strict=True)
+        relative = str(actual.relative_to(folder))
+        digest = hashlib.sha256(actual.read_bytes()).hexdigest()
+        if digest != binding["sha256"] or descriptor["files"].get(relative) != "sha256:" + digest:
+            raise ValueError("Oracle input is not bound to the reference export")
+    for binding in [receipt["tool"], *receipt["modules"].values()]:
+        if hashlib.sha256(Path(binding["path"]).read_bytes()).hexdigest() != binding["sha256"]:
+            raise ValueError("Oracle numerical source changed")
+    if signed:
+        compare_signed_snapshot(json.loads(raw), candidate, root)
+    elif json.loads(raw) != fingerprint(candidate):
+        raise ValueError("Complete reconstructed oracle differs")
+
+
 def compare_gap_no_split(original, candidate, descriptor, folder):
     """Verify the complete prepare-only branch using its original native supports."""
     if original["selected"] is not None or original["candidate"] is not None:
@@ -493,6 +583,70 @@ def compare(args):
             scope="Prepare-only branch with unchanged full parent supports",
             metadata_semantics_qualified=False,
         )
+    handoff_documents = {}
+    for key, stage, path in (
+        ("input", "ALGO07", "worker/recovery/inputs/SCAN.json"),
+        ("replay", "ALGO07", "worker/recovery/candidate/SCAN/replay.json"),
+        ("additional", "ALGO06", "worker/recovery/position/SCAN/result.json"),
+    ):
+        value, descriptor = read_export(args.reference_evidence, stage, path)
+        same(descriptor["input_sha256"], request["identity"]["input_sha256"])
+        handoff_documents[key] = value
+    check(
+        "policy/reassociation_handoff",
+        lambda: compare_handoff_no_addition(
+            handoff_documents["input"],
+            handoff_documents["replay"],
+            handoff_documents["additional"],
+            evidence["audit"]["reassociation_handoff"],
+        ),
+    )
+    if checks["policy/reassociation_handoff"]:
+        policies["reassociation_handoff"] = dict(
+            stage="ALGO07",
+            file="worker/recovery/inputs/SCAN.json",
+            supporting_files=[
+                "ALGO07/worker/recovery/candidate/SCAN/replay.json",
+                "ALGO06/worker/recovery/position/SCAN/result.json",
+            ],
+            scope="Complete no-addition handoff: both arms, all owners and replay checks",
+            mapped_fields=["abbreviated fallback expanded from bound preceding decision"],
+            metadata_semantics_qualified=False,
+        )
+    for name, option in (
+        ("signed_policy", "signed_oracle"),
+        ("recovery_inventory", "inventory_oracle"),
+    ):
+        path = getattr(args, option, None)
+        if path is None:
+            continue
+        check(
+            "policy/" + name,
+            lambda n=name, p=path: compare_reconstructed_oracle(
+                evidence["audit"][n],
+                p,
+                args.reference_evidence,
+                request["scan_identities"],
+                signed=n == "signed_policy",
+            ),
+        )
+        if checks["policy/" + name]:
+            policies[name] = dict(
+                stage="ALGO02",
+                file="worker/inference/SCAN",
+                external_oracle=str(path),
+                oracle_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                oracle_receipt_sha256=hashlib.sha256(
+                    path.with_suffix(".receipt.json").read_bytes()
+                ).hexdigest(),
+                scope="Every numerical context field from bound independent frozen reconstruction",
+                persisted_type_restoration=(
+                    ["node", "unchanged arms", "unchanged signed.policy_arms"]
+                    if name == "signed_policy"
+                    else []
+                ),
+                metadata_semantics_qualified=False,
+            )
     missing = sorted(set(evidence["audit"]) - set(policies))
     reference_clock = json.loads(args.reference_timing.read_bytes())
     candidate_clock = json.loads(args.candidate_timing.read_bytes())
@@ -550,6 +704,8 @@ if __name__ == "__main__":
         "output",
     ):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--signed-oracle", type=Path)
+    parser.add_argument("--inventory-oracle", type=Path)
     args = parser.parse_args()
     result = compare(args)
     with args.output.open("x") as stream:

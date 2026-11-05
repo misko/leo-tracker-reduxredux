@@ -4,6 +4,14 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest qualification: [reverse-order timing repeat and expanded audits](../../reports/2026_11_05_algo07v3_repeat_audits/README.md).
+The serial/concurrent standalone pair is exact and takes **284.846 / 258.638 s**
+(9.20% less elapsed time). This is a single shared-host observation, not the
+cumulative legacy-to-v3 speedup or population qualification. Historical checks
+now cover 15/17 sections and 725 tests pass. Remaining mappings are
+`additional_recovery` and `numerical_recovery`; metadata, accepted branches,
+full DS26, ordinary deadlines and the tenfold target remain open. No deployment.
+
 Latest implementation: [concurrent predictive folds](../../reports/2026_11_05_algo07v3_predictive_parallel/README.md).
 Independent ordinary annotation folds now use up to three owned processes;
 stateful replays/callbacks and adoption remain serial. The fresh native pair

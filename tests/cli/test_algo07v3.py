@@ -79,26 +79,56 @@ def test_supervisor_refuses_unbounded_deadline(tmp_path, timeout):
         supervise(["must-not-launch"], log=log, timeout=timeout, environment={})
 
 
-def test_supervisor_timeout_cleans_up_actual_owned_pair(tmp_path):
+def test_supervisor_timeout_cleans_up_actual_owned_pair(tmp_path, monkeypatch):
+    original_popen = subprocess.Popen
+
+    def start(*args, **kwargs):
+        child = original_popen(*args, **kwargs)
+        original_wait = child.wait
+        first = True
+
+        def wait(timeout=None):
+            nonlocal first
+            if first:
+                first = False
+                # This test exercises cleanup after both fits start. Give
+                # imports a separate bounded setup interval; the real short
+                # wait below must then time out with both children alive.
+                until = time.monotonic() + 10
+                while not all((tmp_path / arm).exists() for arm in ("c0", "fitted_c")):
+                    if child.poll() is not None or time.monotonic() >= until:
+                        raise AssertionError("Owned pair did not become ready")
+                    time.sleep(0.01)
+            return original_wait(timeout=timeout)
+
+        child.wait = wait
+        return child
+
+    monkeypatch.setattr(subprocess, "Popen", start)
     code = (
-        'import os,signal,time\n'
-        'from pathlib import Path\n'
-        'from leo.operations.localization_v3_parallel import map_initial_arms\n'
-        'from leo.operations.localization_v3_job import JobInterrupted\n'
+        "import os,signal,time\n"
+        "from pathlib import Path\n"
+        "from leo.operations.localization_v3_parallel import map_initial_arms\n"
+        "from leo.operations.localization_v3_job import JobInterrupted\n"
         'def interrupted(*args): raise JobInterrupted("cancel")\n'
-        'signal.signal(signal.SIGTERM, interrupted)\n'
-        'def fit(arm):\n'
-        ' signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
-        f' Path({str(tmp_path)!r}, arm).write_text(str(os.getpid()))\n'
-        ' time.sleep(60)\n'
+        "signal.signal(signal.SIGTERM, interrupted)\n"
+        "def fit(arm):\n"
+        " signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+        f" Path({str(tmp_path)!r}, arm).write_text(str(os.getpid()))\n"
+        " time.sleep(60)\n"
         'try: map_initial_arms(fit, ("c0", "fitted_c"))\n'
-        'except JobInterrupted: pass\n'
+        "except JobInterrupted: pass\n"
     )
-    with (tmp_path / 'log').open('wb') as log:
-        result = supervise([sys.executable, '-B', '-c', code], log=log, timeout=1.5,
-                            environment=os.environ.copy(), grace=1.)
-    assert result['status'] == 'timed_out'
-    for arm in ('c0', 'fitted_c'):
+    with (tmp_path / "log").open("wb") as log:
+        result = supervise(
+            [sys.executable, "-B", "-c", code],
+            log=log,
+            timeout=0.1,
+            environment=os.environ.copy(),
+            grace=1.0,
+        )
+    assert result["status"] == "timed_out"
+    for arm in ("c0", "fitted_c"):
         with pytest.raises(ProcessLookupError):
             os.kill(int((tmp_path / arm).read_text()), 0)
 
