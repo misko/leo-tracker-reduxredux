@@ -34,6 +34,7 @@ class ExecutionPorts:
     map_predictive_folds: Callable | None = None
     map_family_arms: Callable | None = None
     map_recovery_arms: Callable | None = None
+    map_conservative_arms: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -126,7 +127,9 @@ def infer_prepared(
     conservative = step(
         "conservative",
         lambda: policy.refit_initial_position(
-            prepared, initial["initial_fit"], region, noise_sha256=noise_sha
+            prepared, initial["initial_fit"], region, noise_sha256=noise_sha,
+            **({"map_arms": execution.map_conservative_arms}
+               if execution.map_conservative_arms else {}),
         ),
         "conservative_fit_evaluated",
     )

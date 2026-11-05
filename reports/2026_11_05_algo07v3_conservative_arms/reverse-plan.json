@@ -1,0 +1,67 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_conservative_arms/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/candidate-request.json",
+      "run",
+      "1200"
+    ]
+  },
+  "sequence": [
+    "candidate",
+    "baseline"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-src/leo/analysis/localization_v3/conservative_recovery.py": "1980c199bb2a195e06e11d5bd4ebc56cf00ea30ee7c65bcaa21d17bc16544d5b",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/conservative_recovery.py": "9d5047f873a22790c4f0818877b09270ee91a0761a9a3d7204c8a849639ee656",
+    "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-src/leo/application/localization_v3.py": "a849df8b002e650f4cb6ce1f8a079fab0687616eb4a3e8723eb0abde03a4f754",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "1254f7c759724a61448583cd0b049c0c78b0f7fb4bd8066b6cd4f761a14385e9",
+    "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-src/leo/application/localization_v3_engine.py": "2ffa716b2cbbcd408861dd4f3aba5c9b8068eebe901fdb856e2e196a39e311a6",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "a0cbd07af4886fb5ad31bdd2720cc6f314d537e99cbf49b8bf30c9f681a3ac8f",
+    "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-src/leo/operations/localization_v3_job.py": "d60d07e6c7d81417ec5e5cc750cfe3934cae5bd3eeff27c485dc7c2d0fe41652",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_job.py": "a4b01282ff789b7b2a3a6bf23e2dcfb08e041d675553b66c22762a061cc26d30",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_conservative_arms/run_pair.py": "356bec75d2982824bd634c92eed382c22ab03fcfa15150d117a2f346a5997417",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_conservative_arms/run_baseline.sh": "570a33cb448911951f95474a023758c1385d13447262970b25b97fae286a9494",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/baseline-request.json": "a2f789755e0510dffc143b29e9f8651ea27a49682bdf0699bfc88e8461e84ce5",
+    "/srv/bulk/leo-dev/algo07v3-conservative-arms-20261105/reverse/candidate-request.json": "0fe3ce226487fdc63aa0c8f1d751a293891c0cd22e6301b47b41223403a0f6a9"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

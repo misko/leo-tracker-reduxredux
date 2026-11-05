@@ -42,16 +42,20 @@ def test_initial_executor_port_is_forwarded_only_to_initial_search(monkeypatch):
             assert 'map_arms' not in kwargs
 
 
-def test_family_executor_is_scoped_to_family_policy(monkeypatch):
+@pytest.mark.parametrize('port,method', [
+    ('map_family_arms', 'fit_family_policy'),
+    ('map_conservative_arms', 'refit_initial_position'),
+])
+def test_stage_executor_is_scoped_to_its_policy(monkeypatch, port, method):
     from dataclasses import replace
 
     prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
     mapper = object()
-    execution = replace(execution, map_family_arms=mapper)
+    execution = replace(execution, **{port: mapper})
     engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
                           collect_history=object(), execution=execution)
     for name, _, kwargs in calls:
-        if name == 'fit_family_policy':
+        if name == method:
             assert kwargs['map_arms'] is mapper
         else:
             assert 'map_arms' not in kwargs

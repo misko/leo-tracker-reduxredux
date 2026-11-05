@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest [conservative-arm concurrency](../../reports/2026_11_05_algo07v3_conservative_arms/README.md)
+measures **73.595 → 46.980 s (36.16% lower)** for complete prepared conservative
+recovery on DS26-0066, across three alternating exact pairs. Parent-plus-child
+CPU is **73.507 → 75.042 s**, so this improves latency at a small CPU cost.
+The report retains four fresh complete DS26-0002 executions in ABBA order,
+with per-stage costs and host evidence; unchanged stages vary materially under
+shared-host load. The 940-test suite passes. Production remains unchanged.
+
+The exact ABBA run order is **199.368 / 192.892 / 191.880 / 320.444 s**.
+Both candidates are about 192 s; the final baseline slows in unchanged stages.
+The first pair saves 6.476 s, but the pooled **259.906 → 192.386 s** average
+does not qualify a 25.98% code speedup. All four science/PNG outputs also match
+across pairs. Keep these complete-path observations separate from component gains.
+
 Latest [alternating reassociation benchmark](../../reports/2026_11_05_algo07v3_reassociation_benchmark/README.md)
 resolves the component timing question: DS26-0066 complete screens average
 **16.253 → 11.407 s (29.81% lower)** over three alternating pairs, with CPU

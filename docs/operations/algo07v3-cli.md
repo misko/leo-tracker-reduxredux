@@ -1,5 +1,16 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The owned CLI now maps conservative c=0/fitted-c fits through its existing
+ordered executor. Rejection masks, salvage and callbacks remain sequential;
+only compact fit/metric records cross the process boundary. The
+[qualification report](../../reports/2026_11_05_algo07v3_conservative_arms/README.md)
+records 940 passing tests, exact DS26-0066 prepared-stage pairs and four fresh
+complete DS26-0002 runs. The stage averages **73.595 → 46.980 s**, with a small
+CPU increase. Production and ordinary-admission qualification remain unchanged.
+The four full timings are **199.368 / 192.892 / 191.880 / 320.444 s** in ABBA
+order, with exact science and all PNGs across all runs. The final baseline's
+host-related variation prevents attributing the pooled difference to the change.
+
 The [reassociation timing follow-up](../../reports/2026_11_05_algo07v3_reassociation_benchmark/README.md)
 alternates complete screens from live native DS26-0066 inference. Twelve exact
 executions average **16.253 → 11.407 s** per two-target screen set. Final science

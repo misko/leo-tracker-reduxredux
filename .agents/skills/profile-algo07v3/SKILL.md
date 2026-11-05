@@ -86,3 +86,14 @@ benchmark. Verify its final science and eight PNGs against the unchanged owned
 request using the explicit entry-point-alias audit in
 `reports/2026_11_05_algo07v3_recovery_arms/profile_parity.py`. Keep numerical
 inputs and runtime sources unchanged until both the run and parity check finish.
+
+For conservative recovery, `tools/benchmark_algo07v3_conservative.py` loads owned
+native preparation and initial-fit evidence, builds a fresh scan context for
+each trial, and alternates the frozen serial stage with concurrent arms. Use
+`--request REQUEST --output NEW_JSON --repeats 3`, CPUs 0–2, one BLAS thread and
+an external `timeout -k 2 600`. It compares every complete stage against the
+saved serial result and records parent plus reaped-child CPU. This is prepared
+stage evidence, not fresh full inference. The complete-run recipe in
+`reports/2026_11_05_algo07v3_conservative_arms/run_pair.py` supports
+`--candidate-first`; run a fresh normal pair followed by a fresh reversed pair
+to record ABBA order. Retain all four complete timings and cross-pair exactness.

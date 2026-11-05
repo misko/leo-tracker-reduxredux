@@ -28,7 +28,8 @@ ARMS = ("c0", "fitted_c")
 
 
 def conservative_recovery(
-    scan, initial, observations, *, max_rounds=4, rounds=5, iterations=48, on_round=None
+    scan, initial, observations, *, max_rounds=4, rounds=5, iterations=48, on_round=None,
+    map_arms=None,
 ):
     """Retain exactly the original exclusion/salvage policy and failure states.
 
@@ -63,6 +64,7 @@ def conservative_recovery(
         rounds=rounds,
         iterations=iterations,
         on_round=on_round,
+        map_arms=map_arms,
     )
     trims = []
     if stable and not keep.all():
@@ -76,6 +78,7 @@ def conservative_recovery(
             rounds=rounds,
             iterations=iterations,
             on_round=on_round,
+            map_arms=map_arms,
         )
     else:
         after_history = []
@@ -205,16 +208,35 @@ def causal_fit(scan, node, keep, arm, *, rounds=5, iterations=48):
     return fit_position(scan, node, keep, [], arm, "native", rounds=rounds, iterations=iterations)
 
 
-def fit_and_gate(scan, node, keep, stage, max_rounds=4, *, rounds=5, iterations=48, on_round=None):
+def fit_and_gate(scan, node, keep, stage, max_rounds=4, *, rounds=5, iterations=48,
+                 on_round=None, map_arms=None):
     """Monotone paired-arm rejection with equal data and budgets in each pair."""
     history = []
     for epoch in range(max_rounds):
         pair, rejected = ({}, set())
+        if map_arms is None:
+            for arm in ARMS:
+                p, record = causal_fit(scan, node, keep, arm, rounds=rounds, iterations=iterations)
+                metrics = retained_metrics(p, record["fit"]["parameters"])
+                pair[arm] = dict(record=record, metrics=metrics)
+        else:
+            def fit_arm(arm, keep=keep):
+                problem, record = causal_fit(
+                    scan, node, keep, arm, rounds=rounds, iterations=iterations
+                )
+                return dict(record=record,
+                            metrics=retained_metrics(problem, record["fit"]["parameters"]))
+
+            pair = dict(zip(ARMS, map_arms(fit_arm, ARMS), strict=True))
+            # Transfer only fit/metric records, not the large scan or its caches.
+            # Rebuild the last arm's layout for the unchanged paired mask update.
+            saved = pair["fitted_c"]["record"]
+            p = PositionNormal(scan, node, scan.radio_sigma_hz, True,
+                               reference=np.asarray(saved["phase_reference"]), keep=keep)
+            p.phase_sigma = np.asarray(saved["phase_widths_s"])
         for arm in ARMS:
-            p, record = causal_fit(scan, node, keep, arm, rounds=rounds, iterations=iterations)
-            metrics = retained_metrics(p, record["fit"]["parameters"])
-            pair[arm] = dict(record=record, metrics=metrics)
-            rejected.update(r["component"] for r in metrics["tracks"] if not r["compatible"])
+            rejected.update(r["component"] for r in pair[arm]["metrics"]["tracks"]
+                            if not r["compatible"])
         history.append(
             dict(epoch=epoch, active_points=int(keep.sum()), rejected_components=sorted(rejected))
         )

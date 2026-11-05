@@ -73,7 +73,8 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
     return dict(status='initial_position_fitted', initial_fit=result, recovery_complete=False)
 
 
-def refit_initial_position(prepared, initial, search_region, *, noise_sha256=None, on_round=None):
+def refit_initial_position(prepared, initial, search_region, *, noise_sha256=None, on_round=None,
+                           map_arms=None):
     """Use a fresh context for the genuine-previous prior and conservative recovery.
 
     Later ordered recovery policies remain separate from this incumbent.
@@ -82,7 +83,8 @@ def refit_initial_position(prepared, initial, search_region, *, noise_sha256=Non
         return dict(status=prepared['status'], conservative_fit=None, recovery_complete=False)
     scan = _context(prepared, search_region, noise_sha256, genuine=True)
     result = conservative_recovery(scan, initial, prepared['tracks']['observations'],
-                                    on_round=on_round)
+                                    on_round=on_round,
+                                    **({'map_arms': map_arms} if map_arms is not None else {}))
     return dict(status='conservative_fit_evaluated', conservative_fit=result,
                 recovery_complete=False)
 

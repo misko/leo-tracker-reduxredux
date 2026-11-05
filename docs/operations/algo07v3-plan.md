@@ -4,6 +4,16 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest [conservative-arm implementation](../../reports/2026_11_05_algo07v3_conservative_arms/README.md)
+uses the existing bounded executor while preserving sequential rejection masks
+and salvage. Three exact DS26-0066 prepared-stage pairs average **73.595 →
+46.980 s**; CPU rises slightly. The 940-test suite and full DS26-0002 ABBA
+comparison provide the accompanying qualification. Host variation in unchanged
+stages prevents assigning the entire full-run timing difference to this edit.
+Next focus profiling on predictive recovery, the largest remaining fitting cost,
+including the split between control fits, new-family fits and repeated audits.
+Full DS26, ordinary admission and 10× remain open; no deployment.
+
 The [alternating reassociation follow-up](../../reports/2026_11_05_algo07v3_reassociation_benchmark/README.md)
 now establishes exact component savings: **16.253 → 11.407 s** across two
 DS26-0066 targets, with all 12 screens and final science/eight PNGs exact.

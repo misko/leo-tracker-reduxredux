@@ -176,7 +176,8 @@ def test_initial_fit_forwards_executor_without_changing_budgets(monkeypatch):
     assert result['initial_fit'] == {'selected_hypothesis': 1}
 
 
-def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatch):
+@pytest.mark.parametrize('parallel', [False, True])
+def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatch, parallel):
     from types import SimpleNamespace
 
     observation = dict(observation_id='native-1')
@@ -186,6 +187,7 @@ def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatc
             catalogue_sha256='genuine-sha', sources={'1': {'epoch_utc_ns': 5}}),
         metadata=dict(origin_utc_ns=10, regional_center=[1., 2.])))
     initial, region, contexts = {}, object(), []
+    extra = dict(map_arms=object()) if parallel else {}
 
     def context(*args, **kw):
         assert kw['previous_tle'] == 'genuine'
@@ -197,15 +199,15 @@ def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatc
 
     def recovery(scan, result, observations, **kwargs):
         assert scan is contexts[-1] and result is initial
-        assert observations == [observation] and kwargs == dict(on_round=None)
+        assert observations == [observation] and kwargs == dict(on_round=None, **extra)
         return dict(status='gate_refit_unstable')
 
     monkeypatch.setattr(app, 'ScanLikelihood', context)
     monkeypatch.setattr(app, 'conservative_recovery', recovery)
-    result = app.refit_initial_position(prepared, initial, region)
+    result = app.refit_initial_position(prepared, initial, region, **extra)
     assert result['conservative_fit']['status'] == 'gate_refit_unstable'
     assert result['recovery_complete'] is False
-    app.refit_initial_position(prepared, initial, region)
+    app.refit_initial_position(prepared, initial, region, **extra)
     assert contexts[0] is not contexts[1]
 
 
