@@ -1,5 +1,13 @@
 # ALGO07 cumulative runtime scorecard
 
+The external [scoped initial-cache experiment](../../reports/2026_11_05_algo07v3_initial_cache/README.md)
+preserves all six prepared initial searches and a fresh complete DS26-0002 run,
+including both arms and all eight PNG bytes. Prepared search averages
+**28.792 → 27.950 s**, with CPU **42.795 → 40.529 s**. The complete native pair
+nevertheless regresses **244.609 → 301.029 s** (candidate first); unchanged later
+stages also slow down. Keep the cache external pending stronger timing evidence.
+No production change or cumulative speedup is claimed.
+
 The [covariance-index iteration](../../reports/2026_11_05_algo07v3_posterior_followup/README.md)
 is integrated in development. Eight complete slow DS26-0066 training fits are
 exact: `c=0` averages **49.519 → 47.269 s (4.54% lower)** and fitted `c`

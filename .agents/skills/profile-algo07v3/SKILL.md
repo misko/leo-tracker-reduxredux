@@ -182,3 +182,17 @@ native qualification and 727 tests; prepared DS26-0066 training gains are
 old/new comparisons. The posterior-followup report retains the measured helper
 bytes and both source strings, and provides the private-overlay native runner.
 Prepared-fit gains do not establish a capture-to-publication or population gain.
+
+For repeated initial calculations, use the observation-only
+`tools/profile_algo07v3_initial_repeats.py --request REQUEST --output FRESH_DIRECTORY`
+on one CPU and one BLAS thread. It executes every call and checks repeated full
+results rather than assuming identical coordinates imply a fixed model. Then
+`tools/probe_algo07v3_initial_cache.py --request REQUEST --output FRESH_DIRECTORY
+--repeats 3` compares bounded one-entry reuse on three CPUs, alternating complete
+initial searches against frozen pre-cache references. Use external bounds of
+300 and 600 seconds respectively. The cache is experimental: six searches and
+one native pair are exact, but the full native pair regresses 244.609 → 301.029 s
+despite a small prepared-stage improvement. Retain that regression and keep the
+runtime unchanged until repeated full-pipeline evidence supports integration.
+The initial-cache report includes source overlays and a native runner. Do not
+treat its archived candidate as deployed or its prepared timings as cumulative.
