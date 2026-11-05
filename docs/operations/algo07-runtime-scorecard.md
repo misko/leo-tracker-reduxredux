@@ -4,6 +4,17 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest concurrency experiment:
+[independent initial c arms](../../reports/2026_11_05_algo07v3_parallel_initial/README.md).
+Four ABBA runs give **38.928 → 27.731 s (28.76% less)** for the full initial-search
+stage, using two performance cores rather than one. Both arms and all branch
+callbacks are exact. A subsequent complete native-to-PNG run preserves the
+entire established scientific snapshot, 179 grid points and eight PNG bytes.
+Its 279.527 s through rendering excludes publication and has no paired baseline.
+This is an external prototype, not enabled in the owned CLI. Two new tool tests
+pass. Owned concurrency/cancellation integration and population coverage remain
+next steps; no complete-pipeline speedup or deployment claim follows.
+
 Latest integration: [standalone scatter kernel](../../reports/2026_11_05_algo07v3_integrated/README.md).
 Two fresh previous-kernel/current-kernel comparisons have exact owned science,
 both arms, 179 grid points and all eight PNGs. Observed process times are

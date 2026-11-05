@@ -4,6 +4,14 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest external experiment: [parallel initial c arms](../../reports/2026_11_05_algo07v3_parallel_initial/README.md)
+reduce initial-stage ABBA means 38.928 → 27.731 s (28.76%) on two performance
+cores, preserving every scientific field and callback. A full native-to-PNG
+replay also preserves the complete established snapshot and all eight PNGs.
+The prototype is not enabled in the CLI; owned execution/cancellation integration,
+publication qualification and population coverage remain. Its unpaired 279.527 s
+through rendering is not a complete-path speedup. No deployment occurred.
+
 Latest milestone: the [scatter kernel is integrated](../../reports/2026_11_05_algo07v3_integrated/README.md).
 Two fresh comparisons preserve the complete owned science and publication
 exactly. There are 670 passing tests and 12/17 fresh historical audit mappings.
