@@ -161,8 +161,8 @@ fold output must match. Numerical-policy replay is excluded, not silently
 parallelized. This remains a single-fold experiment, not whole-pipeline speed
 evidence. The owned worker now uses a bounded queue across fold/arm tasks, then
 separate fold scoring; it never nests arm workers under three fold workers.
-The annotation-training report records exact native DS26-0002 qualification
-and the pending DS26-0066 pair. Use its `run_pair.py`/`run_baseline.sh` for seven
+The annotation-training report records exact native DS26-0002 and DS26-0066
+qualification. Use its `run_pair.py`/`run_baseline.sh` for seven
 declared module overlays and its renderer for complete timing receipts. Profiler
 child metadata now identifies training tasks as `[seed, arm]`. Keep numerical
 replay/callbacks serial and preserve the three-live-worker cap when iterating.

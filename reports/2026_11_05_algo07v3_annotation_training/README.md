@@ -102,13 +102,30 @@ GNU-time process-tree observations, not a measurement of aggregate simultaneous
 resident memory. Full numerical results remain identical; no position-accuracy
 or frequency-fit improvement is claimed from this runtime change.
 
-DS26-0066 is the next qualification, because it exercises accepted guarded
-reassociation and the slow training fold that motivated the work. A fresh
-candidate-first/baseline pair has been launched at
-`/srv/bulk/leo-dev/algo07v3-annotation-training-0066-20261105` using these same
-source snapshots. Its result is **pending**, not included in the passing scan
-count or timing claims above. The copied test XML files refer to the same-byte
-component suites, not additional scan-specific test executions.
+DS26-0066 also passes the complete exact comparison, including accepted guarded
+reassociation and the slow training fold that motivated this work. The fresh
+candidate-first/baseline pair uses the same source snapshots at
+`/srv/bulk/leo-dev/algo07v3-annotation-training-0066-20261105`.
+
+| DS26-0066 scope | Baseline | Candidate |
+| --- | ---: | ---: |
+| Complete native-input-to-publication process | 691.997 s | 441.193 s |
+| Process CPU, user + system | 1,009.020 s | 704.840 s |
+| GNU-time maximum resident set | 2,205,028 KiB | 2,196,788 KiB |
+| Initial search | 133.167 s | 118.994 s |
+| Predictive recovery | 304.289 s | 164.762 s |
+| Diagnostic plot evidence | 16.708 s | 10.315 s |
+| PNG rendering | 7.245 s | 5.066 s |
+
+![Complete DS26-0066 timing and largest stages](DS26-0066/runtime.png)
+
+The observed complete reduction is **250.803 s / 36.24%**. Unchanged downstream
+stages also run faster, even with reversed execution order, so this is still
+shared-host evidence rather than an isolated scheduler speedup. Both scans
+retain every scientific audit, both calibration arms, point/satellite ownership,
+all eight PNG bytes and published grid/path values exactly. The copied test XML
+files refer to the same-byte component suites, not additional scan-specific
+test executions. This qualifies two scans, not the full DS26 population.
 
 Fresh baseline and candidate runs use separate output stores and private,
 read-only source overlays. They share frozen native GLRT observations, causal
@@ -154,3 +171,8 @@ whether a bounded queue across branch/arm pairs helps complete initial search,
 retaining common `c0` branch selection, zero-phase controls and callback order.
 This is a hypothesis to measure, separate from the earlier discovery-seed
 scheduling experiment that remained external because its CPU cost increased.
+
+The subsequent [branch-queue experiment](../2026_11_05_algo07v3_branch_queue/README.md)
+now records six exact initial searches. Mean elapsed time falls 5.92%, but mean
+CPU rises 8.48% and one pair regresses. It remains external pending stronger
+evidence; it is not part of the native comparisons above.

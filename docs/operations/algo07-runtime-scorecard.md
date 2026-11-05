@@ -1,5 +1,10 @@
 # ALGO07 cumulative runtime scorecard
 
+The external [initial branch-queue experiment](../../reports/2026_11_05_algo07v3_branch_queue/README.md)
+preserves six complete DS26-0002 initial-search results. Mean elapsed time is
+**26.781 → 25.195 s**, but mean CPU is **38.633 → 41.907 s** and one pair
+regresses. It remains external; these are prepared-stage measurements.
+
 The [bounded annotation-training queue](../../reports/2026_11_05_algo07v3_annotation_training/README.md)
 is integrated in development and passes a fresh complete DS26-0002 comparison:
 both arms, every scientific audit, eight PNG bytes and public grid/path are exact.
@@ -7,8 +12,11 @@ Observed native-input-to-publication time is **270.401 → 195.246 s**, with CPU
 **374.490 → 255.370 s**. Predictive recovery is **63.668 → 45.856 s**. Unchanged
 preparation and initial search also improve, so the overall 27.79% reduction is
 not attributable solely to scheduling. The component suite passes 672 tests.
-DS26-0066's reversed-order pair is pending. Production and cumulative/original
-ALGO07 qualification are unchanged; this is one-scan development evidence.
+DS26-0066's reversed-order pair also passes exactly: **691.997 → 441.193 s**,
+with predictive recovery **304.289 → 164.762 s**. Unchanged downstream stages
+also improve; the observed 36.24% reduction is not an isolated scheduling gain.
+Production and cumulative/original ALGO07 qualification are unchanged; this is
+two-scan development evidence.
 
 The [DS26-0066 predictive profile](../../reports/2026_11_05_algo07v3_predictive_0066_profile/README.md)
 matches all scientific audits, both arms and eight PNGs against the unchanged

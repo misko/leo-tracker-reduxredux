@@ -6,7 +6,9 @@ by the original fold scoring. Numerical replay and callbacks remain serial.
 It passes 672 component tests and a fresh exact DS26-0002 native comparison,
 including both arms, all eight PNGs and public grid/path. Observed complete time
 is **270.401 → 195.246 s**, with shared-host improvements in unchanged stages.
-DS26-0066 qualification is pending. This is development code, not deployment.
+DS26-0066 also passes the complete exact comparison, including accepted guarded
+reassociation: **691.997 → 441.193 s**, again with host variation in unchanged
+stages. This is development code, not deployment or a population speed claim.
 
 The [fixed-phase geometry iteration](../../reports/2026_11_05_algo07v3_position_geometry/README.md)
 reuses position-independent orbital interpolation inside each position problem.
