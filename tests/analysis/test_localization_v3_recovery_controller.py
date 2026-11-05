@@ -80,12 +80,17 @@ def test_inclusion_executor_keeps_target_order_and_reaches_retry(monkeypatch, sh
                      [(0, 'lbfgsb'), (0, 'powell'), (1, 'lbfgsb'), (1, 'powell')])
 
 
-def test_fold_executor_is_forwarded_without_reordering_target_decisions(monkeypatch):
+@pytest.mark.parametrize('port,argument', [
+    ('map_annotation_folds', 'map_folds'), ('map_annotation_training', 'map_training'),
+])
+def test_fold_executor_is_forwarded_without_reordering_target_decisions(
+    monkeypatch, port, argument
+):
     evidence = setup(monkeypatch, shared=True)
     mapper, calls = object(), []
 
     def annotate(d, inv, tid, **kwargs):
-        assert kwargs["map_folds"] is mapper
+        assert kwargs[argument] is mapper
         calls.append(tid)
         return dict(result=dict(folds=[tid]), protocol={})
 
@@ -95,7 +100,7 @@ def test_fold_executor_is_forwarded_without_reordering_target_decisions(monkeypa
         evidence,
         run_stage=execute,
         discovery_allowed=lambda: True,
-        map_annotation_folds=mapper,
+        **{port: mapper},
     )
     assert calls == ["t0", "t1"]
     assert result["selected"]["targets"][0]["norad"] == 2

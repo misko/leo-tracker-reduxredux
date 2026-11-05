@@ -345,18 +345,19 @@ def test_predictive_checkpoint_keeps_only_completed_stages_and_inventory_duratio
     assert result['recovery_complete'] is False
 
 
-def test_predictive_checkpoint_forwards_fold_executor_through_application(monkeypatch):
+@pytest.mark.parametrize('port', ['map_annotation_folds', 'map_annotation_training'])
+def test_predictive_checkpoint_forwards_fold_executor_through_application(monkeypatch, port):
     mapper, calls = object(), []
 
     def recover(context, evidence, **kwargs):
-        calls.append(kwargs['map_annotation_folds'])
+        calls.append(kwargs[port])
         return dict(selected=None)
 
     monkeypatch.setattr(app, 'recover_tracks', recover)
     prepared = dict(status='track_recovery_prepared', recovery_context={}, inventory={})
     app.recover_predictive_checkpoint(prepared, run_stage=lambda n, f: (True, f()),
         discovery_allowed=lambda: True, clock=lambda: 0., inventory_seconds=0.,
-        map_annotation_folds=mapper)
+        **{port: mapper})
     assert calls == [mapper]
 
 

@@ -81,37 +81,59 @@ def map_predictive_folds(operation, seeds):
     return _ordered(operation, seeds)
 
 
-def _ordered(operation, items):
+def map_annotation_training(operation, tasks):
+    """Queue up to three complete fold/arm pairs on at most three children."""
+    tasks = tuple(tasks)
+    if not callable(operation) or len(tasks) > 6 or len(tasks) % 2:
+        raise ValueError("At most three ordered fold/arm pairs are supported")
+    seeds = []
+    for left, right in zip(tasks[::2], tasks[1::2], strict=True):
+        if (not isinstance(left, tuple) or not isinstance(right, tuple)
+                or len(left) != 2 or len(right) != 2
+                or left[0] != right[0] or (left[1], right[1]) != ('c0', 'fitted_c')):
+            raise ValueError("Each fold requires its ordered c0/fitted_c pair")
+        seeds.append(left[0])
+    if len(set(seeds)) != len(seeds):
+        raise ValueError("Training fold seeds must be distinct")
+    return _ordered(operation, tasks, workers=3) if tasks else []
+
+
+def _ordered(operation, items, *, workers=None):
     try:
-        return _execute(operation, items)
+        return _execute(operation, items, workers=workers)
     except Exception as error:
         # Process/pipe startup and transport failures are operational failures,
         # just like child crashes. They must bypass scientific fallback gates.
         raise ParallelFitFailure(f"Parallel execution failed: {error}") from error
 
 
-def _execute(operation, items):
+def _execute(operation, items, *, workers=None):
     if threading.current_thread() is not threading.main_thread() or threading.active_count() != 1:
         raise ParallelFitFailure("Forked fitting requires a single-threaded job owner")
     context = multiprocessing.get_context("fork")
     processes, receivers, pending, results = [], [], {}, [None] * len(items)
+
+    def launch(index):
+        receive, send = context.Pipe(duplex=False)
+        receivers.append(receive)
+        # Defer cancellation across process creation/registration so an
+        # interrupt cannot leave a forked child outside the cleanup list.
+        previous = signal.pthread_sigmask(signal.SIG_BLOCK, _INTERRUPTS)
+        try:
+            process = context.Process(
+                target=_invoke, args=(operation, items[index], receive, send, previous)
+            )
+            processes.append(process)
+            process.start()
+        finally:
+            send.close()
+            signal.pthread_sigmask(signal.SIG_SETMASK, previous)
+        pending[index] = (receive, process)
+
     try:
-        for index, item in enumerate(items):
-            receive, send = context.Pipe(duplex=False)
-            receivers.append(receive)
-            # Defer cancellation across process creation/registration so an
-            # interrupt cannot leave a forked child outside the cleanup list.
-            previous = signal.pthread_sigmask(signal.SIG_BLOCK, _INTERRUPTS)
-            try:
-                process = context.Process(
-                    target=_invoke, args=(operation, item, receive, send, previous)
-                )
-                processes.append(process)
-                process.start()
-            finally:
-                send.close()
-                signal.pthread_sigmask(signal.SIG_SETMASK, previous)
-            pending[index] = (receive, process)
+        next_item = len(items) if workers is None else min(workers, len(items))
+        for index in range(next_item):
+            launch(index)
         while pending:
             ready = wait([item for r, p in pending.values() for item in (r, p.sentinel)])
             for index, (receive, process) in list(pending.items()):
@@ -126,6 +148,15 @@ def _execute(operation, items):
                         raise ParallelFitFailure(f"{items[index]} numerical task failed:\n{value}")
                     results[index] = value
                     del pending[index]
+                    if next_item < len(items):
+                        # Reap before reusing a slot: successful teardown must
+                        # not transiently exceed the worker limit. The owning
+                        # deadline still bounds this wait; add no local cutoff.
+                        process.join()
+                        if process.exitcode != 0:
+                            raise ParallelFitFailure("Training child failed during teardown")
+                        launch(next_item)
+                        next_item += 1
                 elif process.sentinel in ready:
                     raise ParallelFitFailure("Numerical child process exited without a result")
         for process in processes:

@@ -25,7 +25,7 @@ def test_transform_changes_only_the_training_dictionary():
     _, before, after = probe.transform()
     old, new = ast.parse(before), ast.parse(after)
     for tree in (old, new):
-        row = next(n for n in tree.body[0].body if isinstance(n, ast.Assign)
+        row = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign)
                    and ast.unparse(n.targets[0]) == 'base')
         row.value = ast.Constant(None)
     assert ast.dump(old) == ast.dump(new)

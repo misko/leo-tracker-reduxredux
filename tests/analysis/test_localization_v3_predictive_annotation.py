@@ -6,6 +6,47 @@ import pytest
 from check_algo07v3_scan_likelihood import fingerprint
 
 from leo.analysis.localization_v3 import predictive_annotation as annotation
+from leo.operations.localization_v3_parallel import map_annotation_training, map_predictive_folds
+
+
+@pytest.mark.parametrize('skip,unobservable', [(False, False), (True, False), (False, True)])
+@pytest.mark.parametrize('real_children', [False, True])
+def test_paired_training_preserves_all_fold_and_proposal_results(
+    monkeypatch, skip, unobservable, real_children
+):
+    d, inventory, seeds = fixture(monkeypatch, annotation, skip=skip, unobservable=unobservable)
+    expected = annotation.annotate(d, inventory, 'target')
+    monkeypatch.setattr(annotation, 'training_record',
+                        lambda d, keep, arm: annotation.fit_training(d, d['node'], keep, arm))
+    monkeypatch.setattr(annotation, 'restore_training', lambda d, keep, arm, record: record)
+    calls = []
+
+    def reverse_mapper(operation, tasks):
+        calls.extend(tasks)
+        rows = {item: operation(item) for item in reversed(tasks)}
+        return [rows[item] for item in tasks]
+
+    actual = annotation.annotate(
+        d, inventory, 'target',
+        map_training=map_annotation_training if real_children else reverse_mapper,
+        map_folds=map_predictive_folds if real_children else map)
+    assert fingerprint(actual) == fingerprint(expected)
+    if not real_children:
+        assert calls == [(s, a) for s in seeds if not (skip and s == 9) for a in annotation.ARMS]
+
+
+@pytest.mark.parametrize('stateful', ['callback', 'policy'])
+def test_paired_training_does_not_detach_stateful_annotation(monkeypatch, stateful):
+    d, inventory, _ = fixture(monkeypatch, annotation, policy=stateful == 'policy')
+
+    def forbidden(*args):
+        raise AssertionError('Stateful annotation must stay serial')
+
+    seen = []
+    callback = (lambda seed, proposal: seen.append(seed)) if stateful == 'callback' else None
+    annotation.annotate(d, inventory, 'target', on_proposal=callback,
+                        map_training=forbidden, map_folds=forbidden)
+    assert len(seen if callback else d['numerical_policy'].receipt) == 6
 
 
 def test_insufficient_distinct_geometry_stops_before_any_frequency_fit(monkeypatch):

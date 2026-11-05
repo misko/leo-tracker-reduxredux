@@ -61,19 +61,23 @@ def test_stage_executor_is_scoped_to_its_policy(monkeypatch, port, method):
             assert 'map_arms' not in kwargs
 
 
-def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch):
+@pytest.mark.parametrize('port,argument', [
+    ('map_predictive_folds', 'map_annotation_folds'),
+    ('map_annotation_training', 'map_annotation_training'),
+])
+def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch, port, argument):
     from dataclasses import replace
 
     prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
     mapper = object()
-    execution = replace(execution,map_predictive_folds=mapper)
+    execution = replace(execution, **{port: mapper})
     engine.infer_prepared(prepared,region,catalogue,identities=['scan'],
                           collect_history=object(),execution=execution)
     for name, _, kwargs in calls:
         if name == 'recover_predictive_checkpoint':
-            assert kwargs['map_annotation_folds'] is mapper
+            assert kwargs[argument] is mapper
         else:
-            assert 'map_annotation_folds' not in kwargs
+            assert argument not in kwargs
 
 
 def test_recovery_arm_executor_is_scoped_to_original_predictive_checkpoint(monkeypatch):

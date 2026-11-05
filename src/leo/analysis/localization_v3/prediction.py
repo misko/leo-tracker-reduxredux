@@ -159,6 +159,31 @@ def corrected(p, x, i):
     )
 
 
+def training_record(d, keep, arm):
+    """Portable final-problem recipe after the unchanged five-round fit."""
+    if d.get('numerical_policy') is not None:
+        raise ValueError('Stateful numerical training requires its original serial execution')
+    p, x, meta = fit_training(d, d['node'], keep, arm)
+    return dict(arm=arm, keep=np.asarray(keep).copy(), reference=p.reference.copy(),
+                endpoint=x.copy(), metadata=meta)
+
+
+def restore_training(d, keep, arm, record):
+    """Reconstruct this invocation's fitted likelihood, never transport closures."""
+    if record['arm'] != arm or not np.array_equal(record['keep'], keep):
+        raise ValueError('Training recipe belongs to another arm or observation mask')
+    means, _ = prior_means(d, d['node'])
+    p = make_event_problem(
+        d['scan'], d['node'], keep, arm, record['reference'].copy(),
+        np.ones(len(d['powers'])), means, d['model'], [],
+        base_problem_factory=training_factory(d))
+    cached(p)
+    x, meta = record['endpoint'].copy(), copy.deepcopy(record['metadata'])
+    if p.calculate(x)['negative_twice_elbo'] != meta['training_objective']:
+        raise ValueError('Reconstructed training likelihood differs')
+    return p, x, meta
+
+
 def nominate(d, base, target_index, target_train, max_candidates):
     track = d["scan"].tracks[target_index]
     available = np.flatnonzero(target_train)

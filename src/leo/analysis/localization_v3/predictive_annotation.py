@@ -8,6 +8,8 @@ from leo.analysis.localization_v3.prediction import (
     fit_training,
     nominate,
     prediction_models,
+    restore_training,
+    training_record,
 )
 from leo.analysis.localization_v3.recovery_fragments import inactive_fragment_context
 from leo.analysis.localization_v3.recovery_partitions import partition_schedule, planned_split
@@ -21,7 +23,8 @@ ARMS = ("c0", "fitted_c")
 
 
 def annotate_fold(
-    d, i, full_times, n, seed, plan, *, candidates, phase_step, shifted_origin, on_proposal=None
+    d, i, full_times, n, seed, plan, *, candidates, phase_step, shifted_origin, on_proposal=None,
+    training=None,
 ):
     """Evaluate one predeclared grouped split without adopting associations."""
     track = d["scan"].tracks[i]
@@ -38,7 +41,10 @@ def annotate_fold(
             fold=None,
         )
     keep = d["keep"] & train[:n]
-    base = {a: fit_training(d, d["node"], keep, a) for a in ARMS}
+    if training is None:
+        base = {a: fit_training(d, d["node"], keep, a) for a in ARMS}
+    else:
+        base = {a: restore_training(d, keep, a, training[a]) for a in ARMS}
     offers, receipt = nominate(d, base, i, train_target, candidates)
     nomination = dict(selected=offers, nomination=receipt, split=split)
     proposals = []
@@ -113,6 +119,7 @@ def annotate(
     target_record=None,
     shifted_origin=True,
     map_folds=None,
+    map_training=None,
 ):
     """Original production nomination and three distinct shifted-block checks.
 
@@ -163,6 +170,25 @@ def annotate(
         future_TLE=False,
     )
     results, nominations, attempts = [], {}, {}
+    training = {}
+    stateful = on_proposal is not None or d.get("numerical_policy") is not None
+    if map_training is not None and not stateful:
+        masks = {}
+        for seed in seeds[:folds]:
+            if not shifted_origin and len(np.unique(np.floor(track['times'] / 12))) < 3:
+                continue
+            train, held, _ = planned_split(full_times, track['times'], seed, plan)
+            if train[n:].sum() >= 8 and held[n:].sum() >= 4:
+                masks[seed] = d['keep'] & train[:n]
+        tasks = [(seed, arm) for seed in masks for arm in ARMS]
+
+        def train_arm(task):
+            seed, arm = task
+            return training_record(d, masks[seed], arm)
+
+        records = map_training(train_arm, tasks) if tasks else []
+        for (seed, arm), record in zip(tasks, records, strict=True):
+            training.setdefault(seed, {})[arm] = record
 
     def one(seed):
         return annotate_fold(
@@ -176,13 +202,14 @@ def annotate(
             phase_step=phase_step,
             shifted_origin=shifted_origin,
             on_proposal=on_proposal,
+            **({'training': training[seed]} if seed in training else {}),
         )
 
     # Numerical replay owns mutable ordered receipts. Observational callbacks
     # may also have caller-owned state. Preserve their original serial behavior.
     mapper = (
         map
-        if map_folds is None or on_proposal is not None or d.get("numerical_policy") is not None
+        if map_folds is None or stateful
         else map_folds
     )
     for seed, row in zip(seeds[:folds], mapper(one, seeds[:folds]), strict=True):

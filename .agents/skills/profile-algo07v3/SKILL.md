@@ -158,8 +158,11 @@ owned context before timing; both arms retain five phase rounds and 48 position
 iterations. Child results carry final-problem recipes, and reconstruction must
 match full calculation/state fingerprints before nomination. Every complete
 fold output must match. Numerical-policy replay is excluded, not silently
-parallelized. This is a single-fold experiment, not runtime integration or
-whole-pipeline speed evidence. For integration, use one bounded queue across
-fold/arm tasks; do not nest arm workers under the existing three fold workers.
-See the DS26-0066 predictive-profile report for exactness receipts and remaining
-qualification requirements.
+parallelized. This remains a single-fold experiment, not whole-pipeline speed
+evidence. The owned worker now uses a bounded queue across fold/arm tasks, then
+separate fold scoring; it never nests arm workers under three fold workers.
+The annotation-training report records exact native DS26-0002 qualification
+and the pending DS26-0066 pair. Use its `run_pair.py`/`run_baseline.sh` for seven
+declared module overlays and its renderer for complete timing receipts. Profiler
+child metadata now identifies training tasks as `[seed, arm]`. Keep numerical
+replay/callbacks serial and preserve the three-live-worker cap when iterating.

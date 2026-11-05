@@ -66,10 +66,10 @@ def training_pair(d, node, keep, mapper=map_initial_arms):
 def transform(pair=training_pair):
     source = inspect.getsource(predictive_annotation.annotate_fold)
     tree = ast.parse(source)
-    matches = [n for n in tree.body[0].body if isinstance(n, ast.Assign)
-               and ast.unparse(n.targets[0]) == 'base']
-    if len(matches) != 1 or ast.unparse(matches[0].value) != (
-            "{a: fit_training(d, d['node'], keep, a) for a in ARMS}"):
+    matches = [n for n in ast.walk(tree) if isinstance(n, ast.Assign)
+               and ast.unparse(n.targets[0]) == 'base'
+               and ast.unparse(n.value) == "{a: fit_training(d, d['node'], keep, a) for a in ARMS}"]
+    if len(matches) != 1:
         raise ValueError('Original fold training changed; review extraction')
     matches[0].value = ast.parse("_training_pair(d, d['node'], keep)", mode='eval').body
     tree = ast.fix_missing_locations(tree)

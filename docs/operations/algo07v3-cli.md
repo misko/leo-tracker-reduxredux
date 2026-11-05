@@ -1,5 +1,13 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [bounded annotation-training queue](../../reports/2026_11_05_algo07v3_annotation_training/README.md)
+schedules fold/arm training fits through at most three live workers, followed
+by the original fold scoring. Numerical replay and callbacks remain serial.
+It passes 672 component tests and a fresh exact DS26-0002 native comparison,
+including both arms, all eight PNGs and public grid/path. Observed complete time
+is **270.401 → 195.246 s**, with shared-host improvements in unchanged stages.
+DS26-0066 qualification is pending. This is development code, not deployment.
+
 The [fixed-phase geometry iteration](../../reports/2026_11_05_algo07v3_position_geometry/README.md)
 reuses position-independent orbital interpolation inside each position problem.
 It preserves every position projection, derivative operation, prior, optimizer

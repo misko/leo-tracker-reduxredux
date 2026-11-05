@@ -11,11 +11,83 @@ import pytest
 from leo.operations.localization_v3_job import StageDeadline, stage_deadline
 from leo.operations.localization_v3_parallel import (
     ParallelFitFailure,
+    map_annotation_training,
     map_initial_arms,
     map_predictive_folds,
 )
 
 ARMS = ("c0", "fitted_c")
+TRAINING = tuple((seed, arm) for seed in (13, 9, 4) for arm in ARMS)
+
+
+def test_training_queue_keeps_three_slots_and_order_without_waiting_for_first_task(tmp_path):
+    import multiprocessing
+
+    context = multiprocessing.get_context('fork')
+    active, maximum = context.Value('i', 0), context.Value('i', 0)
+
+    def operation(item):
+        index = TRAINING.index(item)
+        (tmp_path / str(index)).write_text(str(os.getpid()))
+        with active.get_lock():
+            active.value += 1
+            maximum.value = max(maximum.value, active.value)
+        try:
+            until = time.monotonic() + 2
+            # The first task cannot finish until a queued task has started.
+            required = ('3',) if index == 0 else ('0', '1', '2')
+            while not all((tmp_path / name).exists() for name in required):
+                if time.monotonic() >= until:
+                    raise RuntimeError('Queue failed to advance independently')
+                time.sleep(.001)
+            time.sleep(.02)
+            return item
+        finally:
+            with active.get_lock():
+                active.value -= 1
+
+    with stage_deadline(4):
+        assert map_annotation_training(operation, TRAINING) == list(TRAINING)
+    assert maximum.value == 3 and active.value == 0
+    assert_reaped([tmp_path / str(i) for i in range(6)])
+
+
+@pytest.mark.parametrize('cancel', [False, True])
+def test_training_queue_reaps_running_tasks_and_does_not_start_pending_after_failure(
+    tmp_path, cancel
+):
+    def operation(item):
+        index = TRAINING.index(item)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        (tmp_path / str(index)).write_text(str(os.getpid()))
+        if index == 1 and not cancel:
+            until = time.monotonic() + 2
+            while not all((tmp_path / str(i)).exists() for i in range(3)):
+                if time.monotonic() >= until:
+                    raise RuntimeError('Initial workers did not start')
+                time.sleep(.001)
+            return item
+        if index == 3:
+            raise RuntimeError('queued fit failed')
+        time.sleep(60)
+
+    with pytest.raises(StageDeadline if cancel else ParallelFitFailure), stage_deadline(.5):
+        map_annotation_training(operation, TRAINING)
+    paths = list(tmp_path.iterdir())
+    assert {p.name for p in paths} == ({'0', '1', '2'} if cancel else {'0', '1', '2', '3'})
+    assert_reaped(paths)
+
+
+@pytest.mark.parametrize('tasks', [TRAINING[:1], TRAINING + TRAINING[:2],
+                                  TRAINING[:2] * 2, tuple(reversed(TRAINING[:2])),
+                                  ((13, 'c0'), (9, 'fitted_c'))])
+def test_training_queue_refuses_incomplete_or_ambiguous_fold_pairs(tasks):
+    with pytest.raises(ValueError):
+        map_annotation_training(lambda item: item, tasks)
+
+
+def test_empty_training_queue_has_no_children():
+    assert map_annotation_training(lambda item: item, []) == []
 
 
 def assert_reaped(paths):

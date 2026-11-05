@@ -68,3 +68,27 @@ def test_predictive_only_profiles_and_labels_its_children(monkeypatch, tmp_path)
     assert sorted(r['item'] for r in metadata) == ['c0', 'fitted_c']
     assert len(list(tmp_path.glob('profile-*.pstats'))) == 3
     assert calls == [['c0', 'fitted_c'], ['c0', 'fitted_c']]
+
+
+def test_queued_training_profiles_identify_both_fold_and_arm(monkeypatch, tmp_path):
+    import json
+
+    from leo.operations.localization_v3_parallel import map_annotation_training
+
+    tasks = tuple((seed, arm) for seed in (13, 9, 4) for arm in ('c0', 'fitted_c'))
+
+    def worker(*args):
+        assert map_annotation_training(lambda item: item, tasks) == list(tasks)
+        return 0
+
+    monkeypatch.setattr(profiler, 'worker', worker)
+    assert profiler.profile_worker(tmp_path) == 0
+    metadata = [json.loads(p.read_text()) for p in tmp_path.glob('profile-*.json')]
+    assert sorted(tuple(r['item']) for r in metadata) == sorted(tasks)
+    assert len(list(tmp_path.glob('profile-*.pstats'))) == 7
+
+
+def test_profile_item_keeps_opaque_array_tasks_out_of_metadata():
+    import numpy as np
+
+    assert profiler.profile_item((1, np.zeros(3))) == "<class 'tuple'>"

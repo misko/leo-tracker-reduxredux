@@ -28,6 +28,16 @@ def cpu():
                   resource.getrusage(resource.RUSAGE_CHILDREN)))
 
 
+def profile_item(item):
+    if isinstance(item, (str, int, bool)):
+        return item
+    if (isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], int)
+            and isinstance(item[1], str)
+            and item[1] in ('c0', 'fitted_c')):
+        return list(item)
+    return repr(type(item))
+
+
 def timed(operation, rows, name, *args):
     began, before = time.perf_counter(), cpu()
     complete = False
@@ -87,7 +97,7 @@ def profile_worker(root, only_stage=None):
             name = getattr(operation, '__qualname__', type(operation).__name__)
             defaults = getattr(operation, '__defaults__', None)
             metadata = dict(stage=stage_name, operation=name,
-                            item=item if isinstance(item, (str, int, bool)) else repr(type(item)))
+                            item=profile_item(item))
             if 'fit_new.<locals>.fit_arm' in name and defaults:
                 metadata['variant'] = 'new_family' if defaults[0] else 'control'
             if 'fit_shared.<locals>.fit_arm' in name and defaults:

@@ -35,6 +35,7 @@ class ExecutionPorts:
     map_family_arms: Callable | None = None
     map_recovery_arms: Callable | None = None
     map_conservative_arms: Callable | None = None
+    map_annotation_training: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -175,6 +176,11 @@ def infer_prepared(
             **(
                 {"map_annotation_folds": execution.map_predictive_folds}
                 if execution.map_predictive_folds
+                else {}
+            ),
+            **(
+                {"map_annotation_training": execution.map_annotation_training}
+                if execution.map_annotation_training
                 else {}
             ),
         ),
