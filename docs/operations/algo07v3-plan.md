@@ -39,9 +39,14 @@ frozen ALGO03 inventory with production session identities. The
 adds timestamp-only distinct holdouts, training-only causal nomination, shared
 and new-family predictive covariance, and identity consensus. Complete annotation
 of the largest target in each of the three scans matches the frozen reference,
-including supported, residual-failing and unstable identities. Position inclusion,
-later recovery policies, reassociation and publication remain unfinished;
-full DS26 localization parity is still open.
+including supported, residual-failing and unstable identities. The
+[predictive-inclusion extraction](../../reports/2026_11_05_algo07v3_inclusion/README.md)
+adds shared/new-family position trials, exact orbit/owner replay, scoped adoption
+and matched numerical retry. DS26-0002's shared rejection and new-family retry
+acceptance match the frozen reference exactly, including unchanged earlier
+results. Inactive-fragment and successful shared inclusion qualification, the
+multi-target/joint controller, later recovery policies, reassociation and
+publication remain unfinished; full DS26 localization parity is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times

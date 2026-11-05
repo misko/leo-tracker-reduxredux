@@ -112,8 +112,16 @@ three scans. This includes every proposal, held prediction and both c arms, with
 one supported identity and two rejected cases. Candidate timings include the
 entire implemented prefix; the external reference starts from an archived cavity
 decision. These remain unequal-scope timings, not a speedup measurement.
-Shared/new-family position inclusion and the later policy/publication stages
-are still outstanding.
+Shared/new-family position inclusion was the next missing stage at that milestone.
+
+The [predictive-inclusion extraction](../../reports/2026_11_05_algo07v3_inclusion/README.md)
+now exactly reproduces DS26-0002's shared-family rejection and new-family
+acceptance after matched Powell retry, including every fit/audit and unchanged
+earlier results. Fresh candidate durations are 132.204 and 186.780 seconds;
+external reference replay plus annotation/inclusion takes 30.111 and 83.127
+seconds. These scopes differ, so no speed ratio is valid. The multi-target/joint
+controller, remaining recovery policies and publication still precede any
+complete-path speed qualification.
 
 ## Measured improvements within the pipeline
 

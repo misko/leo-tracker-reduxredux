@@ -225,3 +225,23 @@ def test_cavity_application_uses_owned_context_and_does_not_claim_recovery_compl
     assert result['recovery_complete'] is False
     assert app.fit_family_cavity(dict(status='no_active_curvature')) == dict(
         status='no_active_curvature', nominations=None, cavity_fit=None, recovery_complete=False)
+
+
+def test_inclusion_application_passes_protected_support_without_mutating_inventory(monkeypatch):
+    context, annotation = object(), object()
+    evidence = dict(inventory=dict(policy={}), publication_support=dict(c0='protected'))
+    prepared = dict(recovery_context=context, inventory=evidence)
+
+    def include(d, inv, a):
+        assert d is context and a is annotation
+        assert inv['publication_support'] is evidence['publication_support']
+        return dict(status='qualified_candidate')
+
+    monkeypatch.setattr(app, 'include_annotation', include)
+    result = app.include_recovery_target(prepared,
+        dict(status='predictive_annotation_evaluated', annotation=annotation))
+    assert result['inclusion']['status'] == 'qualified_candidate'
+    assert result['recovery_complete'] is False
+    assert 'publication_support' not in evidence['inventory']
+    assert app.include_recovery_target({}, dict(status='cavity_incomplete')) == dict(
+        status='cavity_incomplete', inclusion=None, recovery_complete=False)

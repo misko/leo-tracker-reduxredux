@@ -82,7 +82,8 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    inventory_mode = args.recovery_inventory or args.predictive_annotation
+    annotation_mode = args.predictive_annotation or args.predictive_inclusion
+    inventory_mode = args.recovery_inventory or annotation_mode
     cavity_mode = args.cavity_policy or inventory_mode
     signed_mode = args.signed_policy or cavity_mode
     history_mode = args.history_policy or signed_mode
@@ -195,7 +196,7 @@ def run(args):
                             result['recovery_inventory'] = fingerprint(inventory_result)
                             print('recovery inventory', inventory_result['eligible_targets'],
                                   flush=True)
-                            if args.predictive_annotation:
+                            if annotation_mode:
                                 from leo.analysis.localization_v3.predictive_annotation import (
                                     annotate,
                                 )
@@ -207,6 +208,16 @@ def run(args):
                                     on_proposal=lambda seed, q: print(
                                         'predictive proposal', seed, q['norad'], flush=True))
                                 result['predictive_annotation'] = fingerprint(annotation)
+                                if args.predictive_inclusion:
+                                    from leo.analysis.localization_v3.recovery_inclusion import (
+                                        include_annotation,
+                                    )
+
+                                    inv = dict(inventory_result['inventory'],publication_support=
+                                               inventory_result['publication_support'])
+                                    inclusion = include_annotation(recovery_context,inv,annotation)
+                                    result['predictive_inclusion'] = fingerprint(inclusion)
+                                    print('predictive inclusion',inclusion['status'],flush=True)
         else:
             result = fingerprint(initial)
     elif args.discovery:
@@ -272,7 +283,8 @@ def run(args):
         conservative=args.conservative, history_policy=history_mode,
         signed_policy=signed_mode, cavity_policy=cavity_mode,
         recovery_inventory=inventory_mode, scan_identities=args.scan_identities,
-        predictive_annotation=args.predictive_annotation, target_rank=args.target_rank,
+        predictive_annotation=annotation_mode, predictive_inclusion=args.predictive_inclusion,
+        target_rank=args.target_rank,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
@@ -312,6 +324,7 @@ if __name__ == '__main__':
     mode.add_argument('--cavity-policy', action='store_true')
     mode.add_argument('--recovery-inventory', action='store_true')
     mode.add_argument('--predictive-annotation', action='store_true')
+    mode.add_argument('--predictive-inclusion', action='store_true')
     parser.add_argument('--target-rank', type=int, default=0)
     parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)

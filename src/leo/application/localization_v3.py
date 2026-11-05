@@ -15,6 +15,7 @@ from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.phase_prior import forecast
 from leo.analysis.localization_v3.predictive_annotation import annotate
+from leo.analysis.localization_v3.recovery_inclusion import include_annotation
 from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.signed_context import signed_context
@@ -147,3 +148,14 @@ def annotate_recovery_target(prepared_recovery, target, *, on_proposal=None):
         inactive_fragment=target['inactive_fragment'], on_proposal=on_proposal)
     return dict(status='predictive_annotation_evaluated', annotation=result,
                 recovery_complete=False)
+
+
+def include_recovery_target(prepared_recovery, annotated):
+    """Evaluate one candidate addition; full ordered recovery remains separate."""
+    if annotated['status'] != 'predictive_annotation_evaluated':
+        return dict(status=annotated['status'], inclusion=None, recovery_complete=False)
+    evidence = prepared_recovery['inventory']
+    inventory = dict(evidence['inventory'], publication_support=evidence['publication_support'])
+    result = include_annotation(prepared_recovery['recovery_context'],inventory,
+                                annotated['annotation'])
+    return dict(status='predictive_inclusion_evaluated', inclusion=result, recovery_complete=False)
