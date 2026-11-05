@@ -148,3 +148,32 @@ def test_family_policy_binds_owned_history_without_mutating_forecast(monkeypatch
     prepared['phase_forecast']['history_sha256'] = 'different'
     with pytest.raises(ValueError, match='binding'):
         app.fit_family_policy(prepared, conservative, region)
+
+
+def test_signed_application_binds_native_inputs_and_keeps_later_recovery_open(monkeypatch):
+    import hashlib
+    import json
+
+    prepared = dict(status='inputs_prepared', phase_history=dict(case='SCAN'),
+        phase_forecast={}, sky=dict(metadata=dict(cutoff_utc_ns=90)),
+        tracks=dict(observations=['native']))
+    region, scan, conservative, family = object(), object(), {}, {}
+    def context(p, r, noise, *, genuine):
+        assert p is prepared and r is region and genuine
+        return scan
+    def policy(s, c, f, raw, forecast, observations, **kwargs):
+        assert s is scan and c is conservative and f is family
+        assert observations is prepared['tracks']['observations']
+        assert raw is prepared['phase_history']
+        digest = hashlib.sha256((json.dumps(raw, sort_keys=True)+'\n').encode()).hexdigest()
+        assert forecast['history_sha256'] == digest
+        assert kwargs == dict(case='SCAN', cutoff_utc_ns=90, history_sha256=digest)
+        return dict(signed=dict(accepted=False))
+    monkeypatch.setattr(app, '_context', context)
+    monkeypatch.setattr(app, 'signed_context', policy)
+    result = app.fit_signed_policy(prepared, conservative, family, region)
+    assert result['signed_context']['signed']['accepted'] is False
+    assert result['recovery_complete'] is False
+    assert prepared['phase_forecast'] == {}
+    assert app.fit_signed_policy(dict(status='no_active_curvature'), {}, {}, region) == dict(
+        status='no_active_curvature', signed_context=None, recovery_complete=False)

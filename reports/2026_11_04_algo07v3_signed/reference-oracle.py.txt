@@ -1,0 +1,61 @@
+"""Frozen signed-context numerical body with explicit inputs, external audit only."""
+import ast
+import inspect
+
+
+def reference_signed_context(scan, original_result, family_result, raw, forecast,
+                             observations, *, case, history_sha256, signed=True):
+    import fast_graph_engine as original
+
+    function = ast.parse(inspect.getsource(original.context)).body[0]
+    function.name = 'numerical_context'
+    names = ('scan', 'original', 'old', 'raw', 'forecast', 'observations',
+             'case', 'history_sha256', 'signed')
+    function.args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in names],
+        kwonlyargs=[], kw_defaults=[], defaults=[])
+
+    class ExplicitInputs(ast.NodeTransformer):
+        def visit_Assign(self, node):
+            targets = {n.id for t in node.targets for n in ast.walk(t)
+                       if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+            if targets.intersection(('root', 'old', 'original', 'scan', 'history',
+                                     'forecast_path', 'raw', 'forecast')):
+                return None
+            return self.generic_visit(node)
+
+        def visit_Expr(self, node):
+            if (isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute)
+                    and node.value.func.attr == 'bind_run_directory'):
+                return None
+            return self.generic_visit(node)
+
+        def visit_Call(self, node):
+            if isinstance(node.func, ast.Name) and node.func.id == 'sha':
+                return ast.Name(id='history_sha256', ctx=ast.Load())
+            if isinstance(node.func, ast.Name) and node.func.id == 'read':
+                raise ValueError('Unexpected retained old storage read')
+            if isinstance(node.func, ast.Name) and node.func.id == 'dict':
+                node.keywords = [kw for kw in node.keywords if kw.arg != 'binding']
+                for kw in node.keywords:
+                    if kw.arg == 'observations':
+                        kw.value = ast.Name(id='observations', ctx=ast.Load())
+            return self.generic_visit(node)
+
+    namespace = dict(original.context.__globals__)
+    tree = ast.Module(body=[ExplicitInputs().visit(function)], type_ignores=[])
+    exec(compile(ast.fix_missing_locations(tree), inspect.getsourcefile(original), 'exec'),
+         namespace)
+    return namespace['numerical_context'](scan, original_result, family_result, raw,
+        forecast, observations, case, history_sha256, signed)
+
+
+def snapshot(context):
+    """Every numerical context field plus its resulting likelihood and physical state."""
+    result = {k:v for k,v in context.items() if k not in ('scan', 'base')}
+    result['original_protected'] = sorted(result['original_protected'])
+    p, x = context['base'], context['x']
+    result['base'] = dict(calculated=p.calculate(x), state=p.state(x),
+        residual=p.residual(x), conditional_frequency=p.conditional_frequency(x),
+        members=p.members, labels=p.labels, keep=p.keep, reference=p.reference,
+        events=p.events, event_start=p.event_start)
+    return result

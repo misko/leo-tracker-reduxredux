@@ -1,0 +1,251 @@
+"""External bounded exact oracle for joint position likelihood and descent.
+
+Default mode independently nominates one zero-calibration hypothesis. Discovery
+mode compares seed proposals. Initial-search mode compares the complete initial
+regional branch policy using explicitly declared solver budgets. None includes
+the later recovery or publication stages. Old imports occur only in reference mode.
+"""
+import argparse
+import hashlib
+import json
+import sys
+import time
+from pathlib import Path
+
+from check_algo07v3_scan_likelihood import fingerprint
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def run(args):
+    if args.side == 'candidate':
+        from check_algo07v3_track_preparation import deny_legacy
+
+        sys.addaudithook(deny_legacy)
+        from leo.analysis.localization_v3.discovery import fresh_discovery
+        from leo.analysis.localization_v3.families import AnchoredFamilies, nomination_rows
+        from leo.analysis.localization_v3.position import NormalPosition as Position
+        from leo.analysis.localization_v3.position import fit
+        from leo.analysis.localization_v3.region import SearchRegion
+        from leo.analysis.localization_v3.scan import ScanLikelihood
+    else:
+        if args.reference_runtime is None:
+            raise ValueError('Explicit reference runtime required')
+        sys.path[:0] = [str(args.reference_runtime/'src'), str(args.reference_runtime/'tools')]
+        from evaluate_ds23_phase_refreshed import FreshScan
+        from investigate_dsx01_localization_failures import DiagnosticNormal as Position
+        from investigate_dsx01_localization_failures import fit
+        from iterate_dsx01_position_nominations import AnchoredFamilies, nomination_rows
+        from prototype_dsx01_continuous_position import CENTER, native_point
+        from run_dsx01_clean_region import fresh_discovery
+
+        if tuple(args.search_center) != tuple(CENTER):
+            raise ValueError('Reference has a frozen search center; it cannot be overridden')
+
+    import numpy as np
+
+    from leo.analysis.research.phase_linear_geometry import phase_linear_frequency
+
+    def read(name):
+        return json.loads((args.source/name).read_text())
+
+    started = time.monotonic()
+    if args.side == 'candidate':
+        summary = read('summary.json')
+        for name, sha in summary['source_files'].items():
+            if digest(args.source/name) != sha:
+                raise ValueError('Candidate preparation binding differs')
+        metadata = read('metadata.json')
+        with np.load(args.source/'bank.npz') as arrays:
+            bank = dict(arrays)
+        region = SearchRegion(tuple(args.search_center))
+        scan = ScanLikelihood(read('tracks.json')['tracks'], bank, read('nominal_elements.json'),
+            origin_utc_ns=metadata['origin_utc_ns'], regional_center=metadata['regional_center'],
+            noise=read('radio_noise.json'), noise_sha256=digest(args.source/'radio_noise.json'),
+            search_region=region, previous_tle=(args.source/'previous.tle').read_text(),
+            previous_tle_sha256=digest(args.source/'previous.tle'))
+        point = region.native_point(scan, [0., 0.])
+    else:
+        scan = FreshScan(args.source, noise_mode='radio')
+        point = native_point(scan, [0., 0.])
+    history_mode = args.history_policy or args.signed_policy
+    if args.initial_search or args.conservative or history_mode:
+        if (args.conservative or history_mode) and (args.rounds, args.iterations) != (5, 48):
+            raise ValueError('Recovery comparisons require full production fitting budgets')
+        if args.side == 'candidate':
+            from leo.analysis.localization_v3.initial_search import initial_search
+        else:
+            from algo07v3_initial_search_oracle import reference_initial_search as initial_search
+        initial = initial_search(scan, scan.radio_sigma_hz,
+            seed_budget=args.seed_budget, branch_budget=args.branch_budget,
+            rounds=args.rounds, iterations=args.iterations)
+        if args.conservative or history_mode:
+            if args.side == 'candidate':
+                from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
+
+                prior = read('genuine_previous_receipt.json')
+                def final_scan():
+                    return ScanLikelihood(read('tracks.json')['tracks'], bank,
+                        read('nominal_elements.json'), origin_utc_ns=metadata['origin_utc_ns'],
+                        regional_center=metadata['regional_center'], noise=read('radio_noise.json'),
+                        noise_sha256=digest(args.source/'radio_noise.json'), search_region=region,
+                        previous_tle=(args.source/'genuine_previous.tle').read_text(),
+                        previous_tle_sha256=prior['catalogue_sha256'],
+                        previous_sources=prior['sources'])
+                observations = read('tracks.json')['observations']
+            else:
+                from algo07v3_initial_search_oracle import reference_conservative_recovery
+
+                conservative_recovery = reference_conservative_recovery
+                prior_root = args.source.parent/'causal_prior'/args.source.name
+                def final_scan():
+                    scan = FreshScan(args.source, noise_mode='radio')
+                    scan.previous_tle_path = prior_root/'previous.tle'
+                    scan.receipt = json.loads((prior_root/'receipt.json').read_text())
+                    return scan
+                observations = read('observations.json')
+            scan = final_scan()
+            recovery = conservative_recovery(scan, initial, observations)
+            result = dict(initial=fingerprint(initial), recovery=fingerprint(recovery))
+            if history_mode:
+                scan = final_scan()
+                if args.side == 'candidate':
+                    from leo.analysis.localization_v3.history_policy import history_policy
+
+                    history_path = args.source/'phase_history.json'
+                    forecast_path = args.source/'phase_forecast.json'
+                    raw = json.loads(history_path.read_text())
+                    forecast = json.loads(forecast_path.read_text())
+                    history_result = history_policy(scan, recovery, raw, forecast,
+                        case='SCAN', cutoff_utc_ns=metadata['cutoff_utc_ns'],
+                        history_sha256=digest(history_path))
+                else:
+                    from algo07v3_initial_search_oracle import reference_history_policy
+
+                    history_path = args.source.parent/'causal_phase_history'/(
+                        args.source.name+'.json')
+                    forecast_path = history_path.with_name(args.source.name+'_forecast.json')
+                    raw = json.loads(history_path.read_text())
+                    forecast = json.loads(forecast_path.read_text())
+                    history_result = reference_history_policy(scan, recovery, raw, forecast,
+                                                               digest(history_path))
+                result['history_policy'] = fingerprint(history_result)
+                if args.signed_policy:
+                    from algo07v3_signed_oracle import snapshot
+
+                    scan = final_scan()
+                    if args.side == 'candidate':
+                        from leo.analysis.localization_v3.signed_context import signed_context
+
+                        context = signed_context(scan, recovery, history_result, raw, forecast,
+                            observations, case='SCAN', history_sha256=digest(history_path),
+                            cutoff_utc_ns=metadata['cutoff_utc_ns'])
+                    else:
+                        from algo07v3_signed_oracle import reference_signed_context
+
+                        context = reference_signed_context(scan, recovery, history_result,
+                            raw, forecast, observations, case='SCAN',
+                            history_sha256=digest(history_path))
+                    result['signed_policy'] = fingerprint(snapshot(context))
+        else:
+            result = fingerprint(initial)
+    elif args.discovery:
+        result = dict(candidates=fingerprint(fresh_discovery(
+            scan, scan.radio_sigma_hz, budget=args.seed_budget)))
+    else:
+        base = phase_linear_frequency(scan.geometry, *args.search_center)
+        state = dict(beta=np.zeros(8), phases=np.zeros(len(scan.norads)), extra={},
+                     smooth=np.zeros((2, scan.rx_basis[0].shape[1])))
+        _, rows, nominees, _ = scan.association(state, base, point, 'receiver_smooth')
+        seed = dict(state=state, rows=nomination_rows(scan, rows, nominees))
+        anchored = AnchoredFamilies(scan, seed, 'receiver_smooth', False, [0., 0.])
+        node = dict(seed=seed, aliases=anchored.alias)
+        result = dict(node=fingerprint(node), arms={})
+        for arm in ('c0', 'fitted_c'):
+            problem = Position(scan, node, scan.radio_sigma_hz, arm == 'fitted_c')
+            names = ('rows', 'members', 'labels', 'flat_labels', 'flat_times', 'alias', 'reference',
+                     'phase_sigma', 'values', 'q', 'hardware', 'smooth', 'constants', 'supported',
+                     'supported_local', 'mode_bank', 'mode_metadata', 'initial', 'lower', 'upper',
+                     'noise_groups', 'point_noise', 'keep', 'noise_volume')
+            record = dict(design={name:fingerprint(getattr(problem, name)) for name in names},
+                          evaluations=[], fits=[])
+            for xy in ([0., 0.], [3., -4.], [-7., 8.]):
+                x = np.asarray(xy)
+                record['evaluations'].append(dict(point=xy,
+                    calculated=fingerprint(problem.calculate(x)),
+                    residual=fingerprint(problem.residual(x)), state=fingerprint(problem.state(x)),
+                    conditional_frequency=fingerprint(problem.conditional_frequency(x))))
+            print(arm, 'design and three evaluations complete', flush=True)
+            phase, anchor = np.zeros(len(problem.labels)), np.zeros(2)
+            for epoch in range(args.rounds):
+                problem = Position(scan, node, scan.radio_sigma_hz, arm == 'fitted_c',
+                                   reference=phase)
+                fitted = fit(problem, anchor, iterations=args.iterations)
+                anchor = np.array(fitted['parameters'])
+                posterior = problem.state(anchor)['phases'][problem.labels]
+                record['fits'].append(fingerprint(dict(epoch=epoch, fit=fitted,
+                    phase_reference=phase.copy(), posterior_phase_s=posterior,
+                    max_reference_change_s=float(np.max(abs(posterior-phase))))))
+                phase = np.clip(posterior, -15, 15)
+                print(arm, 'phase round', epoch, 'complete', flush=True)
+            result['arms'][arm] = record
+    with args.output.open('x') as stream:
+        json.dump(result, stream, sort_keys=True, allow_nan=False)
+        stream.write('\n')
+    modules = {name:str(module.__file__) for name, module in sys.modules.items()
+               if getattr(module, '__file__', None) and (name.startswith('leo.')
+               or (args.side == 'reference'
+                   and str(module.__file__).startswith(str(args.reference_runtime))))}
+    additional_inputs = {}
+    if args.conservative or history_mode:
+        paths = ([args.source/'genuine_previous.tle', args.source/'genuine_previous_receipt.json']
+                 if args.side == 'candidate' else
+                 [prior_root/'previous.tle', prior_root/'previous_receipt.json',
+                  prior_root/'receipt.json', args.source/'observations.json'])
+        additional_inputs = {str(path):digest(path) for path in paths}
+        if history_mode:
+            additional_inputs.update({str(path):digest(path)
+                                      for path in (history_path, forecast_path)})
+    receipt = dict(side=args.side, source=str(args.source), seconds=time.monotonic()-started,
+        output_sha256=digest(args.output), rounds=args.rounds, iterations=args.iterations,
+        discovery=args.discovery, initial_search=args.initial_search,
+        conservative=args.conservative, history_policy=history_mode,
+        signed_policy=args.signed_policy,
+        additional_inputs=additional_inputs,
+        seed_budget=args.seed_budget, branch_budget=args.branch_budget,
+        search_center=args.search_center, full_localization_parity=False,
+        modules={name:dict(path=path, sha256=digest(Path(path))) for name,path in modules.items()},
+        tool_sources={str(Path(path).resolve()):digest(Path(path)) for path in (
+            __file__, sys.modules['check_algo07v3_scan_likelihood'].__file__,
+            *([sys.modules['algo07v3_initial_search_oracle'].__file__]
+              if (args.initial_search or args.conservative or history_mode)
+              and args.side == 'reference' else []),
+            *([sys.modules['algo07v3_signed_oracle'].__file__] if args.signed_policy else []))},
+        inputs={name:digest(args.source/name) for name in ('tracks.json', 'bank.npz',
+               'nominal_elements.json', 'radio_noise.json', 'previous.tle')})
+    with args.output.with_suffix('.receipt.json').open('x') as stream:
+        json.dump(receipt, stream, sort_keys=True, indent=2)
+        stream.write('\n')
+    print(json.dumps({k:receipt[k] for k in ('side','seconds','output_sha256')}), flush=True)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--side', choices=('reference', 'candidate'), required=True)
+    parser.add_argument('--source', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--reference-runtime', type=Path)
+    parser.add_argument('--search-center', type=float, nargs=2, required=True)
+    parser.add_argument('--rounds', type=int, default=2)
+    parser.add_argument('--iterations', type=int, default=8)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--discovery', action='store_true')
+    mode.add_argument('--initial-search', action='store_true')
+    mode.add_argument('--conservative', action='store_true')
+    mode.add_argument('--history-policy', action='store_true')
+    mode.add_argument('--signed-policy', action='store_true')
+    parser.add_argument('--branch-budget', type=int, default=3)
+    parser.add_argument('--seed-budget', type=int, default=4)
+    run(parser.parse_args())

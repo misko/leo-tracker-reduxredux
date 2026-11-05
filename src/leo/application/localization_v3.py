@@ -1,7 +1,8 @@
 """Standalone preparation and initial regional position search.
 
 No earlier ALGO jobs or result stores are inputs. Initial, conservative and
-family/history fitting are included; later ordered recovery remains unfinished.
+family/history and signed-prior fitting are included; later ordered recovery
+remains unfinished.
 """
 import hashlib
 import json
@@ -13,6 +14,7 @@ from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.phase_prior import forecast
 from leo.analysis.localization_v3.scan import ScanLikelihood
+from leo.analysis.localization_v3.signed_context import signed_context
 from leo.analysis.localization_v3.tracks import prepare_tracks
 from leo.operations.localization_v3_inputs import prepare_initial_sky, prepare_phase_history
 
@@ -79,14 +81,32 @@ def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=Non
     """Bind owned in-memory history and evaluate the original paired family policy."""
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], family_fit=None, recovery_complete=False)
+    history, phase_forecast, history_sha256 = _bound_history(prepared)
+    scan = _context(prepared, search_region, noise_sha256, genuine=True)
+    result = history_policy(scan, conservative, history, phase_forecast,
+        case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],
+        history_sha256=history_sha256)
+    return dict(status='family_policy_evaluated', family_fit=result, recovery_complete=False)
+
+
+def _bound_history(prepared):
     history = prepared['phase_history']
     history_bytes = (json.dumps(history, sort_keys=True, allow_nan=False)+'\n').encode()
     history_sha256 = hashlib.sha256(history_bytes).hexdigest()
     if prepared['phase_forecast'].get('history_sha256', history_sha256) != history_sha256:
         raise ValueError('In-memory phase forecast/history binding differs')
     phase_forecast = dict(prepared['phase_forecast'], history_sha256=history_sha256)
+    return history, phase_forecast, history_sha256
+
+
+def fit_signed_policy(prepared, conservative, family, search_region, *, noise_sha256=None):
+    """Prepare the signed-prior numerical context for subsequent cavity selection."""
+    if prepared['status'] != 'inputs_prepared':
+        return dict(status=prepared['status'], signed_context=None, recovery_complete=False)
+    history, phase_forecast, history_sha256 = _bound_history(prepared)
     scan = _context(prepared, search_region, noise_sha256, genuine=True)
-    result = history_policy(scan, conservative, history, phase_forecast,
+    result = signed_context(scan, conservative, family, history, phase_forecast,
+        prepared['tracks']['observations'],
         case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],
         history_sha256=history_sha256)
-    return dict(status='family_policy_evaluated', family_fit=result, recovery_complete=False)
+    return dict(status='signed_policy_evaluated', signed_context=result, recovery_complete=False)

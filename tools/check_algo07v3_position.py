@@ -19,6 +19,18 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def signed_snapshot(context):
+    """Every numerical context field plus its resulting likelihood and physical state."""
+    result = {k:v for k,v in context.items() if k not in ('scan', 'base')}
+    result['original_protected'] = sorted(result['original_protected'])
+    p, x = context['base'], context['x']
+    result['base'] = dict(calculated=p.calculate(x), state=p.state(x),
+        residual=p.residual(x), conditional_frequency=p.conditional_frequency(x),
+        members=p.members, labels=p.labels, keep=p.keep, reference=p.reference,
+        events=p.events, event_start=p.event_start)
+    return result
+
+
 def run(args):
     if args.side == 'candidate':
         from check_algo07v3_track_preparation import deny_legacy
@@ -70,8 +82,9 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    if args.initial_search or args.conservative or args.history_policy:
-        if (args.conservative or args.history_policy) and (args.rounds, args.iterations) != (5, 48):
+    history_mode = args.history_policy or args.signed_policy
+    if args.initial_search or args.conservative or history_mode:
+        if (args.conservative or history_mode) and (args.rounds, args.iterations) != (5, 48):
             raise ValueError('Recovery comparisons require full production fitting budgets')
         if args.side == 'candidate':
             from leo.analysis.localization_v3.initial_search import initial_search
@@ -80,7 +93,7 @@ def run(args):
         initial = initial_search(scan, scan.radio_sigma_hz,
             seed_budget=args.seed_budget, branch_budget=args.branch_budget,
             rounds=args.rounds, iterations=args.iterations)
-        if args.conservative or args.history_policy:
+        if args.conservative or history_mode:
             if args.side == 'candidate':
                 from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 
@@ -108,7 +121,7 @@ def run(args):
             scan = final_scan()
             recovery = conservative_recovery(scan, initial, observations)
             result = dict(initial=fingerprint(initial), recovery=fingerprint(recovery))
-            if args.history_policy:
+            if history_mode:
                 scan = final_scan()
                 if args.side == 'candidate':
                     from leo.analysis.localization_v3.history_policy import history_policy
@@ -131,6 +144,21 @@ def run(args):
                     history_result = reference_history_policy(scan, recovery, raw, forecast,
                                                                digest(history_path))
                 result['history_policy'] = fingerprint(history_result)
+                if args.signed_policy:
+                    scan = final_scan()
+                    if args.side == 'candidate':
+                        from leo.analysis.localization_v3.signed_context import signed_context
+
+                        context = signed_context(scan, recovery, history_result, raw, forecast,
+                            observations, case='SCAN', history_sha256=digest(history_path),
+                            cutoff_utc_ns=metadata['cutoff_utc_ns'])
+                    else:
+                        from algo07v3_signed_oracle import reference_signed_context
+
+                        context = reference_signed_context(scan, recovery, history_result,
+                            raw, forecast, observations, case='SCAN',
+                            history_sha256=digest(history_path))
+                    result['signed_policy'] = fingerprint(signed_snapshot(context))
         else:
             result = fingerprint(initial)
     elif args.discovery:
@@ -181,19 +209,20 @@ def run(args):
                or (args.side == 'reference'
                    and str(module.__file__).startswith(str(args.reference_runtime))))}
     additional_inputs = {}
-    if args.conservative or args.history_policy:
+    if args.conservative or history_mode:
         paths = ([args.source/'genuine_previous.tle', args.source/'genuine_previous_receipt.json']
                  if args.side == 'candidate' else
                  [prior_root/'previous.tle', prior_root/'previous_receipt.json',
                   prior_root/'receipt.json', args.source/'observations.json'])
         additional_inputs = {str(path):digest(path) for path in paths}
-        if args.history_policy:
+        if history_mode:
             additional_inputs.update({str(path):digest(path)
                                       for path in (history_path, forecast_path)})
     receipt = dict(side=args.side, source=str(args.source), seconds=time.monotonic()-started,
         output_sha256=digest(args.output), rounds=args.rounds, iterations=args.iterations,
         discovery=args.discovery, initial_search=args.initial_search,
-        conservative=args.conservative, history_policy=args.history_policy,
+        conservative=args.conservative, history_policy=history_mode,
+        signed_policy=args.signed_policy,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
@@ -201,8 +230,10 @@ def run(args):
         tool_sources={str(Path(path).resolve()):digest(Path(path)) for path in (
             __file__, sys.modules['check_algo07v3_scan_likelihood'].__file__,
             *([sys.modules['algo07v3_initial_search_oracle'].__file__]
-              if (args.initial_search or args.conservative or args.history_policy)
-              and args.side == 'reference' else []))},
+              if (args.initial_search or args.conservative or history_mode)
+              and args.side == 'reference' else []),
+            *([sys.modules['algo07v3_signed_oracle'].__file__]
+              if args.signed_policy and args.side == 'reference' else []))},
         inputs={name:digest(args.source/name) for name in ('tracks.json', 'bank.npz',
                'nominal_elements.json', 'radio_noise.json', 'previous.tle')})
     with args.output.with_suffix('.receipt.json').open('x') as stream:
@@ -225,6 +256,7 @@ if __name__ == '__main__':
     mode.add_argument('--initial-search', action='store_true')
     mode.add_argument('--conservative', action='store_true')
     mode.add_argument('--history-policy', action='store_true')
+    mode.add_argument('--signed-policy', action='store_true')
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     run(parser.parse_args())

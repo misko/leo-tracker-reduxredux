@@ -1,6 +1,6 @@
 # ALGO07 cumulative runtime scorecard
 
-Updated 2026-11-04. **End-to-end speedup since optimization began: not yet
+Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
@@ -79,8 +79,16 @@ extends exact comparisons through family weighting, causal phase priors and
 predictive-linear acceptance/fallback on the same three cases. All persisted
 scientific values also match archived production. Observed reference/v3 durations
 are 101.906/102.593, 205.985/228.501 and 216.759/219.935 seconds under concurrent
-shared-host load; no speedup is qualified. Signed-prior/cavity selection, later
-recovery and publication still remain before complete-path benchmarking.
+shared-host load; no speedup is qualified. Those comparisons exclude signed-prior/
+cavity selection, later recovery and publication.
+
+The [signed-prior extraction](../../reports/2026_11_04_algo07v3_signed/README.md)
+extends exact comparisons through historical signed-mean qualification and
+both-arm RF refitting. All three contexts and archived incumbents match.
+Observed reference/v3 durations are 144.529/187.646, 128.169/220.619 and
+272.787/366.337 seconds. The candidate is slower in this uncontrolled shared-host
+batch; no optimization or controlled regression ratio is established. Cavity
+selection and the remaining recovery/publication path are still incomplete.
 
 ## Measured improvements within the pipeline
 

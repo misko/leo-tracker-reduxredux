@@ -23,8 +23,12 @@ matches all three replay cases with full production budgets. The
 [family/history extraction](../../reports/2026_11_04_algo07v3_history/README.md)
 adds family weighting, history-qualified phase priors, predictive linear evidence
 and paired fallback. All three full-budget comparisons match both fresh oracles
-and archived production scientific values. Signed-prior/cavity selection,
-later recovery, reassociation and publication remain unfinished;
+and archived production scientific values. The
+[signed-prior extraction](../../reports/2026_11_04_algo07v3_signed/README.md)
+adds signed historical qualification and matched-arm refitting. Its complete
+numerical context matches fresh references and archived incumbents on all three
+cases. Family-cavity selection, later recovery, reassociation and publication
+remain unfinished;
 full DS26 localization parity is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
