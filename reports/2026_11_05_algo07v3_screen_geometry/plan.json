@@ -1,0 +1,61 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_geometry/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/candidate-request.json",
+      "run",
+      "1200"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/baseline-src/leo/analysis/localization_v3/residual_screen.py": "c605070f6fc7433c727c6e4df746f9766570bfa9b161c18c5dc6f7a6cbc5a9b4",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/residual_screen.py": "17bc170eaa83b046d818a8a7c5630eaeb924ee15211fc52cfe8be6f96a465f6b",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_geometry/run_pair.py": "b74408f5bead110192977527ba559b06498f20e0ae2fba4dd9b32999fc6b230c",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_geometry/run_baseline.sh": "bd13d6ab247e54bc905a89e8a5d2e0c85a523be3af1a4b0837e657f32e3b22bc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "25378e52dc94713b2a60e154a470b202a68a135b66dacd7db584813a65ab17a2",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/baseline-request.json": "00a5d609b453c3bac43e6bf43873aeddad40451fafcbda69c2e0b89643a71975",
+    "/srv/bulk/leo-dev/algo07v3-screen-geometry-20261105/candidate-request.json": "473fe99f61c74fca9b5671a46ef2ddf6c1b0f6f10925ead4372b70a82e68a92e"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

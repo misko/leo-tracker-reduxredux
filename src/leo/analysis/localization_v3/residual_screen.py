@@ -7,8 +7,8 @@ from sgp4.api import Satrec
 
 from leo.analysis.localization_v3.orbits import ecef_states
 from leo.analysis.localization_v3.residual_evidence import age_penalty, components, marginal
+from leo.analysis.localization_v3.screen_geometry import phase_frequency_grids
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
-from leo.analysis.research.orbit_phase_geometry import phase_frequency_grid
 from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_screen
 from leo.analysis.research.retained_track_likelihood import PERIOD
 from leo.analysis.research.track_recovery_diagnostics import profile_rate
@@ -96,16 +96,21 @@ def screen_candidates(packet, catalogue, search_region, *, policy="72h_30s", on_
         # target's full-data winner is never injected into a training shortlist.
         offers = {}
         finalists = set()
-        for arm in ARMS:
-            y = np.asarray(target["corrected_hz"][arm])
-            x = packet["positions"][arm]
-            best = {
+        best = {
+            arm: {
                 (bound, name): np.full(len(nums), np.inf)
                 for bound in (15, 30)
                 for name, _, _ in folds
             }
-            for phi in phases:
-                f, e = phase_frequency_grid(bank, t, *search_region.latlon(x), phase_seconds=phi)
+            for arm in ARMS
+        }
+        positions = [search_region.latlon(packet["positions"][arm]) for arm in ARMS]
+        # Stream one phase at a time; both arms share only its orbital states.
+        # Each arm retains its original phase/fold accumulation order.
+        for phi in phases:
+            grids = phase_frequency_grids(bank, t, positions, phase_seconds=phi)
+            for arm, (f, e) in zip(ARMS, grids, strict=True):
+                y = np.asarray(target["corrected_hz"][arm])
                 f *= q
                 for name, mask, _held in folds:
                     # Uniform thinning solely for nomination, identical per policy.
@@ -120,10 +125,11 @@ def screen_candidates(packet, catalogue, search_region, *, policy="72h_30s", on_
                     cost = np.where(e[:, ix].min(axis=1) >= 0, cost, np.inf)
                     for bound in (15, 30):
                         if abs(phi) <= bound:
-                            best[bound, name] = np.minimum(best[bound, name], cost)
+                            best[arm][bound, name] = np.minimum(best[arm][bound, name], cost)
+        for arm in ARMS:
             for policy, (limit, bound, penalty) in policy_table.items():
                 for name, _, _ in folds:
-                    ks = top_indices(best[bound, name], age, limit, penalty)
+                    ks = top_indices(best[arm][bound, name], age, limit, penalty)
                     offers[policy, arm, name] = set(int(nums[k]) for k in ks)
                     finalists.update(offers[policy, arm, name])
         # Match candidate sets across c arms, but never across training folds.

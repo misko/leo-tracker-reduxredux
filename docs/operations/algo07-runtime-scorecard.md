@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+Latest [residual-screen interpolation reuse](../../reports/2026_11_05_algo07v3_screen_geometry/README.md):
+three alternating native prepared-screen pairs average **17.997 → 12.203 s
+(32.19% lower)**, with exact results throughout. A fresh complete DS26-0002 pair
+also preserves both arms, all science, eight PNGs and publication exactly.
+Its **250.094 → 210.621 s** observation is confounded by changes in unchanged
+stages and host load; it is not an attributable 15.78% pipeline improvement.
+918 component tests and three benchmark-tool tests pass. One phase's states
+are shared across arms without a persistent cache. Production is unchanged.
+
 Latest incremental [recovery-arm iteration](../../reports/2026_11_05_algo07v3_recovery_arms/README.md):
 fresh DS26-0002 runs take **229.888 → 202.201 s (12.04% lower)**. Predictive
 recovery takes **69.319 → 45.570 s**; reported total CPU is **261.39 s on both

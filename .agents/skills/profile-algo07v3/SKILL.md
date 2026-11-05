@@ -66,3 +66,11 @@ ratios from separate trials. Native GLRT extraction, capture and queue delay
 are outside the owned CLI clock. Report the observation as scoped, not an
 end-to-end capture speedup. Push code and report to remote main when authorized;
 deployment is a separate action. Select the next hotspot from the new profile.
+
+For residual-screen changes, `tools/benchmark_algo07v3_screen_geometry.py`
+reads a completed owned request through the public evidence store and alternates
+the frozen original screen with the current one. Run with `--request REQUEST
+--output NEW_JSON --repeats 3`, BLAS pinned to one, one-core affinity and an
+external `timeout -k 2 360`. It checks every complete screen against the saved
+result and verifies inputs remain unchanged. Its prepared-component times do
+not replace a fresh complete-pipeline comparison.

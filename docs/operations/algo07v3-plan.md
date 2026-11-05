@@ -4,6 +4,14 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest exact optimization: [streamed residual-screen phase reuse](../../reports/2026_11_05_algo07v3_screen_geometry/README.md).
+Three alternating prepared-screen pairs average **17.997 → 12.203 s**, with
+exact complete-screen outputs. Full isolated DS26-0002 science/publication is
+also exact; its timing is host-confounded. 918 component and three benchmark
+tests pass. The next prototype should extend streaming reuse to reassociation
+screening, preserve output ordering and broaden accepted-branch qualification.
+Full DS26, ordinary admission and 10× remain open; production is unchanged.
+
 Latest incremental qualification: [profile-driven recovery concurrency](../../reports/2026_11_05_algo07v3_recovery_arms/README.md)
 takes **229.888 → 202.201 s** on a fresh DS26-0002 pair, with exact science,
 both arms, eight PNGs and publication. All 882 component tests pass. Original

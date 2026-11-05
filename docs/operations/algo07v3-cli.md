@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Latest [residual-screen geometry reuse](../../reports/2026_11_05_algo07v3_screen_geometry/README.md)
+interpolates each phase once for both receiver-position arms, retaining exact
+Doppler arithmetic and every candidate/holdout check. A complete isolated
+DS26-0002 comparison is exact through science, both arms, eight PNGs and public
+artifacts; 918 component tests and three benchmark-tool tests pass. Alternating
+prepared-screen time averages **17.997 → 12.203 s**. Complete-run observations
+**250.094 → 210.621 s** are affected by host load and cannot establish that
+percentage as a pipeline gain. Production and admission qualification are unchanged.
+
 Latest [recovery-arm scheduling change](../../reports/2026_11_05_algo07v3_recovery_arms/README.md)
 passes 882 tests and an isolated exact native comparison, including both arms,
 eight PNGs and publication. Complete observed time is **229.888 → 202.201 s**;
