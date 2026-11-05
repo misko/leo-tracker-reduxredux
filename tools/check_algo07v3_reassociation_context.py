@@ -11,6 +11,111 @@ import numpy as np
 from check_algo07v3_scan_likelihood import fingerprint
 
 
+def without_elapsed(value):
+    """Exclude only wall-clock metadata; retain every numerical/decision field."""
+    if isinstance(value, dict):
+        return {k: without_elapsed(v) for k, v in value.items() if k != "seconds"}
+    if isinstance(value, (list, tuple)):
+        return [without_elapsed(v) for v in value]
+    return value
+
+
+def screen_comparison(args, context, packet, catalogue, owners):
+    target = args.screen_target
+    if args.side == "reference":
+        from algo07_science import engine, propagation, validation
+        from algo07_science.runner import destination_owned, propagation_eligible
+        from algo07_science.uniqueness import from_additional_checks
+
+        ledger = engine.rec.causal_records(packet["case"], packet)
+        nums, bank, failures = engine.rec.bank_for(ledger, packet["scan_receipt"]["origin_utc_ns"])
+        audit = propagation.audit(packet["case"], args.catalogue, args.input, "elements")
+        audit = {
+            k: v
+            for k, v in audit.items()
+            if k not in ("catalogue_path", "catalogue_sha256", "input_path", "input_sha256")
+        }
+        eligible = (
+            propagation_eligible(audit, failures)
+            and len(nums) + len(failures) == len(ledger)
+            and np.isfinite(bank["position_km"]).all()
+            and np.isfinite(bank["velocity_km_s"]).all()
+        )
+        engine.rec.write = lambda *a: None
+
+        def screen():
+            return engine.rec.screen(
+                context, packet, target, nums, bank, Path("unused-oracle-output")
+            )
+
+        def shared(screened, new):
+            return validation.receiver_shared_check(context, packet, screened, target, new, ledger)
+
+        def occupied(new):
+            return destination_owned(packet, new)
+    else:
+        from leo.analysis.localization_v3.reassociation_admission import admit
+        from leo.analysis.localization_v3.reassociation_catalogue import prepare_catalogue
+
+        # Extra preparation fingerprints the complete bank in this external
+        # oracle only. Production admission prepares the catalogue once.
+        prepared = prepare_catalogue(catalogue, packet["scan_receipt"])
+        admission = admit(context, owners, [target], catalogue, packet["scan_receipt"])
+        return without_elapsed(
+            dict(
+                catalogue_audit=admission["catalogue_eligibility"],
+                propagation_failures=admission["propagation_failures"],
+                eligible=admission["status"] != "propagation_fallback",
+                nums=prepared["nums"],
+                bank=prepared["bank"],
+                screen=admission["screens"].get(str(target)),
+                shared=admission["shared"].get(str(target)),
+                guards=admission["guards"],
+                admitted=[row["hypothesis"] for row in admission["admitted"]],
+            )
+        )
+
+    result = dict(
+        catalogue_audit=audit,
+        propagation_failures=failures,
+        eligible=bool(eligible),
+        nums=nums,
+        bank=bank,
+        screen=None,
+        shared=None,
+        guards={},
+        admitted=[],
+    )
+    if not eligible:
+        return without_elapsed(result)
+    screened = screen()
+    result["screen"] = screened
+    proposals = [
+        h
+        for h in screened.get("proposals", [])
+        if "prediction_limit" not in h
+        and set(map(int, h["mapping"].values())) == {int(h["norad"])}
+        and int(h["norad"]) != int(target)
+        and all(h["predictive"][arm]["pass_check"] for arm in ("c0", "fitted_c"))
+    ]
+    for proposal in proposals:
+        if occupied(proposal["norad"]):
+            result["guards"][proposal["name"]] = dict(
+                passed=False,
+                status="rejected",
+                model="receiver_offset",
+                reason="destination_already_owned",
+            )
+            continue
+        if result["shared"] is None:
+            result["shared"] = shared(screened, proposal["norad"])
+        guard = from_additional_checks(dict(result["shared"], new=proposal["norad"]))
+        result["guards"][proposal["name"]] = guard
+        if guard["passed"]:
+            result["admitted"].append(proposal)
+    return without_elapsed(result)
+
+
 def run(args):
     bindings = {}
 
@@ -68,13 +173,17 @@ def run(args):
         common.read = read
         engine.read = routed
         engine.position.read = routed
+        engine.rec.read = routed
+        engine.rec.CATALOGUES = root / "catalogues"
         engine.ROOTS = {original["case"][:4]: root}
         d, z, replay = engine.load_case(original["case"])
         arms, owners = z["baseline_arms"], z["baseline_owners"]
         active = engine.active_ids(d)
-        ranking, targets = engine.rank_families(d, z)
+        ranking, targets = ([], []) if args.screen_target else engine.rank_families(d, z)
+
         def build(arm, ref, omit=None):
             return engine.build(d, z, arm, ref, omit=omit)
+
         objective = engine.objective
     else:
         from check_algo07v3_track_preparation import deny_legacy
@@ -108,12 +217,15 @@ def run(args):
         )
         d, arms, owners, replay = (restored[k] for k in ("context", "arms", "owners", "replay"))
         active = owned.active_ids(d)
-        ranking, targets = owned.rank_families(d)
+        ranking, targets = ([], []) if args.screen_target else owned.rank_families(d)
+        z = dict(original, baseline_arms=arms, baseline_owners=owners)
+
         def build(arm, ref, omit=None):
             return owned.build(d, arm, ref, omit=omit)
+
         objective = owned.objective
     probes = {}
-    for arm, (problem, x) in d["problems"].items():
+    for arm, (problem, x) in [] if args.screen_target else d["problems"].items():
         probes[arm] = []
         for omitted in (None, *targets):
             p, view = build(arm, problem.reference.copy(), omitted)
@@ -137,6 +249,8 @@ def run(args):
         targets=targets,
         probes=probes,
     )
+    if args.screen_target:
+        result["screening"] = screen_comparison(args, d, z, catalogue, owners)
     args.output.write_text(json.dumps(fingerprint(result), sort_keys=True, allow_nan=False) + "\n")
 
     def binding(path):
@@ -151,7 +265,14 @@ def run(args):
     receipt = dict(
         side=args.side,
         seconds=time.monotonic() - began,
-        scope="Selected additional handoff, final-stage likelihood probes and RF influence trigger",
+        scope=(
+            "Selected handoff, causal propagation, family-omitted screen and primary receiver guard"
+            if args.screen_target
+            else (
+                "Selected additional handoff, final-stage likelihood probes "
+                "and RF influence trigger"
+            )
+        ),
         full_pipeline_parity=False,
         tool=binding(__file__),
         inputs=bindings,
@@ -185,6 +306,11 @@ def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--side", choices=["reference", "candidate"], required=True)
+    parser.add_argument(
+        "--screen-target",
+        type=int,
+        help="External component fixture only: compare a declared target's complete screen",
+    )
     for name in ("input", "screen", "catalogue", "recovery", "runtime", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     args = parser.parse_args()

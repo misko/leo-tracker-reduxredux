@@ -218,6 +218,17 @@ native preparation and artifact publication are excluded. The selector matches
 six decision checks and the focused suite passes 424 tests. Whole-path matched
 scans and the end-to-end speedup remain zero/unavailable respectively.
 
+The [final causal screen and receiver-shared admission](../../reports/2026_11_05_algo07v3_reassociation_screen/README.md)
+match the frozen DS26-0066 component exactly, admitting 62025 → 68047 on the same
+140 native points. The observed reference/controller durations are **19.072 /
+19.975 seconds**, with overlapping shared-host execution and one extra catalogue
+preparation in the candidate oracle solely for bank fingerprinting. They are not
+a production speed comparison. The fresh connected DS26-0002 prefix through
+this stage takes **307.896 seconds**, preserves all earlier scientific output
+and admits no replacement. The focused suite passes 449 tests. No complete-path
+baseline/current pair or end-to-end ratio exists yet; remaining replacement fits,
+native preparation and artifact publication are outside this measurement.
+
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
 |---|---:|---:|---:|---|
 | Final ALGO07 numerical worker, two-family case, iteration 002 | 779.063 s | 420.000 s | 1.855× | Full worker; exact scientific comparison; profiled overlapping runs on shared host |

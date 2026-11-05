@@ -265,3 +265,30 @@ def test_incomplete_additional_position_cannot_enter_final_reassociation():
     result = app.prepare_reassociation(prepared, dict(status="incomplete"), screened, catalogue, [])
     assert result["status"] == "incomplete" and result["context"] is None
     assert app.rank_reassociation_families(result)["targets"] is None
+
+
+def test_reassociation_screen_uses_ranked_targets_and_both_owner_maps(monkeypatch):
+    from leo.analysis.localization_v3 import reassociation_admission
+
+    prepared = dict(status="reassociation_prepared", context=object(), owners=object())
+    ranked = dict(status="reassociation_targets_ranked", targets=[1, 2])
+    catalogue, receipt, sink = object(), object(), object()
+
+    def admit(*args, **kwargs):
+        assert args == (prepared["context"], prepared["owners"], [1, 2], catalogue, receipt)
+        assert kwargs == dict(on_target=sink)
+        return dict(status="screened", admitted=[])
+
+    monkeypatch.setattr(reassociation_admission, "admit", admit)
+    result = app.screen_reassociation_candidates(
+        prepared, ranked, catalogue, receipt, on_target=sink
+    )
+    assert result["status"] == "reassociation_candidates_screened"
+    assert not result["recovery_complete"]
+
+
+def test_incomplete_trigger_cannot_enter_candidate_discovery():
+    result = app.screen_reassociation_candidates(
+        dict(status="reassociation_prepared"), dict(status="incomplete"), {}, {}
+    )
+    assert result["admission"] is None and result["status"] == "incomplete"

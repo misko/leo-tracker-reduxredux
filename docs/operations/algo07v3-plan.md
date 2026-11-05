@@ -4,6 +4,12 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Current implementation status, 2026-11-05: the owned application is connected
+through final-stage causal candidate screening and receiver-shared predictive
+admission. Matched replacement/control fitting, causal-history completion and
+all artifact publication still need integration and qualification. Full DS26
+equivalence and the 10× complete-path metric remain unproven.
+
 Implementation has begun: see the [first extraction and geometry-reuse report](../../reports/2026_11_04_algo07v3_start/README.md).
 This is component progress, not completion of the standalone engine or its gates.
 The [causal-preparation iteration](../../reports/2026_11_04_algo07v3_preparation/README.md)
@@ -92,8 +98,13 @@ handoff, likelihood probes and all 26 influence rankings match frozen final
 ALGO07 exactly; both implementations nominate 62116 and 58002. The selector
 matches six accepted/fallback/invalid-admission checks. A fresh connected
 DS26-0002 prefix preserves all earlier science and 2,783 owners per arm, then
-nominates 69265. Candidate screening, receiver-shared validation, causal-history
-completion and replacement fits remain to be integrated into this final stage.
+nominates 69265. The [causal screen and receiver-shared admission](../../reports/2026_11_05_algo07v3_reassociation_screen/README.md)
+now match the frozen DS26-0066 component exactly, including all 11,133 catalogue
+candidates, the full propagation bank/audit, cavity fits and every predictive
+partition. Both admit 62025 → 68047 on the same 140 points and ten unique
+receiver-shared folds. The connected DS26-0002 run preserves all preceding
+science and admits no replacement. Causal-history completion and matched
+replacement/control fits remain to be integrated into this final stage.
 Production cancellation, final proof
 publication and broader gap branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint

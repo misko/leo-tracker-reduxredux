@@ -32,6 +32,8 @@ def signed_snapshot(context):
 
 
 def run(args):
+    if args.reassociation_screen:
+        args.reassociation_trigger = True
     if args.reassociation_trigger:
         args.additional_position = True
     if args.additional_position:
@@ -337,8 +339,15 @@ def run(args):
                                                             additional_position, screened, catalogue, observations)
                                                         result['reassociation_handoff'] = fingerprint({
                                                             k:v for k,v in final_context.items() if k != 'context'})
-                                                        result['reassociation_trigger'] = fingerprint(
-                                                            rank_reassociation_families(final_context))
+                                                        ranked = rank_reassociation_families(final_context)
+                                                        result['reassociation_trigger'] = fingerprint(ranked)
+                                                        if args.reassociation_screen:
+                                                            from leo.application.localization_v3 import screen_reassociation_candidates
+                                                            result['reassociation_screen'] = fingerprint(
+                                                                screen_reassociation_candidates(final_context,
+                                                                    ranked, catalogue, metadata,
+                                                                    on_target=lambda row: print('reassociation screen',
+                                                                        row['target'], len(row['admitted']), flush=True)))
                                             if args.preflight_packet:
                                                 with args.preflight_packet.open('x') as stream:
                                                     json.dump(additional['preflight'], stream,
@@ -440,6 +449,7 @@ def run(args):
         residual_screen=args.residual_screen,
         additional_position=args.additional_position,
         reassociation_trigger=args.reassociation_trigger,
+        reassociation_screen=args.reassociation_screen,
         recovery_catalogue=(dict(path=str(args.recovery_catalogue),
                                   sha256=digest(args.recovery_catalogue))
                             if args.recovery_catalogue else None),
@@ -502,6 +512,8 @@ if __name__ == '__main__':
                       help='Test harness: fresh prefix through matched additional-family position trials')
     mode.add_argument('--reassociation-trigger', action='store_true',
                       help='Test harness: fresh prefix through exact final-stage handoff and RF trigger')
+    mode.add_argument('--reassociation-screen', action='store_true',
+                      help='Test harness: fresh prefix through final causal nomination and receiver guard')
     parser.add_argument('--recovery-catalogue', type=Path)
     parser.add_argument('--preflight-packet', type=Path)
     parser.add_argument('--target-rank', type=int, default=0)
@@ -509,8 +521,8 @@ if __name__ == '__main__':
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     args = parser.parse_args()
-    if (args.residual_screen or args.additional_position or args.reassociation_trigger) and args.recovery_catalogue is None:
+    if (args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen) and args.recovery_catalogue is None:
         parser.error('Residual screening/position requires --recovery-catalogue')
-    if args.preflight_packet and not (args.additional_preflight or args.residual_screen or args.additional_position or args.reassociation_trigger):
+    if args.preflight_packet and not (args.additional_preflight or args.residual_screen or args.additional_position or args.reassociation_trigger or args.reassociation_screen):
         parser.error('--preflight-packet requires a preflight-producing mode')
     run(args)

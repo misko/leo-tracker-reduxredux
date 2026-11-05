@@ -379,6 +379,18 @@ def rank_reassociation_families(prepared):
                 recovery_complete=False)
 
 
+def screen_reassociation_candidates(prepared, ranked, catalogue, scan_receipt, *, on_target=None):
+    """Run causal nomination and the primary shared-receiver guard before any refit."""
+    for result, status in ((prepared, 'reassociation_prepared'),
+                           (ranked, 'reassociation_targets_ranked')):
+        if result['status'] != status:
+            return dict(status=result['status'], admission=None, recovery_complete=False)
+    from leo.analysis.localization_v3.reassociation_admission import admit
+    result = admit(prepared['context'], prepared['owners'], ranked['targets'], catalogue,
+                   scan_receipt, on_target=on_target)
+    return dict(status='reassociation_candidates_screened', admission=result, recovery_complete=False)
+
+
 def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
                                 arms, owners, identities, selection=None, annotations=()):
     """Replay an explicitly chosen owned likelihood and rank remaining evidence.
