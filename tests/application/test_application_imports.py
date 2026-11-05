@@ -15,8 +15,10 @@ def guard(event, args):
 sys.addaudithook(guard)
 from leo.application.localization_v3 import recover_numerical_checkpoint, recover_gap_tracks
 from leo.application.localization_v3_engine import infer_prepared, run_native
+from leo.application.localization_v3_result import build_evidence, publish_saved
 assert callable(recover_numerical_checkpoint) and callable(recover_gap_tracks)
 assert callable(infer_prepared) and callable(run_native)
+assert callable(build_evidence) and callable(publish_saved)
 """
     result = subprocess.run([sys.executable, "-B", "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

@@ -4,6 +4,22 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest persistence/publication milestone:
+[isolated native input through the public manifest](../../reports/2026_11_05_algo07v3_publication/README.md).
+The first complete v3 candidate observation is **477.365 s**, including owned
+scientific storage and all eight published PNGs plus both sidecars. Reloaded
+science and PNGs match exactly; the current HTTP routes serve them. This is an
+unpaired observation using the initial archive encoding, with no complete
+baseline/current speed ratio. It excludes acquisition, native GLRT extraction
+and queue delay. Complete-path matched scans remain zero.
+
+The scalar-encoding follow-up reduces encode/decode ABBA means from **18.501 to
+7.400 s (2.50×)** and archive size from **211.518 to 79.902 MB**, with every field
+and PNG exact. The optimized persistence/publication-only replay takes 19.780 s
+including filesystem work; it performs no inference. Do not subtract component
+timings to fabricate a new full-path runtime. The current focused suite passes
+588 tests. Production execution controls/population gates remain open; no deployment.
+
 Latest native-engine milestone: [native GLRT through eight figures](../../reports/2026_11_05_algo07v3_native_engine/README.md).
 The owned application entry point completes DS26-0002 native preparation,
 all numerical policies, 179 grid locations and eight PNGs in **311.064 s**.
@@ -61,7 +77,8 @@ matched scans remain zero.
 
 | Metric | Starting baseline | Current / candidate | Paired speedup |
 |---|---:|---:|---:|
-| Recorded input ready → all standard web artifacts published, excluding queue waits | Not measured as one complete matched run | Not measured as one complete matched run | Unavailable |
+| Native GLRT ready → all standard web artifacts published, excluding queue waits | No matched complete reference | 477.365 s candidate observation, initial archive encoding | Unavailable: no matched pair |
+| Recorded IQ ready → all standard web artifacts published, including unchanged detector and excluding queue waits | Not measured as one complete matched run | Not measured as one complete matched run | Unavailable |
 | Capture start → all standard web artifacts published, including acquisition and queue waits | No matched baseline/current cohort | No matched baseline/current cohort | Unavailable |
 | ALGO07* versus its frozen ALGO07 reference, GLRT-ready through publication | 912.576 s observed; grid incomplete | 887.264 s observed; full grid | Unqualified: unequal completed grid work |
 

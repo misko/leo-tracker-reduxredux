@@ -18,9 +18,17 @@ numerical and presentation path; prepared and native inputs reproduce the entire
 DS26-0002 audit and eight PNGs exactly. See the
 [native-engine report](../../reports/2026_11_05_algo07v3_native_engine/README.md)
 for independent isolation evidence, 543 passing tests and explicit stage clocks.
-Atomic publication, full DS26 equivalence, cancellation qualification and the
-10× complete-path metric remain unfinished or unproven. This is not yet the
-complete standalone production engine.
+The [publication milestone](../../reports/2026_11_05_algo07v3_publication/README.md)
+now completes one isolated native run through an owned scientific archive and
+the existing atomic WebUI manifest. Reloaded science, eight PNGs and all 179 grid
+points remain exact; the unchanged HTTP routes serve these artifacts. A subsequent
+scalar-encoding optimization preserves every saved field while reducing measured
+encode/decode time 18.501 → 7.400 s and archive size 211.518 → 79.902 MB. That is a
+component result, not a full-path speed ratio. The 477.365 s first native-to-publication
+observation used the initial encoding and has no matched baseline. There are
+588 passing focused tests. Production CLI/execution controls, full DS26 equivalence,
+cancellation qualification and the 10× complete-path metric remain unfinished or
+unproven. This is not yet the complete qualified production engine.
 
 The [connected presentation report](../../reports/2026_11_05_algo07v3_connected_presentation/README.md)
 records the fresh prepared-input-to-PNG run, exact numerical regression, owned
