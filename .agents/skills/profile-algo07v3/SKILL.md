@@ -138,3 +138,14 @@ builds a fresh scan context outside the timer. Full fit/history/state/calculatio
 fingerprints must match; the temporary calculator substitution is restored even
 on failure. Keep this benchmark sequential with full-pipeline timing runs.
 This measures a prepared position fit, not discovery, recovery or publication.
+
+To investigate discovery scheduling without changing runtime, use
+`tools/probe_algo07v3_discovery_schedule.py --request REQUEST --output FRESH_DIRECTORY`
+with three CPUs, one BLAS thread and an external `timeout -k 2 600`. It extracts
+the unchanged per-seed body, uses batches of at most three existing workers,
+and alternates three complete initial-search pairs. Every search must exactly
+match the saved owned initial result; both sides keep existing paired-arm fits.
+Fresh context construction is outside the timer. Report nested discovery time,
+whole-stage time and parent-plus-child CPU separately. The current prototype
+saves 1.649 stage seconds but adds 2.449 CPU seconds on DS26-0002 and remains
+external. Do not equate reduced latency with better queue throughput.

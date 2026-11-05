@@ -1,0 +1,31 @@
+def fresh_discovery(scan, sigma, *, budget=8):
+    base = phase_linear_frequency(scan.geometry, *scan.search_region.center)
+    stats = statistics(scan.groups, dict(time_s=scan.times, doppler_0=base[0], elevation_deg=base[1]), {str(t['channel']): 0.0 for t in scan.tracks})
+    stats = augment_phase_statistics(stats, scan.times, base[0], base[2])
+    bounds = np.full(len(scan.norads), 15.0)
+    initial = np.zeros(8)
+    phases, _ = proposal_phases(stats, initial, scan.sigma, bounds, return_components=True)
+    phi = phases[stats['ci']]
+    proposals_stats = dict(stats, mean=stats['mean'] - stats['hm'] * phi, xz=stats['xz'] - stats['xh'] * phi, rss=np.maximum(0, stats['rss'] - 2 * stats['zh'] * phi + stats['hh'] * phi ** 2))
+    shape = np.maximum(0, proposals_stats['rss'] - proposals_stats['xz'] ** 2 / np.maximum(stats['xx'][:, None], 1e-12))
+    proposals_stats['shape_rms'] = np.sqrt(np.add.reduceat(shape, stats['starts'], axis=0) / stats['count'][:, None])
+    proposals = list(itertools.islice(seed_calibrations(proposals_stats, initial, budget), budget))
+
+    def one_seed(item):
+        number, beta = item
+        state = zero_state(scan)
+        if number:
+            phase = proposal_phases(stats, beta, scan.sigma, bounds)
+            fitted = improve(stats, beta, phase, scan.sigma, bounds, drift_sigma_hz_s=10, drift_bound_hz_s=30)
+            state.update(beta=fitted[1], phases=fitted[2])
+        state = project_radio_state(state)
+        _, rows, nominees, _ = scan.association(state, base, scan.search_region.native_point(scan, (0, 0)), 'shared_phase')
+        seed = dict(state=state, rows=nomination_rows(scan, rows, nominees))
+        for _ in range(2):
+            problem = standard_problem(scan, seed, sigma)
+            state = problem.state(np.zeros(2))
+            seed, _ = explore(scan, reference_state(state), (0, 0), 'receiver_smooth', compact_update=False)
+        problem = standard_problem(scan, seed, sigma)
+        seed = dict(rows=problem.rows, state=problem.state(np.zeros(2)))
+        return dict(hypothesis=number, center_score=score_at(problem, [0, 0]), seed=seed, aliases=problem.alias)
+    return list(_map_seeds(one_seed, enumerate(proposals)))

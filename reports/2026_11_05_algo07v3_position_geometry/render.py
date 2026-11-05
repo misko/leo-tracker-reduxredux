@@ -11,8 +11,9 @@ def read(path):
     return json.loads(path.read_bytes())
 
 
-def main(root):
-    out = Path(__file__).resolve().parent
+def main(root, out=None, scan='DS26-0002'):
+    out = Path(__file__).resolve().parent if out is None else out.resolve()
+    out.mkdir(parents=True, exist_ok=True)
     plan, comparison = read(root / 'plan.json'), read(root / 'comparison.json')
     module = 'leo/analysis/localization_v3/marginal.py'
     baseline = read(root / 'baseline-sources.json')
@@ -59,7 +60,7 @@ def main(root):
         for name, path in {'supervisor.json': 'attempt/supervisor.json',
                            'isolation.json': 'isolation.json'}.items():
             (out / f'{side}-{name}').write_bytes((root / side / path).read_bytes())
-    summary = dict(exact=True, seconds=times, stages=stages, resources=resources,
+    summary = dict(scan=scan, exact=True, seconds=times, stages=stages, resources=resources,
                    observed_reduction_percent=100 * (1 - times['candidate'] / times['baseline']),
                    qualified_speedup=None, production_modified=False,
                    full_dataset_equivalence=False, test_runs=counts)
@@ -75,7 +76,7 @@ def main(root):
                        list(times.values()), color=colors)
     axes[0].bar_label(bars, fmt='%.1f s', padding=3)
     axes[0].set(ylabel='Native GLRT ready → supervisor exit (seconds)',
-                title='DS26-0002 · full pipeline observation',
+                title=f'{scan} · full pipeline observation',
                 ylim=(0, max(times.values()) * 1.16))
     labels = sorted(stages['baseline'], key=stages['baseline'].get, reverse=True)[:7][::-1]
     y = np.arange(len(labels))
@@ -97,4 +98,7 @@ def main(root):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
-    main(parser.parse_args().root)
+    parser.add_argument('--out', type=Path)
+    parser.add_argument('--scan', default='DS26-0002')
+    args = parser.parse_args()
+    main(args.root, args.out, args.scan)

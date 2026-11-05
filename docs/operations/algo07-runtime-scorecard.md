@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+The [geometry follow-up](../../reports/2026_11_05_algo07v3_geometry_followup/README.md)
+passes the complete DS26-0066 comparison, including accepted reassociation,
+both arms and all eight PNGs. Total observed time is **667.114 → 602.497 s**,
+CPU **977.300 → 830.270 s**. Initial search nevertheless regresses
+**120.382 → 204.640 s**; retain that evidence and the changing-host limitations.
+The numerical geometry source is unchanged from `7f52d1248`.
+
+An external discovery-scheduling prototype matches all six complete initial
+searches on DS26-0002. Three alternating pairs average **20.303 → 18.655 s**
+for the entire stage, with CPU **29.855 → 32.304 s**. It remains external:
+1.649 seconds saved at an additional 2.449 CPU seconds is not yet a compelling
+full-pipeline/queue-throughput improvement. Predictive recovery is the next
+profiling target. Production is unchanged.
+
 Latest [fixed-phase position geometry](../../reports/2026_11_05_algo07v3_position_geometry/README.md)
 is integrated in development after an exact native DS26-0002 comparison.
 Observed full-path time is **258.526 → 188.557 s** and process CPU
