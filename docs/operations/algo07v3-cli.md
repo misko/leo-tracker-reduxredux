@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Latest [original-versus-v3 evidence](../../reports/2026_11_05_algo07v3_cumulative_repeat/README.md)
+now compares fresh complete executions: original **642.886 s**, v3 before/after
+**440.510 / 226.531 s**. Both v3 runs match all public fields, both arms, eight
+PNGs and all 17 scientific audit mappings exactly. Shared-host variation and
+research-harness overhead are explicitly accounted; these are not full-dataset
+or production-admission qualifications. An independent audit verifies 21 excluded
+metadata fields across five initial policies with 19 passing tests. Later metadata
+semantics remain open. Runtime code and production are unchanged by this audit.
+
 Latest development change: [concurrent family fits](../../reports/2026_11_05_algo07v3_family_integration/README.md)
 are wired into the owned CLI. All 843 component tests pass, and a fresh isolated
 serial/concurrent comparison is exact through both arms, all eight PNGs, grid/path

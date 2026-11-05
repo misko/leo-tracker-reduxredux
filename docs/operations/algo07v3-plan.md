@@ -4,6 +4,17 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest cumulative evidence: [fresh original/v3 timing and metadata audit](../../reports/2026_11_05_algo07v3_cumulative_repeat/README.md).
+Original ALGO07 takes **642.886 s**; v3 executions before/after it take
+**440.510 / 226.531 s**, with all public artifacts and all 17 scientific audit
+mappings exact in both comparisons. The observed ratios **1.459× / 2.838×**
+vary with host conditions and are not a population-wide guarantee. The report
+separates research-harness overhead from original worker/publication work.
+A new external verifier independently checks 21 previously excluded metadata
+fields across five initial policies; 19 tests pass. Later metadata, accepted
+branches, full DS26, production admission and the tenfold target remain open.
+No inference changes or deployment occurred in this measurement.
+
 Latest implementation: [family concurrency integration](../../reports/2026_11_05_algo07v3_family_integration/README.md).
 The owned CLI runs the independent family c arms concurrently, preserving paired
 gates and sequential mask updates. All 843 component tests pass; a fresh isolated

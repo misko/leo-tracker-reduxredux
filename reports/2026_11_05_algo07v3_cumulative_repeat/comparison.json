@@ -1,0 +1,287 @@
+{
+  "input_bindings": {
+    "request": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/v3-request.json",
+      "sha256": "sha256:0dfe8ddeaac588d24fdaa838be06e983e7a63ff302e00efe9bb7c3089fe60329"
+    },
+    "reference_timing": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-timing/summary.json",
+      "sha256": "sha256:a06d52a1dce53197e52d570d1ac03b511a1ca0cf241b2d57e5173cc953fbd075"
+    },
+    "candidate_timing": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/v3-run/attempt/supervisor.json",
+      "sha256": "sha256:c19a88210971fbb60c611ca159fffde2cbbe94ac220f362143b6724207c939ee"
+    },
+    "comparison_tool": {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_published.py",
+      "sha256": "sha256:2fef378cb1cdb7e8843157e3c9f4d1a612688bea4a637d842b210904f3124a27"
+    },
+    "export_ALGO02": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-evidence/ALGO02/descriptor.json",
+      "sha256": "sha256:9c2ef2f39cda6d8275cbf2ea9fd20773c6e2dae14780ed8a2ad922c4bf9d5cf1"
+    },
+    "export_ALGO03": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-evidence/ALGO03/descriptor.json",
+      "sha256": "sha256:b15e009798b0b81bc2d997a96358e882b655695063df5ef0b8e4e1127b496955"
+    },
+    "export_ALGO06": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-evidence/ALGO06/descriptor.json",
+      "sha256": "sha256:53c02bef02305d759cd68d3ce8b4bbd05a7e3fb7815d754ab53d93754806641b"
+    },
+    "export_ALGO04": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-evidence/ALGO04/descriptor.json",
+      "sha256": "sha256:fa532d28476114198c6d56ea56fb555be69fc7df8063a289197f5304a1548ecb"
+    },
+    "export_ALGO05": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-evidence/ALGO05/descriptor.json",
+      "sha256": "sha256:dbccaa028591b676cfee4be96e4ea4c7fbb7b540f21ee4b25d68a9840f24fb87"
+    },
+    "export_ALGO07": {
+      "path": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/reference-evidence/ALGO07/descriptor.json",
+      "sha256": "sha256:e9a4f8562a3cf4ee43e4b03ddeff6d8c0ee583ad33a42b1b5f1884efe00ec729"
+    }
+  },
+  "candidate_scientific_receipt_sha256": "sha256:e47d22f7603526976174db61193e52d06599484f2486d4ae1f9eafa337d9f102",
+  "checks": {
+    "observations": true,
+    "tracks": true,
+    "public_document": true,
+    "PNG/ch1-4-all": true,
+    "PNG/ch5-8-all": true,
+    "PNG/ch1-4-unassociated": true,
+    "PNG/ch5-8-unassociated": true,
+    "PNG/ch1-4-residuals": true,
+    "PNG/ch5-8-residuals": true,
+    "PNG/track-rms": true,
+    "PNG/position": true,
+    "grid": true,
+    "complete_grid": true,
+    "path": true,
+    "policy/initial": true,
+    "policy/recovery": true,
+    "policy/history_policy": true,
+    "policy/cavity_nominations": true,
+    "policy/cavity_policy": true,
+    "policy/residual_screen": true,
+    "policy/additional_position": true,
+    "policy/predictive_recovery": true,
+    "policy/reassociation_trigger": true,
+    "policy/reassociation_complete": true,
+    "policy/reassociation_screen": true,
+    "policy/gap_recovery": true,
+    "policy/numerical_recovery": true,
+    "policy/additional_recovery": true,
+    "policy/reassociation_handoff": true,
+    "policy/signed_policy": true,
+    "policy/recovery_inventory": true
+  },
+  "errors": {},
+  "mapped_policies": {
+    "initial": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN/fit_radio_noise.json",
+      "excluded_bookkeeping": [
+        "case",
+        "input_read_paths",
+        "noise_features_sha256",
+        "noise_mode",
+        "physical_prior_previous_tle_path",
+        "seconds",
+        "source_sha256"
+      ]
+    },
+    "recovery": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN/result.json",
+      "excluded_bookkeeping": [
+        "algorithm",
+        "case",
+        "seconds",
+        "source_sha256"
+      ]
+    },
+    "history_policy": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN/algo02_result.json",
+      "excluded_bookkeeping": [
+        "algorithm",
+        "baseline_sha256",
+        "case",
+        "engine_sha256",
+        "history_forecast_sha256",
+        "history_sha256",
+        "seconds"
+      ]
+    },
+    "cavity_nominations": {
+      "stage": "ALGO02",
+      "file": "worker/inference/family_cavity/SCAN_nominations.json",
+      "excluded_bookkeeping": [
+        "seconds"
+      ]
+    },
+    "cavity_policy": {
+      "stage": "ALGO02",
+      "file": "worker/inference/family_cavity/position/SCAN.json",
+      "excluded_bookkeeping": [
+        "nomination_sha256",
+        "seconds"
+      ]
+    },
+    "residual_screen": {
+      "stage": "ALGO06",
+      "file": "worker/recovery/screen/SCAN/result.json",
+      "excluded_bookkeeping": [
+        "seconds"
+      ]
+    },
+    "additional_position": {
+      "stage": "ALGO06",
+      "file": "worker/recovery/position/SCAN/result.json",
+      "excluded_bookkeeping": [
+        "seconds"
+      ]
+    },
+    "predictive_recovery": {
+      "stage": "ALGO03",
+      "file": "worker/recovery/decision.json",
+      "excluded_bookkeeping": [
+        "baseline",
+        "job_id",
+        "limitations",
+        "maximum_seconds",
+        "policy",
+        "production_changed",
+        "ranking",
+        "seconds",
+        "shadow_only",
+        "source_support_receipt"
+      ],
+      "mapped_fields": [
+        "trial/source receipt paths verified",
+        "retry paths verified then mapped to boolean",
+        "inventory is separate owned stage",
+        "stage process accounting",
+        "inventory identity labels"
+      ]
+    },
+    "reassociation_trigger": {
+      "stage": "ALGO07",
+      "file": "worker/recovery/candidate/SCAN/trigger.json",
+      "scope": "Complete ranking",
+      "metadata_semantics_qualified": false
+    },
+    "reassociation_screen": {
+      "stage": "ALGO07",
+      "file": "worker/recovery/candidate/SCAN/worker_result.json",
+      "scope": "No-admission family screens",
+      "excluded_bookkeeping": [
+        "cavity/c0/seconds",
+        "cavity/fitted_c/seconds"
+      ],
+      "metadata_semantics_qualified": false
+    },
+    "reassociation_complete": {
+      "stage": "ALGO07",
+      "file": "worker/recovery/candidate/SCAN/worker_result.json",
+      "scope": "No-proposal fallback",
+      "metadata_semantics_qualified": false
+    },
+    "gap_recovery": {
+      "stage": "ALGO05",
+      "file": "worker/recovery/decision.json",
+      "scope": "Prepare-only branch with unchanged full parent supports",
+      "metadata_semantics_qualified": false
+    },
+    "numerical_recovery": {
+      "stage": "ALGO04",
+      "file": "worker/recovery/decision.json",
+      "supporting_files": [
+        "worker/recovery/guarded-result.json",
+        "worker/terminal.json",
+        "worker/recovery/stage-cache/001.json",
+        "worker/recovery/stage-cache/002.json",
+        "worker/recovery/stage-cache/003.json",
+        "worker/recovery/stage-cache/004.json",
+        "worker/recovery/stage-cache/005.json",
+        "worker/recovery/stage-cache/006.json",
+        "worker/recovery/stage-cache/007.json",
+        "worker/recovery/numerical-receipts/target-1-inclusion.json",
+        "worker/recovery/numerical-receipts/target-1-audit.json"
+      ],
+      "scope": "Complete additive numerical branch, losing trials and conditional replay",
+      "context_count_oracle": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/context-oracle.json",
+      "context_count_oracle_sha256": "961d0ad34ce6a9c8c61ad4096a0b6724fb7186fceb9c11d6b8fecb19b70572a8",
+      "mapped_fields": [
+        "controller process/file representation",
+        "stage timing accounting",
+        "numerical bootstrap bookkeeping"
+      ],
+      "metadata_semantics_qualified": false
+    },
+    "additional_recovery": {
+      "stage": "ALGO06",
+      "file": "worker/recovery/inputs/SCAN.json",
+      "supporting_files": [
+        "worker/recovery/residual-inventory.json",
+        "worker/recovery/preflight/SCAN.json",
+        "worker/recovery/current/current/3079f771e877d913ca7f/trial/protocol.json"
+      ],
+      "scope": "Complete one-family residual preparation; no gap additions",
+      "excluded_bookkeeping": [
+        "preflight/seconds"
+      ],
+      "mapped_metadata": "Original bank/TLE bytes bound; policy constants and causal maxima checked",
+      "metadata_semantics_qualified": false
+    },
+    "reassociation_handoff": {
+      "stage": "ALGO07",
+      "file": "worker/recovery/inputs/SCAN.json",
+      "supporting_files": [
+        "ALGO07/worker/recovery/candidate/SCAN/replay.json",
+        "ALGO06/worker/recovery/position/SCAN/result.json"
+      ],
+      "scope": "Complete no-addition handoff: both arms, all owners and replay checks",
+      "mapped_fields": [
+        "abbreviated fallback expanded from bound preceding decision"
+      ],
+      "metadata_semantics_qualified": false
+    },
+    "signed_policy": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN",
+      "external_oracle": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/signed-oracle.json",
+      "oracle_sha256": "b96cdc13cdee6faa038213ed6c76809f5ae6f8387c144a60c52fcf8a2a72c829",
+      "oracle_receipt_sha256": "07606f67b063c8d8a0fff6a9c87ba469f879fb0feeca318dbb977f7d30b9feff",
+      "scope": "Every numerical context field from bound independent frozen reconstruction",
+      "persisted_type_restoration": [
+        "node",
+        "unchanged arms",
+        "unchanged signed.policy_arms"
+      ],
+      "metadata_semantics_qualified": false
+    },
+    "recovery_inventory": {
+      "stage": "ALGO02",
+      "file": "worker/inference/SCAN",
+      "external_oracle": "/srv/bulk/leo-dev/algo07v3-cumulative-20261105/inventory-oracle.json",
+      "oracle_sha256": "b04c1faac7c52016595b530374ab03a080e76a7be5e45491f64caa3075be9ee6",
+      "oracle_receipt_sha256": "1c3c774cecacbce81b67ad9a4d98621d0a6c4fe240e46cb0c9e6f4e81ef0441e",
+      "scope": "Every numerical context field from bound independent frozen reconstruction",
+      "persisted_type_restoration": [],
+      "metadata_semantics_qualified": false
+    }
+  },
+  "missing_audit_mappings": [],
+  "all_checked_values_exact": true,
+  "full_intermediate_equivalence": false,
+  "remaining_gate": "Map remaining audits and independently qualify excluded metadata links",
+  "latency_observations": {
+    "reference_seconds": 642.8857120163739,
+    "native_v3_process_seconds": 440.5101556684822,
+    "native_v3_worker_seconds": 437.9094992438331
+  },
+  "qualified_speedup": null,
+  "full_dataset_equivalence": false,
+  "production_modified": false
+}

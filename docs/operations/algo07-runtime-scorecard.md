@@ -1,8 +1,20 @@
 # ALGO07 cumulative runtime scorecard
 
-Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
-established.** This is an unmeasured ratio, not a measured 1.00× result.
-The tenfold active-processing target remains open.
+Updated 2026-11-05. **Fresh cumulative same-scan observations are now available:**
+original ALGO07 **642.886 s**, standalone v3 **440.510 s before** and **226.531 s
+after** the reference, observed ratios **1.459× / 2.838×**. Both v3 executions
+match all public values, both calibration arms, eight PNGs and all 17 scientific
+audit mappings exactly. The shared host changed substantially: v3 records
+15,722 major page faults before and six after. These observations do not
+establish a stable population-wide ratio or the tenfold target.
+
+The [cumulative report](../../reports/2026_11_05_algo07v3_cumulative_repeat/README.md)
+retains all three executions. It also separates original worker time
+**522.619 s**, publication **63.576 s** and other in-interval work **56.690 s**;
+the last category includes research verification and orchestration. The new
+metadata verifier checks 21 excluded fields across five initial policies, with
+19 tests passing. Later metadata, full DS26 and production admission remain open.
+No deployment occurred. Capture, GLRT extraction and queue delay are excluded.
 
 Latest [family concurrency integration](../../reports/2026_11_05_algo07v3_family_integration/README.md)
 passes 843 component tests and a fresh isolated complete-path comparison.
