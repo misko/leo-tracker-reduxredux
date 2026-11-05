@@ -30,7 +30,11 @@ numerical context matches fresh references and archived incumbents on all three
 cases. The [family-cavity extraction](../../reports/2026_11_05_algo07v3_cavity/README.md)
 adds complete-family exclusion, full-catalogue nomination, paired replacement
 trials and the production equal-prior adoption rule. All three scans match fresh
-references and archived cavity scientific values. Recovery inventory, the later
+references and archived cavity scientific values. The
+[recovery-inventory extraction](../../reports/2026_11_05_algo07v3_inventory/README.md)
+adds independent selected-incumbent replay, native-point ownership, protected
+publication support and ordered recovery targets. All three scans match the
+frozen ALGO03 inventory with production session identities. Later predictive
 recovery policies, reassociation and publication remain unfinished;
 full DS26 localization parity is still open.
 

@@ -96,7 +96,15 @@ nomination and paired replacement selection on the same three scans. Observed
 reference/v3 durations are 113.085/114.265, 164.741/164.528 and 232.013/231.927
 seconds. Both sides use the numerical in-memory harness under concurrent load;
 these are not production worker timings or a qualified speedup. Recovery
-inventory, later policies and publication remain before complete-path testing.
+inventory was the next missing stage at that milestone.
+
+The [recovery-inventory extraction](../../reports/2026_11_05_algo07v3_inventory/README.md)
+now reproduces the frozen ALGO03 inventory on all three scans, including exact
+owners, publication support, point counts and production target order. The
+candidate runs freshly through the entire implemented prefix; the reference
+inventory starts from a saved cavity decision, so their durations have different
+scopes and are not a speed comparison. Later predictive recovery, subsequent
+policies and publication remain before complete-path qualification.
 
 ## Measured improvements within the pipeline
 

@@ -82,7 +82,8 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    signed_mode = args.signed_policy or args.cavity_policy
+    cavity_mode = args.cavity_policy or args.recovery_inventory
+    signed_mode = args.signed_policy or cavity_mode
     history_mode = args.history_policy or signed_mode
     if args.initial_search or args.conservative or history_mode:
         if (args.conservative or history_mode) and (args.rounds, args.iterations) != (5, 48):
@@ -160,7 +161,7 @@ def run(args):
                             raw, forecast, observations, case='SCAN',
                             history_sha256=digest(history_path))
                     result['signed_policy'] = fingerprint(signed_snapshot(context))
-                    if args.cavity_policy:
+                    if cavity_mode:
                         if args.side == 'candidate':
                             from leo.analysis.localization_v3.family_cavity import (
                                 cavity_policy,
@@ -179,6 +180,19 @@ def run(args):
                         selected = cavity_policy(context, nominations)
                         result['cavity_policy'] = fingerprint(selected)
                         print('cavity position', selected['status'], flush=True)
+                        if args.recovery_inventory:
+                            if args.side != 'candidate' or not args.scan_identities:
+                                raise ValueError('Inventory mode requires candidate and scan IDs; '
+                                                 'use the separate inventory oracle for reference')
+                            from leo.analysis.localization_v3.recovery_inventory import (
+                                prepare_recovery,
+                            )
+
+                            _, inventory_result = prepare_recovery(scan, selected, observations,
+                                identities=args.scan_identities)
+                            result['recovery_inventory'] = fingerprint(inventory_result)
+                            print('recovery inventory', inventory_result['eligible_targets'],
+                                  flush=True)
         else:
             result = fingerprint(initial)
     elif args.discovery:
@@ -242,7 +256,8 @@ def run(args):
         output_sha256=digest(args.output), rounds=args.rounds, iterations=args.iterations,
         discovery=args.discovery, initial_search=args.initial_search,
         conservative=args.conservative, history_policy=history_mode,
-        signed_policy=signed_mode, cavity_policy=args.cavity_policy,
+        signed_policy=signed_mode, cavity_policy=cavity_mode,
+        recovery_inventory=args.recovery_inventory, scan_identities=args.scan_identities,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
@@ -255,7 +270,7 @@ def run(args):
             *([sys.modules['algo07v3_signed_oracle'].__file__]
               if signed_mode and args.side == 'reference' else []),
             *([sys.modules['algo07v3_cavity_oracle'].__file__]
-              if args.cavity_policy and args.side == 'reference' else []))},
+              if cavity_mode and args.side == 'reference' else []))},
         inputs={name:digest(args.source/name) for name in ('tracks.json', 'bank.npz',
                'nominal_elements.json', 'radio_noise.json', 'previous.tle')})
     with args.output.with_suffix('.receipt.json').open('x') as stream:
@@ -280,6 +295,8 @@ if __name__ == '__main__':
     mode.add_argument('--history-policy', action='store_true')
     mode.add_argument('--signed-policy', action='store_true')
     mode.add_argument('--cavity-policy', action='store_true')
+    mode.add_argument('--recovery-inventory', action='store_true')
+    parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     run(parser.parse_args())

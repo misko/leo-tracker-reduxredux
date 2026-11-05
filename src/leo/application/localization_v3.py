@@ -14,6 +14,7 @@ from leo.analysis.localization_v3.history_policy import history_policy
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.phase_prior import forecast
+from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.signed_context import signed_context
 from leo.analysis.localization_v3.tracks import prepare_tracks
@@ -122,4 +123,15 @@ def fit_family_cavity(signed):
     nominations = nominate_families(context)
     result = cavity_policy(context, nominations)
     return dict(status='family_cavity_evaluated', nominations=nominations, cavity_fit=result,
+                recovery_complete=False)
+
+
+def prepare_track_recovery(prepared, signed, cavity, *, identities):
+    """Replay the selected policy and identify the original recovery targets."""
+    if (cavity.get('cavity_fit') or {}).get('status') != 'complete':
+        return dict(status='cavity_incomplete', recovery_context=None, inventory=None,
+                    recovery_complete=False)
+    context, result = prepare_recovery(signed['signed_context']['scan'], cavity['cavity_fit'],
+        prepared['tracks']['observations'], identities=identities)
+    return dict(status='track_recovery_prepared', recovery_context=context, inventory=result,
                 recovery_complete=False)

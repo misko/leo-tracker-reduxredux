@@ -5,6 +5,23 @@ from leo.application import localization_v3 as app
 from tests.analysis.test_localization_v3_tracks import native_document
 
 
+def test_recovery_inventory_keeps_incomplete_cavity_out_of_recovery():
+    result = app.prepare_track_recovery({}, {}, dict(cavity_fit=None), identities=['scan'])
+    assert result['status'] == 'cavity_incomplete' and not result['recovery_complete']
+
+
+def test_recovery_inventory_receives_owned_scan_and_native_points(monkeypatch):
+    scan, observations, cavity = object(), [], dict(status='complete')
+    def prepare(actual_scan, selected, points, *, identities):
+        assert actual_scan is scan and selected is cavity and points is observations
+        assert identities == ['source']
+        return {'context':True}, {'selected_targets':[]}
+    monkeypatch.setattr(app, 'prepare_recovery', prepare)
+    result = app.prepare_track_recovery(dict(tracks=dict(observations=observations)),
+        dict(signed_context=dict(scan=scan)), dict(cavity_fit=cavity), identities=['source'])
+    assert result['status'] == 'track_recovery_prepared' and not result['recovery_complete']
+
+
 def test_no_curvature_does_not_read_archive():
     document = native_document()
     for probe in document['source']['probes']:
