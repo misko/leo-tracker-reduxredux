@@ -1,5 +1,14 @@
 # ALGO07v3 experiment recipes and retained evidence
 
+For the current full-stage survey, use `tools/profile_algo07v3.py --timers-only`
+and `reports/2026_11_06_algo07v3_full_profile/render.py`. The renderer requires a
+completed unprofiled native pair's candidate and verifies full science and PNG
+bytes before producing wall/CPU and longest-task figures. Do not infer speedup
+from the instrumented run. The control-view successor and original no-cache
+snapshots are in `reports/2026_11_06_algo07v3_control_geometry_view`; use the
+explicit `--baseline-report` option of `tools/probe_algo07v3_control_view.py`.
+That keeps the current cached implementation from becoming its own baseline.
+
 Read only the section relevant to the current measured hotspot. Paths below are
 repository-relative unless absolute; they do not resolve relative to this file.
 Historical timings are scoped observations, never ratios to multiply together.

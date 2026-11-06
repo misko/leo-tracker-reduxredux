@@ -1,5 +1,24 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [cheaper control-view reuse](../../reports/2026_11_06_algo07v3_control_geometry_view/README.md)
+is retained in development after 2,012 passing tests and two exact native cases.
+DS26-0066 is **480.981→394.960 s**; DS26-0002 is **247.723→245.940 s**.
+Both preserve all scientific audits, both arms, ownership, grid/path and eight
+PNG bytes. Fingerprint overhead falls to about 0.32–0.36 s per complete prepared
+recovery by making unused discovery geometry unavailable to controls. Three
+duplicate pairs are reused on DS26-0066; none on DS26-0002. The short scan's
+predictive stage regresses 61.082→64.357 s and its prepared recovery also
+regresses. Unchanged stages vary; do not attribute the whole hard-scan gain to
+reuse or claim population throughput. Production is unchanged. The new
+[full timer profile](../../reports/2026_11_06_algo07v3_full_profile/README.md)
+uses independent wall/CPU clocks without aggregate cProfile tracing.
+It completes in 440.994 s with exact science and eight PNGs against the
+394.960 s unprofiled candidate. Initial search and predictive recovery account
+for 64.4% of unprofiled wall time. The longest initial fit takes 76.418 s; the
+hard recovery fold takes 47.897/45.235 s in its two parallel arms. Prioritize
+their likelihood/precision calculations. Instrumented timing is not a speed
+comparison. Eighteen profiler/report tests pass, with overlap in the larger suite.
+
 November 6 [duplicate inclusion-control investigation](../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md):
 **candidate not adopted; default restored**. Prepared DS26-0066 recovery improves
 227.275→205.399 s by reusing three of four identical controls. Native predictive

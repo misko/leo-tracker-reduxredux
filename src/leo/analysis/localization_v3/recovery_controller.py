@@ -8,6 +8,7 @@ Neither port may use a reference position or known localization error.
 
 from copy import deepcopy
 
+from leo.analysis.localization_v3.inclusion_controls import InclusionControlCache
 from leo.analysis.localization_v3.joint_recovery import (
     audit_joint,
     fit_joint,
@@ -58,6 +59,7 @@ def recover_tracks(
     )
     qualified, records = [], {}
     selected_state = None
+    controls = InclusionControlCache()
 
     def stage(name, operation):
         ok, value = run_stage(name, operation)
@@ -135,7 +137,7 @@ def recover_tracks(
             ok, trial = stage(
                 f"target-{index}-inclusion",
                 lambda shared=shared, annotation=annotation: (fit_shared if shared else fit_new)(
-                    context, inventory, [annotation],
+                    context, inventory, [annotation], control_cache=controls,
                     **({"map_arms": map_inclusion_arms} if map_inclusion_arms else {}),
                 ),
             )
@@ -163,6 +165,7 @@ def recover_tracks(
                     f"target-{index}-retry",
                     lambda annotation=annotation: fit_new(
                         context, inventory, [annotation], optimizer="powell",
+                        control_cache=controls,
                         **({"map_arms": map_inclusion_arms} if map_inclusion_arms else {}),
                     ),
                 )

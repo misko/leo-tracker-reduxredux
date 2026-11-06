@@ -7,6 +7,7 @@ import argparse
 import cProfile
 import dataclasses
 import hashlib
+import inspect
 import json
 import os
 import resource
@@ -28,6 +29,18 @@ def cpu():
                   resource.getrusage(resource.RUSAGE_CHILDREN)))
 
 
+def frequencies(root=Path('/sys/devices/system/cpu'), cores=None):
+    """Point samples, not averages or a correction factor for measured timings."""
+    result = {}
+    for core in sorted(os.sched_getaffinity(0) if cores is None else cores):
+        path = root / f'cpu{core}/cpufreq/scaling_cur_freq'
+        try:
+            result[str(core)] = int(path.read_text().strip())
+        except FileNotFoundError:
+            result[str(core)] = None
+    return result
+
+
 def profile_item(item):
     if isinstance(item, (str, int, bool)):
         return item
@@ -39,6 +52,7 @@ def profile_item(item):
 
 
 def timed(operation, rows, name, *args):
+    frequency_before = frequencies()
     began, before = time.perf_counter(), cpu()
     complete = False
     try:
@@ -49,10 +63,24 @@ def timed(operation, rows, name, *args):
         after = cpu()
         rows.append(dict(name=name, seconds=time.perf_counter() - began,
                          self_cpu_seconds=after[0] - before[0],
-                         children_cpu_seconds=after[1] - before[1], completed=complete))
+                         children_cpu_seconds=after[1] - before[1], completed=complete,
+                         cpu_frequency_start_khz=frequency_before,
+                         cpu_frequency_end_khz=frequencies()))
 
 
-def profile_worker(root, only_stage=None):
+def fit_metadata(operation):
+    name = getattr(operation, '__qualname__', type(operation).__name__)
+    metadata = dict(operation=name)
+    if 'fit_new.<locals>.fit_arm' in name:
+        include = inspect.signature(operation).parameters['include'].default
+        metadata['variant'] = 'new_family' if include else 'control'
+    if 'fit_shared.<locals>.fit_arm' in name:
+        extras = inspect.signature(operation).parameters['extras'].default
+        metadata['extra_count'] = len(extras)
+    return metadata
+
+
+def profile_worker(root, only_stage=None, timers_only=False):
     from leo.application import localization_v3 as policy
     from leo.application import localization_v3_engine as engine
     from leo.operations import localization_v3_parallel as parallel
@@ -94,29 +122,34 @@ def profile_worker(root, only_stage=None):
         if not active:
             return original_invoke(*args)
         # Replace the inherited parent's profiler, retaining separate child files.
-        profile.disable()
-        child_profile = cProfile.Profile()
-        child_profile.enable()
+        child_profile = None
+        if not timers_only:
+            profile.disable()
+            child_profile = cProfile.Profile()
+            child_profile.enable()
+        began, before = time.perf_counter(), cpu()
         try:
             return original_invoke(*args)
         finally:
-            child_profile.disable()
-            child_profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
+            after, ended = cpu(), time.perf_counter()
+            if child_profile is not None:
+                child_profile.disable()
+                child_profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
             operation, item = args[:2]
-            name = getattr(operation, '__qualname__', type(operation).__name__)
-            defaults = getattr(operation, '__defaults__', None)
-            metadata = dict(stage=stage_name, top_stage=top_stage, operation=name,
-                            item=profile_item(item))
-            if 'fit_new.<locals>.fit_arm' in name and defaults:
-                metadata['variant'] = 'new_family' if defaults[0] else 'control'
-            if 'fit_shared.<locals>.fit_arm' in name and defaults:
-                metadata['extra_count'] = len(defaults[-1])
+            metadata = dict(stage=stage_name, top_stage=top_stage,
+                            **fit_metadata(operation), item=profile_item(item),
+                            start=began, end=ended, seconds=ended-began,
+                            self_cpu_seconds=after[0]-before[0],
+                            children_cpu_seconds=after[1]-before[1],
+                            task_window_includes_pipe_send=True,
+                            timers_only=timers_only)
             write(root / f'profile-{os.getpid()}.json', metadata)
 
     def predictive(*args, **kwargs):
         nonlocal active
         active = True
-        profile.enable()
+        if not timers_only:
+            profile.enable()
         try:
             return original_predictive(*args, **kwargs)
         finally:
@@ -126,16 +159,17 @@ def profile_worker(root, only_stage=None):
     engine.run_native, parallel._invoke = observed, invoke
     engine._Timing.run = top_timing
     profile = cProfile.Profile()
-    if only_stage is None:
+    if only_stage is None and not timers_only:
         profile.enable()
-    else:
+    elif only_stage is not None:
         policy.recover_predictive_checkpoint = predictive
     try:
         return timed(worker, worker_rows, 'worker',
                      root / 'request.json', root / 'worker.json', False)
     finally:
         profile.disable()
-        profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
+        if not timers_only:
+            profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
         engine.run_native, parallel._invoke = original_run, original_invoke
         engine._Timing.run = original_timing
         policy.recover_predictive_checkpoint = original_predictive
@@ -159,11 +193,14 @@ def launch(args):
     write(root / 'plan.json', dict(bindings=bindings, affinity=sorted(os.sched_getaffinity(0)),
                                   timeout_seconds=args.timeout, profiled=True,
                                   only_stage=getattr(args, 'only_stage', None),
+                                  timers_only=getattr(args, 'timers_only', False),
                                   production_modified=False))
     write(root / 'resources-start.json', resources())
     command = [sys.executable, '-B', str(Path(__file__).resolve()), '--worker', str(root)]
     if getattr(args, 'only_stage', None):
         command += ['--only-stage', args.only_stage]
+    if getattr(args, 'timers_only', False):
+        command += ['--timers-only']
     environment = dict(os.environ, OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1',
                        MKL_NUM_THREADS='1', PYTHONDONTWRITEBYTECODE='1')
     with (root / 'worker.log').open('xb') as log:
@@ -192,9 +229,11 @@ def main():
     parser.add_argument('--timeout', type=float, default=1200)
     parser.add_argument('--worker', type=Path, help=argparse.SUPPRESS)
     parser.add_argument('--only-stage', choices=['predictive'])
+    parser.add_argument('--timers-only', action='store_true',
+                        help='Full stage/child wall and CPU accounting without cProfile tracing')
     args = parser.parse_args()
     if args.worker:
-        return profile_worker(args.worker, args.only_stage)
+        return profile_worker(args.worker, args.only_stage, args.timers_only)
     if not args.request or not args.output:
         parser.error('--request and --output required')
     return launch(args)

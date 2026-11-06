@@ -66,6 +66,9 @@ class ControlPairs:
         self.reuse, self.key = reuse, key
         self.values, self.rows = {}, []
 
+    def context(self, d, kind, option):
+        return d
+
     def __call__(self, compute, control, kind, d, inventory, count, option):
         if not control:
             return compute()

@@ -26,13 +26,17 @@ The profiling command creates its own request with only `output_root` changed:
 ```sh
 PYTHONPATH=src OPENBLAS_NUM_THREADS=1 taskset -c 0,1,2 python -B \
   tools/profile_algo07v3.py --request /absolute/native-request.json \
-  --output /absolute/fresh-profile --timeout 1200
+  --output /absolute/fresh-profile --timeout 1200 --timers-only
 ```
 
-It runs the actual owned worker under its process-group supervisor, records
-top-level stages and recovery substages, parent and child CPU accounting, source
-bindings, host pressure and per-process cProfile files. Inspect `profile.json`
-and `worker.log`. Use `python -m pstats profile-PID.pstats` for call detail.
+It runs the actual owned worker under its process-group supervisor and records
+top-level stages, recovery substages, per-task wall/CPU windows, parent and child
+CPU accounting, source bindings and host pressure. Inspect `profile.json`,
+`stage-resources.json`, `profile-PID.json` and `worker.log`. Task windows include
+pipe transfer and overlap stages. `--timers-only` avoids the known inconsistent
+aggregate cProfile trace and produces no pstats files. Omit it only when a
+targeted function trace is needed; validate that trace before ranking functions.
+Use `python -m pstats profile-PID.pstats` for valid call detail.
 Substages are nested within top-level stages; never add both. Child profiles
 overlap in wall time; their cumulative function times are not exclusive CPU.
 Profiling perturbs timing: choose a hotspot from these results, then measure
@@ -168,3 +172,13 @@ the default restored. DS26-0002 has no duplicates and about 1.5 s of key overhea
 Do not claim a complete-scan gain from the stage clocks. Reduce dependency-key
 overhead and measure duplicate incidence before another integration; retain all
 controls, stateful fallback, both arms and complete audit/PNG equality.
+
+The successor [control-view implementation](../../../reports/2026_11_06_algo07v3_control_geometry_view/README.md)
+is retained in development: exact native DS26-0066 is 480.981→394.960 s and
+DS26-0002 is 247.723→245.940 s, with 2,012 tests passing. Short-scan predictive
+and prepared clocks regress; do not claim a universal speedup. Controls run on
+a view without unused discovery geometry, with every retained field key-bound.
+The [full timer profile](../../../reports/2026_11_06_algo07v3_full_profile/README.md)
+compares this code's complete science and eight PNGs against its unprofiled run.
+Use `--timers-only` for reliable stage/child accounting; frequency snapshots are
+diagnostics, not timing corrections. Retain separate unprofiled speed clocks.

@@ -153,7 +153,7 @@ def _targets(context, inventory, annotations, *, shared):
 
 
 def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh=False,
-               map_arms=None):
+               map_arms=None, control_cache=None):
     d, targets, receipts, fragments, count = _targets(context, inventory, annotations, shared=True)
     protocol = dict(
         targets=targets,
@@ -196,8 +196,10 @@ def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh
         variants.append(("combined", targets))
     for name, extras in variants:
         entries = d["entries"] + extras
+        fit_context = (control_cache.context(d, 'fit_shared', conditional_satellite_refresh)
+                       if control_cache is not None and name == 'control' else d)
 
-        def fit_arm(arm, entries=entries, extras=extras):
+        def fit_arm(arm, entries=entries, extras=extras, d=fit_context):
             x, reference, history = np.zeros(2), np.zeros(len(d["means"])), []
             for _ in range(5):
                 p = _problem(
@@ -268,8 +270,13 @@ def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh
                 row["shared_satellite_replay"] = exact_shared_replay(p, x, entries)
             return row
 
-        pair = dict(zip(ARMS, numerics.map_calibration_arms(d, fit_arm, ARMS, map_arms),
-                        strict=True))
+        def compute_pair():
+            return dict(zip(ARMS, numerics.map_calibration_arms(d, fit_arm, ARMS, map_arms),
+                            strict=True))
+
+        pair = (compute_pair() if control_cache is None else control_cache.pair(
+            compute_pair, name == 'control', 'fit_shared', fit_context, inventory, count,
+            conditional_satellite_refresh))
         valid = pair_passes(pair, include_linear=True) and all(
             r["lost_points"] == 0 and r["final_phase_change_s"] <= 0.01 for r in pair.values()
         )
@@ -299,7 +306,8 @@ def fit_shared(context, inventory, annotations, *, conditional_satellite_refresh
     return result
 
 
-def fit_new(context, inventory, annotations, *, optimizer="lbfgsb", map_arms=None):
+def fit_new(context, inventory, annotations, *, optimizer="lbfgsb", map_arms=None,
+            control_cache=None):
     if optimizer not in ("lbfgsb", "powell"):
         raise ValueError("unknown matched position optimizer")
     d, targets, _, fragments, count = _targets(context, inventory, annotations, shared=False)
@@ -331,7 +339,10 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb", map_arms=Non
     )
     result = dict(protocol=protocol)
     for variant, include in [("control", False), ("new_family", True)]:
-        def fit_arm(arm, include=include):
+        fit_context = (control_cache.context(d, 'fit_new', optimizer)
+                       if control_cache is not None and variant == 'control' else d)
+
+        def fit_arm(arm, include=include, d=fit_context):
             x, reference, history = np.zeros(2), np.zeros(len(d["means"])), []
             for _ in range(5):
                 p = _problem(d, arm, reference, d["entries"])
@@ -401,8 +412,13 @@ def fit_new(context, inventory, annotations, *, optimizer="lbfgsb", map_arms=Non
             )
             return row
 
-        pair = dict(zip(ARMS, numerics.map_calibration_arms(d, fit_arm, ARMS, map_arms),
-                        strict=True))
+        def compute_pair():
+            return dict(zip(ARMS, numerics.map_calibration_arms(d, fit_arm, ARMS, map_arms),
+                            strict=True))
+
+        pair = (compute_pair() if control_cache is None else control_cache.pair(
+            compute_pair, variant == 'control', 'fit_new', fit_context, inventory, count,
+            optimizer))
         valid = pair_passes(pair, include_linear=True) and all(
             v["lost_points"] == 0
             and v["history"][-1]["success"]

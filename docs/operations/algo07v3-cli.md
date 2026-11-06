@@ -380,11 +380,14 @@ timeout. Changing those scientific admission semantics remains a release gate.
 
 ## Timing scopes
 
-The [duplicate-control experiment](../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md)
-is external, not a default runtime feature. It removes repeated fits exactly and
-improves predictive-stage clocks, but both complete native comparisons regress.
-The default implementation is restored. Use the profiling skill's inclusion
-recipe to reproduce the census; no new CLI option or speed guarantee is added.
+The original [broad-key control experiment](../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md)
+was rejected after complete native regressions. Its successor,
+[control-view reuse](../../reports/2026_11_06_algo07v3_control_geometry_view/README.md),
+is retained in development after exact native qualification on two scans.
+It reuses complete identical paired controls within one recovery invocation;
+target fits and scientific budgets are unchanged. Stateful and custom contexts
+bypass reuse. This adds no CLI option or population speed guarantee. Production
+admission and broader qualification remain separate gates.
 
 The worker records native-to-render, evidence projection/save, publication and
 their combined time. Its combined clock starts after loading the result/public

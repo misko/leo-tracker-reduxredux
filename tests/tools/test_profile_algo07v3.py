@@ -139,3 +139,44 @@ def test_top_level_instrumentation_restores_after_failure(monkeypatch, tmp_path)
     assert _Timing.run is original
     assert json.loads((tmp_path / 'stage-resources.json').read_text())[0]['completed'] is False
     assert json.loads((tmp_path / 'worker-resources.json').read_text())[0]['completed'] is False
+
+
+def test_control_labels_use_named_defaults_not_context_position():
+    def shared(arm, entries=(), extras=('target',), d=None):
+        return arm
+    shared.__qualname__ = 'fit_shared.<locals>.fit_arm'
+    assert profiler.fit_metadata(shared)['extra_count'] == 1
+    def new(arm, include=False, d=None):
+        return arm
+    new.__qualname__ = 'fit_new.<locals>.fit_arm'
+    assert profiler.fit_metadata(new)['variant'] == 'control'
+
+
+def test_frequency_samples_record_missing_counters_explicitly(tmp_path):
+    path = tmp_path / 'cpu1/cpufreq/scaling_cur_freq'
+    path.parent.mkdir(parents=True)
+    path.write_text('1234567\n')
+    assert profiler.frequencies(tmp_path, [1, 2]) == {'1': 1234567, '2': None}
+
+
+@pytest.mark.parametrize('only_stage', [None, 'predictive'])
+def test_timer_mode_keeps_complete_child_clocks_without_tracing(monkeypatch, tmp_path, only_stage):
+    import json
+
+    from leo.application import localization_v3 as policy
+    from leo.operations.localization_v3_parallel import map_initial_arms
+
+    def predictive():
+        return map_initial_arms(lambda arm: arm, ('c0', 'fitted_c'))
+    def worker(*args):
+        result = policy.recover_predictive_checkpoint() if only_stage else predictive()
+        assert result == ['c0', 'fitted_c']
+        return 0
+    monkeypatch.setattr(policy, 'recover_predictive_checkpoint', predictive)
+    monkeypatch.setattr(profiler, 'worker', worker)
+    assert profiler.profile_worker(tmp_path, only_stage, timers_only=True) == 0
+    assert not list(tmp_path.glob('*.pstats'))
+    rows = [json.loads(path.read_bytes()) for path in tmp_path.glob('profile-*.json')]
+    assert len(rows) == 2 and all(r['timers_only'] for r in rows)
+    assert all(r['seconds'] >= r['self_cpu_seconds'] >= 0 for r in rows)
+    assert all(r['start'] <= r['end'] and r['children_cpu_seconds'] >= 0 for r in rows)
