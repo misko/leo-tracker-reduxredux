@@ -51,7 +51,7 @@ def profile_item(item):
     return repr(type(item))
 
 
-def timed(operation, rows, name, *args):
+def timed(operation, rows, name, *args, parent_stage=None):
     frequency_before = frequencies()
     began, before = time.perf_counter(), cpu()
     complete = False
@@ -65,7 +65,7 @@ def timed(operation, rows, name, *args):
                          self_cpu_seconds=after[0] - before[0],
                          children_cpu_seconds=after[1] - before[1], completed=complete,
                          cpu_frequency_start_khz=frequency_before,
-                         cpu_frequency_end_khz=frequencies()))
+                         cpu_frequency_end_khz=frequencies(), parent_stage=parent_stage))
 
 
 def fit_metadata(operation):
@@ -104,7 +104,7 @@ def profile_worker(root, only_stage=None, timers_only=False):
         nonlocal stage_name
         previous, stage_name = stage_name, name
         try:
-            return timed(operation, rows, name, name, *args)
+            return timed(operation, rows, name, name, *args, parent_stage=top_stage)
         finally:
             stage_name = previous
 

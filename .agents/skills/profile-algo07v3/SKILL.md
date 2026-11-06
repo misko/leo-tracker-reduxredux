@@ -98,6 +98,7 @@ results; its opening search guide helps locate the needed section.
 | Precision convergence by fold/phase | `training_convergence`, `tools/profile_algo07v3_training_convergence.py` |
 | Per-problem cache eviction | `position_cache`, `tools/profile_algo07v3_position_cache.py` |
 | Initial search | `initial_queue`, `initial_priority`, `discovery_schedule`, `initial-cache` |
+| Joint phase integration / numerical replay | `joint_phase_lu`, `tools/probe_algo07v3_shared_lu.py`, `tools/qualify_algo07v3_shared_lu.py` |
 | Independent paired fits | `conservative`, `numerical` |
 | Diagnostic figures and publication | `grid`, `encoding` |
 
@@ -303,3 +304,41 @@ The observed 0102 worker finishes at 718.702 s, including 192.959 s numerical
 recovery. Profile its new-family/joint replay fits and audits next; the centered
 optimizer and reference-limit policy can change dependencies, and its ordered
 numerical receipts must be preserved. Do not treat all replay time as redundant.
+
+The [numerical-recovery and shared-LU investigation](../../../reports/2026_11_06_algo07v3_joint_phase_lu/README.md)
+separates repeated substage names by `parent_stage`. Joint fits/audits consume
+70.3% of the profiled numerical stage on DS26-0102. The profile's launcher was
+lost while its worker completed: retain its exact saved science and stage CPU
+measurements, but do not invent a supervisor receipt or process speedup.
+`compare_science` supports that limited audit; normal `compare` still requires
+fresh successful supervisor clocks. Long external trials should use a detached
+launcher with a persistent launch record/log and their own bounded process-group
+supervisor. Inspect the same live PID and terminal receipts; do not restart work
+because a tool terminal vanished.
+
+The shared-factorization probe preserves both optimized and direct contraction
+modes. Keep its C source, compiled binary and actual installed LAPACK provider
+hash-bound; it is an external prototype, not an owned production dependency.
+Captured-call gains are not pipeline gains. The fresh native pair must compare
+complete science, both arms, all eight PNGs, identical kernel mode/grid sequences,
+source bindings and complete-worker clocks. Use
+`tools/summarize_algo07v3_shared_lu.py --root PAIR --output FRESH` only after both
+workers finish. Do not sum nested kernel totals with stages. The separate final
+joint-result reuse prototype removes one reporting-tail integration per fit and
+has component tests, but must pass real fit/audit and native verification before
+integration; do not combine it into the LU experiment.
+
+The completed external LU pair is exact on DS26-0102: 826.801→752.739 s wall,
+1,135.26→1,101.05 CPU s. CPU was recovered from the same supervisor's reaped-child
+counters between its two sequential waits; retain raw counters and worker PID
+checks, and never accept a partial observation. Unchanged stages vary, so this
+single native observation is not a population/deployed gain. Default is unchanged;
+an owned supported backend and integration qualification remain.
+The independent `tools/probe_algo07v3_joint_chunks.py` tests at most three ordered
+workers without changing either actual BLAS library's one-thread setting. All
+48 captured outputs match, but optimized contractions regress 9.70–18.95%.
+Do not enable blanket chunk concurrency. Three workers improve direct-mode wall
+32.45% while increasing CPU 34.62%; next test a direct-only policy on the common
+smaller grids and a fresh native pair, with serial fallback outside an explicitly
+owned three-slot context. Keep its latency/throughput tradeoff visible and do
+not stack unqualified LU, chunk and endpoint candidates. Sixty-seven tests pass.

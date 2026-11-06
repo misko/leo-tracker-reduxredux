@@ -1,5 +1,8 @@
 import copy
+import json
+from types import SimpleNamespace
 
+import compare_algo07v3_runs as comparison
 import numpy as np
 import pytest
 from compare_algo07v3_runs import matched_requests, module_changes, scientific_values
@@ -60,3 +63,25 @@ def test_explicit_empty_source_declaration_is_distinct_from_default():
         module_changes(original, changed, [], [])
     with pytest.raises(ValueError, match='Declared source changes'):
         module_changes(original, original, None, [])
+
+
+def test_scientific_match_does_not_waive_missing_supervisor_clock(monkeypatch, tmp_path):
+    request = tmp_path / 'request.json'
+    request.write_text(json.dumps(dict(output_root='unused')))
+    monkeypatch.setattr(comparison, 'compare_science', lambda args: {'science': True})
+    args = SimpleNamespace(baseline_request=request, candidate_request=request,
+                           baseline_timing=tmp_path / 'missing',
+                           candidate_timing=tmp_path / 'missing')
+    with pytest.raises(FileNotFoundError):
+        comparison.compare(args)
+
+
+def test_scientific_match_does_not_waive_failed_execution(monkeypatch, tmp_path):
+    request, clock = tmp_path / 'request.json', tmp_path / 'clock.json'
+    request.write_text('{}')
+    clock.write_text(json.dumps(dict(status='exited', returncode=124)))
+    monkeypatch.setattr(comparison, 'compare_science', lambda args: {'science': True})
+    args = SimpleNamespace(baseline_request=request, candidate_request=request,
+                           baseline_timing=clock, candidate_timing=clock)
+    with pytest.raises(ValueError, match='Fresh completed'):
+        comparison.compare(args)

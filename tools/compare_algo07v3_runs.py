@@ -62,7 +62,8 @@ def module_changes(a, b, expected_changed, expected_added):
     return changed, added
 
 
-def compare(args):
+def compare_science(args):
+    """Compare saved science/publication without making any execution-time claim."""
     requests = [json.loads(p.read_bytes()) for p in (args.baseline_request, args.candidate_request)]
     matched_requests(*requests)
     run_id = requests[0]["identity"]["run_id"]
@@ -133,6 +134,20 @@ def compare(args):
                 {k: v for k, v in value.items() if k not in {"binding", "elapsed_seconds"}}
             )
         same(*values, method)
+    return dict(
+        exact_owned_science_and_artifacts=True,
+        source_changes=sorted(changes), added_modules=sorted(added), both_c_arms=True,
+        full_historical_equivalence=False, dataset_wide_qualification=False,
+        qualified_speedup=None,
+        input_bindings={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in
+                        (args.baseline_request, args.candidate_request, Path(__file__))},
+        scientific_receipts=[r['sha256'] for r in saved],
+    )
+
+
+def compare(args):
+    result = compare_science(args)
+    requests = [json.loads(p.read_bytes()) for p in (args.baseline_request, args.candidate_request)]
     clocks = [json.loads(p.read_bytes()) for p in (args.baseline_timing, args.candidate_timing)]
     for request, clock in zip(requests, clocks, strict=True):
         if (
@@ -143,18 +158,11 @@ def compare(args):
         ):
             raise ValueError("Fresh completed executions required")
         same(clock["request_sha256"], canonical_digest(request), "Timing request binding")
-    return dict(
-        exact_owned_science_and_artifacts=True,
-        source_changes=sorted(changes),
-        added_modules=sorted(added),
+    result.update(
         observed_process_seconds={
             s: r["process_seconds"] for s, r in zip(("baseline", "optimized"), clocks, strict=True)
         },
         observed_latency_ratio=clocks[0]["process_seconds"] / clocks[1]["process_seconds"],
-        both_c_arms=True,
-        full_historical_equivalence=False,
-        dataset_wide_qualification=False,
-        qualified_speedup=None,
         input_bindings={
             str(p): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in (
@@ -165,8 +173,8 @@ def compare(args):
                 Path(__file__),
             )
         },
-        scientific_receipts=[r["sha256"] for r in saved],
     )
+    return result
 
 
 if __name__ == "__main__":

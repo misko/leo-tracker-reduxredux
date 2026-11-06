@@ -25,6 +25,14 @@ def test_timed_preserves_cancellation_and_records_incomplete():
     assert rows[0]['completed'] is False
 
 
+def test_repeated_substage_names_retain_parent_identity():
+    rows = []
+    for stage in ('predictive', 'numerical'):
+        assert timed(lambda s=stage: s, rows, 'control-c0', parent_stage=stage) == stage
+    assert [r['parent_stage'] for r in rows] == ['predictive', 'numerical']
+    assert [r['name'] for r in rows] == ['control-c0', 'control-c0']
+
+
 def test_forked_workers_replace_inherited_profiler_and_write_independent_profiles(
     monkeypatch, tmp_path
 ):

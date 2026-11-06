@@ -1,5 +1,22 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [numerical replay and shared-factorization qualification](../../reports/2026_11_06_algo07v3_joint_phase_lu/README.md):
+**external prototype passes one complete DS26-0102 pair; default and production
+unchanged**. Full process wall is 826.801→752.739 s (8.96% reduction), with
+reaped worker/descendant CPU 1,135.26→1,101.05 s (3.01%). Complete science, both
+arms, ordered kernel modes/grid sizes, ownership, public grid/path and eight
+PNGs agree. Unchanged stages vary substantially; do not attribute all wall gain
+to the factorization or treat one joint-branch case as population qualification.
+The completed profile attributes 70.3% of numerical replay to joint fits/audits;
+its lost supervisor prevents a clean process-speed claim but saved science is
+verified separately. A supported owned backend still needs integration testing.
+Independent ordered-chunk captures preserve all bytes: three workers improve
+direct-contraction wall 32.45% but raise CPU 34.62%; optimized contractions regress
+9.70%. Reject a blanket parallel policy. Next test direct-only chunks on actual
+smaller grids and full native workers, keeping at most three owned slots and
+preserving the original optimized path. Endpoint-result reuse has component
+tests only. The focused suite passes 67 tests; no cumulative/deployed gain claimed.
+
 November 6 [broader full-profile review and repeated-fit census](../../reports/2026_11_06_algo07v3_fit_census/README.md):
 **observation only; no new runtime or production change**. All 937 bindings from
 the exact full timer profile remain current. Two additional native workers finish
