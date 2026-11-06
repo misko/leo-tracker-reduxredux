@@ -48,3 +48,15 @@ def test_only_declared_loaded_source_changes_and_additions_are_allowed():
             module_changes(a, changed, ['job'], ['executor'])
     with pytest.raises(ValueError):
         module_changes(a, b, ['job'], [])
+
+
+def test_explicit_empty_source_declaration_is_distinct_from_default():
+    name = 'leo.analysis.localization_v3.hierarchical'
+    original = {name: 'old', 'other': 'same'}
+    changed = dict(original, **{name: 'new'})
+    assert module_changes(original, original, [], []) == (set(), set())
+    assert module_changes(original, changed, None, []) == ({name}, set())
+    with pytest.raises(ValueError, match='Declared source changes'):
+        module_changes(original, changed, [], [])
+    with pytest.raises(ValueError, match='Declared source changes'):
+        module_changes(original, original, None, [])

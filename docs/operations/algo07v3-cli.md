@@ -1,5 +1,11 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The external [native gradient scheduling trial](../../reports/2026_11_05_algo07v3_native_gradients/README.md)
+preserves complete science and all eight PNGs, but its targeted fits regress
+4.445 → 5.392 s and consume 72.7% more CPU. It is rejected for integration;
+the owned CLI remains unchanged. The complete 291.515 → 229.841 s observation
+is driven by unchanged-stage variation, not an established optimization benefit.
+
 The [covariance-index optimization](../../reports/2026_11_05_algo07v3_posterior_followup/README.md)
 precomputes covariance gather indices once per likelihood call while preserving
 every numerical operation and convergence rule. It passes 727 tests and a fresh

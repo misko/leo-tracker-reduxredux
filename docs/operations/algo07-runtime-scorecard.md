@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [native gradient scheduling trial](../../reports/2026_11_05_algo07v3_native_gradients/README.md)
+is **rejected for integration**. Complete DS26-0002 science and eight PNGs match,
+but its seven targeted fits regress **4.445 → 5.392 s**, with CPU **4.441 →
+7.669 s**. They cover only 1.52% of baseline wall time. The full observed pair
+**291.515 → 229.841 s** improves in unchanged stages and does not establish
+prototype benefit. Eleven tests pass, including the explicit-empty source
+declaration verifier correction; original checker bytes and corrected recheck
+are preserved. Runtime, production and original-ALGO07 speed claims are unchanged.
+
 The [hard-scan follow-up](../../reports/2026_11_05_algo07v3_grid_hard_case/README.md)
 qualifies grid batching exactly on DS26-0066 and matches the earlier complete
 scientific output and eight PNGs across the intervening changes. The candidate-

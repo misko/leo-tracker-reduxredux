@@ -263,5 +263,17 @@ optimizer arithmetic is unchanged. Full history, evaluations, phase reference,
 state and final likelihood must match in both arms. Four unit tests pass;
 observed prepared-fit latency falls 18–21%, but total CPU increases 10–12%.
 This prototype is external and must not be nested inside the existing three-
-worker training queue. The next qualification must restrict it to otherwise
-serial fits and measure fresh complete native results before runtime integration.
+worker training queue.
+
+The native owner-only follow-up uses `tools/probe_algo07v3_native_gradients.py
+--request REQUEST --output FRESH_ROOT` with the same three-CPU limit and explicit
+external substitution. It matches complete science and all PNGs on DS26-0002,
+but its seven eligible fits regress 4.445 → 5.392 s and CPU rises 72.7%. They
+cover only 1.52% of baseline wall time. Keep this policy external/rejected;
+the whole-run 291.515 → 229.841 s difference occurs in unchanged stages and
+does not support its integration. The report archives the measured verifier
+and an exact post-run correction for explicit-empty source-change declarations.
+An empty declaration requires no changes; an omitted declaration retains the
+historical default. Do not bypass the source comparison to handle this case.
+Next investigate coarser independent numerical-replay fits with exact ordered
+receipt reconciliation, or separately measure repeated catalogue preparation.

@@ -52,6 +52,8 @@ def scientific_values(a, b):
 
 
 def module_changes(a, b, expected_changed, expected_added):
+    if expected_changed is None:
+        expected_changed = ["leo.analysis.localization_v3.hierarchical"]
     same(set(a) - set(b), set(), "Removed implementation modules")
     added = set(b) - set(a)
     same(added, set(expected_added), "Declared added modules")
@@ -108,7 +110,7 @@ def compare(args):
     modules = [x["provenance"]["modules"] for x in (a, b)]
     changes, added = module_changes(
         *modules,
-        args.changed_module or ["leo.analysis.localization_v3.hierarchical"],
+        args.changed_module,
         args.added_module,
     )
     public = [FastStandardAnalysisStore(r["output_root"]) for r in requests]
