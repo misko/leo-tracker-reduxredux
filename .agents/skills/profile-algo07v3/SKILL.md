@@ -316,3 +316,17 @@ causal filtering on hits. Full DS26 and original-ALGO07 cumulative qualification
 remain outstanding. Next profile live evidence encoding or repeated likelihood
 work before selecting another change; decoded saved evidence may alias arrays
 that were separate in memory, so it cannot establish live encoding-cache gains.
+
+The external `tools/probe_algo07v3_codec_headers.py --request REQUEST --output
+FRESH_ROOT` profiles complete archive encoding on live evidence after fresh
+native inference. Pin three CPUs and one BLAS thread; its process-group bound
+is 1,200 seconds. It runs a scoped original profile and three alternating full
+archive pairs, requiring byte equality throughout, then publishes the original
+bytes. Compare final science/eight PNGs using the unchanged-source parity helper.
+The outer clock includes eight encodings and is not normal pipeline latency.
+Fourteen focused tests pass. Header reuse is rejected: DS26-0002 means regress
+3.569 → 3.734 s, while NumPy save consumes only 0.025 s. The 2.916-second
+unclassified remainder needs further attribution; do not call all of it
+traversal. Predictive fitting (39.785 s), initial search (21.225 s) and residual
+screening (14.210 s) remain much larger targets. The encoding report retains
+fresh stage clocks, exact publication and all failed timing evidence.

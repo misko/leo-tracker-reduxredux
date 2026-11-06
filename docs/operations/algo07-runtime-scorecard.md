@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [live encoding profile](../../reports/2026_11_05_algo07v3_encoding_profile/README.md)
+rejects header caching: three complete archive pairs average **3.569 → 3.734 s**,
+4.62% slower, despite exact bytes. Fourteen tests and complete normal-CLI
+science/both-arm/eight-PNG parity pass. Fresh stage clocks identify predictive
+recovery **39.785 s**, initial search **21.225 s** and residual screening
+**14.210 s** as the main targets. The 187.850-second supervised clock includes
+eight encodings; it is not a normal-run speed result. Runtime, production and
+cumulative qualification remain unchanged.
+
 The [recovery catalogue cache iteration](../../reports/2026_11_05_algo07v3_catalogue_cache/README.md)
 is integrated in development. Twelve complete preparation trials on DS26-0002
 and DS26-0066 are exact: catalogue means improve **5.513 → 2.040 s** and
