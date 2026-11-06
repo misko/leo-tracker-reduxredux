@@ -13,7 +13,7 @@ from leo.analysis.localization_v3 import initial_search, position
 from tests.analysis.test_localization_v3_position import prepared
 
 
-def test_runtime_remains_the_frozen_baseline_and_candidate_is_external():
+def test_cache_prototype_retains_frozen_input_and_stays_out_of_runtime():
     import algo07v3_preinitial_cache_position_oracle as old_position
     import algo07v3_preinitial_cache_search_oracle as old_search
 
@@ -22,11 +22,14 @@ def test_runtime_remains_the_frozen_baseline_and_candidate_is_external():
     assert hashlib.sha256(Path(old_search.__file__).read_bytes()).hexdigest() == (
         'dcd98f3ea29c5be0f76a13271f74b8637b6e04f20200c5a6204f54bee4ec190a')
     _, _, sources = functions()
+    # Initial scheduling was subsequently integrated and has its own exact
+    # branch-queue tests. The rejected cache probe still targets frozen input.
     for function in (position.refreshed, initial_search.fit_initial_arm,
-                     initial_search.initial_search):
+                     old_search.initial_search):
         assert ast.dump(ast.parse(inspect.getsource(function))) == ast.dump(
             ast.parse(sources[function.__name__]['original']))
     assert not hasattr(position, 'fixed_calculations')
+    assert 'fixed_calculations' not in inspect.getsource(initial_search.initial_search)
     for before, after in ((old_position.fit, position.fit),
                           (old_position.NormalPosition, position.NormalPosition)):
         assert ast.dump(ast.parse(inspect.getsource(before))) == ast.dump(

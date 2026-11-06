@@ -142,3 +142,10 @@ timing evidence before adoption. Preserve all alternating pairs, including
 regressions. The next scheduling diagnostic is the complete recovery timeline
 across targets, not another permutation of one target's six jobs. Preserve the
 three-slot limit, canonical outputs, stateful fallback and admission semantics.
+
+The [cross-target queue experiment](../../../reports/2026_11_06_algo07v3_cross_target_queue/README.md)
+is rejected: prepared annotation improves 14–22%, but both native pairs regress
+21–37% with exact science and eight PNGs. Default runtime sources are restored.
+Next isolate complete recovery from a common native prefix checkpoint and explain
+the discrepancy before integrating another scheduling change. The restored
+default passes 1,959 tests; candidate sources and its 1,980-test receipt are archived.

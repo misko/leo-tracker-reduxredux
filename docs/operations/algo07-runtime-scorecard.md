@@ -1,5 +1,13 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [cross-target training queue](../../reports/2026_11_06_algo07v3_cross_target_queue/README.md):
+**candidate rejected and default restored**. Prepared DS26-0066 annotation
+improves 14–22%, but complete native comparisons regress 399.664→485.562 s and
+400.526→549.862 s. Both retain exact science, both arms and eight PNGs. The
+restored default passes 1,959 tests. No new cumulative speedup or production
+change. Compare recovery from the same native prefix checkpoint next; explain
+the prepared/native discrepancy before another integration attempt.
+
 November 6 [training reuse census and covariance experiments](../../reports/2026_11_06_algo07v3_covariance_reuse/README.md):
 no runtime or production change. Six DS26-0002 fold masks are all distinct;
 DS26-0066 has 23 distinct masks among 24 folds, with its slow fold unique.

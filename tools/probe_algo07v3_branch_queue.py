@@ -13,11 +13,11 @@ import os
 import time
 from pathlib import Path
 
+import algo07v3_preinitialqueue_oracle as initial_search
 import numpy as np
 from check_algo07v3_scan_likelihood import fingerprint
 from probe_algo07v3_discovery_schedule import cpu_seconds, host_resources
 
-from leo.analysis.localization_v3 import initial_search
 from leo.analysis.localization_v3.region import SearchRegion
 from leo.application.localization_v3 import _context
 from leo.application.localization_v3_engine import _json_value
@@ -115,6 +115,7 @@ def main():
     if os.environ.get('OPENBLAS_NUM_THREADS') != '1' or len(os.sched_getaffinity(0)) != 3:
         parser.error('Pin three CPUs and one BLAS thread')
     files = [*Path('src').rglob('*.py'), args.request, Path(__file__),
+             Path(initial_search.__file__),
              Path('tools/check_algo07v3_scan_likelihood.py'),
              Path('tools/probe_algo07v3_discovery_schedule.py')]
     bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}

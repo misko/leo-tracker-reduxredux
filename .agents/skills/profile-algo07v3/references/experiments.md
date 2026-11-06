@@ -528,3 +528,37 @@ Two observer tests are included in the candidate's 1,492-test qualification.
 These profiled clocks are not speed comparisons. Investigate first-round
 conditioning and repeated exact work; do not reduce budgets or change priors
 to claim a performance optimization under the identical-output requirement.
+
+## Training across recovery targets
+
+`tools/probe_algo07v3_cross_target_queue.py --request REQUEST --output FRESH_ROOT`
+profiles every selected target and compares the original per-target queue with
+a shared FIFO training queue. Add `--reverse` for candidate first. Use three
+CPUs, one BLAS thread and an external 900-second bound. This external prototype
+does not change runtime sources and requires validation-all-work admission.
+It preserves all folds and both arms; compare complete annotations and saved
+native votes, not only final positions. Context loading is outside its timer.
+
+DS26-0066's 48 jobs improve full annotation time in both orders:
+118.544→101.697 s and 178.954→138.965 s. DS26-0002's twelve-job prototype
+regresses 14.039→14.812 s. The rejected candidate kept the per-target queue
+for fewer than three targets. Complete native DS26-0066 runs regress in both
+orders: 399.664→485.562 s and 400.526→549.862 s. All scientific outputs and eight
+PNGs are exact. All six runtime modules are restored; candidate sources/tests
+are archived. The [report](../../../../reports/2026_11_06_algo07v3_cross_target_queue/README.md)
+contains all pairs, measured task intervals and separate native qualification.
+Never label the prepared annotation ratio as a whole-pipeline speedup.
+
+The archived all-target execution port was confined to explicit all-work admission.
+Training runs inside the first annotation stage so timing receipts retain its
+cost. Target scoring/inclusion/selection stay canonical, and stateful numerical
+replay retains the existing path. Qualify full audits, both c arms, ownership,
+eight PNG bytes and grid/path; ordinary elapsed admission remains separate.
+Next compare complete recovery from an identical native prefix checkpoint and
+measure task CPU/wall costs before any further promotion. Prepared gains alone
+are insufficient; shared-host variability is not a demonstrated root cause.
+
+Historical initial-search probes must use their existing frozen source oracle,
+not transform the evolving runtime by line position. The broader suite exposed
+five old failures that reproduced under pre-change runtime modules. The frozen
+oracle bytes and golden tolerances were not changed when repairing these helpers.

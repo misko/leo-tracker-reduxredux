@@ -1,5 +1,11 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [cross-target training candidate](../../reports/2026_11_06_algo07v3_cross_target_queue/README.md)
+is rejected: prepared annotation gains do not survive either complete native
+comparison. All six runtime modules are restored to pre-experiment bytes, with
+1,959 tests passing. No CLI, numerical or production change. Candidate sources,
+exact scientific/PNG comparisons and contrary timing evidence are archived.
+
 The [compiled assembly candidate](../../reports/2026_11_06_algo07v3_ordered_assembly/README.md)
 is rejected after two complete native timing regressions despite exact scientific
 outputs and modest prepared-fit gains. NumPy assembly and the existing build
