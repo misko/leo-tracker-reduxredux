@@ -95,10 +95,10 @@ def measured_worker(root, variant):
         write(root / 'fits.json', rows)
 
 
-def launch(root, variant):
+def launch(root, variant, entry_path=None):
     write(root / 'resources-start.json', resources())
     with (root / 'worker.log').open('xb') as log:
-        outcome = supervise([sys.executable, '-B', str(Path(__file__).resolve()),
+        outcome = supervise([sys.executable, '-B', str((entry_path or Path(__file__)).resolve()),
                              '--worker', str(root), '--variant', variant],
                             log=log, timeout=1200, environment=dict(
                                 os.environ, OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1',
@@ -112,7 +112,8 @@ def launch(root, variant):
     return 0 if outcome['returncode'] == 0 and result and result['status'] == 'complete' else 1
 
 
-def main():
+def main(worker_operation=measured_worker, entry_path=None, runner_path=None, extra_paths=(),
+         counter_events=()):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--request', type=Path)
     parser.add_argument('--output', type=Path)
@@ -122,9 +123,9 @@ def main():
     parser.add_argument('--candidate-first', action='store_true')
     args = parser.parse_args()
     if args.worker:
-        return measured_worker(args.worker, args.variant)
+        return worker_operation(args.worker, args.variant)
     if args.launch:
-        return launch(args.launch, args.variant)
+        return launch(args.launch, args.variant, entry_path)
     if not args.request or not args.output:
         parser.error('--request and --output required')
     root = args.output.resolve()
@@ -133,8 +134,10 @@ def main():
     root.mkdir(exist_ok=False)
     request = json.loads(args.request.read_bytes())
     bundle = Path(request['native_input']['path']).parent
-    runner = Path('reports/2026_11_05_algo07v3_native_gradients/isolate.sh').resolve()
-    paths = [*Path('src').rglob('*.py'), args.request, Path(__file__), runner,
+    runner = (runner_path or Path(
+        'reports/2026_11_05_algo07v3_native_gradients/isolate.sh')).resolve()
+    entry = (entry_path or Path(__file__)).resolve()
+    paths = [*Path('src').rglob('*.py'), args.request, Path(__file__), runner, entry, *extra_paths,
              Path('tools/probe_algo07v3_gradient_axes.py'), Path('tools/profile_algo07v3.py'),
              Path('tools/compare_algo07v3_runs.py'), bundle / 'input-bindings.json']
     commands = {}
@@ -145,11 +148,16 @@ def main():
         paths.append(target / 'request.json')
         commands[side] = ['/usr/bin/time', '-v', '-o', str(target / 'process-time.txt'),
                           'sh', str(runner), str(bundle), str(target), sys.executable, side]
+        if counter_events:
+            commands[side] = ['taskset', '-c', '0,1,2', 'perf', 'stat', '--json-output',
+                              '-o', str(target/'counters.jsonl'), '-e', ','.join(counter_events),
+                              '--', *commands[side]]
     bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     order = ['candidate', 'baseline'] if args.candidate_first else ['baseline', 'candidate']
     write(root / 'plan.json', dict(bindings=bindings, commands=commands, order=order,
                                   cpus=[0, 1, 2], blas_threads=1, production_modified=False,
-                                  external_function_substitution=True, profiled=False))
+                                  external_function_substitution=True, profiled=False,
+                                  hardware_counter_events=list(counter_events)))
     for side in order:
         print('Starting ' + side, flush=True)
         with (root / side / 'launch.log').open('xb') as log:
@@ -163,7 +171,7 @@ def main():
         baseline_timing=root / 'baseline/supervisor.json',
         candidate_timing=root / 'candidate/supervisor.json', changed_module=[], added_module=[]))
     comparison.update(external_function_substitution=True,
-                      probe_sha256=bindings[str(Path(__file__).resolve())])
+                      probe_sha256=bindings[str(entry)])
     write(root / 'comparison.json', comparison)
     print(json.dumps({k: comparison[k] for k in ('exact_owned_science_and_artifacts',
                                                 'observed_process_seconds')}), flush=True)

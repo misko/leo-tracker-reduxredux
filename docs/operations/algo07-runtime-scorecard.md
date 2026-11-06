@@ -1,5 +1,22 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [bounded process-helper and full-profile review](../../reports/2026_11_06_algo07v3_idle_process/README.md):
+**external candidate not adopted; runtime and production unchanged**. Native
+DS26-0066 preserves complete science, both arms, grid/path and eight PNG bytes.
+The targeted initial stage is effectively flat, **104.724 → 104.473 s**; its
+fit queue takes 80.439 → 79.087 s but consumes **121.134 → 130.984 CPU s**.
+Full worker 462.319 → 393.222 s is driven mostly by unchanged-stage variation;
+inherited counters show nearly equal instructions (10.154 / 10.151 trillion),
+with changing cycle costs and host pressure. This is no demonstrated new speedup.
+Prepared short/hard pairs are 29.399 → 33.061 and 174.400 → 109.379 s;
+the unusually slow hard baseline is retained, not credited as a helper gain.
+A serial-fallback activation race was reproduced, corrected after measurement,
+and covered by the 21 passing focused tests. Corrected helper has no native
+qualification and remains external. Prioritize shared likelihood matrix work;
+solver/convergence changes require separate scientific qualification rather
+than silently relaxing exact outputs. Do not launch more queue trials without
+a specific mechanism to overcome the flat native result.
+
 November 6 [hardware counters and precision coupling](../../reports/2026_11_06_algo07v3_perf_coupling/README.md):
 unchanged DS26-0066 completes in **398.576 s**, exactly matching both arms,
 science, eight PNGs and public grid/path, with no changed runtime modules.

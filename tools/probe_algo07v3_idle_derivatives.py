@@ -27,6 +27,8 @@ from leo.operations import localization_v3_parallel as parallel
 from leo.operations.localization_v3_job import runtime_versions
 from leo.storage.localization_v3 import LocalizationV3Store
 
+_INITIAL_PORT = parallel.map_initial_branches
+
 
 class IdleDerivatives:
     """One map invocation; only its sole surviving outer child can borrow."""
@@ -113,12 +115,12 @@ class IdleDerivatives:
             self.records = [row[1] for row in rows]
             return [row[0] for row in rows]
         scope = dict(vars(parallel), _ordered=ordered)
-        exec(compile(inspect.getsource(parallel.map_initial_branches),
+        exec(compile(inspect.getsource(_INITIAL_PORT),
                      '<idle-initial-port>', 'exec'), scope)
         return scope['map_initial_branches'](operation, items)
 
 
-def main():
+def main(coordinator_type=IdleDerivatives, extra_paths=()):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--request', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
@@ -134,21 +136,23 @@ def main():
     assert runtime_versions() == request['runtime']
     paths = [*Path('src').rglob('*.py'), args.request, Path(__file__),
              Path('tools/check_algo07v3_scan_likelihood.py'),
-             Path('tools/probe_algo07v3_gradient_axes.py'), Path('tools/profile_algo07v3.py')]
+             Path('tools/probe_algo07v3_gradient_axes.py'), Path('tools/profile_algo07v3.py'),
+             *extra_paths]
     bindings = {str(q.resolve()): hashlib.sha256(q.read_bytes()).hexdigest() for q in paths}
     saved = LocalizationV3Store(request['output_root']).load(request['identity']['run_id'])
     prepared, expected = saved['evidence']['preparation'], saved['evidence']['audit']['initial']
     before = fingerprint(prepared)
     noise = (json.dumps(prepared['noise'], default=_json_value,
                         sort_keys=True, allow_nan=False)+'\n').encode()
-    prototype = IdleDerivatives()
+    prototype = coordinator_type()
     for name in ('original_executor', 'generated_executor', 'original_gradient',
                  'generated_gradient'):
         (args.output/f'{name}.py').write_text(getattr(prototype, name)+'\n')
     plan = dict(bindings=bindings, scientific_receipt=saved['sha256'],
                 cpus=sorted(os.sched_getaffinity(0)), blas_threads=1, max_execution_units=3,
                 candidate_first=args.candidate_first, repeats=args.repeats,
-                production_modified=False, external_function_substitution=True)
+                production_modified=False, external_function_substitution=True,
+                coordinator_type=coordinator_type.__name__)
     (args.output/'plan.json').write_text(json.dumps(plan, indent=2)+'\n')
     rows = []
     for pair in range(args.repeats):
@@ -158,7 +162,7 @@ def main():
         for side in order:
             scan = _context(prepared, SearchRegion(tuple(request['search_center'])),
                             hashlib.sha256(noise).hexdigest(), genuine=False)
-            coordinator = IdleDerivatives()
+            coordinator = coordinator_type()
             mapper = (coordinator.map if side == 'candidate' else parallel.map_initial_branches)
             host = resources()
             began, used = time.perf_counter(), cpu()

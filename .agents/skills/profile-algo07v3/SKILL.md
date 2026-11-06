@@ -235,3 +235,15 @@ Next process-helper experiment must differ from the rejected thread policy:
 borrow one helper only in the sole remaining outer fit, preserve the three-slot
 cap, handle helper failure and parent death, and require exact native outputs
 plus complete wall/CPU/counter comparisons before adoption.
+
+The [process-helper comparison](../../../reports/2026_11_06_algo07v3_idle_process/README.md)
+is now **not adopted**. Complete native science and eight PNGs are exact, but
+initial search is flat at 104.724→104.473 s and queue CPU rises 8.13%.
+Whole-worker 462.319→393.222 s mostly reflects unchanged-stage variation;
+instructions are nearly equal and CPU-pressure/cycle costs change. Prepared
+gains do not override this result. The measured sources are archived; a later
+serial-fallback race fix passes 21 focused tests but has no native qualification.
+Do not integrate or claim cumulative gain. Next focus on the shared likelihood
+matrix work, or explicitly separate a numerical-convergence candidate from the
+identical-output path. Avoid another queue experiment without a new measured
+mechanism and preserve the negative evidence.
