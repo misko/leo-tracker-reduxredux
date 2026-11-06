@@ -13,13 +13,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--stage', choices=('predictive', 'numerical'), required=True)
+    parser.add_argument('--variant', choices=('endpoint', 'paired'), default='endpoint')
     args = parser.parse_args()
     root = args.root.resolve()
     if root.exists() or root.is_relative_to('/mnt/qnap01'):
         parser.error('Fresh local root required')
     reference = Path('/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106')
+    tool = ('tools/benchmark_algo07v3_final_joint.py' if args.variant == 'endpoint'
+            else 'tools/benchmark_algo07v3_joint_pair.py')
     command = ['timeout', '--kill-after=5s', '1200s', 'taskset', '-c', '0,1,2',
-               sys.executable, '-B', 'tools/benchmark_algo07v3_final_joint.py',
+               sys.executable, '-B', tool,
                '--request', str(reference / 'candidate-request.json'),
                '--native-comparison', str(reference / 'comparison.json'),
                '--stage', args.stage, '--output', str(root)]

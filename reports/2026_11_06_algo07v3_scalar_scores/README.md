@@ -5,6 +5,12 @@ phase grids are exact, but latency and CPU results are mixed. Keeping a separate
 runtime path is not justified by these measurements. No runtime or production
 change is made by this experiment, and no complete-pipeline speedup is claimed.
 
+The separate endpoint-reuse prototype also remains **unintegrated** after exact
+real-fit trials: mean predictive c=0 joint-fit time is 20.365→20.402 s, with
+20.358→20.385 CPU s. Removing one 0.087-second integration does not produce a
+measurable fit-level benefit here. The next experiment is independent execution
+of both complete calibration fits, described in [the plan](next.md).
+
 The preceding [joint-audit report](../2026_11_06_algo07v3_joint_audit/README.md)
 was published to remote main as `14b552ce7`, including its full-run regression.
 The current experiment does not remove, replace or normalize that evidence.
@@ -48,7 +54,7 @@ These are kernel-only clocks. They exclude geometry preparation, optimizer,
 native prefix, admission and publication. They do not measure c=0 versus fitted-c
 position accuracy; the scientific model and both runtime arms are unchanged.
 
-## Next measured target
+## Endpoint-reuse checkpoint result
 
 Both owned joint optimizers compute the endpoint joint likelihood, then compute
 the same full joint integral again for the final diagnostic record. Reusing that
@@ -66,6 +72,40 @@ numerical-receipt equality, and checks that the kernel call sequence loses
 exactly the final duplicate call. It stops after the checkpoint and never
 publishes an inferred position. A complete native qualification would still be
 required before integrating this candidate.
+
+The corrected checkpoint run finishes successfully. Every complete fit result,
+input/output kernel sequence and policy signature agrees; exactly one final
+kernel call is removed. This predictive route has no numerical-policy receipt;
+the actual numerical route and fitted-c timing are not covered by this result.
+
+| Pair | Original wall, s | Reuse wall, s | Original CPU, s | Reuse CPU, s |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline first | 20.174481 | 20.111275 | 20.172845 | 20.099560 |
+| Candidate first | 20.556383 | 20.692591 | 20.543920 | 20.670833 |
+| Mean | **20.365432** | **20.401933** | **20.358383** | **20.385197** |
+
+The mean is 0.18% slower in wall time and 0.13% higher in CPU. One pair improves
+and the other regresses. Keep both. This is insufficient reason to integrate
+another runtime optimization or spend a complete native pair qualifying a
+claimed gain that the scoped experiment does not show.
+
+![Complete endpoint-reuse fit trials](endpoint-checkpoint/runtime.png)
+
+[Trial results](endpoint-checkpoint/result.json),
+[summary](endpoint-checkpoint/summary.json),
+[verification](endpoint-checkpoint/verified.json),
+[measured harness source](endpoint-checkpoint/benchmark_source.py).
+The 410.124-second launcher interval includes recomputing the native prefix and
+four trials. It is not a full pipeline runtime or a before/after comparison.
+Fit clocks include the same instrumentation on both sides; kernel timing excludes
+input/output fingerprinting. The parent checkpoint is unchanged between trials.
+
+The first baseline contains 149 integrations and 138 unique input/policy keys.
+The eleven repeats total 0.965922 s of kernel work; the final duplicate is
+0.086517 s. Even eliminating all repeats with zero cache overhead would remove
+only about 4.8% of this one instrumented fit. That is an upper bound, not a
+measured caching gain or a claim about other scans. The input census makes this
+a secondary target behind independent complete-fit execution.
 
 The first checkpoint attempt failed in the external harness after its first
 baseline fit. While intercepting `_fit_lbfgsb`, the AST builder looked up the
@@ -85,6 +125,14 @@ Source-drift, changed result, changed numerical receipt and unexpected call-coun
 cases are rejected. Runtime qualification remains the preceding 2,358-test suite;
 the present experiment does not change runtime code.
 
+The subsequent paired-fit probe and retained final-reuse tests pass **22 tests**
+(overlapping coverage). Actual fork tests check both calibration outputs,
+ordered owned-policy receipts, pristine parent state and child failure. The
+paired probe measures serial versus two-process fits from the same checkpoint;
+audits are excluded. It is an external measurement tool, not a controller change.
+Controller integration must still preserve the intervening audit's receipt
+position; [the plan](next.md) explains why an eager receipt merge is insufficient.
+
 ## Reproduction
 
 From the development checkout, use the repository virtualenv Python:
@@ -99,6 +147,8 @@ python -B reports/2026_11_06_algo07v3_scalar_scores/render.py \
   --input /absolute/fresh-scalar-root --output /absolute/fresh-scalar-summary
 python -B reports/2026_11_06_algo07v3_scalar_scores/run_probe.py \
   --root /absolute/fresh-checkpoint-root --stage predictive
+python -B reports/2026_11_06_algo07v3_scalar_scores/run_probe.py \
+  --root /absolute/fresh-paired-root --stage predictive --variant paired
 ```
 
 The checkpoint wrapper records launch PID, command, a 1,200-second timeout,

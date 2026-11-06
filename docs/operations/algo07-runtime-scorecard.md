@@ -6,10 +6,15 @@ evaluations preserve exact scores and immutable inputs. Four alternating pairs
 per grid/mode show mixed effects: optimized wall reductions −0.34%, +2.00%,
 +4.26%; direct −2.16%, +1.54%, −1.16%. The largest optimized mean includes a
 slow baseline. No complete native speedup is claimed and no scalar runtime path
-is added. The next external checkpoint benchmark tests reuse of the complete
-endpoint joint result, including unchanged optimizer histories and numerical
-receipts, rather than only skipping diagnostic reductions. Forty-two focused
-scalar/final-reuse/benchmark tests pass. Full native integration remains required.
+is added. The completed endpoint-reuse checkpoint also stays unintegrated:
+predictive c=0 fit means 20.365→20.402 s wall and 20.358→20.385 CPU s. Every result
+and input/output call sequence is exact, but one pair improves and one regresses.
+Its final duplicate costs only 0.087 s. Eleven repeated input/policy keys account
+for 0.966 s among 149 calls, an upper bound rather than a caching gain.
+Forty-two scalar/final-reuse/benchmark tests and 22 paired-probe/retained tests pass
+(overlapping coverage). Next measure both independent calibration fits with two
+processes from one checkpoint. Preserve the intervening audit's receipt order
+before any controller integration; do not nest two fits with three-worker audits.
 
 November 6 [joint-audit batching](../../reports/2026_11_06_algo07v3_joint_audit/README.md):
 **retained for measured audit latency; full-pipeline speedup unproven and

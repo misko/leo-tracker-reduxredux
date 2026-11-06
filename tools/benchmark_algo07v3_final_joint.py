@@ -72,7 +72,8 @@ def measure(operation, args, save):
     return rows
 
 
-def main():
+def main(*, measurement=measure, scope='first native c0 joint fit only',
+         extra_dependencies=(), export_candidates=True):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--request', type=Path, required=True)
     parser.add_argument('--native-comparison', type=Path, required=True)
@@ -90,7 +91,7 @@ def main():
              Path(__file__), Path('tools/probe_algo07v3_final_joint_reuse.py'),
              Path('tools/probe_algo07v3_joint_audit.py'),
              Path('tools/check_algo07v3_scan_likelihood.py'),
-             args.request, args.native_comparison, *qualified]
+             args.request, args.native_comparison, *qualified, *extra_dependencies]
     bundle = Path(request['native_input']['path']).parent
     manifest = bundle / 'input-bindings.json'
     paths.append(manifest)
@@ -104,10 +105,11 @@ def main():
     root.mkdir(exist_ok=False)
     (root / 'plan.json').write_text(json.dumps(dict(bindings=bindings, stage=args.stage,
         cpus=[0, 1, 2], blas_threads=1, sequence=['baseline', 'candidate', 'candidate', 'baseline'],
-        scope='first native c0 joint fit only', production_modified=False,
+        scope=scope, production_modified=False,
         full_pipeline_speedup=None), indent=2) + '\n')
-    for name in ('_fit_lbfgsb', '_fit_powell'):
-        (root / f'{name}-candidate.py').write_text(candidate(name)[1] + '\n')
+    if export_candidates:
+        for name in ('_fit_lbfgsb', '_fit_powell'):
+            (root / f'{name}-candidate.py').write_text(candidate(name)[1] + '\n')
     operation = joint._fit_lbfgsb
 
     def save(row):
@@ -119,7 +121,7 @@ def main():
         stage = 'numerical' if context.get('numerical_policy') is not None else 'predictive'
         if stage != args.stage or arm != 'c0' or method != 'joint':
             return operation(context, targets, arm, method, phase_step)
-        rows = measure(operation, (context, targets, arm, method, phase_step), save)
+        rows = measurement(operation, (context, targets, arm, method, phase_step), save)
         (root / 'result.json').write_text(json.dumps(dict(rows=rows, exact=True), indent=2))
         raise ProbeComplete()
 

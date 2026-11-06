@@ -87,13 +87,19 @@ deployment is a separate action. Select the next hotspot from the new profile.
 The [scalar-only score benchmark](../../../reports/2026_11_06_algo07v3_scalar_scores/README.md)
 is complete and **not adopted**: all 48 actual grid scores are exact, but four
 alternating pairs per grid/mode give mixed wall and CPU effects. No native
-speedup or scalar runtime integration follows. The next bounded experiment is
-`tools/benchmark_algo07v3_final_joint.py`, measuring reuse of the complete endpoint
-joint result from a fresh native fit checkpoint. It verifies full results,
-numerical receipts and exactly one removed final kernel call. Its scope is a
-single c=0 fit, not complete native qualification or both-arm timing. The report
-contains its bounded launcher and scalar benchmark figure. Forty-two focused
-tests pass. Do not rerun scalar timing seeking a favorable result.
+speedup or scalar runtime integration follows. The endpoint-reuse checkpoint is
+also complete and unintegrated: predictive c=0 mean 20.365→20.402 s wall and
+20.358→20.385 CPU s, with complete results exact and exactly one removed call.
+That duplicate costs only 0.087 s; all eleven repeated input/policy keys total
+0.966 s out of a 20.174-second baseline fit. Neither is a demonstrated speedup.
+Next use `tools/benchmark_algo07v3_joint_pair.py` for independent complete c=0/
+fitted-c fits from the same native checkpoint. The report's launcher accepts
+`--variant paired --stage predictive` (or the actual numerical stage).
+The probe excludes audits. Any later controller integration must defer the
+fitted-c receipt until after the original c=0 audit, and finish both fitting
+children before starting three-worker audit batches. See the report's `next.md`.
+Forty-two scalar/final-reuse tests and 22 paired-probe/retained tests pass with
+overlap. Do not rerun scalar/endpoint timing merely seeking favorable clocks.
 
 The latest [joint-audit batching qualification](../../../reports/2026_11_06_algo07v3_joint_audit/README.md)
 retains three ordered position batches in development. One complete DS26-0102
@@ -123,9 +129,8 @@ tool checks pass. Production and original-ALGO07 cumulative qualification remain
 unchanged. Use `benchmark_algo07v3_direct_grids.py --variant owned-lu` for the
 explicit original-factorization versus owned-backend comparison, after native
 qualification; bind its actual native captures, Python/C/binary and LAPACK bytes.
-Final-joint-result reuse remains a separate prototype. It still needs real
-fit/audit qualification; this is now the next measurement after the scalar-only
-experiment. Do not change optimizer calls or numerical-policy receipts, and
+Final-joint-result reuse remains an unintegrated prototype after its flat real
+fit measurement above. Do not change optimizer calls or numerical-policy receipts, and
 do not combine separate unqualified changes.
 
 Use [experiment recipes](references/experiments.md) only for the relevant target.
