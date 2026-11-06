@@ -102,6 +102,11 @@ def test_profile_item_keeps_opaque_array_tasks_out_of_metadata():
     assert profiler.profile_item((1, np.zeros(3))) == "<class 'tuple'>"
 
 
+def test_profile_item_preserves_joint_audit_position_batches():
+    assert [profiler.profile_item(batch) for batch in ((0, 1), (2, 3), (4,))] == [
+        [0, 1], [2, 3], [4]]
+
+
 def test_top_level_accounting_labels_children_and_preserves_result(monkeypatch, tmp_path):
     import json
     import time

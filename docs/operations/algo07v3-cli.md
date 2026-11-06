@@ -358,6 +358,15 @@ incomplete result aborts the job and cannot become a scientific rejection.
 Parent interruption terminates, kills if necessary and reaps all running children;
 queued tasks do not start after cancellation or failure.
 
+Joint-audit quadrature uses the existing grid port for three ordered batches
+covering all five local positions and all three phase resolutions. Factorized
+audits and custom policy/factory routes remain serial. Every child and parent
+numerical receipt must remain unchanged; malformed or incomplete batches abort
+execution. The [qualification report](../../reports/2026_11_06_algo07v3_joint_audit/README.md)
+shows lower audit latency with a CPU tradeoff, exact native science/artifacts,
+and a complete-run timing regression. This does not establish a production or
+whole-pipeline speedup, and introduces no CLI or persisted-contract change.
+
 On timeout the supervisor sends termination to the entire worker process group, waits up to
 two seconds, then kills remaining descendants and reaps the direct child. A
 timeout returns exit code 124. Parent cancellation cleans up the same group and

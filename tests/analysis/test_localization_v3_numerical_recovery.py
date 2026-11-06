@@ -39,12 +39,13 @@ def execute(name, operation):
         return False, None
 
 
-def test_numerical_replay_forwards_arm_mapper_to_controller(monkeypatch):
+@pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches'])
+def test_numerical_replay_forwards_arm_mapper_to_controller(monkeypatch, port):
     evidence, incumbent, candidate, saved = fixture()
     mapper, seen = object(), []
     monkeypatch.setattr(replay, 'recover_tracks',
-                        lambda *a, **k: seen.append(k['map_inclusion_arms']) or candidate)
-    run(evidence, incumbent, saved, map_inclusion_arms=mapper)
+                        lambda *a, **k: seen.append(k[port]) or candidate)
+    run(evidence, incumbent, saved, **{port: mapper})
     assert seen == [mapper]
 
 

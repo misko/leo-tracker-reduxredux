@@ -34,7 +34,8 @@ METHODS = ("control", "factorized", "joint")
 
 def recover_tracks(
     context, evidence, *, run_stage, discovery_allowed, on_selection=None,
-    map_annotation_folds=None, map_inclusion_arms=None, map_annotation_training=None
+    map_annotation_folds=None, map_inclusion_arms=None, map_annotation_training=None,
+    map_joint_batches=None
 ):
     """Evaluate original target order and at most one disjoint new-family pair.
 
@@ -84,7 +85,8 @@ def recover_tracks(
                 ok, audit = stage(
                     name + "-audit",
                     lambda trial=trial, control=control: audit_joint(
-                        context, inventory, trial, control
+                        context, inventory, trial, control,
+                        **({"map_batches": map_joint_batches} if map_joint_batches else {}),
                     ),
                 )
                 if not ok:

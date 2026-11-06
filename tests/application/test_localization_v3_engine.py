@@ -85,19 +85,25 @@ def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch, port, arg
             assert argument not in kwargs
 
 
-def test_recovery_arm_executor_is_scoped_to_predictive_and_numerical_checkpoints(monkeypatch):
+@pytest.mark.parametrize('port,argument', [
+    ('map_recovery_arms', 'map_inclusion_arms'),
+    ('map_grid_batches', 'map_joint_batches'),
+])
+def test_recovery_arm_executor_is_scoped_to_predictive_and_numerical_checkpoints(
+    monkeypatch, port, argument
+):
     from dataclasses import replace
 
     prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
     mapper = object()
-    execution = replace(execution, map_recovery_arms=mapper)
+    execution = replace(execution, **{port: mapper})
     engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
                           collect_history=object(), execution=execution)
     for name, _, kwargs in calls:
         if name in ('recover_predictive_checkpoint', 'recover_numerical_checkpoint'):
-            assert kwargs['map_inclusion_arms'] is mapper
+            assert kwargs[argument] is mapper
         else:
-            assert 'map_inclusion_arms' not in kwargs
+            assert argument not in kwargs
 
 
 def fixture(monkeypatch, *, selected=False, fault=None):

@@ -84,7 +84,24 @@ deployment is a separate action. Select the next hotspot from the new profile.
 
 ## Choose a focused experiment
 
-The latest retained change is [owned joint-factor reuse](../../../reports/2026_11_06_algo07v3_owned_lu/README.md).
+The latest [joint-audit batching qualification](../../../reports/2026_11_06_algo07v3_joint_audit/README.md)
+retains three ordered position batches in development. One complete DS26-0102
+pair preserves all science and eight PNGs but regresses 679.517→847.613 s wall
+and 963.35→1,356.91 CPU s. Do not call that a pipeline speedup. Independent
+same-checkpoint alternating pairs establish the narrower benefit: direct
+numerical quadrature 24.690→10.585 s (+1.15% CPU), predictive quadrature
+10.555→5.635 s (+7.72% CPU). All 15 scores and numerical receipts match.
+Both native c arms are exact; repeated grid timing covers the first c=0 audit
+in each route. Preserve the full-run regression and CPU tradeoff. The existing
+profiler now records the batches' integer indices. Native source snapshots,
+timing/probe commands and figures are in the report; production is unchanged.
+The final broad suite passes 2,358 tests with no failures or skips.
+Next measure the separate scalar-only joint-score prototype using
+`tools/benchmark_algo07v3_joint_scalar.py` on the original native captures with
+one CPU/BLAS thread. Its 25 tests pass, but it has no timing or native integration
+qualification yet. Do not count it as a retained runtime change.
+
+The preceding retained change is [owned joint-factor reuse](../../../reports/2026_11_06_algo07v3_owned_lu/README.md).
 It adds the optional `_joint_lu` extension and `numpy_factor` helper through the
 normal build, with original NumPy fallback. Two native cases preserve all science
 and eight PNGs. Active-joint 0102 is 849.427→685.637 s; inactive 0002 is
@@ -97,9 +114,10 @@ tool checks pass. Production and original-ALGO07 cumulative qualification remain
 unchanged. Use `benchmark_algo07v3_direct_grids.py --variant owned-lu` for the
 explicit original-factorization versus owned-backend comparison, after native
 qualification; bind its actual native captures, Python/C/binary and LAPACK bytes.
-Next qualify the already-tested final-joint-result reuse against real fits and
-audits. Do not change optimizer calls or numerical-policy receipts, and do not
-combine it with another unqualified concurrency/algorithm change.
+Final-joint-result reuse remains a separate prototype. It still needs real
+fit/audit qualification; the newer scalar-only experiment above is the next
+measurement. Do not change optimizer calls or numerical-policy receipts, and
+do not combine separate unqualified changes.
 
 Use [experiment recipes](references/experiments.md) only for the relevant target.
 That reference preserves commands, failure lessons and qualified historical

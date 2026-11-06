@@ -1,0 +1,68 @@
+{
+  "commands": {
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-fit-census-joint-20261106/DS26-0102",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/candidate-request.json",
+      "run",
+      "1200"
+    ],
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_joint_audit/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-fit-census-joint-20261106/DS26-0102",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "candidate",
+    "baseline"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-src/leo/analysis/localization_v3/joint_recovery.py": "fe41fdd8fe1dd1863f65a904c5f3baeff6db66bb7c80c42c3675581d735b4c82",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/joint_recovery.py": "5ed3a2d6f35ddd75f4ea74d5651893f2964319b3b10eff895efebb176eb8b644",
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-src/leo/analysis/localization_v3/recovery_controller.py": "c274a4cc68ac3ed86e65bf4354bbfcd0f811a92efd5999cdca783d8e6e58b09a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py": "d05cef42e62a67d85d6df6930f5ce1a3d351cf0549dcb305419a75f6e70c7b82",
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-src/leo/analysis/localization_v3/numerical_recovery.py": "edc61999862997955bc3f82d38eb175975ab4a76004d41bf3465520d7e34fa97",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/numerical_recovery.py": "c874d6daae828f4e99a82e5d85b1e71f4981f2cb259d602e04aff6e2d9accc8e",
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-src/leo/application/localization_v3.py": "5e0bdb19645830c74896e0e2c7dc5eadc2428f079d8f5884e382d9595f4f023a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "0cfaf692f7ab77f596cbafe16778500168b98b4eabb1e38406305c76d30d7bc0",
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-src/leo/application/localization_v3_engine.py": "285bc6d2284e520e05e84a82a1c8adb4f4ceafc86fe3046399bcef8de467315a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "1c836e158e8229c23257e943f466186f63024ba0ed000aa0c48da74f982e15db",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_joint_audit/run_pair.py": "6150be0316d43cd7ad445a0dba88fcdf9712e41950c7ed3d354aa99722631ed4",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_joint_audit/run_baseline.sh": "2bf417f6531429b20e9a75a896b7e8defb5951ac6497ba3476930444ad04c9a4",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "94e22ce68ce4b7e20fd33607fcdaea4a487b757164a1a4e6e51b426754feedb9",
+    "/srv/bulk/leo-dev/algo07v3-fit-census-joint-20261106/DS26-0102/input-bindings.json": "7401d30870297d946501d22071f4c9ab79e810e04eeff07d57fe74cdd79921a7",
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/candidate-request.json": "0f9b3e88c880f08195e3fdc024de759eae7bbd9248538b74ab7b00f144bc88d0",
+    "/srv/bulk/leo-dev/algo07v3-joint-audit-native-0102-20261106/baseline-request.json": "a9641757f56f2f7055cab14a77ac9db6ba840c980f73b26a06fe3f84e6129e40"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

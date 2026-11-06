@@ -405,15 +405,16 @@ def test_numerical_checkpoint_keeps_completed_annotations_even_when_selection_fa
     assert result['recovery']['decision'] == 'ALGO03_fallback'
 
 
-def test_numerical_checkpoint_forwards_arm_mapper_through_application(monkeypatch):
+@pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches'])
+def test_numerical_checkpoint_forwards_arm_mapper_through_application(monkeypatch, port):
     mapper, seen = object(), []
     monkeypatch.setattr(app, 'replay_recovery',
-                        lambda *a, **k: seen.append(k['map_inclusion_arms']) or {})
+                        lambda *a, **k: seen.append(k[port]) or {})
     app.recover_numerical_checkpoint(
         dict(recovery_context={}, inventory={}),
         dict(status='predictive_recovery_evaluated', recovery={}, completed_stages={}),
         run_stage=lambda n, f: (True, f()), discovery_allowed=lambda: True,
-        clock=lambda: 0., charge_reused=lambda _: None, map_inclusion_arms=mapper)
+        clock=lambda: 0., charge_reused=lambda _: None, **{port: mapper})
     assert seen == [mapper]
 
 

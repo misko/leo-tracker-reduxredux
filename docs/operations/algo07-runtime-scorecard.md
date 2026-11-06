@@ -1,5 +1,20 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [joint-audit batching](../../reports/2026_11_06_algo07v3_joint_audit/README.md):
+**retained for measured audit latency; full-pipeline speedup unproven and
+production unchanged**. Complete DS26-0102 science, both c arms, ownership,
+grid/path and eight PNGs are exact. Its candidate-first native pair regresses
+679.517→847.613 s wall and 963.35→1,356.91 CPU s. Preserve that result.
+Two alternating pairs from each actual c=0 audit checkpoint show direct
+quadrature 24.690→10.585 s (57.13% less wall, 1.15% more CPU) and predictive
+quadrature 10.555→5.635 s (46.62% less wall, 7.72% more CPU), with every score
+and receipt exact. Unchanged stages before recovery already account for
+84.498 s of native timing variation. Neither a timing correction nor a new
+cumulative ratio is justified. This establishes a narrower latency/CPU tradeoff,
+not dataset throughput or production admission. A separate scalar-only score
+prototype passes 25 tests but is not integrated or timed; it is the next target.
+The final broad suite passes 2,358 tests, with no failures or skips.
+
 November 6 [owned joint-factor reuse](../../reports/2026_11_06_algo07v3_owned_lu/README.md):
 **retained in development; production unchanged**. Two isolated native pairs
 preserve complete science, both c arms, ownership, public grid/path and all eight

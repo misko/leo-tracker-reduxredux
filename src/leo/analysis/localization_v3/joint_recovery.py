@@ -1,6 +1,7 @@
 """Joint predictive family geometry and physical diagnostics, owned by v3."""
 
 import copy
+import json
 
 import numpy as np
 from scipy.linalg import block_diag, cho_solve
@@ -579,7 +580,48 @@ def _fit_powell(d, targets, arm, method, phase_step):
     return result
 
 
-def audit_joint(d, inv, trial, control_audit=None):
+class QuadratureExecutionFailure(BaseException):
+    """Incomplete parallel audit work cannot become a scientific rejection."""
+
+
+def _quadrature_scores(families, problem, position, context, method, offsets, mapper=None):
+    """Preserve every offset/grid value using at most three ordered process batches.
+
+    Only joint evidence is expensive enough to batch. Unknown policy/factory
+    hooks retain the serial path. Grid evaluation must not change policy receipts.
+    """
+    policy = context.get("numerical_policy")
+    if (mapper is None or method != "joint" or "problem_factory" in context
+            or (policy is not None and type(policy) is not numerics.NumericalPolicy)):
+        return np.array([[evidence(f, problem, position + offset, context, method)
+                          for f in families] for offset in offsets])
+    def receipt():
+        return json.dumps(policy.receipt, sort_keys=True, allow_nan=False) if policy else None
+    before = receipt()
+    width = max(1, (len(offsets) + 2) // 3)
+    batches = [tuple(range(start, min(start + width, len(offsets))))
+               for start in range(0, len(offsets), width)]
+    def evaluate(indices):
+        values = [[evidence(f, problem, position + offsets[i], context, method)
+                   for f in families] for i in indices]
+        return indices, values, receipt()
+    completed = list(mapper(evaluate, batches))
+    if len(completed) != len(batches) or receipt() != before:
+        raise QuadratureExecutionFailure("Incomplete grid batches or modified parent policy")
+    rows = []
+    for expected, item in zip(batches, completed, strict=True):
+        if not isinstance(item, tuple) or len(item) != 3:
+            raise QuadratureExecutionFailure("Malformed grid batch result")
+        indices, values, state = item
+        if (not isinstance(indices, tuple) or indices != expected or state != before
+                or not isinstance(values, list) or len(values) != len(expected)
+                or any(not isinstance(row, list) or len(row) != len(families) for row in values)):
+            raise QuadratureExecutionFailure("Grid order, shape or numerical policy changed")
+        rows.extend(values)
+    return np.array(rows)
+
+
+def audit_joint(d, inv, trial, control_audit=None, *, map_batches=None):
     pr, saved = (trial["protocol"], trial["result"])
     arm = pr["arm"]
     p0, x0 = d["problems"][arm]
@@ -660,9 +702,7 @@ def audit_joint(d, inv, trial, control_audit=None):
                 ]
                 for step in steps
             ]
-            scores = np.array(
-                [[evidence(f, p, x + offset, d, pr["method"]) for f in fs] for offset in offsets]
-            )
+            scores = _quadrature_scores(fs, p, x, d, pr["method"], offsets, map_batches)
             quadrature = dict(
                 steps_s=steps,
                 offsets_km=offsets,

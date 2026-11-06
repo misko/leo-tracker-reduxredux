@@ -44,6 +44,8 @@ def frequencies(root=Path('/sys/devices/system/cpu'), cores=None):
 def profile_item(item):
     if isinstance(item, (str, int, bool)):
         return item
+    if isinstance(item, tuple) and all(type(index) is int for index in item):
+        return list(item)
     if (isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], int)
             and isinstance(item[1], str)
             and item[1] in ('c0', 'fitted_c')):

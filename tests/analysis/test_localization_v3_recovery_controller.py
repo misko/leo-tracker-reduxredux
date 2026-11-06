@@ -171,9 +171,11 @@ def test_failed_stage_preserves_earlier_qualified_addition(monkeypatch):
     assert result["selected"]["targets"][0]["norad"] == 2
 
 
-def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatch):
+@pytest.mark.parametrize('parallel', [False, True])
+def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatch, parallel):
     evidence = setup(monkeypatch)
     calls = []
+    audit_calls, mapper = [], object()
     monkeypatch.setattr(controller, "probe_joint", lambda *a: {})
 
     def fit(d, probe, arm, method, optimizer):
@@ -189,7 +191,9 @@ def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatc
             ),
         )
 
-    def audit(d, inv, trial, control):
+    def audit(d, inv, trial, control, **kwargs):
+        assert kwargs == ({'map_batches': mapper} if parallel else {})
+        audit_calls.append((trial['protocol']['method'], trial['protocol']['arm']))
         success = trial["result"]["history"][-1]["success"]
         return dict(
             RF_qualified_arm=success,
@@ -204,9 +208,11 @@ def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatc
     monkeypatch.setattr(controller, "audit_joint", audit)
     states = []
     result = controller.recover_tracks(
-        {}, evidence, run_stage=execute, discovery_allowed=lambda: True, on_selection=states.append
+        {}, evidence, run_stage=execute, discovery_allowed=lambda: True, on_selection=states.append,
+        **({'map_joint_batches': mapper} if parallel else {})
     )
     assert len(calls) == 12
+    assert audit_calls == [(method, arm) for _, method, arm in calls]
     assert result["decision"] == "ALGO03_joint"
     assert result["selected"]["arms"]["c0"]["added_points"] == 2
     assert result["selected"]["arms"]["c0"]["owners"] == {"old": 1, "n0": 2, "n1": 3}
@@ -232,3 +238,19 @@ def test_changed_protected_owner_forces_original_fallback(monkeypatch):
     )
     assert result["selected"] is None and result["decision"] == "ALGO02_fallback"
     assert "incumbent owner" in result["failure"]
+
+
+def test_joint_batch_failure_cannot_publish_scientific_fallback(monkeypatch):
+    from leo.analysis.localization_v3.joint_recovery import QuadratureExecutionFailure
+
+    evidence = setup(monkeypatch)
+    monkeypatch.setattr(controller, 'probe_joint', lambda *a: {})
+    monkeypatch.setattr(controller, 'fit_joint', lambda *a, **kw: {})
+
+    def interrupted(*args, **kwargs):
+        raise QuadratureExecutionFailure('incomplete audit')
+
+    monkeypatch.setattr(controller, 'audit_joint', interrupted)
+    with pytest.raises(QuadratureExecutionFailure, match='incomplete audit'):
+        controller.recover_tracks({}, evidence, run_stage=execute, discovery_allowed=lambda: True,
+                                  map_joint_batches=object())
