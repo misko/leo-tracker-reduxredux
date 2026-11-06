@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [direct Cholesky iteration](../../reports/2026_11_05_algo07v3_likelihood_repeats/README.md)
+preserves exact numerical outputs and all eight PNGs on fresh native DS26-0002
+qualification, with **772 tests** passing. Controlled full training fits on
+DS26-0066 improve 1.05–1.59% in both c arms. The complete native pair is
+184.748 → 158.609 s, but unchanged-stage host variation prevents assigning the
+whole difference to this implementation change. The measured candidate module
+is integrated in development; production and full-cohort qualification remain
+unchanged. No priors, candidates or numerical iteration budgets were changed.
+
 The [recovery catalogue cache change](../../reports/2026_11_05_algo07v3_catalogue_cache/README.md)
 reuses validated TLE text from initial preparation, retains all archive checks
 and causal selection, and constructs fresh SGP4 objects. The cache is released

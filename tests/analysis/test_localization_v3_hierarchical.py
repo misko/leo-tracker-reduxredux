@@ -73,14 +73,15 @@ def test_preindex_solver_is_the_two_scan_qualified_variance_prototype():
     )
 
 
-def test_owned_solver_is_the_native_qualified_covariance_index_prototype():
+def test_precholesky_solver_is_the_native_qualified_covariance_index_prototype():
+    import algo07v3_precholesky_hierarchical_oracle as precholesky
     from probe_algo07v3_variance_indices import candidate_function
 
     _, _, expected = candidate_function()
     assert hashlib.sha256(expected.encode()).hexdigest() == (
         "65128c40051a36fbe1132117da90df4df7bd6af547b1ebb68b1fba396d1e12ef"
     )
-    assert ast.dump(ast.parse(inspect.getsource(hierarchical_bound))) == ast.dump(
+    assert ast.dump(ast.parse(inspect.getsource(precholesky.hierarchical_bound))) == ast.dump(
         ast.parse(expected)
     )
 

@@ -3,7 +3,7 @@
 from math import lgamma
 
 import numpy as np
-from scipy.linalg.lapack import dgetrf, dgetrs
+from scipy.linalg.lapack import dgetrf, dgetrs, dpotrf
 
 gammaln = np.vectorize(lgamma, otypes=[float])
 
@@ -13,6 +13,15 @@ def _solve_factor(lu, pivots, rhs):
     if info:
         raise np.linalg.LinAlgError(f"DGETRS failed: {info}")
     return result
+
+
+def _cholesky(gram):
+    if not len(gram):
+        return np.linalg.cholesky(gram)
+    factor, info = dpotrf(gram, lower=1, clean=1)
+    if info != 0:
+        raise np.linalg.LinAlgError('Matrix is not positive definite')
+    return np.ascontiguousarray(factor)
 
 
 def hierarchical_bound(
@@ -114,7 +123,7 @@ def hierarchical_bound(
         block_weight = power * weight
         np.add.at(gram.ravel(), matrix_indices, block_weight[matrix_groups] * matrices)
         np.add.at(rhs, rhs_indices, block_weight[rhs_groups] * right_sides)
-        root = np.linalg.cholesky(gram)
+        root = _cholesky(gram)
         # Reuse lower-root LU for the original separate right-hand sides. The
         # upper root is already a valid LU representation with identity pivots.
         lu, pivots, info = dgetrf(root) if width else (root, None, 0)

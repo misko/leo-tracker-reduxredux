@@ -330,3 +330,32 @@ unclassified remainder needs further attribution; do not call all of it
 traversal. Predictive fitting (39.785 s), initial search (21.225 s) and residual
 screening (14.210 s) remain much larger targets. The encoding report retains
 fresh stage clocks, exact publication and all failed timing evidence.
+
+For exact repeated-likelihood work, run
+`tools/profile_algo07v3_likelihood_repeats.py --request REQUEST --output FRESH_ROOT`
+with three CPUs and one BLAS thread; its supervisor bounds the fresh pipeline
+at 1,200 seconds. It executes every original call, fingerprints complete inputs
+including array layouts/defaults, checks repeated results, and resets observation
+tables in children. The per-process call times overlap: never sum them as wall
+latency. DS26-0002 has 6,784 calls and 507 repeats (12.664 accumulated seconds),
+but keying costs 9.703 seconds. Predictive repeats cost only 1.999 seconds against
+4.200 seconds of keying. General hashing caches are therefore lower priority.
+Verify full normal-CLI science and eight PNGs with the unchanged-source helper.
+
+`tools/probe_algo07v3_cholesky.py --capture CAPTURE --output FRESH_ROOT` compares
+complete likelihoods on the bound hardest input. The direct LAPACK Cholesky
+path is integrated after eight exact full DS26-0066 training fits and a fresh
+native DS26-0002 pair. To repeat prepared training, use
+`tools/benchmark_algo07v3_cholesky_training.py --request REQUEST --output FRESH_ROOT`
+on one CPU/BLAS thread with an external `timeout -k 2 900`. It alternates two
+pairs per arm with fresh contexts, five phase rounds and 48 optimizer iterations.
+The tools retain the explicit frozen original oracle; measured pre-adaptation
+tool bytes are archived. No runtime code imports the oracle.
+
+Controlled training means improve 1.59%/1.05%; 772 tests pass. The full native
+pair is 184.748 → 158.609 seconds, but unchanged rendering and system CPU vary
+substantially. Preserve this distinction and the one-scan native scope. The
+likelihood-repeats report supplies a one-module private-overlay runner, strict
+source checks and renderer. Next profile residual-screen propagation, phase
+nomination and finalist fitting before attempting bounded concurrency; preserve
+ordering, callbacks, all rows and the existing scientific gates.

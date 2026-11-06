@@ -1,5 +1,17 @@
 # ALGO07 cumulative runtime scorecard
 
+The [likelihood/Cholesky iteration](../../reports/2026_11_05_algo07v3_likelihood_repeats/README.md)
+is integrated in development. Eight complete DS26-0066 training fits are exact:
+means improve **47.506 → 46.751 s** for c=0 and **46.200 → 45.715 s** for fitted c
+(1.59% and 1.05%, with comparable CPU reductions). The fresh native DS26-0002
+pair preserves both arms, every scientific audit, ownership, public grid/path
+and eight PNG bytes: **184.748 → 158.609 s**, observed 1.165×. Unchanged rendering
+and other stages vary, so do not attribute the whole 26.138-second difference to
+the small kernel change. **772 tests pass**. General likelihood caching is lower
+priority: predictive repeat-call cost is below its fingerprinting overhead in
+the new observation profile. Production, full DS26 and cumulative original-
+ALGO07 timing qualification remain unchanged.
+
 The [live encoding profile](../../reports/2026_11_05_algo07v3_encoding_profile/README.md)
 rejects header caching: three complete archive pairs average **3.569 → 3.734 s**,
 4.62% slower, despite exact bytes. Fourteen tests and complete normal-CLI
