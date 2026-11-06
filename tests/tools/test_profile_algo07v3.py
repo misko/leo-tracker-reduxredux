@@ -92,3 +92,50 @@ def test_profile_item_keeps_opaque_array_tasks_out_of_metadata():
     import numpy as np
 
     assert profiler.profile_item((1, np.zeros(3))) == "<class 'tuple'>"
+
+
+def test_top_level_accounting_labels_children_and_preserves_result(monkeypatch, tmp_path):
+    import json
+    import time
+
+    from leo.application.localization_v3_engine import _Timing
+    from leo.operations.localization_v3_parallel import map_initial_arms
+
+    original, expected = _Timing.run, object()
+
+    def worker(*args):
+        timer = _Timing(time.monotonic, None)
+        def operation():
+            assert map_initial_arms(lambda arm: arm, ('c0', 'fitted_c')) == ['c0', 'fitted_c']
+            return expected
+        assert timer.run('initial', operation) is expected
+        return 0
+
+    monkeypatch.setattr(profiler, 'worker', worker)
+    assert profiler.profile_worker(tmp_path) == 0
+    assert _Timing.run is original
+    rows = json.loads((tmp_path / 'stage-resources.json').read_text())
+    assert len(rows) == 1 and rows[0]['name'] == 'initial' and rows[0]['completed']
+    assert rows[0]['self_cpu_seconds'] >= 0 and rows[0]['children_cpu_seconds'] > 0
+    metadata = [json.loads(p.read_text()) for p in tmp_path.glob('profile-*.json')]
+    assert all(r['top_stage'] == 'initial' and r['stage'] is None for r in metadata)
+
+
+def test_top_level_instrumentation_restores_after_failure(monkeypatch, tmp_path):
+    import json
+    import time
+
+    from leo.application.localization_v3_engine import _Timing
+
+    original = _Timing.run
+    def worker(*args):
+        def fail():
+            raise RuntimeError('stage failed')
+        _Timing(time.monotonic, None).run('native_preparation', fail)
+
+    monkeypatch.setattr(profiler, 'worker', worker)
+    with pytest.raises(RuntimeError, match='stage failed'):
+        profiler.profile_worker(tmp_path)
+    assert _Timing.run is original
+    assert json.loads((tmp_path / 'stage-resources.json').read_text())[0]['completed'] is False
+    assert json.loads((tmp_path / 'worker-resources.json').read_text())[0]['completed'] is False

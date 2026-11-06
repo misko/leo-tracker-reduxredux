@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [fresh complete v3 profile](../../reports/2026_11_05_algo07v3_full_runtime_profile/README.md)
+records **175.426 s unprofiled** and **215.765 s instrumented** on DS26-0002,
+with complete science, both arms and all eight PNG bytes exact. Predictive
+recovery (38.048 s), initial search (21.476 s) and diagnostic grid preparation
+(14.048 s) lead the unprofiled stages. Eleven tests pass. Independent stage
+wall/CPU counters are valid; inconsistent global parent cProfile accounting is
+explicitly rejected. This is unchanged-runtime profiling, not a new speedup
+or full-cohort qualification. No fresh original-ALGO07 pair was run.
+
 The [current posterior profile and buffer trials](../../reports/2026_11_05_algo07v3_posterior_buffers/README.md)
 identify 49.633 of 50.998 profiled training seconds inside the hierarchical
 likelihood; 220/350 calls reach its unchanged 256-iteration ceiling. Eight full

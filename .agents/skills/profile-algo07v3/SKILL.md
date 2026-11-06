@@ -37,6 +37,15 @@ Profiling perturbs timing: choose a hotspot from these results, then measure
 speed in separate unprofiled sequential runs. Do not edit bound sources while
 a run is active. A failed, interrupted or resumed run is not a speed result.
 
+Read `stage-resources.json` and `worker-resources.json` for independent monotonic
+wall and parent/reaped-child CPU counters. Check cProfile accounting before
+ranking functions: self time exceeding cumulative time or summed exclusive time
+exceeding the measured process window invalidates that trace. The complete
+November 5 fork/render profile exhibits this problem; pausing parent tracing
+around forks did not fix it. Preserve the rejected trace digest and use stage
+counters plus isolated targeted instrumentation instead. Do not blame functions
+named by an inconsistent trace or sum overlapping child profiles into wall time.
+
 Freeze the baseline modules before making one focused change. Prefer removing
 measured repeated work or concurrently executing independent fits with the
 existing bounded execution port. Keep targets, variant order, rejection masks,
@@ -210,3 +219,13 @@ and `--repeats 2` with a 900-second outer bound. Its eight exact fits show no
 useful speed gain. Combined lower solves and direct upper solves are rejected
 for numerical and signed-zero differences respectively; do not silently revive
 them or treat mathematical equivalence as byte equivalence.
+
+For finer posterior attribution, use `tools/profile_algo07v3_posterior_parts.py
+--capture CAPTURE_DIRECTORY --output FRESH_DIRECTORY` with one CPU and one BLAS
+thread. The capture contains the training profiler's bound `hardest.npz` and
+`hardest.json`. This external AST instrumenter times posterior expressions while
+returning their original results, validates expected boundaries and compares
+three complete likelihood results exactly, including unchanged inputs. It does
+not measure pipeline speed. The full-runtime-profile report records inverse
+solving and covariance/factorization as the main captured-call costs; changing
+the solver or precision ceiling still requires the existing exactness gate.

@@ -58,10 +58,19 @@ def profile_worker(root, only_stage=None):
     from leo.operations import localization_v3_parallel as parallel
 
     original_run, original_invoke = engine.run_native, parallel._invoke
+    original_timing = engine._Timing.run
     original_predictive = policy.recover_predictive_checkpoint
-    rows = []
+    rows, top_rows, worker_rows = [], [], []
     active = only_stage is None
-    stage_name = None
+    stage_name, top_stage = None, None
+
+    def top_timing(timer, name, operation, expected=None):
+        nonlocal top_stage
+        previous, top_stage = top_stage, name
+        try:
+            return timed(original_timing, top_rows, name, timer, name, operation, expected)
+        finally:
+            top_stage = previous
 
     def recovery_stage(operation, name, *args):
         nonlocal stage_name
@@ -96,7 +105,7 @@ def profile_worker(root, only_stage=None):
             operation, item = args[:2]
             name = getattr(operation, '__qualname__', type(operation).__name__)
             defaults = getattr(operation, '__defaults__', None)
-            metadata = dict(stage=stage_name, operation=name,
+            metadata = dict(stage=stage_name, top_stage=top_stage, operation=name,
                             item=profile_item(item))
             if 'fit_new.<locals>.fit_arm' in name and defaults:
                 metadata['variant'] = 'new_family' if defaults[0] else 'control'
@@ -115,19 +124,24 @@ def profile_worker(root, only_stage=None):
             active = False
 
     engine.run_native, parallel._invoke = observed, invoke
+    engine._Timing.run = top_timing
     profile = cProfile.Profile()
     if only_stage is None:
         profile.enable()
     else:
         policy.recover_predictive_checkpoint = predictive
     try:
-        return worker(root / 'request.json', root / 'worker.json', False)
+        return timed(worker, worker_rows, 'worker',
+                     root / 'request.json', root / 'worker.json', False)
     finally:
         profile.disable()
         profile.dump_stats(str(root / f'profile-{os.getpid()}.pstats'))
         engine.run_native, parallel._invoke = original_run, original_invoke
+        engine._Timing.run = original_timing
         policy.recover_predictive_checkpoint = original_predictive
         write(root / 'recovery-substages.json', rows)
+        write(root / 'stage-resources.json', top_rows)
+        write(root / 'worker-resources.json', worker_rows)
 
 
 def launch(args):

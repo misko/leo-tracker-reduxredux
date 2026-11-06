@@ -1,0 +1,22 @@
+| Stage | Unprofiled seconds | Share of total | Profiled seconds |
+| --- | ---: | ---: | ---: |
+| predictive | 38.048 | 21.7% | 42.687 |
+| initial | 21.476 | 12.2% | 23.792 |
+| plot_evidence | 14.048 | 8.0% | 14.234 |
+| residual_screen | 12.553 | 7.2% | 12.487 |
+| numerical | 12.481 | 7.1% | 13.571 |
+| conservative | 11.597 | 6.6% | 13.041 |
+| family | 11.223 | 6.4% | 12.093 |
+| native_preparation | 8.376 | 4.8% | 17.605 |
+| admission | 8.029 | 4.6% | 8.152 |
+| cavity | 7.376 | 4.2% | 11.027 |
+| ranking | 6.386 | 3.6% | 6.610 |
+| png_rendering | 5.637 | 3.2% | 9.343 |
+| recovery_catalogue | 5.412 | 3.1% | 15.216 |
+| signed | 2.504 | 1.4% | 2.972 |
+| incumbent | 0.255 | 0.1% | 0.306 |
+| inventory | 0.195 | 0.1% | 0.238 |
+| residual | 0.185 | 0.1% | 0.248 |
+| final | 0.055 | 0.0% | 0.058 |
+| addition | 0.002 | 0.0% | 0.002 |
+| gap | 0.001 | 0.0% | 0.002 |
