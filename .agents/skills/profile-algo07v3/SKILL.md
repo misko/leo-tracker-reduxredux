@@ -149,3 +149,12 @@ is rejected: prepared annotation improves 14–22%, but both native pairs regres
 Next isolate complete recovery from a common native prefix checkpoint and explain
 the discrepancy before integrating another scheduling change. The restored
 default passes 1,959 tests; candidate sources and its 1,980-test receipt are archived.
+
+The [common-native-prefix diagnostic](../../../reports/2026_11_06_algo07v3_native_recovery_queue/README.md)
+now compares complete recovery in fresh children forked from one native checkpoint.
+One DS26-0066 pair improves 180.483→138.434 s with exact stages, selection and prior
+native audit. Task CPU/off-CPU costs also change; do not overturn earlier full-run
+regressions on this favorable order. The fixed-task scheduling model suggests
+18–20 s opportunity, not a measured full-pipeline gain. Use the external native
+recovery probe for both-order follow-up. Exact repeated inclusion control fits
+are another hypothesis to investigate before adding reuse.

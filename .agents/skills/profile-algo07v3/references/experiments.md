@@ -562,3 +562,20 @@ Historical initial-search probes must use their existing frozen source oracle,
 not transform the evolving runtime by line position. The broader suite exposed
 five old failures that reproduced under pre-change runtime modules. The frozen
 oracle bytes and golden tolerances were not changed when repairing these helpers.
+
+## Recovery from a common native prefix
+
+`tools/probe_algo07v3_native_recovery_queue.py --request REQUEST --candidate-report
+reports/2026_11_06_algo07v3_cross_target_queue --output FRESH_ROOT` computes the
+native prefix once, then forks each complete recovery trial from that live state.
+Use three CPUs, one BLAS thread and an external 1,000-second bound; `--reverse`
+changes the order. No published result enters inference. The prior native audit
+is loaded only after fresh trials finish. Check `verified.json` and full stage,
+selection and input signatures. Nested training/scoring clocks are not additive.
+The observer/report describes source bindings and the measured-source archive.
+
+DS26-0066 baseline-first improves 180.483→138.434 s; 19 tool tests pass. Unchanged
+task costs and off-CPU delays vary, so this does not supersede the two full native
+regressions. Keep the candidate external. A fixed-task CPU simulation suggests
+18–20 s scheduling potential; it is not measured speedup. Investigate both orders
+and potential repeated inclusion control fits, with complete state equality.

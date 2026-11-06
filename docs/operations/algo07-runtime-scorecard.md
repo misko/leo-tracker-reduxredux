@@ -1,5 +1,12 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [common native prefix recovery diagnostic](../../reports/2026_11_06_algo07v3_native_recovery_queue/README.md):
+one complete recovery pair improves **180.483→138.434 s**, preserving all stage
+outputs, selected state and the prior native audit. This is a stage-only,
+instrumented baseline-first pair, with changing task CPU/off-CPU costs. It does
+not override the two complete native regressions below or establish a new
+cumulative speedup. No runtime/production changes; 19 tool tests pass.
+
 November 6 [cross-target training queue](../../reports/2026_11_06_algo07v3_cross_target_queue/README.md):
 **candidate rejected and default restored**. Prepared DS26-0066 annotation
 improves 14–22%, but complete native comparisons regress 399.664→485.562 s and
