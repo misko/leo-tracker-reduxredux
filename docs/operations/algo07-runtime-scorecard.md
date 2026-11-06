@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [current posterior profile and buffer trials](../../reports/2026_11_05_algo07v3_posterior_buffers/README.md)
+identify 49.633 of 50.998 profiled training seconds inside the hierarchical
+likelihood; 220/350 calls reach its unchanged 256-iteration ceiling. Eight full
+training fits are exact, but scratch-buffer timing is flat for c=0
+(62.323 → 62.341 s) and regresses for fitted c (56.711 → 62.005 s).
+Keep these experiments external. Two solver shortcuts fail exactness and are
+also rejected. This iteration adds profiling/qualification evidence, not a
+runtime change or a new cumulative speedup; 94 focused tests pass.
+
 The external [scoped initial-cache experiment](../../reports/2026_11_05_algo07v3_initial_cache/README.md)
 preserves all six prepared initial searches and a fresh complete DS26-0002 run,
 including both arms and all eight PNG bytes. Prepared search averages

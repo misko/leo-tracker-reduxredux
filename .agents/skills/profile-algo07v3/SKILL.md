@@ -196,3 +196,17 @@ despite a small prepared-stage improvement. Retain that regression and keep the
 runtime unchanged until repeated full-pipeline evidence supports integration.
 The initial-cache report includes source overlays and a native runner. Do not
 treat its archived candidate as deployed or its prepared timings as cumulative.
+
+To refresh the slow posterior profile without a full native replay, use
+`tools/profile_algo07v3_training_posterior.py --request REQUEST --expected
+PREVIOUS_ARM_CANDIDATE_JSON --arm c0 --output FRESH_DIRECTORY`, pinned to one
+CPU/BLAS thread with a 300-second outer bound. It profiles all five training
+rounds, checks complete history/state against previously qualified evidence,
+and retains the highest-iteration observed kernel input. Profiling is not timing
+qualification. The posterior-buffers report records 220/350 calls reaching the
+existing 256-iteration ceiling; preserve that ceiling and convergence tolerance.
+The associated buffer benchmark uses `--request`, `--expected-root`, `--output`
+and `--repeats 2` with a 900-second outer bound. Its eight exact fits show no
+useful speed gain. Combined lower solves and direct upper solves are rejected
+for numerical and signed-zero differences respectively; do not silently revive
+them or treat mathematical equivalence as byte equivalence.
