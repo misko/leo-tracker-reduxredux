@@ -1,5 +1,13 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [scalar-phase optimization](../../reports/2026_11_05_algo07v3_scalar_phase/README.md)
+shares interpolation indices across satellites only when their requested phase is
+scalar. State arithmetic, rotation vectors, per-satellite phases and empty-bank
+behavior remain exact. All twelve complete screen trials improve, all 99 real
+coarse-state checks match, and **975 tests** pass. Native screening improves
+9.394 → 8.862 s; the complete native pair is 165.924 → 154.351 s, with other-stage
+variation. Full science and eight PNGs match; production is unchanged.
+
 The [immutable-bank iteration](../../reports/2026_11_05_algo07v3_bank_validation/README.md)
 validates a private immutable snapshot once per residual screen. Mutable callers
 and every per-call phase/time check retain validation. The twelve final prepared

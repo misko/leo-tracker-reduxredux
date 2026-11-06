@@ -394,7 +394,8 @@ DS26-0002/0066 remain exact, with valid non-forking profiler accounting. Coarse
 geometry still takes 80–83% of each profiled screen. DS26-0002's 99 empty-request
 bank validations cost 3.376 cumulative seconds; investigate once-per-screen
 validation of a locally immutable bank and scalar-phase index reuse separately.
-Neither proposal is implemented. The report also retains the 158.773/265.044 s
+At that stage neither proposal was implemented; later integrations are below.
+The report also retains the 158.773/265.044 s
 same-numerics native observations: CPU changes too, and the variation's cause is
 unestablished. Preserve both, rather than advertising a stable native speed.
 
@@ -416,3 +417,18 @@ timing outcomes; twelve final component trials and 845 tests support the narrow
 development integration, not a stable complete-pipeline speed guarantee. Next
 test shared scalar-phase indices, preserving per-satellite phase and empty-bank
 behavior and every original numerical operation.
+
+The scalar-phase experiment is now integrated. Use
+`tools/probe_algo07v3_scalar_phase.py --request REQUEST --output FRESH_ROOT`
+with one CPU/BLAS thread and a 360-second external bound. Both control and
+candidate bodies compile against the owned immutable-bank class; using the
+oracle's separate class would incorrectly revalidate control banks. The fresh
+post-bank profile confirms one bank validation and 77% coarse-geometry share.
+Twelve full screen trials improve 6.36%/5.00%; 99 real coarse states, layouts and
+complete outputs match, and 975 tests pass. Native DS26-0002 is 165.924 →
+154.351 s, but screening saves 0.532 s; do not attribute the whole difference to
+that stage. The report's `prove_states.py`, one-module native runner and renderer
+retain all bindings and exact publication checks. See
+`reports/2026_11_05_algo07v3_scalar_phase/README.md`. Next test reuse of the exact
+lower interpolation endpoint, currently gathered twice per state array, before
+claiming any additional saving or changing runtime.

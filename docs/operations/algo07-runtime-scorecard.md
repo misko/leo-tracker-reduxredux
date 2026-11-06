@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [scalar-phase iteration](../../reports/2026_11_05_algo07v3_scalar_phase/README.md)
+is integrated with **975 passing tests**, twelve exact complete screens and
+99 exact real coarse-state comparisons. Screen means improve 6.36% and 5.00%
+on DS26-0002/0066. Native DS26-0002 is **165.924 → 154.351 s**, with screening
+**9.394 → 8.862 s** and exact science/eight PNGs. Do not credit the entire
+11.573-second native difference to the measured 0.532-second screen improvement;
+initial-search and system-time variation remain. Production, whole-cohort and
+original-ALGO07 cumulative qualification remain unchanged.
+
 The [immutable-bank iteration](../../reports/2026_11_05_algo07v3_bank_validation/README.md)
 is integrated in development with **845 passing tests**. Twelve final complete
 screen trials are exact: mean elapsed decreases 4.25% on DS26-0002 and 12.80%

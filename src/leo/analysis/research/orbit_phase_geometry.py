@@ -46,6 +46,7 @@ def phase_shifted_states(bank, time_s, phase_seconds):
     phases = np.asarray(phase_seconds, float)
     times = np.asarray(time_s, float)
     count = np.asarray(bank["position_km"]).shape[0]
+    scalar_phase = phases.ndim == 0 and count > 0
     if phases.ndim == 0:
         phases = np.full(count, float(phases))
     if phases.shape != (count,) or not np.isfinite(phases).all():
@@ -57,7 +58,8 @@ def phase_shifted_states(bank, time_s, phase_seconds):
     if times.ndim != 1 or not np.isfinite(times).all():
         raise ValueError("finite one-dimensional observation times required")
     knots = np.asarray(bank["time_s"], float)
-    requested = times[None, :] + phases[:, None]
+    query_phases = phases[:1] if scalar_phase else phases
+    requested = times[None, :] + query_phases[:, None]
     if np.any(requested < knots[0]) or np.any(requested > knots[-1]):
         raise ValueError("orbit phase interpolation never extrapolates")
     index = np.clip(np.searchsorted(knots, requested, side="right") - 1, 0, len(knots) - 2)

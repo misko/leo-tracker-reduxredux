@@ -1,0 +1,60 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_scalar_phase/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_scalar_phase/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/baseline-src/leo/analysis/research/orbit_phase_geometry.py": "737d867db26429ce5a542e07d7dd9dd1d4116a98056524b60781da7637eed4e0",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py": "e607e6eb5200e8ce768542a61d3f67621000da3ca32ac21a1e4d93e3fa5adbb5",
+    "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/candidate-src/leo/analysis/research/orbit_phase_geometry.py": "e607e6eb5200e8ce768542a61d3f67621000da3ca32ac21a1e4d93e3fa5adbb5",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_scalar_phase/run_pair.py": "e1a1b2c94526ccb9eb5ec1dfee76ddbdfd910e75f77e47ade29df1147fba6a88",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_scalar_phase/run_baseline.sh": "b05d39206cbf64cb2fbcaf36c01b89a52f7aaf08d8fc243be497126178328ea2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "bc2032a491e2d1a3b272d4bc09d27e8ca065d9d7c7bdc30633c55686cefdfe42",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/baseline-request.json": "46e11a2f3ce14328101a344e36d99d3fce6e70d18a028bfd341ee03e32971281",
+    "/srv/bulk/leo-dev/algo07v3-scalar-phase-native-0002-20261106/candidate-request.json": "fa5ea8021555d4a42c5ef6e7f4c7463552a01577c583f3659dd61fafc35027ee"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}
