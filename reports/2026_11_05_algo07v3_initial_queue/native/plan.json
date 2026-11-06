@@ -1,0 +1,72 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_initial_queue/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_initial_queue/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py": "8affea2a053f3acd2edf38d7daaa2cfe7fcdc86293261fbff69e9e14a0df4d56",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-src/leo/analysis/localization_v3/initial_search.py": "dcd98f3ea29c5be0f76a13271f74b8637b6e04f20200c5a6204f54bee4ec190a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/initial_search.py": "97050fd8ce366771111cecc0ec0dc1f8d302baec21687c6acf7ec9b722fab30b",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-src/leo/analysis/localization_v3/initial_search.py": "97050fd8ce366771111cecc0ec0dc1f8d302baec21687c6acf7ec9b722fab30b",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-src/leo/application/localization_v3.py": "b9cc13e37092f948e76b90fd3e9b59289ed965002a971e0ccb75136f61dd5064",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "5e0bdb19645830c74896e0e2c7dc5eadc2428f079d8f5884e382d9595f4f023a",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-src/leo/application/localization_v3.py": "5e0bdb19645830c74896e0e2c7dc5eadc2428f079d8f5884e382d9595f4f023a",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-src/leo/application/localization_v3_engine.py": "11bd0d0ca738a342b6e17a18cc2a5ea15cd44a46baa20eb0ef449763452c0267",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "285bc6d2284e520e05e84a82a1c8adb4f4ceafc86fe3046399bcef8de467315a",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-src/leo/application/localization_v3_engine.py": "285bc6d2284e520e05e84a82a1c8adb4f4ceafc86fe3046399bcef8de467315a",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-src/leo/operations/localization_v3_parallel.py": "9a39414a764029b1da350f424666942b4a3868bbeba346f2278a800afac61cb5",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_parallel.py": "f5585116491c50712e8348721108bc29e7fdbdc5b7d256233a13a8a91dd2c230",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-src/leo/operations/localization_v3_parallel.py": "f5585116491c50712e8348721108bc29e7fdbdc5b7d256233a13a8a91dd2c230",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-src/leo/operations/localization_v3_job.py": "68b9cdd5a2c9d69501c26214af2884209dbcf2f867ed288dcde64fc98b23b7ae",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_job.py": "247ab5df5ae42cf729cc1f81c4d40357b76cf77ea0e99055d7c032259318be36",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-src/leo/operations/localization_v3_job.py": "247ab5df5ae42cf729cc1f81c4d40357b76cf77ea0e99055d7c032259318be36",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_initial_queue/run_pair.py": "5b20ec7d0a8f7e3bf4f7ebac4b767f8ccd520fc1927c053b77355bca4d47f81a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_initial_queue/run_baseline.sh": "65a175aac6844733ecc4772f9e69b4d5e5d3187e7d26e490ae0c36d885b036ad",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "bc2032a491e2d1a3b272d4bc09d27e8ca065d9d7c7bdc30633c55686cefdfe42",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/baseline-request.json": "77d74154e0a92d77ec657a96e1558bd0f0f2a985c3f471d40ff23a36432dc31e",
+    "/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-request.json": "c15b626ab9d64d7373b58bb6a6b21bc688c64526bd36833c61dc8b0bfc074d30"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

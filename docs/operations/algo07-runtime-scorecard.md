@@ -1,5 +1,18 @@
 # ALGO07 cumulative runtime scorecard
 
+The [initial-queue iteration](../../reports/2026_11_05_algo07v3_initial_queue/README.md)
+is integrated in development with **1,203 passing tests**. Ten complete prepared
+searches preserve all results/callbacks; initial-search means improve 7.6% on
+DS26-0002 and 8.0% on DS26-0066, with slightly higher CPU. A fresh native
+DS26-0002 pair is **152.602 → 151.305 s (0.85%, observed 1.009×)**. Initial search
+is **20.744 → 18.877 s**, and full science, both arms, ownership, grid/path and
+eight PNG bytes match. CPU is **224.770 → 227.200 s**; unchanged stages vary in
+both directions. This is a modest incremental gain, not a cumulative ratio.
+Eight further trials reject fitted-c-first priority: both scan means regress.
+A fresh exact posterior profile confirms inverse solves/factorization/covariance
+work as the next larger target. Production, full DS26 and matched original-
+ALGO07/current-v3 qualification remain open.
+
 The [screen-azimuth iteration](../../reports/2026_11_05_algo07v3_screen_azimuth/README.md)
 is integrated in development with **1,162 passing tests**. Twelve exact complete
 screens improve 12.39%/12.70% on DS26-0002/0066; 99 real coarse projections match

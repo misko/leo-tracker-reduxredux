@@ -58,7 +58,7 @@ def prepare_native_scan(document, archive, track_config, *,
 
 
 def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branch=None,
-                         map_arms=None):
+                         map_arms=None, map_branches=None):
     """Run the original full initial-search budgets on native prepared evidence.
 
     Use the original previous-orbit prior at this stage. The separately prepared
@@ -69,6 +69,8 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
         return dict(status=prepared['status'], initial_fit=None, recovery_complete=False)
     scan = _context(prepared, search_region, noise_sha256, genuine=False)
     execution = {} if map_arms is None else dict(map_arms=map_arms)
+    if map_branches is not None:
+        execution['map_branches'] = map_branches
     result = initial_search(scan, scan.radio_sigma_hz, on_branch=on_branch, **execution)
     return dict(status='initial_position_fitted', initial_fit=result, recovery_complete=False)
 

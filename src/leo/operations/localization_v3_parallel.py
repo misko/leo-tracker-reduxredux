@@ -81,6 +81,24 @@ def map_predictive_folds(operation, seeds):
     return _ordered(operation, seeds)
 
 
+def map_initial_branches(operation, tasks):
+    """Queue independent branch/arm fits on three workers in canonical order.
+
+    The numerical caller owns the branch budget. This port bounds simultaneous
+    workers, never the number of scientific hypotheses. Partial results abort.
+    """
+    tasks = tuple(tasks)
+    if not callable(operation) or len(tasks) % 2:
+        raise ValueError('Complete ordered initial branch/arm pairs required')
+    for index, (left, right) in enumerate(zip(tasks[::2], tasks[1::2], strict=True)):
+        for item, arm in ((left, 'c0'), (right, 'fitted_c')):
+            if (not isinstance(item, tuple) or len(item) != 2
+                    or not isinstance(item[0], int) or isinstance(item[0], bool)
+                    or item != (index, arm)):
+                raise ValueError('Contiguous ordered initial branch/arm pairs required')
+    return _ordered(operation, tasks, workers=3) if tasks else []
+
+
 def map_annotation_training(operation, tasks):
     """Queue up to three complete fold/arm pairs on at most three children."""
     tasks = tuple(tasks)

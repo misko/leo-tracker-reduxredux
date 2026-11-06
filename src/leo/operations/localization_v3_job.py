@@ -202,6 +202,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
         map_annotation_training,
         map_grid_batches,
         map_initial_arms,
+        map_initial_branches,
         map_predictive_folds,
     )
     from leo.operations.tle_archive import TleArchiveReader
@@ -235,6 +236,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
     ports = ExecutionPorts(
         stage, gap, lambda: True, lambda _: None, time.monotonic,
         map_initial_arms=map_initial_arms,
+        map_initial_branches=map_initial_branches,
         map_predictive_folds=map_predictive_folds,
         map_family_arms=map_initial_arms,
         map_recovery_arms=map_initial_arms,

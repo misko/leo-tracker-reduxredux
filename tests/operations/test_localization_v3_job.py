@@ -44,6 +44,7 @@ def test_fresh_job_wires_owned_pair_executor(tmp_path, monkeypatch):
         map_annotation_training,
         map_grid_batches,
         map_initial_arms,
+        map_initial_branches,
         map_predictive_folds,
     )
 
@@ -53,6 +54,7 @@ def test_fresh_job_wires_owned_pair_executor(tmp_path, monkeypatch):
         else {'config': {}}))
     def run(*args, **kwargs):
         assert kwargs['execution'].map_initial_arms is map_initial_arms
+        assert kwargs['execution'].map_initial_branches is map_initial_branches
         assert kwargs['execution'].map_predictive_folds is map_predictive_folds
         assert kwargs['execution'].map_family_arms is map_initial_arms
         assert kwargs['execution'].map_recovery_arms is map_initial_arms

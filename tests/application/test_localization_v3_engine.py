@@ -26,20 +26,25 @@ FUNCTIONS = [
 ]
 
 
-def test_initial_executor_port_is_forwarded_only_to_initial_search(monkeypatch):
+@pytest.mark.parametrize('queued', [False, True])
+def test_initial_executor_port_is_forwarded_only_to_initial_search(monkeypatch, queued):
     from dataclasses import replace
 
     prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
     def mapper(operation, arms):
         return list(map(operation, arms))
     execution = replace(execution, map_initial_arms=mapper)
+    if queued:
+        execution = replace(execution, map_initial_branches=mapper)
     engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
                           collect_history=object(), execution=execution)
     for name, _, kwargs in calls:
         if name == 'fit_initial_position':
-            assert kwargs['map_arms'] is mapper
+            assert kwargs['map_branches' if queued else 'map_arms'] is mapper
+            assert ('map_arms' if queued else 'map_branches') not in kwargs
         else:
             assert 'map_arms' not in kwargs
+            assert 'map_branches' not in kwargs
 
 
 @pytest.mark.parametrize('port,method', [

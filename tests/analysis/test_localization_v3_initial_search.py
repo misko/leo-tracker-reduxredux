@@ -7,7 +7,7 @@ from leo.analysis.localization_v3 import initial_search as policy
 from leo.analysis.localization_v3.region import SearchRegion
 
 
-@pytest.mark.parametrize('use_port', [False, True])
+@pytest.mark.parametrize('use_port', [False, True, 'branches'])
 def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch, use_port):
     scan = SimpleNamespace(search_region=SearchRegion((10., 20.)), norads=np.arange(3))
     candidates = [dict(center_score=float(i), seed=dict(rows=[dict(component=str(i),
@@ -55,9 +55,12 @@ def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch, use_port):
     def mapper(operation, arms):
         mapped.append(tuple(arms))
         return [operation(arm) for arm in arms]
-    result = policy.initial_search(scan, 150., on_branch=notices.append,
-                                   map_arms=mapper if use_port else None)
-    assert mapped == ([('c0', 'fitted_c')] * 3 if use_port else [])
+    execution = ({'map_branches': mapper} if use_port == 'branches'
+                 else {'map_arms': mapper} if use_port else {})
+    result = policy.initial_search(scan, 150., on_branch=notices.append, **execution)
+    assert mapped == ([tuple((i, a) for i in range(3) for a in ('c0', 'fitted_c'))]
+                      if use_port == 'branches' else
+                      [('c0', 'fitted_c')] * 3 if use_port else [])
     assert corners == [(-12.5, -12.5), (-12.5, 12.5), (12.5, -12.5), (12.5, 12.5)]
     assert result['unique_RF_hypotheses'] == 3  # Corner aliases deduplicate.
     assert len(notices) == result['fully_fitted_hypotheses'] == 3
@@ -75,6 +78,37 @@ def test_branch_ranking_cold_start_and_common_c0_winner(monkeypatch, use_port):
 def test_invalid_budgets_fail_before_any_search(bad):
     with pytest.raises(ValueError, match='integer'):
         policy.initial_search(None, 150., rounds=bad)
+
+
+def test_conflicting_execution_ports_fail_before_discovery():
+    with pytest.raises(ValueError, match='one initial execution port'):
+        policy.initial_search(None, 150., map_arms=map, map_branches=map)
+
+
+@pytest.mark.parametrize('extra', [-1, 1])
+def test_incomplete_queue_results_cannot_select_a_hypothesis(extra):
+    from tests.analysis.test_localization_v3_position import prepared
+    scan, _ = prepared()
+    with pytest.raises(ValueError, match='One result per initial branch/arm'):
+        policy.initial_search(scan, 150., seed_budget=1, branch_budget=1, rounds=1,
+            iterations=1, map_branches=lambda f, tasks: [None] * (len(tasks) + extra))
+
+
+@pytest.mark.parametrize('branches', [1, 2, 3, 4])
+def test_real_queued_search_preserves_all_values_and_callbacks(branches):
+    from check_algo07v3_scan_likelihood import fingerprint
+
+    from leo.operations.localization_v3_parallel import map_initial_arms, map_initial_branches
+    from tests.analysis.test_localization_v3_position import prepared
+    first, _ = prepared()
+    second, _ = prepared()
+    budgets = dict(seed_budget=1, branch_budget=branches, rounds=1, iterations=2)
+    expected = policy.initial_search(first, 150., map_arms=map_initial_arms, **budgets)
+    notices = []
+    actual = policy.initial_search(second, 150., map_branches=map_initial_branches,
+                                   on_branch=notices.append, **budgets)
+    assert fingerprint(actual) == fingerprint(expected)
+    assert fingerprint(notices) == fingerprint(expected['choices'])
 
 
 def test_extracted_fit_body_matches_the_qualified_external_prototype():

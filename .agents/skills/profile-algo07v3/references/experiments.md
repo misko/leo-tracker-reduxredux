@@ -398,3 +398,29 @@ and predictive fitting account for 66.9% of the hard candidate's time. Next test
 a bounded queue across the three initial branches and both arms, retaining
 ordered results/callbacks and the existing three-worker maximum. This is a new
 proposal, distinct from earlier discovery-seed and gradient experiments.
+
+The initial branch/arm FIFO queue is now integrated in development. Use
+`tools/probe_algo07v3_initial_queue.py --request REQUEST --output FRESH_ROOT
+--repeats 2` on CPUs 0–2 with one BLAS thread and an external 1,200-second
+bound for the harder scan. The external oracle retains the original paired
+branches; the owned numerical component receives a narrow `map_branches` port.
+It queues the same fits on at most three workers and collects canonical order.
+Callbacks preserve values/order but arrive after the full queue. Native execution
+currently supplies no branch callback. Failure/cancellation aborts and reaps
+running children; no scientific budget or acceptance changes.
+
+Ten complete prepared searches are exact. Means improve 7.6%/8.0% on
+DS26-0002/0066; CPU rises 6.3%/1.4%. Native DS26-0002 is **152.602 → 151.305 s**,
+initial **20.744 → 18.877 s**, with exact complete science/eight PNGs and 1,203
+passing tests. Total CPU rises 224.770 → 227.200 s, while unchanged stages vary.
+Do not infer a new original-ALGO07 ratio or production throughput improvement.
+
+`tools/probe_algo07v3_initial_priority.py` is the rejected fixed fitted-c-first
+alternative: eight exact complete trials, but means regress on both scans.
+The hard scan has one improving and one regressing pair; retain both and do
+not use the favorable pair as the adoption argument. See
+`reports/2026_11_05_algo07v3_initial_queue/README.md` for every trial, worker
+execution intervals, the five-module native runner, source bindings, full
+stage table and refreshed captured posterior profile. Next target the repeated
+inverse/factorization/covariance work or measured predictive idle time while
+preserving exact arithmetic. Full DS26 and production admission remain open.

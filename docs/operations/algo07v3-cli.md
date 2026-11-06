@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [initial-fit queue](../../reports/2026_11_05_algo07v3_initial_queue/README.md)
+uses at most three workers across all nominated branches and both calibration
+arms. **1,203 tests** and a complete native DS26-0002 comparison preserve exact
+science, audits, point ownership, public grid/path and all eight PNGs. Initial
+search is **20.744 → 18.877 s**; complete native time is **152.602 → 151.305 s**,
+with CPU **224.770 → 227.200 s**. Prepared searches on two DS26 scans improve
+about 8% on average. The alternative fitted-c-first schedule is not integrated:
+its means regress on both scans. Production and full-cohort admission are unchanged.
+
 The [screen-azimuth optimization](../../reports/2026_11_05_algo07v3_screen_azimuth/README.md)
 omits unused azimuth calculations while retaining exact elevation and Doppler
 arithmetic. **1,162 tests**, twelve complete screens and 99 real-projection
@@ -303,13 +312,19 @@ supervisor pins BLAS thread counts to one and enforces `--timeout` over the chil
 process, including its imports, numerical work and publication. Accepted limits
 are positive and at most 7,200 seconds. The default is 1,200 seconds.
 
-The pair adapter uses Linux `fork` from a single Python-thread owner. It shares
-the scan copy-on-write and inherits the worker's CPU affinity; it does not expand
-that CPU allowance. At most two numerical children run for an initial pair.
+The execution adapters use Linux `fork` from a single Python-thread owner. They
+share the scan copy-on-write and inherit the worker's CPU affinity; they do not
+expand that CPU allowance. Initial search queues all nominated branch/arm fits
+on at most three children, collecting results in original branch/c0/fitted-c
+order. The caller still owns the scientific branch budget. The paired fallback
+and other paired-fit stages use at most two children. Optional initial branch
+callbacks retain their values/order but arrive after the complete queue; the
+native engine currently supplies no such callback.
 Successful fits wait for normal worker exit under the existing job/stage deadline,
 without a new short completion cutoff. A child crash, serialization error or
 incomplete result aborts the job and cannot become a scientific rejection.
-Parent interruption terminates, kills if necessary and reaps both children.
+Parent interruption terminates, kills if necessary and reaps all running children;
+queued tasks do not start after cancellation or failure.
 
 On timeout the supervisor sends termination to the entire worker process group, waits up to
 two seconds, then kills remaining descendants and reaps the direct child. A

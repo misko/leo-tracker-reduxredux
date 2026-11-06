@@ -37,6 +37,7 @@ class ExecutionPorts:
     map_conservative_arms: Callable | None = None
     map_annotation_training: Callable | None = None
     map_grid_batches: Callable | None = None
+    map_initial_branches: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -122,7 +123,9 @@ def infer_prepared(
             prepared,
             region,
             noise_sha256=noise_sha,
-            **({"map_arms": execution.map_initial_arms} if execution.map_initial_arms else {}),
+            **({"map_branches": execution.map_initial_branches}
+               if execution.map_initial_branches is not None else
+               {"map_arms": execution.map_initial_arms} if execution.map_initial_arms else {}),
         ),
         "initial_position_fitted",
     )

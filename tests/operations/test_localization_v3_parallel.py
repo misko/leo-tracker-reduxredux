@@ -14,11 +14,13 @@ from leo.operations.localization_v3_parallel import (
     map_annotation_training,
     map_grid_batches,
     map_initial_arms,
+    map_initial_branches,
     map_predictive_folds,
 )
 
 ARMS = ("c0", "fitted_c")
 TRAINING = tuple((seed, arm) for seed in (13, 9, 4) for arm in ARMS)
+BRANCHES = tuple((index, arm) for index in range(3) for arm in ARMS)
 
 
 def test_grid_batches_run_in_separate_reaped_children_and_return_in_order(tmp_path):
@@ -41,14 +43,18 @@ def test_grid_child_failure_aborts_instead_of_becoming_an_empty_batch():
         map_grid_batches(operation, [(0,), (1,)])
 
 
-def test_training_queue_keeps_three_slots_and_order_without_waiting_for_first_task(tmp_path):
+@pytest.mark.parametrize('mapper,tasks', [(map_annotation_training, TRAINING),
+                                        (map_initial_branches, BRANCHES)])
+def test_training_queue_keeps_three_slots_and_order_without_waiting_for_first_task(
+    tmp_path, mapper, tasks
+):
     import multiprocessing
 
     context = multiprocessing.get_context('fork')
     active, maximum = context.Value('i', 0), context.Value('i', 0)
 
     def operation(item):
-        index = TRAINING.index(item)
+        index = tasks.index(item)
         (tmp_path / str(index)).write_text(str(os.getpid()))
         with active.get_lock():
             active.value += 1
@@ -68,17 +74,19 @@ def test_training_queue_keeps_three_slots_and_order_without_waiting_for_first_ta
                 active.value -= 1
 
     with stage_deadline(4):
-        assert map_annotation_training(operation, TRAINING) == list(TRAINING)
+        assert mapper(operation, tasks) == list(tasks)
     assert maximum.value == 3 and active.value == 0
     assert_reaped([tmp_path / str(i) for i in range(6)])
 
 
 @pytest.mark.parametrize('cancel', [False, True])
+@pytest.mark.parametrize('mapper,tasks', [(map_annotation_training, TRAINING),
+                                        (map_initial_branches, BRANCHES)])
 def test_training_queue_reaps_running_tasks_and_does_not_start_pending_after_failure(
-    tmp_path, cancel
+    tmp_path, cancel, mapper, tasks
 ):
     def operation(item):
-        index = TRAINING.index(item)
+        index = tasks.index(item)
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
         (tmp_path / str(index)).write_text(str(os.getpid()))
         if index == 1 and not cancel:
@@ -93,7 +101,7 @@ def test_training_queue_reaps_running_tasks_and_does_not_start_pending_after_fai
         time.sleep(60)
 
     with pytest.raises(StageDeadline if cancel else ParallelFitFailure), stage_deadline(.5):
-        map_annotation_training(operation, TRAINING)
+        mapper(operation, tasks)
     paths = list(tmp_path.iterdir())
     assert {p.name for p in paths} == ({'0', '1', '2'} if cancel else {'0', '1', '2', '3'})
     assert_reaped(paths)
@@ -109,6 +117,28 @@ def test_training_queue_refuses_incomplete_or_ambiguous_fold_pairs(tasks):
 
 def test_empty_training_queue_has_no_children():
     assert map_annotation_training(lambda item: item, []) == []
+
+
+@pytest.mark.parametrize('tasks', [BRANCHES[:1], BRANCHES[:2] * 2,
+    tuple(reversed(BRANCHES[:2])), ((0, 'c0'), (1, 'fitted_c')),
+    ((True, 'c0'), (True, 'fitted_c')), ((0., 'c0'), (0., 'fitted_c')),
+    ((1, 'c0'), (1, 'fitted_c')), ([0, 'c0'], [0, 'fitted_c']),
+    ((0,), (0, 'fitted_c'))])
+def test_initial_queue_requires_contiguous_complete_ordered_branches(tasks):
+    with pytest.raises(ValueError):
+        map_initial_branches(lambda item: item, tasks)
+
+
+@pytest.mark.parametrize('branches', [0, 1, 2, 3, 5])
+def test_initial_queue_has_no_new_scientific_branch_limit(branches):
+    tasks = [(index, arm) for index in range(branches) for arm in ARMS]
+    matrix = np.asfortranarray(np.arange(12.).reshape(3, 4))
+    actual = map_initial_branches(lambda item: (item, matrix), tasks)
+    assert [r[0] for r in actual] == tasks
+    assert all(r[1].strides == matrix.strides and r[1].tobytes() == matrix.tobytes()
+               for r in actual)
+    with pytest.raises(ValueError):
+        map_initial_branches(None, tasks)
 
 
 def assert_reaped(paths):

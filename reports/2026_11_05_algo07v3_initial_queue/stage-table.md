@@ -1,0 +1,25 @@
+| Stage | Baseline s | Candidate s | Candidate share |
+| --- | ---: | ---: | ---: |
+| predictive | 41.822 | 37.747 | 24.95% |
+| initial | 20.744 | 18.877 | 12.48% |
+| conservative | 10.594 | 11.652 | 7.70% |
+| family | 10.003 | 11.107 | 7.34% |
+| native_preparation | 8.369 | 8.447 | 5.58% |
+| numerical | 7.143 | 8.331 | 5.51% |
+| cavity | 7.032 | 7.212 | 4.77% |
+| admission | 7.114 | 7.189 | 4.75% |
+| residual_screen | 7.173 | 7.116 | 4.70% |
+| ranking | 6.355 | 6.303 | 4.17% |
+| evidence_save | 4.473 | 6.112 | 4.04% |
+| plot_evidence | 6.504 | 5.975 | 3.95% |
+| png_rendering | 5.629 | 5.622 | 3.72% |
+| publication | 3.028 | 3.047 | 2.01% |
+| recovery_catalogue | 2.085 | 2.073 | 1.37% |
+| other_process_time | 2.024 | 2.021 | 1.34% |
+| signed | 1.800 | 1.766 | 1.17% |
+| incumbent | 0.263 | 0.263 | 0.17% |
+| inventory | 0.192 | 0.197 | 0.13% |
+| residual | 0.202 | 0.193 | 0.13% |
+| final | 0.052 | 0.053 | 0.03% |
+| gap | 0.002 | 0.002 | 0.00% |
+| addition | 0.001 | 0.001 | 0.00% |

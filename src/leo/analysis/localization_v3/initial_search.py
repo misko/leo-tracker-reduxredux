@@ -28,7 +28,7 @@ def fit_initial_arm(scan, sigma, node, arm, *, rounds, iterations):
 
 
 def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
-                   iterations=48, on_branch=None, map_arms=None):
+                   iterations=48, on_branch=None, map_arms=None, map_branches=None):
     """Fit matched c arms; select their common hypothesis using only the c0 score.
 
     Defaults are the original complete initial-search budgets. Smaller explicit
@@ -36,10 +36,16 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
     ``on_branch`` is an optional progress sink called after each completed pair.
     ``map_arms`` may execute the two pure fits concurrently, but must return
     their values in input order or raise. The default is ordinary serial map.
+    Alternatively, ``map_branches`` queues all (branch index, arm) tasks and
+    returns their values in input order or raises. Branch callbacks then arrive
+    in original order after the queue completes. Fit and selection budgets stay
+    the same; supplying both execution ports is ambiguous and rejected.
     """
     if any(not isinstance(n, int) or isinstance(n, bool) or n < 1
            for n in (seed_budget, branch_budget, rounds, iterations)):
         raise ValueError('Positive integer search budgets required')
+    if map_arms is not None and map_branches is not None:
+        raise ValueError('Supply only one initial execution port')
     half = scan.search_region.half_width_km
     proposals = ((0., 0.), (-half, -half), (-half, half), (half, -half), (half, half))
     candidates = fresh_discovery(scan, sigma, budget=seed_budget)
@@ -69,12 +75,24 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
         residual = p.residual(np.zeros(2))
         scored.append((float(residual @ residual), cold))
     selected = sorted(scored, key=lambda r: r[0])[:branch_budget]
+    fitted = None
+    if map_branches is not None:
+        tasks = [(index, arm) for index in range(len(selected))
+                 for arm in ('c0', 'fitted_c')]
+        fitted = list(map_branches(
+            lambda item: fit_initial_arm(scan, sigma, selected[item[0]][1], item[1],
+                                         rounds=rounds, iterations=iterations), tasks))
+        if len(fitted) != len(tasks):
+            raise ValueError('One result per initial branch/arm required')
     choices = []
     for index, (score, node) in enumerate(selected):
         arms = ('c0', 'fitted_c')
-        mapped = (map if map_arms is None else map_arms)(
-            lambda arm, node=node: fit_initial_arm(scan, sigma, node, arm,
-                                        rounds=rounds, iterations=iterations), arms)
+        if fitted is None:
+            mapped = (map if map_arms is None else map_arms)(
+                lambda arm, node=node: fit_initial_arm(scan, sigma, node, arm,
+                                            rounds=rounds, iterations=iterations), arms)
+        else:
+            mapped = fitted[2*index:2*index+2]
         pair = dict(zip(arms, mapped, strict=True))
         choice = dict(hypothesis=index, center_score=score, node=node, arms=pair)
         choices.append(choice)

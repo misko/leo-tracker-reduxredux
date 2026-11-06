@@ -172,7 +172,8 @@ def test_initial_fit_preserves_prior_stage_and_does_not_claim_final_completion(m
         status='no_active_curvature', initial_fit=None, recovery_complete=False)
 
 
-def test_initial_fit_forwards_executor_without_changing_budgets(monkeypatch):
+@pytest.mark.parametrize('port', ['map_arms', 'map_branches'])
+def test_initial_fit_forwards_executor_without_changing_budgets(monkeypatch, port):
     from types import SimpleNamespace
 
     scan = SimpleNamespace(radio_sigma_hz=150.)
@@ -180,11 +181,11 @@ def test_initial_fit_forwards_executor_without_changing_budgets(monkeypatch):
     mapper, marker = object(), object()
     def search(actual_scan, sigma, **kwargs):
         assert actual_scan is scan and sigma == 150.
-        assert kwargs == dict(on_branch=marker, map_arms=mapper)
+        assert kwargs == dict(on_branch=marker, **{port: mapper})
         return {'selected_hypothesis': 1}
     monkeypatch.setattr(app, 'initial_search', search)
     result = app.fit_initial_position({'status': 'inputs_prepared'}, object(),
-                                      on_branch=marker, map_arms=mapper)
+                                      on_branch=marker, **{port: mapper})
     assert result['initial_fit'] == {'selected_hypothesis': 1}
 
 
