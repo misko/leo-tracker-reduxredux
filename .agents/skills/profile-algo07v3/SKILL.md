@@ -84,6 +84,17 @@ deployment is a separate action. Select the next hotspot from the new profile.
 
 ## Choose a focused experiment
 
+The [scalar-only score benchmark](../../../reports/2026_11_06_algo07v3_scalar_scores/README.md)
+is complete and **not adopted**: all 48 actual grid scores are exact, but four
+alternating pairs per grid/mode give mixed wall and CPU effects. No native
+speedup or scalar runtime integration follows. The next bounded experiment is
+`tools/benchmark_algo07v3_final_joint.py`, measuring reuse of the complete endpoint
+joint result from a fresh native fit checkpoint. It verifies full results,
+numerical receipts and exactly one removed final kernel call. Its scope is a
+single c=0 fit, not complete native qualification or both-arm timing. The report
+contains its bounded launcher and scalar benchmark figure. Forty-two focused
+tests pass. Do not rerun scalar timing seeking a favorable result.
+
 The latest [joint-audit batching qualification](../../../reports/2026_11_06_algo07v3_joint_audit/README.md)
 retains three ordered position batches in development. One complete DS26-0102
 pair preserves all science and eight PNGs but regresses 679.517→847.613 s wall
@@ -96,10 +107,8 @@ in each route. Preserve the full-run regression and CPU tradeoff. The existing
 profiler now records the batches' integer indices. Native source snapshots,
 timing/probe commands and figures are in the report; production is unchanged.
 The final broad suite passes 2,358 tests with no failures or skips.
-Next measure the separate scalar-only joint-score prototype using
-`tools/benchmark_algo07v3_joint_scalar.py` on the original native captures with
-one CPU/BLAS thread. Its 25 tests pass, but it has no timing or native integration
-qualification yet. Do not count it as a retained runtime change.
+The separate scalar-only prototype was subsequently measured and rejected for
+integration as described above. Do not count it as a retained runtime change.
 
 The preceding retained change is [owned joint-factor reuse](../../../reports/2026_11_06_algo07v3_owned_lu/README.md).
 It adds the optional `_joint_lu` extension and `numpy_factor` helper through the
@@ -115,8 +124,8 @@ unchanged. Use `benchmark_algo07v3_direct_grids.py --variant owned-lu` for the
 explicit original-factorization versus owned-backend comparison, after native
 qualification; bind its actual native captures, Python/C/binary and LAPACK bytes.
 Final-joint-result reuse remains a separate prototype. It still needs real
-fit/audit qualification; the newer scalar-only experiment above is the next
-measurement. Do not change optimizer calls or numerical-policy receipts, and
+fit/audit qualification; this is now the next measurement after the scalar-only
+experiment. Do not change optimizer calls or numerical-policy receipts, and
 do not combine separate unqualified changes.
 
 Use [experiment recipes](references/experiments.md) only for the relevant target.

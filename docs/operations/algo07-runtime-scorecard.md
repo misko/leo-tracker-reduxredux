@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [scalar-only joint scores](../../reports/2026_11_06_algo07v3_scalar_scores/README.md):
+**not adopted; runtime and production unchanged**. All 48 actual DS26-0102 grid
+evaluations preserve exact scores and immutable inputs. Four alternating pairs
+per grid/mode show mixed effects: optimized wall reductions −0.34%, +2.00%,
++4.26%; direct −2.16%, +1.54%, −1.16%. The largest optimized mean includes a
+slow baseline. No complete native speedup is claimed and no scalar runtime path
+is added. The next external checkpoint benchmark tests reuse of the complete
+endpoint joint result, including unchanged optimizer histories and numerical
+receipts, rather than only skipping diagnostic reductions. Forty-two focused
+scalar/final-reuse/benchmark tests pass. Full native integration remains required.
+
 November 6 [joint-audit batching](../../reports/2026_11_06_algo07v3_joint_audit/README.md):
 **retained for measured audit latency; full-pipeline speedup unproven and
 production unchanged**. Complete DS26-0102 science, both c arms, ownership,

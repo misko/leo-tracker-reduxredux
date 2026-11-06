@@ -1,0 +1,80 @@
+{"index": 0, "side": "baseline", "seconds": 20.81282619573176, "cpu_seconds": 20.806160999999996, "exact": true}
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_final_joint.py", line 138, in <module>
+    main()
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_final_joint.py", line 126, in main
+    execute(native, emit=emit)
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_job.py", line 248, in execute
+    result = run_native(
+             ^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py", line 409, in run_native
+    result = infer_prepared(
+             ^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py", line 167, in infer_prepared
+    predictive = step(
+                 ^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py", line 116, in step
+    result = timing.run(name, operation, expected)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py", line 55, in run
+    value = operation()
+            ^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py", line 169, in <lambda>
+    lambda: policy.recover_predictive_checkpoint(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py", line 222, in recover_predictive_checkpoint
+    result = recover_predictive_tracks(prepared_recovery, run_stage=captured,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py", line 193, in recover_predictive_tracks
+    result = recover_tracks(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py", line 211, in recover_tracks
+    completed, experiment = joint_experiment(pair, probe, optimizer="lbfgsb")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py", line 76, in joint_experiment
+    ok, trial = stage(
+                ^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py", line 66, in stage
+    ok, value = run_stage(name, operation)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py", line 217, in captured
+    ok, value = run_stage(name, operation)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_job.py", line 218, in stage
+    value = operation()
+            ^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py", line 78, in <lambda>
+    lambda method=method, arm=arm: fit_joint(
+                                   ^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/joint_recovery.py", line 400, in fit_joint
+    result = _fit_lbfgsb(d, targets, arm, method, step)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_final_joint.py", line 115, in observed
+    rows = measure(operation, (context, targets, arm, method, phase_step), save)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_final_joint.py", line 48, in measure
+    row = _ordered(trial, [0], workers=1)[0]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_parallel.py", line 131, in _ordered
+    return _execute(operation, items, workers=workers)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_parallel.py", line 176, in _execute
+    raise ParallelFitFailure(f"{items[index]} numerical task failed:\n{value}")
+leo.operations.localization_v3_parallel.ParallelFitFailure: 0 numerical task failed:
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_parallel.py", line 32, in _invoke
+    result = operation(value)
+             ^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_final_joint.py", line 40, in trial
+    fn = operation if side == 'baseline' else candidate(operation.__name__)[0]
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_final_joint_reuse.py", line 13, in candidate
+    tree = ast.parse(source)
+           ^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<unknown>", line 1
+    def observed(context, targets, arm, method, phase_step):
+IndentationError: unexpected indent
+
