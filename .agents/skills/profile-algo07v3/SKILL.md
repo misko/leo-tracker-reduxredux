@@ -262,3 +262,15 @@ every output byte. Only if exact and faster should a complete-fit/capacity polic
 be considered, retaining at most three active CPU slots across outer and inner
 work. No larger thread count, numerical tolerance or scientific policy change
 is already qualified by these measurements.
+
+The [BLAS thread gate and full-profile review](../../../reports/2026_11_06_algo07v3_blas_threads/README.md)
+rejects all six two/three-thread configurations across NumPy/SciPy together or
+separately. Both actual loaded libraries are queried and binary-bound. NumPy-only
+preserves the recovery capture but changes the initial capture; all other
+multi-thread configurations change both. Keep one BLAS thread and preserve the
+raw unfavorable clocks. Eight tests pass; no runtime change or native gain.
+All 937 bindings from the full timer profile remain current. Next attribute the
+first differing primitive cheaply before another kernel policy, and measure
+remaining exact repeated work across a bounded branch-diverse subset. Numerical
+convergence redesign remains separate from the identical-output contract; do
+not repeat full native trials for a candidate that fails the captured-call gate.

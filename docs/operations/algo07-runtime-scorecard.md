@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [full-profile review and BLAS thread gate](../../reports/2026_11_06_algo07v3_blas_threads/README.md):
+**no new optimization adopted; runtime and production unchanged**. All 937
+bindings from the full timer profile still match. Initial search and predictive
+recovery remain 64.4% of the 394.960 s hard-scan worker. Fresh-process captured
+calls test both loaded BLAS libraries together and separately at two/three
+threads, verifying actual settings and binary hashes. All six configurations
+fail exactness on at least one call; NumPy-only preserves the recovery call but
+changes the initial call. Maximum residual delta is 1.42e-6 Hz, still a failure
+under the identical-output contract, not evidence of a position-error change.
+Raw wall/CPU clocks and controls are retained; no complete-fit or native speedup
+is claimed. Eight focused tests pass. Next time-box first-primitive matrix
+attribution, census remaining exact repeats on a branch-diverse subset, and
+keep any convergence redesign separate from the byte-identical runtime path.
+
 November 6 [fixed coefficient-prior shortcut](../../reports/2026_11_06_algo07v3_fixed_priors/README.md):
 **candidate not adopted; runtime and production unchanged**. Bypassing empty
 learned-prior updates preserves complete captured outputs and hard-fold training
