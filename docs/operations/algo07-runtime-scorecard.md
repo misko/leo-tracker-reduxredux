@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [full-profile review and idle derivative experiment](../../reports/2026_11_06_algo07v3_idle_derivatives/README.md):
+**external prototype not adopted; runtime unchanged**. Complete prepared initial
+search remains exact but takes 29.870→30.543 s on DS26-0002 and
+105.318→111.901 s on DS26-0066. CPU also rises; one pair per scan, opposite
+orders. The final surviving fit borrows one helper thread within the three-slot
+allowance, covering 1/44 gradients respectively. No native pipeline speedup
+or deployment is claimed. The existing full profile remains applicable:
+initial/predictive fitting consume 64.4% on the hard scan. Next compare detailed
+likelihood costs and noise-group convergence in the slow initial and recovery
+phases; retain the identical-output contract and rejected scheduling results.
+
 November 6 [covariance-buffer native qualification](../../reports/2026_11_06_algo07v3_covariance_native/README.md):
 **candidate rejected; original kernel restored**. Exact DS26-0066 is
 400.994→416.279 s and DS26-0002 is 233.729→251.925 s. Both preserve both arms,

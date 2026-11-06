@@ -192,3 +192,12 @@ one captured recovery likelihood has no repeated loop state. Next investigate
 spare-capacity derivative work, preserving a shared three-worker cap, cancellation
 and exact histories. Do not revive unrestricted nesting or the rejected
 owner-only gradient policy. Commands and both observer tools are in the report.
+
+The [idle derivative follow-up](../../../reports/2026_11_06_algo07v3_idle_derivatives/README.md)
+is also not adopted. A helper thread only in the last surviving initial fit
+preserves complete prepared search outputs but regresses on both scans:
+29.870→30.543 s and 105.318→111.901 s. Runtime is unchanged; these are stage-only
+pairs, not native qualification. Use the existing full profile for stage ranking.
+Next compare captured likelihood costs and noise-group precision trajectories
+between slow initial and recovery phases before another exact kernel experiment.
+The external probe retains bounded-capacity, failure and cancellation tests.
