@@ -359,3 +359,31 @@ likelihood-repeats report supplies a one-module private-overlay runner, strict
 source checks and renderer. Next profile residual-screen propagation, phase
 nomination and finalist fitting before attempting bounded concurrency; preserve
 ordering, callbacks, all rows and the existing scientific gates.
+
+For residual-screen attribution, use `tools/profile_algo07v3_screen_parts.py
+--request REQUEST --output FRESH_ROOT` on one CPU/BLAS thread with an external
+`timeout -k 2 240`. It loads public owned prepared evidence, executes the complete
+screen and validates every output/callback against that evidence. Scoped
+non-forking cProfile accounting must pass before interpreting function rankings.
+DS26-0002/0066 show coarse phase geometry at 83–87% of profiled screen time.
+
+Nomination now projects the union of the original at-most-16 points per fold.
+Full-data finalist fits, original fold selections and all gates remain intact.
+`tools/probe_algo07v3_nomination_points.py --request REQUEST --output FRESH_ROOT`
+alternates three complete screens per side, including propagation. Pin one CPU
+and one BLAS thread with an external `timeout -k 2 360`. The helper uses an
+explicit frozen pre-change oracle; measured pre-adaptation bytes are archived.
+`tools/check_algo07v3_nomination_geometry.py --request REQUEST --output FRESH_ROOT`
+with a 240-second bound additionally checks all reduced projections against
+the corresponding full-grid columns before verifying the complete screen.
+
+All twelve complete screens and 99 hard-scan phase grids are exact. Prepared
+means improve 15.487 → 11.844 s and 17.781 → 13.535 s. Retain the slower first
+DS26-0002 baseline; later pairs improve 12.72–15.35%. The native DS26-0002 pair
+is 165.230 → 158.773 s, but the changed stage saves 2.035 s and total CPU 2.080 s;
+do not credit all 6.456 wall seconds to the change. 796 tests pass. The final
+source has whitespace-only cleanup plus a separate fresh exact publication
+replay, retained with source/AST bindings by `verify_formatted.py`. The report's
+one-module private-overlay runner and renderer retain both comparisons.
+Production and whole-cohort qualification remain unchanged. Next re-profile
+the reduced geometry path before considering scoped bank-validation reuse.

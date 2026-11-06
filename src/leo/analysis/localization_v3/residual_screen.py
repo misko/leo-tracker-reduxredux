@@ -43,6 +43,28 @@ def top_indices(cost, age, limit, penalty=False):
     return [int(k) for k in np.argsort(values)[:3] if np.isfinite(values[k])]
 
 
+def _nomination_indices(folds):
+    indices = {}
+    for name, mask, _ in folds:
+        ix = np.flatnonzero(mask)
+        indices[name] = ix[np.unique(np.linspace(0, len(ix) - 1, min(16, len(ix))).astype(int))]
+    query = np.unique(np.concatenate(list(indices.values())))
+    columns = {name: np.searchsorted(query, ix) for name, ix in indices.items()}
+    return query, columns
+
+
+def _nomination_grids(bank, times, query, positions, *, phase_seconds):
+    # Keep full-input validation: an omitted point must not hide a malformed
+    # time or extrapolation. Delegate invalid cases to the original path.
+    t = np.asarray(times, float)
+    knots = np.asarray(bank['time_s'], float)
+    shifted = t + phase_seconds
+    if (t.ndim != 1 or not np.isfinite(t).all()
+            or np.any(shifted < knots[0]) or np.any(shifted > knots[-1])):
+        return phase_frequency_grids(bank, times, positions, phase_seconds=phase_seconds)
+    return phase_frequency_grids(bank, t[query], positions, phase_seconds=phase_seconds)
+
+
 def screen_candidates(packet, catalogue, search_region, *, policy="72h_30s", on_target=None):
     """Nominate from each training partition independently under the frozen policy.
 
@@ -104,11 +126,12 @@ def screen_candidates(packet, catalogue, search_region, *, policy="72h_30s", on_
             }
             for arm in ARMS
         }
+        query, columns = _nomination_indices(folds)
         positions = [search_region.latlon(packet["positions"][arm]) for arm in ARMS]
         # Stream one phase at a time; both arms share only its orbital states.
         # Each arm retains its original phase/fold accumulation order.
         for phi in phases:
-            grids = phase_frequency_grids(bank, t, positions, phase_seconds=phi)
+            grids = _nomination_grids(bank, t, query, positions, phase_seconds=phi)
             for arm, (f, e) in zip(ARMS, grids, strict=True):
                 y = np.asarray(target["corrected_hz"][arm])
                 f *= q
@@ -118,11 +141,12 @@ def screen_candidates(packet, catalogue, search_region, *, policy="72h_30s", on_
                     ix = ix[np.unique(np.linspace(0, len(ix) - 1, min(16, len(ix))).astype(int))]
                     cost = (
                         profile_rate(
-                            y[ix], f[:, ix], t[ix], rate_sigma_hz_s=0.5, bias_sigma_hz=300
+                            y[ix], f[:, columns[name]], t[ix],
+                            rate_sigma_hz_s=0.5, bias_sigma_hz=300
                         )["cost"]
                         + (phi / 5) ** 2
                     )
-                    cost = np.where(e[:, ix].min(axis=1) >= 0, cost, np.inf)
+                    cost = np.where(e[:, columns[name]].min(axis=1) >= 0, cost, np.inf)
                     for bound in (15, 30):
                         if abs(phi) <= bound:
                             best[arm][bound, name] = np.minimum(best[arm][bound, name], cost)

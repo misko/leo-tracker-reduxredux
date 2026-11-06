@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [nomination geometry optimization](../../reports/2026_11_05_algo07v3_nomination_points/README.md)
+projects only the union of points already selected by the original coarse folds;
+all full-data finalist fits and acceptance gates are unchanged. Twelve complete
+screens on two DS26 scans, 99 selected-projection checks, 796 tests and a fresh
+native DS26-0002 comparison pass exactly. Native screening falls 12.622 →
+10.587 seconds; the complete pair is 165.230 → 158.773 seconds with host variation.
+The final formatted source has a separate exact publication replay. This is
+development integration, not deployment or full-cohort qualification.
+
 The [direct Cholesky iteration](../../reports/2026_11_05_algo07v3_likelihood_repeats/README.md)
 preserves exact numerical outputs and all eight PNGs on fresh native DS26-0002
 qualification, with **772 tests** passing. Controlled full training fits on

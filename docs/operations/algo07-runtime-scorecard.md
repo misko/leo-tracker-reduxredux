@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+The [nomination-point iteration](../../reports/2026_11_05_algo07v3_nomination_points/README.md)
+is integrated in development. Twelve complete screen trials are exact; means
+improve **15.487 → 11.844 s** on DS26-0002 and **17.781 → 13.535 s** on DS26-0066,
+with matching CPU reductions. All 99 hard-scan coarse phase grids also preserve
+every selected frequency/elevation value exactly. The fresh native pair is
+**165.230 → 158.773 s (observed 1.041×)**, with exact science, both arms, ownership,
+public grid/path and eight PNGs. Only **2.035 s** of the 6.456-second difference
+is in the changed screen stage; total CPU falls **2.080 s**. **796 tests pass**.
+A separate final-format replay verifies the committed source exactly. Production,
+full DS26 and cumulative original-ALGO07 speed qualification remain unchanged.
+
 The [likelihood/Cholesky iteration](../../reports/2026_11_05_algo07v3_likelihood_repeats/README.md)
 is integrated in development. Eight complete DS26-0066 training fits are exact:
 means improve **47.506 → 46.751 s** for c=0 and **46.200 → 45.715 s** for fitted c
