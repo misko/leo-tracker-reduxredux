@@ -387,3 +387,13 @@ replay, retained with source/AST bindings by `verify_formatted.py`. The report's
 one-module private-overlay runner and renderer retain both comparisons.
 Production and whole-cohort qualification remain unchanged. Next re-profile
 the reduced geometry path before considering scoped bank-validation reuse.
+
+The post-nomination profiles are now in
+`reports/2026_11_05_algo07v3_runtime_priorities/README.md`. Complete screens on
+DS26-0002/0066 remain exact, with valid non-forking profiler accounting. Coarse
+geometry still takes 80–83% of each profiled screen. DS26-0002's 99 empty-request
+bank validations cost 3.376 cumulative seconds; investigate once-per-screen
+validation of a locally immutable bank and scalar-phase index reuse separately.
+Neither proposal is implemented. The report also retains the 158.773/265.044 s
+same-numerics native observations: CPU changes too, and the variation's cause is
+unestablished. Preserve both, rather than advertising a stable native speed.

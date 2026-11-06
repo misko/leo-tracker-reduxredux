@@ -1,5 +1,12 @@
 # ALGO07 cumulative runtime scorecard
 
+See [current runtime priorities](../../reports/2026_11_05_algo07v3_runtime_priorities/README.md)
+for all native stages, exact post-change screen profiles on DS26-0002/0066 and
+the slower same-numerics confirmation. Predictive fits remain 23–25% of observed
+native time; coarse geometry remains 80–83% of residual screening. Scoped bank
+validation and scalar-phase index reuse are proposals, not integrated gains.
+Production and full-cohort qualification are unchanged.
+
 The [nomination-point iteration](../../reports/2026_11_05_algo07v3_nomination_points/README.md)
 is integrated in development. Twelve complete screen trials are exact; means
 improve **15.487 → 11.844 s** on DS26-0002 and **17.781 → 13.535 s** on DS26-0066,

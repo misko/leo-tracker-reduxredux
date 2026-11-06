@@ -1,0 +1,380 @@
+{
+  "runs": [
+    {
+      "label": "Measured candidate",
+      "total": 158.7734525669366,
+      "stages": {
+        "native_preparation": 8.224491140805185,
+        "recovery_catalogue": 2.0911754639819264,
+        "initial": 20.752917191013694,
+        "conservative": 11.648117681965232,
+        "family": 12.362521941773593,
+        "signed": 2.4794353311881423,
+        "cavity": 7.2240748135373,
+        "inventory": 0.190314001403749,
+        "predictive": 38.84264274220914,
+        "numerical": 7.112114678137004,
+        "gap": 0.0017283307388424873,
+        "residual": 0.19289107155054808,
+        "residual_screen": 10.586577226407826,
+        "addition": 0.0006777262315154076,
+        "incumbent": 0.2559749707579613,
+        "ranking": 6.354185365140438,
+        "admission": 8.30331724602729,
+        "final": 0.051134481094777584,
+        "plot_evidence": 7.033963589929044,
+        "png_rendering": 5.633699670433998,
+        "evidence_save": 4.549258140847087,
+        "publication": 2.7680974090471864,
+        "other_supervision_and_unscoped": 2.1141423527151346
+      }
+    },
+    {
+      "label": "Same-numerics confirmation",
+      "total": 265.0435945764184,
+      "stages": {
+        "native_preparation": 12.762473308481276,
+        "recovery_catalogue": 3.6769288033246994,
+        "initial": 40.26527568232268,
+        "conservative": 19.157591741532087,
+        "family": 17.458449472673237,
+        "signed": 3.805217961780727,
+        "cavity": 11.67632212024182,
+        "inventory": 0.2701898654922843,
+        "predictive": 61.0742077017203,
+        "numerical": 11.593568947166204,
+        "gap": 0.0025880662724375725,
+        "residual": 0.2561799297109246,
+        "residual_screen": 20.078553821891546,
+        "addition": 0.001223272643983364,
+        "incumbent": 0.38306304160505533,
+        "ranking": 9.957238174043596,
+        "admission": 16.126134066842496,
+        "final": 0.08490300923585892,
+        "plot_evidence": 10.342590475454926,
+        "png_rendering": 7.9222121592611074,
+        "evidence_save": 9.121238975785673,
+        "publication": 5.551700048148632,
+        "other_supervision_and_unscoped": 3.475743930786848
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "scan": "0002",
+      "seconds": 20.071401620283723,
+      "parts": {
+        "ecef_states": {
+          "seconds": 1.682264283299446,
+          "calls": 1
+        },
+        "phase_frequency_grids": {
+          "seconds": 16.620965681038797,
+          "calls": 99
+        },
+        "profile_rate": {
+          "seconds": 0.8031981280073524,
+          "calls": 660
+        },
+        "paired_phase_frequency": {
+          "seconds": 0.05354934837669134,
+          "calls": 18
+        },
+        "components": {
+          "seconds": 0.05454234778881073,
+          "calls": 60
+        },
+        "marginal": {
+          "seconds": 0.028362621553242207,
+          "calls": 60
+        },
+        "batch_noise_screen": {
+          "seconds": 0.011226392351090908,
+          "calls": 60
+        }
+      },
+      "top_functions": [
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py",
+          "line": 16,
+          "function": "phase_shifted_states",
+          "calls": 99,
+          "self_seconds": 7.194840714000001,
+          "cumulative_seconds": 11.32648211
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/sky/frames.py",
+          "line": 158,
+          "function": "look_angles",
+          "calls": 216,
+          "self_seconds": 3.4714705400000003,
+          "cumulative_seconds": 5.216246685000001
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/track_catalogue_geometry.py",
+          "line": 18,
+          "function": "interpolate_states",
+          "calls": 99,
+          "self_seconds": 3.091414567,
+          "cumulative_seconds": 3.376410196
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+          "calls": 11801,
+          "self_seconds": 1.2216901390000001,
+          "cumulative_seconds": 1.2216901390000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method '_sgp4' of 'sgp4.vallado_cpp.SatrecArray' objects>",
+          "calls": 1,
+          "self_seconds": 1.082178627,
+          "cumulative_seconds": 1.082178627
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/residual_screen.py",
+          "line": 68,
+          "function": "screen_candidates",
+          "calls": 1,
+          "self_seconds": 0.6461192840000001,
+          "cumulative_seconds": 20.065092755000002
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/track_recovery_diagnostics.py",
+          "line": 6,
+          "function": "profile_rate",
+          "calls": 660,
+          "self_seconds": 0.638881927,
+          "cumulative_seconds": 0.7990032420000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method numpy._core._multiarray_umath.c_einsum>",
+          "calls": 216,
+          "self_seconds": 0.545661226,
+          "cumulative_seconds": 0.545661226
+        },
+        {
+          "file": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/linalg/_linalg.py",
+          "line": 2598,
+          "function": "norm",
+          "calls": 216,
+          "self_seconds": 0.39618471400000005,
+          "cumulative_seconds": 1.191468836
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'copy' of 'numpy.ndarray' objects>",
+          "calls": 470,
+          "self_seconds": 0.372083698,
+          "cumulative_seconds": 0.372083698
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'searchsorted' of 'numpy.ndarray' objects>",
+          "calls": 226,
+          "self_seconds": 0.336950254,
+          "cumulative_seconds": 0.336950254
+        },
+        {
+          "file": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py",
+          "line": 378,
+          "function": "stack",
+          "calls": 63,
+          "self_seconds": 0.31041761700000003,
+          "cumulative_seconds": 0.3104651
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/sky/frames.py",
+          "line": 92,
+          "function": "teme_to_ecef",
+          "calls": 1,
+          "self_seconds": 0.264619849,
+          "cumulative_seconds": 0.583448835
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py",
+          "line": 13,
+          "function": "phase_frequency_grids",
+          "calls": 99,
+          "self_seconds": 0.08822964300000001,
+          "cumulative_seconds": 16.619212083
+        },
+        {
+          "file": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py",
+          "line": 96,
+          "function": "_clip",
+          "calls": 216,
+          "self_seconds": 0.041713711,
+          "cumulative_seconds": 0.044231944
+        }
+      ]
+    },
+    {
+      "scan": "0066",
+      "seconds": 14.729237785562873,
+      "parts": {
+        "ecef_states": {
+          "seconds": 1.5488081742078066,
+          "calls": 1
+        },
+        "phase_frequency_grids": {
+          "seconds": 11.772195361554623,
+          "calls": 99
+        },
+        "profile_rate": {
+          "seconds": 0.7073729448020458,
+          "calls": 792
+        },
+        "paired_phase_frequency": {
+          "seconds": 0.07231911551207304,
+          "calls": 18
+        },
+        "components": {
+          "seconds": 0.06371717154979706,
+          "calls": 72
+        },
+        "marginal": {
+          "seconds": 0.029717675410211086,
+          "calls": 72
+        },
+        "batch_noise_screen": {
+          "seconds": 0.011743120849132538,
+          "calls": 72
+        }
+      },
+      "top_functions": [
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py",
+          "line": 16,
+          "function": "phase_shifted_states",
+          "calls": 99,
+          "self_seconds": 5.033756735,
+          "cumulative_seconds": 7.063301082000001
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/sky/frames.py",
+          "line": 158,
+          "function": "look_angles",
+          "calls": 216,
+          "self_seconds": 3.041727662,
+          "cumulative_seconds": 4.673550202
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/track_catalogue_geometry.py",
+          "line": 18,
+          "function": "interpolate_states",
+          "calls": 99,
+          "self_seconds": 1.3833364750000001,
+          "cumulative_seconds": 1.514958531
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+          "calls": 13819,
+          "self_seconds": 1.197038614,
+          "cumulative_seconds": 1.197038614
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method '_sgp4' of 'sgp4.vallado_cpp.SatrecArray' objects>",
+          "calls": 1,
+          "self_seconds": 1.023404714,
+          "cumulative_seconds": 1.023404714
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/track_recovery_diagnostics.py",
+          "line": 6,
+          "function": "profile_rate",
+          "calls": 792,
+          "self_seconds": 0.552079082,
+          "cumulative_seconds": 0.70512916
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method numpy._core._multiarray_umath.c_einsum>",
+          "calls": 216,
+          "self_seconds": 0.44147343800000005,
+          "cumulative_seconds": 0.44147343800000005
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/residual_screen.py",
+          "line": 68,
+          "function": "screen_candidates",
+          "calls": 1,
+          "self_seconds": 0.40747716700000003,
+          "cumulative_seconds": 14.726198896000001
+        },
+        {
+          "file": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py",
+          "line": 378,
+          "function": "stack",
+          "calls": 75,
+          "self_seconds": 0.36550324100000003,
+          "cumulative_seconds": 0.365545457
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'searchsorted' of 'numpy.ndarray' objects>",
+          "calls": 228,
+          "self_seconds": 0.29001844400000004,
+          "cumulative_seconds": 0.29001844400000004
+        },
+        {
+          "file": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/linalg/_linalg.py",
+          "line": 2598,
+          "function": "norm",
+          "calls": 216,
+          "self_seconds": 0.26283454,
+          "cumulative_seconds": 1.186502286
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'copy' of 'numpy.ndarray' objects>",
+          "calls": 470,
+          "self_seconds": 0.199924706,
+          "cumulative_seconds": 0.199924706
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/sky/frames.py",
+          "line": 92,
+          "function": "teme_to_ecef",
+          "calls": 1,
+          "self_seconds": 0.14119150700000002,
+          "cumulative_seconds": 0.510193264
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py",
+          "line": 13,
+          "function": "phase_frequency_grids",
+          "calls": 99,
+          "self_seconds": 0.057145171,
+          "cumulative_seconds": 11.771306235
+        },
+        {
+          "file": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/residual_evidence.py",
+          "line": 28,
+          "function": "components",
+          "calls": 72,
+          "self_seconds": 0.047011512000000005,
+          "cumulative_seconds": 0.063470917
+        }
+      ]
+    }
+  ],
+  "source_commit": "8e3fb0224265e7fb28323098f206fddb068cb283",
+  "production_changed": false,
+  "whole_dataset_qualification": false,
+  "original_algo07_speedup": null
+}
