@@ -1,5 +1,15 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [latest cumulative comparison](../../reports/2026_11_06_algo07v3_reference_recovery/README.md)
+observes original ALGO07 at 886.905 s versus current v3 at 193.899 / 152.529 s
+on DS26-0002 (4.57–5.81×), preserving both arms, scientific audits, ownership,
+public grid/path and eight PNGs. These bracketed, shared-host observations reuse
+one reference; they are not dataset-wide or capture-to-publication guarantees.
+The original worker-plus-publication subtotal is 811.989 s (4.19–5.32×).
+Reference manifests pass unchanged after exact private restoration. See the
+[new stage/queue profile](../../reports/2026_11_06_algo07v3_training_queue/README.md)
+for the remaining fit bottlenecks. No CLI contract or production change.
+
 The [inverse-solve workspace](../../reports/2026_11_05_algo07v3_lapack_workspace/README.md)
 reuses one private Fortran-order array within each likelihood call, resetting it
 before the same LAPACK solve. **1,332 tests** and complete native DS26-0002

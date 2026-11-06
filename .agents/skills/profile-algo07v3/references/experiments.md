@@ -474,3 +474,30 @@ checks outside the fit timer. Sizes 16/32/64 would avoid only three c=0 calls
 (0.0595 s) and one fitted-c call (0.0188 s). This is potential reusable work,
 not a net speedup or proof that larger-cache outputs are exact. Leave capacity
 eight; next measure predictive queue idle intervals and reconstruction costs.
+
+## Exact reference restoration and predictive training queue
+
+`reports/2026_11_06_algo07v3_reference_recovery/run.py --root FRESH_ROOT`
+uses twelve privately bound exact overlays and preflights the unchanged original
+runtime/presentation manifests plus full case configuration before fitting.
+All seven historical bytecode files were reconstructed from Git source, original
+filenames and timestamps, accepted only by complete original SHA-256 equality.
+`recover.py --output FRESH_ROOT --search-days 4` reproduces the bounded recovery;
+it does not change the old manifest. Keep bytecode out of source-only pins.
+The three fresh executions are v3 193.899 s, original 886.905 s, v3 152.529 s.
+Exact science/public outputs hold; full intermediate/production gates stay open.
+The original subtotal omitting orchestration is 811.989 s. No matched-population
+or tenfold claim follows; do not multiply historical incremental ratios.
+
+`tools/profile_algo07v3_training_queue.py --request REQUEST --output FRESH_ROOT
+--target 1` requires three pinned CPUs, one BLAS thread and an external 600 s
+bound. It runs complete fresh unobserved/observed annotations, validates complete
+fingerprints and saved native votes, and records task intervals in canonical
+order. Nine tests cover actual forked execution, ordering, failure and schedule
+bounds. DS26-0066 target 1 takes 49.475 s observed, including 47.815 s training
+and 1.659 s scoring. Two fits take 47.017/45.521 s; four take 2.251–2.473 s.
+Despite 71.1% slot occupancy, prescient reordering saves at most 0.755 s under
+fixed-duration simulation. This is not a measured scheduling speedup. Numerical
+fit cost is the next priority. See the training-queue report for complete native
+stage clocks, nested posterior timings and ranked experiments. These profiling
+controls do not change runtime code, scientific budgets or production.

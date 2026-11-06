@@ -1,5 +1,25 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [exact reference recovery and cumulative comparison](../../reports/2026_11_06_algo07v3_reference_recovery/README.md):
+original ALGO07 **886.905 s**, bracketed by current v3 **193.899 / 152.529 s**
+on DS26-0002, with exact public outputs, both arms, eight PNGs and 17 scientific
+audit sections. Observed ratios **4.57–5.81×** reuse one reference; they are not
+independent pairs or a population guarantee. Original worker-plus-publication
+subtotal is 811.989 s (ratios **4.19–5.32×**), explicitly excluding orchestration
+gaps. Native GLRT extraction, capture and queue waits are outside these clocks.
+All 72,405 original runtime and 2,149 presentation manifest entries verify
+unchanged after twelve exact private overlays, including seven reconstructed
+bytecode files matching their original SHA-256 hashes. The failed attempts below
+remain recorded. Later metadata, full DS26 and production admission remain open.
+
+The [predictive queue profile](../../reports/2026_11_06_algo07v3_training_queue/README.md)
+finds two 45.5–47.0 s tasks versus four 2.3–2.5 s tasks on DS26-0066 target 1.
+Training takes 47.815 s at 71.1% three-slot occupancy; prescient reordering offers
+only 0.755 s in simulation, not a measured speedup. Both full annotations and
+saved decisions match exactly; nine tool tests pass. No numerical changes.
+Next measure precision convergence by fold and test ordered assembly; bigger
+caches and task reordering have negligible measured opportunity here.
+
 November 6 [cumulative refresh and cache census](../../reports/2026_11_06_algo07v3_cumulative_current/README.md):
 fresh current v3 completes DS26-0002 in **161.431 s** with exact unchanged
 science/eight PNGs. The original reference fails its frozen-runtime check before
