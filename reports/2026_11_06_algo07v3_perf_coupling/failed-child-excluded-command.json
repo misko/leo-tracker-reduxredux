@@ -1,0 +1,21 @@
+[
+  "sudo",
+  "-n",
+  "perf",
+  "stat",
+  "--json-output",
+  "-o",
+  "/srv/bulk/leo-dev/algo07v3-perf-native-0066-20261106/child-excluded-counters.jsonl",
+  "-e",
+  "cpu_core/cycles/,cpu_core/instructions/,task-clock",
+  "--no-inherit",
+  "--",
+  "taskset",
+  "-c",
+  "0",
+  "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+  "-B",
+  "-c",
+  "import os, resource, sys, time\ndef work():\n    value = 0\n    for i in range(5000000):\n        value += i % 97\n    assert value > 0\nif sys.argv[1] == 'parent':\n    work()\nelse:\n    pid = os.fork()\n    if pid == 0:\n        work()\n        os._exit(0)\n    _, status = os.waitpid(pid, 0)\n    assert status == 0\nprint({'parent_cpu': time.process_time(),\n       'child_cpu': sum(resource.getrusage(resource.RUSAGE_CHILDREN)[:2])})\n",
+  "child"
+]

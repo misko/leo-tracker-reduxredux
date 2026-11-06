@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [hardware counters and precision coupling](../../reports/2026_11_06_algo07v3_perf_coupling/README.md):
+unchanged DS26-0066 completes in **398.576 s**, exactly matching both arms,
+science, eight PNGs and public grid/path, with no changed runtime modules.
+Inherited perf scope including harness/preflight records **656.458 CPU s over
+400.069 s**, 3.53656 trillion cycles and 10.14420 trillion instructions: average
+1.641 of three slots, 5.387 GHz active-clock estimate. Fork inheritance was
+verified; counters run 100%. This is no new speedup and not production throughput.
+The precision-map observer reproduces 512 saved transitions exactly: local
+eigenvalue magnitudes are near one at the plateaus and 1.1215/1.0479 at the caps.
+Inactive-column compression fails exactness (maximum coefficient delta 4.747e-10)
+and is rejected without a timing claim. Nineteen focused tests pass. Next test
+one process helper only after the initial queue drains, enforcing the existing
+three-slot cap and parent-death cleanup; the thread policy remains rejected.
+
 November 6 [initial precision attribution and layout trial](../../reports/2026_11_06_algo07v3_initial_precision/README.md):
 both complete initial branch-1 arms remain exact. The first capped fitted-c
 call maps group 53 to RX2 CH6 T002, 28 points at 55.85–86.68 s, under that

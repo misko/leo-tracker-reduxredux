@@ -1,0 +1,49 @@
+{
+  "measured": {
+    "returncode": 0,
+    "elapsed_seconds": 400.0686394274235,
+    "inherit": true,
+    "command": [
+      "sudo",
+      "-n",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "perf",
+      "stat",
+      "--json-output",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-perf-native-0066-r2-20261106/native-counters.jsonl",
+      "-e",
+      "cpu_core/cycles/,cpu_core/instructions/,task-clock",
+      "--",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-perf-native-0066-r2-20261106/native",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-perf-native-0066-r2-20261106/request.json",
+      "run",
+      "1200"
+    ],
+    "counters": {
+      "cpu_core/cycles/": 3536560157877.0,
+      "cpu_core/instructions/": 10144204273167.0,
+      "task-clock": 656457.912848,
+      "cpu_seconds": 656.457912848,
+      "cycles_per_instruction": 0.34862864179813025,
+      "average_active_ghz": 5.387337236189086
+    }
+  },
+  "resources_before": null,
+  "resources_after": null,
+  "resource_note": "Transient samples were not saved after original comparator failure",
+  "scope": "perf includes isolated harness, preflight, supervisor and descendants",
+  "scientific_equality": true,
+  "speedup": null,
+  "production_modified": false,
+  "completion": "Explicit unchanged-module comparison of already completed run"
+}

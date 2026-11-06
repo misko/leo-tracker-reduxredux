@@ -1,0 +1,117 @@
+{
+  "records": {
+    "parent": {
+      "returncode": 0,
+      "elapsed_seconds": 0.12165062595158815,
+      "inherit": true,
+      "command": [
+        "sudo",
+        "-n",
+        "taskset",
+        "-c",
+        "0",
+        "perf",
+        "stat",
+        "--json-output",
+        "-o",
+        "/srv/bulk/leo-dev/algo07v3-perf-native-0066-r2-20261106/parent-counters.jsonl",
+        "-e",
+        "cpu_core/cycles/,cpu_core/instructions/,task-clock",
+        "--",
+        "taskset",
+        "-c",
+        "0",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+        "-B",
+        "-c",
+        "import os, resource, sys, time\ndef work():\n    value = 0\n    for i in range(5000000):\n        value += i % 97\n    assert value > 0\nif sys.argv[1] == 'parent':\n    work()\nelse:\n    pid = os.fork()\n    if pid == 0:\n        work()\n        os._exit(0)\n    _, status = os.waitpid(pid, 0)\n    assert status == 0\nprint({'parent_cpu': time.process_time(),\n       'child_cpu': sum(resource.getrusage(resource.RUSAGE_CHILDREN)[:2])})\n",
+        "parent"
+      ],
+      "counters": {
+        "cpu_core/cycles/": 458103723.0,
+        "cpu_core/instructions/": 3084002041.0,
+        "task-clock": 85.828621,
+        "cpu_seconds": 0.085828621,
+        "cycles_per_instruction": 0.14854196492407573,
+        "average_active_ghz": 5.337423783145718
+      }
+    },
+    "child": {
+      "returncode": 0,
+      "elapsed_seconds": 0.1021335693076253,
+      "inherit": true,
+      "command": [
+        "sudo",
+        "-n",
+        "taskset",
+        "-c",
+        "0",
+        "perf",
+        "stat",
+        "--json-output",
+        "-o",
+        "/srv/bulk/leo-dev/algo07v3-perf-native-0066-r2-20261106/child-counters.jsonl",
+        "-e",
+        "cpu_core/cycles/,cpu_core/instructions/,task-clock",
+        "--",
+        "taskset",
+        "-c",
+        "0",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+        "-B",
+        "-c",
+        "import os, resource, sys, time\ndef work():\n    value = 0\n    for i in range(5000000):\n        value += i % 97\n    assert value > 0\nif sys.argv[1] == 'parent':\n    work()\nelse:\n    pid = os.fork()\n    if pid == 0:\n        work()\n        os._exit(0)\n    _, status = os.waitpid(pid, 0)\n    assert status == 0\nprint({'parent_cpu': time.process_time(),\n       'child_cpu': sum(resource.getrusage(resource.RUSAGE_CHILDREN)[:2])})\n",
+        "child"
+      ],
+      "counters": {
+        "cpu_core/cycles/": 466994167.0,
+        "cpu_core/instructions/": 3086961672.0,
+        "task-clock": 87.377238,
+        "cpu_seconds": 0.08737723800000001,
+        "cycles_per_instruction": 0.15127954818351888,
+        "average_active_ghz": 5.34457460191177
+      }
+    },
+    "child-excluded": {
+      "returncode": 0,
+      "elapsed_seconds": 0.10344888269901276,
+      "inherit": false,
+      "command": [
+        "sudo",
+        "-n",
+        "taskset",
+        "-c",
+        "0",
+        "perf",
+        "stat",
+        "--json-output",
+        "-o",
+        "/srv/bulk/leo-dev/algo07v3-perf-native-0066-r2-20261106/child-excluded-counters.jsonl",
+        "-e",
+        "cpu_core/cycles/,cpu_core/instructions/,task-clock",
+        "--no-inherit",
+        "--",
+        "taskset",
+        "-c",
+        "0",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+        "-B",
+        "-c",
+        "import os, resource, sys, time\ndef work():\n    value = 0\n    for i in range(5000000):\n        value += i % 97\n    assert value > 0\nif sys.argv[1] == 'parent':\n    work()\nelse:\n    pid = os.fork()\n    if pid == 0:\n        work()\n        os._exit(0)\n    _, status = os.waitpid(pid, 0)\n    assert status == 0\nprint({'parent_cpu': time.process_time(),\n       'child_cpu': sum(resource.getrusage(resource.RUSAGE_CHILDREN)[:2])})\n",
+        "child"
+      ],
+      "counters": {
+        "cpu_core/cycles/": 54916411.0,
+        "cpu_core/instructions/": 60465447.0,
+        "task-clock": 10.303074,
+        "cpu_seconds": 0.010303074,
+        "cycles_per_instruction": 0.9082279834960949,
+        "average_active_ghz": 5.330099638224475
+      }
+    }
+  },
+  "included_ratio": 1.000959672192383,
+  "included_vs_excluded_ratio": 51.05331764106532,
+  "verified": true,
+  "workload": "import os, resource, sys, time\ndef work():\n    value = 0\n    for i in range(5000000):\n        value += i % 97\n    assert value > 0\nif sys.argv[1] == 'parent':\n    work()\nelse:\n    pid = os.fork()\n    if pid == 0:\n        work()\n        os._exit(0)\n    _, status = os.waitpid(pid, 0)\n    assert status == 0\nprint({'parent_cpu': time.process_time(),\n       'child_cpu': sum(resource.getrusage(resource.RUSAGE_CHILDREN)[:2])})\n"
+}

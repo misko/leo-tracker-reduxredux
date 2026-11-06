@@ -215,3 +215,23 @@ Hardware counters are available through privileged `perf` on this host, but only
 a trivial command was checked: verify child inheritance and measurement scope
 before making any pipeline counter claim. Frequency snapshots alone cannot
 explain component/native timing discrepancies.
+
+The [hardware-counter and coupling report](../../../reports/2026_11_06_algo07v3_perf_coupling/README.md)
+now verifies fork inheritance and complete native accounting. Use
+`tools/profile_algo07v3_perf.py --request REQUEST --reference-timing SUPERVISOR
+--output FRESH` for the unchanged-code counter baseline. It requires privileged
+perf/namespaces, explicitly pins the perf launcher to P cores before creating
+counters, and compares with empty changed/added-module lists. `--verify-only`
+checks inheritance cheaply. The counters include harness/preflight/supervisor;
+report their wider scope separately from the worker clock. DS26-0066 is exact
+at 398.576 s; perf records 656.458 CPU s over 400.069 s, not a new speedup.
+No native work should be rerun merely because post-run comparison failed;
+retain the failure and use the exact explicit comparison as in `finish.py`.
+
+The precision-map observer reproduces all 512 captured transitions before
+estimating Jacobians. Local expanding directions do not prove global divergence.
+Inactive-column posterior compression fails byte equality and stays rejected.
+Next process-helper experiment must differ from the rejected thread policy:
+borrow one helper only in the sole remaining outer fit, preserve the three-slot
+cap, handle helper failure and parent death, and require exact native outputs
+plus complete wall/CPU/counter comparisons before adoption.
