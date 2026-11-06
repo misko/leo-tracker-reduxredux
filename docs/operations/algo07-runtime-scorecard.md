@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+The [screen-azimuth iteration](../../reports/2026_11_05_algo07v3_screen_azimuth/README.md)
+is integrated in development with **1,162 passing tests**. Twelve exact complete
+screens improve 12.39%/12.70% on DS26-0002/0066; 99 real coarse projections match
+every output bit and layout. Fresh native **DS26-0066 is 469.957 → 404.752 s**,
+saving 65.205 s (observed 1.161×), with exact science/eight PNGs. Residual screening
+saves **1.633 s** (10.537 → 8.903 s); reassociation admission also improves, but
+most whole-run variation is in unchanged fitting stages. This is not a stable
+65-second attributable gain. The current result also matches earlier qualified
+DS26-0066 science/eight PNGs across ten explicitly declared module changes.
+Predictive fitting plus initial search account for 66.9% of this candidate's
+time. Next test bounded scheduling across initial branch/arm fits. Production,
+full DS26 and original-ALGO07 cumulative qualification are unchanged. The skill
+now keeps detailed historical recipes in a linked reference.
+
 The [endpoint-reuse iteration](../../reports/2026_11_05_algo07v3_endpoint_reuse/README.md)
 is integrated in development with **1,132 passing tests**. Twelve exact complete
 screens improve by 13.38%/8.74% on DS26-0002/0066; all 99 real coarse-state

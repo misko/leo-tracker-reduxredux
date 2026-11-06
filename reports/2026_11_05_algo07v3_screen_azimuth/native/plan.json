@@ -1,0 +1,60 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_azimuth/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_azimuth/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py": "8affea2a053f3acd2edf38d7daaa2cfe7fcdc86293261fbff69e9e14a0df4d56",
+    "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/baseline-src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "d72031c3886bc49d144260b96f3649770eae72c54ea2449c5ace80b3b8c4618a",
+    "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/candidate-src/leo/analysis/localization_v3/screen_geometry.py": "d72031c3886bc49d144260b96f3649770eae72c54ea2449c5ace80b3b8c4618a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_azimuth/run_pair.py": "799f313e0c053b24f475bc5f225b830ed0e701296d07315d044aa933e0832bd1",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_screen_azimuth/run_baseline.sh": "d3bef23f1d25384cc0f1956a49c58f4cf385a60d9bdb19390b4c4a4daee6fdf6",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "bc2032a491e2d1a3b272d4bc09d27e8ca065d9d7c7bdc30633c55686cefdfe42",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066/input-bindings.json": "25c6fff9072daf8495e698d726bed4df38957e3a0391b9cdd544ee66a7dc6d65",
+    "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/baseline-request.json": "8a6decc63c4ec3009d4fb09f8bd4a5b464296a80b2f902d1220e1c3a701ffa3b",
+    "/srv/bulk/leo-dev/algo07v3-azimuth-native-0066-20261106/candidate-request.json": "5bf611c65e324042d4230eb4343b95d82c4a1cb427bc61c0a216d4561aa090bd"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

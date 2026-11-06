@@ -7,7 +7,25 @@ receiver position; the original look-angle arithmetic is retained for each site.
 import numpy as np
 
 from leo.analysis.research.orbit_phase_geometry import phase_shifted_states
-from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km, look_angles
+from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km
+
+
+def _elevation_and_rate(position_ecef_km, velocity_ecef_km_s, observer_ecef_km, enu_matrix):
+    """Retain the original look-angle math for the two outputs screening uses."""
+    relative = position_ecef_km - observer_ecef_km
+    east_north_up = relative @ enu_matrix.T
+    slant_range = np.linalg.norm(relative, axis=-1)
+    east = east_north_up[..., 0]
+    north = east_north_up[..., 1]
+    up = east_north_up[..., 2]
+    elevation = np.rad2deg(np.arctan2(up, np.hypot(east, north)))
+    with np.errstate(invalid="ignore", divide="ignore"):
+        range_rate = np.where(
+            slant_range > 0.0,
+            np.einsum("...i,...i->...", relative, velocity_ecef_km_s) / slant_range,
+            0.0,
+        )
+    return elevation, range_rate
 
 
 def phase_frequency_grids(bank, time_s, positions, *, phase_seconds=0.0,
@@ -25,6 +43,6 @@ def phase_frequency_grids(bank, time_s, positions, *, phase_seconds=0.0,
     for latitude, longitude in positions:
         observer = geodetic_to_ecef_km(latitude, longitude, altitude_m)
         rotation = ecef_to_enu_matrix(latitude, longitude)
-        _, elevation, _, rate = look_angles(position, velocity, observer, rotation)
+        elevation, rate = _elevation_and_rate(position, velocity, observer, rotation)
         results.append((-rf_hz * rate / 299792.458, elevation))
     return results

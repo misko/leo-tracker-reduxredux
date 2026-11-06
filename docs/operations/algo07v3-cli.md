@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [screen-azimuth optimization](../../reports/2026_11_05_algo07v3_screen_azimuth/README.md)
+omits unused azimuth calculations while retaining exact elevation and Doppler
+arithmetic. **1,162 tests**, twelve complete screens and 99 real-projection
+comparisons pass. Fresh native DS26-0066 preserves complete science/eight PNGs,
+including accepted reassociation, and matches its earlier qualified output.
+Native time is 469.957 → 404.752 s, but only 1.633 s of that difference is in
+residual screening; unchanged stages vary. Component means improve 12.39%/12.70%.
+Production and full-cohort qualification remain unchanged.
+
 The [endpoint-reuse optimization](../../reports/2026_11_05_algo07v3_endpoint_reuse/README.md)
 gathers each lower orbital interpolation sample once while preserving arithmetic
 and array layout. Twelve complete screens and 99 real-state comparisons are
