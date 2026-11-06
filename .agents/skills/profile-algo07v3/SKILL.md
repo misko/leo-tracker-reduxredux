@@ -287,3 +287,19 @@ tests pass; no complete-fit or native qualification was warranted. Next census
 remaining exact complete-fit duplicates across a bounded branch-diverse subset
 before another cache or scheduling change. Keep numerical convergence work
 separate from the byte-identical contract and do not revive generic BLAS trials.
+
+The [bounded fit census](../../../reports/2026_11_06_algo07v3_fit_census/README.md)
+extends stage observations to DS26-0084/0170 and observes joint recovery on 0102.
+Only two of sixty training masks per arm repeat across the first four cases;
+that is not proof of reusable fits or a time-saving percentage. The 0102 joint
+controls exactly match fifteen core fields of earlier individual controls,
+including histories and phase references. Two stages total 8.867 s; do not
+double-count their four pairwise matches or treat all stage time as removable.
+Next prove complete input-key equivalence, retain joint-specific diagnostics,
+and time-box any narrow reuse prototype. No runtime change is qualified by this
+observation. For larger gains, investigate precision convergence in a separate
+scientific candidate without relaxing byte-identical v3's existing gates.
+The observed 0102 worker finishes at 718.702 s, including 192.959 s numerical
+recovery. Profile its new-family/joint replay fits and audits next; the centered
+optimizer and reference-limit policy can change dependencies, and its ordered
+numerical receipts must be preserved. Do not treat all replay time as redundant.

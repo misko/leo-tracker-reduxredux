@@ -1,5 +1,22 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [broader full-profile review and repeated-fit census](../../reports/2026_11_06_algo07v3_fit_census/README.md):
+**observation only; no new runtime or production change**. All 937 bindings from
+the exact full timer profile remain current. Two additional native workers finish
+at 213.395 s (DS26-0084) and 494.698 s (DS26-0170), with predictive recovery taking
+14.990 / 197.060 s. These are different scans, not a speed comparison. Four-scan
+training census finds only two possible repeats among 60 masks per arm; equal
+masks are insufficient for reuse. DS26-0102's observed joint controls exactly
+match fifteen core fields of earlier individual controls, including histories.
+Their combined 8.867 s is an upper bound on removable time, not a measured gain;
+joint diagnostics and dependency proof remain. Thirteen focused tests pass.
+The observed full DS26-0102 worker finishes at 718.702 s, with 300.162 s predictive
+and 192.959 s numerical recovery. Profile that numerical branch next; it uses
+different optimizer/reference policy and cannot be removed as redundant wholesale.
+Time-box the narrow reuse candidate; the larger opportunity is the capped
+noise-precision solver, requiring separate scientific qualification if its
+initialization, arithmetic or convergence changes. Preserve byte-identical v3.
+
 November 6 [primitive attribution and covariance-only threading](../../reports/2026_11_06_algo07v3_blas_primitives/README.md):
 **not adopted; runtime and production unchanged**. Four shadow observations
 preserve complete serial trajectories. Cholesky/LU change immediately with
