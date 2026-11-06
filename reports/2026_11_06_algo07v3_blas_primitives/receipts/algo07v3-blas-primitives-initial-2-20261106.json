@@ -1,0 +1,322 @@
+{
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/profile_algo07v3_blas_primitives.py": "5c727ecb2d4538b5a057f5b19b7302a0120ff1f885b736190c3e781db702335e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py": "c906a5992ca3428c29b5c44326264549e18dc4206653b3d6f2fd12b48638607e",
+    "/srv/bulk/leo-dev/algo07v3-initial-capture-20261106/fitted_c-capture/hardest.json": "012bb74e98fe87b814a9840e357fccefa95c989600bd549f463924c4373a015e",
+    "/srv/bulk/leo-dev/algo07v3-initial-capture-20261106/fitted_c-capture/hardest.npz": "d72a34ba03a80cb439913c897b3864f9c686951928faaaecdcedddad0eb36b98",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/check_algo07v3_scan_likelihood.py": "b8f5e618238b98c31d0073a07d6d3922cb80af0fafb7ddd9854297ea2a53e209",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_blas_threads.py": "1fe38ceb7d5b6e586c4c38976f8d687d7c922f5238b0d9844497d7a14a0f5441"
+  },
+  "libraries": [
+    {
+      "owner": "numpy",
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+      "threads": 1,
+      "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+      "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+    },
+    {
+      "owner": "scipy",
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+      "threads": 1,
+      "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+      "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+    }
+  ],
+  "threads": 2,
+  "rows": {
+    "local.T @ local": {
+      "calls": 73,
+      "tested": 73,
+      "first_difference": null
+    },
+    "local.T @ r[use]": {
+      "calls": 73,
+      "tested": 73,
+      "first_difference": null
+    },
+    "dpotrf": {
+      "calls": 257,
+      "tested": 1,
+      "first_difference": {
+        "call": 1,
+        "baseline": [
+          {
+            "type": "array",
+            "dtype": "<f8",
+            "shape": [
+              177,
+              177
+            ],
+            "sha256": "02033b5f67a725e5292b3367ec509dd10064cc13dcc9f00a9ec7079424423a06"
+          },
+          0
+        ],
+        "candidate": [
+          {
+            "type": "array",
+            "dtype": "<f8",
+            "shape": [
+              177,
+              177
+            ],
+            "sha256": "3d991c80437a7da690359fc64da307f75df489c0d9997f602ace546a671fd76a"
+          },
+          0
+        ],
+        "argument_shapes": [
+          [
+            177,
+            177
+          ]
+        ]
+      }
+    },
+    "dgetrf": {
+      "calls": 257,
+      "tested": 1,
+      "first_difference": {
+        "call": 1,
+        "baseline": [
+          {
+            "type": "array",
+            "dtype": "<f8",
+            "shape": [
+              177,
+              177
+            ],
+            "sha256": "0d807e69bf89a73f73d0b90748e812f31f7014eb4ad70c5a6b07fd035fb4959a"
+          },
+          {
+            "type": "array",
+            "dtype": "<i4",
+            "shape": [
+              177
+            ],
+            "sha256": "a04dff273fe40c0f7aff0fbb72f65546079a0b3a8e4558f82218ee8dc56b478e"
+          },
+          0
+        ],
+        "candidate": [
+          {
+            "type": "array",
+            "dtype": "<f8",
+            "shape": [
+              177,
+              177
+            ],
+            "sha256": "fdd511febac55a2d25d0524629aaff21399c556e43d4e7517cd527cf042bd40d"
+          },
+          {
+            "type": "array",
+            "dtype": "<i4",
+            "shape": [
+              177
+            ],
+            "sha256": "a04dff273fe40c0f7aff0fbb72f65546079a0b3a8e4558f82218ee8dc56b478e"
+          },
+          0
+        ],
+        "argument_shapes": [
+          [
+            177,
+            177
+          ]
+        ]
+      }
+    },
+    "dgetrs-vector": {
+      "calls": 514,
+      "tested": 514,
+      "first_difference": null
+    },
+    "dgetrs-matrix": {
+      "calls": 256,
+      "tested": 1,
+      "first_difference": {
+        "call": 1,
+        "baseline": [
+          {
+            "type": "array",
+            "dtype": "<f8",
+            "shape": [
+              177,
+              177
+            ],
+            "sha256": "28013f432d407736d4c56312ae4a1fe2caf478c33724e549721da53cc9ae4eb6"
+          },
+          0
+        ],
+        "candidate": [
+          {
+            "type": "array",
+            "dtype": "<f8",
+            "shape": [
+              177,
+              177
+            ],
+            "sha256": "beca83a1ba598c852f6dbe4417ef0ec8212e3967c03509b61054af4eb31e4f70"
+          },
+          0
+        ],
+        "argument_shapes": [
+          [
+            177,
+            177
+          ],
+          [
+            177
+          ],
+          [
+            177,
+            177
+          ]
+        ]
+      }
+    },
+    "inv_root.T @ inv_root": {
+      "calls": 256,
+      "tested": 256,
+      "first_difference": null
+    },
+    "u @ coefficient": {
+      "calls": 257,
+      "tested": 3,
+      "first_difference": {
+        "call": 3,
+        "baseline": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "c741228302a0f5237beb2763ee69c982bcfb4fd55e24a7bb70c5592d4cb34294"
+        },
+        "candidate": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "d4d40d4cb0cc7c60a263b48bdb1f50eb7c698275ea8686dd2bbf38a00ef96f94"
+        },
+        "argument_shapes": [
+          [
+            2897,
+            177
+          ],
+          [
+            177
+          ]
+        ]
+      }
+    },
+    "innovation @ innovation": {
+      "calls": 1,
+      "tested": 1,
+      "first_difference": null
+    },
+    "residual @ residual": {
+      "calls": 1,
+      "tested": 1,
+      "first_difference": null
+    },
+    "power @ counts": {
+      "calls": 1,
+      "tested": 1,
+      "first_difference": null
+    }
+  },
+  "unchanged_trajectory_exact": true,
+  "expected": {
+    "residual": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [
+        3148
+      ],
+      "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+    },
+    "coefficient": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [
+        177
+      ],
+      "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+    },
+    "quadratic": {
+      "type": "float",
+      "hex": "0x1.069e2dee10889p+12"
+    },
+    "logvolume": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [],
+      "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+    },
+    "conditional_residual_hz": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [
+        2897
+      ],
+      "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+    },
+    "noise_precision": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [
+        73
+      ],
+      "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+    },
+    "coefficient_prior_precision": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [
+        177
+      ],
+      "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+    },
+    "prior_group_precision": {
+      "type": "array",
+      "dtype": "<f8",
+      "shape": [
+        0
+      ],
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "noise_gamma_cost": {
+      "type": "float",
+      "hex": "0x1.582bfa05a8f24p+12"
+    },
+    "prior_gamma_cost": {
+      "type": "float",
+      "hex": "0x0.0p+0"
+    },
+    "gamma_cost": {
+      "type": "float",
+      "hex": "0x1.582bfa05a8f24p+12"
+    },
+    "normalization_constant": {
+      "type": "float",
+      "hex": "0x1.894a55505014ep+14"
+    },
+    "negative_twice_elbo": {
+      "type": "float",
+      "hex": "0x1.183eb04a8fde8p+15"
+    },
+    "effective_observations": {
+      "type": "float",
+      "hex": "0x1.6a20000000000p+11"
+    },
+    "precision_iterations": 256,
+    "final_log_precision_change": {
+      "type": "float",
+      "hex": "0x1.12bdcb639c71bp-6"
+    }
+  },
+  "production_modified": false,
+  "full_pipeline_speedup": null
+}

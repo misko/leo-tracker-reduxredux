@@ -1,0 +1,1402 @@
+{
+  "plan": {
+    "capture": "/srv/bulk/leo-dev/algo07v3-initial-capture-20261106/fitted_c-capture",
+    "threads": 2,
+    "bindings": {
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/benchmark_algo07v3_covariance_threads.py": "8d0887d1732fb0ac5ed3cf8867653b59df83d6f251af532bf569f4342cd15da1",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_covariance_threads.py": "57c85bb14a8b829970207abc9b7eb31b9807db82aa1905ef96ead74de021bd95",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/profile_algo07v3_blas_primitives.py": "5c727ecb2d4538b5a057f5b19b7302a0120ff1f885b736190c3e781db702335e",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_algo07v3_blas_threads.py": "1fe38ceb7d5b6e586c4c38976f8d687d7c922f5238b0d9844497d7a14a0f5441",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/check_algo07v3_scan_likelihood.py": "b8f5e618238b98c31d0073a07d6d3922cb80af0fafb7ddd9854297ea2a53e209",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py": "c906a5992ca3428c29b5c44326264549e18dc4206653b3d6f2fd12b48638607e",
+      "/srv/bulk/leo-dev/algo07v3-initial-capture-20261106/fitted_c-capture/hardest.json": "012bb74e98fe87b814a9840e357fccefa95c989600bd549f463924c4373a015e",
+      "/srv/bulk/leo-dev/algo07v3-initial-capture-20261106/fitted_c-capture/hardest.npz": "d72a34ba03a80cb439913c897b3864f9c686951928faaaecdcedddad0eb36b98"
+    }
+  },
+  "rows": [
+    {
+      "pair": 0,
+      "side": "baseline",
+      "seconds": 0.20428341440856457,
+      "cpu_seconds": 0.2042725816666667,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 1,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 0,
+      "side": "candidate",
+      "seconds": 0.19682893188049397,
+      "cpu_seconds": 0.39381239700000004,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 2,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "seconds": 0.1975727683554093,
+      "cpu_seconds": 0.3952225786666667,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 2,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "seconds": 0.20313297118991613,
+      "cpu_seconds": 0.20312354499999996,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 1,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "seconds": 0.2058849148452282,
+      "cpu_seconds": 0.20587053933333332,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 1,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "seconds": 0.20054303078601757,
+      "cpu_seconds": 0.4008615123333333,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 2,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "seconds": 0.2061568113664786,
+      "cpu_seconds": 0.4124383973333334,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 2,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "seconds": 0.21242209834357104,
+      "cpu_seconds": 0.2124112243333333,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 1,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "seconds": 0.20477393735200167,
+      "cpu_seconds": 0.20475744833333334,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 1,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "seconds": 0.19689734280109406,
+      "cpu_seconds": 0.39353755100000004,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 2,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "seconds": 0.2033189736927549,
+      "cpu_seconds": 0.4066083363333333,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 2,
+      "thread_settings_returned_to_one": true
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "seconds": 0.20444689070185026,
+      "cpu_seconds": 0.2044426553333333,
+      "calls": 3,
+      "exact": true,
+      "expected": {
+        "residual": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            3148
+          ],
+          "sha256": "d99d2317413996efa5eec366015e1f1d0034f889a2aa9472460557aaf7b9c228"
+        },
+        "coefficient": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "89c3a376f727e882ca224f5e89dc8c1d4fbfe6836c5a7b94f5f510581bbb426d"
+        },
+        "quadratic": {
+          "type": "float",
+          "hex": "0x1.069e2dee10889p+12"
+        },
+        "logvolume": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [],
+          "sha256": "5b3871a9cb1e0e6a59828b726e051c94b02c8f05c4de7e60f699dbcf95e5e52e"
+        },
+        "conditional_residual_hz": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            2897
+          ],
+          "sha256": "305793e3784deb4e8c9edcd0bc50a8b7ed8b9bbeecbce969cf69cbc1d2836575"
+        },
+        "noise_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            73
+          ],
+          "sha256": "28a2bfcec65b6a933b9b7e612330f2e02b16229edb399bf3d633ae2d00e8f37d"
+        },
+        "coefficient_prior_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            177
+          ],
+          "sha256": "10dfd14472275076f173d67b79a48b8694c5463a44f289ee0a6cfddc812907f1"
+        },
+        "prior_group_precision": {
+          "type": "array",
+          "dtype": "<f8",
+          "shape": [
+            0
+          ],
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "noise_gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "prior_gamma_cost": {
+          "type": "float",
+          "hex": "0x0.0p+0"
+        },
+        "gamma_cost": {
+          "type": "float",
+          "hex": "0x1.582bfa05a8f24p+12"
+        },
+        "normalization_constant": {
+          "type": "float",
+          "hex": "0x1.894a55505014ep+14"
+        },
+        "negative_twice_elbo": {
+          "type": "float",
+          "hex": "0x1.183eb04a8fde8p+15"
+        },
+        "effective_observations": {
+          "type": "float",
+          "hex": "0x1.6a20000000000p+11"
+        },
+        "precision_iterations": 256,
+        "final_log_precision_change": {
+          "type": "float",
+          "hex": "0x1.12bdcb639c71bp-6"
+        }
+      },
+      "libraries": [
+        {
+          "owner": "numpy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082"
+        },
+        {
+          "owner": "scipy",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+          "threads": 1,
+          "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64",
+          "sha256": "2a5b4c1a6311873c59132b2ceaaf3c26258a17350b7cd27ea8782a47e3322981"
+        }
+      ],
+      "thread_count": 1,
+      "thread_settings_returned_to_one": true
+    }
+  ],
+  "fresh_process_per_side": true,
+  "captured_kernel_only": true,
+  "production_modified": false,
+  "full_pipeline_speedup": null
+}

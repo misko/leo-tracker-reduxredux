@@ -1,5 +1,18 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [primitive attribution and covariance-only threading](../../reports/2026_11_06_algo07v3_blas_primitives/README.md):
+**not adopted; runtime and production unchanged**. Four shadow observations
+preserve complete serial trajectories. Cholesky/LU change immediately with
+multiple threads; covariance products remain exact across all 256 iterations
+of both captured calls. Covariance-only two-thread fresh-process trials preserve
+all fields and reduce captured wall time 2.72% / 2.54%, but increase CPU 94.55% /
+94.89%. Three threads regress on average. A verified short idle-wait setting
+reduces the CPU penalty but regresses wall time 18.97% / 30.53%. Retain all pairs,
+including outliers. No complete-fit/native gain is claimed and no new helper
+policy is justified. Seventeen tests pass. Next census remaining exact complete
+fit duplicates on a bounded branch-diverse DS26 subset; convergence changes stay
+separate from the identical-output path.
+
 November 6 [full-profile review and BLAS thread gate](../../reports/2026_11_06_algo07v3_blas_threads/README.md):
 **no new optimization adopted; runtime and production unchanged**. All 937
 bindings from the full timer profile still match. Initial search and predictive

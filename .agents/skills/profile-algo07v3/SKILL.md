@@ -274,3 +274,16 @@ first differing primitive cheaply before another kernel policy, and measure
 remaining exact repeated work across a bounded branch-diverse subset. Numerical
 convergence redesign remains separate from the identical-output contract; do
 not repeat full native trials for a candidate that fails the captured-call gate.
+
+The [primitive and covariance-thread follow-up](../../../reports/2026_11_06_algo07v3_blas_primitives/README.md)
+now identifies the differences: factorization changes at the first call; all
+covariance products remain exact on both captures. Covariance-only threading
+is still not adopted. Fresh-process two-thread means improve captured wall
+2.54–2.72% but consume about 95% more CPU; three threads regress. Reducing the
+helper wait regresses wall 19–31%. Same-process baseline CPU can contain helper
+carryover; use fresh processes for configuration comparisons. Preserve NumPy
+operand aliasing in observers, while owning mutable LAPACK RHS copies. Seventeen
+tests pass; no complete-fit or native qualification was warranted. Next census
+remaining exact complete-fit duplicates across a bounded branch-diverse subset
+before another cache or scheduling change. Keep numerical convergence work
+separate from the byte-identical contract and do not revive generic BLAS trials.

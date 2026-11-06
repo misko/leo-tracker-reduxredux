@@ -1,0 +1,906 @@
+{
+  "primitives": [
+    {
+      "case": "initial",
+      "threads": 2,
+      "rows": {
+        "local.T @ local": {
+          "calls": 73,
+          "tested": 73,
+          "first_difference": null
+        },
+        "local.T @ r[use]": {
+          "calls": 73,
+          "tested": 73,
+          "first_difference": null
+        },
+        "dpotrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "02033b5f67a725e5292b3367ec509dd10064cc13dcc9f00a9ec7079424423a06"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "3d991c80437a7da690359fc64da307f75df489c0d9997f602ace546a671fd76a"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                177,
+                177
+              ]
+            ]
+          }
+        },
+        "dgetrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "0d807e69bf89a73f73d0b90748e812f31f7014eb4ad70c5a6b07fd035fb4959a"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  177
+                ],
+                "sha256": "a04dff273fe40c0f7aff0fbb72f65546079a0b3a8e4558f82218ee8dc56b478e"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "fdd511febac55a2d25d0524629aaff21399c556e43d4e7517cd527cf042bd40d"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  177
+                ],
+                "sha256": "a04dff273fe40c0f7aff0fbb72f65546079a0b3a8e4558f82218ee8dc56b478e"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                177,
+                177
+              ]
+            ]
+          }
+        },
+        "dgetrs-vector": {
+          "calls": 514,
+          "tested": 514,
+          "first_difference": null
+        },
+        "dgetrs-matrix": {
+          "calls": 256,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "28013f432d407736d4c56312ae4a1fe2caf478c33724e549721da53cc9ae4eb6"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "beca83a1ba598c852f6dbe4417ef0ec8212e3967c03509b61054af4eb31e4f70"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                177,
+                177
+              ],
+              [
+                177
+              ],
+              [
+                177,
+                177
+              ]
+            ]
+          }
+        },
+        "inv_root.T @ inv_root": {
+          "calls": 256,
+          "tested": 256,
+          "first_difference": null
+        },
+        "u @ coefficient": {
+          "calls": 257,
+          "tested": 3,
+          "first_difference": {
+            "call": 3,
+            "baseline": {
+              "type": "array",
+              "dtype": "<f8",
+              "shape": [
+                2897
+              ],
+              "sha256": "c741228302a0f5237beb2763ee69c982bcfb4fd55e24a7bb70c5592d4cb34294"
+            },
+            "candidate": {
+              "type": "array",
+              "dtype": "<f8",
+              "shape": [
+                2897
+              ],
+              "sha256": "d4d40d4cb0cc7c60a263b48bdb1f50eb7c698275ea8686dd2bbf38a00ef96f94"
+            },
+            "argument_shapes": [
+              [
+                2897,
+                177
+              ],
+              [
+                177
+              ]
+            ]
+          }
+        },
+        "innovation @ innovation": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "residual @ residual": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "power @ counts": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        }
+      }
+    },
+    {
+      "case": "initial",
+      "threads": 3,
+      "rows": {
+        "local.T @ local": {
+          "calls": 73,
+          "tested": 73,
+          "first_difference": null
+        },
+        "local.T @ r[use]": {
+          "calls": 73,
+          "tested": 73,
+          "first_difference": null
+        },
+        "dpotrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "02033b5f67a725e5292b3367ec509dd10064cc13dcc9f00a9ec7079424423a06"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "3d991c80437a7da690359fc64da307f75df489c0d9997f602ace546a671fd76a"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                177,
+                177
+              ]
+            ]
+          }
+        },
+        "dgetrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "0d807e69bf89a73f73d0b90748e812f31f7014eb4ad70c5a6b07fd035fb4959a"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  177
+                ],
+                "sha256": "a04dff273fe40c0f7aff0fbb72f65546079a0b3a8e4558f82218ee8dc56b478e"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "31b2c09ad047dc3a2ebe5f23d92601ff8f89832a2ab04e73616e826a44fde0cd"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  177
+                ],
+                "sha256": "a04dff273fe40c0f7aff0fbb72f65546079a0b3a8e4558f82218ee8dc56b478e"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                177,
+                177
+              ]
+            ]
+          }
+        },
+        "dgetrs-vector": {
+          "calls": 514,
+          "tested": 514,
+          "first_difference": null
+        },
+        "dgetrs-matrix": {
+          "calls": 256,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "28013f432d407736d4c56312ae4a1fe2caf478c33724e549721da53cc9ae4eb6"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  177,
+                  177
+                ],
+                "sha256": "f42d9a93956d07d9e8b012eef0da9d58c0604e49054cfcc6ea22b5d362c8429a"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                177,
+                177
+              ],
+              [
+                177
+              ],
+              [
+                177,
+                177
+              ]
+            ]
+          }
+        },
+        "inv_root.T @ inv_root": {
+          "calls": 256,
+          "tested": 256,
+          "first_difference": null
+        },
+        "u @ coefficient": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": {
+              "type": "array",
+              "dtype": "<f8",
+              "shape": [
+                2897
+              ],
+              "sha256": "b516326a73eebaade8d1c994b795e22d44414db454750afa10360464ae495986"
+            },
+            "candidate": {
+              "type": "array",
+              "dtype": "<f8",
+              "shape": [
+                2897
+              ],
+              "sha256": "9912d66af48dd16216a0d5babea6047b68a5aca6ad02d122476a26c49d6020a9"
+            },
+            "argument_shapes": [
+              [
+                2897,
+                177
+              ],
+              [
+                177
+              ]
+            ]
+          }
+        },
+        "innovation @ innovation": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "residual @ residual": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "power @ counts": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        }
+      }
+    },
+    {
+      "case": "recovery",
+      "threads": 2,
+      "rows": {
+        "local.T @ local": {
+          "calls": 62,
+          "tested": 62,
+          "first_difference": null
+        },
+        "local.T @ r[use]": {
+          "calls": 62,
+          "tested": 62,
+          "first_difference": null
+        },
+        "dpotrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "f42cc8608c87ee3026e9f9175a7c90e40314d5c0d83158c996584cb270164778"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "f7420055858805bc8f7d637cb27d521f7a8cfc868a68cf6a009c8d92bd3f2c0a"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                175,
+                175
+              ]
+            ]
+          }
+        },
+        "dgetrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "bc94e5abec0fb42b9a32067d8159278f10955ba092ffd60d883547068b17280d"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  175
+                ],
+                "sha256": "b7287ba51579ad45fe60a59d2900290e549a47ee209bba8865a8d7ac3ab1cf40"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "24616c99dbcf8eef85409525d8e4e09cb932cedb8cc74484663c150ba3253a36"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  175
+                ],
+                "sha256": "b7287ba51579ad45fe60a59d2900290e549a47ee209bba8865a8d7ac3ab1cf40"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                175,
+                175
+              ]
+            ]
+          }
+        },
+        "dgetrs-vector": {
+          "calls": 514,
+          "tested": 514,
+          "first_difference": null
+        },
+        "dgetrs-matrix": {
+          "calls": 256,
+          "tested": 256,
+          "first_difference": null
+        },
+        "inv_root.T @ inv_root": {
+          "calls": 256,
+          "tested": 256,
+          "first_difference": null
+        },
+        "u @ coefficient": {
+          "calls": 257,
+          "tested": 257,
+          "first_difference": null
+        },
+        "innovation @ innovation": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "residual @ residual": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "power @ counts": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        }
+      }
+    },
+    {
+      "case": "recovery",
+      "threads": 3,
+      "rows": {
+        "local.T @ local": {
+          "calls": 62,
+          "tested": 62,
+          "first_difference": null
+        },
+        "local.T @ r[use]": {
+          "calls": 62,
+          "tested": 62,
+          "first_difference": null
+        },
+        "dpotrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "f42cc8608c87ee3026e9f9175a7c90e40314d5c0d83158c996584cb270164778"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "f7420055858805bc8f7d637cb27d521f7a8cfc868a68cf6a009c8d92bd3f2c0a"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                175,
+                175
+              ]
+            ]
+          }
+        },
+        "dgetrf": {
+          "calls": 257,
+          "tested": 1,
+          "first_difference": {
+            "call": 1,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "bc94e5abec0fb42b9a32067d8159278f10955ba092ffd60d883547068b17280d"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  175
+                ],
+                "sha256": "b7287ba51579ad45fe60a59d2900290e549a47ee209bba8865a8d7ac3ab1cf40"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "bea68d863e90071a03e371fd666252146bfb95e0fededf74c1fdfdb4cbebb7a8"
+              },
+              {
+                "type": "array",
+                "dtype": "<i4",
+                "shape": [
+                  175
+                ],
+                "sha256": "b7287ba51579ad45fe60a59d2900290e549a47ee209bba8865a8d7ac3ab1cf40"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                175,
+                175
+              ]
+            ]
+          }
+        },
+        "dgetrs-vector": {
+          "calls": 514,
+          "tested": 514,
+          "first_difference": null
+        },
+        "dgetrs-matrix": {
+          "calls": 256,
+          "tested": 2,
+          "first_difference": {
+            "call": 2,
+            "baseline": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "3acc62003cc7050b37daa88ed5784864d1a07e7f78b546a54856e7bc1bfea401"
+              },
+              0
+            ],
+            "candidate": [
+              {
+                "type": "array",
+                "dtype": "<f8",
+                "shape": [
+                  175,
+                  175
+                ],
+                "sha256": "5bd5cb6a96255eebc02bf2cf201c0d279069765427507dde64270dc96c648dfc"
+              },
+              0
+            ],
+            "argument_shapes": [
+              [
+                175,
+                175
+              ],
+              [
+                175
+              ],
+              [
+                175,
+                175
+              ]
+            ]
+          }
+        },
+        "inv_root.T @ inv_root": {
+          "calls": 256,
+          "tested": 256,
+          "first_difference": null
+        },
+        "u @ coefficient": {
+          "calls": 257,
+          "tested": 257,
+          "first_difference": null
+        },
+        "innovation @ innovation": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "residual @ residual": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        },
+        "power @ counts": {
+          "calls": 1,
+          "tested": 1,
+          "first_difference": null
+        }
+      }
+    }
+  ],
+  "trials": [
+    {
+      "case": "initial",
+      "setting": "2 / default",
+      "means": {
+        "baseline": {
+          "seconds": 0.20582403780685532,
+          "cpu_seconds": 0.205812999
+        },
+        "candidate": {
+          "seconds": 0.20021964314704138,
+          "cpu_seconds": 0.4004134621111111
+        }
+      },
+      "ratios": {
+        "seconds": 0.9727709420166313,
+        "cpu_seconds": 1.945520759410882
+      },
+      "wall_pair_ratios": [
+        0.9635091152668825,
+        0.9726277679003257,
+        0.974054028857693,
+        0.9705054840059109,
+        0.9615351706727798,
+        0.9944830806415137
+      ],
+      "exact": true
+    },
+    {
+      "case": "recovery",
+      "setting": "2 / default",
+      "means": {
+        "baseline": {
+          "seconds": 0.18380706990137696,
+          "cpu_seconds": 0.18377887555555555
+        },
+        "candidate": {
+          "seconds": 0.17913108148301643,
+          "cpu_seconds": 0.358162529
+        }
+      },
+      "ratios": {
+        "seconds": 0.974560345144126,
+        "cpu_seconds": 1.948877573210143
+      },
+      "wall_pair_ratios": [
+        0.989107726209431,
+        0.9781667667230698,
+        0.9612451098698649,
+        0.9790314282876292,
+        0.9771884252212867,
+        0.9628001223993371
+      ],
+      "exact": true
+    },
+    {
+      "case": "initial",
+      "setting": "3 / default",
+      "means": {
+        "baseline": {
+          "seconds": 0.21204130351543427,
+          "cpu_seconds": 0.2119871723888889
+        },
+        "candidate": {
+          "seconds": 0.2954760248151918,
+          "cpu_seconds": 0.7762563726111111
+        }
+      },
+      "ratios": {
+        "seconds": 1.393483344596042,
+        "cpu_seconds": 3.6618082304861095
+      },
+      "wall_pair_ratios": [
+        0.9762296297396382,
+        3.766103437944259,
+        0.973419670892547,
+        0.9159195804766185,
+        0.89592612727338,
+        0.9447791507247991
+      ],
+      "exact": true
+    },
+    {
+      "case": "recovery",
+      "setting": "3 / default",
+      "means": {
+        "baseline": {
+          "seconds": 0.1900128950882289,
+          "cpu_seconds": 0.1899889035
+        },
+        "candidate": {
+          "seconds": 0.20134342880919576,
+          "cpu_seconds": 0.5781545252777778
+        }
+      },
+      "ratios": {
+        "seconds": 1.0596303409603107,
+        "cpu_seconds": 3.0430962789244047
+      },
+      "wall_pair_ratios": [
+        0.9191698245446724,
+        0.9467932516503599,
+        0.9171565377811574,
+        0.9410851533180731,
+        1.703842743140086,
+        0.9470339564851705
+      ],
+      "exact": true
+    },
+    {
+      "case": "initial",
+      "setting": "2 / short",
+      "means": {
+        "baseline": {
+          "seconds": 0.20661762987987864,
+          "cpu_seconds": 0.20659280505555555
+        },
+        "candidate": {
+          "seconds": 0.24581956842707264,
+          "cpu_seconds": 0.26214723255555555
+        }
+      },
+      "ratios": {
+        "seconds": 1.1897318179962904,
+        "cpu_seconds": 1.2689078522606858
+      },
+      "wall_pair_ratios": [
+        1.0706125100291746,
+        1.1120241053814293,
+        1.1042588815613357,
+        1.3277937130618767,
+        1.2621388327528789,
+        1.2658156902132152
+      ],
+      "exact": true
+    },
+    {
+      "case": "recovery",
+      "setting": "2 / short",
+      "means": {
+        "baseline": {
+          "seconds": 0.18274184947626457,
+          "cpu_seconds": 0.1827271923888889
+        },
+        "candidate": {
+          "seconds": 0.23852645688586765,
+          "cpu_seconds": 0.25459169555555555
+        }
+      },
+      "ratios": {
+        "seconds": 1.3052645443256754,
+        "cpu_seconds": 1.3932884987020493
+      },
+      "wall_pair_ratios": [
+        1.3631182711221699,
+        1.1428634838518257,
+        1.244039696421732,
+        1.4629943272067756,
+        1.2518029990697699,
+        1.3663721722638908
+      ],
+      "exact": true
+    }
+  ],
+  "adopted": false,
+  "production_modified": false,
+  "full_pipeline_speedup": null
+}
