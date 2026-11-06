@@ -150,6 +150,12 @@ complete grids and all eight PNG bytes. Direct presentation calls remain serial
 unless supplied the grid execution port. This change does not parallelize the
 Matplotlib renderer or change satellite selection.
 
+Grid batching has exact full-science/eight-PNG qualification on DS26-0002 and
+DS26-0066. Complete runtime measurements are mixed: the hard-scan pair regresses
+564.831 → 585.201 s despite a lower plot-evidence duration. See the hard-scan
+report for the retained evidence. The separate parallel-gradient tool is an
+experiment only; native position fits do not use it.
+
 The command is currently qualified for **validation-all-work** only. It is not a
 deployed service or a claim of equivalence to production wall-clock admission.
 

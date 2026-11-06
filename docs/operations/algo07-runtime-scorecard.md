@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+The [hard-scan follow-up](../../reports/2026_11_05_algo07v3_grid_hard_case/README.md)
+qualifies grid batching exactly on DS26-0066 and matches the earlier complete
+scientific output and eight PNGs across the intervening changes. The candidate-
+first full pair **regresses 564.831 → 585.201 s**; the plot-evidence stage improves
+**10.222 → 9.005 s**, with large variation in unchanged stages. Retain this
+regression. An external two-axis gradient prototype preserves four complete
+prepared training fits: **46.923 → 36.865 s** for c=0 and **45.185 → 37.024 s**
+for fitted c, with CPU increasing 10–12%. Four new tests pass. The gradient
+prototype is not integrated, and full DS26/original-ALGO07 timing qualification
+and production remain unchanged.
+
 The [diagnostic-grid batching iteration](../../reports/2026_11_05_algo07v3_grid_batches/README.md)
 is integrated in development. A fresh DS26-0002 pair is exact through both arms,
 every scientific audit, public grid/path and all eight PNG bytes: **230.877 →

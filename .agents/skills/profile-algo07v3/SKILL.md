@@ -246,3 +246,22 @@ and publish only a contiguous prefix if time runs out. Near-deadline point count
 can differ with execution speed; do not claim exact partial-grid equivalence
 from complete-grid fixtures. Keep worker failures as operational failures and
 qualify parent cancellation/reaping using the existing bounded executor tests.
+
+The hard-case grid report adds fresh DS26-0066 qualification and a complete
+historical-science/PNG check across the intervening covariance-index change.
+Both complete grid cases are exact, but DS26-0066 total time regresses
+564.831 → 585.201 s while its plot stage improves 10.222 → 9.005 s. Preserve
+that mixed evidence; the earlier 2.151× isolated grid ratio is not a pipeline
+or dataset-wide speedup.
+
+For gradient scheduling, `tools/probe_algo07v3_gradient_axes.py --request REQUEST
+--output FRESH_DIRECTORY --repeats 1` runs four complete prepared training fits
+on the slow DS26-0066 target-1/fold-1 case. Pin three CPUs and one BLAS thread,
+with an external `timeout -k 2 900`, sequentially with native timing trials.
+Each derivative axis uses one child for its ordered plus/minus pair; remaining
+optimizer arithmetic is unchanged. Full history, evaluations, phase reference,
+state and final likelihood must match in both arms. Four unit tests pass;
+observed prepared-fit latency falls 18–21%, but total CPU increases 10–12%.
+This prototype is external and must not be nested inside the existing three-
+worker training queue. The next qualification must restrict it to otherwise
+serial fits and measure fresh complete native results before runtime integration.
