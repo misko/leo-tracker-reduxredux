@@ -292,7 +292,10 @@ def render_direct_grids(root, out):
                xlabel='Phase pairs per call', ylabel='Candidate / matched baseline mean',
                title=title, ylim=(0, 1.5))
         ax.legend()
-    fig.suptitle('DS26-0102 actual direct grids: three ordered chunk workers\n'
+    variant = result.get('variant', 'direct-chunks')
+    description = ('owned factor reuse' if variant == 'owned-lu'
+                   else 'three ordered chunk workers')
+    fig.suptitle(f'DS26-0102 actual direct grids: {description}\n'
                  'Six alternating pairs per grid; all outputs match the native capture')
     fig.savefig(out / 'actual-grid-timings.png', dpi=150)
     plt.close(fig)

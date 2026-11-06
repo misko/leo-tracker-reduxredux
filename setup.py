@@ -6,6 +6,13 @@ from setuptools import Extension, setup
 setup(
     ext_modules=[
         Extension(
+            "leo.analysis._joint_lu",
+            sources=["src/leo/analysis/_joint_lu.c"],
+            extra_compile_args=["-O3", "-fno-fast-math", "-ffp-contract=off", "-Wall", "-Wextra"],
+            libraries=["m"],
+            optional=True,
+        ),
+        Extension(
             "leo.analysis._regional_orbits",
             sources=["src/leo/analysis/_regional_orbits.cpp"],
             include_dirs=[numpy.get_include()],

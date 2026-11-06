@@ -1,0 +1,33 @@
+running build_ext
+building 'leo.analysis._joint_lu' extension
+cc -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall -O3 -fstack-protector -fstack-clash-protection -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fPIC -fPIC -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/include -I/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12 -c src/leo/analysis/_joint_lu.c -o build/temp.linux-x86_64-cpython-312/src/leo/analysis/_joint_lu.o -O3 -fno-fast-math -ffp-contract=off -Wall -Wextra
+cc -pthread -shared -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -Wl,--exclude-libs,ALL build/temp.linux-x86_64-cpython-312/src/leo/analysis/_joint_lu.o -L/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib -lm -o build/lib.linux-x86_64-cpython-312/leo/analysis/_joint_lu.cpython-312-x86_64-linux-gnu.so
+building 'leo.analysis._regional_orbits' extension
+c++ -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall -O3 -fstack-protector -fstack-clash-protection -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fPIC -fPIC -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/include -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/include -I/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12 -c src/leo/analysis/_regional_orbits.cpp -o build/temp.linux-x86_64-cpython-312/src/leo/analysis/_regional_orbits.o -O3 -fno-fast-math -ffp-contract=off -Wall -Wextra
+In file included from /home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12/Python.h:12,
+                 from src/leo/analysis/_regional_orbits.cpp:44:
+/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12/pyconfig.h:1877:9: warning: ‘_POSIX_C_SOURCE’ redefined
+ 1877 | #define _POSIX_C_SOURCE 200809L
+      |         ^~~~~~~~~~~~~~~
+In file included from /usr/include/x86_64-linux-gnu/c++/15/bits/os_defines.h:39,
+                 from /usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h:727,
+                 from /usr/include/c++/15/bits/requires_hosted.h:31,
+                 from /usr/include/c++/15/cmath:46,
+                 from src/leo/analysis/_regional_orbits.cpp:3:
+/usr/include/features.h:319:10: note: this is the location of the previous definition
+  319 | # define _POSIX_C_SOURCE        202405L
+      |          ^~~~~~~~~~~~~~~
+/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12/pyconfig.h:1898:9: warning: ‘_XOPEN_SOURCE’ redefined
+ 1898 | #define _XOPEN_SOURCE 700
+      |         ^~~~~~~~~~~~~
+/usr/include/features.h:234:10: note: this is the location of the previous definition
+  234 | # define _XOPEN_SOURCE  800
+      |          ^~~~~~~~~~~~~
+c++ -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall -O3 -fstack-protector -fstack-clash-protection -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fPIC -shared -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -Wl,--exclude-libs,ALL build/temp.linux-x86_64-cpython-312/src/leo/analysis/_regional_orbits.o -L/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib -o build/lib.linux-x86_64-cpython-312/leo/analysis/_regional_orbits.cpython-312-x86_64-linux-gnu.so
+building 'leo.analysis.starlink._native_acquisition' extension
+cc -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall -O3 -fstack-protector -fstack-clash-protection -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fPIC -fPIC -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/include -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/include -I/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12 -c src/leo/analysis/starlink/_native_acquisition.c -o build/temp.linux-x86_64-cpython-312/src/leo/analysis/starlink/_native_acquisition.o -O3 -fno-math-errno -Wall -Wextra
+cc -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall -O3 -fstack-protector -fstack-clash-protection -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fPIC -fPIC -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/include -I/home/mouse9911/gits/leo-tracker-reduxredux/.venv/include -I/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/include/python3.12 -c src/leo/analysis/starlink/fast_scan_fold.c -o build/temp.linux-x86_64-cpython-312/src/leo/analysis/starlink/fast_scan_fold.o -O3 -fno-math-errno -Wall -Wextra
+cc -pthread -shared -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -Wl,--exclude-libs,ALL build/temp.linux-x86_64-cpython-312/src/leo/analysis/starlink/_native_acquisition.o build/temp.linux-x86_64-cpython-312/src/leo/analysis/starlink/fast_scan_fold.o -L/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib -o build/lib.linux-x86_64-cpython-312/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so
+copying build/lib.linux-x86_64-cpython-312/leo/analysis/_joint_lu.cpython-312-x86_64-linux-gnu.so -> src/leo/analysis
+copying build/lib.linux-x86_64-cpython-312/leo/analysis/_regional_orbits.cpython-312-x86_64-linux-gnu.so -> src/leo/analysis
+copying build/lib.linux-x86_64-cpython-312/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so -> src/leo/analysis/starlink

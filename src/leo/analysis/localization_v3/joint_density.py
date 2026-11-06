@@ -4,6 +4,8 @@ import numpy as np
 from scipy.linalg import cho_solve
 from scipy.special import logsumexp
 
+from .numpy_factor import solve_and_slogdet
+
 
 def two_family_phase_evidence(
     observed,
@@ -107,9 +109,8 @@ def two_family_phase_evidence(
             ),
             axis=-1,
         )
-        coefficient = np.linalg.solve(gram, rhs[..., None])[..., 0]
+        coefficient, sign, logdet = solve_and_slogdet(gram, rhs)
         raw = q1[start:end, None] + q2[None] + 2 * projected[start:end] @ r2.T
-        sign, logdet = np.linalg.slogdet(gram)
         if not np.all(sign > 0):
             raise ValueError("orbital precision is not positive definite")
         log_density = -0.5 * (raw - np.sum(rhs * coefficient, axis=-1) + logdet + constant)

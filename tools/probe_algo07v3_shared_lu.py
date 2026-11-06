@@ -24,14 +24,19 @@ def candidate(factor, source=None):
              and ast.unparse(n.value) == 'np.linalg.solve(gram, rhs[..., None])[..., 0]']
     determinant = [n for n in ast.walk(tree) if isinstance(n, ast.Assign)
                    and ast.unparse(n.value) == 'np.linalg.slogdet(gram)']
-    if len(solve) != 1 or len(determinant) != 1:
+    combined = [n for n in ast.walk(tree) if isinstance(n, ast.Assign)
+                and ast.unparse(n.value) == 'solve_and_slogdet(gram, rhs)']
+    if len(combined) == 1 and not solve and not determinant:
+        combined[0].value = ast.parse('_factor(gram, rhs)', mode='eval').body
+    elif len(solve) == 1 and len(determinant) == 1 and not combined:
+        solve[0].targets = ast.parse('coefficient, sign, logdet = None').body[0].targets
+        solve[0].value = ast.parse('_factor(gram, rhs)', mode='eval').body
+    else:
         raise ValueError('Review changed solve/determinant boundaries')
-    solve[0].targets = ast.parse('coefficient, sign, logdet = None').body[0].targets
-    solve[0].value = ast.parse('_factor(gram, rhs)', mode='eval').body
 
     class Remove(ast.NodeTransformer):
         def visit_Assign(self, node):
-            return None if node is determinant[0] else node
+            return None if determinant and node is determinant[0] else node
 
     tree = ast.fix_missing_locations(Remove().visit(tree))
     scope = dict(vars(joint_density), _factor=factor)

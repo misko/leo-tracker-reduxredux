@@ -380,6 +380,15 @@ timeout. Changing those scientific admission semantics remains a release gate.
 
 ## Timing scopes
 
+Joint phase integration uses an optional owned `_joint_lu` extension to reuse
+NumPy's small-matrix factorization for solve and determinant. The normal package
+build supplies it; there is no runtime compiler. Unsupported providers, shapes
+or types retain the original NumPy path. The [qualification report](../../reports/2026_11_06_algo07v3_owned_lu/README.md)
+records exact science and publication on two DS26 cases, actual-grid CPU/wall
+improvements and substantial whole-run host variation. This changes no CLI or
+persisted contract and does not establish production admission or a dataset-wide
+speedup.
+
 The original [broad-key control experiment](../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md)
 was rejected after complete native regressions. Its successor,
 [control-view reuse](../../reports/2026_11_06_algo07v3_control_geometry_view/README.md),

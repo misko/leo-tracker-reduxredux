@@ -1,4 +1,4 @@
-"""Benchmark direct chunks on hash-bound grids captured from a native scan."""
+"""Benchmark exact kernels on direct-mode grids captured from a native scan."""
 
 import argparse
 import hashlib
@@ -28,10 +28,33 @@ def load_capture(root, key, record):
     return inputs
 
 
+def select_functions(variant):
+    original = joint_density.two_family_phase_evidence
+    if variant == 'direct-chunks':
+        function, _ = candidate(workers=3)
+        return original, function, [Path('tools/probe_algo07v3_joint_chunks.py')], 3
+    if variant != 'owned-lu':
+        raise ValueError('Explicit kernel variant required')
+    from probe_algo07v3_shared_lu import candidate as replace_factor
+
+    from leo.analysis.localization_v3 import numpy_factor
+    backend = numpy_factor._backend()
+    if backend is None:
+        raise ValueError('Owned compiled NumPy backend required')
+    def numpy_calls(a, b):
+        return np.linalg.solve(a, b[..., None])[..., 0], *np.linalg.slogdet(a)
+    baseline, _ = replace_factor(numpy_calls)
+    return baseline, original, [Path('tools/probe_algo07v3_shared_lu.py'),
+                                Path('src/leo/analysis/_joint_lu.c'),
+                                Path(numpy_factor.__file__),
+                                *(Path(library._name) for library in backend[:2])], 1
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--native', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--variant', choices=['direct-chunks', 'owned-lu'], default='direct-chunks')
     args = parser.parse_args()
     root, native = args.output.resolve(), args.native.resolve()
     if root.is_relative_to('/mnt/qnap01') or sorted(os.sched_getaffinity(0)) != [0, 1, 2]:
@@ -45,15 +68,15 @@ def main():
     if not records or any(row['threads'] != 1 for row in libraries):
         raise ValueError('Real captured grids and one-thread BLAS required')
     root.mkdir(exist_ok=False)
-    fn, _ = candidate(workers=3)
-    paths = [Path(__file__), Path('tools/probe_algo07v3_joint_chunks.py'),
+    reference, fn, dependencies, workers = select_functions(args.variant)
+    paths = [Path(__file__), *dependencies,
              Path('tools/probe_algo07v3_blas_threads.py'),
              Path('tools/check_algo07v3_scan_likelihood.py'), Path(joint_density.__file__),
              native / 'comparison.json', baseline / 'captures.json']
     paths += [baseline / 'captures' / f'{key}.npz' for key in records]
     pins = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     (root / 'plan.json').write_text(json.dumps(dict(bindings=pins, libraries=libraries,
-        workers=3, direct_only=True, native=str(native)), indent=2))
+        workers=workers, variant=args.variant, direct_only=True, native=str(native)), indent=2))
     rows = []
     for key in sorted(records, key=int):
         inputs = load_capture(baseline, key, records[key])
@@ -61,7 +84,7 @@ def main():
         for repeat in range(6):
             for side in (('baseline', 'candidate') if repeat % 2 == 0
                          else ('candidate', 'baseline')):
-                function = joint_density.two_family_phase_evidence if side == 'baseline' else fn
+                function = reference if side == 'baseline' else fn
                 start, used = time.perf_counter(), time.process_time()
                 result = function(*inputs, optimize_contractions=False)
                 wall, used = time.perf_counter() - start, time.process_time() - used
@@ -75,7 +98,7 @@ def main():
     if library_info() != libraries or any(
             hashlib.sha256(Path(p).read_bytes()).hexdigest() != sha for p, sha in pins.items()):
         raise ValueError('Bound dependencies changed')
-    outcome = dict(rows=rows, exact_native_results=True,
+    outcome = dict(rows=rows, variant=args.variant, exact_native_results=True,
                    native_pipeline_speedup=None, bindings=pins)
     (root / 'result.json').write_text(json.dumps(outcome, indent=2))
 

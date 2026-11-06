@@ -84,6 +84,23 @@ deployment is a separate action. Select the next hotspot from the new profile.
 
 ## Choose a focused experiment
 
+The latest retained change is [owned joint-factor reuse](../../../reports/2026_11_06_algo07v3_owned_lu/README.md).
+It adds the optional `_joint_lu` extension and `numpy_factor` helper through the
+normal build, with original NumPy fallback. Two native cases preserve all science
+and eight PNGs. Active-joint 0102 is 849.427→685.637 s; inactive 0002 is
+198.282→159.087 s despite never loading the extension. Treat those ~19% changes
+as shared-host observations, not attributable gains. Eighteen alternating actual
+grid pairs all improve, with mean kernel wall 5.45–6.53% lower and CPU 5.31–6.74%
+lower. All 36 outputs match original captures. The supported setuptools 81.0.0
+build reproduces the tested binary exactly. 2,301 broad tests and six focused
+tool checks pass. Production and original-ALGO07 cumulative qualification remain
+unchanged. Use `benchmark_algo07v3_direct_grids.py --variant owned-lu` for the
+explicit original-factorization versus owned-backend comparison, after native
+qualification; bind its actual native captures, Python/C/binary and LAPACK bytes.
+Next qualify the already-tested final-joint-result reuse against real fits and
+audits. Do not change optimizer calls or numerical-policy receipts, and do not
+combine it with another unqualified concurrency/algorithm change.
+
 Use [experiment recipes](references/experiments.md) only for the relevant target.
 That reference preserves commands, failure lessons and qualified historical
 results; its opening search guide helps locate the needed section.
@@ -356,9 +373,7 @@ symmetric actual-grid captures. `tools/benchmark_algo07v3_direct_grids.py`
 requires the native comparison first and reproduces original captured results,
 not just agreement between two reloaded calls. Summary/figures support
 `--direct-grids ROOT` and keep nested CPU separate from wall time.
-Next integrate the independently CPU-saving LU candidate through the existing
-extension build, without runtime compilation or a substituted LAPACK provider.
-The report's `owned-lu-draft` has a compiled-extension/provider adapter smoke
-test, not integrated qualification. Add component-owned fallback/ABI tests,
-bind the added Python/binary modules, and run isolated native comparisons before
-retaining it. Do not combine LU with chunk concurrency or endpoint reuse.
+The subsequent owned LU integration is now qualified in the latest section
+above. Its component tests, two native pairs and actual-grid timings supersede
+the earlier packaging-only draft. Preserve this negative concurrency result;
+do not stack it into a later experiment without separate qualification.

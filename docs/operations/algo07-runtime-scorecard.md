@@ -1,5 +1,22 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [owned joint-factor reuse](../../reports/2026_11_06_algo07v3_owned_lu/README.md):
+**retained in development; production unchanged**. Two isolated native pairs
+preserve complete science, both c arms, ownership, public grid/path and all eight
+PNG bytes. Active-joint DS26-0102 is 849.427→685.637 s wall and
+1,175.03→1,003.14 CPU s. Inactive-joint DS26-0002 is 198.282→159.087 s and
+289.34→232.07 CPU s despite never loading the extension: this exposes substantial
+shared-host variation, so neither apparent ~19% reduction is an attributable
+pipeline speedup. The stronger narrower evidence is 18 alternating actual-grid
+pairs: all improve, with mean kernel wall 5.45–6.53% lower and CPU 5.31–6.74%
+lower; all 36 results match original native captures exactly. The optional owned
+extension uses the actual NumPy ILP64 provider and original NumPy fallback;
+no runtime compiler or old implementation dependency. 2,301 broad tests and six
+focused grid/summary tests pass (overlapping coverage). Supported setuptools
+81.0.0 reproduces the tested binary byte-for-byte. Cumulative original-ALGO07
+qualification remains unchanged. Next qualify the separate duplicate-final-
+integral reuse against real fits/audits; do not stack chunk concurrency.
+
 November 6 [direct-only chunk native qualification](../../reports/2026_11_06_algo07v3_direct_chunks/README.md):
 **not adopted; default and production unchanged**. DS26-0102 preserves complete
 science, both c arms, all audits, ownership, public grid/path and eight PNGs.
