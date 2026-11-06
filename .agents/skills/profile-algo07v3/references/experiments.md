@@ -579,3 +579,23 @@ task costs and off-CPU delays vary, so this does not supersede the two full nati
 regressions. Keep the candidate external. A fixed-task CPU simulation suggests
 18–20 s scheduling potential; it is not measured speedup. Investigate both orders
 and potential repeated inclusion control fits, with complete state equality.
+
+## Duplicate inclusion controls
+
+`tools/probe_algo07v3_inclusion_controls.py --request REQUEST --output FRESH_ROOT`
+compares complete prepared recovery with recomputed versus reused exact control
+pairs; add `--reverse` for candidate first. Use three CPUs, one BLAS thread and
+an external 700-second bound. Both modes compute keys, so the census baseline
+does not measure the cost against a runtime without key checking. The tool
+supports the restored original API and the archived candidate's optional hook.
+
+DS26-0066 has four identical controls, saving three paired fits: recovery
+227.275→205.399 s, with complete stages/selection and prior native audit exact.
+DS26-0002 has three different controls and no reuse, with roughly 1.5 s key cost.
+Complete native DS26-0066 regressions are 408.499→438.107 s and reverse-order
+415.570→462.984 s, despite faster predictive stages and exact science/eight PNGs.
+Default runtime restored; candidate sources/tests and 1,991-test receipt retained
+in `reports/2026_11_06_algo07v3_inclusion_control_reuse`. Restore candidate source
+in a separate checkout before reproducing its native pair harness. No production
+change or cumulative speedup. Next prove a smaller dependency key and quantify
+duplicate incidence; never omit mutable scan state merely to make hashing cheaper.

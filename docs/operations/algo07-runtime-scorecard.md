@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [duplicate inclusion-control investigation](../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md):
+**candidate not adopted; default restored**. Prepared DS26-0066 recovery improves
+227.275→205.399 s by reusing three of four identical controls. Native predictive
+recovery improves 165.902→149.293 s and 163.459→149.473 s, but complete native
+pairs regress **408.499→438.107 s** and **415.570→462.984 s**. Both preserve full
+science, both arms and eight PNGs. DS26-0002 has no repeated controls and incurs
+about 1.5 s of key checking without reuse. Candidate: 1,991 passing tests;
+restored default plus external probe: 1,973 passing tests.
+No new cumulative speedup or production change. Next reduce exact key overhead
+and qualify the frequency of duplicate controls; retain the full-run regressions.
+
 November 6 [common native prefix recovery diagnostic](../../reports/2026_11_06_algo07v3_native_recovery_queue/README.md):
 one complete recovery pair improves **180.483→138.434 s**, preserving all stage
 outputs, selected state and the prior native audit. This is a stage-only,

@@ -380,6 +380,12 @@ timeout. Changing those scientific admission semantics remains a release gate.
 
 ## Timing scopes
 
+The [duplicate-control experiment](../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md)
+is external, not a default runtime feature. It removes repeated fits exactly and
+improves predictive-stage clocks, but both complete native comparisons regress.
+The default implementation is restored. Use the profiling skill's inclusion
+recipe to reproduce the census; no new CLI option or speed guarantee is added.
+
 The worker records native-to-render, evidence projection/save, publication and
 their combined time. Its combined clock starts after loading the result/public
 adapters. The supervisor separately records child process elapsed time, including

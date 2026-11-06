@@ -89,6 +89,7 @@ results; its opening search guide helps locate the needed section.
 | Residual screening or geometry | `screen_parts`, `nomination`, `immutable-bank`, `scalar-phase`, `endpoint` |
 | Guarded reassociation | `benchmark_algo07v3_reassociation` |
 | Predictive fitting | `only-stage predictive`, `annotation`, `posterior`, `likelihood`, `workspace` |
+| Duplicate inclusion controls | `inclusion_controls`, `tools/probe_algo07v3_inclusion_controls.py` |
 | Predictive worker utilization | `training_queue`, `tools/profile_algo07v3_training_queue.py` |
 | Precision convergence by fold/phase | `training_convergence`, `tools/profile_algo07v3_training_convergence.py` |
 | Per-problem cache eviction | `position_cache`, `tools/profile_algo07v3_position_cache.py` |
@@ -158,3 +159,12 @@ regressions on this favorable order. The fixed-task scheduling model suggests
 18–20 s opportunity, not a measured full-pipeline gain. Use the external native
 recovery probe for both-order follow-up. Exact repeated inclusion control fits
 are another hypothesis to investigate before adding reuse.
+
+The [inclusion-control census](../../../reports/2026_11_06_algo07v3_inclusion_control_reuse/README.md)
+confirms three duplicate paired fits in DS26-0066. Prepared recovery improves
+9.63% and native predictive stages improve 8.56–10.01%, with exact outputs, but
+both complete native pairs regress 7.25–11.41%. The candidate is archived and
+the default restored. DS26-0002 has no duplicates and about 1.5 s of key overhead.
+Do not claim a complete-scan gain from the stage clocks. Reduce dependency-key
+overhead and measure duplicate incidence before another integration; retain all
+controls, stateful fallback, both arms and complete audit/PNG equality.
