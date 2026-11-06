@@ -15,12 +15,12 @@ def read(path):
     return json.loads(path.read_bytes())
 
 
-def kernel_totals(rows):
-    if not rows or any(r['seconds'] < 0 for r in rows):
+def kernel_totals(rows, field='seconds'):
+    if not rows or any(r[field] < 0 for r in rows):
         raise ValueError('Completed nonnegative kernel measurements required')
     return {mode: dict(
         calls=sum(r['optimized'] == optimized for r in rows),
-        seconds=sum(r['seconds'] for r in rows if r['optimized'] == optimized),
+        seconds=sum(r[field] for r in rows if r['optimized'] == optimized),
         phase_pairs=sum(r['phase_pairs'] for r in rows if r['optimized'] == optimized),
     ) for mode, optimized in [('optimized', True), ('direct', False)]}
 
@@ -60,14 +60,29 @@ def summarize(root):
     if signature(calls[0]) != signature(calls[1]):
         raise ValueError('Kernel execution sequence changed')
     sides = {}
+    direct_only = False
+    libraries = None
     for side, rows in zip(('baseline', 'candidate'), calls, strict=True):
         folder = root / side
-        for p, digest in read(folder / 'backend.json')['bindings'].items():
+        backend = read(folder / 'backend.json')
+        if backend.get('direct_only'):
+            direct_only = True
+            if any(r['threads'] != 1 for r in backend['libraries']):
+                raise ValueError('Direct chunks changed BLAS threads')
+            if libraries is not None and libraries != backend['libraries']:
+                raise ValueError('Different BLAS providers between sides')
+            libraries = backend['libraries']
+            bindings = {r['path']: r['sha256'] for r in libraries}
+        else:
+            bindings = backend['bindings']
+        for p, digest in bindings.items():
             if hashlib.sha256(Path(p).read_bytes()).hexdigest() != digest:
                 raise ValueError(f'Changed backend binding: {p}')
         sides[side] = dict(
             process_seconds=read(folder / 'supervisor.json')['process_seconds'],
             stages=stage_totals(folder / 'worker.log'), kernel=kernel_totals(rows),
+            kernel_cpu=kernel_totals(rows, 'cpu_seconds')
+            if all('cpu_seconds' in r for r in rows) else None,
             kernel_grids=[dict(optimized=mode, phase_pairs=pairs,
                                calls=sum(r['optimized'] == mode and r['phase_pairs'] == pairs
                                          for r in rows),
@@ -78,8 +93,26 @@ def summarize(root):
     if sides['baseline']['stages'].keys() != sides['candidate']['stages'].keys():
         raise ValueError('Stage inventory differs')
     cpu = None
+    if direct_only:
+        if (any(r['parallel'] for r in calls[0])
+                or not any(r['parallel'] for r in calls[1])
+                or any(r['parallel'] and r['optimized'] for r in calls[1])):
+            raise ValueError('Direct-only dispatch invariant failed')
+        captures = [read(root / side / 'captures.json') for side in ('baseline', 'candidate')]
+        if ({k: (v['input'], v['result']) for k, v in captures[0].items()}
+                != {k: (v['input'], v['result']) for k, v in captures[1].items()}):
+            raise ValueError('Captured native inputs/results differ')
+        totals = {}
+        for side in sides:
+            usage = read(root / side / 'supervisor.json')['reaped_child_cpu']
+            if (set(usage) != {'user_seconds', 'system_seconds'}
+                    or any(v < 0 for v in usage.values())):
+                raise ValueError('Invalid full-worker CPU counters')
+            totals[side + '_seconds'] = sum(usage.values())
+        cpu = dict(totals, scope='RUSAGE_CHILDREN deltas across completed supervisor waits',
+                   resolution_seconds=None)
     cpu_path = root / 'reaped-child-cpu.json'
-    if cpu_path.exists():
+    if cpu_path.exists() and not direct_only:
         receipt = read(cpu_path)
         if receipt['complete']:
             for side in sides:
@@ -99,6 +132,7 @@ def summarize(root):
                        candidate_seconds=(total - baseline) / tick,
                        scope=receipt['scope'], resolution_seconds=1 / tick)
     return dict(verification=verification, sides=sides, external_prototype=True,
+                variant='direct-only ordered chunks' if direct_only else 'shared-factorization',
                 production_modified=False, cpu_accounting_available=cpu is not None,
                 reaped_child_cpu=cpu,
                 scope='imports through public artifact publication; excludes capture/GLRT/queue')
@@ -131,8 +165,13 @@ def render(summary, out):
     if summary['reaped_child_cpu']:
         cpu = summary['reaped_child_cpu']
         table += (f"\nReaped child CPU: {cpu['baseline_seconds']:.2f} → "
-                  f"{cpu['candidate_seconds']:.2f} CPU seconds; "
-                  f"{cpu['resolution_seconds']} s counter resolution.\n")
+                  f"{cpu['candidate_seconds']:.2f} CPU seconds. {cpu['scope']}.\n")
+    if b['kernel_cpu'] and c['kernel_cpu']:
+        table += ('\nNested kernel CPU totals:\n\n'
+                  '| Mode | Baseline CPU s | Candidate CPU s |\n| --- | ---: | ---: |\n')
+        for mode in ('optimized', 'direct'):
+            table += (f"| {mode} | {b['kernel_cpu'][mode]['seconds']:.3f} | "
+                      f"{c['kernel_cpu'][mode]['seconds']:.3f} |\n")
     (out / 'native-timings.md').write_text(table)
     fig, axes = plt.subplots(1, 2, figsize=(13, 7), layout='constrained')
     order = sorted(names, key=lambda n: b['stages'][n])
@@ -148,7 +187,7 @@ def render(summary, out):
         ax.legend()
     axes[0].set_title('Complete stages (one sequential pair)')
     axes[1].set_title('Joint kernel totals\nNested within stages; do not add both')
-    fig.suptitle('DS26-0102: external shared-factorization prototype\n'
+    fig.suptitle(f"DS26-0102: external {summary['variant']} prototype\n"
                  f"Full process: {b['process_seconds']:.1f} → {c['process_seconds']:.1f} s")
     fig.savefig(out / 'native-timings.png', dpi=150)
     plt.close(fig)
@@ -210,11 +249,62 @@ def render_chunks(root, out):
     return summaries
 
 
+def render_direct_grids(root, out):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    result = read(root / 'result.json')
+    if not result['exact_native_results']:
+        raise ValueError('Exact original native results required')
+    for p, digest in result['bindings'].items():
+        if hashlib.sha256(Path(p).read_bytes()).hexdigest() != digest:
+            raise ValueError(f'Changed actual-grid binding: {p}')
+    summaries = []
+    for pairs in sorted({r['phase_pairs'] for r in result['rows']}):
+        means = {}
+        for side in ('baseline', 'candidate'):
+            rows = [r for r in result['rows'] if r['phase_pairs'] == pairs and r['side'] == side]
+            if len(rows) != 6 or not all(r['exact_native_result'] for r in rows):
+                raise ValueError('Six exact alternating observations per side/grid required')
+            means[side] = {k: statistics.mean(r[k] for r in rows)
+                           for k in ('seconds', 'cpu_seconds')}
+        summaries.append(dict(phase_pairs=pairs, means=means))
+    (out / 'actual-grid-summary.json').write_text(json.dumps(summaries, indent=2) + '\n')
+    table = ('| Phase pairs | Baseline wall s | Candidate wall s | Baseline CPU s | '
+             'Candidate CPU s |\n| ---: | ---: | ---: | ---: | ---: |\n')
+    for row in summaries:
+        b, c = (row['means'][k] for k in ('baseline', 'candidate'))
+        table += (f"| {row['phase_pairs']} | {b['seconds']:.6f} | {c['seconds']:.6f} | "
+                  f"{b['cpu_seconds']:.6f} | {c['cpu_seconds']:.6f} |\n")
+    (out / 'actual-grid-timings.md').write_text(table)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5), layout='constrained')
+    x = np.arange(len(summaries))
+    for ax, metric, title in zip(axes, ('seconds', 'cpu_seconds'), ('Wall time', 'CPU work'),
+                                strict=True):
+        ratios = [r['means']['candidate'][metric] / r['means']['baseline'][metric]
+                  for r in summaries]
+        bars = ax.bar(x, ratios, color='#ee854a')
+        ax.bar_label(bars, fmt='%.2f×', padding=3)
+        ax.axhline(1., color='black', linestyle='--', label='serial baseline')
+        ax.set(xticks=x, xticklabels=[f"{r['phase_pairs']:,}" for r in summaries],
+               xlabel='Phase pairs per call', ylabel='Candidate / matched baseline mean',
+               title=title, ylim=(0, 1.5))
+        ax.legend()
+    fig.suptitle('DS26-0102 actual direct grids: three ordered chunk workers\n'
+                 'Six alternating pairs per grid; all outputs match the native capture')
+    fig.savefig(out / 'actual-grid-timings.png', dpi=150)
+    plt.close(fig)
+    return summaries
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--chunks', type=Path)
+    parser.add_argument('--direct-grids', type=Path)
     args = parser.parse_args()
     result = summarize(args.root)
     args.output.mkdir(exist_ok=False)
@@ -222,6 +312,8 @@ def main():
     render(result, args.output)
     if args.chunks:
         render_chunks(args.chunks, args.output)
+    if args.direct_grids:
+        render_direct_grids(args.direct_grids, args.output)
     print(json.dumps(result['sides']))
 
 

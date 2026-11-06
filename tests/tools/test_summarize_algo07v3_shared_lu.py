@@ -14,6 +14,12 @@ def test_nested_kernel_clocks_remain_separate_by_contraction_mode():
         kernel_totals([])
 
 
+def test_thread_cpu_is_not_substituted_for_wall_time():
+    rows = [dict(optimized=False, seconds=1., cpu_seconds=2.5, phase_pairs=100)]
+    assert kernel_totals(rows)['direct']['seconds'] == 1.
+    assert kernel_totals(rows, 'cpu_seconds')['direct']['seconds'] == 2.5
+
+
 def test_stage_reader_excludes_nested_events_and_refuses_duplicate_stages(tmp_path):
     path = tmp_path / 'worker.log'
     path.write_text('diagnostic text\n'

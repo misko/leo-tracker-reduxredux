@@ -1,0 +1,238 @@
+{
+  "verification": {
+    "exact_owned_science_and_artifacts": true,
+    "source_changes": [],
+    "added_modules": [],
+    "both_c_arms": true,
+    "full_historical_equivalence": false,
+    "dataset_wide_qualification": false,
+    "qualified_speedup": null,
+    "input_bindings": {
+      "/srv/bulk/leo-dev/algo07v3-direct-chunks-native-0102-20261106/baseline/request.json": "f30f6f9dfc47379f2eba405934f04002dec2b10bf6152c0d57338c8eab360e41",
+      "/srv/bulk/leo-dev/algo07v3-direct-chunks-native-0102-20261106/candidate/request.json": "ed1db968f8bb0188a6b02a47a5469add1ca3cb638e08657ef540e79770b5d182",
+      "/srv/bulk/leo-dev/algo07v3-direct-chunks-native-0102-20261106/baseline/supervisor.json": "c97be22dc5f0727ac23e9a5cf6291c495ff0c6874a2bd482e6ca2bf8ded7b61d",
+      "/srv/bulk/leo-dev/algo07v3-direct-chunks-native-0102-20261106/candidate/supervisor.json": "ee45d5f69833380dff665101500ab360965520ed86e56dad7d69020e5772b254",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "94e22ce68ce4b7e20fd33607fcdaea4a487b757164a1a4e6e51b426754feedb9"
+    },
+    "scientific_receipts": [
+      "sha256:fd79988bdd403172a96dabd6939c7c6d3700e89a89bd648354bb921a71776e78",
+      "sha256:01f45382c37deeb169fbbb4b5da75618ff58bb0c77b665cd486bb3a28dcc4f4c"
+    ],
+    "observed_process_seconds": {
+      "baseline": 656.337467466481,
+      "optimized": 754.4027103530243
+    },
+    "observed_latency_ratio": 0.8700094239578574
+  },
+  "sides": {
+    "baseline": {
+      "process_seconds": 656.337467466481,
+      "stages": {
+        "native_preparation": 10.932895991019905,
+        "recovery_catalogue": 2.2770029455423355,
+        "initial": 48.443387682549655,
+        "conservative": 14.308702648617327,
+        "family": 11.969411025755107,
+        "signed": 7.053288406692445,
+        "cavity": 11.55726726539433,
+        "inventory": 0.2637560833245516,
+        "predictive": 298.2077067922801,
+        "numerical": 190.38116296101362,
+        "gap": 0.0017778584733605385,
+        "residual": 0.23943539336323738,
+        "residual_screen": 8.880391775630414,
+        "addition": 0.000707707367837429,
+        "incumbent": 0.3868232937529683,
+        "ranking": 8.776948052458465,
+        "admission": 18.0423253076151,
+        "final": 0.10009836684912443,
+        "plot_evidence": 10.660127487964928,
+        "png_rendering": 5.319799792952836
+      },
+      "kernel": {
+        "optimized": {
+          "calls": 554,
+          "seconds": 58.75575963128358,
+          "phase_pairs": 123643754
+        },
+        "direct": {
+          "calls": 579,
+          "seconds": 118.85182907432318,
+          "phase_pairs": 115083459
+        }
+      },
+      "kernel_cpu": {
+        "optimized": {
+          "calls": 554,
+          "seconds": 58.747058356999695,
+          "phase_pairs": 123643754
+        },
+        "direct": {
+          "calls": 579,
+          "seconds": 118.83552730500034,
+          "phase_pairs": 115083459
+        }
+      },
+      "kernel_grids": [
+        {
+          "optimized": false,
+          "phase_pairs": 1,
+          "calls": 261,
+          "seconds": 0.1313830427825451
+        },
+        {
+          "optimized": false,
+          "phase_pairs": 231361,
+          "calls": 298,
+          "seconds": 71.48722898960114
+        },
+        {
+          "optimized": false,
+          "phase_pairs": 923521,
+          "calls": 10,
+          "seconds": 9.51705265790224
+        },
+        {
+          "optimized": false,
+          "phase_pairs": 3690241,
+          "calls": 10,
+          "seconds": 37.716164384037256
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 1,
+          "calls": 199,
+          "seconds": 0.11265473067760468
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 231361,
+          "calls": 335,
+          "seconds": 36.71294246148318
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 923521,
+          "calls": 10,
+          "seconds": 4.2993134297430515
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 3690241,
+          "calls": 10,
+          "seconds": 17.630849009379745
+        }
+      ]
+    },
+    "candidate": {
+      "process_seconds": 754.4027103530243,
+      "stages": {
+        "native_preparation": 10.741432116366923,
+        "recovery_catalogue": 2.3536974703893065,
+        "initial": 47.689575360156596,
+        "conservative": 13.080058136023581,
+        "family": 12.162378110922873,
+        "signed": 6.969778302125633,
+        "cavity": 11.655549513176084,
+        "inventory": 0.26254101004451513,
+        "predictive": 349.23357236012816,
+        "numerical": 201.33620166778564,
+        "gap": 0.0035636061802506447,
+        "residual": 0.2910173013806343,
+        "residual_screen": 16.05789632909,
+        "addition": 0.0012263953685760498,
+        "incumbent": 0.5373330609872937,
+        "ranking": 13.389694749377668,
+        "admission": 31.857706166803837,
+        "final": 0.16749270539730787,
+        "plot_evidence": 12.192817802540958,
+        "png_rendering": 7.260685910470784
+      },
+      "kernel": {
+        "optimized": {
+          "calls": 554,
+          "seconds": 83.14535008370876,
+          "phase_pairs": 123643754
+        },
+        "direct": {
+          "calls": 579,
+          "seconds": 93.56081101391464,
+          "phase_pairs": 115083459
+        }
+      },
+      "kernel_cpu": {
+        "optimized": {
+          "calls": 554,
+          "seconds": 83.06498700999967,
+          "phase_pairs": 123643754
+        },
+        "direct": {
+          "calls": 579,
+          "seconds": 197.82947033700069,
+          "phase_pairs": 115083459
+        }
+      },
+      "kernel_grids": [
+        {
+          "optimized": false,
+          "phase_pairs": 1,
+          "calls": 261,
+          "seconds": 0.1881610071286559
+        },
+        {
+          "optimized": false,
+          "phase_pairs": 231361,
+          "calls": 298,
+          "seconds": 59.23291663080454
+        },
+        {
+          "optimized": false,
+          "phase_pairs": 923521,
+          "calls": 10,
+          "seconds": 7.235322343185544
+        },
+        {
+          "optimized": false,
+          "phase_pairs": 3690241,
+          "calls": 10,
+          "seconds": 26.904411032795906
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 1,
+          "calls": 199,
+          "seconds": 0.16950792539864779
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 231361,
+          "calls": 335,
+          "seconds": 51.65651806257665
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 923521,
+          "calls": 10,
+          "seconds": 5.970689910463989
+        },
+        {
+          "optimized": true,
+          "phase_pairs": 3690241,
+          "calls": 10,
+          "seconds": 25.348634185269475
+        }
+      ]
+    }
+  },
+  "external_prototype": true,
+  "variant": "direct-only ordered chunks",
+  "production_modified": false,
+  "cpu_accounting_available": true,
+  "reaped_child_cpu": {
+    "baseline_seconds": 942.4032709999999,
+    "candidate_seconds": 1165.8038850000003,
+    "scope": "RUSAGE_CHILDREN deltas across completed supervisor waits",
+    "resolution_seconds": null
+  },
+  "scope": "imports through public artifact publication; excludes capture/GLRT/queue"
+}

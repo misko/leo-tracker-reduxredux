@@ -1,5 +1,20 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [direct-only chunk native qualification](../../reports/2026_11_06_algo07v3_direct_chunks/README.md):
+**not adopted; default and production unchanged**. DS26-0102 preserves complete
+science, both c arms, all audits, ownership, public grid/path and eight PNGs.
+The fresh pair regresses 656.337→754.403 s wall and 942.403→1,165.804 CPU s.
+Direct kernels improve 118.852→93.561 s wall but use 118.836→197.829 CPU s;
+unchanged optimized kernels also slow 41.51%, so do not attribute the entire
+native regression to chunking. Afterward, 36 exact replays of the actual three
+grid sizes improve isolated wall 30.31–40.79% while increasing CPU 16.80–28.07%.
+All match original native results, so smaller-grid mismatch is not the cause.
+Do not select a favorable rerun or invent a scan-specific threshold. Prioritize
+owned packaging of the separate CPU-saving LU candidate. A compiled-extension
+adapter draft passes dimensions 1/2/6/12/32, dimension-33 fallback, singular
+rejection and six whole-kernel smoke cases; it still needs component tests and
+fresh integrated native qualification before becoming default.
+
 November 6 [numerical replay and shared-factorization qualification](../../reports/2026_11_06_algo07v3_joint_phase_lu/README.md):
 **external prototype passes one complete DS26-0102 pair; default and production
 unchanged**. Full process wall is 826.801→752.739 s (8.96% reduction), with

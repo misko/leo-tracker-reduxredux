@@ -342,3 +342,23 @@ Do not enable blanket chunk concurrency. Three workers improve direct-mode wall
 smaller grids and a fresh native pair, with serial fallback outside an explicitly
 owned three-slot context. Keep its latency/throughput tradeoff visible and do
 not stack unqualified LU, chunk and endpoint candidates. Sixty-seven tests pass.
+
+The [direct-only native follow-up](../../../reports/2026_11_06_algo07v3_direct_chunks/README.md)
+is **not adopted**: complete native outputs are exact, but full wall regresses
+656.337→754.403 s and full CPU 942.403→1,165.804 s. Direct-kernel wall improves
+21.28% with 66.47% more CPU; unchanged serial kernels also slow substantially.
+The actual 481²/961²/1921² captures all improve isolated wall 30–41% in 36 exact
+replays, while CPU rises 17–28%. This disproves a simple small-grid failure
+explanation; it does not establish improved native throughput. Preserve both
+observations, and do not repeat whole scans to select a favorable clock.
+`tools/qualify_algo07v3_direct_chunks.py` records full reaped-child CPU and
+symmetric actual-grid captures. `tools/benchmark_algo07v3_direct_grids.py`
+requires the native comparison first and reproduces original captured results,
+not just agreement between two reloaded calls. Summary/figures support
+`--direct-grids ROOT` and keep nested CPU separate from wall time.
+Next integrate the independently CPU-saving LU candidate through the existing
+extension build, without runtime compilation or a substituted LAPACK provider.
+The report's `owned-lu-draft` has a compiled-extension/provider adapter smoke
+test, not integrated qualification. Add component-owned fallback/ABI tests,
+bind the added Python/binary modules, and run isolated native comparisons before
+retaining it. Do not combine LU with chunk concurrency or endpoint reuse.
