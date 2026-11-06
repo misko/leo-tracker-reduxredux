@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from profile_algo07v3_initial_convergence import observe
+from profile_algo07v3_initial_convergence import FirstCappedCapture, observe
 
 from leo.analysis.localization_v3 import position
 
@@ -44,3 +44,23 @@ def test_phase_coordinates_identity_and_restoration(monkeypatch, fail):
         assert rows[2]['phase'] == 1 and rows[2]['in_fit']
     assert position.fit is fit and position.hierarchical_bound is bound
     assert position.NormalPosition.calculate is calculate
+
+
+def test_capture_first_capped_fit_owns_inputs(tmp_path):
+    capture = FirstCappedCapture()
+    a = np.arange(3.)
+    kwargs = dict(prior_groups=np.array([-1, 0]), iterations=256)
+    capture.record(dict(in_fit=False, iterations=256), (a,), kwargs)
+    capture.record(dict(in_fit=True, iterations=20), (a,), kwargs)
+    assert capture.value is None
+    capture.record(dict(in_fit=True, iterations=256, phase=1), (a,), kwargs)
+    a[:] = 10
+    kwargs['prior_groups'][:] = 1
+    capture.record(dict(in_fit=True, iterations=256, phase=2), (a,), kwargs)
+    assert capture.value[0]['phase'] == 1
+    np.testing.assert_array_equal(capture.value[1][0], np.arange(3.))
+    np.testing.assert_array_equal(capture.value[2]['prior_groups'], [-1, 0])
+    assert capture.save(tmp_path/'capture')
+    with np.load(tmp_path/'capture'/'hardest.npz', allow_pickle=False) as data:
+        np.testing.assert_array_equal(data['argument_0'], np.arange(3.))
+    assert not FirstCappedCapture().save(tmp_path/'empty')

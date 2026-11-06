@@ -1,5 +1,18 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [initial precision attribution and layout trial](../../reports/2026_11_06_algo07v3_initial_precision/README.md):
+both complete initial branch-1 arms remain exact. The first capped fitted-c
+call maps group 53 to RX2 CH6 T002, 28 points at 55.85–86.68 s, under that
+intermediate branch's 58109 hypothesis. It dominates 242/256 precision updates;
+the runner-up is another 58109 hypothesis track on RX1 CH6. This does not
+establish incorrect association or causation. Inverse solve/covariance/LU/
+Cholesky consume about 67.8% of this captured likelihood. Retaining Fortran
+Cholesky layout is exact but mixed: initial +0.60%, recovery −0.96%; not adopted.
+Twenty focused tests pass. Runtime/production unchanged; no new whole-scan gain.
+Next investigate shared-parameter noise-update coupling and validate hardware
+counter accounting before using it to explain the recurring component/native
+timing discrepancy. Current complete-runtime profile remains applicable.
+
 November 6 [full-profile review and idle derivative experiment](../../reports/2026_11_06_algo07v3_idle_derivatives/README.md):
 **external prototype not adopted; runtime unchanged**. Complete prepared initial
 search remains exact but takes 29.870→30.543 s on DS26-0002 and

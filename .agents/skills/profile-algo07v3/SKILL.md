@@ -201,3 +201,17 @@ pairs, not native qualification. Use the existing full profile for stage ranking
 Next compare captured likelihood costs and noise-group precision trajectories
 between slow initial and recovery phases before another exact kernel experiment.
 The external probe retains bounded-capacity, failure and cancellation tests.
+
+The [initial precision attribution](../../../reports/2026_11_06_algo07v3_initial_precision/README.md)
+adds `--capture-capped` to the initial observer. It owns the first capped in-fit
+input per arm and preserves full fit signatures. Group 53 dominates 242/256
+updates in the captured fitted-c phase; an exact reconstruction maps it to
+RX2 CH6 T002 under the branch's 58109 hypothesis. This is an intermediate-model
+diagnostic, not evidence of incorrect final association. Inverse solve, covariance
+and factorizations dominate both initial and recovery captures. Fortran root
+layout stays external after mixed sub-percent timings; twenty focused tests pass.
+Investigate shared-parameter precision coupling, preserving the original solver.
+Hardware counters are available through privileged `perf` on this host, but only
+a trivial command was checked: verify child inheritance and measurement scope
+before making any pipeline counter claim. Frequency snapshots alone cannot
+explain component/native timing discrepancies.
