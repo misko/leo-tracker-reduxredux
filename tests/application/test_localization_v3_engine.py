@@ -240,6 +240,7 @@ def test_native_no_curvature_does_not_read_recovery_catalogue_or_render(monkeypa
 
 def test_native_route_never_passes_evaluation_reference_into_inference(monkeypatch):
     reference = dict(latitude_deg=10.0, longitude_deg=20.0)
+    grid_port = object()
     prepared = dict(status="inputs_prepared", sky=dict(bank={}, metadata=dict(cutoff_utc_ns=123)))
     monkeypatch.setattr(engine.policy, "prepare_native_scan", lambda *a, **kw: prepared)
     monkeypatch.setattr(
@@ -257,6 +258,7 @@ def test_native_route_never_passes_evaluation_reference_into_inference(monkeypat
 
     def render(value, **kw):
         assert seen == ["infer"] and kw["evaluation_reference"] is reference
+        assert kw['map_grid_batches'] is grid_port
         return dict(status="figures_ready", products={"png": b"bytes"}, stage_timings=[])
 
     monkeypatch.setattr(engine, "infer_prepared", infer)
@@ -268,7 +270,7 @@ def test_native_route_never_passes_evaluation_reference_into_inference(monkeypat
         object(),
         object(),
         identities=["scan"],
-        execution=SimpleNamespace(clock=lambda: next(ticks)),
+        execution=SimpleNamespace(clock=lambda: next(ticks), map_grid_batches=grid_port),
         screen_latitude_deg=1.0,
         screen_longitude_deg=2.0,
         title="scan",
@@ -365,11 +367,13 @@ def test_render_boundary_has_separate_timing_and_is_only_reference_consumer(monk
     path = dict(selected_model="selected")
     monkeypatch.setattr(localization_v3_path, "recorded_decision_path", lambda *a, **k: path)
     seen = []
+    grid_port = object()
 
     def prepare(context, owners, arms, observations, tracks, **kwargs):
         assert context is result["context"] and owners is result["owners"]
         assert observations is result["native"]["observations"]
         assert kwargs["position_path"] is path and "evaluation_reference" not in kwargs
+        assert kwargs['map_grid_batches'] is grid_port
         seen.append("grid")
         return dict(marker="complete plot evidence")
 
@@ -384,7 +388,8 @@ def test_render_boundary_has_separate_timing_and_is_only_reference_consumer(monk
     monkeypatch.setattr(localization_v3, "prepare_packet", prepare)
     monkeypatch.setattr(fast_standard_analysis, "render", render)
     rendered = engine.render_inference(
-        result, title="scan", clock=execution.clock, evaluation_reference=reference
+        result, title="scan", clock=execution.clock, evaluation_reference=reference,
+        map_grid_batches=grid_port,
     )
     assert seen == ["grid", "render"] and rendered["status"] == "figures_ready"
     assert [r["stage"] for r in rendered["stage_timings"][-2:]] == [

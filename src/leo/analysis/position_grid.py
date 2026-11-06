@@ -7,17 +7,21 @@ ARMS=('c0','fitted_c')
 
 def sample_position_grid(score, endpoints, *, box_width_km=25., coarse_size=9,
                          local_size=7, local_half_width_km=1.5, maximum_seconds=30.,
-                         clock=time.monotonic):
+                         clock=time.monotonic, map_batches=None):
     if coarse_size<2 or local_size<2 or box_width_km<=0 or maximum_seconds<=0:
         raise ValueError('Positive grid size and budget required')
     half=box_width_km/2
-    points=[];seen=set()
+    points=[]
+    seen=set()
     def add(east,north):
         point=(float(east),float(north))
         if not all(math.isfinite(v) and abs(v)<=half for v in point):
             return
-        if point not in seen:seen.add(point);points.append(point)
-    for arm in ARMS:add(*endpoints[arm])
+        if point not in seen:
+            seen.add(point)
+            points.append(point)
+    for arm in ARMS:
+        add(*endpoints[arm])
     add(0,0)
     axis=[-half+box_width_km*i/(coarse_size-1) for i in range(coarse_size)]
     for east,north in sorted(((e,n) for e in axis for n in axis),key=lambda p:p[0]**2+p[1]**2):
@@ -28,18 +32,46 @@ def sample_position_grid(score, endpoints, *, box_width_km=25., coarse_size=9,
         x,y=endpoints[arm]
         for de,dn in sorted(((e,n) for e in offsets for n in offsets),key=lambda p:p[0]**2+p[1]**2):
             add(x+de,y+dn)
-    began=clock();rows=[]
-    for point in points:
-        if clock()-began>=maximum_seconds:break
-        values={};failures={}
+    began=clock()
+    def evaluate(point):
+        values={}
+        failures={}
         for arm in ARMS:
             try:
                 value=float(score(arm,point))
-                if not math.isfinite(value):raise ValueError('Non-finite objective')
+                if not math.isfinite(value):
+                    raise ValueError('Non-finite objective')
                 values[arm]=value
             except (ValueError,ArithmeticError) as error:
-                values[arm]=None;failures[arm]=type(error).__name__
-        rows.append(dict(east_km=point[0],north_km=point[1],scores=values,failures=failures))
+                values[arm]=None
+                failures[arm]=type(error).__name__
+        return dict(east_km=point[0],north_km=point[1],scores=values,failures=failures)
+    def batch(items):
+        result=[]
+        for point in items:
+            if clock()-began>=maximum_seconds:
+                break
+            result.append(evaluate(point))
+        return result
+    if map_batches is None:
+        rows=batch(points)
+    else:
+        # Three contiguous batches amortize process setup. Each location keeps
+        # both arms together and checks the same deadline before starting. A
+        # timed-out batch truncates the published ordered prefix; later results
+        # cannot introduce holes or reorder the diagnostic grid.
+        width=(len(points)+2)//3
+        chunks=[points[i:i+width] for i in range(0,len(points),width)] if width else []
+        results=map_batches(batch,chunks)
+        if len(results)!=len(chunks):
+            raise ValueError('Incomplete grid batch transport')
+        rows=[]
+        for chunk,result in zip(chunks,results,strict=True):
+            if len(result)>len(chunk):
+                raise ValueError('Invalid grid batch length')
+            rows.extend(result)
+            if len(result)<len(chunk):
+                break
     return dict(schema_version=1,kind='conditional-position-grid',
         conditioning='published satellite ownership and phase linearization fixed',
         nuisance_model='unchanged published marginal likelihood',matched_c_grid=True,

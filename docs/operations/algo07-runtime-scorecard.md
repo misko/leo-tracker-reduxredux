@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+The [diagnostic-grid batching iteration](../../reports/2026_11_05_algo07v3_grid_batches/README.md)
+is integrated in development. A fresh DS26-0002 pair is exact through both arms,
+every scientific audit, public grid/path and all eight PNG bytes: **230.877 →
+174.353 s**. Unchanged stages also improve substantially, so the full difference
+is not attributable to batching. Three alternating isolated grid pairs average
+**13.778 → 6.404 s (2.151×)**; grid CPU increases **13.774 → 15.063 s (9.36%)**.
+The native plot-evidence stage drops **14.144 → 6.494 s**. **707 distinct tests
+pass**. This is one-scan complete-grid qualification; partial-grid timing,
+full DS26, production and cumulative/original qualification remain outstanding.
+
 The [fresh complete v3 profile](../../reports/2026_11_05_algo07v3_full_runtime_profile/README.md)
 records **175.426 s unprofiled** and **215.765 s instrumented** on DS26-0002,
 with complete science, both arms and all eight PNG bytes exact. Predictive

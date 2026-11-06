@@ -139,6 +139,17 @@ not overlap: at most three fit children are active, each with one BLAS thread
 and the job's inherited CPU affinity. Failed or interrupted children abort the
 stage and are reaped; incomplete folds cannot become scientific rejections.
 
+Final diagnostic-grid scoring now uses three contiguous process batches through
+the same bounded execution adapter, after all inference has finished. Each
+location retains both calibration arms and the original score calculations.
+Results return in the original point order; the existing 300-second budget is
+checked before each paired location. On expiry, publication retains only the
+contiguous evaluated prefix. This preserves the grid schema, but timing-dependent
+partial-grid counts are not guaranteed identical. Exact qualification requires
+complete grids and all eight PNG bytes. Direct presentation calls remain serial
+unless supplied the grid execution port. This change does not parallelize the
+Matplotlib renderer or change satellite selection.
+
 The command is currently qualified for **validation-all-work** only. It is not a
 deployed service or a claim of equivalence to production wall-clock admission.
 

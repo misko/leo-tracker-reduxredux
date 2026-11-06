@@ -36,6 +36,7 @@ class ExecutionPorts:
     map_recovery_arms: Callable | None = None
     map_conservative_arms: Callable | None = None
     map_annotation_training: Callable | None = None
+    map_grid_batches: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -288,7 +289,8 @@ def infer_prepared(
 
 
 def render_inference(
-    inference, *, title, clock, on_stage=None, evaluation_reference=None, grid_seconds=300.0
+    inference, *, title, clock, on_stage=None, evaluation_reference=None, grid_seconds=300.0,
+    map_grid_batches=None,
 ):
     """Apply evaluation reference only after completed inference and plot scoring."""
     if inference["status"] != "numerics_complete":
@@ -324,6 +326,7 @@ def render_inference(
             position_path=path,
             grid_seconds=grid_seconds,
             clock=clock,
+            map_grid_batches=map_grid_batches,
         ),
     )
     products = timing.run(
@@ -403,6 +406,7 @@ def run_native(
         on_stage=on_stage,
         evaluation_reference=evaluation_reference,
         grid_seconds=grid_seconds,
+        map_grid_batches=execution.map_grid_batches,
     )
     return dict(
         rendered,

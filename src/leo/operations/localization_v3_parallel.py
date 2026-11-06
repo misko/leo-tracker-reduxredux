@@ -98,6 +98,16 @@ def map_annotation_training(operation, tasks):
     return _ordered(operation, tasks, workers=3) if tasks else []
 
 
+def map_grid_batches(operation, batches):
+    """Evaluate at most three independent diagnostic batches in declared order."""
+    batches = tuple(batches)
+    if len(batches) > 3 or not callable(operation):
+        raise ValueError("At most three diagnostic grid batches are supported")
+    if len(batches) < 2:
+        return [operation(batch) for batch in batches]
+    return _ordered(operation, batches, workers=3)
+
+
 def _ordered(operation, items, *, workers=None):
     try:
         return _execute(operation, items, workers=workers)

@@ -36,6 +36,7 @@ def prepare_packet(
     include_grid=True,
     grid_seconds=300.0,
     clock=time.monotonic,
+    map_grid_batches=None,
 ):
     """Preserve every published point's prediction and the original plot order.
 
@@ -156,6 +157,7 @@ def prepare_packet(
             {arm: list(x) for arm, (_, x) in context["problems"].items()},
             maximum_seconds=grid_seconds,
             clock=clock,
+            map_batches=map_grid_batches,
         )
         grid["endpoint_latlon"] = {a: r["endpoint_latlon"] for a, r in summaries.items()}
         region = context["scan"].search_region

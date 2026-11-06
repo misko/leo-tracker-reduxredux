@@ -200,6 +200,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
     from leo.application.localization_v3_engine import ExecutionPorts, run_native
     from leo.operations.localization_v3_parallel import (
         map_annotation_training,
+        map_grid_batches,
         map_initial_arms,
         map_predictive_folds,
     )
@@ -239,6 +240,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
         map_recovery_arms=map_initial_arms,
         map_conservative_arms=map_initial_arms,
         map_annotation_training=map_annotation_training,
+        map_grid_batches=map_grid_batches,
     )
     result = run_native(
         native,

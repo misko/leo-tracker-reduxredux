@@ -229,3 +229,20 @@ three complete likelihood results exactly, including unchanged inputs. It does
 not measure pipeline speed. The full-runtime-profile report records inverse
 solving and covariance/factorization as the main captured-call costs; changing
 the solver or precision ceiling still requires the existing exactness gate.
+
+For diagnostic-grid execution, `tools/benchmark_algo07v3_grid.py --request REQUEST
+--reference FROZEN_POSITION_GRID_PY --output FRESH_DIRECTORY` runs the owned
+pipeline and alternates three complete serial/batched grid pairs on its live
+selected likelihood. Use three CPUs and one BLAS thread. Its outer 1200-second
+supervisor bounds the entire experiment. This clock includes repeated grids
+and must not be presented as pipeline speed. Each grid must be complete and
+match all scores, paired-arm failures, locations, order and policy; only elapsed
+time is excluded. Source bindings, CPU counters and failed receipts are retained.
+Use the unchanged-source publication parity helper to check the experiment's
+final science and all eight PNGs against a fresh uninstrumented candidate.
+The grid-batches report supplies a five-module frozen-overlay native pair runner.
+Three contiguous process batches preserve a deadline-checked paired location
+and publish only a contiguous prefix if time runs out. Near-deadline point counts
+can differ with execution speed; do not claim exact partial-grid equivalence
+from complete-grid fixtures. Keep worker failures as operational failures and
+qualify parent cancellation/reaping using the existing bounded executor tests.

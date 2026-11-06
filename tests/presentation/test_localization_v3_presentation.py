@@ -65,10 +65,13 @@ def test_stale_or_incomplete_evidence_cannot_be_rendered(monkeypatch, fault):
         )
 
 
-def test_grid_uses_declared_region_and_same_fixed_fit_in_both_arms(monkeypatch):
+@pytest.mark.parametrize('parallel', [False, True])
+def test_grid_uses_declared_region_and_same_fixed_fit_in_both_arms(monkeypatch, parallel):
+    from leo.operations.localization_v3_parallel import map_grid_batches
     values = fixture(monkeypatch)
     packet = presentation.prepare_packet(
-        *values, selected_model="selected", position_path={}, clock=lambda: 0.0, grid_seconds=300.0
+        *values, selected_model="selected", position_path={}, clock=lambda: 0.0, grid_seconds=300.0,
+        map_grid_batches=map_grid_batches if parallel else None,
     )
     grid = packet["position_grid"]
     assert grid["complete"] and grid["maximum_seconds"] == 300.0

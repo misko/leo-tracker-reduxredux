@@ -12,12 +12,33 @@ from leo.operations.localization_v3_job import StageDeadline, stage_deadline
 from leo.operations.localization_v3_parallel import (
     ParallelFitFailure,
     map_annotation_training,
+    map_grid_batches,
     map_initial_arms,
     map_predictive_folds,
 )
 
 ARMS = ("c0", "fitted_c")
 TRAINING = tuple((seed, arm) for seed in (13, 9, 4) for arm in ARMS)
+
+
+def test_grid_batches_run_in_separate_reaped_children_and_return_in_order(tmp_path):
+    def operation(batch):
+        (tmp_path / str(batch[0])).write_text(str(os.getpid()))
+        return list(reversed(batch))
+    batches = [(0, 1), (2, 3), (4, 5)]
+    assert map_grid_batches(operation, batches) == [[1, 0], [3, 2], [5, 4]]
+    paths = list(tmp_path.iterdir())
+    assert len({p.read_text() for p in paths}) == 3
+    assert_reaped(paths)
+    with pytest.raises(ValueError, match='At most three'):
+        map_grid_batches(operation, batches + [(6,)])
+
+
+def test_grid_child_failure_aborts_instead_of_becoming_an_empty_batch():
+    def operation(batch):
+        raise RuntimeError('diagnostic process failed')
+    with pytest.raises(ParallelFitFailure, match='diagnostic process failed'):
+        map_grid_batches(operation, [(0,), (1,)])
 
 
 def test_training_queue_keeps_three_slots_and_order_without_waiting_for_first_task(tmp_path):
