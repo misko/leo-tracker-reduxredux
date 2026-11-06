@@ -35,7 +35,16 @@ def factory():
     transition = ast.parse('def transition(rate, prior_rate):\n    pass').body[0]
     transition.body = copy.deepcopy(loop.body[:updates[0]])
     transition.body.append(ast.parse('return next_rate, next_prior_rate, change').body[0])
-    function.body = function.body[:index] + [transition, ast.parse('return transition').body[0]]
+    setup = function.body[:index]
+    seeded_precision = any(isinstance(n, ast.Assign) and
+                           any(isinstance(t, ast.Name) and t.id == 'precision' for t in n.targets)
+                           for n in setup)
+    if seeded_precision:
+        # Extracting a conditional assignment makes precision local to the new
+        # function. Recreate its original pre-loop value on every diagnostic call.
+        setup += ast.parse('_transition_initial_precision = precision.copy()').body
+        transition.body[:0] = ast.parse('precision = _transition_initial_precision.copy()').body
+    function.body = setup + [transition, ast.parse('return transition').body[0]]
     tree = ast.fix_missing_locations(tree)
     scope = dict(vars(hierarchical))
     exec(compile(tree, '<precision-map-observer>', 'exec'), scope)

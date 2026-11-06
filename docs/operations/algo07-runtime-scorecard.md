@@ -1,5 +1,20 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [fixed coefficient-prior shortcut](../../reports/2026_11_06_algo07v3_fixed_priors/README.md):
+**candidate not adopted; runtime and production unchanged**. Bypassing empty
+learned-prior updates preserves complete captured outputs and hard-fold training
+histories. Training improves 48.053→46.190 s (c=0) and 46.316→45.432 s (fitted c),
+but exact native DS26-0066 regresses **394.319→496.700 s** and DS26-0002
+**221.677→250.945 s**, in opposite orders. Both retain all science and eight PNGs.
+Host pressure and unchanged-stage slowdowns confound attribution; no cumulative
+speedup is claimed. Statement profiling puts the bypassed work at only 1.45% /
+1.65% of two captured likelihoods. Private candidate suite: 2,160 passes; default
+plus observers: 2,161 passes. The precision-map observer now handles pre-loop
+constant precision initialization, tested against both old and candidate code.
+Next cheaply test dense BLAS kernels with one/two/three threads for exactness and
+wall/CPU benefit before designing any bounded spare-capacity policy. Do not
+exceed the three-slot limit or retry this small shortcut to seek favorable clocks.
+
 November 6 [bounded process-helper and full-profile review](../../reports/2026_11_06_algo07v3_idle_process/README.md):
 **external candidate not adopted; runtime and production unchanged**. Native
 DS26-0066 preserves complete science, both arms, grid/path and eight PNG bytes.

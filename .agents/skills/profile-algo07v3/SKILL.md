@@ -247,3 +247,18 @@ Do not integrate or claim cumulative gain. Next focus on the shared likelihood
 matrix work, or explicitly separate a numerical-convergence candidate from the
 identical-output path. Avoid another queue experiment without a new measured
 mechanism and preserve the negative evidence.
+
+The [fixed-prior shortcut](../../../reports/2026_11_06_algo07v3_fixed_priors/README.md)
+is also **not adopted**. Empty learned-prior operations cost about 1.45–1.65% of
+two captured calls. Both complete hard-fold arms improve slightly and all outputs
+are exact, but native pairs regress 394.319→496.700 s and 221.677→250.945 s with
+host-pressure variation. Runtime remains unchanged; candidate is an external
+probe/overlay. Candidate/default suites pass 2,160/2,161 tests respectively.
+The precision-map observer now seeds pre-loop precision when extracting a step;
+its transition tests cover both previous and archived candidate implementations.
+Do not revive this shortcut on component gains alone. Next test dense-kernel
+BLAS threading cheaply on captured calls, verifying actual thread counts and
+every output byte. Only if exact and faster should a complete-fit/capacity policy
+be considered, retaining at most three active CPU slots across outer and inner
+work. No larger thread count, numerical tolerance or scientific policy change
+is already qualified by these measurements.
