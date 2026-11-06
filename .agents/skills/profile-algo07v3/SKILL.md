@@ -397,3 +397,22 @@ validation of a locally immutable bank and scalar-phase index reuse separately.
 Neither proposal is implemented. The report also retains the 158.773/265.044 s
 same-numerics native observations: CPU changes too, and the variation's cause is
 unestablished. Preserve both, rather than advertising a stable native speed.
+
+For immutable-bank validation reuse, run
+`tools/probe_algo07v3_bank_validation.py --request REQUEST --output FRESH_ROOT`
+on one CPU/BLAS thread with a 360-second external timeout. It alternates complete
+screens, includes snapshot copying, and checks saved science, callbacks and input
+preservation. Explicit frozen screen/phase oracles keep the old implementation
+external. Read `reports/2026_11_05_algo07v3_bank_validation/README.md` before
+changing the snapshot: read-only arrays still permit shape mutation, so the
+qualified representation retains immutable bytes and shape tuples. Mutable-bank
+callers and all per-call phase/time checks continue to validate normally.
+Use the report's two-module native runner and exact publication comparator.
+Its first candidate-first pair regresses 186.553 → 277.921 s; an opposite-order
+pair improves 161.808 → 153.847 s, with screening 10.542 → 9.205 s. Both pairs and
+cross-pair same-side science/eight PNGs match. `verify_repeats.py` declares an
+explicit empty source-change set for those same-side comparisons. Retain both
+timing outcomes; twelve final component trials and 845 tests support the narrow
+development integration, not a stable complete-pipeline speed guarantee. Next
+test shared scalar-phase indices, preserving per-satellite phase and empty-bank
+behavior and every original numerical operation.

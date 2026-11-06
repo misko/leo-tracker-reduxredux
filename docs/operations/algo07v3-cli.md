@@ -1,5 +1,13 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [immutable-bank iteration](../../reports/2026_11_05_algo07v3_bank_validation/README.md)
+validates a private immutable snapshot once per residual screen. Mutable callers
+and every per-call phase/time check retain validation. The twelve final prepared
+screens are exact, with means 12.397 → 11.871 seconds and 26.394 → 23.015 seconds
+on DS26-0002/0066. The slower DS26-0002 third candidate is retained. **845 tests**
+pass; the report includes the fresh native science/eight-PNG comparison. This
+is development integration, not production or full-cohort qualification.
+
 The [nomination geometry optimization](../../reports/2026_11_05_algo07v3_nomination_points/README.md)
 projects only the union of points already selected by the original coarse folds;
 all full-data finalist fits and acceptance gates are unchanged. Twelve complete

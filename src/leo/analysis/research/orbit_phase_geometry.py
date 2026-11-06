@@ -5,12 +5,41 @@ This separates an orbital phase hypothesis from a receiver UTC-clock shift.
 No orbit correction is estimated here, and interpolation never extrapolates.
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 
 from leo.analysis.research.track_catalogue_geometry import interpolate_states
 from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km, look_angles
 
 EARTH_ROTATION_RAD_S = 7.29211514670698e-5
+_ORBIT_BANK_KEYS = ('time_s', 'position_km', 'velocity_km_s')
+
+
+@dataclass(frozen=True, init=False, eq=False)
+class FrozenOrbitBank:
+    """Validated, independently owned states for repeated local projections.
+
+    Only immutable bytes and shape tuples survive construction. Each lookup
+    returns a new read-only array header, so callers cannot change the bank's
+    values or metadata. This is an in-memory value, not a persisted contract.
+    """
+
+    _entries: tuple
+
+    def __init__(self, bank):
+        entries = []
+        for key in _ORBIT_BANK_KEYS:
+            source = np.asarray(bank[key], float)
+            entries.append((source.tobytes(), source.shape))
+        object.__setattr__(self, '_entries', tuple(entries))
+        interpolate_states(self, np.array([], float))
+
+    def __getitem__(self, key):
+        if key not in _ORBIT_BANK_KEYS:
+            raise KeyError(key)
+        data, shape = self._entries[_ORBIT_BANK_KEYS.index(key)]
+        return np.frombuffer(data, dtype=float).reshape(shape)
 
 
 def phase_shifted_states(bank, time_s, phase_seconds):
@@ -23,7 +52,8 @@ def phase_shifted_states(bank, time_s, phase_seconds):
         raise ValueError("finite scalar or one orbit phase per satellite required")
     # The common interpolator supplies geometry validation even for an empty
     # request. Per-satellite phases then use the same linear interpolation rule.
-    interpolate_states(bank, np.array([], float))
+    if not isinstance(bank, FrozenOrbitBank):
+        interpolate_states(bank, np.array([], float))
     if times.ndim != 1 or not np.isfinite(times).all():
         raise ValueError("finite one-dimensional observation times required")
     knots = np.asarray(bank["time_s"], float)

@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+The [immutable-bank iteration](../../reports/2026_11_05_algo07v3_bank_validation/README.md)
+is integrated in development with **845 passing tests**. Twelve final complete
+screen trials are exact: mean elapsed decreases 4.25% on DS26-0002 and 12.80%
+on DS26-0066, with similar CPU reductions. Complete native timing is mixed:
+candidate-first **186.553 → 277.921 s**, then baseline-first **161.808 → 153.847 s**.
+The second pair's screen falls **10.542 → 9.205 s**; do not attribute its entire
+7.961-second complete difference to that 1.337-second stage saving. Both pairs
+and repeated same-side science/eight PNGs are exact. Preserve the first regression;
+this does not establish a stable whole-pipeline speedup. Production, full-cohort
+and cumulative original-ALGO07 qualification are unchanged.
+
 See [current runtime priorities](../../reports/2026_11_05_algo07v3_runtime_priorities/README.md)
 for all native stages, exact post-change screen profiles on DS26-0002/0066 and
 the slower same-numerics confirmation. Predictive fits remain 23–25% of observed

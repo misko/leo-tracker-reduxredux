@@ -1,0 +1,63 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_bank_validation/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_bank_validation/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline-src/leo/analysis/localization_v3/residual_screen.py": "d23f40d129ddfec95a3cfdeaf085fe224432c7b923038fe3703516b71e2eeb4c",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/residual_screen.py": "90bf5476548e58dd164ff023f91e8c203f463a001bc6c157be0eaae5a135069f",
+    "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate-src/leo/analysis/localization_v3/residual_screen.py": "90bf5476548e58dd164ff023f91e8c203f463a001bc6c157be0eaae5a135069f",
+    "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline-src/leo/analysis/research/orbit_phase_geometry.py": "2966373e9f51f7c032c89ffa73d0250ba58fe1e6a9cdf4ba2ae447b239a58bb2",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py": "737d867db26429ce5a542e07d7dd9dd1d4116a98056524b60781da7637eed4e0",
+    "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate-src/leo/analysis/research/orbit_phase_geometry.py": "737d867db26429ce5a542e07d7dd9dd1d4116a98056524b60781da7637eed4e0",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_bank_validation/run_pair.py": "bc981faaa786cbb762ec05f669ee80b00a15805ffc5952f2b13678027064208d",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_bank_validation/run_baseline.sh": "963617a079eda3fe4de6db4cec1400c535a1f69d617f2a3cd9d13a2d8e0db86d",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "bc2032a491e2d1a3b272d4bc09d27e8ca065d9d7c7bdc30633c55686cefdfe42",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/baseline-request.json": "dbf4acbdefc89fcc2590d31a26f93e3656480713de121ba66a6b9d641e3df4f2",
+    "/srv/bulk/leo-dev/algo07v3-bank-validation-native-reverse-0002-20261106/candidate-request.json": "9a2b70a70e76e42b91c392b8b68d9bce3255f786f2c9c76aa5e3e9345368f7b8"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

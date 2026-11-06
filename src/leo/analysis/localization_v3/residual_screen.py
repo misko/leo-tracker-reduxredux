@@ -9,6 +9,7 @@ from leo.analysis.localization_v3.orbits import ecef_states
 from leo.analysis.localization_v3.residual_evidence import age_penalty, components, marginal
 from leo.analysis.localization_v3.screen_geometry import phase_frequency_grids
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
+from leo.analysis.research.orbit_phase_geometry import FrozenOrbitBank
 from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_screen
 from leo.analysis.research.retained_track_likelihood import PERIOD
 from leo.analysis.research.track_recovery_diagnostics import profile_rate
@@ -103,6 +104,8 @@ def screen_candidates(packet, catalogue, search_region, *, policy="72h_30s", on_
     epoch = epoch[good]
     collection = collection[good]
     bank = dict(time_s=grid, position_km=pos[good], velocity_km_s=vel[good])
+    if packet["targets"]:
+        bank = FrozenOrbitBank(bank)
     outputs = []
     phases = np.sort(np.unique(np.r_[np.arange(-30, 31, 2), -15, 15]))
     for target in packet["targets"]:
