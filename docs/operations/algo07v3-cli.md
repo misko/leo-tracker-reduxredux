@@ -1,5 +1,12 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [compiled assembly candidate](../../reports/2026_11_06_algo07v3_ordered_assembly/README.md)
+is rejected after two complete native timing regressions despite exact scientific
+outputs and modest prepared-fit gains. NumPy assembly and the existing build
+configuration are restored. No CLI or scientific policy changes. Provenance now
+also binds any loaded project-native extension bytes; this does not activate the
+rejected extension. The report includes the new fold/phase convergence diagnosis.
+
 The [latest cumulative comparison](../../reports/2026_11_06_algo07v3_reference_recovery/README.md)
 observes original ALGO07 at 886.905 s versus current v3 at 193.899 / 152.529 s
 on DS26-0002 (4.57–5.81×), preserving both arms, scientific audits, ownership,

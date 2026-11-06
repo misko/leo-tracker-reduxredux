@@ -501,3 +501,30 @@ fixed-duration simulation. This is not a measured scheduling speedup. Numerical
 fit cost is the next priority. See the training-queue report for complete native
 stage clocks, nested posterior timings and ranked experiments. These profiling
 controls do not change runtime code, scientific budgets or production.
+
+## Ordered assembly and convergence by phase
+
+The compiled scatter experiment is not integrated. External ctypes calls regress
+3.46% on the captured likelihood; a direct Python extension improves 4.00% and
+four complete hard-fold training pairs improve. However, native DS26-0002 pairs
+regress in both orders: 148.203→169.946 s and 233.069→258.349 s. All science and
+eight PNGs are exact. Preserve this contrary full-scan evidence. The numerical
+source and setup are restored byte-for-byte to commit 419a4087d. Only the
+independent operation-layer binding of native module bytes is retained.
+`reports/2026_11_06_algo07v3_ordered_assembly` archives rejected source, binary,
+tests, all timings and reproduction helpers. Its native snapshots must be
+restored in a separate experimental checkout to reproduce that candidate.
+
+`tools/profile_algo07v3_training_convergence.py --request REQUEST --expected-root
+QUALIFIED_TRAINING_ROOT --output FRESH_ROOT` runs on CPU 0, one BLAS thread,
+under an external 600 s bound. It compares fast-fold observed fits to fresh
+controls and hard-fold fits to qualified complete signatures. All six observed
+fits pass. Signature-only calls are tagged separately and excluded from fit
+counts. Fold 1's first phase makes 269 calls in each arm; 220 reach iteration
+256, with 219/220 still above the stopping threshold. First-round precision
+iterations are 98.7%/99.0% of that fold's totals. Other folds keep the same
+175/176 nuisance columns but average only 15–20 iterations per call.
+Two observer tests are included in the candidate's 1,492-test qualification.
+These profiled clocks are not speed comparisons. Investigate first-round
+conditioning and repeated exact work; do not reduce budgets or change priors
+to claim a performance optimization under the identical-output requirement.

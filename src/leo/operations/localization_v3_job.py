@@ -9,6 +9,7 @@ import signal
 import sys
 import time
 from contextlib import contextmanager
+from importlib.machinery import EXTENSION_SUFFIXES
 from pathlib import Path
 
 from leo.contracts.digests import canonical_digest, sha256_digest
@@ -150,7 +151,7 @@ def source_bindings():
         for name, module in sys.modules.items()
         if getattr(module, "__file__", None)
         and "/leo/" in str(module.__file__)
-        and str(module.__file__).endswith(".py")
+        and str(module.__file__).endswith((".py", *EXTENSION_SUFFIXES))
     }
 
 

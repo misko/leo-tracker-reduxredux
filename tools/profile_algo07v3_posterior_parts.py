@@ -35,7 +35,7 @@ def instrument(rows):
             if target in labels and not (target == 'cov' and isinstance(node.value, ast.Constant)):
                 label = labels[target]
         if (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
-                and ast.unparse(node.value.func) == 'np.add.at'):
+                and ast.unparse(node.value.func) in ('np.add.at', '_scatter')):
             label = 'ordered_assembly'
         if label:
             found.append(label)

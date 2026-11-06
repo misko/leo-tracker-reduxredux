@@ -90,6 +90,7 @@ results; its opening search guide helps locate the needed section.
 | Guarded reassociation | `benchmark_algo07v3_reassociation` |
 | Predictive fitting | `only-stage predictive`, `annotation`, `posterior`, `likelihood`, `workspace` |
 | Predictive worker utilization | `training_queue`, `tools/profile_algo07v3_training_queue.py` |
+| Precision convergence by fold/phase | `training_convergence`, `tools/profile_algo07v3_training_convergence.py` |
 | Per-problem cache eviction | `position_cache`, `tools/profile_algo07v3_position_cache.py` |
 | Initial search | `initial_queue`, `initial_priority`, `discovery_schedule`, `initial-cache` |
 | Independent paired fits | `conservative`, `numerical` |
@@ -117,3 +118,17 @@ shows two long training tasks dominate DS26-0066 target 1. A prescient schedulin
 bound is not a measured gain; do not turn case-specific task costs into a policy.
 Prioritize precision-iteration profiling and exact numerical work, retaining all
 folds, both arms, original budgets and complete annotation equality.
+
+The [ordered-assembly experiment](../../../reports/2026_11_06_algo07v3_ordered_assembly/README.md)
+is **rejected for default integration**. Its direct extension improves prepared
+training, but both full native pairs regress (148.203→169.946 s and
+233.069→258.349 s). Default NumPy assembly is restored. Do not revive it based
+only on the 4% captured-call or 2.61% fitted-c gains. Candidate source/tests and
+native receipts are archived; numerical oracles are unchanged.
+
+The exact [convergence profile](../../../reports/2026_11_06_algo07v3_ordered_assembly/convergence.md)
+finds 269 first-round likelihood calls in each hard-fold arm, with 220 reaching
+256 precision iterations. Later rounds generally need 10 iterations per call.
+Nuisance width is unchanged across folds. Investigate this first-round trajectory
+and exact reuse across arms/targets. Lower budgets, different initialization or
+different stopping rules change the algorithm; they are not exact runtime fixes.

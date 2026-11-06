@@ -1,0 +1,30 @@
+{
+  "processes": {
+    "command": [
+      "ps",
+      "-eo",
+      "pid,ppid,psr,pcpu,etime,args",
+      "--sort=-pcpu"
+    ],
+    "returncode": 0,
+    "stdout": "    PID    PPID PSR %CPU     ELAPSED COMMAND\n 769651  368483   1  136       07:08 /opt/leo-tracker/releases/47e2705e437722daa5e6d6bb1c252d54b7a21dbc/.venv/bin/python -m leo.cli.adaptive_hop_analysis --bulk-root /srv/bulk/leo --session-id scan-fw-44834523d88f78fe --maximum-workers 2 --host-maximum-workers 2 --probe-stride-ms 120 --maximum-visits 2500 --maximum-seconds 560\n 771069  367691   3  136       02:54 /opt/leo-tracker/releases/47e2705e437722daa5e6d6bb1c252d54b7a21dbc/.venv/bin/python -m leo.cli.adaptive_hop_analysis --bulk-root /srv/bulk/leo --session-id scan-fw-60be1cdb8175e52a --maximum-workers 2 --host-maximum-workers 2 --probe-stride-ms 120 --maximum-visits 2500 --maximum-seconds 560\n 771610       1  15 97.3       01:16 /opt/leo-tracker/releases/c46e58d024d1f1c158553115f7adfdf377f61333/.venv/bin/python /opt/leo-capture-pose/508093c82fcd821e657aa2b56c6b45f135238ca812cd5d332a58748d4061ee4c/bind_adaptive_capture_pose.py --authority /etc/leo/station-authority/gauss-r20-lt3d-004b-20261001-v1.json --authority-sha256 sha256:9f70e628893b213edc8de327d3d583afcfbb6e067031d6922101597b98474373 --bulk-root /srv/bulk/leo --output-root /srv/bulk/leo/capture-pose --write\n 768012  368463   0 96.1       10:35 /opt/leo-tracker/releases/47e2705e437722daa5e6d6bb1c252d54b7a21dbc/.venv/bin/python -m leo.cli.scanner_tracking --bulk-root /srv/bulk/leo --site spinnaker-sausalito --session-id scan-fw-452f2a2a6c045247 --maximum-seconds 560 --maximum-sessions 1 --review-limit 16 --queue-worker\n 770543 3253454  17 88.2       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=18) --multiprocessing-fork\n 770547 3253454  11 88.1       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=26) --multiprocessing-fork\n 770554 3253454  23 86.2       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=40) --multiprocessing-fork\n 770548 3253454  13 86.1       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=28) --multiprocessing-fork\n 770549 3253454  14 85.7       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=30) --multiprocessing-fork\n 770553 3253454  20 85.5       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=38) --multiprocessing-fork\n 770542 3253454  22 84.8       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=16) --multiprocessing-fork\n 770555 3253454  12 83.8       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=42) --multiprocessing-fork\n 770546 3253454  13 83.7       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=24) --multiprocessing-fork\n 770556 3253454  17 83.2       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=44) --multiprocessing-fork\n 770544 3253454   5 83.1       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=20) --multiprocessing-fork\n 770545 3253454   8 83.1       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=22) --multiprocessing-fork\n 770550 3253454  18 82.7       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=32) --multiprocessing-fork\n 770552 3253454  23 82.6       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=36) --multiprocessing-fork\n 770539 3253454   9 82.1       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=14) --multiprocessing-fork\n 770551 3253454  19 81.7       04:16 /opt/leo-fast-auto/20261010-r1/venv/bin/python -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=10, pipe_handle=34) --multiprocessing-fork\n3148215       1   6 74.9  2-16:48:53 /opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13/venv/bin/python -B -m leo.cli.fast_graph_position_v2 --bulk-root /srv/bulk/leo --minimum-completed-utc-ns 1793395227961750830 --maximum-seconds 1200"
+  },
+  "affinity": {
+    "command": [
+      "taskset",
+      "-pc",
+      "768012"
+    ],
+    "returncode": 0,
+    "stdout": "pid 768012's current affinity list: 0-23\n"
+  },
+  "cpu": {
+    "command": [
+      "lscpu",
+      "-p=CPU,CORE,SOCKET,ONLINE"
+    ],
+    "returncode": 0,
+    "stdout": "# The following is the parsable format, which can be fed to other\n# programs. Each different item in every column has an unique ID\n# starting usually from zero.\n# CPU,Core,Socket,Online\n0,0,0,Y\n1,1,0,Y\n2,2,0,Y\n3,3,0,Y\n4,4,0,Y\n5,5,0,Y\n6,6,0,Y\n7,7,0,Y\n8,8,0,Y\n9,9,0,Y\n10,10,0,Y\n11,11,0,Y\n12,12,0,Y\n13,13,0,Y\n14,14,0,Y\n15,15,0,Y\n16,16,0,Y\n17,17,0,Y\n18,18,0,Y\n19,19,0,Y\n20,20,0,Y\n21,21,0,Y\n22,22,0,Y\n23,23,0,Y\n"
+  },
+  "scope": "Post-first-pair observation only; not evidence of exact load during either timed stage."
+}

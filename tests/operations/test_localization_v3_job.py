@@ -1,6 +1,10 @@
+import hashlib
 import json
 import signal
+import sys
 import time
+from importlib.machinery import EXTENSION_SUFFIXES
+from types import SimpleNamespace
 
 import pytest
 
@@ -16,6 +20,20 @@ from leo.operations.localization_v3_job import (
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from leo.storage.localization_v3 import LocalizationV3Store
 from tests.localization_v3_fixture import evidence_fixture
+
+
+def test_source_bindings_include_native_binary_bytes(tmp_path, monkeypatch):
+    from leo.operations.localization_v3_job import source_bindings
+
+    folder = tmp_path / 'leo'
+    folder.mkdir()
+    path = folder / ('native_fixture' + EXTENSION_SUFFIXES[0])
+    path.write_bytes(b'first artifact')
+    monkeypatch.setitem(sys.modules, 'leo.native_fixture', SimpleNamespace(__file__=str(path)))
+    first = source_bindings()['leo.native_fixture']
+    assert first == dict(path=str(path), sha256=hashlib.sha256(b'first artifact').hexdigest())
+    path.write_bytes(b'changed artifact')
+    assert source_bindings()['leo.native_fixture'] != first
 
 
 def request_fixture(tmp_path):

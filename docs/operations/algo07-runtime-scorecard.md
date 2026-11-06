@@ -1,5 +1,20 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [compiled assembly and convergence analysis](../../reports/2026_11_06_algo07v3_ordered_assembly/README.md):
+**candidate rejected; default numerical implementation restored**. Although
+captured-call mean improves 4.00% and hard fitted-c training improves 2.61%,
+both complete DS26-0002 pairs regress: **148.203→169.946 s** and reverse-order
+**233.069→258.349 s**. Both retain exact science and eight PNGs. Candidate tests:
+1,492 passing. Shared-host variation does not justify discarding the regressions.
+No new overall speedup or production change. Native binary provenance is retained
+as an independent verification improvement.
+
+The [new convergence profile](../../reports/2026_11_06_algo07v3_ordered_assembly/convergence.md)
+localizes the hard fold's cost to its first phase: 269 calls per arm, 220 reaching
+the 256-iteration ceiling. Later rounds generally take 10 iterations per call.
+All six fits are exact. Investigate the first-round trajectory and exact reuse,
+keeping the original initialization, stopping rule, data and budgets.
+
 November 6 [exact reference recovery and cumulative comparison](../../reports/2026_11_06_algo07v3_reference_recovery/README.md):
 original ALGO07 **886.905 s**, bracketed by current v3 **193.899 / 152.529 s**
 on DS26-0002, with exact public outputs, both arms, eight PNGs and 17 scientific
