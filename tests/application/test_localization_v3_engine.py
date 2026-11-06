@@ -242,10 +242,20 @@ def test_native_route_never_passes_evaluation_reference_into_inference(monkeypat
     reference = dict(latitude_deg=10.0, longitude_deg=20.0)
     grid_port = object()
     prepared = dict(status="inputs_prepared", sky=dict(bank={}, metadata=dict(cutoff_utc_ns=123)))
-    monkeypatch.setattr(engine.policy, "prepare_native_scan", lambda *a, **kw: prepared)
-    monkeypatch.setattr(
-        engine.policy, "prepare_additional_catalogue", lambda *a: {"catalogue": True}
-    )
+    import weakref
+
+    parsers = []
+
+    def prepare(*a, element_parser, **kw):
+        parsers.append(weakref.ref(element_parser))
+        return prepared
+
+    def catalogue(*a, element_parser):
+        assert element_parser is parsers[0]()
+        return {"catalogue": True}
+
+    monkeypatch.setattr(engine.policy, "prepare_native_scan", prepare)
+    monkeypatch.setattr(engine.policy, "prepare_additional_catalogue", catalogue)
     monkeypatch.setattr(
         engine.policy, "prepare_reassociation_history", lambda *a: pytest.fail("eager history")
     )
@@ -253,6 +263,7 @@ def test_native_route_never_passes_evaluation_reference_into_inference(monkeypat
 
     def infer(*args, **kw):
         assert args[0] == prepared and "evaluation_reference" not in kw
+        assert parsers[0]() is None  # No retained text cache crosses into fitting.
         seen.append("infer")
         return dict(status="numerics_complete")
 

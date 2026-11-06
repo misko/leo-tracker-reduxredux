@@ -293,5 +293,26 @@ receipt merging, unknown-policy serial fallback, failure cleanup and both
 application forwarding boundaries. This is one-scan development qualification.
 Annotation replay and selection callbacks remain serial; only independent
 paired inclusion fits use reconciled policies. Do not generalize this mapper
-to arbitrary mutable contexts or threaded execution. Next measure the uncached
-recovery-catalogue parser against the existing scan-scoped validated-text cache.
+to arbitrary mutable contexts or threaded execution.
+
+Recovery catalogue preparation now shares the initial validated-text parser,
+then releases it before inference. `tools/probe_algo07v3_catalogue_cache.py
+--request REQUEST --output FRESH_ROOT --repeats 3` alternates complete native
+preparation plus recovery-catalogue construction, starting with a fresh parser
+for every trial. Pin one CPU and one BLAS thread and use an external
+`timeout -k 2 360`. Compare complete preparation/catalogue fingerprints, keep
+parser timings nested, and retain hit/miss/eviction counters. The current helper
+uses the new explicit parser port; its earlier measured source is archived.
+Every snapshot still passes the archive read/digest checks, causal selection
+runs every time, and fresh SGP4 objects must never be shared through the cache.
+
+Twelve trials on DS26-0002/0066 are exact. Catalogue means fall 5.513 → 2.040 s
+and 8.819 → 3.994 s, with complete-preparation CPU also lower. The fresh full
+DS26-0002 pair preserves science, both arms and eight PNGs: 280.056 → 245.043 s.
+Only 4.558 s of its difference is in the targeted catalogue stage; unchanged
+later stages vary, so do not credit all 35.013 s to the change. The 722-test
+suite includes cache release before fitting, corrupted text, read failures and
+causal filtering on hits. Full DS26 and original-ALGO07 cumulative qualification
+remain outstanding. Next profile live evidence encoding or repeated likelihood
+work before selecting another change; decoded saved evidence may alias arrays
+that were separate in memory, so it cannot establish live encoding-cache gains.

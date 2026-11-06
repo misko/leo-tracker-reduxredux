@@ -364,7 +364,10 @@ def run_native(
     the RF admission policy asks for it. Evaluation coordinates go solely to
     the renderer after every scientific decision and conditional grid score.
     """
+    from leo.analysis.localization_v3.elements import ElementParser
+
     timing = _Timing(execution.clock, on_stage)
+    element_parser = ElementParser()
     prepared = timing.run(
         "native_preparation",
         lambda: _prepared_values(
@@ -374,6 +377,7 @@ def run_native(
                 track_config,
                 screen_latitude_deg=screen_latitude_deg,
                 screen_longitude_deg=screen_longitude_deg,
+                element_parser=element_parser,
             )
         ),
     )
@@ -381,8 +385,11 @@ def run_native(
         return dict(status=prepared["status"], stage_timings=timing.rows, products={})
     cutoff = prepared["sky"]["metadata"]["cutoff_utc_ns"]
     catalogue = timing.run(
-        "recovery_catalogue", lambda: policy.prepare_additional_catalogue(archive, cutoff)
+        "recovery_catalogue", lambda: policy.prepare_additional_catalogue(
+            archive, cutoff, element_parser=element_parser)
     )
+    # Retain validated text only across preparation, never in numerical workers.
+    element_parser = None
     history = []
 
     def collect(request):

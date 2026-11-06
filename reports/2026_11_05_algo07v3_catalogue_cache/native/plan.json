@@ -1,0 +1,66 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_catalogue_cache/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_catalogue_cache/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "baseline",
+    "candidate"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/screen_geometry.py": "703235f74702b3f74d220f4e2e0e14fa4a2cf250ae084d8eaae7b0d56e30e29e",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-src/leo/operations/localization_v3_inputs.py": "223f1cbd5f041c57859ddac1a00ac115fd5768dfbf3fb825f4815575a62ca736",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/operations/localization_v3_inputs.py": "d23c4b2470b9c81f9714633d430d63ee477980cfe4c96848acb7619693174e22",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-src/leo/operations/localization_v3_inputs.py": "d23c4b2470b9c81f9714633d430d63ee477980cfe4c96848acb7619693174e22",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-src/leo/application/localization_v3.py": "f71433dd2e6cc97009b8b66bee7c54a937633f1e2366db6673ec73adac01667b",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "b9cc13e37092f948e76b90fd3e9b59289ed965002a971e0ccb75136f61dd5064",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-src/leo/application/localization_v3.py": "b9cc13e37092f948e76b90fd3e9b59289ed965002a971e0ccb75136f61dd5064",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-src/leo/application/localization_v3_engine.py": "6275ffbc08441dca895c9eb1d76e37b1b7a85ab97e7f9969eca17d9e6b64153d",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "11bd0d0ca738a342b6e17a18cc2a5ea15cd44a46baa20eb0ef449763452c0267",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-src/leo/application/localization_v3_engine.py": "11bd0d0ca738a342b6e17a18cc2a5ea15cd44a46baa20eb0ef449763452c0267",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_catalogue_cache/run_pair.py": "9c44f445caad0859562448a8c4f57e9b9eebaeb1ff4dda9887daf6584554f1d8",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_05_algo07v3_catalogue_cache/run_baseline.sh": "5da1014688032b05490ffb559a17dfac0f64d24f560b17839feaaffbe0753555",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "bc2032a491e2d1a3b272d4bc09d27e8ca065d9d7c7bdc30633c55686cefdfe42",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/baseline-request.json": "4709b873953bb668a4cedd881be12730a8289a29d0506c7fce255447cb9f258c",
+    "/srv/bulk/leo-dev/algo07v3-catalogue-cache-0002-20261106/candidate-request.json": "112d45fec05840ee1cae80cbf528e8375616f52ccbdbf0c50277042e5cf28e4d"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

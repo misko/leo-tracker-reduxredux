@@ -14,9 +14,10 @@ from leo.operations.causal_tle_catalogue import causal_catalogue
 from leo.sky.propagation import parse_element_sets
 
 
-def prepare_recovery_catalogue(reader, cutoff_utc_ns):
+def prepare_recovery_catalogue(reader, cutoff_utc_ns, *, element_parser=parse_element_sets):
     """Read the original 72-hour newest-causal catalogue through the archive port."""
-    result = causal_catalogue(reader, cutoff_utc_ns, maximum_age_s=72*3600)
+    result = causal_catalogue(reader, cutoff_utc_ns, maximum_age_s=72*3600,
+                              element_parser=element_parser)
     elements = {}
     for number, satellite, provenance in zip(result.catalogue.satellite_numbers,
             result.catalogue.satellites, result.provenance, strict=True):

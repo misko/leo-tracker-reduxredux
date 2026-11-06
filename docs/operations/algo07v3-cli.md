@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [recovery catalogue cache change](../../reports/2026_11_05_algo07v3_catalogue_cache/README.md)
+reuses validated TLE text from initial preparation, retains all archive checks
+and causal selection, and constructs fresh SGP4 objects. The cache is released
+before inference. **722 tests**, twelve preparation trials on two DS26 scans
+and a fresh complete DS26-0002 comparison pass exactly, including both arms and
+eight PNGs. Catalogue latency falls 55–63% in alternating trials. The full pair
+is 280.056 → 245.043 s, but unchanged stages account for most of that difference.
+This is development qualification; production remains unchanged.
+
 The [paired numerical-replay change](../../reports/2026_11_05_algo07v3_numerical_arms/README.md)
 uses the existing recovery-arm executor for independent replay fits, then merges
 their numerical receipts in the original c=0/fitted-c order. Annotation replay,

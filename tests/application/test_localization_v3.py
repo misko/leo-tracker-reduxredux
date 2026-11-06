@@ -125,6 +125,18 @@ def test_archive_failure_does_not_become_a_position_fallback(monkeypatch):
                                  screen_latitude_deg=10., screen_longitude_deg=20.)
 
 
+def test_recovery_catalogue_forwards_only_explicit_parser(monkeypatch):
+    from leo.operations import localization_v3_inputs
+
+    parser, calls = object(), []
+    monkeypatch.setattr(localization_v3_inputs, 'prepare_recovery_catalogue',
+                        lambda *a, **kw: calls.append((a, kw)) or {})
+    app.prepare_additional_catalogue('archive', 123)
+    app.prepare_additional_catalogue('archive', 123, element_parser=parser)
+    assert calls == [(('archive', 123), {}),
+                     (('archive', 123), dict(element_parser=parser))]
+
+
 def test_initial_fit_preserves_prior_stage_and_does_not_claim_final_completion(monkeypatch):
     from types import SimpleNamespace
 

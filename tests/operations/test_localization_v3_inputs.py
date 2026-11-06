@@ -115,6 +115,53 @@ def test_cached_parsing_keeps_collection_provenance_and_read_checks(monkeypatch)
     assert actual['nominal_elements']['44714']['provenance']['collected_utc_ns'] == cutoff-1000
 
 
+def test_recovery_reuses_text_but_repeats_reads_and_causal_selection(monkeypatch):
+    hour = 3600 * 1_000_000_000
+    cutoff, reader, reads = fixture(monkeypatch, [(-60*hour, 230.5), (-2000, 232.5),
+                                               (-1000, 232.5), (-500, 234), (100, 232.9)])
+    original = inputs.prepare_recovery_catalogue(reader, cutoff)
+    expected_reads = list(reads)
+    parser = ElementParser()
+    for snapshot in expected_reads:
+        parser(snapshot.text)
+    before = parser.statistics()
+    reads.clear()
+    actual = inputs.prepare_recovery_catalogue(reader, cutoff, element_parser=parser)
+    assert actual == original and reads == expected_reads
+    assert parser.misses == before['misses']
+    assert parser.hits - before['hits'] == len(expected_reads)
+    assert actual['elements']['44714']['collected_utc_ns'] == cutoff - 1000
+    with pytest.raises(ValueError, match='no past TLE'):
+        inputs.prepare_recovery_catalogue(reader, cutoff - 100 * hour, element_parser=parser)
+
+
+def test_warm_recovery_cache_does_not_hide_archive_failure(monkeypatch):
+    cutoff, reader, reads = fixture(monkeypatch, [(-1000, 232.5)])
+    parser = ElementParser()
+    inputs.prepare_recovery_catalogue(reader, cutoff, element_parser=parser)
+
+    def fail(snapshot):
+        raise ValueError('archive integrity failure')
+
+    reader.read = fail
+    with pytest.raises(ValueError, match='archive integrity failure'):
+        inputs.prepare_recovery_catalogue(reader, cutoff, element_parser=parser)
+
+
+def test_warm_recovery_cache_does_not_hide_malformed_changed_text(monkeypatch):
+    from leo.sky.propagation import ElementSetError
+
+    cutoff, reader, _ = fixture(monkeypatch, [(-1000, 232.5)])
+    parser = ElementParser()
+    inputs.prepare_recovery_catalogue(reader, cutoff, element_parser=parser)
+    snapshot = reader.list_snapshots('space-track')[0]
+    lines = snapshot.text.splitlines()
+    lines[1] = lines[1][:-1] + str((int(lines[1][-1]) + 1) % 10)
+    snapshot.text = '\n'.join(lines)
+    with pytest.raises(ElementSetError, match='checksum'):
+        inputs.prepare_recovery_catalogue(reader, cutoff, element_parser=parser)
+
+
 @pytest.mark.parametrize('fault', ['future_collection', 'future_bytes', 'wrong_epoch'])
 def test_element_bytes_and_provenance_must_both_be_valid(fault):
     cat = parse_element_sets(at_day(232))

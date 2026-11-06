@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+The [recovery catalogue cache iteration](../../reports/2026_11_05_algo07v3_catalogue_cache/README.md)
+is integrated in development. Twelve complete preparation trials on DS26-0002
+and DS26-0066 are exact: catalogue means improve **5.513 → 2.040 s** and
+**8.819 → 3.994 s**, with lower complete-preparation CPU. Fresh DS26-0002 native
+time is **280.056 → 245.043 s (observed 1.143×)**, with exact science, both arms,
+ownership, public grid/path and eight PNGs. The targeted catalogue stage saves
+**4.558 s**; unchanged later stages explain most of the 35.013-second overall
+difference. **722 tests pass**. The cache is released before fitting. Full DS26,
+production and original-ALGO07 cumulative speed qualification are unchanged.
+
 The [paired numerical-replay iteration](../../reports/2026_11_05_algo07v3_numerical_arms/README.md)
 is integrated in development. Fresh DS26-0002 native time is **171.653 →
 169.742 s (1.011×)**, saving 1.911 s, with exact science, both arms, ordered

@@ -343,10 +343,11 @@ def _selected_value(value):
     return value.tolist() if hasattr(value, 'tolist') else value
 
 
-def prepare_additional_catalogue(archive, cutoff_utc_ns):
+def prepare_additional_catalogue(archive, cutoff_utc_ns, *, element_parser=None):
     """Read the owned recovery catalogue only at the operational boundary."""
     from leo.operations.localization_v3_inputs import prepare_recovery_catalogue
-    return prepare_recovery_catalogue(archive, cutoff_utc_ns)
+    return prepare_recovery_catalogue(archive, cutoff_utc_ns,
+        **({'element_parser': element_parser} if element_parser is not None else {}))
 
 
 def screen_additional_recovery(prepared, catalogue, search_region, *, on_target=None):
