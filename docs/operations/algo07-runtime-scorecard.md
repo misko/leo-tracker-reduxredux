@@ -1,5 +1,17 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [cumulative refresh and cache census](../../reports/2026_11_06_algo07v3_cumulative_current/README.md):
+fresh current v3 completes DS26-0002 in **161.431 s** with exact unchanged
+science/eight PNGs. The original reference fails its frozen-runtime check before
+the first scientific worker: two source and seven generated-bytecode entries
+drifted. **No new original-ALGO07 speedup ratio is available.** The earlier
+213.191 s execution used the same v3 code, so that difference is run variation.
+An observation-only hard DS26-0066 cache census passes both full fit signatures
+and ten tool tests. Larger per-problem caches would avoid just **0.0783 s** across
+both arms; capacity remains eight. No runtime or production changes. Repair and
+preflight reference packaging, then refresh cumulative timing; measure predictive
+queue utilization before the next scheduling change.
+
 The [inverse-workspace iteration](../../reports/2026_11_05_algo07v3_lapack_workspace/README.md)
 is integrated in development with **1,332 passing tests**. All four complete
 DS26-0066 training pairs improve exactly: fitted-c mean 46.417 → 45.588 s (1.79%);

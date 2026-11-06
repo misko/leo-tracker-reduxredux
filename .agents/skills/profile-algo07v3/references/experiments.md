@@ -450,3 +450,27 @@ implementation boundary. The report contains all failure/test receipts, the
 one-module native runner and a fresh exact captured profile. Prioritize a fresh
 matched original/current cumulative measurement before claiming further overall
 speed; production and full DS26 remain unqualified.
+
+The November 6 cumulative refresh fails the original-reference integrity check,
+after a fresh current-v3 execution completes in 161.431 s with exact unchanged
+science/eight PNGs. Nine of 72,405 original-manifest entries differ after applying
+the existing private source overlays: two source files and seven generated
+bytecode files. Archived exact source copies exist; the bounded bytecode-copy
+search found none. Do not rerun the old cumulative script unchanged or combine
+161.431 with a historical original-ALGO07 clock. Preserve the original manifest,
+failed attempt and numerical expectations while repairing reference packaging.
+See `reports/2026_11_06_algo07v3_cumulative_current/README.md`.
+
+For per-problem cache eviction, `tools/profile_algo07v3_position_cache.py
+--request REQUEST --expected-root QUALIFIED_TRAINING_ROOT --output FRESH_ROOT`
+observes both complete DS26-0066 target-1/fold-1 training fits on one CPU and one
+BLAS thread, bounded externally to 300 s. It delegates to the existing eight-entry
+cache and maintains shadow LRU capacities; no extra calculation is skipped and
+every size-eight hit/miss must agree with the real cache. Full optimizer history,
+state and likelihood match the earlier qualified per-arm signature. Ten tests
+cover evictions, object identity, per-problem isolation, signed zero, failures
+and restoration of both aliases. The census includes final state/signature
+checks outside the fit timer. Sizes 16/32/64 would avoid only three c=0 calls
+(0.0595 s) and one fitted-c call (0.0188 s). This is potential reusable work,
+not a net speedup or proof that larger-cache outputs are exact. Leave capacity
+eight; next measure predictive queue idle intervals and reconstruction costs.

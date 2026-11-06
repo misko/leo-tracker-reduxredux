@@ -89,6 +89,7 @@ results; its opening search guide helps locate the needed section.
 | Residual screening or geometry | `screen_parts`, `nomination`, `immutable-bank`, `scalar-phase`, `endpoint` |
 | Guarded reassociation | `benchmark_algo07v3_reassociation` |
 | Predictive fitting | `only-stage predictive`, `annotation`, `posterior`, `likelihood`, `workspace` |
+| Per-problem cache eviction | `position_cache`, `tools/profile_algo07v3_position_cache.py` |
 | Initial search | `initial_queue`, `initial_priority`, `discovery_schedule`, `initial-cache` |
 | Independent paired fits | `conservative`, `numerical` |
 | Diagnostic figures and publication | `grid`, `encoding` |
@@ -100,3 +101,9 @@ retains FIFO and rejected priority scheduling. Verify final status and receipts
 before treating candidates as integrated. Preserve negative/flat results from
 likelihood hashing, variance buffers, LU workspace, identity layout and gradient
 scheduling. A small kernel gain or unmatched clock is not a cumulative speedup.
+
+The [November 6 follow-up](../../../reports/2026_11_06_algo07v3_cumulative_current/README.md)
+finds negligible benefit from larger position caches and a failed historical
+reference preflight. Audit the old manifest under its archive and source overlays
+before launching another cumulative candidate: two source files and seven generated
+bytecode files drifted. Preserve the failed receipt and scientific/source guards.

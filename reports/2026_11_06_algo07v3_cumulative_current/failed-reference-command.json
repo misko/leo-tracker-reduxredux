@@ -1,0 +1,35 @@
+{
+  "command": [
+    "timeout",
+    "--kill-after=15",
+    "1785",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_star_archive.py",
+    "exec",
+    "--view",
+    "/srv/bulk/leo/research/algo07-star-20261104/iteration000/tle-view",
+    "--manifest",
+    "/srv/bulk/leo/research/algo07-star-20261104/iteration000/frozen.json",
+    "--",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/run_algo07_star_reference.py",
+    "--root",
+    "/srv/bulk/leo-dev/algo07v3-cumulative-current-20261106/DS26-0002/reference",
+    "--runtimes",
+    "/srv/bulk/leo/research/algo07-star-20261104/iteration000/runtimes-r2.json",
+    "--manifest",
+    "/srv/bulk/leo/research/algo07-star-20261104/iteration000/frozen-r2.json",
+    "--maximum-seconds",
+    "1800",
+    "--output",
+    "/srv/bulk/leo-dev/algo07v3-cumulative-current-20261106/reference-timing/inference-attempt-0001/inference.json"
+  ],
+  "environment": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONPATH": "/srv/bulk/leo-dev/algo06-promotion-20261101/src:/srv/bulk/leo-dev/algo06-promotion-20261101/tools"
+  }
+}
