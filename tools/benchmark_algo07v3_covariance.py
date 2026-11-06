@@ -7,12 +7,12 @@ import os
 from pathlib import Path
 
 import numpy as np
+from algo07v3_precovariance_hierarchical_oracle import hierarchical_bound
 from benchmark_algo07v3_training_kernel import trial
 from check_algo07v3_scan_likelihood import fingerprint
 from probe_algo07v3_covariance import candidate
 from probe_algo07v3_posterior_buffers import training_inputs
 
-from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.operations.localization_v3_job import runtime_versions, source_bindings
 
 
@@ -32,6 +32,7 @@ def main():
                       for arm in ('c0', 'fitted_c')}
     paths = [*Path('src').rglob('*.py'), args.request, Path(__file__), *expected_paths.values()]
     paths.extend(Path('tools') / name for name in (
+        'algo07v3_precovariance_hierarchical_oracle.py',
         'probe_algo07v3_covariance.py', 'benchmark_algo07v3_training_kernel.py',
         'check_algo07v3_scan_likelihood.py', 'probe_algo07v3_posterior_buffers.py',
         'probe_algo07v3_annotation_arms.py'))

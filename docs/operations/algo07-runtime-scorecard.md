@@ -1,5 +1,16 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [covariance-buffer native qualification](../../reports/2026_11_06_algo07v3_covariance_native/README.md):
+**candidate rejected; original kernel restored**. Exact DS26-0066 is
+400.994→416.279 s and DS26-0002 is 233.729→251.925 s. Both preserve both arms,
+all scientific audits and eight PNGs. Candidate tests: 2,027 passing; restored
+implementation plus observers: 2,026 passing. No new
+speedup or deployment. The new initial-branch diagnostic finds 279/279 fitted-c
+likelihood calls capped in the second phase round, with little exact repeated
+work. One captured recovery likelihood has 256 distinct inner-loop states.
+Next investigate capacity-aware derivative work for long fits, retaining the
+shared three-worker cap; the previous owner-only gradient policy stays rejected.
+
 November 6 [cheaper control-view reuse](../../reports/2026_11_06_algo07v3_control_geometry_view/README.md)
 is retained in development after 2,012 passing tests and two exact native cases.
 DS26-0066 is **480.981→394.960 s**; DS26-0002 is **247.723→245.940 s**.

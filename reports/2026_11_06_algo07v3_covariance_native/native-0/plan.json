@@ -1,0 +1,60 @@
+{
+  "commands": {
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_covariance_native/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ],
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/candidate-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_covariance_native/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/candidate-src",
+      "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/candidate-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "candidate",
+    "baseline"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py": "8affea2a053f3acd2edf38d7daaa2cfe7fcdc86293261fbff69e9e14a0df4d56",
+    "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/baseline-src/leo/analysis/localization_v3/hierarchical.py": "c906a5992ca3428c29b5c44326264549e18dc4206653b3d6f2fd12b48638607e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/hierarchical.py": "133bd0cc6c8059f0bdbc8b993bdd6a452414cdc7da819ca0c5b1e4b70b68a45a",
+    "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/candidate-src/leo/analysis/localization_v3/hierarchical.py": "133bd0cc6c8059f0bdbc8b993bdd6a452414cdc7da819ca0c5b1e4b70b68a45a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_covariance_native/run_pair.py": "b482704270c8a4beb901ee5eee9eb1f720293d9f2abd619179a16cd1ec52e6d8",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_covariance_native/run_baseline.sh": "427160c5129db22b3afa302c2697cd13047a5cd2e371ae065642f1eddeab936e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "bc2032a491e2d1a3b272d4bc09d27e8ca065d9d7c7bdc30633c55686cefdfe42",
+    "/srv/bulk/leo-dev/algo07v3-cohort-canaries-20261105/DS26-0066/input-bindings.json": "25c6fff9072daf8495e698d726bed4df38957e3a0391b9cdd544ee66a7dc6d65",
+    "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/baseline-request.json": "7d8c540208ec13a84d14ba1b79816a40dcab198efc3ec668904f425808d2d384",
+    "/srv/bulk/leo-dev/algo07v3-covariance-native-0066-20261106/candidate-request.json": "d5348947b6a57ebc9435982ee197b46384af26081cc3a2d29029f4807539368a"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

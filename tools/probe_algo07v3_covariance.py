@@ -8,11 +8,11 @@ import os
 import time
 from pathlib import Path
 
+import algo07v3_precovariance_hierarchical_oracle as hierarchical
 import numpy as np
 from check_algo07v3_scan_likelihood import fingerprint
 from scipy.linalg.blas import dsyrk
 
-from leo.analysis.localization_v3 import hierarchical
 from leo.operations.localization_v3_job import runtime_versions
 
 

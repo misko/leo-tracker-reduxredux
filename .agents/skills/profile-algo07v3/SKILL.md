@@ -182,3 +182,13 @@ The [full timer profile](../../../reports/2026_11_06_algo07v3_full_profile/READM
 compares this code's complete science and eight PNGs against its unprofiled run.
 Use `--timers-only` for reliable stage/child accounting; frequency snapshots are
 diagnostics, not timing corrections. Retain separate unprofiled speed clocks.
+
+The [covariance-buffer native qualification](../../../reports/2026_11_06_algo07v3_covariance_native/README.md)
+rejects that prototype after exact native regressions: 400.994→416.279 s on
+DS26-0066 and 233.729→251.925 s on DS26-0002. Original allocation is restored.
+The initial-branch profile identifies the second fitted-c phase round: all 279
+likelihood calls reach the 256-iteration cap. Exact repeats offer little work;
+one captured recovery likelihood has no repeated loop state. Next investigate
+spare-capacity derivative work, preserving a shared three-worker cap, cancellation
+and exact histories. Do not revive unrestricted nesting or the rejected
+owner-only gradient policy. Commands and both observer tools are in the report.

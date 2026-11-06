@@ -1,5 +1,18 @@
 # ALGO07v3 experiment recipes and retained evidence
 
+For initial branch convergence, use `tools/profile_algo07v3_initial_convergence.py
+--request REQUEST --branch 1 --output FRESH_ROOT`, one CPU/BLAS thread and an
+external 600-second bound. It compares both complete arm fits to saved native
+evidence, records phase-level precision counts and exact repeated input/output
+signatures, and never skips work. `tools/profile_algo07v3_precision_trajectory.py
+--capture CAPTURE_ROOT --output FRESH_ROOT` observes one original captured
+likelihood's complete noise/prior-rate trajectory and exact loop-state repeats.
+Use a 60-second bound and one CPU/BLAS thread. Neither instrumented clock is a
+speed benchmark. The covariance-native report retains both native regressions,
+source overlays, original/candidate tests, phase plots and loop-state evidence.
+The covariance experiment tools now use an explicit frozen pre-change oracle;
+do not silently substitute the evolving runtime for their baseline.
+
 For the current full-stage survey, use `tools/profile_algo07v3.py --timers-only`
 and `reports/2026_11_06_algo07v3_full_profile/render.py`. The renderer requires a
 completed unprofiled native pair's candidate and verifies full science and PNG
