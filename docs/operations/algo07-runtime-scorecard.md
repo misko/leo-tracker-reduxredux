@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+The [endpoint-reuse iteration](../../reports/2026_11_05_algo07v3_endpoint_reuse/README.md)
+is integrated in development with **1,132 passing tests**. Twelve exact complete
+screens improve by 13.38%/8.74% on DS26-0002/0066; all 99 real coarse-state
+comparisons match. Native DS26-0002 is **161.006 → 153.129 s**, saving 7.877 s
+(observed 1.051×), with exact science/eight PNGs. Screening saves **1.144 s**
+(9.176 → 8.032 s); other stages vary and predictive recovery slightly regresses.
+The complete difference is not all attributable to this change. The report
+includes every stage, CPU/RSS and the next measured targets. Production,
+whole-cohort and original-ALGO07 cumulative qualification are unchanged.
+
 The [scalar-phase iteration](../../reports/2026_11_05_algo07v3_scalar_phase/README.md)
 is integrated with **975 passing tests**, twelve exact complete screens and
 99 exact real coarse-state comparisons. Screen means improve 6.36% and 5.00%
@@ -22,9 +32,10 @@ and cumulative original-ALGO07 qualification are unchanged.
 
 See [current runtime priorities](../../reports/2026_11_05_algo07v3_runtime_priorities/README.md)
 for all native stages, exact post-change screen profiles on DS26-0002/0066 and
-the slower same-numerics confirmation. Predictive fits remain 23–25% of observed
-native time; coarse geometry remains 80–83% of residual screening. Scoped bank
-validation and scalar-phase index reuse are proposals, not integrated gains.
+the slower same-numerics confirmation. Predictive fits take 23–25% of those
+native timings; coarse geometry takes 80–83% of residual screening in those
+historical profiles. Scoped bank validation and scalar-phase index reuse have
+since been integrated, as recorded above.
 Production and full-cohort qualification are unchanged.
 
 The [nomination-point iteration](../../reports/2026_11_05_algo07v3_nomination_points/README.md)

@@ -1,4 +1,4 @@
-"""Shared scalar indices preserve complete states, layout and empty-bank errors."""
+"""Phase optimizations preserve complete states, layout and empty-bank errors."""
 
 import algo07v3_prescalar_phase_oracle as oracle
 import numpy as np
@@ -11,12 +11,17 @@ from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km, look_angles
 @pytest.mark.parametrize('count', [0, 1, 19])
 @pytest.mark.parametrize('frozen', [False, True])
 @pytest.mark.parametrize('phase', [-30., -0., 0., 30., 'per_satellite'])
-def test_states_layout_and_orbital_projection_remain_exact(count, frozen, phase):
+@pytest.mark.parametrize('layout', ['C', 'F', 'strided'])
+def test_states_layout_and_orbital_projection_remain_exact(count, frozen, phase, layout):
     rng = np.random.default_rng(54917)
     knots = np.arange(-40., 341.)
     source = dict(time_s=knots,
-                  position_km=np.asfortranarray(rng.normal(size=(count, len(knots), 3))*7000),
-                  velocity_km_s=np.asfortranarray(rng.normal(size=(count, len(knots), 3))*7))
+                  position_km=rng.normal(size=(count, len(knots), 3))*7000,
+                  velocity_km_s=rng.normal(size=(count, len(knots), 3))*7)
+    if layout == 'F':
+        source = {k: np.asfortranarray(v) for k, v in source.items()}
+    elif layout == 'strided':
+        source = {k: v[::2] if k == 'time_s' else v[:, ::2] for k, v in source.items()}
     before = {k: v.tobytes() for k, v in source.items()}
     actual_bank = FrozenOrbitBank(source) if frozen else source
     if phase == 'per_satellite':

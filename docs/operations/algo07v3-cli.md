@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [endpoint-reuse optimization](../../reports/2026_11_05_algo07v3_endpoint_reuse/README.md)
+gathers each lower orbital interpolation sample once while preserving arithmetic
+and array layout. Twelve complete screens and 99 real-state comparisons are
+exact; **1,132 tests pass**. Screen means improve 13.38%/8.74% on two DS26 scans.
+Fresh native DS26-0002 is **161.006 → 153.129 s** with exact science/eight PNGs;
+screening alone saves 1.144 s and other stages vary. The report accounts for every
+stage and ranks next experiments. This is development integration; production
+and full-cohort qualification are unchanged.
+
 The [scalar-phase optimization](../../reports/2026_11_05_algo07v3_scalar_phase/README.md)
 shares interpolation indices across satellites only when their requested phase is
 scalar. State arithmetic, rotation vectors, per-satellite phases and empty-bank

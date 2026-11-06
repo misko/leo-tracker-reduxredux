@@ -432,3 +432,18 @@ retain all bindings and exact publication checks. See
 `reports/2026_11_05_algo07v3_scalar_phase/README.md`. Next test reuse of the exact
 lower interpolation endpoint, currently gathered twice per state array, before
 claiming any additional saving or changing runtime.
+
+Endpoint reuse is now integrated. Run
+`tools/probe_algo07v3_endpoint_reuse.py --request REQUEST --output FRESH_ROOT`
+on one CPU/BLAS thread with a 360-second external timeout. Both implementations
+use the same owned immutable-bank class; the frozen source is an external oracle.
+It compares complete screens and callbacks and preserves input bindings. Twelve
+trials improve mean time by 13.38%/8.74%; all 99 real coarse-state comparisons and
+1,132 tests pass. Native DS26-0002 is 161.006 → 153.129 s, with screening
+9.176 → 8.032 s and exact science/eight PNGs. Retain the slightly slower predictive
+stage and other host variation; attribute only scoped evidence to the change.
+The report's one-module pair, proof and renderer also export every native stage.
+See `reports/2026_11_05_algo07v3_endpoint_reuse/README.md`. Next investigate
+discarded azimuth calculation in screening, preserving elevation/rate arithmetic,
+and predictive fitting's measured posterior cost. General likelihood hashing and
+variance-buffer reuse have prior negative evidence; do not repeat them blindly.

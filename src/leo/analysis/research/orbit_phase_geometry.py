@@ -70,9 +70,9 @@ def phase_shifted_states(bank, time_s, phase_seconds):
     cosine, sine = np.cos(angle)[:, None], np.sin(angle)[:, None]
     for name in ("position_km", "velocity_km_s"):
         source = np.asarray(bank[name], float)
-        values = source[rows, index] + fraction[:, :, None] * (
-            source[rows, index + 1] - source[rows, index]
-        )
+        lower = source[rows, index]
+        values = lower + fraction[:, :, None] * (source[rows, index + 1] - lower)
+        del lower
         x, y = values[:, :, 0].copy(), values[:, :, 1].copy()
         values[:, :, 0] = cosine * x - sine * y
         values[:, :, 1] = sine * x + cosine * y
