@@ -15,7 +15,7 @@ editing. Earlier workers and results are external numerical references only.
 On the current host, the worktree is `/srv/bulk/leo-dev/algo06-promotion-20261101`;
 use `/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python` with its `src`.
 DS26-0002's reusable request is
-`/srv/bulk/leo-dev/algo07v3-initialqueue-native-0002-20261106/candidate-request.json`.
+`/srv/bulk/leo-dev/algo07v3-lapack-native-0002-20261106/candidate-request.json`.
 Its frozen inputs are in `/srv/bulk/leo-dev/algo07v3-isolation-20261105`.
 These are fixture locations, not inference priors; verify they still exist and
 match their bindings. The profiling command never reuses that request's results.
@@ -88,16 +88,15 @@ results; its opening search guide helps locate the needed section.
 | --- | --- |
 | Residual screening or geometry | `screen_parts`, `nomination`, `immutable-bank`, `scalar-phase`, `endpoint` |
 | Guarded reassociation | `benchmark_algo07v3_reassociation` |
-| Predictive fitting | `only-stage predictive`, `annotation`, `posterior`, `likelihood` |
+| Predictive fitting | `only-stage predictive`, `annotation`, `posterior`, `likelihood`, `workspace` |
 | Initial search | `initial_queue`, `initial_priority`, `discovery_schedule`, `initial-cache` |
 | Independent paired fits | `conservative`, `numerical` |
 | Diagnostic figures and publication | `grid`, `encoding` |
 
 The latest fitting experiment is in
-[the initial-queue report](../../../reports/2026_11_05_algo07v3_initial_queue/README.md);
-the preceding [azimuth report](../../../reports/2026_11_05_algo07v3_screen_azimuth/README.md)
-has complete screen/projection checks. Verify each report's final status and
-receipts before treating a candidate as integrated. The initial-queue report
-preserves the rejected fitted-c-first schedule as well as FIFO results.
-Preserve negative results from likelihood hashing, variance buffers and gradient
-scheduling. A small kernel improvement is not a full-pipeline speedup.
+[the workspace report](../../../reports/2026_11_05_algo07v3_lapack_workspace/README.md);
+the [initial-queue report](../../../reports/2026_11_05_algo07v3_initial_queue/README.md)
+retains FIFO and rejected priority scheduling. Verify final status and receipts
+before treating candidates as integrated. Preserve negative/flat results from
+likelihood hashing, variance buffers, LU workspace, identity layout and gradient
+scheduling. A small kernel gain or unmatched clock is not a cumulative speedup.

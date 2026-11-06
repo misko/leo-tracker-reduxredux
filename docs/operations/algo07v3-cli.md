@@ -1,5 +1,14 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [inverse-solve workspace](../../reports/2026_11_05_algo07v3_lapack_workspace/README.md)
+reuses one private Fortran-order array within each likelihood call, resetting it
+before the same LAPACK solve. **1,332 tests** and complete native DS26-0002
+publication pass exactly. Four complete DS26-0066 training pairs improve; the
+fitted-c mean falls 1.79%, while the smaller reverse c=0 pair falls 0.72%.
+Native time is 264.628 → 213.191 s, but large variation in unchanged stages
+prevents crediting the whole difference to workspace reuse. The report retains
+all alternatives and regressions. No CLI contract or production admission changes.
+
 The [initial-fit queue](../../reports/2026_11_05_algo07v3_initial_queue/README.md)
 uses at most three workers across all nominated branches and both calibration
 arms. **1,203 tests** and a complete native DS26-0002 comparison preserve exact

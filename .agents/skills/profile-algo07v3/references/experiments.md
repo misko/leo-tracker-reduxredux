@@ -424,3 +424,29 @@ execution intervals, the five-module native runner, source bindings, full
 stage table and refreshed captured posterior profile. Next target the repeated
 inverse/factorization/covariance work or measured predictive idle time while
 preserving exact arithmetic. Full DS26 and production admission remain open.
+
+The inverse-solve workspace is integrated in development with 1,332 passing
+tests. See `reports/2026_11_05_algo07v3_lapack_workspace/README.md`. The captured
+kernel tool is `probe_algo07v3_lapack_workspace.py --capture CAPTURE --output ROOT`;
+`probe_algo07v3_inverse_layout.py` separates layout from buffering. Complete
+training tools are `benchmark_algo07v3_lapack_workspace.py` and
+`benchmark_algo07v3_inverse_layout.py`, each taking `--request`, `--expected-root`
+and a fresh `--output`. Pin one CPU/BLAS thread and bound training to 1,200 s.
+
+All four workspace complete-fit pairs improve, but c=0's 8.06% mean is inflated
+by its slow first baseline: the reverse pair improves only 0.72%. Fitted-c mean
+improves 1.79%. Layout-only is effectively flat, with a fitted-c regression;
+LU-only and combined buffers are also unconvincing. Retain every result. Fresh
+native DS26-0002 is 264.628 → 213.191 s with exact science/eight PNGs. Unchanged
+screening, rendering and publication also improve sharply: this is not a
+qualified 51-second attributable gain or a ratio against the prior 151.305 s.
+
+The posterior profiler supports both inverse assignment shapes and empty width.
+For buffered solves its inverse-call timer excludes the reset copy, which stays
+in remaining likelihood work. The source-chain tests retain the historical
+Cholesky proof, unchanged helper and exact measured workspace body. Do not
+relax scientific tests when a source-shape assertion needs an explicit new
+implementation boundary. The report contains all failure/test receipts, the
+one-module native runner and a fresh exact captured profile. Prioritize a fresh
+matched original/current cumulative measurement before claiming further overall
+speed; production and full DS26 remain unqualified.

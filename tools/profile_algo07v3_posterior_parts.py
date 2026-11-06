@@ -30,6 +30,8 @@ def instrument(rows):
             left = node.targets[0]
             target = (', '.join(ast.unparse(n) for n in left.elts)
                       if isinstance(left, ast.Tuple) else ast.unparse(left))
+            if target == 'inv_root, info':
+                target = 'inv_root'
             if target in labels and not (target == 'cov' and isinstance(node.value, ast.Constant)):
                 label = labels[target]
         if (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
@@ -40,7 +42,12 @@ def instrument(rows):
             wrapper = ast.parse(f'_observe({label!r}, lambda: None)', mode='eval').body
             wrapper.args[1].body = node.value
             node.value = wrapper
-    if sorted(found) != sorted([*labels.values(), 'ordered_assembly', 'ordered_assembly']):
+    expected = [*labels.values(), 'ordered_assembly', 'ordered_assembly']
+    if source.count('inv_root, info = dgetrs') == 1:
+        # The buffered path has separate nonempty-solve and empty-copy nodes.
+        # Workspace reset stays outside this timing, in remaining likelihood work.
+        expected.append('inverse_solve')
+    if sorted(found) != sorted(expected):
         raise ValueError('Review posterior boundaries before profiling')
 
     def observe(name, operation):

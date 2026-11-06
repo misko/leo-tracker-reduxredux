@@ -1,5 +1,19 @@
 # ALGO07 cumulative runtime scorecard
 
+The [inverse-workspace iteration](../../reports/2026_11_05_algo07v3_lapack_workspace/README.md)
+is integrated in development with **1,332 passing tests**. All four complete
+DS26-0066 training pairs improve exactly: fitted-c mean 46.417 → 45.588 s (1.79%);
+c=0 mean 53.199 → 48.912 s, but its reverse pair improves only 0.72%. The
+51.437-second native difference (**264.628 → 213.191 s**, observed 1.241×) is not
+an isolated optimization gain: unchanged screening, rendering and publication
+also get substantially faster. CPU is 404.400 → 328.920 s; all science, both
+arms, ownership, public grid/path and eight PNG bytes match. LU-only, combined
+workspace and layout-only alternatives remain external. The posterior profiler
+supports the new solve boundary and retains old-boundary tests. Next prioritize
+a fresh matched original-ALGO07/current-v3 cumulative comparison; do not combine
+this pair with the preceding 151.305-second observation. Production and full
+DS26 admission remain open.
+
 The [initial-queue iteration](../../reports/2026_11_05_algo07v3_initial_queue/README.md)
 is integrated in development with **1,203 passing tests**. Ten complete prepared
 searches preserve all results/callbacks; initial-search means improve 7.6% on

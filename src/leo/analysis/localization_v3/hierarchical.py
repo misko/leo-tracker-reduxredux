@@ -80,7 +80,7 @@ def hierarchical_bound(
     v0 = pa0 / pb0
     rate, prior_rate = alpha.copy(), pa / v0
     blocks = []
-    identity = np.eye(width)
+    identity = np.eye(width, order='F')
     a, r = u / s[:, None], y / s
     for k in range(len(counts)):
         use = g == k
@@ -118,6 +118,8 @@ def hierarchical_bound(
         for group_indices, columns, matrices in variance_blocks
     ]
 
+    inverse_work = np.empty((width, width), order='F')
+
     def posterior(weight, precision, covariance):
         gram, rhs = np.diag(precision), np.zeros(width)
         block_weight = power * weight
@@ -136,7 +138,13 @@ def hierarchical_bound(
         )
         cov = None
         if covariance:
-            inv_root = _solve_factor(lu, pivots, identity) if width else identity.copy()
+            if width:
+                inverse_work[...] = identity
+                inv_root, info = dgetrs(lu, pivots, inverse_work, overwrite_b=1)
+                if info:
+                    raise np.linalg.LinAlgError(f"DGETRS failed: {info}")
+            else:
+                inv_root = identity.copy()
             cov = inv_root.T @ inv_root
             # Iterative callers need only the moments; the volume is used once,
             # after convergence. Keep the final determinant arithmetic unchanged.

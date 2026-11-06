@@ -4,17 +4,20 @@ import ast
 import inspect
 
 import algo07v3_precholesky_hierarchical_oracle as reference
+import algo07v3_preworkspace_hierarchical_oracle as preworkspace
 import numpy as np
 import pytest
 
 from leo.analysis.localization_v3 import hierarchical
 
 
-def test_only_the_qualified_factorization_boundary_changes():
+def test_qualified_factorization_boundary_is_preserved_before_workspace_change():
     expected = inspect.getsource(reference.hierarchical_bound).replace(
         'root = np.linalg.cholesky(gram)', 'root = _cholesky(gram)')
-    assert ast.dump(ast.parse(inspect.getsource(hierarchical.hierarchical_bound))) == (
+    assert ast.dump(ast.parse(inspect.getsource(preworkspace.hierarchical_bound))) == (
         ast.dump(ast.parse(expected)))
+    assert ast.dump(ast.parse(inspect.getsource(hierarchical._cholesky))) == (
+        ast.dump(ast.parse(inspect.getsource(preworkspace._cholesky))))
 
 
 @pytest.mark.parametrize('width', [0, 1, 9, 32, 64, 175])
