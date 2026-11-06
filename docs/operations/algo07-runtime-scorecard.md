@@ -1,5 +1,15 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [training reuse census and covariance experiments](../../reports/2026_11_06_algo07v3_covariance_reuse/README.md):
+no runtime or production change. Six DS26-0002 fold masks are all distinct;
+DS26-0066 has 23 distinct masks among 24 folds, with its slow fold unique.
+Symmetric BLAS covariance fails exactness. Output-buffer reuse preserves the
+captured likelihood and complete difficult training signatures, but individual
+timing pairs vary, including a slower reverse c=0 pair. Keep it external until
+convincing complete-scan evidence. No new cumulative speedup. Next profile the
+recovery timeline across targets to assess idle-slot filling under the same
+three-worker limit and canonical admission/selection semantics.
+
 November 6 [compiled assembly and convergence analysis](../../reports/2026_11_06_algo07v3_ordered_assembly/README.md):
 **candidate rejected; default numerical implementation restored**. Although
 captured-call mean improves 4.00% and hard fitted-c training improves 2.61%,

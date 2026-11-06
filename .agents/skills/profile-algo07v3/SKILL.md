@@ -132,3 +132,13 @@ finds 269 first-round likelihood calls in each hard-fold arm, with 220 reaching
 Nuisance width is unchanged across folds. Investigate this first-round trajectory
 and exact reuse across arms/targets. Lower budgets, different initialization or
 different stopping rules change the algorithm; they are not exact runtime fixes.
+
+The [training reuse and covariance investigation](../../../reports/2026_11_06_algo07v3_covariance_reuse/README.md)
+finds no duplicate masks in DS26-0002 and only one potential duplicate in
+DS26-0066, outside the slow target. Equal masks alone are insufficient for
+complete-fit reuse. A symmetric BLAS covariance product fails exactness;
+private covariance-buffer reuse is exact but requires complete-fit and native
+timing evidence before adoption. Preserve all alternating pairs, including
+regressions. The next scheduling diagnostic is the complete recovery timeline
+across targets, not another permutation of one target's six jobs. Preserve the
+three-slot limit, canonical outputs, stateful fallback and admission semantics.
