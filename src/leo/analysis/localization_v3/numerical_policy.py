@@ -6,6 +6,8 @@ not satellite priors or target phase integration support.
 """
 
 import inspect
+import json
+from copy import deepcopy
 
 import numpy as np
 from scipy.optimize import OptimizeResult
@@ -105,6 +107,64 @@ class NumericalPolicy:
             )
         )
         return result
+
+
+def map_calibration_arms(context, operation, arms, mapper=None):
+    """Run independent fits and reconcile only this policy's ordered receipts.
+
+    The mapper is an ordered process (or serial) port, never a threaded map:
+    each task temporarily installs its own policy in the context it inherits.
+    Unknown policy implementations retain the historical serial behavior.
+    No partial receipt is committed if a task or validation fails.
+    """
+    policy = context.get("numerical_policy")
+    if mapper is None or (policy is not None and type(policy) is not NumericalPolicy):
+        return list(map(operation, arms))
+    if policy is None:
+        return list(mapper(operation, arms))
+    arms = tuple(arms)
+    if arms != ("c0", "fitted_c"):
+        raise ValueError("Exactly the ordered c0/fitted_c pair is required")
+    before = deepcopy(policy.receipt)
+
+    def exact(value):
+        return json.dumps(value, sort_keys=True, allow_nan=False)
+
+    def execute(arm):
+        local = deepcopy(policy)
+        context["numerical_policy"] = local
+        try:
+            return arm, operation(arm), local.receipt
+        finally:
+            context["numerical_policy"] = policy
+
+    completed = list(mapper(execute, arms))
+    if exact(policy.receipt) != exact(before):
+        raise ValueError("Mapper mutated the owning numerical receipt")
+    merged = deepcopy(before)
+    lists = ("reference_updates", "optimizer_calls")
+    constant = set(before) - {*lists, "problem_count"}
+    values = []
+    for expected, (arm, value, receipt) in zip(arms, completed, strict=True):
+        if arm != expected:
+            raise ValueError("Numerical arm results are out of order")
+        if set(receipt) != set(before) or any(
+            exact(receipt[k]) != exact(before[k]) for k in constant
+        ):
+            raise ValueError("Numerical policy configuration changed in child")
+        for key in lists:
+            n = len(before[key])
+            if exact(receipt[key][:n]) != exact(before[key]):
+                raise ValueError("Child rewrote existing numerical receipt")
+            merged[key].extend(deepcopy(receipt[key][n:]))
+        count = receipt["problem_count"]
+        if type(count) is not int or count < before["problem_count"]:
+            raise ValueError("Child problem count is invalid")
+        merged["problem_count"] += count - before["problem_count"]
+        values.append(value)
+    policy.receipt.clear()
+    policy.receipt.update(merged)
+    return values
 
 
 def check_problem(context, problem):

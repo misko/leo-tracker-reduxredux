@@ -111,3 +111,30 @@ def test_failed_child_aborts_instead_of_becoming_a_rejection(monkeypatch, kind):
     args = fixture(monkeypatch, fail=True)
     with pytest.raises(ParallelFitFailure, match='recovery arm failed'):
         getattr(owned, kind)(*args, map_arms=map_initial_arms)
+
+
+@pytest.mark.parametrize('kind,kwargs', [
+    ('fit_shared', {}), ('fit_shared', dict(conditional_satellite_refresh=True)),
+    ('fit_new', {}), ('fit_new', dict(optimizer='powell')),
+])
+def test_owned_numerical_policy_reconciles_full_trial_receipts(monkeypatch, kind, kwargs):
+    from leo.analysis.localization_v3.numerical_policy import NumericalPolicy
+
+    args = fixture(monkeypatch)
+    args[0]['numerical_policy'] = NumericalPolicy()
+    original_problem = owned._problem
+
+    def observed(d, arm, reference, *a, **kw):
+        receipt = d['numerical_policy'].receipt
+        receipt['problem_count'] += 1
+        receipt['reference_updates'].append(dict(arm=arm, reference=reference.tolist()))
+        return original_problem(d, arm, reference, *a, **kw)
+
+    for module in (oracle, owned):
+        monkeypatch.setattr(module, '_problem', observed)
+    reference = copy.deepcopy(args)
+    expected = getattr(oracle, kind)(*reference, **kwargs)
+    actual = getattr(owned, kind)(*args, map_arms=map_initial_arms, **kwargs)
+    assert fingerprint(actual) == fingerprint(expected)
+    assert fingerprint(args[0]['numerical_policy'].receipt) == fingerprint(
+        reference[0]['numerical_policy'].receipt)

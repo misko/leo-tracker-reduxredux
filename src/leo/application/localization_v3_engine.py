@@ -196,6 +196,8 @@ def infer_prepared(
             discovery_allowed=execution.discovery_allowed,
             clock=execution.clock,
             charge_reused=execution.charge_reused,
+            **({"map_inclusion_arms": execution.map_recovery_arms}
+               if execution.map_recovery_arms else {}),
         ),
         "numerical_recovery_evaluated",
     )

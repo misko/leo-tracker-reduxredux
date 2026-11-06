@@ -39,6 +39,15 @@ def execute(name, operation):
         return False, None
 
 
+def test_numerical_replay_forwards_arm_mapper_to_controller(monkeypatch):
+    evidence, incumbent, candidate, saved = fixture()
+    mapper, seen = object(), []
+    monkeypatch.setattr(replay, 'recover_tracks',
+                        lambda *a, **k: seen.append(k['map_inclusion_arms']) or candidate)
+    run(evidence, incumbent, saved, map_inclusion_arms=mapper)
+    assert seen == [mapper]
+
+
 def routes(monkeypatch, *, shared=True):
     monkeypatch.setattr(replay, "identity_consensus", lambda *a, **kw: dict(norad=3))
     monkeypatch.setattr(replay, "shared_family_route", lambda *a: shared)

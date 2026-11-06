@@ -64,6 +64,7 @@ def replay_recovery(
     clock,
     charge_reused,
     on_selection=None,
+    map_inclusion_arms=None,
 ):
     """Replay the completed original schedule, then perform additive adoption.
 
@@ -184,6 +185,7 @@ def replay_recovery(
             narrowed,
             run_stage=stage,
             discovery_allowed=discovery_allowed,
+            **({"map_inclusion_arms": map_inclusion_arms} if map_inclusion_arms else {}),
             **({"on_selection": selected_state.append} if on_selection is not None else {}),
         )
     else:

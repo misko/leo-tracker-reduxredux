@@ -1,5 +1,13 @@
 # Standalone ALGO07v3 run and publication recovery
 
+The [paired numerical-replay change](../../reports/2026_11_05_algo07v3_numerical_arms/README.md)
+uses the existing recovery-arm executor for independent replay fits, then merges
+their numerical receipts in the original c=0/fitted-c order. Annotation replay,
+selection callbacks and control/addition ordering remain serial. **716 tests**
+and a fresh DS26-0002 complete comparison pass, including both arms and eight
+PNG bytes. Native time is **171.653 → 169.742 s**; numerical replay falls
+**12.438 → 7.208 s**. This is development qualification, not deployment.
+
 The external [native gradient scheduling trial](../../reports/2026_11_05_algo07v3_native_gradients/README.md)
 preserves complete science and all eight PNGs, but its targeted fits regress
 4.445 → 5.392 s and consume 72.7% more CPU. It is rejected for integration;

@@ -80,7 +80,7 @@ def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch, port, arg
             assert argument not in kwargs
 
 
-def test_recovery_arm_executor_is_scoped_to_original_predictive_checkpoint(monkeypatch):
+def test_recovery_arm_executor_is_scoped_to_predictive_and_numerical_checkpoints(monkeypatch):
     from dataclasses import replace
 
     prepared, region, catalogue, execution, calls, *_ = fixture(monkeypatch)
@@ -89,7 +89,7 @@ def test_recovery_arm_executor_is_scoped_to_original_predictive_checkpoint(monke
     engine.infer_prepared(prepared, region, catalogue, identities=['scan'],
                           collect_history=object(), execution=execution)
     for name, _, kwargs in calls:
-        if name == 'recover_predictive_checkpoint':
+        if name in ('recover_predictive_checkpoint', 'recover_numerical_checkpoint'):
             assert kwargs['map_inclusion_arms'] is mapper
         else:
             assert 'map_inclusion_arms' not in kwargs

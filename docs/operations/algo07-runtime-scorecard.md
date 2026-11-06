@@ -1,5 +1,14 @@
 # ALGO07 cumulative runtime scorecard
 
+The [paired numerical-replay iteration](../../reports/2026_11_05_algo07v3_numerical_arms/README.md)
+is integrated in development. Fresh DS26-0002 native time is **171.653 →
+169.742 s (1.011×)**, saving 1.911 s, with exact science, both arms, ordered
+numerical receipts, public grid/path and all eight PNGs. The replay stage falls
+**12.438 → 7.208 s**. Three alternating complete-fit pairs average **22.665 →
+13.746 s**, with CPU increasing 9.6%; full-run CPU rises 3.5% in the native pair.
+Unchanged stages offset part of the stage saving. **716 tests pass**. Full DS26,
+production admission and original-ALGO07 cumulative timing remain outstanding.
+
 The [native gradient scheduling trial](../../reports/2026_11_05_algo07v3_native_gradients/README.md)
 is **rejected for integration**. Complete DS26-0002 science and eight PNGs match,
 but its seven targeted fits regress **4.445 → 5.392 s**, with CPU **4.441 →

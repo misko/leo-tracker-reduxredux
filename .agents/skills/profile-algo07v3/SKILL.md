@@ -173,8 +173,9 @@ separate fold scoring; it never nests arm workers under three fold workers.
 The annotation-training report records exact native DS26-0002 and DS26-0066
 qualification. Use its `run_pair.py`/`run_baseline.sh` for seven
 declared module overlays and its renderer for complete timing receipts. Profiler
-child metadata now identifies training tasks as `[seed, arm]`. Keep numerical
-replay/callbacks serial and preserve the three-live-worker cap when iterating.
+child metadata now identifies training tasks as `[seed, arm]`. Annotation replay
+and selection callbacks remain serial. Paired numerical inclusion now uses the
+qualified receipt reconciliation below; preserve the three-live-worker cap.
 
 For posterior-loop changes, measure complete fits as well as array kernels.
 `tools/probe_algo07v3_posterior_assembly.py --request REQUEST --output FRESH_DIRECTORY`
@@ -275,5 +276,22 @@ does not support its integration. The report archives the measured verifier
 and an exact post-run correction for explicit-empty source-change declarations.
 An empty declaration requires no changes; an omitted declaration retains the
 historical default. Do not bypass the source comparison to handle this case.
-Next investigate coarser independent numerical-replay fits with exact ordered
-receipt reconciliation, or separately measure repeated catalogue preparation.
+The coarser numerical-replay follow-up is now integrated with exact ordered
+receipt reconciliation. `tools/probe_algo07v3_numerical_arms.py --request REQUEST
+--output FRESH_ROOT --repeats 3` alternates complete serial/paired inclusion
+fits in a fresh native execution, with three CPUs, one BLAS thread and a
+1,200-second supervisor. Its repeated-work outer clock is not pipeline speed.
+Each trial copies the incoming policy; compare complete fits and the resulting
+receipt, and verify final native science/eight PNGs. The frozen serial oracle
+is external measurement code, never a runtime dependency. The original probe
+bytes are archived because it was subsequently adapted to that frozen oracle.
+
+Three DS26-0002 pairs average 22.665 → 13.746 s, with CPU increasing 9.6%.
+The fresh candidate-first native pair is exact and improves 171.653 → 169.742 s;
+numerical replay itself falls 12.438 → 7.208 s. The 716-test suite covers ordered
+receipt merging, unknown-policy serial fallback, failure cleanup and both
+application forwarding boundaries. This is one-scan development qualification.
+Annotation replay and selection callbacks remain serial; only independent
+paired inclusion fits use reconciled policies. Do not generalize this mapper
+to arbitrary mutable contexts or threaded execution. Next measure the uncached
+recovery-catalogue parser against the existing scan-scoped validated-text cache.

@@ -227,19 +227,22 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
 
 
 def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
-                             discovery_allowed, clock, charge_reused, on_selection=None):
+                             discovery_allowed, clock, charge_reused, on_selection=None,
+                             map_inclusion_arms=None):
     """Replay the owned checkpoint and retain the exact incumbent on rejection."""
     if predictive['status'] != 'predictive_recovery_evaluated':
         return dict(status=predictive['status'], recovery=None, recovery_complete=False)
     result = replay_recovery(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
         predictive['recovery'], predictive['completed_stages'], run_stage=run_stage,
         discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused,
+        **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}),
         **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='numerical_recovery_evaluated', recovery=result, recovery_complete=False)
 
 
 def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
-                                 discovery_allowed, clock, charge_reused):
+                                 discovery_allowed, clock, charge_reused,
+                                 map_inclusion_arms=None):
     """Retain completed numerical annotations, including on incumbent fallback."""
     completed = {}
     selection = []
@@ -252,7 +255,8 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
 
     result = recover_numerical_tracks(prepared_recovery, predictive, run_stage=captured,
         discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused,
-        on_selection=selection.append)
+        on_selection=selection.append,
+        **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}))
     return dict(result, completed_stages=completed,
                 selected_state=selection[0] if selection else predictive.get('selected_state'))
 
