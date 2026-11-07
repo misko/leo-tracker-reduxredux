@@ -39,7 +39,7 @@ def execute(name, operation):
         return False, None
 
 
-@pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches'])
+@pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches', 'map_joint_arms'])
 def test_numerical_replay_forwards_arm_mapper_to_controller(monkeypatch, port):
     evidence, incumbent, candidate, saved = fixture()
     mapper, seen = object(), []

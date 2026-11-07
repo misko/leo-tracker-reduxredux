@@ -1,5 +1,29 @@
 # ALGO07 cumulative runtime scorecard
 
+November 6 [paired joint fits](../../reports/2026_11_06_algo07v3_joint_pairs/README.md):
+**retained for scoped latency; production unchanged**. Four real
+predictive checkpoint trials preserve both complete calibration fits. Mean wall
+falls 57.687→32.398 s (43.84%), while CPU rises 57.662→64.633 s (12.09%). Both
+opposite-order pairs improve latency; the reverse pair has appreciable CPU cost.
+This is not a complete-pipeline gain. The owned candidate passes 2,418 tests,
+including stage-specific numerical receipt delivery and unchanged audit order.
+The first isolated DS26-0102 pair passes complete science and eight PNGs but
+regresses 658.199→745.581 s wall and 994.45→1,364.77 CPU s. Numerical recovery
+improves 169.151→129.615 s, while predictive rises 282.967→368.191 s; unchanged
+pre-recovery stages alone rise 109.068→175.186 s. Preserve the regression.
+The opposite-order same-scan replication, declared before candidate completion,
+also passes exact science: 847.876→526.894 s and 1,329.12→940.35 CPU s. The inactive
+DS26-0002 control passes at 150.331→170.455 s and 230.15→255.98 CPU s, with no
+joint recovery stages. All three predeclared pairs are complete and archived;
+no additional repetitions were selected. Retention is for repeatable scoped fit
+latency and exact native science, with increased CPU in the focused benchmark.
+These inconsistent full-run timings do not establish throughput, production
+admission or a new cumulative speed ratio. Preserve all outcomes without
+normalization. Eight new observer tests and six exact captured-kernel profiles
+identify the next target: direct-mode cross-family contractions/RHS consume
+63.82% of the largest call's CPU, while predictive solve/determinant uses 49.94%.
+These are nested kernel shares, not estimated full-scan savings.
+
 November 6 [scalar-only joint scores](../../reports/2026_11_06_algo07v3_scalar_scores/README.md):
 **not adopted; runtime and production unchanged**. All 48 actual DS26-0102 grid
 evaluations preserve exact scores and immutable inputs. Four alternating pairs

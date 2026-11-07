@@ -88,6 +88,7 @@ def test_fold_executor_is_scoped_to_predictive_checkpoint(monkeypatch, port, arg
 @pytest.mark.parametrize('port,argument', [
     ('map_recovery_arms', 'map_inclusion_arms'),
     ('map_grid_batches', 'map_joint_batches'),
+    ('map_recovery_arms', 'map_joint_arms'),
 ])
 def test_recovery_arm_executor_is_scoped_to_predictive_and_numerical_checkpoints(
     monkeypatch, port, argument

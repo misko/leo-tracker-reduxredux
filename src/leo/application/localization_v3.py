@@ -186,7 +186,7 @@ def include_recovery_target(prepared_recovery, annotated):
 def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed,
                               on_selection=None, map_annotation_folds=None,
                               map_inclusion_arms=None, map_annotation_training=None,
-                              map_joint_batches=None):
+                              map_joint_batches=None, map_joint_arms=None):
     """Run ordered recovery with explicit caller-owned admission and execution."""
     if prepared_recovery['status'] != 'track_recovery_prepared':
         return dict(status=prepared_recovery['status'], recovery=None, recovery_complete=False)
@@ -200,6 +200,7 @@ def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed
                                if map_annotation_training else {}),
                             **({'map_joint_batches': map_joint_batches}
                                if map_joint_batches else {}),
+                            **({'map_joint_arms': map_joint_arms} if map_joint_arms else {}),
                             **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='predictive_recovery_evaluated', recovery=result, recovery_complete=False)
 
@@ -207,7 +208,7 @@ def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed
 def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_allowed, clock,
                                   inventory_seconds, map_annotation_folds=None,
                                   map_inclusion_arms=None, map_annotation_training=None,
-                                  map_joint_batches=None):
+                                  map_joint_batches=None, map_joint_arms=None):
     """Keep owned stage values for the immediately following numerical policy."""
     completed = {'inventory': dict(value=prepared_recovery['inventory'], seconds=inventory_seconds)}
     selection = []
@@ -229,14 +230,16 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
                                       **({'map_annotation_training': map_annotation_training}
                                          if map_annotation_training else {}),
                                       **({'map_joint_batches': map_joint_batches}
-                                         if map_joint_batches else {}))
+                                         if map_joint_batches else {}),
+                                      **({'map_joint_arms': map_joint_arms}
+                                         if map_joint_arms else {}))
     return dict(result, completed_stages=completed,
                 selected_state=selection[0] if selection else None)
 
 
 def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
                              discovery_allowed, clock, charge_reused, on_selection=None,
-                             map_inclusion_arms=None, map_joint_batches=None):
+                             map_inclusion_arms=None, map_joint_batches=None, map_joint_arms=None):
     """Replay the owned checkpoint and retain the exact incumbent on rejection."""
     if predictive['status'] != 'predictive_recovery_evaluated':
         return dict(status=predictive['status'], recovery=None, recovery_complete=False)
@@ -245,13 +248,15 @@ def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
         discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused,
         **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}),
         **({'map_joint_batches': map_joint_batches} if map_joint_batches else {}),
+        **({'map_joint_arms': map_joint_arms} if map_joint_arms else {}),
         **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='numerical_recovery_evaluated', recovery=result, recovery_complete=False)
 
 
 def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
                                  discovery_allowed, clock, charge_reused,
-                                 map_inclusion_arms=None, map_joint_batches=None):
+                                 map_inclusion_arms=None, map_joint_batches=None,
+                                 map_joint_arms=None):
     """Retain completed numerical annotations, including on incumbent fallback."""
     completed = {}
     selection = []
@@ -266,7 +271,8 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
         discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused,
         on_selection=selection.append,
         **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}),
-        **({'map_joint_batches': map_joint_batches} if map_joint_batches else {}))
+        **({'map_joint_batches': map_joint_batches} if map_joint_batches else {}),
+        **({'map_joint_arms': map_joint_arms} if map_joint_arms else {}))
     return dict(result, completed_stages=completed,
                 selected_state=selection[0] if selection else predictive.get('selected_state'))
 

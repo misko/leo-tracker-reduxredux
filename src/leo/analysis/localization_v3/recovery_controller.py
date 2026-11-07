@@ -9,6 +9,7 @@ Neither port may use a reference position or known localization error.
 from copy import deepcopy
 
 from leo.analysis.localization_v3.inclusion_controls import InclusionControlCache
+from leo.analysis.localization_v3.joint_fits import DeferredJointFits
 from leo.analysis.localization_v3.joint_recovery import (
     audit_joint,
     fit_joint,
@@ -35,7 +36,7 @@ METHODS = ("control", "factorized", "joint")
 def recover_tracks(
     context, evidence, *, run_stage, discovery_allowed, on_selection=None,
     map_annotation_folds=None, map_inclusion_arms=None, map_annotation_training=None,
-    map_joint_batches=None
+    map_joint_batches=None, map_joint_arms=None
 ):
     """Evaluate original target order and at most one disjoint new-family pair.
 
@@ -71,13 +72,12 @@ def recover_tracks(
         experiment = {m: {} for m in METHODS}
         prefix = "retry-" if optimizer == "powell" else ""
         for method in METHODS:
+            fits = DeferredJointFits(context, probe, method, optimizer, fit_joint, map_joint_arms)
             for arm in ARMS:
                 name = prefix + method + "-" + arm
                 ok, trial = stage(
                     name,
-                    lambda method=method, arm=arm: fit_joint(
-                        context, probe, arm, method, optimizer=optimizer
-                    ),
+                    lambda arm=arm, fits=fits: fits.fit(arm),
                 )
                 if not ok:
                     return False, experiment

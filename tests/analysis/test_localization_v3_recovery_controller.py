@@ -172,7 +172,9 @@ def test_failed_stage_preserves_earlier_qualified_addition(monkeypatch):
 
 
 @pytest.mark.parametrize('parallel', [False, True])
-def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatch, parallel):
+@pytest.mark.parametrize('paired', [False, True])
+def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(
+        monkeypatch, parallel, paired):
     evidence = setup(monkeypatch)
     calls = []
     audit_calls, mapper = [], object()
@@ -209,7 +211,8 @@ def test_joint_numerical_retry_refits_both_arms_and_all_three_methods(monkeypatc
     states = []
     result = controller.recover_tracks(
         {}, evidence, run_stage=execute, discovery_allowed=lambda: True, on_selection=states.append,
-        **({'map_joint_batches': mapper} if parallel else {})
+        **({'map_joint_batches': mapper} if parallel else {}),
+        **({'map_joint_arms': lambda fn, arms: [fn(arm) for arm in arms]} if paired else {})
     )
     assert len(calls) == 12
     assert audit_calls == [(method, arm) for _, method, arm in calls]

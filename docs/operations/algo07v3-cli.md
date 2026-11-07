@@ -389,6 +389,15 @@ timeout. Changing those scientific admission semantics remains a release gate.
 
 ## Timing scopes
 
+The [paired joint-fit implementation](../../reports/2026_11_06_algo07v3_joint_pairs/README.md)
+uses the existing bounded two-arm execution port, retaining original stage and
+numerical-receipt delivery order. Three native comparisons on DS26-0102/0002
+preserve complete science and all eight PNGs. Focused paired fitting is 43.84%
+faster in elapsed time with 12.09% more CPU; full-scan timings disagree in
+direction. This is a development latency optimization, not a new cumulative,
+dataset-throughput or production-admission claim. There is no new CLI flag,
+search budget, calibration policy or persisted contract.
+
 Joint phase integration uses an optional owned `_joint_lu` extension to reuse
 NumPy's small-matrix factorization for solve and determinant. The normal package
 build supplies it; there is no runtime compiler. Unsupported providers, shapes

@@ -1,0 +1,67 @@
+{
+  "commands": {
+    "candidate": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/candidate-process-time.txt",
+      "taskset",
+      "-c",
+      "0,1,2",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/candidate",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/candidate-request.json",
+      "run",
+      "1200"
+    ],
+    "baseline": [
+      "/usr/bin/time",
+      "-v",
+      "-o",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-process-time.txt",
+      "sh",
+      "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_joint_pairs/run_baseline.sh",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-src",
+      "/srv/bulk/leo-dev/algo07v3-isolation-20261105",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-request.json",
+      "1200",
+      "0,1,2"
+    ]
+  },
+  "sequence": [
+    "candidate",
+    "baseline"
+  ],
+  "bindings": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/joint_fits.py": "fd00504efc3a21f9813ed3d9d1ffce8a6f2cb1bb818238d71c9822fc16ac4b29",
+    "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-src/leo/analysis/localization_v3/recovery_controller.py": "d05cef42e62a67d85d6df6930f5ce1a3d351cf0549dcb305419a75f6e70c7b82",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/recovery_controller.py": "61d6cdb0c9ee8b7ed7ea2c2757fe399caea629b9d956652f2ad9ecbe56df5e55",
+    "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-src/leo/analysis/localization_v3/numerical_recovery.py": "c874d6daae828f4e99a82e5d85b1e71f4981f2cb259d602e04aff6e2d9accc8e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/localization_v3/numerical_recovery.py": "4ed5b09f01db43dc4778b80d7cfae80997d74638d6fb127bc8a0bdf69dd3e3f3",
+    "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-src/leo/application/localization_v3.py": "0cfaf692f7ab77f596cbafe16778500168b98b4eabb1e38406305c76d30d7bc0",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3.py": "f1aaca74fe330c9ca881c3d375c4272b1d0d0a682a3eaa320514253acd6516ee",
+    "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-src/leo/application/localization_v3_engine.py": "1c836e158e8229c23257e943f466186f63024ba0ed000aa0c48da74f982e15db",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/application/localization_v3_engine.py": "2abb9aad929bb3ccecd7d6215234cf55a84a78d2f9deb95310ab3ff9201a9d16",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_joint_pairs/run_pair.py": "fa4308b68d0f264c50990b81583cbe16fafd5de807f5b0e0284e456016ed2c96",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_06_algo07v3_joint_pairs/run_baseline.sh": "c852fce88afc6d21a08bc6f0cf660b9cfaee218621b055adc7a98a2f2f8b36e7",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/qualify_algo07v3_cli.sh": "466b295a6e2de3b51e42466ab8e8605d1633c49d4f8eb7e1dd09916da669bdbc",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/compare_algo07v3_runs.py": "94e22ce68ce4b7e20fd33607fcdaea4a487b757164a1a4e6e51b426754feedb9",
+    "/srv/bulk/leo-dev/algo07v3-isolation-20261105/input-bindings.json": "3d41b2ae9a3fcbbde170ad0a4f747b364565d59e6989aab47ef7832e99622681",
+    "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/candidate-request.json": "33d821799761acd4eed9fc43162784c1cb9e3efb910fd8fad640eea7bb82ce4c",
+    "/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106/baseline-request.json": "3c7ea4663c2a07cfa0deb311fff083246696ff3a2f72d7c8f7ac93657e6aa9c9"
+  },
+  "cpus": [
+    0,
+    1,
+    2
+  ],
+  "blas_threads": 1,
+  "timeout_seconds": 1200,
+  "cpu_accounting": "GNU time -v",
+  "production_modified": false
+}

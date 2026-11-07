@@ -189,6 +189,8 @@ def infer_prepared(
             ),
             **({"map_joint_batches": execution.map_grid_batches}
                if execution.map_grid_batches else {}),
+            **({"map_joint_arms": execution.map_recovery_arms}
+               if execution.map_recovery_arms else {}),
         ),
         "predictive_recovery_evaluated",
     )
@@ -205,6 +207,8 @@ def infer_prepared(
                if execution.map_recovery_arms else {}),
             **({"map_joint_batches": execution.map_grid_batches}
                if execution.map_grid_batches else {}),
+            **({"map_joint_arms": execution.map_recovery_arms}
+               if execution.map_recovery_arms else {}),
         ),
         "numerical_recovery_evaluated",
     )

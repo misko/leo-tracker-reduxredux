@@ -84,6 +84,50 @@ deployment is a separate action. Select the next hotspot from the new profile.
 
 ## Choose a focused experiment
 
+The [paired joint-fit candidate](../../../reports/2026_11_06_algo07v3_joint_pairs/README.md)
+is retained in development for scoped latency; production is unchanged.
+Its completed predictive checkpoint preserves
+both complete fits in four alternating trials: mean wall 57.687→32.398 s
+(43.84% less), CPU 57.662→64.633 s (12.09% more). Both pairs improve latency;
+do not label this a pipeline gain. The development candidate passes 2,418 tests
+with no failures/skips. Four runtime modules forward the existing arm mapper;
+`joint_fits.py` delivers each precomputed result at its original stage boundary.
+Numerical replay creates a fresh policy per stage, so it receives only its own
+fit's receipt; tests also cover persistent-policy audit ordering.
+The completed isolated baseline-first pair root is
+`/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0102-20261106`.
+It passes complete science, both arms, all audits and eight PNGs, but regresses
+658.199→745.581 s wall and 994.45→1,364.77 CPU s. Numerical recovery falls
+169.151→129.615 s; predictive rises 282.967→368.191 s. Unchanged stages before
+recovery rise 109.068→175.186 s. Preserve these clocks without normalization.
+Before that candidate completed, one same-scan opposite-order replication was
+declared in the report's `replication-plan.json`. It completed exactly at
+`/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0102-reverse-20261107`.
+Its wall is 847.876→526.894 s and CPU 1,329.12→940.35 s. The inactive control at
+`/srv/bulk/leo-dev/algo07v3-joint-pairs-native-0002-20261106` also completes exactly,
+150.331→170.455 s and 230.15→255.98 CPU s, with no joint recovery stages.
+All three pairs retain source bindings, both c arms, ordered numerical receipts,
+public grid/path and eight exact PNGs. Do not restart these terminal jobs.
+The four-file baseline and five-file candidate snapshots remain in each root.
+The report's `render_all.py` checks the fixed sequence and matched source/config
+bindings before displaying every pair. No additional favorable repetitions were
+selected. Retention is based on exact native science and repeatable scoped fit
+latency, with a CPU tradeoff; full-pipeline/throughput and production admission
+remain unqualified. No new cumulative speed ratio follows. Scalar and endpoint
+changes below are not stacked into this implementation.
+
+The completed `tools/profile_algo07v3_joint_statements.py` observer attributes
+the actual three native phase grids in both modes, with six exact complete
+outputs and unchanged inputs. Results are at
+`/srv/bulk/leo-dev/algo07v3-joint-statements-20261107` and the paired-fit report's
+`kernel-profile/`. Eight observer tests pass. On the largest grid, direct-mode
+cross-family contractions plus RHS construction consume 63.82% of whole-call
+CPU; predictive solve/determinant consumes 49.94%. These are nested component
+shares, not a pipeline speed forecast. Next test a narrow contraction-layout
+prototype against these captures, rejecting any changed byte before real-fit
+or native qualification. Preserve summation order, both modes and all outputs.
+Do not revive scalar/endpoint or generic parallel chunk trials unchanged.
+
 The [scalar-only score benchmark](../../../reports/2026_11_06_algo07v3_scalar_scores/README.md)
 is complete and **not adopted**: all 48 actual grid scores are exact, but four
 alternating pairs per grid/mode give mixed wall and CPU effects. No native
