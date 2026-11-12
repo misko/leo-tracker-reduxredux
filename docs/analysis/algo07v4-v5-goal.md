@@ -270,3 +270,21 @@ then tests L-BFGS-B with all branches and five phase rounds. No initial-search
 optimizer change is enabled in the worker. A read-only phase census also
 finds expensive late L-BFGS-B fits on DS26-0002; choosing GN for warm later
 rounds is a separate hypothesis, not a measured hybrid policy.
+
+The complete initial-search screen rejected L-BFGS-B. The untouched GN oracle
+used 40.154 wall / 56.440 CPU seconds; cloned GN used 39.674 / 56.327 and
+matched the entire oracle result bit for bit. Both used 30 phase fits and
+1,366 residual evaluations, including one original iteration-budget stop.
+L-BFGS-B used 100.100 wall / 120.765 CPU seconds and 2,410 residual evaluations.
+Only 27 of 30 fits reported convergence, with one exhausted budget. It retained
+the branch winner and nominations but changed some branch-level acceptance
+and graph-association decisions. This is a rejected component cost screen,
+not a measured GPS tradeoff. No initial optimizer extension is enabled.
+`initial-optimizer-0066-001` retains the qualified oracle and both comparisons.
+
+The next exact-work hypothesis is the inclusion-control cache bypass: the scan
+now stores a callable backend, while cache eligibility rejects callable scan
+fields. A read-only audit proved the bypass, but reuse and savings remain
+unmeasured. First census prospective keys and independently recompute any
+colliding controls. Keep all scientific fingerprints and unknown-callback
+rejections; do not enable cache reuse until complete results match.
