@@ -1,5 +1,52 @@
 # Algo07v4 baseline and algo07v5 goal
 
+The first four independent frozen-v3/four-target-v5 pairs are complete and
+validated through public stores. Aggregate complete-worker wall time falls
+from 1241.670208 to 713.841397 seconds, or 1.739420x. CPU falls from
+1962.461957 to 973.400486 seconds, or 2.016089x. The wall target is still
+unmet on this sample. Each recording has one adjacent pair, with version
+order alternating across recordings; this is not repeated timing or full
+DS26 qualification.
+
+| Recording | Frozen v3 wall seconds | Four-target v5 wall seconds | Wall ratio |
+| --- | ---: | ---: | ---: |
+| DS26-0225 | 549.071 | 236.555 | 2.321x |
+| DS26-0237 | 271.703 | 186.620 | 1.456x |
+| DS26-0048 | 182.148 | 104.746 | 1.739x |
+| DS26-0140 | 238.749 | 185.921 | 1.284x |
+
+Candidate GPS median/p95/max are 0.746485/1.917686/2.087295 km for c0 and
+0.727778/1.958260/2.121770 km for fitted-c. The largest paired increases
+are 1.26 cm and 0.32 mm respectively. On 0225 both errors decrease by
+68.35/73.19 m, while association counts decrease by 32 in each arm. Its
+seventh-ranked RF-qualified family is outside the prefix: joint predictive
+recovery becomes single-family recovery. The other three recordings retain
+all owners. Frequency scores and RMS remain separate; 0225's lower score
+uses fewer associated points and does not establish a better fit on matched
+observations. All workers and selected training/control/joint executions
+completed. Primary optimizer failures and completed GN fallbacks remain
+recorded. Evidence and source/request checks are in
+`~/.cache/algo07v5-speed-20261112/worker-targets4-qualification-001-validation-4/`.
+
+These four recordings now inform the next budget experiment. Their frozen
+four-target results remain valid, but revised policies must treat them as
+development. `qualification-split-target-frontier-002.json` retains 12
+development and 146 untouched available recording groups. Original split,
+seed, assignments and missing 0172 remain recorded.
+
+The existing zero-recovery-target option completes on development scan0066.
+Both selected arms, GPS errors, frequency fit, ownership and eight PNG bytes
+match full-search current v5 exactly. It declares all eight original targets
+omitted, performs no annotation/control/joint work, and records 5252 native
+calls with no native fallback. Observed wall/CPU are 206.382180/240.555161
+seconds versus the earlier four-target 161.206511/215.255213. These separated
+runs do not establish a causal speed ratio. Its later addition stage takes
+11.77 seconds versus 0.003 in the four-target observation. Per-stage work and
+host effects must be separated; fewer early calls alone do not establish
+lower complete-worker cost. Remaining quick cases and balanced timing
+are required before selecting this frontier point. No new numerical cap,
+runtime implementation, default or full-batch launch is involved.
+
 The explicit four-target policy passes all three complete-worker quick screens.
 All selected science, GPS errors, frequency scores, ownership and all 24 PNG
 bytes match the full-search v5 controls exactly. Kept target inputs and all
