@@ -59,6 +59,29 @@ def execute(name, operation):
     return True, operation()
 
 
+def test_control_factory_is_scoped_to_one_complete_recovery(monkeypatch):
+    evidence = setup(monkeypatch, shared=True)
+    created, received = [], []
+
+    def factory():
+        cache = object()
+        created.append(cache)
+        return cache
+
+    original = controller.fit_shared
+
+    def fit(*args, control_cache, **kwargs):
+        received.append(control_cache)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(controller, 'fit_shared', fit)
+    for _ in range(2):
+        controller.recover_tracks({}, evidence, run_stage=execute, discovery_allowed=lambda: True,
+                                  inclusion_control_factory=factory)
+    assert len(created) == 2 and created[0] is not created[1]
+    assert received == [created[0], created[0], created[1], created[1]]
+
+
 @pytest.mark.parametrize('shared', [False, True])
 def test_inclusion_executor_keeps_target_order_and_reaches_retry(monkeypatch, shared):
     evidence = setup(monkeypatch, shared=shared)

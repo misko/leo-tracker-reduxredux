@@ -222,6 +222,58 @@ def test_training_policy_rejected_for_other_versions_before_reading_inputs(tmp_p
     assert not (tmp_path / 'output').exists()
 
 
+@pytest.mark.parametrize('profile', ['quick', 'full'])
+@pytest.mark.parametrize('action', ['plan', 'run'])
+@pytest.mark.parametrize('training', [None, 'lbfgsb-gn-fallback-full5-v1'])
+def test_control_policy_is_independent_and_keeps_missing_inventory_visible(
+    frozen, monkeypatch, profile, action, training
+):
+    from leo.contracts import localization_v5
+
+    snapshot, source, output = frozen
+    manifest = snapshot / 'manifest.json'
+    evaluation.write(manifest, {'synthetic': 'backend'})
+    calls = []
+
+    def wrap(request, manifest, *, annotation_training_policy, inclusion_control_policy):
+        calls.append((annotation_training_policy, inclusion_control_policy))
+        return dict(job=request, backend_manifest=manifest, schema_version=3,
+                    inclusion_control_policy=localization_v5.inclusion_control_policy())
+
+    monkeypatch.setattr(evaluation, 'owned_import', lambda module, binding:
+                        localization_v5 if module == 'leo.contracts.localization_v5'
+                        else SimpleNamespace(make_request=wrap))
+    if action == 'run':
+        def run(plan, python):
+            rows = [dict(status='missing' if row['status'] == 'missing' else 'complete')
+                    for row in plan['jobs']]
+            return dict(statuses={}, results=rows)
+        monkeypatch.setattr(evaluation, 'run_plan', run)
+    args = [action, '--version', 'algo07v5', '--profile', profile,
+            '--snapshot', str(snapshot), '--source-root', str(source), '--output', str(output),
+            '--native-manifest', str(manifest), '--inclusion-control-policy',
+            localization_v5.INCLUSION_CONTROL_POLICY]
+    if training:
+        args += ['--annotation-training-policy', training]
+    assert evaluation.main(args) == int(action == 'run' and profile == 'full')
+    result = evaluation.read(output / 'plan.json')
+    assert result['inclusion_control_policy'] == localization_v5.inclusion_control_policy()
+    assert len(result['jobs']) == (3 if profile == 'quick' else 4)
+    assert calls == [(training, localization_v5.INCLUSION_CONTROL_POLICY)] * 3
+    if profile == 'full':
+        assert result['jobs'][-1]['status'] == 'missing'
+    for row in result['jobs'][:3]:
+        assert row['request']['inclusion_control_policy'] == result['inclusion_control_policy']
+
+
+@pytest.mark.parametrize('version', ['algo07v3', 'algo07v4'])
+def test_control_policy_rejected_for_other_versions_before_reading_inputs(tmp_path, version):
+    assert evaluation.main(['plan', '--version', version, '--snapshot', str(tmp_path / 'absent'),
+        '--output', str(tmp_path / 'output'), '--inclusion-control-policy',
+        'native-complete-controls-v1']) == 1
+    assert not (tmp_path / 'output').exists()
+
+
 @pytest.mark.parametrize('change', ['duplicate', 'missing', 'changed'])
 def test_nested_archive_mutation_never_launches_inference(frozen, monkeypatch, change):
     result = plan(frozen, '--cases', 'DS26-0002')

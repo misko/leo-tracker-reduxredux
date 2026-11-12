@@ -5,6 +5,21 @@ from leo.contracts.digests import canonical_digest
 from tests.localization_v5_fixture import evidence_fixture
 
 
+def test_control_policy_is_explicit_and_independent():
+    policy = localization_v5.inclusion_control_policy()
+    assert policy['id'] == 'native-complete-controls-v1'
+    assert policy['scope'] == 'one recovery invocation'
+    assert policy['scan'] == 'all fields including geometry'
+    assert localization_v5.validate_inclusion_control_policy(policy) is policy
+    policy['normalized_lists'].clear()
+    assert localization_v5.inclusion_control_policy()['normalized_lists'] == [
+        'tracks', 'white', 'rx_basis']
+    with pytest.raises(ValueError):
+        localization_v5.validate_inclusion_control_policy(policy)
+    with pytest.raises(ValueError, match='Unknown'):
+        localization_v5.inclusion_control_policy('other')
+
+
 def test_v5_outer_model_preserves_v4_native_backend_and_scientific_checks():
     evidence, _ = evidence_fixture()
     assert localization_v5.validate_evidence(evidence) is evidence

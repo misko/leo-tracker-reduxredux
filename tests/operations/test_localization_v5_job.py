@@ -39,6 +39,13 @@ def saved(request):
                 schema_version=1, policy=deepcopy(request['annotation_training_policy']),
                 policy_sha256=canonical_digest(request['annotation_training_policy']),
                 receipts=[], counts=_counts([]))
+    if 'inclusion_control_policy' in request:
+        policy = deepcopy(request['inclusion_control_policy'])
+        evidence['provenance'].update(inclusion_control_policy=policy,
+            inclusion_control_work=dict(schema_version=1, policy=deepcopy(policy),
+                backend_manifest_sha256=canonical_digest(request['backend_manifest']),
+                invocations=[], counts={name: 0 for name in
+                    ('requests', 'computed', 'reused', 'failed', 'unkeyable', 'in_progress')}))
     receipt = LocalizationV5Store(request["job"]["output_root"]).save(evidence, pngs)
     return evidence, receipt
 

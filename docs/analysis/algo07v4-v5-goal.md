@@ -332,3 +332,21 @@ focused checks pass. Raw observations are in `control-reuse-screen-summary-001.j
 and `control-reuse-fallback-0066-001`. Next, add a separately identified opt-in
 v5 runtime policy and work accounting, preserving old requests and the fixed
 v4 implementation, then evaluate complete workers through the shared CLI.
+
+The runtime implementation now has the separate opt-in policy
+`native-complete-controls-v1`, selected with `--inclusion-control-policy` in
+the shared evaluator. Schema 3 binds this independently of annotation training.
+Legacy schema-1/2 request descriptors, run IDs and resume behavior remain stable.
+The pure cache receives a narrow backend-identity port; operations own manifest
+validation and work accounting. Each recovery invocation gets a fresh cache.
+Numerical replay checks checkpoint policy compatibility before reusing stages.
+
+The common runtime suite passed 1,492 tests. An additional focused 73-test check
+includes the newly added real-factory probe route. The registered factory then
+reproduced the current 0066 fallback candidate's entire recovery audit through
+its actual port: four requests, one computed pair, three reused pairs and no
+failures or incomplete work. This is a component gate; the next check is a
+complete-worker CLI run with both explicit policies. Source and receipts are
+under `control-runtime-replay-0066-001`, with quick/full request plans in
+`control-runtime-plan-quick-001` and `control-runtime-plan-full-001`. Full plans
+still retain 159 expected, 158 available and missing DS26-0172.

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from types import SimpleNamespace
 
 import pytest
 
@@ -37,6 +38,21 @@ def execute(name, operation):
         return True, operation()
     except ValueError:
         return False, None
+
+
+def test_cache_policy_is_checked_before_reusing_numerical_stages(monkeypatch):
+    evidence, incumbent, candidate, saved = fixture()
+    factory = SimpleNamespace(policy={'id': 'control-policy'})
+    seen = []
+    monkeypatch.setattr(replay, 'recover_tracks', lambda *a, **k: seen.append(k) or candidate)
+    with pytest.raises(ValueError, match='control policy differs'):
+        run(evidence, incumbent, saved, inclusion_control_factory=factory)
+    assert seen == []
+    run(evidence, incumbent, saved, inclusion_control_factory=factory,
+        completed_inclusion_control_policy=factory.policy)
+    assert seen[0]['inclusion_control_factory'] is factory
+    with pytest.raises(ValueError, match='control policy differs'):
+        run(evidence, incumbent, saved, completed_inclusion_control_policy=factory.policy)
 
 
 @pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches', 'map_joint_arms'])

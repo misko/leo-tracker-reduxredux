@@ -86,8 +86,11 @@ def owned_import(name, source):
 
 def make_plan(args):
     training_policy = getattr(args, 'annotation_training_policy', None)
+    control_policy = getattr(args, 'inclusion_control_policy', None)
     if training_policy is not None and args.version != 'algo07v5':
         raise ValueError('--annotation-training-policy requires --version algo07v5')
+    if control_policy is not None and args.version != 'algo07v5':
+        raise ValueError('--inclusion-control-policy requires --version algo07v5')
     snapshot, output = args.snapshot.resolve(), local_output(args.output)
     inventory = read(snapshot / 'inventory.json')
     template = read(snapshot / 'template-request.json')
@@ -112,6 +115,9 @@ def make_plan(args):
         contract = owned_import('leo.contracts.localization_v5', source)
         training['annotation_training_policy'] = contract.annotation_training_policy(
             training_policy)
+    if control_policy is not None:
+        contract = owned_import('leo.contracts.localization_v5', source)
+        training['inclusion_control_policy'] = contract.inclusion_control_policy(control_policy)
     manifest = read(args.native_manifest) if args.native_manifest else None
     references = read(args.references) if args.references else {}
     config = snapshot / 'inputs/config.json'
@@ -150,7 +156,9 @@ def make_plan(args):
                 module = owned_import(f'leo.operations.localization_{version}_job', source)
                 if training:
                     request = module.make_request(
-                        request, manifest, annotation_training_policy=training_policy)
+                        request, manifest, annotation_training_policy=training_policy,
+                        **({'inclusion_control_policy': control_policy}
+                           if control_policy is not None else {}))
                 else:
                     request = module.make_request(request, manifest)
             rows.append(dict(row, status='planned', request=request))
@@ -424,6 +432,8 @@ def main(argv=None):
         command.add_argument('--annotation-training-policy',
                              choices=('lbfgsb-full5-625-v1', 'lbfgsb-gn-fallback-full5-v1'),
                              help='Opt-in annotation training policy for algo07v5')
+        command.add_argument('--inclusion-control-policy', choices=('native-complete-controls-v1',),
+                             help='Opt-in exact native control reuse for algo07v5')
         command.add_argument('--references', type=Path, help='Per-case evaluation-only GPS map')
         command.add_argument('--cases', help='Comma-separated labels; quick defaults to 3 controls')
         command.add_argument('--repeats', type=int, default=1)

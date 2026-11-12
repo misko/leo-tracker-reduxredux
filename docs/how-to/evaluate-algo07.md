@@ -231,3 +231,45 @@ pairs through independent copies. Both must reproduce the entire saved native
 recovery audit. Omit `--run` to plan without loading the scientific archive.
 Reports separate recomputation, reuse, keying and copy costs. A component result
 does not satisfy the complete-worker speed target.
+
+## Evaluate opt-in runtime control reuse
+
+Add `--inclusion-control-policy native-complete-controls-v1` independently of
+the annotation optimizer. It reuses complete matching c0/fitted-c control pairs
+within one recovery invocation. The key retains geometry and all mutable
+scientific state and binds the known native backend. Unknown callbacks and
+stateful numerical replay remain ineligible. No search budget is reduced.
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile quick --version algo07v5 \
+  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
+  --inclusion-control-policy native-complete-controls-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/quick-v5-control-reuse"
+
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py plan \
+  --profile full --version algo07v5 \
+  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
+  --inclusion-control-policy native-complete-controls-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/full-plan-v5-control-reuse"
+
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile full --version algo07v5 \
+  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
+  --inclusion-control-policy native-complete-controls-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/full-v5-control-reuse"
+```
+
+The option creates a separately bound schema-3 request. Commands without it keep
+their schema-1/2 descriptors, identities and behavior. Provenance records each
+cache invocation and its computed, reused, failed and unkeyable pair counts.
+Cached fit histories describe the reused result; those histories are not new
+physical solver evaluations. Native activation receipts retain actual calls.
+Saved resume validates the bound work record without loading a native backend.
+Use the usual `compare` command on matched reports; qualification is still required.

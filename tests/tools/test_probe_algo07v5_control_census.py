@@ -232,6 +232,30 @@ def test_reuse_cli_records_explicit_experimental_mode(monkeypatch, cli):
     assert result['whole_worker_speedup'] is None
 
 
+def test_runtime_mode_uses_real_factory_port_and_preserves_audit(monkeypatch, cli):
+    args, output, expected = cli
+    monkeypatch.setattr(probe, 'load_context', lambda *args: ({}, {}, {'receipt': 'tiny'}))
+
+    def run(*args, inclusion_control_factory, **kwargs):
+        assert inclusion_control_factory.policy['id'] == 'native-complete-controls-v1'
+        inclusion_control_factory()
+        return expected
+
+    monkeypatch.setattr(probe.recovery_controller, 'recover_tracks', run)
+    assert probe.main([*args, '--run', '--reuse', '--runtime']) == 0
+    result = json.loads((output / 'result.json').read_text())
+    assert result['runtime_factory'] is True
+    assert result['saved_audit_exact'] is True
+    assert len(result['inclusion_control_work']['invocations']) == 1
+    assert result['inclusion_control_work']['counts']['requests'] == 0
+
+
+def test_runtime_mode_requires_explicit_reuse(cli):
+    args, _, _ = cli
+    with pytest.raises(SystemExit):
+        probe.main([*args, '--runtime'])
+
+
 def test_run_cli_retains_mismatch_as_failure(monkeypatch, cli):
     args, output, _ = cli
     monkeypatch.setattr(probe, 'load_context', lambda *args: ({}, {}, {'receipt': 'tiny'}))
