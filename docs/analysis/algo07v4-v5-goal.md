@@ -1,5 +1,46 @@
 # Algo07v4 baseline and algo07v5 goal
 
+Latest continuation: a fresh matched DS26-0102 pair completed at
+753.920414 seconds / 1369.053036 CPU seconds for frozen v3 and
+401.607870 / 643.249736 for current v5 with both opt-in policies. This is
+1.877255x wall and 2.128338x CPU in one adjacent pair, below the required
+2x wall target. Host CPU pressure fell during the baseline. Reverse-order
+repeats and independent qualification remain open. Both arms retain all
+3471 owners; GPS-error differences are below 0.02 mm. Current v5 repeats
+its previous complete selected result, eight PNGs and all work counts
+exactly, with only 31 audit clocks changing. See
+`~/.cache/algo07v5-speed-20261112/worker-repeat-0102-001/validation.json`
+and its shared-CLI comparison.
+
+A bounded joint experiment rejects factorized-endpoint warm initialization:
+the complete fit/audit pair increases from 54.495700 to 62.178628 wall
+seconds and 106.838267 to 109.130047 CPU seconds. Objective evaluations
+change from 156/153 to 138/204 across the arms, introducing a fitted-c
+optimizer failure. No warm-start runtime policy is enabled.
+
+The next exact-work hypothesis is to defer factorized fits until control
+and joint audits show they are necessary for numerical retry. On 0102,
+joint phase-resolution failure already excludes that retry. A replay of
+the original control and joint fits/audits preserves every remaining
+field bit for bit and both decisions, while omitting factorized work:
+74.943440 to 60.282623 wall seconds and 140.535722 to 114.628989 CPU
+seconds for this component. All original optimizer and phase budgets
+remain intact. The scope excludes already paid probe/preparation work;
+this is not a worker ratio or independent qualification. Tools
+`probe_algo07v5_joint_start.py` and `probe_algo07v5_joint_schedule.py`
+retain the negative and positive screens. Their 27 owned tests include
+4096 acceptance/retry combinations against the original decision rule.
+Next is an explicit worker policy with complete-work accounting and
+matched predictive/numerical checkpoint binding, followed by the shared
+CLI quick evaluation. Unknown or stateful callbacks need the original
+schedule; numerical replay still requires its own execution validation.
+
+The public-work census also limits the opportunity from dropping GN
+fallback: it accounts for only 3.01%, 4.59% and 6.19% of annotation
+residual evaluations on 0066, 0102 and 0002. These are work shares, not
+wall-time shares. Keep fallback while pursuing the larger scheduling
+opportunity. No full batch or new RF collection ran in this continuation.
+
 Algo07v4 preserves the full-budget native solver as a separately identified
 implementation. Algo07v3 keeps its original solver. The provisional algo07v5
 runtime is registered for evaluation with an explicit initial-control reuse

@@ -1,5 +1,23 @@
 # Evaluate algo07 on frozen DS26 inputs
 
+Current candidate commands explicitly use
+`--annotation-training-policy lbfgsb-gn-fallback-full5-v1` and
+`--inclusion-control-policy native-complete-controls-v1`; the final section
+shows their combination. Joint scheduling remains diagnostic only.
+
+The bounded joint diagnostics accept a completed current v5 request. First
+capture a complete predictive recovery with
+`tools/probe_algo07v5_joint_start.py --mode capture`, then use its output as
+`--reference` for `--mode warm` or
+`tools/probe_algo07v5_joint_schedule.py`. All commands require `--request`,
+`--native-manifest` and fresh `--output`; inference additionally requires
+`--run`, three pinned CPUs and the single-thread environment below.
+Capture allows at most 300 seconds; the tested warm and deferred schedules
+use `--timeout 180`. Capture must match the entire saved recovery before
+its content-bound reference is accepted. The deferred replay must match
+every remaining trial and audit and both acceptance/retry decisions.
+These diagnostics do not establish complete-worker speed or GPS accuracy.
+
 Run these commands from the repository root. Use the pinned numerical environment.
 The paths below describe the existing development host. Choose a fresh output
 directory for each command. Outputs on QNAP are rejected.
