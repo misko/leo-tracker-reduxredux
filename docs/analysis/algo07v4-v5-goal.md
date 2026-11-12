@@ -1,5 +1,23 @@
 # Algo07v4 baseline and algo07v5 goal
 
+All three runtime joint-policy quick workers now pass complete publication
+validation. DS26-0002 and 0066 execute no joint experiment and retain all
+selected science, eight PNGs each, and native/training/control work counts
+exactly. Only 16/54 named audit clocks differ. Combined with the 0102 gate,
+all 24 PNGs and all selected results match the prior current-v5 references.
+Quick GPS error median/p95/max are 0.908834/1.210361/1.243864 km for c0
+and 0.874911/1.183293/1.217558 km for fitted-c, unchanged by this policy.
+These three development cases are not independent DS26 qualification.
+
+The new 0002 worker records 176.104485 wall / 229.055025 CPU seconds,
+and 0066 records 289.690773 / 409.512588. Their physical work is unchanged,
+yet their timings differ from earlier controls. This demonstrates why
+separated timings cannot establish the new schedule's causal worker gain.
+The next timing pair runs current final-policy v5 before frozen v3 on 0102,
+reversing the earlier order. Alternating repeats and independent qualification
+remain required. See `joint-schedule-quick-summary-001.json` and
+`worker-joint-schedule-remaining-001/validation/` under the evidence cache.
+
 First complete-worker integration of the joint policy passes on DS26-0102.
 Both predictive and numerical recovery omit their factorized pair after
 the full control/joint audits exclude numerical retry. Native calls drop
