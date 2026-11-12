@@ -61,9 +61,12 @@ def target_context(context, inventory, frozen, protocol):
     return changed, target
 
 
-def replay_annotation(context, inventory, annotation):
+def replay_annotation(context, inventory, annotation, *, training_fit=None):
     """Re-evaluate every saved proposal; never renominate using a changed fit."""
     frozen, protocol = annotation["result"], annotation["protocol"]
+    expected_optimizer = training_fit.policy if training_fit is not None else None
+    if protocol.get("training_optimizer_policy") != expected_optimizer:
+        raise ValueError("frozen training optimizer policy differs from replay optimizer")
     require_distinct_annotation(frozen, protocol)
     if not has_phase_overflow(frozen):
         raise ValueError("reference30 replay requires saved phase overflow metadata")
@@ -77,6 +80,8 @@ def replay_annotation(context, inventory, annotation):
     original_competition = competition_signature(frozen)
     base, _ = context["problems"]["c0"]
     d, target = target_context(context, inventory, frozen, protocol)
+    if training_fit is not None:
+        d = dict(d, annotation_training_fit=training_fit)
     i = target["track_index"]
     track = d["scan"].tracks[i]
     check_predictive_role(base, i, protocol.get("inactive_curved_member_as_predictive", False))

@@ -30,7 +30,7 @@ from leo.contracts.digests import canonical_digest
 from leo.operations.localization_v3_job import runtime_versions, source_bindings, stage_deadline
 from leo.operations.localization_v3_parallel import map_predictive_folds
 
-ORIGINAL_SHA256 = 'bcf7da0df353d071f45ce64068e815707410c883489fba9d0c538e15fe1258d4'
+ORIGINAL_SHA256 = '0d53615fea866bc41db4c604e7bbc72ea33285f417d91b1e41dad5184a047757'
 
 
 def optimizer_policy(optimizer):

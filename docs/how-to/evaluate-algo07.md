@@ -157,3 +157,39 @@ controls. Its native backend remains the full-budget v4 implementation.
 Registration does not establish a worker speedup or DS26 accuracy qualification.
 Keep the v4 source and backend fixed. The [investigation goal](../analysis/algo07v4-v5-goal.md)
 names the evidence required before selecting a candidate.
+
+## Evaluate the opt-in annotation optimizer
+
+Add the explicit policy to select L-BFGS-B for annotation training only. It keeps
+all five phase rounds and the full native precision budget. Every physical
+residual evaluation, including finite differences, counts against a 625-call
+ceiling. Termination, exhausted budgets and projected-gradient stationarity
+remain separate in saved training metadata. Existing requests and commands
+without this option retain their GN behavior.
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile quick --version algo07v5 \
+  --annotation-training-policy lbfgsb-full5-625-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/quick-v5-lbfgsb"
+
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py plan \
+  --profile full --version algo07v5 \
+  --annotation-training-policy lbfgsb-full5-625-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/full-plan-v5-lbfgsb"
+
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile full --version algo07v5 \
+  --annotation-training-policy lbfgsb-full5-625-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/full-v5-lbfgsb"
+```
+
+Use the same comparison command with matched fixed-v4 or frozen-v3 reports.
+The experimental policy is not a qualified default. A successful component
+screen does not establish complete-worker speed or localization accuracy.

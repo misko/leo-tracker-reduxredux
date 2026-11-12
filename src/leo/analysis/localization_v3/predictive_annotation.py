@@ -1,5 +1,7 @@
 """Grouped causal satellite annotation, with no authority to add associations."""
 
+import copy
+
 import numpy as np
 
 from leo.analysis.localization_v3.prediction import (
@@ -120,6 +122,7 @@ def annotate(
     shifted_origin=True,
     map_folds=None,
     map_training=None,
+    training_fit=None,
 ):
     """Original production nomination and three distinct shifted-block checks.
 
@@ -139,6 +142,8 @@ def annotate(
         target = next(
             r for r in inventory["tracks"] if r["track_id"] == track_id and r["current_large"]
         )
+    if training_fit is not None:
+        d = dict(d, annotation_training_fit=training_fit)
     i = target["track_index"]
     track = d["scan"].tracks[i]
     check_predictive_role(p0, i, True)
@@ -169,6 +174,8 @@ def annotate(
         GPS_used=False,
         future_TLE=False,
     )
+    if training_fit is not None:
+        protocol["training_optimizer_policy"] = copy.deepcopy(training_fit.policy)
     results, nominations, attempts = [], {}, {}
     training = {}
     stateful = on_proposal is not None or d.get("numerical_policy") is not None

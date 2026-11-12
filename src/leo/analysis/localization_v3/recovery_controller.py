@@ -36,7 +36,7 @@ METHODS = ("control", "factorized", "joint")
 def recover_tracks(
     context, evidence, *, run_stage, discovery_allowed, on_selection=None,
     map_annotation_folds=None, map_inclusion_arms=None, map_annotation_training=None,
-    map_joint_batches=None, map_joint_arms=None
+    map_joint_batches=None, map_joint_arms=None, annotation_training_fit=None
 ):
     """Evaluate original target order and at most one disjoint new-family pair.
 
@@ -118,6 +118,8 @@ def recover_tracks(
                     inventory,
                     target["track_id"],
                     inactive_fragment=target["inactive_fragment"],
+                    **({"training_fit": annotation_training_fit}
+                       if annotation_training_fit is not None else {}),
                     **({"map_folds": map_annotation_folds} if map_annotation_folds else {}),
                     **({"map_training": map_annotation_training}
                        if map_annotation_training else {}),

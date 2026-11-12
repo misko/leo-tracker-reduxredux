@@ -88,6 +88,7 @@ def fit_training(
     reference = np.zeros(len(means))
     x = np.asarray(start, float)
     history = []
+    training_fit = d.get("annotation_training_fit", fit)
     factory = training_factory(d, orbital_policy, target_family)
     powers = np.ones(len(d["powers"]))
     for _epoch in range(5):
@@ -107,7 +108,7 @@ def fit_training(
         if predictive:
             attach_event_predictive(p, d["entries"], powers)
         cached(p)
-        f = fit(p, x, iterations=48)
+        f = training_fit(p, x, iterations=48)
         x = np.asarray(f["parameters"])
         policy = d.get("numerical_policy")
         if policy is None:
@@ -134,7 +135,22 @@ def fit_training(
         history.append(dict(endpoint=x, **check))
         if record_optimizer:
             history[-1]["optimizer"] = copy.deepcopy(f)
+        elif "annotation_training_fit" in d:
+            history[-1]["optimizer"] = {
+                key: copy.deepcopy(f[key])
+                for key in (
+                    "scipy_result", "budget_exhausted", "converged", "solution_origin",
+                    "evaluations", "history_kind", "stationarity",
+                    "convergence_kind", "final_metadata_calculate_calls", "stopped",
+                )
+                if key in f
+            }
+            history[-1]["optimizer"]["history_stored"] = False
         reference = phase
+    optimizer_metadata = (
+        {"training_optimizer_policy": copy.deepcopy(training_fit.policy)}
+        if "annotation_training_fit" in d else {}
+    )
     return (
         p,
         x,
@@ -145,6 +161,7 @@ def fit_training(
             final_phase_change_s=delta,
             phase_reference_check=check,
             endpoint_east_north_km=x,
+            **optimizer_metadata,
         ),
     )
 

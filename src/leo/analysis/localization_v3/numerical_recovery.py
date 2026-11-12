@@ -67,6 +67,7 @@ def replay_recovery(
     map_inclusion_arms=None,
     map_joint_batches=None,
     map_joint_arms=None,
+    annotation_training_fit=None,
 ):
     """Replay the completed original schedule, then perform additive adoption.
 
@@ -83,11 +84,18 @@ def replay_recovery(
             raise ValueError("finite nonnegative completed stage duration required")
         stages[name] = saved
     completed = []
+    expected_optimizer = (
+        annotation_training_fit.policy if annotation_training_fit is not None else None
+    )
     for old_index, target in enumerate(evidence["selected_targets"]):
         record = stages.get(f"target-{old_index}-annotation")
         if record is not None:
             if record["value"]["result"]["track_id"] != target["track_id"]:
                 raise ValueError("completed annotation belongs to a different target")
+            if record["value"]["protocol"].get("training_optimizer_policy") != expected_optimizer:
+                raise ValueError(
+                    "completed training optimizer policy differs from replay optimizer"
+                )
             completed.append((old_index, target))
     narrowed = dict(evidence, selected_targets=[target for _, target in completed])
     inventory = dict(evidence["inventory"], publication_support=evidence["publication_support"])
@@ -115,7 +123,11 @@ def replay_recovery(
                 if not reuse:
 
                     def operation():
-                        return replay_annotation(context, inventory, frozen)
+                        return replay_annotation(
+                            context, inventory, frozen,
+                            **({"training_fit": annotation_training_fit}
+                               if annotation_training_fit is not None else {}),
+                        )
             elif kind == "inclusion":
                 annotation = annotations[index]
                 vote = identity_consensus(
@@ -187,6 +199,8 @@ def replay_recovery(
             narrowed,
             run_stage=stage,
             discovery_allowed=discovery_allowed,
+            **({"annotation_training_fit": annotation_training_fit}
+               if annotation_training_fit is not None else {}),
             **({"map_inclusion_arms": map_inclusion_arms} if map_inclusion_arms else {}),
             **({"map_joint_batches": map_joint_batches} if map_joint_batches else {}),
             **({"map_joint_arms": map_joint_arms} if map_joint_arms else {}),

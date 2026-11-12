@@ -8,17 +8,19 @@ policy. It has not met the speed target or completed independent DS26 qualificat
 ## Proposed slash goal
 
 ```text
-/goal Preserve the measured full-budget native implementation as algo07v4 on
-upstream main. Develop algo07v5 toward at least 2x complete-worker speed versus
-the frozen algo07v3 baseline, with another 2x versus algo07v4 as a stretch target.
+/goal Develop algo07v5 toward at least 2x complete-worker speed versus the frozen
+algo07v3 baseline. Keep the published algo07v4 implementation fixed as the
+comparison and rollback. Another 2x versus algo07v4 is a stretch target.
 Measure the speed versus localization-accuracy frontier before choosing an
 approximation budget. Keep algo07v4 fixed as the rollback and comparison point.
 
-Use tools/evaluate_algo07.py run --profile quick for DS26-0002/0066/0102,
-and the same CLI with --profile full for the complete frozen DS26 inventory.
+Use tools/evaluate_algo07.py run --profile quick for DS26-0002/0066/0102.
+Use plan --profile full, then run --profile full, for the frozen DS26 inventory.
 Pass --version algo07v4, --native-manifest FILE and a fresh --output DIR for
 the fixed baseline. Select the provisional candidate with --version algo07v5.
 Use the documented pinned Python environment and plan before a full run.
+Keep candidate policies explicit in requests and the CLI. The annotation
+optimizer experiment uses --annotation-training-policy lbfgsb-full5-625-v1.
 Start every experiment with a bounded component replay, then
 run the quick screen. Qualify finalists on the independent remaining scans.
 Keep all 159 expected inventory members visible, including the currently
@@ -37,6 +39,9 @@ admission. Look for repeated work that can be reused or moved earlier before
 reducing budgets. Preserve negative experiments. Keep one change per measured
 attempt and record its speed, accuracy, failures and decision. Use alternating
 timing repeats on representative quick cases before claiming a stable win.
+The primary speed metric is the baseline total wall time divided by candidate
+total wall time over all matched complete available DS26 members. Also report
+per-scan ratios and timing tails. A component ratio cannot satisfy this target.
 Stop when the target and chosen accuracy budget pass independent evaluation,
 or report the measured frontier and the remaining bottleneck explicitly.
 ```
@@ -163,3 +168,39 @@ It does not establish a repeatable timing ratio, complete-worker speedup or GPS
 accuracy. `annotation-optimizer-screen-summary.json` retains the measurements and
 the exact measured probe source. The next gates are repeated annotations, an
 explicit version-bound worker policy, the quick CLI and independent qualification.
+
+Five alternating measured pairs per target passed the component gate. On the
+rejected target, median annotation CPU fell from 40.863 s to 17.024 s. The GN
+range was 37.222 to 41.649 s; the L-BFGS-B range was 16.494 to 17.251 s. On the
+supported target, median CPU fell from 16.766 s to 12.350 s, with ranges of
+15.848 to 17.303 s and 11.522 to 12.721 s. All 300 measured candidate optimizer
+calls reported SciPy success without exhausting a budget. Each annotation
+retained five phase rounds and the same nominees, aliases, votes and consensus.
+
+The rejected-target wall ranges separate, at 27.528 to 39.414 s for GN and
+8.288 to 12.742 s for L-BFGS-B. The supported-target wall ranges overlap.
+These measurements use three fold processes, each training both arms serially.
+Production instead queues six fold/arm training tasks before prediction. The
+repeat results advance the optimizer to a production-queue check; their wall
+ratios do not establish a complete-worker speedup. The raw receipts and source
+bindings are in `annotation-repeat-001/summary.json` under the local evidence root.
+
+The opt-in runtime policy now has a separate request schema with a complete
+descriptor. Existing v5 requests retain their original schema, run ID and GN
+behavior. The runtime records SciPy termination separately from projected-gradient
+stationarity. Complete-worker timing and independent GPS qualification remain open.
+
+The production-queue integration check completed both targets. Queued GN is
+bit-exact to the ordinary fold path. The runtime L-BFGS-B port retains the
+nominees, aliases, votes and consensus, with all 30 optimizer calls and five
+phase rounds per annotation. Residual-call counts match the earlier screen,
+at 675 and 660. No candidate budget was exhausted. Only 15 of 60 candidate fits
+meet the projected-gradient threshold; all report SciPy success. These are
+different stopping criteria and must not be described as equal convergence.
+
+The single queued pair uses 36.521 versus 11.765 CPU seconds on target 1 and
+12.575 versus 13.518 CPU seconds on target 2. The latter is not a demonstrated
+cost improvement. Repeatability of production-queue and complete-worker costs
+remains open. `policy-queue-001` retains the receipts and exact measured source;
+the subsequent numerical-source formatting has an identical AST. Quick and
+full CLI plans select the new policy explicitly and retain the expected counts.

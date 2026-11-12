@@ -28,6 +28,9 @@ def saved(request):
             receipts=[],
         ),
     )
+    if 'annotation_training_policy' in request:
+        evidence['provenance']['annotation_training_policy'] = deepcopy(
+            request['annotation_training_policy'])
     receipt = LocalizationV5Store(request["job"]["output_root"]).save(evidence, pngs)
     return evidence, receipt
 

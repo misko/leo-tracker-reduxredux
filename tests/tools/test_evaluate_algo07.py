@@ -172,6 +172,53 @@ def test_v5_bound_plan_wraps_requests_and_run_supplies_manifest(frozen, monkeypa
     assert '--native-manifest' in report['results'][0]['command']
 
 
+@pytest.mark.parametrize('profile', ['quick', 'full'])
+@pytest.mark.parametrize('action', ['plan', 'run'])
+def test_explicit_v5_training_policy_binds_plan_and_requests(frozen, monkeypatch, profile, action):
+    from leo.contracts import localization_v5
+
+    snapshot, source, output = frozen
+    manifest = snapshot / 'manifest.json'
+    evaluation.write(manifest, {'synthetic': 'backend'})
+    calls = []
+
+    def wrap(request, manifest, *, annotation_training_policy):
+        calls.append(annotation_training_policy)
+        return dict(job=request, backend_manifest=manifest, schema_version=2,
+                    annotation_training_policy=localization_v5.annotation_training_policy())
+
+    def owned(module, binding):
+        assert binding['root'] == str(source)
+        return (localization_v5 if module == 'leo.contracts.localization_v5'
+                else SimpleNamespace(make_request=wrap))
+
+    monkeypatch.setattr(evaluation, 'owned_import', owned)
+    if action == 'run':
+        def run(plan, python):
+            assert plan['annotation_training_policy'] == (
+                localization_v5.annotation_training_policy())
+            return dict(statuses={'complete': 3}, results=[dict(status='complete')])
+        monkeypatch.setattr(evaluation, 'run_plan', run)
+    assert evaluation.main([action, '--version', 'algo07v5', '--profile', profile,
+        '--snapshot', str(snapshot), '--source-root', str(source), '--output', str(output),
+        '--native-manifest', str(manifest), '--annotation-training-policy',
+        localization_v5.ANNOTATION_TRAINING_POLICY]) == 0
+    plan = evaluation.read(output / 'plan.json')
+    assert plan['annotation_training_policy'] == localization_v5.annotation_training_policy()
+    assert len(plan['jobs']) == (3 if profile == 'quick' else 4)
+    assert calls == [localization_v5.ANNOTATION_TRAINING_POLICY] * 3
+    for row in plan['jobs'][:3]:
+        assert row['request']['annotation_training_policy'] == plan['annotation_training_policy']
+
+
+@pytest.mark.parametrize('version', ['algo07v3', 'algo07v4'])
+def test_training_policy_rejected_for_other_versions_before_reading_inputs(tmp_path, version):
+    assert evaluation.main(['plan', '--version', version, '--snapshot', str(tmp_path / 'absent'),
+        '--output', str(tmp_path / 'output'), '--annotation-training-policy',
+        'lbfgsb-full5-625-v1']) == 1
+    assert not (tmp_path / 'output').exists()
+
+
 @pytest.mark.parametrize('change', ['duplicate', 'missing', 'changed'])
 def test_nested_archive_mutation_never_launches_inference(frozen, monkeypatch, change):
     result = plan(frozen, '--cases', 'DS26-0002')

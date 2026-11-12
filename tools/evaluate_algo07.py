@@ -85,6 +85,9 @@ def owned_import(name, source):
 
 
 def make_plan(args):
+    training_policy = getattr(args, 'annotation_training_policy', None)
+    if training_policy is not None and args.version != 'algo07v5':
+        raise ValueError('--annotation-training-policy requires --version algo07v5')
     snapshot, output = args.snapshot.resolve(), local_output(args.output)
     inventory = read(snapshot / 'inventory.json')
     template = read(snapshot / 'template-request.json')
@@ -104,6 +107,12 @@ def make_plan(args):
     if not math.isfinite(args.timeout) or not 0 < args.timeout <= 7200:
         raise ValueError('Per-worker timeout must be in (0, 7200] seconds')
     source = source_binding(args.source_root)
+    training = {}
+    if training_policy is not None:
+        contract = owned_import('leo.contracts.localization_v5', source)
+        if training_policy != contract.ANNOTATION_TRAINING_POLICY:
+            raise ValueError('Unknown ALGO07v5 annotation training policy')
+        training['annotation_training_policy'] = contract.annotation_training_policy()
     manifest = read(args.native_manifest) if args.native_manifest else None
     references = read(args.references) if args.references else {}
     config = snapshot / 'inputs/config.json'
@@ -140,7 +149,11 @@ def make_plan(args):
             if args.version in ('algo07v4', 'algo07v5') and manifest is not None:
                 version = args.version.removeprefix('algo07')
                 module = owned_import(f'leo.operations.localization_{version}_job', source)
-                request = module.make_request(request, manifest)
+                if training:
+                    request = module.make_request(
+                        request, manifest, annotation_training_policy=training_policy)
+                else:
+                    request = module.make_request(request, manifest)
             rows.append(dict(row, status='planned', request=request))
     compact = [{k: v for k, v in m.items() if k != 'causal_snapshots'} for m in members]
     return dict(schema_version=1, version=args.version,
@@ -152,7 +165,7 @@ def make_plan(args):
                 backend_bound=args.version == 'algo07v3' or manifest is not None,
                 selected=selected, members=compact, jobs=rows,
                 missing=[m['dataset_label'] for m in members if m['availability'] != 'available'],
-                config_sha256=config_sha, inference_requested=args.action == 'run')
+                config_sha256=config_sha, inference_requested=args.action == 'run', **training)
 
 
 def descendants(pid):
@@ -409,6 +422,8 @@ def main(argv=None):
         command.add_argument('--source-root', type=Path,
                              default=Path(__file__).resolve().parents[1] / 'src')
         command.add_argument('--native-manifest', type=Path)
+        command.add_argument('--annotation-training-policy', choices=('lbfgsb-full5-625-v1',),
+                             help='Opt-in annotation training policy for algo07v5')
         command.add_argument('--references', type=Path, help='Per-case evaluation-only GPS map')
         command.add_argument('--cases', help='Comma-separated labels; quick defaults to 3 controls')
         command.add_argument('--repeats', type=int, default=1)

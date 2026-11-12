@@ -169,7 +169,7 @@ def _execute(
     request, *, resume_only=False, emit=lambda value: None, contract=None, results_factory=None,
     request_binding=None, bound=None, extra_provenance=lambda: {},
     check_saved=lambda evidence: None,
-    initial_control=None,
+    initial_control=None, annotation_training_fit=None,
 ):
     if runtime_versions() != request["runtime"]:
         raise ValueError("Numerical/rendering runtime differs from the request pins")
@@ -267,6 +267,8 @@ def _execute(
         map_grid_batches=map_grid_batches,
         bound=bound,
         initial_control=initial_control,
+        **({"annotation_training_fit": annotation_training_fit}
+           if annotation_training_fit is not None else {}),
     )
     result = run_native(
         native,
