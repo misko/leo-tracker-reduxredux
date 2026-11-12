@@ -2,8 +2,11 @@ from copy import deepcopy
 
 import pytest
 
+from leo.analysis.localization_v3 import recovery_controller
+from leo.analysis.localization_v5.control_reuse import ControlReuseFailure
 from leo.contracts.localization_v5 import inclusion_control_policy, validate_inclusion_control_work
 from leo.operations.localization_v5_controls import ControlCacheFactory
+from tests.analysis.test_localization_v3_recovery_controller import execute, setup
 from tests.analysis.test_localization_v5_control_reuse import fixture, value
 
 
@@ -24,10 +27,31 @@ def test_factory_scopes_caches_and_publishes_bound_actual_work():
     factory.policy['normalized_lists'].clear()
     assert factory.policy == inclusion_control_policy()
     bound.manifest['changed'] = True
-    with pytest.raises(RuntimeError, match='manifest binding changed'):
+    with pytest.raises(ControlReuseFailure, match='manifest binding changed'):
         factory.provenance()
-    with pytest.raises(RuntimeError, match='manifest binding changed'):
+    with pytest.raises(ControlReuseFailure, match='manifest binding changed'):
         first.pair(value, *args)
+
+
+@pytest.mark.parametrize('failure', ['binding', 'partial'])
+def test_integrity_failures_escape_controller_instead_of_becoming_scientific_rejection(
+    monkeypatch, failure
+):
+    context, inventory, bound = fixture()
+    evidence = setup(monkeypatch, shared=True)
+    factory = ControlCacheFactory(bound, inclusion_control_policy())
+
+    def fails(*args, control_cache, **kwargs):
+        if failure == 'binding':
+            bound.manifest['changed'] = True
+        compute = value if failure == 'binding' else lambda: {'c0': {}}
+        return control_cache.pair(compute, True, 'fit_shared', context, inventory, 2, False)
+
+    monkeypatch.setattr(recovery_controller, 'fit_shared', fails)
+    with pytest.raises(ControlReuseFailure):
+        recovery_controller.recover_tracks(
+            context, evidence, run_stage=execute, discovery_allowed=lambda: True,
+            inclusion_control_factory=factory)
 
 
 @pytest.mark.parametrize('change', ['binding', 'policy', 'missing', 'bool', 'sum', 'extra'])

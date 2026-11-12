@@ -1,13 +1,19 @@
-"""Run or resume ALGO07v5 with explicit zero-phase control reuse."""
+"""Run or resume a pinned ALGO07v5 job with explicit policies."""
 
 from leo.cli.algo07v4 import main as native_main
 from leo.cli.algo07v4 import worker as native_worker
 
 
 def worker(args):
+    from leo.analysis.localization_v5.control_reuse import ControlReuseFailure
+    from leo.cli.algo07v3 import write
     from leo.operations.localization_v5_job import execute
 
-    return native_worker(args, _execute=execute)
+    try:
+        return native_worker(args, _execute=execute)
+    except ControlReuseFailure as error:
+        write(args.outcome, dict(status='failed', error=f'{type(error).__name__}: {error}'))
+        return 1
 
 
 def main():

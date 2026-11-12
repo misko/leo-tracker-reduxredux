@@ -367,3 +367,38 @@ in the saved uncached candidate. Those runs were separated in time, so their
 Raw reports and exhaustive public-store comparisons are in
 `worker-control-reuse-0066-001` and `worker-control-reuse-0066-001-comparison`.
 Next are the other two quick cases and fresh alternating timing qualification.
+
+The cache-enabled workers also completed DS26-0002 and DS26-0102. Both match
+the uncached candidate in the entire selected result and all eight PNGs. Audits
+differ only in 16 and 31 named clock fields; no margin or ownership changes
+occur. Annotation work is unchanged. The cache remains ineligible for stateful
+numerical replay, as intended.
+
+| Scan | Computed control pairs | Reused pairs | Native calls before / after |
+| --- | ---: | ---: | ---: |
+| DS26-0002 | 4 | 0 | 7,657 / 7,657 |
+| DS26-0066 | 1 | 3 | 13,198 / 12,439 |
+| DS26-0102 | 5 | 1 | 15,880 / 15,659 |
+
+The new 0002 worker used 182.431 wall / 251.226 CPU seconds. The 0102 worker
+used 393.052 / 612.812 seconds. These runs were separated from their uncached
+references; large timing changes cannot be attributed to the small call-count
+reduction alone. Full comparisons and work validation are in
+`worker-control-reuse-remaining-001` and its `-comparison` directory.
+
+A synthetic fault test proved that a cache identity exception could be caught
+as an ALGO02 scientific fallback inside the recovery controller. Cache integrity
+failures now bypass scientific rejection handlers and the v5 CLI records them
+as failed work. Regression tests cover changed identities and incomplete pairs;
+the expanded common suite passes 1,497 tests. None of these faults occurred in
+the three healthy worker checks. The change affects failure handling only.
+
+An offline radio-only census found no quick-case opportunity to skip a joint
+trial by its added-point ceiling. On 0102, the possible joint pair can add 67
+points versus the incumbent's 34, so it can still win. First-fold rejection
+suggests another possible saving, but later numerical rescue must be considered
+before claiming decision equivalence. Neither pruning policy is enabled.
+Before further optimization, measure frozen v3 against the current v5 on the
+heavier 0102 case. A later candidate lever is to initialize costly joint fits
+from the already-computed same-arm factorized fit, retaining full joint
+objectives, phase rounds and audits. That alternative has not been evaluated.

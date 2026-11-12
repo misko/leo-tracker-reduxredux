@@ -3,7 +3,11 @@ import pytest
 from probe_algo07v5_control_census import prospective_key
 
 from leo.analysis.localization_v3.scan import ScanLikelihood
-from leo.analysis.localization_v5.control_reuse import CompleteControlCache, control_key
+from leo.analysis.localization_v5.control_reuse import (
+    CompleteControlCache,
+    ControlReuseFailure,
+    control_key,
+)
 from leo.contracts.digests import canonical_digest
 
 
@@ -114,11 +118,11 @@ def test_changed_identity_and_incomplete_pairs_fail_without_poisoning_cache():
     context, inventory, bound = fixture()
     cache = CompleteControlCache(bound, lambda: canonical_digest(bound.manifest))
     args = (True, 'fit_shared', context, inventory, 2, False)
-    with pytest.raises(RuntimeError, match='Complete matched'):
+    with pytest.raises(ControlReuseFailure, match='Complete matched'):
         cache.pair(lambda: {'c0': {}}, *args)
     assert cache.pair(value, *args) == value()
     bound.manifest['changed'] = True
-    with pytest.raises(RuntimeError, match='identity changed'):
+    with pytest.raises(ControlReuseFailure, match='identity changed'):
         cache.pair(value, *args)
     assert cache.counts() == dict(requests=3, computed=1, reused=0, failed=2,
                                  unkeyable=0, in_progress=0)

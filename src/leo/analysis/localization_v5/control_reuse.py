@@ -9,6 +9,10 @@ from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.contracts.localization_v5 import inclusion_control_policy
 
 
+class ControlReuseFailure(BaseException):
+    """Cache integrity failures must bypass scientific rejection handlers."""
+
+
 def control_key(kind, context, inventory, count, option, known_bound, binding):
     scan = context['scan']
     if (context.get('numerical_policy') is not None or 'problem_factory' in context
@@ -60,7 +64,7 @@ class CompleteControlCache:
         self._counts['requests'] += 1
         try:
             if self._identity() != self._binding:
-                raise RuntimeError('Bound numerical identity changed during control reuse')
+                raise ControlReuseFailure('Bound numerical identity changed during control reuse')
             key = control_key(kind, context, inventory, count, option, self._bound, self._binding)
             if key is None:
                 self._counts['unkeyable'] += 1
@@ -70,7 +74,7 @@ class CompleteControlCache:
                 return value
             value = compute()
             if type(value) is not dict or set(value) != {'c0', 'fitted_c'}:
-                raise RuntimeError('Complete matched control pair required')
+                raise ControlReuseFailure('Complete matched control pair required')
             if key is not None:
                 self._pairs[key] = deepcopy(value)
             self._counts['computed'] += 1

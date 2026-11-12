@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from leo.analysis.localization_v5.control_reuse import CompleteControlCache
+from leo.analysis.localization_v5.control_reuse import CompleteControlCache, ControlReuseFailure
 from leo.contracts.digests import canonical_digest
 from leo.contracts.localization_v5 import (
     validate_inclusion_control_policy,
@@ -23,7 +23,7 @@ class ControlCacheFactory:
 
     def identity(self):
         if canonical_digest(self._backend.manifest) != self._binding:
-            raise RuntimeError('Native control-cache manifest binding changed')
+            raise ControlReuseFailure('Native control-cache manifest binding changed')
         return self._binding
 
     def __call__(self):

@@ -111,3 +111,22 @@ def test_worker_records_failures_and_interrupts(tmp_path, monkeypatch, interrupt
     assert algo07v5.worker(args) == (130 if interrupted else 1)
     expected = "interrupted" if interrupted else "failed"
     assert json.loads(outcome.read_bytes())["status"] == expected
+
+
+def test_worker_serializes_control_integrity_abort_as_failed(tmp_path, monkeypatch):
+    from leo.analysis.localization_v5.control_reuse import ControlReuseFailure
+    from leo.operations import localization_v5_job
+
+    def fail(*args, **kwargs):
+        raise ControlReuseFailure('changed bound identity')
+
+    monkeypatch.setattr(localization_v5_job, 'execute', fail)
+    path = tmp_path / 'request.json'
+    path.write_text('{}')
+    outcome = tmp_path / 'outcome.json'
+    args = SimpleNamespace(request=path, outcome=outcome,
+                           native_manifest=Path('/unused'), resume_only=False)
+    assert algo07v5.worker(args) == 1
+    result = json.loads(outcome.read_bytes())
+    assert result == dict(status='failed',
+                         error='ControlReuseFailure: changed bound identity')
