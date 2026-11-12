@@ -89,22 +89,43 @@ def two_family_phase_evidence(
     best_coeff = np.zeros(d1 + d2)
     constant = 2 * np.log(np.diag(root)).sum() + n * np.log(2 * np.pi)
     rows_per_chunk = max(1, max_pairs // counts[1])
+    contraction_cross, contraction_u2 = cross, u2
+    contraction_r2, contraction_projected = r2, projected
+    # Preserve NumPy's reduction path for degenerate or nonpositive-stride
+    # geometry. Ordinary direct contractions benefit from Fortran operands;
+    # the original arrays still feed every other operation, including raw.
+    if (
+        not optimize_contractions
+        and min(counts[0], counts[1], d1, d2, n1, n2) > 1
+        and all(stride > 0 for value in (cross, u2, r2, projected) for stride in value.strides)
+    ):
+        contraction_cross = np.asfortranarray(cross)
+        contraction_u2 = np.asfortranarray(u2)
+        contraction_r2 = np.asfortranarray(r2)
+        contraction_projected = np.asfortranarray(projected)
     for start in range(0, counts[0], rows_per_chunk):
         end = min(start + rows_per_chunk, counts[0])
         shape = (end - start, counts[1])
         gram = np.empty((*shape, d1 + d2, d1 + d2))
         gram[:, :, :d1, :d1] = g1[start:end, None]
         gram[:, :, d1:, d1:] = g2[None]
-        off = np.einsum("ian,jnb->ijab", cross[start:end], u2, optimize=optimize_contractions)
+        off = np.einsum(
+            "ian,jnb->ijab", contraction_cross[start:end], contraction_u2,
+            optimize=optimize_contractions,
+        )
         gram[:, :, :d1, d1:] = off
         gram[:, :, d1:, :d1] = off.swapaxes(-1, -2)
         rhs = np.concatenate(
             (
                 h1[start:end, None]
-                + np.einsum("ian,jn->ija", cross[start:end], r2, optimize=optimize_contractions),
+                + np.einsum(
+                    "ian,jn->ija", contraction_cross[start:end], contraction_r2,
+                    optimize=optimize_contractions,
+                ),
                 h2[None]
                 + np.einsum(
-                    "jna,in->ija", u2, projected[start:end], optimize=optimize_contractions
+                    "jna,in->ija", contraction_u2, contraction_projected[start:end],
+                    optimize=optimize_contractions,
                 ),
             ),
             axis=-1,
