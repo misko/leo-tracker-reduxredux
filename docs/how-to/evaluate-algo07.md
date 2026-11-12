@@ -1,11 +1,14 @@
 # Evaluate algo07 on frozen DS26 inputs
 
-Current candidate commands explicitly use
-`--annotation-training-policy lbfgsb-gn-fallback-full5-v1` and
-`--inclusion-control-policy native-complete-controls-v1`; the runtime control
-section shows their combination. The independent opt-in
-`--joint-schedule-policy defer-factorized-unless-retry-v1` adds conditional
-joint scheduling and still requires complete-worker qualification.
+The current four-target candidate uses all four explicit options:
+`--annotation-training-policy lbfgsb-gn-fallback-full5-v1`,
+`--inclusion-control-policy native-complete-controls-v1`,
+`--joint-schedule-policy defer-factorized-unless-retry-v1` and
+`--recovery-target-limit 4`. The final section contains its complete command.
+All three quick development scans preserve selected science and PNG bytes
+against full-search current v5. Independent accuracy and repeated timing
+qualification remain open. Bare `--version algo07v5` does not select these
+experimental policies.
 
 Run these commands from the repository root. Use the pinned numerical environment.
 The paths below describe the existing development host. Choose a fresh output

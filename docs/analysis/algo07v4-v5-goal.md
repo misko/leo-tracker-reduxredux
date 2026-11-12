@@ -1,5 +1,38 @@
 # Algo07v4 baseline and algo07v5 goal
 
+The explicit four-target policy passes all three complete-worker quick screens.
+All selected science, GPS errors, frequency scores, ownership and all 24 PNG
+bytes match the full-search v5 controls exactly. Kept target inputs and all
+predictive/numerical attempts match their original prefixes. Training, cache
+and joint work have no failed or unfinished execution; every selected target
+retains its full optimizer and audit budgets. These are development scans,
+not independent accuracy qualification.
+
+On 0066, training drops from 240 to 120 fits and native calls from 12439 to
+8477. On 0102, training drops from 210 to 120 fits and native calls from
+15006 to 9246; omitting the second RF-qualified family also avoids its inclusion
+and joint experiment. On 0002, only two targets exist, so all work remains
+unchanged. Candidate wall/CPU seconds are 127.779932/170.062573 on 0002,
+161.206511/215.255213 on 0066 and 255.373128/368.028335 on 0102. These
+separated observations do not qualify a speed ratio. In particular, 0002's
+lower time despite identical work is a control for host variation.
+
+Quick c0 GPS median/p95/max remain 0.908834/1.210361/1.243864 km; fitted-c
+remain 0.874911/1.183293/1.217558 km. All paired GPS deltas and ownership
+changes are zero against full-search current v5. Evidence is under
+`~/.cache/algo07v5-speed-20261112/targets4-quick-summary-001.json` and the
+two `worker-targets4-*/validation/` directories. Raw audit differences remain
+available, including declared target/stage/receipt omissions and clocks.
+
+The next gate freezes the same candidate and runs adjacent frozen-v3/v5
+pairs on four untouched recordings, alternating version order. Their order
+was assigned without GPS using seed
+`algo07v5-targets4-qualification-20261112-v1` and whole recording ID groups:
+0225, 0237, 0048, 0140. The saved assignment retains all 150 independent
+available scans and the eight development cases. If these results inform a
+policy revision, inspected groups become development before fresh
+qualification. No independent inference or full batch has run at this checkpoint.
+
 The RF target-prefix lever is now registered as the independent optional
 `--recovery-target-limit 0..8`. Omitting it preserves the original eight-target
 limit and schema1..4 identities. Schema5 binds the explicit policy into the
