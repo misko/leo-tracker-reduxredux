@@ -137,3 +137,29 @@ calls and 722 evaluations. Two cold fits alone use 269 evaluations each and hit
 the original 48-iteration budget. The next experiment tests alternative position
 optimizers with all five phase rounds. The rounds probe remains available as a
 rejected cost screen rather than a production budget change.
+
+The optimizer probe now tests L-BFGS-B and trust-region least squares against the
+same squared residual objective, bounds and initial position. Both alternatives
+retain all five phase rounds and count every residual call, including Jacobians.
+Their explicit 625-call ceiling matches the two-dimensional original GN48 worst
+case. Budget exhaustion is reported separately from convergence.
+
+The first screens cover one rejected target and one supported target on DS26-0066.
+Each entry below is one complete annotation, including all folds and nomination.
+
+| Target | GN CPU seconds | L-BFGS-B CPU seconds | Trust-region CPU seconds |
+| --- | ---: | ---: | ---: |
+| 1, rejected | 35.408 | 12.150 | 24.962 |
+| 2, supported | 10.858 | 8.158 | Not run |
+
+All 60 L-BFGS-B fits report convergence without exhausting a budget. Nominee
+order, candidate sets, aliases, winning identities, runner-up identities and
+adequacy votes remain unchanged in both annotations. Fold-training endpoints
+move by at most 1.59 m. These shifts do not measure localization error. The
+alternative optimizer is not enabled in the v5 worker.
+
+This screen selects L-BFGS-B for alternating repeats and broader component checks.
+It does not establish a repeatable timing ratio, complete-worker speedup or GPS
+accuracy. `annotation-optimizer-screen-summary.json` retains the measurements and
+the exact measured probe source. The next gates are repeated annotations, an
+explicit version-bound worker policy, the quick CLI and independent qualification.
