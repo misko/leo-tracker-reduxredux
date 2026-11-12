@@ -20,6 +20,44 @@ def test_control_policy_is_explicit_and_independent():
         localization_v5.inclusion_control_policy('other')
 
 
+def test_joint_schedule_policy_has_independent_complete_descriptor():
+    policy = localization_v5.joint_schedule_policy()
+    assert policy['id'] == 'defer-factorized-unless-retry-v1'
+    assert policy['optimizer_and_phase_budgets'] == 'unchanged'
+    assert localization_v5.validate_joint_schedule_policy(policy) is policy
+    policy['order'].clear()
+    assert localization_v5.joint_schedule_policy()['order'] == ['control', 'joint', 'factorized']
+    with pytest.raises(ValueError):
+        localization_v5.validate_joint_schedule_policy(policy)
+    with pytest.raises(ValueError, match='Unknown'):
+        localization_v5.joint_schedule_policy('other')
+
+
+@pytest.mark.parametrize('failure', [None, 'missing_work', 'orphaned_work', 'binding', 'counts'])
+def test_joint_work_is_required_and_bound_when_explicitly_enabled(failure):
+    evidence, _ = evidence_fixture()
+    provenance = evidence['provenance']
+    policy = localization_v5.joint_schedule_policy()
+    provenance['joint_schedule_policy'] = policy
+    provenance['joint_schedule_work'] = dict(
+        schema_version=1, policy=localization_v5.joint_schedule_policy(),
+        backend_manifest_sha256=provenance['native_backend']['manifest_sha256'],
+        experiments=[], counts=localization_v5.joint_schedule_counts([]))
+    if failure == 'missing_work':
+        del provenance['joint_schedule_work']
+    elif failure == 'orphaned_work':
+        del provenance['joint_schedule_policy']
+    elif failure == 'binding':
+        provenance['joint_schedule_work']['backend_manifest_sha256'] = 'other'
+    elif failure == 'counts':
+        provenance['joint_schedule_work']['counts']['factorized_computed'] = 1
+    if failure is None:
+        assert localization_v5.validate_evidence(evidence) is evidence
+    else:
+        with pytest.raises(ValueError, match='[Jj]oint schedule work|Joint schedule aggregate'):
+            localization_v5.validate_evidence(evidence)
+
+
 def test_v5_outer_model_preserves_v4_native_backend_and_scientific_checks():
     evidence, _ = evidence_fixture()
     assert localization_v5.validate_evidence(evidence) is evidence

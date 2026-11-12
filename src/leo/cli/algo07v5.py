@@ -6,12 +6,13 @@ from leo.cli.algo07v4 import worker as native_worker
 
 def worker(args):
     from leo.analysis.localization_v5.control_reuse import ControlReuseFailure
+    from leo.analysis.localization_v5.joint_schedule import JointScheduleFailure
     from leo.cli.algo07v3 import write
     from leo.operations.localization_v5_job import execute
 
     try:
         return native_worker(args, _execute=execute)
-    except ControlReuseFailure as error:
+    except (ControlReuseFailure, JointScheduleFailure) as error:
         write(args.outcome, dict(status='failed', error=f'{type(error).__name__}: {error}'))
         return 1
 

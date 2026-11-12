@@ -55,6 +55,21 @@ def test_cache_policy_is_checked_before_reusing_numerical_stages(monkeypatch):
         run(evidence, incumbent, saved, completed_inclusion_control_policy=factory.policy)
 
 
+def test_joint_schedule_policy_is_checked_before_reusing_numerical_stages(monkeypatch):
+    evidence, incumbent, candidate, saved = fixture()
+    factory = SimpleNamespace(policy={'id': 'joint-policy'})
+    seen = []
+    monkeypatch.setattr(replay, 'recover_tracks', lambda *a, **k: seen.append(k) or candidate)
+    with pytest.raises(ValueError, match='joint schedule policy differs'):
+        run(evidence, incumbent, {'invalid': object()}, joint_schedule_factory=factory)
+    assert seen == []
+    run(evidence, incumbent, saved, joint_schedule_factory=factory,
+        completed_joint_schedule_policy=factory.policy)
+    assert seen[0]['joint_schedule_factory'] is factory
+    with pytest.raises(ValueError, match='joint schedule policy differs'):
+        run(evidence, incumbent, saved, completed_joint_schedule_policy=factory.policy)
+
+
 @pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches', 'map_joint_arms'])
 def test_numerical_replay_forwards_arm_mapper_to_controller(monkeypatch, port):
     evidence, incumbent, candidate, saved = fixture()

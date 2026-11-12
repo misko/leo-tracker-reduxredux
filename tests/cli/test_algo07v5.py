@@ -113,12 +113,16 @@ def test_worker_records_failures_and_interrupts(tmp_path, monkeypatch, interrupt
     assert json.loads(outcome.read_bytes())["status"] == expected
 
 
-def test_worker_serializes_control_integrity_abort_as_failed(tmp_path, monkeypatch):
+@pytest.mark.parametrize('kind', ['control', 'joint'])
+def test_worker_serializes_policy_integrity_abort_as_failed(tmp_path, monkeypatch, kind):
     from leo.analysis.localization_v5.control_reuse import ControlReuseFailure
+    from leo.analysis.localization_v5.joint_schedule import JointScheduleFailure
     from leo.operations import localization_v5_job
 
+    failure = ControlReuseFailure if kind == 'control' else JointScheduleFailure
+
     def fail(*args, **kwargs):
-        raise ControlReuseFailure('changed bound identity')
+        raise failure('changed bound identity')
 
     monkeypatch.setattr(localization_v5_job, 'execute', fail)
     path = tmp_path / 'request.json'
@@ -129,4 +133,4 @@ def test_worker_serializes_control_integrity_abort_as_failed(tmp_path, monkeypat
     assert algo07v5.worker(args) == 1
     result = json.loads(outcome.read_bytes())
     assert result == dict(status='failed',
-                         error='ControlReuseFailure: changed bound identity')
+                         error=f'{failure.__name__}: changed bound identity')

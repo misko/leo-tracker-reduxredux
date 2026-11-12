@@ -37,7 +37,7 @@ def recover_tracks(
     context, evidence, *, run_stage, discovery_allowed, on_selection=None,
     map_annotation_folds=None, map_inclusion_arms=None, map_annotation_training=None,
     map_joint_batches=None, map_joint_arms=None, annotation_training_fit=None,
-    inclusion_control_factory=None
+    inclusion_control_factory=None, joint_schedule_factory=None
 ):
     """Evaluate original target order and at most one disjoint new-family pair.
 
@@ -73,28 +73,40 @@ def recover_tracks(
     def joint_experiment(pair, probe, *, optimizer):
         experiment = {m: {} for m in METHODS}
         prefix = "retry-" if optimizer == "powell" else ""
-        for method in METHODS:
-            fits = DeferredJointFits(context, probe, method, optimizer, fit_joint, map_joint_arms)
-            for arm in ARMS:
-                name = prefix + method + "-" + arm
-                ok, trial = stage(
-                    name,
-                    lambda arm=arm, fits=fits: fits.fit(arm),
-                )
-                if not ok:
-                    return False, experiment
-                control = experiment["control"].get(arm, {}).get("audit")
-                ok, audit = stage(
-                    name + "-audit",
-                    lambda trial=trial, control=control: audit_joint(
-                        context, inventory, trial, control,
-                        **({"map_batches": map_joint_batches} if map_joint_batches else {}),
-                    ),
-                )
-                if not ok:
-                    return False, experiment
-                experiment[method][arm] = dict(trial=trial, audit=audit)
-        return True, experiment
+        schedule = (joint_schedule_factory(context, optimizer)
+                    if joint_schedule_factory is not None else None)
+        completed = False
+        try:
+            for method in schedule.methods if schedule is not None else METHODS:
+                if (method == 'factorized' and schedule is not None
+                        and schedule.omit_factorized(experiment)):
+                    continue
+                fits = DeferredJointFits(context, probe, method, optimizer, fit_joint,
+                                         map_joint_arms)
+                for arm in ARMS:
+                    name = prefix + method + "-" + arm
+                    ok, trial = stage(
+                        name,
+                        lambda arm=arm, fits=fits: fits.fit(arm),
+                    )
+                    if not ok:
+                        return False, experiment, schedule
+                    control = experiment["control"].get(arm, {}).get("audit")
+                    ok, audit = stage(
+                        name + "-audit",
+                        lambda trial=trial, control=control: audit_joint(
+                            context, inventory, trial, control,
+                            **({"map_batches": map_joint_batches} if map_joint_batches else {}),
+                        ),
+                    )
+                    if not ok:
+                        return False, experiment, schedule
+                    experiment[method][arm] = dict(trial=trial, audit=audit)
+            completed = True
+            return True, experiment, schedule
+        finally:
+            if schedule is not None:
+                schedule.finish(experiment, completed)
 
     def joint_passes(experiment):
         return all(
@@ -212,10 +224,13 @@ def recover_tracks(
                 "joint-probe", lambda: probe_joint(context, [records[id(q)] for q in pair])
             )
             if ok:
-                completed, experiment = joint_experiment(pair, probe, optimizer="lbfgsb")
+                completed, experiment, schedule = joint_experiment(pair, probe, optimizer="lbfgsb")
                 passed = completed and joint_passes(experiment)
-                if completed and not passed and joint_numerical_only(experiment):
-                    completed, retry = joint_experiment(pair, probe, optimizer="powell")
+                if completed and not passed and (
+                    schedule.numerical_only(experiment) if schedule is not None
+                    else joint_numerical_only(experiment)
+                ):
+                    completed, retry, _ = joint_experiment(pair, probe, optimizer="powell")
                     passed = completed and joint_passes(retry)
                     if passed:
                         experiment = retry

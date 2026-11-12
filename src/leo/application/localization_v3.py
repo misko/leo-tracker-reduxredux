@@ -198,7 +198,8 @@ def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed
                               on_selection=None, map_annotation_folds=None,
                               map_inclusion_arms=None, map_annotation_training=None,
                               map_joint_batches=None, map_joint_arms=None,
-                              annotation_training_fit=None, inclusion_control_factory=None):
+                              annotation_training_fit=None, inclusion_control_factory=None,
+                              joint_schedule_factory=None):
     """Run ordered recovery with explicit caller-owned admission and execution."""
     if prepared_recovery['status'] != 'track_recovery_prepared':
         return dict(status=prepared_recovery['status'], recovery=None, recovery_complete=False)
@@ -208,6 +209,8 @@ def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed
                                if annotation_training_fit is not None else {}),
                             **({'inclusion_control_factory': inclusion_control_factory}
                                if inclusion_control_factory is not None else {}),
+                            **({'joint_schedule_factory': joint_schedule_factory}
+                               if joint_schedule_factory is not None else {}),
                             **({'map_annotation_folds': map_annotation_folds}
                                if map_annotation_folds else {}),
                             **({'map_inclusion_arms': map_inclusion_arms}
@@ -225,7 +228,8 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
                                   inventory_seconds, map_annotation_folds=None,
                                   map_inclusion_arms=None, map_annotation_training=None,
                                   map_joint_batches=None, map_joint_arms=None,
-                                  annotation_training_fit=None, inclusion_control_factory=None):
+                                  annotation_training_fit=None, inclusion_control_factory=None,
+                                  joint_schedule_factory=None):
     """Keep owned stage values for the immediately following numerical policy."""
     completed = {'inventory': dict(value=prepared_recovery['inventory'], seconds=inventory_seconds)}
     selection = []
@@ -244,6 +248,8 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
                                          if annotation_training_fit is not None else {}),
                                       **({'inclusion_control_factory': inclusion_control_factory}
                                          if inclusion_control_factory is not None else {}),
+                                      **({'joint_schedule_factory': joint_schedule_factory}
+                                         if joint_schedule_factory is not None else {}),
                                       **({'map_inclusion_arms': map_inclusion_arms}
                                          if map_inclusion_arms else {}),
                                       **({'map_annotation_folds': map_annotation_folds}
@@ -257,13 +263,16 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
     return dict(result, completed_stages=completed,
                 **({'inclusion_control_policy': inclusion_control_factory.policy}
                    if inclusion_control_factory is not None else {}),
+                **({'joint_schedule_policy': joint_schedule_factory.policy}
+                   if joint_schedule_factory is not None else {}),
                 selected_state=selection[0] if selection else None)
 
 
 def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
                              discovery_allowed, clock, charge_reused, on_selection=None,
                              map_inclusion_arms=None, map_joint_batches=None, map_joint_arms=None,
-                             annotation_training_fit=None, inclusion_control_factory=None):
+                             annotation_training_fit=None, inclusion_control_factory=None,
+                             joint_schedule_factory=None):
     """Replay the owned checkpoint and retain the exact incumbent on rejection."""
     if predictive['status'] != 'predictive_recovery_evaluated':
         return dict(status=predictive['status'], recovery=None, recovery_complete=False)
@@ -274,8 +283,12 @@ def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
            if annotation_training_fit is not None else {}),
         **({'inclusion_control_factory': inclusion_control_factory}
            if inclusion_control_factory is not None else {}),
+        **({'joint_schedule_factory': joint_schedule_factory}
+           if joint_schedule_factory is not None else {}),
         **({'completed_inclusion_control_policy': predictive['inclusion_control_policy']}
            if 'inclusion_control_policy' in predictive else {}),
+        **({'completed_joint_schedule_policy': predictive['joint_schedule_policy']}
+           if 'joint_schedule_policy' in predictive else {}),
         **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}),
         **({'map_joint_batches': map_joint_batches} if map_joint_batches else {}),
         **({'map_joint_arms': map_joint_arms} if map_joint_arms else {}),
@@ -287,7 +300,7 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
                                  discovery_allowed, clock, charge_reused,
                                  map_inclusion_arms=None, map_joint_batches=None,
                                  map_joint_arms=None, annotation_training_fit=None,
-                                 inclusion_control_factory=None):
+                                 inclusion_control_factory=None, joint_schedule_factory=None):
     """Retain completed numerical annotations, including on incumbent fallback."""
     completed = {}
     selection = []
@@ -305,6 +318,8 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
            if annotation_training_fit is not None else {}),
         **({'inclusion_control_factory': inclusion_control_factory}
            if inclusion_control_factory is not None else {}),
+        **({'joint_schedule_factory': joint_schedule_factory}
+           if joint_schedule_factory is not None else {}),
         **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}),
         **({'map_joint_batches': map_joint_batches} if map_joint_batches else {}),
         **({'map_joint_arms': map_joint_arms} if map_joint_arms else {}))

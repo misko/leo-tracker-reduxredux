@@ -42,6 +42,7 @@ class ExecutionPorts:
     initial_control: Callable | None = None
     annotation_training_fit: Callable | None = None
     inclusion_control_factory: Callable | None = None
+    joint_schedule_factory: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -186,6 +187,8 @@ def infer_prepared(
                if execution.annotation_training_fit is not None else {}),
             **({'inclusion_control_factory': execution.inclusion_control_factory}
                if execution.inclusion_control_factory is not None else {}),
+            **({'joint_schedule_factory': execution.joint_schedule_factory}
+               if execution.joint_schedule_factory is not None else {}),
             **(
                 {"map_inclusion_arms": execution.map_recovery_arms}
                 if execution.map_recovery_arms
@@ -221,6 +224,8 @@ def infer_prepared(
                if execution.annotation_training_fit is not None else {}),
             **({'inclusion_control_factory': execution.inclusion_control_factory}
                if execution.inclusion_control_factory is not None else {}),
+            **({'joint_schedule_factory': execution.joint_schedule_factory}
+               if execution.joint_schedule_factory is not None else {}),
             **({"map_inclusion_arms": execution.map_recovery_arms}
                if execution.map_recovery_arms else {}),
             **({"map_joint_batches": execution.map_grid_batches}

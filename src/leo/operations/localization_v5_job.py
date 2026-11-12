@@ -10,7 +10,7 @@ from leo.operations import localization_v3_job
 
 
 def make_request(v3_request, backend_manifest, *, annotation_training_policy=None,
-                 inclusion_control_policy=None):
+                 inclusion_control_policy=None, joint_schedule_policy=None):
     from leo.analysis.localization_v4.backend import read_manifest, validate_manifest
 
     localization_v3_job.validate_request(v3_request)
@@ -27,17 +27,23 @@ def make_request(v3_request, backend_manifest, *, annotation_training_policy=Non
         controls['inclusion_control_policy'] = localization_v5.inclusion_control_policy(
             inclusion_control_policy)
         binding.update(controls)
+    joint = {}
+    if joint_schedule_policy is not None:
+        joint['joint_schedule_policy'] = localization_v5.joint_schedule_policy(
+            joint_schedule_policy)
+        binding.update(joint)
     job["identity"]["run_id"] = "v5-" + canonical_digest(
         binding
     )[7:47]
     return validate_request(dict(
-        schema_version=3 if controls else 2 if training else 1,
+        schema_version=4 if joint else 3 if controls else 2 if training else 1,
         algorithm=localization_v5.MODEL,
         backend_manifest=deepcopy(manifest),
         initial_control_policy=POLICY,
         job=job,
         **training,
         **controls,
+        **joint,
     ))
 
 
@@ -53,11 +59,16 @@ def validate_request(request):
         keys.add('inclusion_control_policy')
         if 'annotation_training_policy' in request:
             keys.add('annotation_training_policy')
+    if (isinstance(request, dict) and type(request.get('schema_version')) is int
+            and request['schema_version'] == 4):
+        keys.add('joint_schedule_policy')
+        keys.update(k for k in ('annotation_training_policy', 'inclusion_control_policy')
+                    if k in request)
     if (
         not isinstance(request, dict)
         or set(request) != keys
         or type(request["schema_version"]) is not int
-        or request["schema_version"] not in (1, 2, 3)
+        or request["schema_version"] not in (1, 2, 3, 4)
         or request["algorithm"] != localization_v5.MODEL
         or request["initial_control_policy"] != POLICY
     ):
@@ -66,6 +77,8 @@ def validate_request(request):
         localization_v5.validate_annotation_training_policy(request["annotation_training_policy"])
     if 'inclusion_control_policy' in request:
         localization_v5.validate_inclusion_control_policy(request['inclusion_control_policy'])
+    if 'joint_schedule_policy' in request:
+        localization_v5.validate_joint_schedule_policy(request['joint_schedule_policy'])
     localization_v3_job.validate_request(request["job"])
     if not request["job"]["identity"]["run_id"].startswith("v5-"):
         raise ValueError("Native ALGO07v5 run namespace required")
@@ -83,6 +96,8 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
         training["annotation_training_policy"] = request["annotation_training_policy"]
     controls = ({'inclusion_control_policy': request['inclusion_control_policy']}
                 if 'inclusion_control_policy' in request else {})
+    joint = ({'joint_schedule_policy': request['joint_schedule_policy']}
+             if 'joint_schedule_policy' in request else {})
     manifest = request["backend_manifest"]
     if read_manifest(native_manifest) != manifest:
         raise ValueError("Native manifest differs from request backend binding")
@@ -111,6 +126,9 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
             or provenance.get('inclusion_control_policy') != controls.get(
                 'inclusion_control_policy')
             or (not controls and 'inclusion_control_work' in provenance)
+            or ('joint_schedule_policy' in provenance) != bool(joint)
+            or provenance.get('joint_schedule_policy') != joint.get('joint_schedule_policy')
+            or (not joint and 'joint_schedule_work' in provenance)
         ):
             raise ValueError("Saved result belongs to a different native backend")
         if training:
@@ -126,10 +144,20 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
             localization_v5.validate_inclusion_control_work(
                 provenance.get('inclusion_control_work'), request['inclusion_control_policy'],
                 canonical_digest(manifest))
+        if joint:
+            localization_v5.validate_joint_schedule_work(
+                provenance.get('joint_schedule_work'), request['joint_schedule_policy'],
+                canonical_digest(manifest))
 
     execution = {}
     work = None
     control_factory = None
+    schedule_factory = None
+    if joint and backend is not None:
+        from leo.operations.localization_v5_joint import JointScheduleFactory
+
+        schedule_factory = JointScheduleFactory(backend, request['joint_schedule_policy'])
+        execution['joint_schedule_factory'] = schedule_factory
     if controls and backend is not None:
         from leo.operations.localization_v5_controls import ControlCacheFactory
 
@@ -156,10 +184,12 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
         check_saved=check_saved, initial_control=initial_control,
         extra_provenance=lambda: dict(
             algorithm=localization_v5.MODEL, native_backend=backend.provenance(),
-            initial_control_policy=POLICY, **training, **controls,
+            initial_control_policy=POLICY, **training, **controls, **joint,
             **({"annotation_training_work": work.provenance()} if work is not None else {}),
             **({'inclusion_control_work': control_factory.provenance()}
                if control_factory is not None else {}),
+            **({'joint_schedule_work': schedule_factory.provenance()}
+               if schedule_factory is not None else {}),
         ),
         **execution,
     )

@@ -70,6 +70,8 @@ def replay_recovery(
     annotation_training_fit=None,
     inclusion_control_factory=None,
     completed_inclusion_control_policy=None,
+    joint_schedule_factory=None,
+    completed_joint_schedule_policy=None,
 ):
     """Replay the completed original schedule, then perform additive adoption.
 
@@ -83,6 +85,10 @@ def replay_recovery(
                          if inclusion_control_factory is not None else None)
     if completed_inclusion_control_policy != expected_controls:
         raise ValueError('Completed inclusion control policy differs from replay policy')
+    expected_schedule = (joint_schedule_factory.policy
+                         if joint_schedule_factory is not None else None)
+    if completed_joint_schedule_policy != expected_schedule:
+        raise ValueError('Completed joint schedule policy differs from replay policy')
     stages = {}
     for name, saved in completed_stages.items():
         seconds = saved["seconds"]
@@ -209,6 +215,8 @@ def replay_recovery(
                if annotation_training_fit is not None else {}),
             **({'inclusion_control_factory': inclusion_control_factory}
                if inclusion_control_factory is not None else {}),
+            **({'joint_schedule_factory': joint_schedule_factory}
+               if joint_schedule_factory is not None else {}),
             **({"map_inclusion_arms": map_inclusion_arms} if map_inclusion_arms else {}),
             **({"map_joint_batches": map_joint_batches} if map_joint_batches else {}),
             **({"map_joint_arms": map_joint_arms} if map_joint_arms else {}),

@@ -1,5 +1,17 @@
 # Algo07v4 baseline and algo07v5 goal
 
+The conditional joint schedule is now wired as the independent opt-in
+`defer-factorized-unless-retry-v1` policy. Schema4 requests bind it into the
+run identity; schema1/2/3 remain unchanged. A narrow factory port reaches
+predictive and numerical recovery, and replay verifies the checkpoint's
+policy before consuming saved stages. Operations owns native-manifest
+validation and reports actual completed, failed, omitted and unfinished
+experiments. Unknown callbacks and numerical policies retain the original
+schedule. All 1558 relevant checks pass, including paired selection and
+per-stage receipt comparisons. Runtime component and complete-worker
+qualification are still required; this integration is not a measured new
+worker speedup.
+
 Latest continuation: a fresh matched DS26-0102 pair completed at
 753.920414 seconds / 1369.053036 CPU seconds for frozen v3 and
 401.607870 / 643.249736 for current v5 with both opt-in policies. This is

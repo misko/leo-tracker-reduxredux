@@ -2,8 +2,10 @@
 
 Current candidate commands explicitly use
 `--annotation-training-policy lbfgsb-gn-fallback-full5-v1` and
-`--inclusion-control-policy native-complete-controls-v1`; the final section
-shows their combination. Joint scheduling remains diagnostic only.
+`--inclusion-control-policy native-complete-controls-v1`; the runtime control
+section shows their combination. The independent opt-in
+`--joint-schedule-policy defer-factorized-unless-retry-v1` adds conditional
+joint scheduling and still requires complete-worker qualification.
 
 The bounded joint diagnostics accept a completed current v5 request. First
 capture a complete predictive recovery with
@@ -17,6 +19,29 @@ use `--timeout 180`. Capture must match the entire saved recovery before
 its content-bound reference is accepted. The deferred replay must match
 every remaining trial and audit and both acceptance/retry decisions.
 These diagnostics do not establish complete-worker speed or GPS accuracy.
+
+To evaluate the new runtime schedule, add the joint flag to quick or full
+commands while retaining the same annotation and inclusion policies:
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile quick --version algo07v5 \
+  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
+  --inclusion-control-policy native-complete-controls-v1 \
+  --joint-schedule-policy defer-factorized-unless-retry-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/quick-v5-joint-schedule"
+```
+
+Use `plan --profile full`, then `run --profile full` with these same options
+and fresh output paths for full qualification. Schema4 binds this policy
+independently of the other two. The schedule retains both full control and
+joint fits/audits, and computes factorized fits only when they can affect
+numerical retry. Saved work distinguishes computed and omitted experiments;
+native receipts retain actual physical calls. Unknown callbacks retain the
+original order. A mismatched predictive checkpoint cannot be reused by
+numerical recovery. Existing commands keep their original schedule.
 
 Run these commands from the repository root. Use the pinned numerical environment.
 The paths below describe the existing development host. Choose a fresh output

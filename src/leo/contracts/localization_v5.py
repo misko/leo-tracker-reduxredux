@@ -9,6 +9,70 @@ INITIAL_CONTROL_POLICY = "winner-arm-phase0-fit-v1"
 ANNOTATION_TRAINING_POLICY = "lbfgsb-full5-625-v1"
 ANNOTATION_FALLBACK_POLICY = "lbfgsb-gn-fallback-full5-v1"
 INCLUSION_CONTROL_POLICY = "native-complete-controls-v1"
+JOINT_SCHEDULE_POLICY = "defer-factorized-unless-retry-v1"
+
+
+def joint_schedule_policy(identifier=JOINT_SCHEDULE_POLICY):
+    if identifier != JOINT_SCHEDULE_POLICY:
+        raise ValueError('Unknown ALGO07v5 joint schedule policy')
+    return dict(id=identifier, scope='one paired joint experiment',
+                order=['control', 'joint', 'factorized'],
+                omit_factorized='joint accepted or control/joint audits rule out numerical retry',
+                optimizer_and_phase_budgets='unchanged',
+                bound='request-bound native manifest',
+                unknown_callbacks='original schedule',
+                numerical_policy='known original NumericalPolicy only')
+
+
+def validate_joint_schedule_policy(value):
+    if type(value) is not dict or value != joint_schedule_policy():
+        raise ValueError('Complete ALGO07v5 joint schedule policy required')
+    return value
+
+
+def joint_schedule_counts(rows):
+    return dict(started=len(rows), completed=sum(r['state'] == 'completed' for r in rows),
+                failed=sum(r['state'] == 'failed' for r in rows),
+                in_progress=sum(r['state'] == 'started' for r in rows),
+                ineligible=sum(not r['eligible'] for r in rows),
+                **{'factorized_' + status: sum(r['factorized'] == status for r in rows)
+                   for status in ('computed', 'omitted', 'incomplete', 'not_reached')})
+
+
+def validate_joint_schedule_work(value, policy, binding):
+    validate_joint_schedule_policy(policy)
+    if (type(value) is not dict
+            or set(value) != {'schema_version', 'policy', 'backend_manifest_sha256',
+                              'experiments', 'counts'}
+            or type(value['schema_version']) is not int or value['schema_version'] != 1
+            or value['policy'] != policy or value['backend_manifest_sha256'] != binding
+            or type(value['experiments']) is not list):
+        raise ValueError('Bound joint schedule work required')
+    validate_joint_schedule_policy(value['policy'])
+    for row in value['experiments']:
+        if (type(row) is not dict
+                or set(row) != {'optimizer', 'eligible', 'state', 'factorized',
+                                'reason', 'completed_arms'}
+                or row['optimizer'] not in ('lbfgsb', 'powell')
+                or type(row['eligible']) is not bool
+                or row['state'] not in ('started', 'completed', 'failed')
+                or row['factorized'] not in ('computed', 'omitted', 'incomplete', 'not_reached')
+                or type(row['completed_arms']) is not int
+                or not 0 <= row['completed_arms'] <= 2
+                or (row['factorized'] == 'computed') != (row['completed_arms'] == 2)
+                or (row['factorized'] in ('omitted', 'not_reached') and row['completed_arms'])
+                or (row['factorized'] == 'omitted' and not row['eligible'])
+                or (row['factorized'] == 'omitted') != (row['reason'] in (
+                    'joint_already_qualified', 'numerical_retry_ruled_out'))
+                or (row['factorized'] != 'omitted' and row['reason'] is not None)
+                or (row['state'] == 'completed'
+                    and row['factorized'] not in ('computed', 'omitted'))):
+            raise ValueError('Consistent actual joint experiment states required')
+    counts = value['counts']
+    if (type(counts) is not dict or counts != joint_schedule_counts(value['experiments'])
+            or any(type(n) is not int or n < 0 for n in counts.values())):
+        raise ValueError('Joint schedule aggregate differs from experiments')
+    return value
 
 
 def inclusion_control_policy(identifier=INCLUSION_CONTROL_POLICY):
@@ -110,6 +174,13 @@ def validate_evidence(evidence):
                                         provenance["native_backend"]["manifest_sha256"])
     elif 'inclusion_control_work' in evidence['provenance']:
         raise ValueError('Inclusion control work requires its explicit policy')
+    if 'joint_schedule_policy' in evidence['provenance']:
+        provenance = evidence['provenance']
+        validate_joint_schedule_work(provenance.get('joint_schedule_work'),
+                                     provenance['joint_schedule_policy'],
+                                     provenance['native_backend']['manifest_sha256'])
+    elif 'joint_schedule_work' in evidence['provenance']:
+        raise ValueError('Joint schedule work requires its explicit policy')
     return evidence
 
 

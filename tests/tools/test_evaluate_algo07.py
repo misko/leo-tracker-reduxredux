@@ -274,6 +274,61 @@ def test_control_policy_rejected_for_other_versions_before_reading_inputs(tmp_pa
     assert not (tmp_path / 'output').exists()
 
 
+@pytest.mark.parametrize('profile', ['quick', 'full'])
+@pytest.mark.parametrize('action', ['plan', 'run'])
+@pytest.mark.parametrize('other_policies', [False, True])
+def test_joint_schedule_policy_keeps_quick_full_and_existing_policies_explicit(
+    frozen, monkeypatch, profile, action, other_policies
+):
+    from leo.contracts import localization_v5
+
+    snapshot, source, output = frozen
+    manifest = snapshot / 'manifest.json'
+    evaluation.write(manifest, {'synthetic': 'backend'})
+    calls = []
+
+    def wrap(request, manifest, **policies):
+        calls.append(policies)
+        assert request['evaluation_reference'] is None
+        return dict(job=request, backend_manifest=manifest, schema_version=4,
+                    joint_schedule_policy=localization_v5.joint_schedule_policy())
+
+    monkeypatch.setattr(evaluation, 'owned_import', lambda name, binding:
+                        localization_v5 if name == 'leo.contracts.localization_v5'
+                        else SimpleNamespace(make_request=wrap))
+    if action == 'run':
+        monkeypatch.setattr(evaluation, 'run_plan', lambda plan, python: dict(
+            statuses={}, results=[dict(status='missing' if j['status'] == 'missing' else 'complete')
+                                  for j in plan['jobs']]))
+    args = [action, '--version', 'algo07v5', '--profile', profile,
+            '--snapshot', str(snapshot), '--source-root', str(source), '--output', str(output),
+            '--native-manifest', str(manifest), '--joint-schedule-policy',
+            localization_v5.JOINT_SCHEDULE_POLICY]
+    if other_policies:
+        args += ['--annotation-training-policy', localization_v5.ANNOTATION_FALLBACK_POLICY,
+                 '--inclusion-control-policy', localization_v5.INCLUSION_CONTROL_POLICY]
+    assert evaluation.main(args) == int(action == 'run' and profile == 'full')
+    result = evaluation.read(output / 'plan.json')
+    assert result['joint_schedule_policy'] == localization_v5.joint_schedule_policy()
+    assert len(result['jobs']) == (3 if profile == 'quick' else 4)
+    assert calls == [dict(annotation_training_policy=(
+        localization_v5.ANNOTATION_FALLBACK_POLICY if other_policies else None),
+        joint_schedule_policy=localization_v5.JOINT_SCHEDULE_POLICY,
+        **({'inclusion_control_policy': localization_v5.INCLUSION_CONTROL_POLICY}
+           if other_policies else {}))] * 3
+    if profile == 'full':
+        assert result['jobs'][-1]['status'] == 'missing'
+    assert all(j['request']['schema_version'] == 4 for j in result['jobs'][:3])
+
+
+@pytest.mark.parametrize('version', ['algo07v3', 'algo07v4'])
+def test_joint_schedule_policy_rejects_other_versions_before_loading_inputs(tmp_path, version):
+    assert evaluation.main(['plan', '--version', version, '--snapshot', str(tmp_path / 'absent'),
+        '--output', str(tmp_path / 'output'), '--joint-schedule-policy',
+        'defer-factorized-unless-retry-v1']) == 1
+    assert not (tmp_path / 'output').exists()
+
+
 @pytest.mark.parametrize('change', ['duplicate', 'missing', 'changed'])
 def test_nested_archive_mutation_never_launches_inference(frozen, monkeypatch, change):
     result = plan(frozen, '--cases', 'DS26-0002')
