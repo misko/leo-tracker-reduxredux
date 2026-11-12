@@ -1,5 +1,26 @@
 # Algo07v4 baseline and algo07v5 goal
 
+The fresh reverse-order 0102 pair completes at 351.401017 wall /
+566.900862 CPU seconds for current full-policy v5, followed by frozen v3
+at 663.078334 / 1175.698310. This is 1.886956x wall and 2.073905x CPU,
+still below the wall target. Current-v5 selected evidence, all PNGs and
+physical work repeat exactly; only 31 audit clocks change. Fresh-v3
+ownership and published GPS errors remain the same to the previously
+measured micrometer-scale native roundoff. One reversed pair does not
+establish population performance or repeatability.
+
+The next speed-accuracy lever limits the original length-ranked RF target
+prefix. The existing selector already accepts a limit, defaulting to eight.
+An explicit versioned request/CLI option can reduce search coverage while
+retaining the complete optimizer and audit budgets for every selected
+target. Predictive plus numerical recovery occupy 25.3%, 29.7% and 64.2%
+of current quick-worker wall time on 0002/0066/0102. A saved-endpoint census
+does not predict final accuracy after changing that search: on 0066 the
+pre-recovery RF position has about 2.39 km GPS error versus 1.24 km after
+all later phases. Actual complete-worker comparisons are required.
+Current full-policy behavior and v4 rollback remain fixed while the
+explicit search-budget frontier is evaluated.
+
 All three runtime joint-policy quick workers now pass complete publication
 validation. DS26-0002 and 0066 execute no joint experiment and retain all
 selected science, eight PNGs each, and native/training/control work counts
