@@ -7,42 +7,6 @@ section shows their combination. The independent opt-in
 `--joint-schedule-policy defer-factorized-unless-retry-v1` adds conditional
 joint scheduling and still requires complete-worker qualification.
 
-The bounded joint diagnostics accept a completed current v5 request. First
-capture a complete predictive recovery with
-`tools/probe_algo07v5_joint_start.py --mode capture`, then use its output as
-`--reference` for `--mode warm` or
-`tools/probe_algo07v5_joint_schedule.py`. All commands require `--request`,
-`--native-manifest` and fresh `--output`; inference additionally requires
-`--run`, three pinned CPUs and the single-thread environment below.
-Capture allows at most 300 seconds; the tested warm and deferred schedules
-use `--timeout 180`. Capture must match the entire saved recovery before
-its content-bound reference is accepted. The deferred replay must match
-every remaining trial and audit and both acceptance/retry decisions.
-These diagnostics do not establish complete-worker speed or GPS accuracy.
-
-To evaluate the new runtime schedule, add the joint flag to quick or full
-commands while retaining the same annotation and inclusion policies:
-
-```bash
-"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
-  --profile quick --version algo07v5 \
-  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
-  --inclusion-control-policy native-complete-controls-v1 \
-  --joint-schedule-policy defer-factorized-unless-retry-v1 \
-  --snapshot "$ALGO_SNAPSHOT" \
-  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
-  --output "$ALGO_EVAL/quick-v5-joint-schedule"
-```
-
-Use `plan --profile full`, then `run --profile full` with these same options
-and fresh output paths for full qualification. Schema4 binds this policy
-independently of the other two. The schedule retains both full control and
-joint fits/audits, and computes factorized fits only when they can affect
-numerical retry. Saved work distinguishes computed and omitted experiments;
-native receipts retain actual physical calls. Unknown callbacks retain the
-original order. A mismatched predictive checkpoint cannot be reused by
-numerical recovery. Existing commands keep their original schedule.
-
 Run these commands from the repository root. Use the pinned numerical environment.
 The paths below describe the existing development host. Choose a fresh output
 directory for each command. Outputs on QNAP are rejected.
@@ -316,3 +280,41 @@ Cached fit histories describe the reused result; those histories are not new
 physical solver evaluations. Native activation receipts retain actual calls.
 Saved resume validates the bound work record without loading a native backend.
 Use the usual `compare` command on matched reports; qualification is still required.
+
+## Evaluate conditional joint scheduling
+
+The bounded joint diagnostics accept a completed current v5 request. First
+capture a complete predictive recovery with
+`tools/probe_algo07v5_joint_start.py --mode capture`, then use its output as
+`--reference` for `--mode warm` or
+`tools/probe_algo07v5_joint_schedule.py`. All commands require `--request`,
+`--native-manifest` and fresh `--output`; inference additionally requires
+`--run`, three pinned CPUs and the single-thread environment below.
+Capture allows at most 300 seconds; the tested warm and deferred schedules
+use `--timeout 180`. Capture must match the entire saved recovery before
+its content-bound reference is accepted. The deferred replay must match
+every remaining trial and audit and both acceptance/retry decisions.
+These diagnostics do not establish complete-worker speed or GPS accuracy.
+
+To evaluate the new runtime schedule, add the joint flag to quick or full
+commands while retaining the same annotation and inclusion policies:
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile quick --version algo07v5 \
+  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
+  --inclusion-control-policy native-complete-controls-v1 \
+  --joint-schedule-policy defer-factorized-unless-retry-v1 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/quick-v5-joint-schedule"
+```
+
+Use `plan --profile full`, then `run --profile full` with these same options
+and fresh output paths for full qualification. Schema4 binds this policy
+independently of the other two. The schedule retains both full control and
+joint fits/audits, and computes factorized fits only when they can affect
+numerical retry. Saved work distinguishes computed and omitted experiments;
+native receipts retain actual physical calls. Unknown callbacks retain the
+original order. A mismatched predictive checkpoint cannot be reused by
+numerical recovery. Existing commands keep their original schedule.

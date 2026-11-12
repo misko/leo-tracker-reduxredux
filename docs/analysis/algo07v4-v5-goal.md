@@ -1,5 +1,27 @@
 # Algo07v4 baseline and algo07v5 goal
 
+First complete-worker integration of the joint policy passes on DS26-0102.
+Both predictive and numerical recovery omit their factorized pair after
+the full control/joint audits exclude numerical retry. Native calls drop
+15659 to 15006. Selected evidence, GPS errors, frequency scores and all
+eight PNGs match the prior current-v5 worker exactly. After removing only
+the eight explicitly omitted stage records and four corresponding
+numerical receipts, the remaining 31 audit differences are clocks.
+Annotation work remains 210 completed fits / 6018 physical residuals /
+eight GN fallbacks; control work remains six requests, five computed and
+one reused. Two joint experiments complete, both eligible, with no
+scheduling failures or unfinished work.
+
+Observed complete-worker wall/CPU times are 401.607870 / 643.249736 seconds
+before and 364.113634 / 564.538212 after. This separated pair is not timing
+qualification and must not be combined with an earlier v3 timing to claim
+2x. Real runtime component replay also passes through the original
+controller/factory port, with only the declared stage omission. Remaining
+quick controls and alternating repeats are next; independent DS26
+qualification remains open. Evidence is under
+`~/.cache/algo07v5-speed-20261112/worker-joint-schedule-0102-001/`, including
+`validation.json` and every raw/normalized audit difference.
+
 The conditional joint schedule is now wired as the independent opt-in
 `defer-factorized-unless-retry-v1` policy. Schema4 requests bind it into the
 run identity; schema1/2/3 remain unchanged. A narrow factory port reaches
