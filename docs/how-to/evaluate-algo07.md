@@ -205,3 +205,29 @@ calls, retaining five phase rounds. Receipts count both attempts and preserve
 their stops, failures and score corrections. Completed GN fallback is recorded
 separately from primary convergence. This policy also requires complete-worker
 and independent DS26 qualification before becoming a default.
+
+## Inspect exact inclusion-control reuse
+
+This bounded diagnostic replays predictive recovery from a completed public
+result. It keeps both calibration arms, full scientific budgets and geometry
+fingerprints. It does not enable a cache in the worker or run a full DS26 batch.
+Use a saved request and its own checkout-bound manifest.
+
+```bash
+taskset -c 0,1,2 "$ALGO_PYTHON" -B tools/probe_algo07v5_control_census.py \
+  --request "$ALGO_EVAL/quick-v5/DS26-0066-r0/algo07v5/request.json" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/control-census-0066" --timeout 180 --run
+
+taskset -c 0,1,2 "$ALGO_PYTHON" -B tools/probe_algo07v5_control_census.py \
+  --request "$ALGO_EVAL/quick-v5/DS26-0066-r0/algo07v5/request.json" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/control-reuse-0066" --timeout 180 --reuse --run
+```
+
+The first command independently computes every control pair and checks any
+matching keys against complete results. The second explicitly reuses matching
+pairs through independent copies. Both must reproduce the entire saved native
+recovery audit. Omit `--run` to plan without loading the scientific archive.
+Reports separate recomputation, reuse, keying and copy costs. A component result
+does not satisfy the complete-worker speed target.

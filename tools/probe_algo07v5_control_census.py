@@ -1,4 +1,4 @@
-"""Observe independently recomputed native inclusion controls; never reuse fits."""
+"""Census or explicitly reuse native inclusion controls in a diagnostic replay."""
 
 import argparse
 import hashlib
@@ -59,9 +59,12 @@ def prospective_key(kind, context, inventory, count, option, backend, binding):
 
 
 class ControlCensus:
-    """The actual control computation always runs, including duplicate keys."""
+    """Default to independent computations; diagnostic reuse returns isolated copies."""
 
-    def __init__(self, backend):
+    def __init__(self, backend, reuse=False):
+        if type(reuse) is not bool:
+            raise ValueError('Explicit boolean reuse selection required')
+        self.reuse = reuse
         self.backend, self.binding = backend, canonical_digest(backend.manifest)
         self.original = inclusion_controls.InclusionControlCache()
         self.values, self.rows = {}, []
@@ -78,8 +81,9 @@ class ControlCensus:
         key = prospective_key(kind, context, inventory, count, option, self.backend, self.binding)
         key_seconds = time.perf_counter() - began
         duplicate = key is not None and key in self.values
+        reused = self.reuse and duplicate
         began, used = time.perf_counter(), cpu()
-        value = compute()
+        value = deepcopy(self.values[key]) if reused else compute()
         seconds, cpu_seconds = time.perf_counter() - began, sum(cpu()) - sum(used)
         actual = fingerprint(value)
         if duplicate and actual != fingerprint(self.values[key]):
@@ -87,7 +91,7 @@ class ControlCensus:
         if key is not None and not duplicate:
             self.values[key] = deepcopy(value)
         self.rows.append(dict(kind=kind, option=option, key=key, key_seconds=key_seconds,
-                              duplicate=duplicate, reused=False, seconds=seconds,
+                              duplicate=duplicate, reused=reused, seconds=seconds,
                               cpu_seconds=cpu_seconds, complete_pair_sha256=actual))
         return value
 
@@ -96,12 +100,17 @@ class ControlCensus:
                     distinct_keys=len(self.values),
                     duplicates=sum(r['duplicate'] for r in self.rows),
                     duplicate_compute_seconds=sum(r['seconds'] for r in self.rows
-                                                  if r['duplicate']),
+                                                  if r['duplicate'] and not r['reused']),
                     duplicate_compute_cpu_seconds=sum(r['cpu_seconds'] for r in self.rows
-                                                      if r['duplicate']),
-                    key_seconds=sum(r['key_seconds'] for r in self.rows), cache_reuse=False,
+                                                      if r['duplicate'] and not r['reused']),
+                    reused_controls=sum(r['reused'] for r in self.rows),
+                    independent_duplicate_comparisons=sum(r['duplicate'] and not r['reused']
+                                                          for r in self.rows),
+                    cached_copy_seconds=sum(r['seconds'] for r in self.rows if r['reused']),
+                    key_seconds=sum(r['key_seconds'] for r in self.rows), cache_reuse=self.reuse,
                     geometry_fingerprinted=True,
-                    savings_qualification='potential duplicate cost; no cache speedup measured')
+                    savings_qualification=('diagnostic replay only; no worker speedup claim'
+                                           if self.reuse else 'potential duplicate compute cost'))
 
 
 def controller(census):
@@ -123,6 +132,8 @@ def main(argv=None):
     parser.add_argument('--native-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--timeout', type=int, choices=range(1, 301), default=180)
+    parser.add_argument('--reuse', action='store_true',
+                        help='Reuse matching controls in this probe')
     parser.add_argument('--run', action='store_true')
     args = parser.parse_args(argv)
     output = args.output.resolve()
@@ -142,9 +153,9 @@ def main(argv=None):
                 for path in paths}
     plan = dict(status='plan', request_sha256=canonical_digest(request),
                 manifest_sha256=canonical_digest(manifest), modules=modules, bindings=bindings,
-                timeout_s=args.timeout, cache_reuse=False, geometry_fingerprinted=True,
+                timeout_s=args.timeout, cache_reuse=args.reuse, geometry_fingerprinted=True,
                 GPS_used=False, whole_worker_speedup=None,
-                scope='complete predictive recovery; prospective inclusion-control keys only')
+                scope='complete predictive recovery with diagnostic inclusion controls')
     output.mkdir(parents=True, exist_ok=False)
 
     def save(name, value):
@@ -164,7 +175,7 @@ def main(argv=None):
         with stage_deadline(args.timeout):
             backend = ProcessBound(manifest, output / 'native-receipts')
             context, evidence, scientific = load_context(request, job, store, backend)
-            census = ControlCensus(backend)
+            census = ControlCensus(backend, reuse=args.reuse)
 
             def stage(name, operation):
                 start, used = time.perf_counter(), cpu()

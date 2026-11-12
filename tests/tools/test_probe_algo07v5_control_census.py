@@ -131,6 +131,31 @@ def test_noncontrols_do_not_enter_census():
     assert census.rows == []
 
 
+def test_explicit_reuse_copies_pairs_without_claiming_independent_comparisons():
+    context, inventory, backend = fixture()
+    census, calls = probe.ControlCensus(backend, reuse=True), []
+
+    def compute():
+        calls.append(1)
+        return {'c0': [1.], 'fitted_c': [2.]}
+
+    args = (True, 'fit_shared', context, inventory, 2, False)
+    census.pair(compute, *args)['c0'][0] = 99
+    census.pair(compute, *args)['fitted_c'][0] = 99
+    assert census.pair(compute, *args) == {'c0': [1.], 'fitted_c': [2.]}
+    assert calls == [1]
+    counts = census.summary()
+    assert counts['reused_controls'] == counts['duplicates'] == 2
+    assert counts['independent_duplicate_comparisons'] == counts['duplicate_compute_seconds'] == 0
+    assert counts['cache_reuse'] is True
+    assert counts['cached_copy_seconds'] >= 0
+
+
+def test_reuse_cannot_be_enabled_by_a_truthy_nonboolean():
+    with pytest.raises(ValueError, match='Explicit boolean'):
+        probe.ControlCensus(Backend(), reuse='false')
+
+
 def test_already_working_cache_cannot_be_counted_as_new_work(monkeypatch):
     context, inventory, backend = fixture()
     census = probe.ControlCensus(backend)
@@ -194,6 +219,17 @@ def test_run_cli_requires_complete_saved_audit_equality(monkeypatch, cli):
     assert result['saved_audit_exact'] is True
     assert result['summary']['cache_reuse'] is False
     assert result['summary']['geometry_fingerprinted'] is True
+
+
+def test_reuse_cli_records_explicit_experimental_mode(monkeypatch, cli):
+    args, output, expected = cli
+    monkeypatch.setattr(probe, 'load_context', lambda *args: ({}, {}, {'receipt': 'tiny'}))
+    monkeypatch.setattr(probe, 'controller', lambda census: lambda *args, **kwargs: expected)
+    assert probe.main([*args, '--reuse', '--run']) == 0
+    result = json.loads((output / 'result.json').read_text())
+    assert result['summary']['cache_reuse'] is True
+    assert result['summary']['independent_duplicate_comparisons'] == 0
+    assert result['whole_worker_speedup'] is None
 
 
 def test_run_cli_retains_mismatch_as_failure(monkeypatch, cli):

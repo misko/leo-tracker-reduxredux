@@ -305,3 +305,30 @@ recovery equality before adding a runtime policy. The new checked probe is
 `control-census-0002-001` and `control-census-0066-001`. Its 81 focused checks
 cover complete-pair comparisons, copy isolation, unknown callback rejection,
 scientific fingerprints, unchanged controller behavior and failure handling.
+
+Explicit diagnostic reuse now passes complete recovery equality on 0066,
+including the current L-BFGS-B/GN fallback candidate. It replaces three control
+computations with independent copies and removes 759 native solver calls. The
+keys and complete control-pair fingerprints also match between GN and fallback
+training configurations. Unknown callbacks remain ineligible; geometry stays
+in the fingerprint. No scientific budget is reduced.
+
+| Diagnostic recovery | Wall seconds | CPU seconds | Native calls |
+| --- | ---: | ---: | ---: |
+| GN, uncached census before | 102.617 | 232.020 | 9,997 |
+| GN, explicit reuse | 86.890 | 200.470 | 9,238 |
+| GN, uncached census after | 92.237 | 170.099 | 9,997 |
+| Current fallback training, explicit reuse | 64.480 | 118.678 | 7,191 |
+
+The later uncached run uses the same probe version as the reuse run. All four
+complete recovery audits match their saved references. Wall observations favor
+reuse, but CPU variation prevents a stable timing-ratio claim. The control
+computations alone cost 8.562 to 9.311 wall seconds in the uncached runs;
+reuse keying costs 0.646 to 0.949 seconds and copying at most 0.016 seconds.
+These are component observations, not complete-worker results or a 2x claim.
+
+The probe's `--reuse` option is explicit and off by default. Its expanded 84
+focused checks pass. Raw observations are in `control-reuse-screen-summary-001.json`
+and `control-reuse-fallback-0066-001`. Next, add a separately identified opt-in
+v5 runtime policy and work accounting, preserving old requests and the fixed
+v4 implementation, then evaluate complete workers through the shared CLI.
