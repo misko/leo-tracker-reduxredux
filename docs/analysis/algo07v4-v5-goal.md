@@ -1,5 +1,33 @@
 # Algo07v4 baseline and algo07v5 goal
 
+Complete-worker quick screens now cover RF-recovery limits zero, two and four.
+All selected work completes; every attempted target keeps full optimizer and
+audit budgets. On 0102, zero and two give the same final result: 34 fewer
+associated points per arm and GPS errors 33.81 m higher for c0 and 61.43 m
+higher for fitted-c than full-search current v5. Two preserves the complete
+selected science and all PNG bytes on 0002/0066. Zero preserves 0066 exactly;
+on 0002 its GPS errors decrease by about 0.4 m with unchanged owners, while
+fitted-c RMS increases by 0.64 Hz. Frequency scores and ownership remain
+separate from localization accuracy.
+
+| RF recovery limit | Observed three-worker wall seconds | CPU seconds | Native calls |
+| --- | ---: | ---: | ---: |
+| 0 | 486.687 | 565.921 | 12493 |
+| 2 | 485.373 | 622.880 | 20601 |
+| 4 | 544.360 | 753.346 | 25380 |
+
+These are separated observations on three development cases, not qualified
+speed ratios. In particular, zero/two wall totals are nearly equal despite
+their different CPU/work counts. No default or speed winner is selected.
+Zero is the next frozen candidate for fresh independent qualification because
+it performs less work; two remains on the measured frontier. The next gate
+uses new random whole-recording groups among the 146 untouched available
+recordings, followed by alternating repeated timing and full inventory
+qualification. Evidence is `target-frontier-quick-002.json` under
+`~/.cache/algo07v5-speed-20261112/`. The prepared paired-run driver supports
+both frozen-v3 comparisons and v5-budget controls, recording its own source
+bindings, host observations, all failures and complete-worker accounting.
+
 The first four independent frozen-v3/four-target-v5 pairs are complete and
 validated through public stores. Aggregate complete-worker wall time falls
 from 1241.670208 to 713.841397 seconds, or 1.739420x. CPU falls from
