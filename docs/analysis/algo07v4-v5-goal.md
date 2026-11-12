@@ -219,3 +219,23 @@ stable worker speedup nor GPS accuracy. Local evidence is in
 `worker-policy-0066-001`, `policy-target0-corrected-001` and
 `policy-fallback-queue-001` under the evidence root above. The latter archives
 the exact measured source before an AST-identical probe line wrap.
+
+The robust candidate then completed DS26-0066 through the shared evaluation CLI.
+Its entire selected result and all eight PNGs match fixed v4 exactly. Both arms
+retain GPS errors of 1.243864 km and 1.217558 km, respectively, with identical
+frequency scores, residual RMS and ownership. The audit differs in 54 timing
+fields and 168 stored margin fields representing 56 distinct predictive margin
+values; the largest absolute margin change is 0.010126. Every other audit field
+matches. Five unsuccessful primary fits completed full GN fallback. All 240
+phase fits completed, with 245 optimizer attempts, 6,016 residual evaluations,
+four recorded-score corrections and no exhausted budgets.
+
+One worker comparison uses 475.988 versus 307.756 CPU seconds and 318.030 versus
+217.209 wall seconds. The fixed-v4 baseline was saved earlier, not alternated
+with this retry. Unchanged native preparation also fell from 14.179 to 10.550
+wall seconds. The overall 1.464 wall ratio therefore remains an integration
+observation requiring alternating repeats; do not multiply it by historical
+v3/v4 ratios to claim the 2x goal. Raw reports, work validation and exhaustive
+selected/audit differences are in `worker-fallback-0066-001`, with paired
+metrics in `worker-fallback-0066-001-comparison`. Next are the other quick
+cases, alternating complete-worker repeats and independent qualification.
