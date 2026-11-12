@@ -1,0 +1,313 @@
+"""Bounded complete-annotation experiment with explicitly approximate phase rounds.
+
+Default invocation only writes a plan. Pickles are trusted local probe outputs.
+This experiment neither evaluates GPS nor establishes a whole-worker speedup.
+"""
+
+import argparse
+import ast
+import hashlib
+import inspect
+import json
+import os
+import pickle
+import resource
+import time
+import types
+from pathlib import Path
+
+import numpy as np
+from census_algo07v5_initial_controls import differences, fingerprint
+
+from leo.analysis.localization_v3 import prediction, predictive_annotation
+from leo.analysis.localization_v3.recovery_inventory import recovery_context
+from leo.analysis.localization_v3.region import SearchRegion
+from leo.analysis.localization_v4.backend import ProcessBound, read_manifest, validate_manifest
+from leo.application.localization_v3 import _context
+from leo.application.localization_v3_engine import _json_value
+from leo.contracts.digests import canonical_digest
+from leo.operations.localization_v3_job import runtime_versions, source_bindings, stage_deadline
+from leo.operations.localization_v3_parallel import map_predictive_folds
+
+ORIGINAL_SHA256 = 'bcf7da0df353d071f45ce64068e815707410c883489fba9d0c538e15fe1258d4'
+
+
+def transform(rounds, source=None, scope=None, expected_sha256=ORIGINAL_SHA256):
+    source = inspect.getsource(prediction.fit_training) if source is None else source
+    if hashlib.sha256(source.encode()).hexdigest() != expected_sha256:
+        raise ValueError('Original fit_training source changed; review the experiment')
+    tree = ast.parse(source)
+    outer = [n for n in tree.body[0].body if isinstance(n, ast.For)
+             and ast.unparse(n.target) == '_epoch' and ast.unparse(n.iter) == 'range(5)']
+    all_ranges = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+                  and ast.unparse(n) == 'range(5)']
+    if rounds not in (1, 2, 3, 5) or len(outer) != 1 or len(all_ranges) != 1:
+        raise ValueError('Exactly one outer five-round phase loop is required')
+    outer[0].iter.args[0] = ast.Constant(rounds)
+    ast.fix_missing_locations(tree)
+    namespace = dict(vars(prediction) if scope is None else scope)
+    exec(compile(tree, '<annotation-phase-rounds>', 'exec'), namespace)
+    return namespace[tree.body[0].name], source, ast.unparse(tree)
+
+
+def clone(function, **globals_override):
+    result = types.FunctionType(function.__code__, dict(function.__globals__, **globals_override),
+                                function.__name__, function.__defaults__, function.__closure__)
+    result.__kwdefaults__ = function.__kwdefaults__
+    return result
+
+
+def annotation_operation(rounds, receipts=None):
+    training, original, changed = transform(rounds)
+    if receipts is not None:
+        records, current = [], [None]
+        def counted_fit(*args, **kwargs):
+            if kwargs.get('iterations') != 48:
+                raise ValueError('Original 48 position steps required')
+            current[0]['optimizer_calls_started'] += 1
+            result = prediction.fit(*args, **kwargs)
+            current[0]['optimizers'].append(dict(evaluations=result['evaluations'],
+                                               stopped=result['stopped']))
+            return result
+        training.__globals__['fit'] = counted_fit
+        def counted_training(d, node, keep, arm):
+            row = dict(arm=arm, optimizer_calls_started=0, optimizers=[], completed=False)
+            records.append(row)
+            current[0] = row
+            try:
+                result = training(d, node, keep, arm)
+                row.update(completed=True, completed_rounds=len(result[2]['history']))
+                return result
+            finally:
+                (receipts / f'{os.getpid()}.json').write_text(json.dumps(records) + '\n')
+        training_callable = counted_training
+    else:
+        training_callable = training
+    fold = clone(predictive_annotation.annotate_fold, fit_training=training_callable)
+    return clone(predictive_annotation.annotate, annotate_fold=fold), original, changed
+
+
+def request_inputs(path):
+    from leo.operations import localization_v3_job, localization_v4_job, localization_v5_job
+    from leo.storage.localization_v3 import LocalizationV3Store
+    from leo.storage.localization_v4 import LocalizationV4Store
+    from leo.storage.localization_v5 import LocalizationV5Store
+
+    request = json.loads(path.read_bytes())
+    if not isinstance(request, dict) or not request:
+        raise ValueError('A complete stored request is required')
+    handlers = {'algo07v4-native-v1': (localization_v4_job, LocalizationV4Store),
+                'algo07v5-native-v1': (localization_v5_job, LocalizationV5Store)}
+    if 'job' in request:
+        if request.get('algorithm') not in handlers:
+            raise ValueError('Unsupported stored native request algorithm')
+        validator, store = handlers[request['algorithm']]
+        validator.validate_request(request)
+        job = request['job']
+    else:
+        localization_v3_job.validate_request(request)
+        job, store = request, LocalizationV3Store
+    if job['runtime'] != runtime_versions():
+        raise ValueError('Match the frozen numerical runtime')
+    return request, job, store
+
+
+def load_context(request, job, store, backend):
+    saved = store(job['output_root']).load(job['identity']['run_id'])
+    evidence, receipt = saved['evidence'], saved['receipt']
+    if (evidence['provenance']['request_sha256'] != canonical_digest(request)
+            or evidence['provenance']['configuration']['request'] != job
+            or evidence['identity'] != job['identity']
+            or any(receipt[k] != v for k, v in job['identity'].items())
+            or saved['sha256'] != canonical_digest(receipt)):
+        raise ValueError('Saved evidence/request/receipt binding mismatch')
+    prepared = evidence['preparation']
+    noise = (json.dumps(prepared['noise'], default=_json_value,
+                       sort_keys=True, allow_nan=False) + '\n').encode()
+    scan = _context(prepared, SearchRegion(tuple(job['search_center'])),
+                    hashlib.sha256(noise).hexdigest(), genuine=True, bound=backend)
+    context = recovery_context(scan, evidence['audit']['cavity_policy'])
+    inventory = evidence['audit']['recovery_inventory']
+    binding = dict(receipt_sha256=saved['sha256'],
+                   context_sha256=fingerprint((prepared, evidence['audit']['cavity_policy'])),
+                   replay_objective_deltas=context['replay'])
+    return context, inventory, binding
+
+
+def metrics(annotation):
+    rows = []
+    for fold in annotation['result']['folds']:
+        for proposal in fold['proposals']:
+            for arm in prediction.ARMS:
+                value = proposal['arms'][arm]
+                score = value['scores']['conditional_target']
+                rows.append(dict(seed=fold['seed'], candidate_index=proposal['candidate_index'],
+                    norad=proposal['norad'], alias=proposal['alias'], arm=arm,
+                    training_objective=value['training_objective'],
+                    negative_twice_log_density=score['negative_twice_log_density'],
+                    rms_hz=score['rms_hz'], elevation_deg=value['minimum_target_elevation_deg'],
+                    final_phase_change_s=value['final_phase_change_s'],
+                    training_rounds=len(value['history']),
+                    history_sha256=fingerprint(value['history'])))
+    return dict(consensus=annotation['result']['annotation'], proposals=rows,
+                nominees={str(k): [dict(candidate_index=o['candidate_index'], arm=o['arm'])
+                                  for o in v['selected']]
+                          for k, v in annotation['nominations'].items()})
+
+
+def compare(reference, actual):
+    return dict(exact=fingerprint(reference) == fingerprint(actual),
+                differences=differences(reference, actual),
+                reference=metrics(reference), actual=metrics(actual),
+                inclusion_decisions_evaluated=False)
+
+
+def cpu():
+    return [resource.getrusage(w).ru_utime + resource.getrusage(w).ru_stime
+            for w in (resource.RUSAGE_SELF, resource.RUSAGE_CHILDREN)]
+
+
+def work_counts(output, mode):
+    records = {p.stem: json.loads(p.read_bytes()) for p in
+               sorted((output / 'training-receipts').glob('*.json'))}
+    rows = [r for values in records.values() for r in values]
+    counts = dict(training_calls_started=len(rows),
+                  training_calls_completed=sum(r['completed'] for r in rows),
+                  completed_rounds=sum(r.get('completed_rounds', 0) for r in rows),
+                  optimizer_calls_started=sum(r['optimizer_calls_started'] for r in rows),
+                  optimizer_evaluations=sum(f['evaluations'] for r in rows
+                                            for f in r['optimizers']))
+    if mode == 'oracle':
+        counts = dict.fromkeys(counts)
+    return dict(counts, per_pid=records,
+                unavailable_reason='untouched oracle is not instrumented'
+                    if mode == 'oracle' else None)
+
+
+def read_reference(path):
+    receipt = json.loads((path / 'result.json').read_bytes())
+    raw = (path / 'annotation.pickle').read_bytes()
+    if (receipt['status'] != 'complete'
+            or hashlib.sha256(raw).hexdigest() != receipt['pickle_sha256']):
+        raise ValueError('Complete content-bound probe reference required')
+    result = pickle.loads(raw)
+    if fingerprint(result) != receipt['annotation_sha256']:
+        raise ValueError('Reference annotation fingerprint differs')
+    return receipt, result
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--request', type=Path, required=True)
+    parser.add_argument('--native-manifest', type=Path, required=True)
+    parser.add_argument('--target', type=int, required=True)
+    parser.add_argument('--rounds', type=int, choices=(1, 2, 3, 5), required=True)
+    parser.add_argument('--mode', choices=('oracle', 'clone'), default='clone')
+    parser.add_argument('--reference', type=Path)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--timeout', type=int, choices=range(1, 121), default=120)
+    parser.add_argument('--run', action='store_true')
+    args = parser.parse_args(argv)
+    output = args.output.resolve()
+    if output.is_relative_to('/mnt/qnap01') or output.exists() or args.target < 0:
+        parser.error('Fresh local output and nonnegative target index required')
+    if args.mode == 'oracle' and (args.rounds != 5 or args.reference is not None):
+        parser.error('Untouched oracle requires five rounds and no reference')
+    if args.run and args.mode == 'clone' and args.reference is None:
+        parser.error('Run clone5 against oracle, then reduced rounds against qualified clone5')
+    request, job, store = request_inputs(args.request)
+    manifest = validate_manifest(read_manifest(args.native_manifest))
+    if 'backend_manifest' in request and request['backend_manifest'] != manifest:
+        parser.error('Explicit manifest differs from stored request')
+    operation, original, changed = annotation_operation(args.rounds)
+    paths = [args.request, args.native_manifest, Path(__file__),
+             Path(__file__).with_name('census_algo07v5_initial_controls.py')]
+    bindings = {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    modules = source_bindings()
+    plan = dict(status='plan', mode=args.mode, rounds=args.rounds, target=args.target,
+                timeout_s=args.timeout, request_sha256=canonical_digest(request), bindings=bindings,
+                modules=modules, manifest_sha256=canonical_digest(manifest),
+                approximation=args.rounds != 5, position_steps=48, folds=3, candidates=12,
+                phase_step_s=.1, map_training=None, GPS_used=False,
+                scope='complete single-target annotation; original nomination and mixture',
+                whole_worker_speedup=None, accuracy_qualification=False)
+    output.mkdir(parents=True, exist_ok=False)
+    def save(name, value):
+        (output / name).write_text(json.dumps(value, indent=2, default=_json_value) + '\n')
+    save('plan.json', plan)
+    (output / 'original.txt').write_text(original)
+    (output / 'candidate.txt').write_text(changed)
+    if not args.run:
+        print(json.dumps(dict(status='plan', output=str(output), inference_rerun=False)))
+        return 0
+    began, used = time.perf_counter(), cpu()
+    try:
+        if len(os.sched_getaffinity(0)) != 3 or os.environ.get('OPENBLAS_NUM_THREADS') != '1':
+            raise ValueError('Pin three CPUs and one BLAS thread')
+        reference = reference_receipt = None
+        if args.reference:
+            reference_receipt, reference = read_reference(args.reference.resolve())
+            if (any(reference_receipt[k] != plan[k] for k in
+                    ('request_sha256', 'target', 'manifest_sha256', 'modules', 'bindings'))
+                    or reference_receipt['rounds'] != 5
+                    or (args.rounds == 5 and reference_receipt['mode'] != 'oracle')
+                    or (args.rounds != 5 and not reference_receipt.get('full5_oracle_exact'))):
+                raise ValueError('Reference differs or lacks full5 oracle proof')
+        with stage_deadline(args.timeout):
+            backend = ProcessBound(manifest, output / 'native-receipts')
+            context, evidence, scientific = load_context(request, job, store, backend)
+            if reference_receipt is not None and reference_receipt['scientific'] != scientific:
+                raise ValueError('Reference reconstructed a different saved scientific context')
+            target = evidence['selected_targets'][args.target]
+            inventory = dict(evidence['inventory'],
+                             publication_support=evidence['publication_support'])
+            (output / 'training-receipts').mkdir()
+            if args.mode == 'clone':
+                operation, _, _ = annotation_operation(args.rounds, output / 'training-receipts')
+            prepared_seconds = time.perf_counter() - began
+            fit_began, fit_cpu = time.perf_counter(), cpu()
+            annotation = (predictive_annotation.annotate if args.mode == 'oracle' else operation)(
+                context, inventory, target['track_id'],
+                inactive_fragment=target['inactive_fragment'],
+                candidates=12, folds=3, phase_step=.1, shifted_origin=True,
+                map_folds=map_predictive_folds, map_training=None)
+            annotation_seconds = time.perf_counter() - fit_began
+            annotation_cpu = np.subtract(cpu(), fit_cpu).tolist()
+            annotation['protocol']['phase_rounds'] = args.rounds
+        provenance = backend.provenance()
+        raw = pickle.dumps(annotation, protocol=5)
+        (output / 'annotation.pickle').write_bytes(raw)
+        assessment = compare(reference, annotation) if reference is not None else None
+        if assessment is not None:
+            save('comparison.json', assessment)
+        final_modules = source_bindings()
+        if (any(final_modules.get(k) != v for k, v in modules.items())
+                or any(hashlib.sha256(Path(p).read_bytes()).hexdigest() != sha
+                       for p, sha in bindings.items())):
+            raise ValueError('Bound source/input changed during experiment')
+        row = dict(plan, status='complete', scientific=scientific, target_record=target,
+                   annotation_seconds=annotation_seconds, annotation_cpu_seconds=annotation_cpu,
+                   preparation_seconds=prepared_seconds, total_seconds=time.perf_counter() - began,
+                   total_cpu_seconds=np.subtract(cpu(), used).tolist(),
+                   native_activation=provenance,
+                   annotation_sha256=fingerprint(annotation),
+                   pickle_sha256=hashlib.sha256(raw).hexdigest(), metrics=metrics(annotation),
+                   work_counts=work_counts(output, args.mode),
+                   reference=str(args.reference.resolve()) if args.reference else None,
+                   full5_oracle_exact=bool(args.rounds == 5 and assessment and assessment['exact']),
+                   exact=assessment['exact'] if assessment else None)
+        if args.rounds == 5 and assessment is not None and not assessment['exact']:
+            raise ValueError('Entire clone5 annotation differs from untouched oracle')
+        save('result.json', row)
+    except BaseException as exc:
+        save('failure.json', dict(status='failed', error=type(exc).__name__, message=str(exc),
+                                 seconds=time.perf_counter() - began,
+                                 cpu_seconds=np.subtract(cpu(), used).tolist()))
+        raise
+    print(json.dumps(dict(status='complete', output=str(output),
+                          annotation_seconds=annotation_seconds, exact=row['exact'])))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
