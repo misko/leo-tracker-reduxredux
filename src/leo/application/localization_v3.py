@@ -58,7 +58,7 @@ def prepare_native_scan(document, archive, track_config, *,
 
 
 def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branch=None,
-                         map_arms=None, map_branches=None):
+                         map_arms=None, map_branches=None, bound=None):
     """Run the original full initial-search budgets on native prepared evidence.
 
     Use the original previous-orbit prior at this stage. The separately prepared
@@ -67,7 +67,8 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
     """
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], initial_fit=None, recovery_complete=False)
-    scan = _context(prepared, search_region, noise_sha256, genuine=False)
+    scan = _context(prepared, search_region, noise_sha256, genuine=False,
+                    **({'bound': bound} if bound is not None else {}))
     execution = {} if map_arms is None else dict(map_arms=map_arms)
     if map_branches is not None:
         execution['map_branches'] = map_branches
@@ -76,14 +77,15 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
 
 
 def refit_initial_position(prepared, initial, search_region, *, noise_sha256=None, on_round=None,
-                           map_arms=None):
+                           map_arms=None, bound=None):
     """Use a fresh context for the genuine-previous prior and conservative recovery.
 
     Later ordered recovery policies remain separate from this incumbent.
     """
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], conservative_fit=None, recovery_complete=False)
-    scan = _context(prepared, search_region, noise_sha256, genuine=True)
+    scan = _context(prepared, search_region, noise_sha256, genuine=True,
+                    **({'bound': bound} if bound is not None else {}))
     result = conservative_recovery(scan, initial, prepared['tracks']['observations'],
                                     on_round=on_round,
                                     **({'map_arms': map_arms} if map_arms is not None else {}))
@@ -91,24 +93,26 @@ def refit_initial_position(prepared, initial, search_region, *, noise_sha256=Non
                 recovery_complete=False)
 
 
-def _context(prepared, search_region, noise_sha256, *, genuine):
+def _context(prepared, search_region, noise_sha256, *, genuine, bound=None):
     sky = prepared['sky']
     prefix = 'genuine_previous' if genuine else 'previous'
     receipt = sky[prefix+'_receipt']
     return ScanLikelihood(prepared['tracks']['tracks'], sky['bank'], sky['nominal_elements'],
         origin_utc_ns=sky['metadata']['origin_utc_ns'],
         regional_center=sky['metadata']['regional_center'], noise=prepared['noise'],
-        noise_sha256=noise_sha256, search_region=search_region,
+        noise_sha256=noise_sha256, search_region=search_region, bound=bound,
         previous_tle=sky[prefix+'_tle'], previous_tle_sha256=receipt['catalogue_sha256'],
         previous_sources=receipt['sources'] if genuine else receipt.get('sources'))
 
 
-def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=None, map_arms=None):
+def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=None, map_arms=None,
+                      bound=None):
     """Bind owned in-memory history and evaluate the original paired family policy."""
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], family_fit=None, recovery_complete=False)
     history, phase_forecast, history_sha256 = _bound_history(prepared)
-    scan = _context(prepared, search_region, noise_sha256, genuine=True)
+    scan = _context(prepared, search_region, noise_sha256, genuine=True,
+                    **({'bound': bound} if bound is not None else {}))
     result = history_policy(scan, conservative, history, phase_forecast,
         case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],
         history_sha256=history_sha256, **({'map_arms': map_arms} if map_arms is not None else {}))
@@ -125,12 +129,14 @@ def _bound_history(prepared):
     return history, phase_forecast, history_sha256
 
 
-def fit_signed_policy(prepared, conservative, family, search_region, *, noise_sha256=None):
+def fit_signed_policy(prepared, conservative, family, search_region, *, noise_sha256=None,
+                      bound=None):
     """Prepare the signed-prior numerical context for subsequent cavity selection."""
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], signed_context=None, recovery_complete=False)
     history, phase_forecast, history_sha256 = _bound_history(prepared)
-    scan = _context(prepared, search_region, noise_sha256, genuine=True)
+    scan = _context(prepared, search_region, noise_sha256, genuine=True,
+                    **({'bound': bound} if bound is not None else {}))
     result = signed_context(scan, conservative, family, history, phase_forecast,
         prepared['tracks']['observations'],
         case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],

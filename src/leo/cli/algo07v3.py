@@ -83,11 +83,12 @@ def worker(request_path, outcome_path, resume_only):
     return 0 if result["status"] == "complete" else 2
 
 
-def launch(args):
+def launch(args, *, _module="leo.cli.algo07v3", _validator=None, _worker_arguments=()):
     from leo.contracts.digests import canonical_digest
     from leo.operations.localization_v3_job import JobInterrupted, validate_request
 
-    request = validate_request(json.loads(args.request.read_bytes()))
+    validator = validate_request if _validator is None else _validator
+    request = validator(json.loads(args.request.read_bytes()))
     directory = args.work_dir.resolve()
     if directory.is_relative_to("/mnt/qnap01"):
         raise ValueError("QNAP is read-only")
@@ -99,7 +100,7 @@ def launch(args):
         sys.executable,
         "-B",
         "-m",
-        "leo.cli.algo07v3",
+        _module,
         "_worker",
         "--request",
         str(directory / "request.json"),
@@ -108,6 +109,7 @@ def launch(args):
     ]
     if args.action == "resume":
         command.append("--resume-only")
+    command.extend(_worker_arguments)
     environment = dict(
         os.environ,
         OPENBLAS_NUM_THREADS="1",

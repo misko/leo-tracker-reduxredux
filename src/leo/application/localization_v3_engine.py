@@ -38,6 +38,7 @@ class ExecutionPorts:
     map_annotation_training: Callable | None = None
     map_grid_batches: Callable | None = None
     map_initial_branches: Callable | None = None
+    bound: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -123,6 +124,7 @@ def infer_prepared(
             prepared,
             region,
             noise_sha256=noise_sha,
+            **({"bound": execution.bound} if execution.bound is not None else {}),
             **({"map_branches": execution.map_initial_branches}
                if execution.map_initial_branches is not None else
                {"map_arms": execution.map_initial_arms} if execution.map_initial_arms else {}),
@@ -133,6 +135,7 @@ def infer_prepared(
         "conservative",
         lambda: policy.refit_initial_position(
             prepared, initial["initial_fit"], region, noise_sha256=noise_sha,
+            **({"bound": execution.bound} if execution.bound is not None else {}),
             **({"map_arms": execution.map_conservative_arms}
                if execution.map_conservative_arms else {}),
         ),
@@ -142,6 +145,7 @@ def infer_prepared(
         "family",
         lambda: policy.fit_family_policy(
             prepared, conservative["conservative_fit"], region, noise_sha256=noise_sha,
+            **({"bound": execution.bound} if execution.bound is not None else {}),
             **({"map_arms": execution.map_family_arms} if execution.map_family_arms else {}),
         ),
         "family_policy_evaluated",
@@ -154,6 +158,7 @@ def infer_prepared(
             family["family_fit"],
             region,
             noise_sha256=noise_sha,
+            **({"bound": execution.bound} if execution.bound is not None else {}),
         ),
         "signed_policy_evaluated",
     )

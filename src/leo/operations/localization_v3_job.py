@@ -162,16 +162,35 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
     claim equivalence to the older wall-clock discovery-admission policy.
     """
     validate_request(request)
+    return _execute(request, resume_only=resume_only, emit=emit)
+
+
+def _execute(
+    request, *, resume_only=False, emit=lambda value: None, contract=None, results_factory=None,
+    request_binding=None, bound=None, extra_provenance=lambda: {},
+    check_saved=lambda evidence: None,
+):
     if runtime_versions() != request["runtime"]:
         raise ValueError("Numerical/rendering runtime differs from the request pins")
-    from leo.application.localization_v3_result import build_evidence, publish_saved
+    from leo.application.localization_v3_result import _build_evidence, _publish_saved
+    from leo.contracts import localization_v3
     from leo.storage.fast_standard_analysis import RENDER_REVISION, FastStandardAnalysisStore
     from leo.storage.localization_v3 import LocalizationV3Store
 
+    contract = localization_v3 if contract is None else contract
+
+    def build_evidence(*args, **kwargs):
+        return _build_evidence(*args, **kwargs, contract=contract)
+
+    def publish_saved(*args):
+        return _publish_saved(*args, contract=contract)
+
     started = time.monotonic()
     identity = request["identity"]
-    request_sha = canonical_digest(request)
-    results = LocalizationV3Store(request["output_root"])
+    request_sha = canonical_digest(request if request_binding is None else request_binding)
+    results = (LocalizationV3Store if results_factory is None else results_factory)(
+        request["output_root"]
+    )
     publication = FastStandardAnalysisStore(request["output_root"])
     try:
         results.receipt(identity["run_id"])
@@ -185,6 +204,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
             or saved["evidence"]["provenance"].get("request_sha256") != request_sha
         ):
             raise ValueError("Saved result belongs to a different native request")
+        check_saved(saved["evidence"])
         manifest = publish_saved(identity["run_id"], results, publication)
         return dict(
             status="complete",
@@ -244,6 +264,7 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
         map_conservative_arms=map_initial_arms,
         map_annotation_training=map_annotation_training,
         map_grid_batches=map_grid_batches,
+        bound=bound,
     )
     result = run_native(
         native,
@@ -279,11 +300,14 @@ def execute(request, *, resume_only=False, emit=lambda value: None):
             runtime=runtime_versions(),
             implementation_sha256=canonical_digest({k: v["sha256"] for k, v in modules.items()}),
             modules=modules,
+            **extra_provenance(),
         ),
         title=request["title"],
         renderer_revision=RENDER_REVISION,
         evaluation_reference=request["evaluation_reference"],
     )
+    evidence["provenance"].update(extra_provenance())
+    contract.validate_evidence(evidence)
     for record in (request["native_input"], request["track_config"]):
         read_bound(record)
     if source_bindings() != modules:

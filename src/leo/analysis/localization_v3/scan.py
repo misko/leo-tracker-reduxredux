@@ -9,6 +9,7 @@ from copy import deepcopy
 import numpy as np
 from sgp4.api import WGS72, Satrec
 
+from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.analysis.localization_v3.orbits import ecef_states
 from leo.analysis.localization_v3.tracks import active_curvature
 from leo.analysis.research.phase_linear_geometry import (
@@ -63,10 +64,11 @@ def perturb(base, parameter, delta):
 class ScanLikelihood:
     def __init__(self, tracks, bank, elements, *, origin_utc_ns, regional_center, noise,
                  search_region=None, previous_tle=None, previous_tle_sha256=None,
-                 noise_sha256=None, previous_sources=None):
+                 noise_sha256=None, previous_sources=None, bound=None):
         if not tracks:
             raise ValueError("Nonempty prepared tracks required")
         self.origin_utc_ns = origin_utc_ns
+        self.bound = hierarchical_bound if bound is None else bound
         self.search_region = search_region
         self.previous_tle = previous_tle
         self.previous_tle_sha256 = previous_tle_sha256

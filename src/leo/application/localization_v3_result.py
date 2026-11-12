@@ -5,9 +5,9 @@ evidence is delegated to result ports; the current public figure store is a
 separate publication port. A saved result can finish publication without a fit.
 """
 
+from leo.contracts import localization_v3
 from leo.contracts.digests import canonical_digest
 from leo.contracts.fast_standard_analysis import MODEL as POLICY_MODEL
-from leo.contracts.localization_v3 import MODEL, validate_evidence, validate_identity
 
 
 def signed_evidence(context):
@@ -70,7 +70,18 @@ def audit_evidence(inference):
 def build_evidence(
     result, *, identity, provenance, title, renderer_revision, evaluation_reference=None
 ):
-    validate_identity(identity)
+    return _build_evidence(
+        result, identity=identity, provenance=provenance, title=title,
+        renderer_revision=renderer_revision, evaluation_reference=evaluation_reference,
+        contract=localization_v3,
+    )
+
+
+def _build_evidence(
+    result, *, identity, provenance, title, renderer_revision, evaluation_reference=None,
+    contract,
+):
+    contract.validate_identity(identity)
     if result["status"] != "figures_ready" or result["inference"]["status"] != "numerics_complete":
         raise ValueError("Complete native inference and figures required")
     inference = result["inference"]
@@ -79,10 +90,10 @@ def build_evidence(
         selected[arm] = dict(
             x=x, reference=p.reference, calculated=p.calculate(x), state=p.state(x)
         )
-    return validate_evidence(
+    return contract.validate_evidence(
         dict(
             schema_version=1,
-            model_version=MODEL,
+            model_version=contract.MODEL,
             status="figures_ready",
             identity=dict(identity),
             provenance=dict(provenance),
@@ -103,6 +114,10 @@ def build_evidence(
 
 
 def publish_saved(run_id, results, publication):
+    return _publish_saved(run_id, results, publication, contract=localization_v3)
+
+
+def _publish_saved(run_id, results, publication, *, contract):
     """Verify an owned result, then atomically expose all current UI artifacts.
 
     Only public ports are used. Repeating this operation requires no archive read,
@@ -110,7 +125,7 @@ def publish_saved(run_id, results, publication):
     inference; the persisted rendering reference is attached after publication.
     """
     saved = results.load(run_id)
-    evidence = validate_evidence(saved["evidence"])
+    evidence = contract.validate_evidence(saved["evidence"])
     receipt = saved["receipt"]
     if (
         evidence["identity"]["run_id"] != run_id
@@ -124,7 +139,7 @@ def publish_saved(run_id, results, publication):
         **evidence["identity"],
         state="complete",
         model_version=POLICY_MODEL,
-        implementation_model=MODEL,
+        implementation_model=contract.MODEL,
         decision=(
             "ALGO07_reassociation"
             if evidence["audit"]["reassociation_complete"]["recovery"]["selected"] is not None

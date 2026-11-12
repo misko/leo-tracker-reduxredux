@@ -3,7 +3,6 @@
 import numpy as np
 
 from leo.analysis.localization_v3.conservative_recovery import retained_metrics
-from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.analysis.localization_v3.marginal import JointMarginal
 from leo.analysis.localization_v3.orbit_modes import build_modes
 from leo.analysis.localization_v3.position import NormalPosition, fit
@@ -87,7 +86,7 @@ def make_problem(scan, node, keep, arm, reference, weights, means, multiplier, n
         scale[-len(p.members) :] = 0.3
         raw = p.values - p.q * result["intercept"] - features @ mean
         present = np.unique(p.noise_groups[keep])
-        bound = hierarchical_bound(
+        bound = p.scan.bound(
             raw[keep],
             (features * scale)[keep],
             p.point_noise[keep],

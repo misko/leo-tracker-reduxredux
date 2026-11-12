@@ -10,7 +10,6 @@ from functools import lru_cache
 import numpy as np
 
 from leo.analysis.localization_v3.conservative_recovery import retained_metrics
-from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.analysis.localization_v3.history_position import make_problem, scale_posterior
 from leo.analysis.localization_v3.marginal import JointMarginal
 from leo.analysis.localization_v3.position import fit
@@ -109,7 +108,7 @@ def make_event_problem(
         features = np.column_stack((geometry["features"], design))
         raw = p.values - p.q * geometry["intercept"] - features @ mean
         present = np.unique(p.noise_groups[keep])
-        bound = hierarchical_bound(
+        bound = p.scan.bound(
             raw[keep],
             (features * scales)[keep],
             p.point_noise[keep],

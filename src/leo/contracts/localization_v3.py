@@ -11,11 +11,15 @@ ARMS = ("c0", "fitted_c")
 
 
 def validate_evidence(evidence):
+    return _validate_evidence(evidence, MODEL)
+
+
+def _validate_evidence(evidence, model):
     """Cross-check scientific ownership and presentation before making it visible."""
     try:
         if (
             evidence["schema_version"] != 1
-            or evidence["model_version"] != MODEL
+            or evidence["model_version"] != model
             or evidence["status"] != "figures_ready"
         ):
             raise ValueError("Completed standalone evidence required")
@@ -73,10 +77,14 @@ def validate_identity(identity):
 
 
 def validate(receipt):
+    return _validate(receipt, MODEL)
+
+
+def _validate(receipt, model):
     try:
         if (
             receipt["schema_version"] != 1
-            or receipt["model_version"] != MODEL
+            or receipt["model_version"] != model
             or receipt["policy_model_version"] != POLICY_MODEL
             or receipt["state"] != "complete"
         ):

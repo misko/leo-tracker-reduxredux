@@ -2,7 +2,6 @@
 
 import numpy as np
 
-from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.analysis.localization_v3.marginal import JointMarginal
 from leo.analysis.localization_v3.orbit_modes import previous_bank
 from leo.analysis.localization_v3.phase_prior import causal_phase_sigma
@@ -65,7 +64,7 @@ class PositionNormal(NormalPosition):
         stop = features.shape[1] - len(self.members)
         features = np.column_stack((features[:, :stop], scales, features[:, stop:]))
         raw = self.values - self.q * intercept
-        bound = hierarchical_bound(
+        bound = self.scan.bound(
             raw[self.keep],
             features[self.keep],
             self.point_noise[self.keep],

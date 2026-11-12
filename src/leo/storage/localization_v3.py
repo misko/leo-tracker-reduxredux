@@ -5,15 +5,18 @@ import os
 import uuid
 from pathlib import Path
 
+from leo.contracts import localization_v3 as contract
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.fast_standard_analysis import MODEL as POLICY_MODEL
-from leo.contracts.localization_v3 import MODEL, validate, validate_evidence, validate_identity
 from leo.storage.fast_scan import immutable_json, safe_id
 from leo.storage.localization_v3_codec import pack, unpack
 from leo.storage.uri import confined_path
 
 
 class LocalizationV3Store:
+    contract = contract
+    namespace = "localization-v3-v1"
+
     def __init__(self, root):
         self.root = Path(root).resolve()
         if self.root.is_relative_to("/mnt/qnap01"):
@@ -22,21 +25,21 @@ class LocalizationV3Store:
 
     def _folder(self, run_id):
         return confined_path(
-            self.root, self.root / "localization-v3-v1" / safe_id(run_id), must_exist=False
+            self.root, self.root / self.namespace / safe_id(run_id), must_exist=False
         )
 
     def save(self, evidence, pngs):
-        validate_evidence(evidence)
+        self.contract.validate_evidence(evidence)
         identity = evidence["identity"]
-        validate_identity(identity)
+        self.contract.validate_identity(identity)
         if evidence["status"] != "figures_ready":
             raise ValueError("Completed numerical and presentation evidence required")
         packet = evidence["presentation"]
         raw = pack(evidence, pngs)
-        receipt = validate(
+        receipt = self.contract.validate(
             dict(
                 schema_version=1,
-                model_version=MODEL,
+                model_version=self.contract.MODEL,
                 policy_model_version=POLICY_MODEL,
                 state="complete",
                 **identity,
@@ -79,7 +82,7 @@ class LocalizationV3Store:
         """Read the committed identity without treating a missing archive as absent work."""
         folder = self._folder(run_id)
         manifest = confined_path(self.root, folder / "manifest.json", must_exist=True)
-        receipt = validate(json.loads(manifest.read_bytes()))
+        receipt = self.contract.validate(json.loads(manifest.read_bytes()))
         if receipt["run_id"] != run_id:
             raise ValueError("Standalone result belongs to another run")
         return dict(receipt=receipt, sha256=canonical_digest(receipt))
@@ -94,7 +97,7 @@ class LocalizationV3Store:
         if len(raw) != receipt["result_bytes"] or sha256_digest(raw) != receipt["result_sha256"]:
             raise ValueError("Standalone archive integrity failure")
         evidence, pngs = unpack(raw)
-        validate_evidence(evidence)
+        self.contract.validate_evidence(evidence)
         identity = {k: receipt[k] for k in ("run_id", "session_id", "input_sha256")}
         packet = evidence["presentation"]
         if (

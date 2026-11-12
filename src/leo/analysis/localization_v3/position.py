@@ -6,7 +6,6 @@ separate policies, still under construction.
 """
 import numpy as np
 
-from leo.analysis.localization_v3.hierarchical import hierarchical_bound
 from leo.analysis.localization_v3.marginal import JointMarginal
 from leo.analysis.research.continuous_curve_fit import bounded_gauss_newton
 
@@ -48,7 +47,7 @@ class NormalPosition(JointMarginal):
         scales = np.ones(features.shape[1])
         raw = self.values - self.q * result['intercept']
         design, response, noise = features * scales, raw, self.point_noise
-        bound = hierarchical_bound(response[self.keep], design[self.keep], noise[self.keep],
+        bound = self.scan.bound(response[self.keep], design[self.keep], noise[self.keep],
                                    self.noise_groups[self.keep])
         bound['coefficient'] *= scales
         bound['coefficient_prior_precision'] /= scales**2
