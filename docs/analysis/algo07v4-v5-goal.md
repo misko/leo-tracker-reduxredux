@@ -350,3 +350,20 @@ complete-worker CLI run with both explicit policies. Source and receipts are
 under `control-runtime-replay-0066-001`, with quick/full request plans in
 `control-runtime-plan-quick-001` and `control-runtime-plan-full-001`. Full plans
 still retain 159 expected, 158 available and missing DS26-0172.
+
+The complete schema-3 worker passed DS26-0066. Its entire selected result and
+all eight PNGs match the uncached fallback candidate exactly. All non-clock
+audit fields match; only 54 named timing fields differ. GPS error, frequency
+score, residual RMS and observation ownership are unchanged in both arms.
+Control accounting records four requests, one computed pair and three reuses,
+with no failures or incomplete work. Numerical replay creates a separate empty
+cache invocation. Annotation work remains 240 completed phase fits, 6,016
+residual evaluations and five full GN fallbacks. Native calls fall exactly
+from 13,198 to 12,439.
+
+This worker uses 245.497 wall / 326.980 CPU seconds, versus 270.927 / 368.605
+in the saved uncached candidate. Those runs were separated in time, so their
+1.104 wall ratio is an integration observation. The 2x target remains unproven.
+Raw reports and exhaustive public-store comparisons are in
+`worker-control-reuse-0066-001` and `worker-control-reuse-0066-001-comparison`.
+Next are the other two quick cases and fresh alternating timing qualification.
