@@ -28,7 +28,8 @@ def fit_initial_arm(scan, sigma, node, arm, *, rounds, iterations):
 
 
 def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
-                   iterations=48, on_branch=None, map_arms=None, map_branches=None):
+                   iterations=48, on_branch=None, map_arms=None, map_branches=None,
+                   initial_control=None):
     """Fit matched c arms; select their common hypothesis using only the c0 score.
 
     Defaults are the original complete initial-search budgets. Smaller explicit
@@ -40,6 +41,8 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
     returns their values in input order or raises. Branch callbacks then arrive
     in original order after the queue completes. Fit and selection budgets stay
     the same; supplying both execution ports is ambiguous and rejected.
+    ``initial_control`` optionally supplies each complete zero-phase fit from
+    the selected branch. The default recomputes both controls independently.
     """
     if any(not isinstance(n, int) or isinstance(n, bool) or n < 1
            for n in (seed_budget, branch_budget, rounds, iterations)):
@@ -101,6 +104,9 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
     winner = min(choices, key=lambda r: r['arms']['c0']['fit']['score'])
     zero = {}
     for arm in ('c0', 'fitted_c'):
+        if initial_control is not None:
+            zero[arm] = initial_control(winner, arm)
+            continue
         p = NormalPosition(scan, winner['node'], sigma, arm == 'fitted_c',
                            reference=np.zeros(len({r['candidate_index']
                                                    for r in winner['node']['seed']['rows']})))

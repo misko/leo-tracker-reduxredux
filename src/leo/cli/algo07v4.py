@@ -10,9 +10,11 @@ from pathlib import Path
 from leo.cli.algo07v3 import launch, write
 
 
-def worker(args):
+def worker(args, *, _execute=None):
     from leo.operations.localization_v3_job import JobInterrupted
     from leo.operations.localization_v4_job import execute
+
+    execute_job = execute if _execute is None else _execute
 
     def interrupted(signum, _):
         raise JobInterrupted(f"Native job cancelled by signal {signum}")
@@ -20,7 +22,7 @@ def worker(args):
     signal.signal(signal.SIGTERM, interrupted)
     signal.signal(signal.SIGINT, interrupted)
     try:
-        result = execute(
+        result = execute_job(
             json.loads(args.request.read_bytes()),
             native_manifest=args.native_manifest,
             receipts=args.outcome.parent / "native-receipts",
@@ -37,8 +39,9 @@ def worker(args):
     return 0 if result["status"] == "complete" else 2
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(*, _module="leo.cli.algo07v4", _worker=worker, _validator=None,
+         _description=__doc__):
+    parser = argparse.ArgumentParser(description=_description)
     commands = parser.add_subparsers(dest="action", required=True)
     build = commands.add_parser("build-native")
     build.add_argument("--output", type=Path, required=True)
@@ -65,20 +68,22 @@ def main():
             print(json.dumps(dict(status="complete", native_manifest=str(path))), flush=True)
             return 0
         if args.action == "_worker":
-            return worker(args)
+            return _worker(args)
         from leo.analysis.localization_v4.backend import read_manifest
         from leo.operations.localization_v4_job import validate_request
+
+        validator = validate_request if _validator is None else _validator
 
         manifest = read_manifest(args.native_manifest)
 
         def validate(request):
-            validate_request(request)
+            validator(request)
             if request["backend_manifest"] != manifest:
                 raise ValueError("Native manifest differs from request backend binding")
             return request
 
         return launch(
-            args, _module="leo.cli.algo07v4", _validator=validate,
+            args, _module=_module, _validator=validate,
             _worker_arguments=("--native-manifest", str(args.native_manifest.resolve())),
         )
     except (ValueError, OSError, KeyError) as error:

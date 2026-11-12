@@ -120,6 +120,58 @@ def test_v4_plan_is_explicitly_unbound_without_backend(frozen):
         evaluation.run_plan(result, sys.executable)
 
 
+def test_v5_plan_is_opt_in_and_requires_backend_before_run(frozen):
+    snapshot, source, output = frozen
+    assert evaluation.main(['plan', '--version', 'algo07v5', '--snapshot', str(snapshot),
+        '--source-root', str(source), '--output', str(output)]) == 0
+    result = evaluation.read(output / 'plan.json')
+    assert result['version'] == 'algo07v5'
+    assert result['module'] == 'leo.cli.algo07v5'
+    assert result['backend_bound'] is False
+    assert evaluation.VERSIONS['algo07v5'][1:] == (
+        'leo.storage.localization_v5', 'LocalizationV5Store')
+    with pytest.raises(ValueError, match='Running v5 requires --native-manifest'):
+        evaluation.run_plan(result, sys.executable)
+
+
+def test_v5_bound_plan_wraps_requests_and_run_supplies_manifest(frozen, monkeypatch):
+    snapshot, source, output = frozen
+    native = snapshot / 'manifest.json'
+    evaluation.write(native, {'algorithm': 'algo07v4-native-v1'})
+    imports, wrapped = [], []
+
+    def wrap(request, manifest):
+        wrapped.append(copy.deepcopy(request))
+        return dict(job=request, backend_manifest=manifest,
+                    initial_control_policy='winner-arm-phase0-fit-v1')
+
+    def owned(module, binding):
+        imports.append(module)
+        assert binding['root'] == str(source)
+        return SimpleNamespace(make_request=wrap)
+
+    monkeypatch.setattr(evaluation, 'owned_import', owned)
+    assert evaluation.main(['plan', '--version', 'algo07v5', '--snapshot', str(snapshot),
+        '--source-root', str(source), '--output', str(output), '--native-manifest', str(native),
+        '--cases', 'DS26-0002']) == 0
+    result = evaluation.read(output / 'plan.json')
+    assert imports == ['leo.operations.localization_v5_job']
+    assert len(wrapped) == 1 and wrapped[0]['evaluation_reference'] is None
+    assert result['backend_bound'] is True
+
+    def supervise(command, log_path, timeout, environment):
+        assert command[command.index('-m') + 1] == 'leo.cli.algo07v5'
+        manifest_path = Path(command[command.index('--native-manifest') + 1])
+        assert evaluation.read(manifest_path) == result['backend_manifest']
+        Path(log_path).write_text('{"status":"exited","worker":{"status":"failed"}}\n')
+        return dict(status='exited', returncode=1)
+
+    monkeypatch.setattr(evaluation, 'supervise', supervise)
+    report = evaluation.run_plan(result, sys.executable)
+    assert report['statuses'] == {'failed': 1}
+    assert '--native-manifest' in report['results'][0]['command']
+
+
 @pytest.mark.parametrize('change', ['duplicate', 'missing', 'changed'])
 def test_nested_archive_mutation_never_launches_inference(frozen, monkeypatch, change):
     result = plan(frozen, '--cases', 'DS26-0002')

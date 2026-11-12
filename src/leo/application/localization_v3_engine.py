@@ -39,6 +39,7 @@ class ExecutionPorts:
     map_grid_batches: Callable | None = None
     map_initial_branches: Callable | None = None
     bound: Callable | None = None
+    initial_control: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -124,6 +125,8 @@ def infer_prepared(
             prepared,
             region,
             noise_sha256=noise_sha,
+            **({"initial_control": execution.initial_control}
+               if execution.initial_control is not None else {}),
             **({"bound": execution.bound} if execution.bound is not None else {}),
             **({"map_branches": execution.map_initial_branches}
                if execution.map_initial_branches is not None else

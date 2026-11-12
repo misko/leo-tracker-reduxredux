@@ -25,6 +25,7 @@ QUICK = ('DS26-0002', 'DS26-0066', 'DS26-0102')
 VERSIONS = {
     'algo07v3': ('leo.cli.algo07v3', 'leo.storage.localization_v3', 'LocalizationV3Store'),
     'algo07v4': ('leo.cli.algo07v4', 'leo.storage.localization_v4', 'LocalizationV4Store'),
+    'algo07v5': ('leo.cli.algo07v5', 'leo.storage.localization_v5', 'LocalizationV5Store'),
 }
 ARMS = ('c0', 'fitted_c')
 METRICS = ('gps_error_km', 'residual_rms_hz', 'frequency_score', 'associated_points')
@@ -136,9 +137,10 @@ def make_plan(args):
                 session_id=member['session_id'], input_sha256=member['input_sha256'])
             row['workload_sha256'] = digest({
                 k: v for k, v in request.items() if k not in ('identity', 'output_root', 'title')})
-            if args.version == 'algo07v4' and manifest is not None:
-                request = owned_import('leo.operations.localization_v4_job', source).make_request(
-                    request, manifest)
+            if args.version in ('algo07v4', 'algo07v5') and manifest is not None:
+                version = args.version.removeprefix('algo07')
+                module = owned_import(f'leo.operations.localization_{version}_job', source)
+                request = module.make_request(request, manifest)
             rows.append(dict(row, status='planned', request=request))
     compact = [{k: v for k, v in m.items() if k != 'causal_snapshots'} for m in members]
     return dict(schema_version=1, version=args.version,
@@ -226,8 +228,10 @@ def project(evidence, reference):
 
 
 def run_plan(plan, python):
-    if plan['version'] == 'algo07v4' and plan['backend_manifest'] is None:
-        raise ValueError('Running v4 requires --native-manifest; planning remains inference-free')
+    if plan['version'] in ('algo07v4', 'algo07v5') and plan['backend_manifest'] is None:
+        version = plan['version'].removeprefix('algo07')
+        raise ValueError(
+            f'Running {version} requires --native-manifest; planning remains inference-free')
     output = Path(plan['output'])
     environment = dict(os.environ, PYTHONPATH=plan['source']['root'], PYTHONDONTWRITEBYTECODE='1',
                        OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1', MKL_NUM_THREADS='1')
@@ -264,7 +268,7 @@ def run_plan(plan, python):
                 command = [python, '-B', '-m', plan['module'], 'run', '--request',
                            str(folder / 'request.json'), '--work-dir', str(folder / 'work'),
                            '--timeout', str(plan['timeout_seconds'])]
-                if plan['version'] == 'algo07v4':
+                if plan['version'] in ('algo07v4', 'algo07v5'):
                     write(folder / 'backend-manifest.json', plan['backend_manifest'])
                     command += ['--native-manifest', str(folder / 'backend-manifest.json')]
                 row['command'] = command

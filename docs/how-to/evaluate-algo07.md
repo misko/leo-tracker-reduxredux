@@ -109,7 +109,51 @@ baseline repetitions before all candidate repetitions. The CLI runs one version
 per invocation. Retain the order, affinity, host load and timing ranges. A quick
 single pair is a smoke test, not a repeatability or DS26 population claim.
 
-Algo07v5 is not registered yet. Add its versioned runtime and evaluator registry
-entry before using it as a candidate. Keep the algo07v4 backend and source
-bindings fixed. The [proposed goal](../analysis/algo07v4-v5-goal.md) names the
-accuracy and speed evidence required from the next investigation.
+## Screen provisional algo07v5
+
+Run the v4 commands from the fixed v4 checkout. Run the following commands from
+the v5 checkout, with the environment set above. Build a separate manifest for
+each checkout because the manifest binds absolute source and wrapper paths.
+
+```bash
+"$ALGO_PYTHON" -B -m leo.cli.algo07v5 build-native \
+  --output "$ALGO_EVAL/native-v5"
+
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile quick --version algo07v5 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/quick-v5"
+```
+
+Inspect the complete plan before starting the full batch.
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py plan \
+  --profile full --version algo07v5 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/full-plan-v5"
+
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile full --version algo07v5 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/full-v5"
+```
+
+Compare matched v4 and v5 reports with the same cases, timeout and repetition
+count. Use fresh output directories for every alternating repeat.
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py compare \
+  --baseline "$ALGO_EVAL/quick-v4/report.json" \
+  --candidate "$ALGO_EVAL/quick-v5/report.json" \
+  --output "$ALGO_EVAL/quick-v4-v5-comparison"
+```
+
+The provisional v5 policy reuses the winner's complete first-round initial
+controls. Its native backend remains the full-budget v4 implementation.
+Registration does not establish a worker speedup or DS26 accuracy qualification.
+Keep the v4 source and backend fixed. The [investigation goal](../analysis/algo07v4-v5-goal.md)
+names the evidence required before selecting a candidate.

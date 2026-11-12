@@ -1,8 +1,9 @@
 # Algo07v4 baseline and algo07v5 goal
 
 Algo07v4 preserves the full-budget native solver as a separately identified
-implementation. Algo07v3 keeps its original solver. Algo07v5 is an investigation,
-not an available runtime version.
+implementation. Algo07v3 keeps its original solver. The provisional algo07v5
+runtime is registered for evaluation with an explicit initial-control reuse
+policy. It has not met the speed target or completed independent DS26 qualification.
 
 ## Proposed slash goal
 
@@ -16,7 +17,7 @@ approximation budget. Keep algo07v4 fixed as the rollback and comparison point.
 Use tools/evaluate_algo07.py run --profile quick for DS26-0002/0066/0102,
 and the same CLI with --profile full for the complete frozen DS26 inventory.
 Pass --version algo07v4, --native-manifest FILE and a fresh --output DIR for
-the fixed baseline. Register algo07v5 before selecting it as a candidate.
+the fixed baseline. Select the provisional candidate with --version algo07v5.
 Use the documented pinned Python environment and plan before a full run.
 Start every experiment with a bounded component replay, then
 run the quick screen. Qualify finalists on the independent remaining scans.
@@ -75,7 +76,7 @@ on 0002. The table names hypotheses, not demonstrated speedups.
 
 | Phase | Native wall seconds, 0002 / 0066 | First alternative to evaluate | Main tradeoff or proof needed |
 | --- | ---: | --- | --- |
-| Predictive annotation | 6.73 / 55.81 | Factor the shared receiver/noise covariance once and evaluate conditional orbital modes through low-rank systems. Census exactly identical training recipes before adding a fit cache. | Preserve held-out conditioning and mixture moments. Cache only identical masks and full fit recipes. |
+| Predictive annotation | 6.73 / 55.81 | Test cheaper fold training after measuring its convergence. Exact recipe reuse has few hits in the saved pilot. Shared-base conditional covariance is a smaller opportunity. | Preserve held-out independence. Fewer training phase rounds are an explicit approximation requiring complete annotation and worker evaluation. |
 | Inclusion and retry | 17.85 / 11.64 | Replace repeated cold Powell work with targeted feasibility restoration or continuation, followed by the full audit. | Optimizer trajectories and local minima can change. Measure gate and ownership changes. |
 | Initial search | 13.41 / 37.32 | Check whether saved zero-reference first-round fits exactly replace the final zero-reference control refits. Then test paired coarse screening of branches. | Exact reuse requires whole-fit equality. Screening can miss a winning branch. |
 | Conservative fit | 5.97 / 15.24 | Reuse symbolic layouts across mask changes; compare cold refits with continuation. | Numeric values must not survive a changed mask. Continuation is approximate. |
@@ -86,8 +87,53 @@ on 0002. The table names hypotheses, not demonstrated speedups.
 | Additional and final repair | 0.04 / 30.11 | Share objective and constraint calculations; test derivative-assisted fitting. | Preserve explicit-family mutations, physical slacks and final orbit audits. |
 | Signed and family cavity | 8.09 / 5.42 | Census duplicated phase-width/history queries and batch matching geometry queries. | Small scope. A previous geometry cache failed its representative cost screen. |
 
-The first bounded experiment should capture a complete hard-case annotation.
-Compare all conditional densities, mixture weights, covariance summaries and
-nomination decisions before a complete-worker attempt. The exact initial-control
-reuse check is a separate cheap experiment. Do not combine either with a precision
-cap or an unqualified kernel change.
+## Current experiment evidence
+
+The saved initial-control census compares complete fit records, including types,
+floating-point bits, histories and stopping records. All 18 arms match across
+the eight original pilot results and the saved v4 DS26-0002 result. The provisional
+v5 port reuses independent copies of those first-round records. A bounded native
+DS26-0002 replay removes 54 calls and about 0.4 CPU seconds per pair of controls.
+Five alternating repeats preserve the complete fit records. This is a small
+component saving, not a complete-worker speed claim.
+
+The hard-case annotation profile attributes 79.0% of annotation-child CPU to
+48 fold/arm training calls and 12.9% to nomination. Covariance construction and
+conditional mixture evaluation together account for 7.2%. These profiled CPU
+fractions do not estimate unprofiled wall speedups.
+
+The pure-array recipe census finds 20 potential duplicate calls among 306 planned
+calls across the eight original pilots plus saved v4 DS26-0002. Only 2 of 48 calls
+are potential duplicates on DS26-0066. These are planned duplicates, not proven
+executed cache hits. A general training cache is not the next primary experiment.
+
+Capture a complete hard-case annotation and compare the original five training
+phase rounds with smaller explicit budgets. Retain all three folds, both arms,
+48 position steps, candidates, nomination and conditional uncertainty calculations.
+Report changes in all fold votes and scientific decisions before worker evaluation.
+Do not combine this attempt with a precision cap or an unqualified kernel change.
+
+Local evidence is under `/home/mouse9911/.cache/algo07v5-speed-20261112/` in
+`initial-control-census-001`, `initial-controls-probe-001` and
+`training-recipe-census-001`. The two checked-in census tools reproduce the saved
+evidence comparisons. Full-worker and independent accuracy gates remain open.
+
+The provisional v5 quick batch completed all three development scans. DS26-0002
+matches the fixed v4 result in all non-clock scientific fields and all eight PNG
+bytes. DS26-0066 similarly matches the saved full-budget native research result.
+Those comparisons retain the raw clock differences and allow only named timing
+fields. DS26-0102 completed, but lacks a matched saved v4 comparison in this batch.
+The busy-host timings are integration evidence without alternating baseline pairs.
+
+The bounded hard-case target-1 annotation reproduces the original five-round
+annotation exactly through the probe's cloned execution path. Reducing training
+to one round changes its wall time from 27.037 to 25.142 seconds and total CPU
+from 33.437 to 29.241 seconds in one pair. It retains the same negative consensus,
+but leaves phase-reference changes near 10 seconds instead of below 0.001 seconds.
+This pair does not establish a repeatable timing gain or an accuracy frontier.
+
+Actual work falls from 30 optimizer calls and 1,184 residual evaluations to six
+calls and 722 evaluations. Two cold fits alone use 269 evaluations each and hit
+the original 48-iteration budget. The next experiment tests alternative position
+optimizers with all five phase rounds. The rounds probe remains available as a
+rejected cost screen rather than a production budget change.
