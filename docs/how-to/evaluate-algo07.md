@@ -318,3 +318,34 @@ numerical retry. Saved work distinguishes computed and omitted experiments;
 native receipts retain actual physical calls. Unknown callbacks retain the
 original order. A mismatched predictive checkpoint cannot be reused by
 numerical recovery. Existing commands keep their original schedule.
+
+## Measure the RF recovery search frontier
+
+Add `--recovery-target-limit N` for an explicit 0..8 target prefix. Omitting
+the option preserves the original limit of eight. Targets retain the
+original order: descending observation count, then track ID. Both calibration
+arms use the same prefix and keep full per-target fit/audit budgets. Numerical
+replay consumes the completed prefix and rejects a mismatched checkpoint.
+Schema5 records the policy and omitted original target IDs. Trying fewer
+tracks can miss useful associations and change final position accuracy;
+measure GPS errors and ownership separately from frequency fit.
+
+```bash
+"$ALGO_PYTHON" -B tools/evaluate_algo07.py run \
+  --profile quick --version algo07v5 \
+  --annotation-training-policy lbfgsb-gn-fallback-full5-v1 \
+  --inclusion-control-policy native-complete-controls-v1 \
+  --joint-schedule-policy defer-factorized-unless-retry-v1 \
+  --recovery-target-limit 4 \
+  --snapshot "$ALGO_SNAPSHOT" \
+  --native-manifest "$ALGO_EVAL/native-v5/manifest.json" \
+  --output "$ALGO_EVAL/quick-v5-targets4"
+```
+
+For full evaluation use `plan --profile full`, then `run --profile full`
+with the same flags and fresh output paths. The full plan must still show
+all 159 expected members and missing DS26-0172. Use separate output paths
+for each limit and compare against a matched full-policy report. A smaller
+prefix defines a complete experimental policy; failed or unfinished work
+still earns no speedup. Registration and saved-winner recall are not accuracy
+qualification.

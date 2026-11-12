@@ -154,3 +154,38 @@ def test_target_ties_and_limit_are_deterministic():
             )
     selected, eligible = recovery.select_targets(dict(tracks=rows))
     assert eligible == 10 and [r["track_id"] for r in selected] == list("01234567")
+
+
+@pytest.mark.parametrize('limit', [None, 0, 2, 4, 8])
+def test_prepare_recovery_records_only_explicit_prefix_omissions(monkeypatch, limit):
+    rows = [dict(arm=arm, track_id=str(tid), observation_ids=[str(tid)],
+                 all_track_observation_ids=[str(tid)], current_large=True)
+            for arm in recovery.ARMS for tid in reversed(range(10))]
+    inv = dict(tracks=rows)
+    original = deepcopy(inv)
+    context = {'replay': {}}
+    monkeypatch.setattr(recovery, 'recovery_context', lambda *a: context)
+    monkeypatch.setattr(recovery, 'baseline_pair', lambda *a: ({}, {}))
+    monkeypatch.setattr(recovery, 'publication_support', lambda *a: {})
+    monkeypatch.setattr(recovery, 'inventory', lambda *a, **kw: inv)
+    actual, result = recovery.prepare_recovery(SimpleNamespace(tracks=[]),
+        {'policy_arms': {}}, [], identities=['source'], target_limit=limit)
+    assert actual is context and inv == original
+    assert result['eligible_targets'] == 10
+    expected = list('01234567')
+    assert [r['track_id'] for r in result['selected_targets']] == (
+        expected if limit is None else expected[:limit])
+    if limit is None:
+        assert 'target_limit' not in result and 'policy_omitted_track_ids' not in result
+    else:
+        assert result['target_limit'] == limit
+        assert result['original_selected_track_ids'] == expected
+        assert result['policy_omitted_track_ids'] == expected[limit:]
+
+
+@pytest.mark.parametrize('limit', [-1, 9, True, 2., '2'])
+def test_invalid_target_limit_fails_before_scientific_replay(monkeypatch, limit):
+    monkeypatch.setattr(recovery, 'recovery_context',
+                        lambda *a: pytest.fail('No scientific replay'))
+    with pytest.raises(ValueError, match='target limit'):
+        recovery.prepare_recovery(None, None, None, identities=[], target_limit=limit)

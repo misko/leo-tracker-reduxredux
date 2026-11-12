@@ -70,6 +70,28 @@ def test_joint_schedule_policy_is_checked_before_reusing_numerical_stages(monkey
         run(evidence, incumbent, saved, completed_joint_schedule_policy=factory.policy)
 
 
+@pytest.mark.parametrize('expected,completed', [(0, None), (0, False), (2, 2.), (None, 0), (2, 4)])
+def test_target_limit_mismatch_fails_before_consuming_completed_stages(expected, completed):
+    evidence, incumbent, _, _ = fixture()
+    if expected is not None:
+        evidence['target_limit'] = expected
+    with pytest.raises(ValueError, match='target selection limit differs'):
+        run(evidence, incumbent, {'invalid': object()}, completed_target_limit=completed)
+
+
+@pytest.mark.parametrize('limit', [0, 2, 8])
+def test_matching_target_limit_keeps_only_the_completed_selected_prefix(monkeypatch, limit):
+    evidence, incumbent, candidate, saved = fixture()
+    evidence.update(target_limit=limit, selected_targets=evidence['selected_targets'][:limit])
+    seen = []
+    monkeypatch.setattr(replay, 'recover_tracks', lambda d, e, **kw: seen.append(e) or candidate)
+    run(evidence, incumbent, saved, completed_target_limit=limit)
+    expected = [t['track_id'] for t in evidence['selected_targets']
+                if any(r.get('value', {}).get('result', {}).get('track_id') == t['track_id']
+                       for r in saved.values())]
+    assert [t['track_id'] for t in seen[0]['selected_targets']] == expected
+
+
 @pytest.mark.parametrize('port', ['map_inclusion_arms', 'map_joint_batches', 'map_joint_arms'])
 def test_numerical_replay_forwards_arm_mapper_to_controller(monkeypatch, port):
     evidence, incumbent, candidate, saved = fixture()

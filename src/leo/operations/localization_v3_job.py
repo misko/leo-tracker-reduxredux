@@ -171,6 +171,7 @@ def _execute(
     check_saved=lambda evidence: None,
     initial_control=None, annotation_training_fit=None, inclusion_control_factory=None,
     joint_schedule_factory=None,
+    recovery_target_limit=None,
 ):
     if runtime_versions() != request["runtime"]:
         raise ValueError("Numerical/rendering runtime differs from the request pins")
@@ -274,6 +275,8 @@ def _execute(
            if inclusion_control_factory is not None else {}),
         **({'joint_schedule_factory': joint_schedule_factory}
            if joint_schedule_factory is not None else {}),
+        **({'recovery_target_limit': recovery_target_limit}
+           if recovery_target_limit is not None else {}),
     )
     result = run_native(
         native,

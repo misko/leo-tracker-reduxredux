@@ -52,6 +52,15 @@ def saved(request):
             joint_schedule_work=dict(schema_version=1, policy=deepcopy(policy),
                 backend_manifest_sha256=canonical_digest(request['backend_manifest']),
                 experiments=[], counts=localization_v5.joint_schedule_counts([])))
+    if 'recovery_target_policy' in request:
+        policy = deepcopy(request['recovery_target_policy'])
+        evidence['provenance']['recovery_target_policy'] = policy
+        original = ['target0', 'target1']
+        limit = policy['maximum_targets']
+        evidence['audit']['recovery_inventory'] = dict(
+            target_limit=limit, original_selected_track_ids=original,
+            selected_targets=[dict(track_id=tid) for tid in original[:limit]],
+            policy_omitted_track_ids=original[limit:])
     receipt = LocalizationV5Store(request["job"]["output_root"]).save(evidence, pngs)
     return evidence, receipt
 

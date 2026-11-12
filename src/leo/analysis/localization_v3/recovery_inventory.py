@@ -247,7 +247,9 @@ def select_targets(inv, limit=8):
     return selected[:limit], len(selected)
 
 
-def prepare_recovery(scan, cavity, observations, *, identities):
+def prepare_recovery(scan, cavity, observations, *, identities, target_limit=None):
+    if target_limit is not None and (type(target_limit) is not int or not 0 <= target_limit <= 8):
+        raise ValueError('Recovery target limit must be an integer in 0..8')
     context = recovery_context(scan, cavity)
     pair, owners = baseline_pair(context)
     support = publication_support(cavity["policy_arms"], owners)
@@ -261,4 +263,9 @@ def prepare_recovery(scan, cavity, observations, *, identities):
         selected_targets=selected,
         eligible_targets=eligible,
     )
+    if target_limit is not None:
+        result.update(target_limit=target_limit,
+                      original_selected_track_ids=[r['track_id'] for r in selected],
+                      policy_omitted_track_ids=[r['track_id'] for r in selected[target_limit:]],
+                      selected_targets=selected[:target_limit])
     return context, result

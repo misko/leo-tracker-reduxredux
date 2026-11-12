@@ -43,6 +43,7 @@ class ExecutionPorts:
     annotation_training_fit: Callable | None = None
     inclusion_control_factory: Callable | None = None
     joint_schedule_factory: Callable | None = None
+    recovery_target_limit: int | None = None
 
 
 class IncompleteStage(ValueError):
@@ -171,7 +172,9 @@ def infer_prepared(
     cavity = step("cavity", lambda: policy.fit_family_cavity(signed), "family_cavity_evaluated")
     inventory = step(
         "inventory",
-        lambda: policy.prepare_track_recovery(prepared, signed, cavity, identities=identities),
+        lambda: policy.prepare_track_recovery(prepared, signed, cavity, identities=identities,
+            **({'recovery_target_limit': execution.recovery_target_limit}
+               if execution.recovery_target_limit is not None else {})),
         "track_recovery_prepared",
     )
     inventory_seconds = timing.rows[-1]["seconds"]

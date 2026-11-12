@@ -10,6 +10,47 @@ ANNOTATION_TRAINING_POLICY = "lbfgsb-full5-625-v1"
 ANNOTATION_FALLBACK_POLICY = "lbfgsb-gn-fallback-full5-v1"
 INCLUSION_CONTROL_POLICY = "native-complete-controls-v1"
 JOINT_SCHEDULE_POLICY = "defer-factorized-unless-retry-v1"
+RECOVERY_TARGET_POLICY = "rf-target-prefix-v1"
+
+
+def recovery_target_policy(limit):
+    if type(limit) is not int or not 0 <= limit <= 8:
+        raise ValueError('Recovery target limit must be an integer in 0..8')
+    return dict(id=RECOVERY_TARGET_POLICY, maximum_targets=limit, original_maximum_targets=8,
+                order='descending observation count then track id',
+                scope='predictive prefix; numerical replay of completed prefix',
+                per_target_fit_and_audit_budget='unchanged', GPS_used=False)
+
+
+def validate_recovery_target_policy(value):
+    if type(value) is not dict or 'maximum_targets' not in value:
+        raise ValueError('Complete recovery target policy required')
+    expected = recovery_target_policy(value['maximum_targets'])
+    if value.keys() != expected.keys() or any(
+            type(value[k]) is not type(v) or value[k] != v for k, v in expected.items()):
+        raise ValueError('Complete recovery target policy required')
+    return value
+
+
+def validate_target_selection(inventory, policy):
+    validate_recovery_target_policy(policy)
+    if (type(inventory) is not dict or type(inventory.get('target_limit')) is not int
+            or inventory['target_limit'] != policy['maximum_targets']):
+        raise ValueError('Recovery target selection must bind its limit')
+    original = inventory.get('original_selected_track_ids')
+    selected = inventory.get('selected_targets')
+    omitted = inventory.get('policy_omitted_track_ids')
+    if (type(original) is not list or len(original) > 8
+            or any(type(tid) is not str or not tid for tid in original)
+            or len(set(original)) != len(original)
+            or type(selected) is not list
+            or any(type(row) is not dict or type(row.get('track_id')) is not str
+                   for row in selected)
+            or type(omitted) is not list
+            or [r['track_id'] for r in selected] != original[:policy['maximum_targets']]
+            or omitted != original[policy['maximum_targets']:]):
+        raise ValueError('Recovery target selection must retain its ordered prefix and omissions')
+    return inventory
 
 
 def joint_schedule_policy(identifier=JOINT_SCHEDULE_POLICY):
@@ -181,6 +222,11 @@ def validate_evidence(evidence):
                                      provenance['native_backend']['manifest_sha256'])
     elif 'joint_schedule_work' in evidence['provenance']:
         raise ValueError('Joint schedule work requires its explicit policy')
+    inventory = evidence['audit'].get('recovery_inventory')
+    if 'recovery_target_policy' in evidence['provenance']:
+        validate_target_selection(inventory, evidence['provenance']['recovery_target_policy'])
+    elif isinstance(inventory, dict) and 'target_limit' in inventory:
+        raise ValueError('Recovery target selection requires its explicit policy')
     return evidence
 
 

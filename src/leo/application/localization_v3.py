@@ -158,13 +158,14 @@ def fit_family_cavity(signed):
                 recovery_complete=False)
 
 
-def prepare_track_recovery(prepared, signed, cavity, *, identities):
+def prepare_track_recovery(prepared, signed, cavity, *, identities, recovery_target_limit=None):
     """Replay the selected policy and identify the original recovery targets."""
     if (cavity.get('cavity_fit') or {}).get('status') != 'complete':
         return dict(status='cavity_incomplete', recovery_context=None, inventory=None,
                     recovery_complete=False)
     context, result = prepare_recovery(signed['signed_context']['scan'], cavity['cavity_fit'],
-        prepared['tracks']['observations'], identities=identities)
+        prepared['tracks']['observations'], identities=identities,
+        **({'target_limit': recovery_target_limit} if recovery_target_limit is not None else {}))
     return dict(status='track_recovery_prepared', recovery_context=context, inventory=result,
                 recovery_complete=False)
 
@@ -261,6 +262,9 @@ def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_all
                                       **({'map_joint_arms': map_joint_arms}
                                          if map_joint_arms else {}))
     return dict(result, completed_stages=completed,
+                **({'recovery_target_limit': prepared_recovery['inventory']['target_limit']}
+                   if isinstance(prepared_recovery.get('inventory'), dict)
+                   and 'target_limit' in prepared_recovery['inventory'] else {}),
                 **({'inclusion_control_policy': inclusion_control_factory.policy}
                    if inclusion_control_factory is not None else {}),
                 **({'joint_schedule_policy': joint_schedule_factory.policy}
@@ -289,6 +293,8 @@ def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
            if 'inclusion_control_policy' in predictive else {}),
         **({'completed_joint_schedule_policy': predictive['joint_schedule_policy']}
            if 'joint_schedule_policy' in predictive else {}),
+        **({'completed_target_limit': predictive['recovery_target_limit']}
+           if 'recovery_target_limit' in predictive else {}),
         **({'map_inclusion_arms': map_inclusion_arms} if map_inclusion_arms else {}),
         **({'map_joint_batches': map_joint_batches} if map_joint_batches else {}),
         **({'map_joint_arms': map_joint_arms} if map_joint_arms else {}),

@@ -72,6 +72,7 @@ def replay_recovery(
     completed_inclusion_control_policy=None,
     joint_schedule_factory=None,
     completed_joint_schedule_policy=None,
+    completed_target_limit=None,
 ):
     """Replay the completed original schedule, then perform additive adoption.
 
@@ -89,6 +90,12 @@ def replay_recovery(
                          if joint_schedule_factory is not None else None)
     if completed_joint_schedule_policy != expected_schedule:
         raise ValueError('Completed joint schedule policy differs from replay policy')
+    expected_limit = evidence.get('target_limit')
+    if ((expected_limit is not None
+         and (type(expected_limit) is not int or not 0 <= expected_limit <= 8))
+            or type(completed_target_limit) is not type(expected_limit)
+            or completed_target_limit != expected_limit):
+        raise ValueError('Completed target selection limit differs from recovery inventory')
     stages = {}
     for name, saved in completed_stages.items():
         seconds = saved["seconds"]

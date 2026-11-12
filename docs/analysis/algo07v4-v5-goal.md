@@ -1,5 +1,23 @@
 # Algo07v4 baseline and algo07v5 goal
 
+The RF target-prefix lever is now registered as the independent optional
+`--recovery-target-limit 0..8`. Omitting it preserves the original eight-target
+limit and schema1..4 identities. Schema5 binds the explicit policy into the
+run ID and saved evidence, records the original selected IDs and policy
+omissions, and checks the limit before numerical checkpoint reuse. Every
+selected target retains its original full fit/audit budgets. This is an
+explicit search-coverage tradeoff; it is not a new default or an established
+accuracy-preserving shortcut. All 1625 relevant checks pass.
+
+The real saved-inventory census reproduces the original ordering on all
+three quick cases. A four-target prefix contains the saved primary winner's
+observations on 0002 and 0102; 0066 has no primary winner. This does not
+prove the later pipeline's accuracy, because skipped annotations can affect
+later recovery. Quick and full limit-four plans contain three available
+jobs and all159expected/158available/missing0172 respectively. The next
+gate is a bounded complete-worker 0102 run with limit four, reporting both
+GPS errors, frequency fit, ownership, work and all selected/audit changes.
+
 The fresh reverse-order 0102 pair completes at 351.401017 wall /
 566.900862 CPU seconds for current full-policy v5, followed by frozen v3
 at 663.078334 / 1175.698310. This is 1.886956x wall and 2.073905x CPU,

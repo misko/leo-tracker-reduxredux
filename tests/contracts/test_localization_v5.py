@@ -33,6 +33,43 @@ def test_joint_schedule_policy_has_independent_complete_descriptor():
         localization_v5.joint_schedule_policy('other')
 
 
+@pytest.mark.parametrize('limit', [0, 2, 4, 8])
+def test_target_selection_policy_retains_the_declared_rf_prefix(limit):
+    evidence, _ = evidence_fixture()
+    original = ['a', 'b']
+    policy = localization_v5.recovery_target_policy(limit)
+    evidence['provenance']['recovery_target_policy'] = policy
+    evidence['audit']['recovery_inventory'] = dict(target_limit=limit,
+        original_selected_track_ids=original,
+        selected_targets=[dict(track_id=tid) for tid in original[:limit]],
+        policy_omitted_track_ids=original[limit:])
+    assert policy['per_target_fit_and_audit_budget'] == 'unchanged'
+    assert localization_v5.validate_evidence(evidence) is evidence
+
+
+@pytest.mark.parametrize('failure', ['orphan', 'missing', 'limit', 'ids', 'order', 'omitted'])
+def test_target_selection_rejects_hidden_or_inconsistent_omissions(failure):
+    evidence, _ = evidence_fixture()
+    evidence['provenance']['recovery_target_policy'] = localization_v5.recovery_target_policy(1)
+    inventory = dict(target_limit=1, original_selected_track_ids=['a', 'b'],
+                     selected_targets=[dict(track_id='a')], policy_omitted_track_ids=['b'])
+    evidence['audit']['recovery_inventory'] = inventory
+    if failure == 'orphan':
+        del evidence['provenance']['recovery_target_policy']
+    elif failure == 'missing':
+        del inventory['original_selected_track_ids']
+    elif failure == 'limit':
+        inventory['target_limit'] = True
+    elif failure == 'ids':
+        inventory['selected_targets'][0]['track_id'] = 'other'
+    elif failure == 'order':
+        inventory['original_selected_track_ids'].reverse()
+    else:
+        inventory['policy_omitted_track_ids'].clear()
+    with pytest.raises(ValueError, match='target selection'):
+        localization_v5.validate_evidence(evidence)
+
+
 @pytest.mark.parametrize('failure', [None, 'missing_work', 'orphaned_work', 'binding', 'counts'])
 def test_joint_work_is_required_and_bound_when_explicitly_enabled(failure):
     evidence, _ = evidence_fixture()

@@ -329,6 +329,52 @@ def test_joint_schedule_policy_rejects_other_versions_before_loading_inputs(tmp_
     assert not (tmp_path / 'output').exists()
 
 
+@pytest.mark.parametrize('profile', ['quick', 'full'])
+@pytest.mark.parametrize('action', ['plan', 'run'])
+@pytest.mark.parametrize('limit', [0, 4])
+def test_target_limit_is_explicit_for_both_evaluation_profiles(
+    frozen, monkeypatch, profile, action, limit
+):
+    from leo.contracts import localization_v5
+
+    snapshot, source, output = frozen
+    manifest = snapshot / 'manifest.json'
+    evaluation.write(manifest, {'synthetic': 'backend'})
+    calls = []
+
+    def wrap(request, manifest, **policies):
+        calls.append(policies)
+        assert request['evaluation_reference'] is None
+        return dict(job=request, backend_manifest=manifest, schema_version=5,
+                    recovery_target_policy=localization_v5.recovery_target_policy(limit))
+
+    monkeypatch.setattr(evaluation, 'owned_import', lambda name, binding:
+                        localization_v5 if name == 'leo.contracts.localization_v5'
+                        else SimpleNamespace(make_request=wrap))
+    if action == 'run':
+        monkeypatch.setattr(evaluation, 'run_plan', lambda plan, python: dict(
+            statuses={}, results=[dict(status='missing' if j['status'] == 'missing' else 'complete')
+                                  for j in plan['jobs']]))
+    args = [action, '--version', 'algo07v5', '--profile', profile,
+            '--snapshot', str(snapshot), '--source-root', str(source), '--output', str(output),
+            '--native-manifest', str(manifest), '--recovery-target-limit', str(limit)]
+    assert evaluation.main(args) == int(action == 'run' and profile == 'full')
+    result = evaluation.read(output / 'plan.json')
+    assert result['recovery_target_policy'] == localization_v5.recovery_target_policy(limit)
+    assert calls == [dict(annotation_training_policy=None, recovery_target_limit=limit)] * 3
+    assert len(result['jobs']) == (3 if profile == 'quick' else 4)
+    assert all(j['request']['schema_version'] == 5 for j in result['jobs'][:3])
+    if profile == 'full':
+        assert result['jobs'][-1]['status'] == 'missing'
+
+
+@pytest.mark.parametrize('version', ['algo07v3', 'algo07v4'])
+def test_target_limit_rejects_other_versions_before_reading_inputs(tmp_path, version):
+    assert evaluation.main(['plan', '--version', version, '--snapshot', str(tmp_path / 'absent'),
+        '--output', str(tmp_path / 'output'), '--recovery-target-limit', '0']) == 1
+    assert not (tmp_path / 'output').exists()
+
+
 @pytest.mark.parametrize('change', ['duplicate', 'missing', 'changed'])
 def test_nested_archive_mutation_never_launches_inference(frozen, monkeypatch, change):
     result = plan(frozen, '--cases', 'DS26-0002')
