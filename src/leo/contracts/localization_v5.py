@@ -7,10 +7,24 @@ from leo.contracts.localization_v3 import validate_identity as validate_identity
 MODEL = "algo07v5-native-v1"
 INITIAL_CONTROL_POLICY = "winner-arm-phase0-fit-v1"
 ANNOTATION_TRAINING_POLICY = "lbfgsb-full5-625-v1"
+ANNOTATION_FALLBACK_POLICY = "lbfgsb-gn-fallback-full5-v1"
 
 
-def annotation_training_policy():
+def annotation_training_policy(identifier=ANNOTATION_TRAINING_POLICY):
     """Return an independent, complete descriptor of the opt-in training budget."""
+    if identifier == ANNOTATION_FALLBACK_POLICY:
+        return dict(
+            id=identifier, optimizer="lbfgsb_with_reference_gn_fallback",
+            phase_rounds=5, position_steps=48,
+            primary=annotation_training_policy(),
+            fallback=dict(optimizer="original_gn", iterations=48,
+                          residual_call_cap=625, start="original phase start",
+                          trigger="primary not converged"),
+            total_residual_call_cap=1250,
+            history_kind="all physical residual evaluations across attempts",
+        )
+    if identifier != ANNOTATION_TRAINING_POLICY:
+        raise ValueError("Unknown ALGO07v5 annotation training policy")
     return dict(
         id=ANNOTATION_TRAINING_POLICY,
         optimizer="lbfgsb", method="L-BFGS-B",
@@ -31,7 +45,9 @@ def validate_annotation_training_policy(value):
             )
         return actual == expected
 
-    if not matches(value, annotation_training_policy()):
+    if (not isinstance(value, dict)
+            or value.get("id") not in (ANNOTATION_TRAINING_POLICY, ANNOTATION_FALLBACK_POLICY)
+            or not matches(value, annotation_training_policy(value["id"]))):
         raise ValueError("Complete ALGO07v5 annotation training policy required")
     return value
 

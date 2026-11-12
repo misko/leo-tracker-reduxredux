@@ -18,9 +18,8 @@ def make_request(v3_request, backend_manifest, *, annotation_training_policy=Non
     binding = dict(request=v3_request, backend_manifest=manifest, initial_control_policy=POLICY)
     training = {}
     if annotation_training_policy is not None:
-        if annotation_training_policy != localization_v5.ANNOTATION_TRAINING_POLICY:
-            raise ValueError("Unknown ALGO07v5 annotation training policy")
-        training["annotation_training_policy"] = localization_v5.annotation_training_policy()
+        training["annotation_training_policy"] = localization_v5.annotation_training_policy(
+            annotation_training_policy)
         binding.update(training)
     job["identity"]["run_id"] = "v5-" + canonical_digest(
         binding
@@ -94,13 +93,31 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
                 "annotation_training_policy")
         ):
             raise ValueError("Saved result belongs to a different native backend")
+        if training:
+            from leo.operations.localization_v5_training import validate_provenance
+
+            work = provenance.get("annotation_training_work")
+            if work is not None:
+                validate_provenance(work, request["annotation_training_policy"])
+            elif (request["annotation_training_policy"]["id"]
+                  == localization_v5.ANNOTATION_FALLBACK_POLICY):
+                raise ValueError("Saved fallback result requires annotation training work")
 
     execution = {}
-    if training:
-        from leo.analysis.localization_v5.annotation_training import fit
+    work = None
+    if training and backend is not None:
+        if (request["annotation_training_policy"]["id"]
+                == localization_v5.ANNOTATION_FALLBACK_POLICY):
+            from leo.analysis.localization_v5.annotation_fallback import fit
+        else:
+            from leo.analysis.localization_v5.annotation_training import fit
+        from leo.operations.localization_v5_training import ProcessTrainingFit
 
         localization_v5.validate_annotation_training_policy(fit.policy)
-        execution["annotation_training_fit"] = fit
+        if fit.policy != request["annotation_training_policy"]:
+            raise ValueError("Implementation annotation training policy differs from request")
+        work = ProcessTrainingFit(fit, Path(receipts))
+        execution["annotation_training_fit"] = work
 
     return localization_v3_job._execute(
         request["job"], resume_only=resume_only, emit=emit,
@@ -110,6 +127,7 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
         extra_provenance=lambda: dict(
             algorithm=localization_v5.MODEL, native_backend=backend.provenance(),
             initial_control_policy=POLICY, **training,
+            **({"annotation_training_work": work.provenance()} if work is not None else {}),
         ),
         **execution,
     )

@@ -142,6 +142,9 @@ def fit_training(
                     "scipy_result", "budget_exhausted", "converged", "solution_origin",
                     "evaluations", "history_kind", "stationarity",
                     "convergence_kind", "final_metadata_calculate_calls", "stopped",
+                    "score_correction",
+                    "attempts", "fallback", "reference_fit_completed",
+                    "physical_budget_exhausted",
                 )
                 if key in f
             }

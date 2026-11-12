@@ -49,6 +49,7 @@ def fit(problem, start=(0.0, 0.0), iterations=48):
 
     stationarity = dict(source="scipy_result.jac", projected_gradient_inf_norm=None,
                         gtol=policy["options"]["gtol"], satisfied=None)
+    score_correction = None
     try:
         result = minimize(objective, x, method="L-BFGS-B",
                           bounds=list(zip(lo, hi, strict=True)),
@@ -58,9 +59,17 @@ def fit(problem, start=(0.0, 0.0), iterations=48):
         if (x.shape != (2,) or not np.isfinite(x).all()
                 or np.any(x < lo) or np.any(x > hi) or not np.isfinite(score)):
             raise ValueError("Finite bounded optimizer parameters and score required")
-        if not any(np.array_equal(x, row["parameters"]) and score == row["score"]
-                   for row in history):
-            raise ValueError("Optimizer result must match an evaluated point and score")
+        scores = [row["score"] for row in history if np.array_equal(x, row["parameters"])]
+        if score not in scores:
+            if (not result.success and result.status == 2
+                    and str(result.message).startswith("ABNORMAL")
+                    and scores and all(value == scores[0] for value in scores)):
+                score_correction = dict(reason="abnormal line search restored parameters",
+                                        reported_score=score, recorded_score=scores[0],
+                                        additional_residual_evaluations=0)
+                score = scores[0]
+            else:
+                raise ValueError("Optimizer result must match an evaluated point and score")
         counts = {}
         for key in ("nfev", "njev", "nit"):
             value = result[key]
@@ -85,9 +94,9 @@ def fit(problem, start=(0.0, 0.0), iterations=48):
         stationarity.update(projected_gradient_inf_norm=norm,
                             satisfied=norm <= policy["options"]["gtol"])
         scipy_result = dict(counts, success=bool(result.success), status=int(result.status),
-                            message=str(result.message))
+                            message=str(result.message), reported_fun=float(result.fun))
         stopped = f"scipy_status_{result.status}: {result.message}"
-        solution_origin = "scipy_result"
+        solution_origin = "scipy_result_with_recorded_score" if score_correction else "scipy_result"
         budget_exhausted = bool(counts["nit"] >= policy["options"]["maxiter"]
                                 or counts["nfev"] >= policy["options"]["maxfun"])
     except Budget as exc:
@@ -120,6 +129,7 @@ def fit(problem, start=(0.0, 0.0), iterations=48):
                 converged=bool(scipy_result and scipy_result["success"] and not budget_exhausted),
                 convergence_kind="scipy-reported success within budget",
                 stationarity=stationarity, solution_origin=solution_origin,
+                score_correction=score_correction,
                 final_metadata_calculate_calls=1, residual_rms_hz=rms,
                 active_points=int(keep.sum()), **metadata)
 

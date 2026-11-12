@@ -31,6 +31,14 @@ def saved(request):
     if 'annotation_training_policy' in request:
         evidence['provenance']['annotation_training_policy'] = deepcopy(
             request['annotation_training_policy'])
+        if (request['annotation_training_policy']['id']
+                == localization_v5.ANNOTATION_FALLBACK_POLICY):
+            from leo.operations.localization_v5_training import _counts
+
+            evidence['provenance']['annotation_training_work'] = dict(
+                schema_version=1, policy=deepcopy(request['annotation_training_policy']),
+                policy_sha256=canonical_digest(request['annotation_training_policy']),
+                receipts=[], counts=_counts([]))
     receipt = LocalizationV5Store(request["job"]["output_root"]).save(evidence, pngs)
     return evidence, receipt
 

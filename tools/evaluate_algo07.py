@@ -110,9 +110,8 @@ def make_plan(args):
     training = {}
     if training_policy is not None:
         contract = owned_import('leo.contracts.localization_v5', source)
-        if training_policy != contract.ANNOTATION_TRAINING_POLICY:
-            raise ValueError('Unknown ALGO07v5 annotation training policy')
-        training['annotation_training_policy'] = contract.annotation_training_policy()
+        training['annotation_training_policy'] = contract.annotation_training_policy(
+            training_policy)
     manifest = read(args.native_manifest) if args.native_manifest else None
     references = read(args.references) if args.references else {}
     config = snapshot / 'inputs/config.json'
@@ -422,7 +421,8 @@ def main(argv=None):
         command.add_argument('--source-root', type=Path,
                              default=Path(__file__).resolve().parents[1] / 'src')
         command.add_argument('--native-manifest', type=Path)
-        command.add_argument('--annotation-training-policy', choices=('lbfgsb-full5-625-v1',),
+        command.add_argument('--annotation-training-policy',
+                             choices=('lbfgsb-full5-625-v1', 'lbfgsb-gn-fallback-full5-v1'),
                              help='Opt-in annotation training policy for algo07v5')
         command.add_argument('--references', type=Path, help='Per-case evaluation-only GPS map')
         command.add_argument('--cases', help='Comma-separated labels; quick defaults to 3 controls')

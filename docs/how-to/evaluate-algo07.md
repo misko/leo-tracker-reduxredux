@@ -193,3 +193,15 @@ without this option retain their GN behavior.
 Use the same comparison command with matched fixed-v4 or frozen-v3 reports.
 The experimental policy is not a qualified default. A successful component
 screen does not establish complete-worker speed or localization accuracy.
+
+The first full-worker attempt with this primary-only policy failed in
+DS26-0066 annotation and produced no scientific result. The repaired primary
+still reports unsuccessful optimization explicitly. The next experimental
+policy is `lbfgsb-gn-fallback-full5-v1`: use that value with the same
+`--annotation-training-policy` option after bounded component checks. It reruns
+an unsuccessful primary attempt with full original GN48 from the original
+phase start. Its worst-case budget is 625 primary plus 625 reference residual
+calls, retaining five phase rounds. Receipts count both attempts and preserve
+their stops, failures and score corrections. Completed GN fallback is recorded
+separately from primary convergence. This policy also requires complete-worker
+and independent DS26 qualification before becoming a default.

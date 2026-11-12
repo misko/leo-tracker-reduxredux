@@ -8,42 +8,32 @@ policy. It has not met the speed target or completed independent DS26 qualificat
 ## Proposed slash goal
 
 ```text
-/goal Develop algo07v5 toward at least 2x complete-worker speed versus the frozen
-algo07v3 baseline. Keep the published algo07v4 implementation fixed as the
-comparison and rollback. Another 2x versus algo07v4 is a stretch target.
-Measure the speed versus localization-accuracy frontier before choosing an
-approximation budget. Keep algo07v4 fixed as the rollback and comparison point.
+/goal Develop algo07v5 to run at least 2x faster end to end than frozen algo07v3
+on DS26. Keep published algo07v4 fixed as the baseline and rollback; another
+2x over v4 is a stretch target. Prefer removing repeated work, then measure
+explicit speed versus accuracy tradeoffs before choosing an approximation.
 
-Use tools/evaluate_algo07.py run --profile quick for DS26-0002/0066/0102.
-Use plan --profile full, then run --profile full, for the frozen DS26 inventory.
-Pass --version algo07v4, --native-manifest FILE and a fresh --output DIR for
-the fixed baseline. Select the provisional candidate with --version algo07v5.
-Use the documented pinned Python environment and plan before a full run.
-Keep candidate policies explicit in requests and the CLI. The annotation
-optimizer experiment uses --annotation-training-policy lbfgsb-full5-625-v1.
-Start every experiment with a bounded component replay, then
-run the quick screen. Qualify finalists on the independent remaining scans.
-Keep all 159 expected inventory members visible, including the currently
-unavailable DS26-0172. Report completed, failed, timed-out and missing counts.
-Never count an incomplete run as a speedup or silently shrink the denominator.
+Use the pinned environment and tools/evaluate_algo07.py:
+- Quick: run --profile quick --version algo07v5 for DS26-0002/0066/0102.
+- Full: plan --profile full, then run --profile full, with the same version.
+- Compare: compare --baseline BASELINE/report.json --candidate CANDIDATE/report.json.
+Follow docs/how-to/evaluate-algo07.md for --snapshot, checkout-bound
+--native-manifest and fresh --output arguments. Keep experimental policies
+explicit. Run bounded component checks before quick workers; qualify finalists
+on the independent remaining scans. Retain all 159 expected DS26 members,
+including missing DS26-0172, and report every failure and timeout.
 
-Report complete-worker wall and CPU time, stage costs, actual solver work,
-and both c=0 and fitted-c results under matched data, candidate policies,
-priors and search budgets. Report GPS error median/p90/p95/max, paired error
-changes and all outliers separately from frequency fit, ownership and audit
-changes. GPS may score completed inference; it must not select settings or
-enter inference. Separate development scans from held-out qualification.
+Measure complete-worker wall/CPU time, phase costs and actual work. Confirm
+timing with alternating repeats. The primary speed ratio is baseline total
+wall time / candidate total wall time over matched complete available scans;
+also report per-scan ratios and tails. Incomplete work earns no speedup.
 
-Prioritize predictive annotation, inclusion/retry, initial search and
-admission. Look for repeated work that can be reused or moved earlier before
-reducing budgets. Preserve negative experiments. Keep one change per measured
-attempt and record its speed, accuracy, failures and decision. Use alternating
-timing repeats on representative quick cases before claiming a stable win.
-The primary speed metric is the baseline total wall time divided by candidate
-total wall time over all matched complete available DS26 members. Also report
-per-scan ratios and timing tails. A component ratio cannot satisfy this target.
-Stop when the target and chosen accuracy budget pass independent evaluation,
-or report the measured frontier and the remaining bottleneck explicitly.
+Keep c=0 and fitted-c comparisons matched in observations, candidates, priors
+and budgets. Report GPS median/p95/max and paired outliers separately from
+frequency fit, ownership and audit changes. GPS is evaluation-only. Preserve
+negative results and one change per experiment. The goal is achieved only
+after independent qualification meets both the speed target and an explicitly
+chosen accuracy budget; otherwise report the measured frontier and bottleneck.
 ```
 
 The accuracy budget is intentionally open. A measured frontier lets the operator
@@ -204,3 +194,28 @@ cost improvement. Repeatability of production-queue and complete-worker costs
 remains open. `policy-queue-001` retains the receipts and exact measured source;
 the subsequent numerical-source formatting has an identical AST. Quick and
 full CLI plans select the new policy explicitly and retain the expected counts.
+
+The first complete-worker L-BFGS-B attempt on DS26-0066 failed in target 0
+annotation. It produced no scientific result and earns no timing ratio. Fixed
+v4 completed in the same experiment. A bounded replay traced the failure to
+an abnormal SciPy return whose restored parameters and reported score disagree;
+the recorded score at those exact parameters is consistent. The repair retains
+the raw status and score and still reports the primary fit as unsuccessful.
+
+The next candidate, `lbfgsb-gn-fallback-full5-v1`, reruns an unsuccessful
+primary fit with the original GN48 solver from the original phase start.
+Its explicit worst-case budget is 625 primary plus 625 reference residual
+calls. Both attempts, failures and physical work remain visible. This policy
+passed bounded production-queue checks on targets 0, 1 and 2. Every annotation
+completed all 30 phase results, with 745, 675 and 660 residual calls. Target 0
+used one GN fallback; the other targets used none. No budget was exhausted.
+Nominees, aliases, votes and consensus remain unchanged in all three checks.
+
+The single-pair annotation CPU costs were 11.583 to 10.290 seconds, 34.518 to
+11.274 seconds and 11.666 to 8.440 seconds respectively. Target 0 wall time
+increased, from 4.146 to 5.400 seconds. These component measurements advance
+the candidate to another complete-worker attempt; they establish neither a
+stable worker speedup nor GPS accuracy. Local evidence is in
+`worker-policy-0066-001`, `policy-target0-corrected-001` and
+`policy-fallback-queue-001` under the evidence root above. The latter archives
+the exact measured source before an AST-identical probe line wrap.

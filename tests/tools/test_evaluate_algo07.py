@@ -174,7 +174,10 @@ def test_v5_bound_plan_wraps_requests_and_run_supplies_manifest(frozen, monkeypa
 
 @pytest.mark.parametrize('profile', ['quick', 'full'])
 @pytest.mark.parametrize('action', ['plan', 'run'])
-def test_explicit_v5_training_policy_binds_plan_and_requests(frozen, monkeypatch, profile, action):
+@pytest.mark.parametrize('policy', ['lbfgsb-full5-625-v1', 'lbfgsb-gn-fallback-full5-v1'])
+def test_explicit_v5_training_policy_binds_plan_and_requests(
+    frozen, monkeypatch, profile, action, policy
+):
     from leo.contracts import localization_v5
 
     snapshot, source, output = frozen
@@ -185,7 +188,7 @@ def test_explicit_v5_training_policy_binds_plan_and_requests(frozen, monkeypatch
     def wrap(request, manifest, *, annotation_training_policy):
         calls.append(annotation_training_policy)
         return dict(job=request, backend_manifest=manifest, schema_version=2,
-                    annotation_training_policy=localization_v5.annotation_training_policy())
+                    annotation_training_policy=localization_v5.annotation_training_policy(policy))
 
     def owned(module, binding):
         assert binding['root'] == str(source)
@@ -196,17 +199,17 @@ def test_explicit_v5_training_policy_binds_plan_and_requests(frozen, monkeypatch
     if action == 'run':
         def run(plan, python):
             assert plan['annotation_training_policy'] == (
-                localization_v5.annotation_training_policy())
+                localization_v5.annotation_training_policy(policy))
             return dict(statuses={'complete': 3}, results=[dict(status='complete')])
         monkeypatch.setattr(evaluation, 'run_plan', run)
     assert evaluation.main([action, '--version', 'algo07v5', '--profile', profile,
         '--snapshot', str(snapshot), '--source-root', str(source), '--output', str(output),
         '--native-manifest', str(manifest), '--annotation-training-policy',
-        localization_v5.ANNOTATION_TRAINING_POLICY]) == 0
+        policy]) == 0
     plan = evaluation.read(output / 'plan.json')
-    assert plan['annotation_training_policy'] == localization_v5.annotation_training_policy()
+    assert plan['annotation_training_policy'] == localization_v5.annotation_training_policy(policy)
     assert len(plan['jobs']) == (3 if profile == 'quick' else 4)
-    assert calls == [localization_v5.ANNOTATION_TRAINING_POLICY] * 3
+    assert calls == [policy] * 3
     for row in plan['jobs'][:3]:
         assert row['request']['annotation_training_policy'] == plan['annotation_training_policy']
 

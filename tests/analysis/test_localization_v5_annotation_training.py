@@ -148,6 +148,69 @@ def test_optimizer_exception_is_not_presented_as_convergence(monkeypatch):
     assert problem.calculations == []
 
 
+def test_real_abnormal_return_recovers_recorded_score_without_claiming_success(monkeypatch):
+    problem = QuadraticProblem()
+    problem.lower, problem.upper = np.array([-1., -1.]), np.array([1., 1.])
+
+    def residual(at):
+        problem.calls.append(at.copy())
+        return np.r_[at - problem.target, 1.]
+
+    problem.residual = residual
+    minimize = training.minimize
+
+    def one_line_search(objective, start, **kwargs):
+        kwargs['options'] = dict(kwargs['options'], maxls=1)
+        return minimize(objective, start, **kwargs)
+
+    monkeypatch.setattr(training, 'minimize', one_line_search)
+    result = training.fit(problem)
+    np.testing.assert_array_equal(result['parameters'], [0., 0.])
+    assert result['score'] == 1.13
+    assert result['scipy_result']['reported_fun'] != result['score']
+    assert result['scipy_result']['status'] == 2
+    assert result['scipy_result']['success'] is result['converged'] is False
+    assert result['budget_exhausted'] is False
+    assert result['score_correction'] == dict(
+        reason='abnormal line search restored parameters', recorded_score=1.13,
+        reported_score=result['scipy_result']['reported_fun'], additional_residual_evaluations=0)
+    assert result['evaluations'] == len(problem.calls) == 6
+    assert result['solution_origin'] == 'scipy_result_with_recorded_score'
+
+
+@pytest.mark.parametrize('changes', [dict(success=True), dict(status=1),
+                                    dict(message='unknown failure'), dict(x=[.3, .3])])
+def test_unexplained_mismatches_still_fail(monkeypatch, changes):
+    def minimize(objective, start, **kwargs):
+        values = dict(fun=999., success=False, status=2, message='ABNORMAL: ')
+        values.update(changes)
+        return returned(objective, start, **values)
+
+    monkeypatch.setattr(training, 'minimize', minimize)
+    with pytest.raises(ValueError):
+        training.fit(QuadraticProblem())
+
+
+def test_abnormal_return_cannot_choose_between_conflicting_scores_at_same_point(monkeypatch):
+    problem = QuadraticProblem()
+
+    def residual(at):
+        problem.calls.append(at.copy())
+        return np.array([float(len(problem.calls))])
+
+    problem.residual = residual
+
+    def minimize(objective, start, **kwargs):
+        objective(start)
+        objective(start)
+        return OptimizeResult(x=start, fun=999., nfev=2, njev=0, nit=0,
+                              success=False, status=2, message='ABNORMAL: ', jac=np.zeros(2))
+
+    monkeypatch.setattr(training, 'minimize', minimize)
+    with pytest.raises(ValueError, match='evaluated point and score'):
+        training.fit(problem)
+
+
 @pytest.mark.parametrize("start,lower,upper", [
     ([0.0], [-1.0, -2.0], [2.0, 1.0]),
     ([np.nan, 0.0], [-1.0, -2.0], [2.0, 1.0]),

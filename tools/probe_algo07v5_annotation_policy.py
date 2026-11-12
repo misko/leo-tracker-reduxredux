@@ -49,8 +49,16 @@ def work_counts(annotation):
                 optimizer_work_available=bool(optimizer),
                 residual_evaluations=(sum(r['evaluations'] for r in optimizer)
                                       if optimizer else None),
-                reported_convergences=(sum(r['converged'] for r in optimizer)
+                reported_convergences=(sum(r['converged'] is True for r in optimizer)
                                        if optimizer else None),
+                reference_fallbacks=(sum(r.get('reference_fit_completed') is True
+                                         for r in optimizer)
+                                     if optimizer else None),
+                completed_phase_results=(sum(r['converged'] is True
+                                             or r.get('reference_fit_completed') is True
+                                             for r in optimizer) if optimizer else None),
+                optimizer_attempts=(sum(len(r.get('attempts', [r])) for r in optimizer)
+                                    if optimizer else None),
                 budget_exhaustions=(sum(r['budget_exhausted'] for r in optimizer)
                                     if optimizer else None),
                 stationarity_satisfied=(sum(r.get('stationarity', {}).get('satisfied') is True
@@ -86,7 +94,7 @@ def main(argv=None):
     parser.add_argument('--request', type=Path, required=True)
     parser.add_argument('--native-manifest', type=Path, required=True)
     parser.add_argument('--target', type=int, required=True)
-    parser.add_argument('--optimizer', choices=('gn', 'lbfgsb'), default='gn')
+    parser.add_argument('--optimizer', choices=('gn', 'lbfgsb', 'lbfgsb-gn'), default='gn')
     parser.add_argument('--execution', choices=('folds', 'queued'), default='queued')
     parser.add_argument('--reference', type=Path)
     parser.add_argument('--output', type=Path, required=True)
@@ -143,6 +151,9 @@ def main(argv=None):
             options = {}
             if args.optimizer == 'lbfgsb':
                 options['training_fit'] = annotation_fit
+            elif args.optimizer == 'lbfgsb-gn':
+                from leo.analysis.localization_v5.annotation_fallback import fit
+                options['training_fit'] = fit
             fit_began, fit_cpu = time.perf_counter(), cpu()
             annotation = annotate(context, inventory, target['track_id'],
                 inactive_fragment=target['inactive_fragment'], candidates=12, folds=3,

@@ -19,6 +19,7 @@ def test_shared_proposal_metadata_counts_each_training_fit_once():
                          completed_rounds=30, recorded_optimizer_calls=30,
                          optimizer_work_available=True,
                          residual_evaluations=210, reported_convergences=30,
+                         reference_fallbacks=0, completed_phase_results=30, optimizer_attempts=30,
                          budget_exhaustions=0, stationarity_satisfied=0)
 
 
@@ -101,6 +102,19 @@ def test_partial_optimizer_telemetry_cannot_understate_work():
         proposal['arms']['c0']['history'][0].pop('optimizer')
     with pytest.raises(ValueError, match='Incomplete per-round'):
         probe.work_counts(value)
+
+
+def test_completed_reference_fallback_is_separate_from_primary_success():
+    value = annotation()
+    for proposal in value['result']['folds'][0]['proposals']:
+        record = proposal['arms']['c0']['history'][0]['optimizer']
+        record.update(converged=None, reference_fit_completed=True,
+                      attempts=[dict(optimizer='lbfgsb'), dict(optimizer='original_gn')])
+    result = probe.work_counts(value)
+    assert result['reported_convergences'] == 29
+    assert result['reference_fallbacks'] == 1
+    assert result['completed_phase_results'] == 30
+    assert result['optimizer_attempts'] == 31
 
 
 @pytest.mark.parametrize('optimizer', ['gn', 'lbfgsb'])

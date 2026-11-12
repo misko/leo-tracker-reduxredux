@@ -48,6 +48,35 @@ def test_annotation_policy_is_independent_and_optional_for_existing_evidence():
     assert localization_v5.validate_evidence(evidence) is evidence
 
 
+def test_fallback_policy_has_independent_complete_budgets():
+    descriptor = localization_v5.annotation_training_policy(
+        localization_v5.ANNOTATION_FALLBACK_POLICY)
+    assert descriptor == dict(
+        id='lbfgsb-gn-fallback-full5-v1', optimizer='lbfgsb_with_reference_gn_fallback',
+        phase_rounds=5, position_steps=48, primary=localization_v5.annotation_training_policy(),
+        fallback=dict(optimizer='original_gn', iterations=48, residual_call_cap=625,
+                      start='original phase start', trigger='primary not converged'),
+        total_residual_call_cap=1250,
+        history_kind='all physical residual evaluations across attempts')
+    assert localization_v5.validate_annotation_training_policy(descriptor) is descriptor
+    descriptor['primary']['options']['maxiter'] = 1
+    assert localization_v5.annotation_training_policy()['options']['maxiter'] == 48
+    with pytest.raises(ValueError, match='annotation training policy'):
+        localization_v5.validate_annotation_training_policy(descriptor)
+    with pytest.raises(ValueError, match='Unknown'):
+        localization_v5.annotation_training_policy('unknown')
+
+
+@pytest.mark.parametrize('field,value', [('total_residual_call_cap', True),
+                                       ('phase_rounds', 5.0), ('position_steps', 47)])
+def test_fallback_policy_rejects_changed_budget_types(field, value):
+    descriptor = localization_v5.annotation_training_policy(
+        localization_v5.ANNOTATION_FALLBACK_POLICY)
+    descriptor[field] = value
+    with pytest.raises(ValueError, match='annotation training policy'):
+        localization_v5.validate_annotation_training_policy(descriptor)
+
+
 @pytest.mark.parametrize('field,value', [
     ('id', 'other'), ('optimizer', 'gn'), ('method', 'BFGS'),
     ('residual_call_cap', True), ('phase_rounds', 5.0), ('position_steps', 47),
