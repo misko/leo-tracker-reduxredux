@@ -239,3 +239,34 @@ v3/v4 ratios to claim the 2x goal. Raw reports, work validation and exhaustive
 selected/audit differences are in `worker-fallback-0066-001`, with paired
 metrics in `worker-fallback-0066-001-comparison`. Next are the other quick
 cases, alternating complete-worker repeats and independent qualification.
+
+The remaining quick cases also completed. DS26-0002 and DS26-0102 match
+their saved default-GN v5 references in the entire selected result and all
+eight PNGs; their audits differ only in named clocks and annotation margins.
+The respective maximum margin changes are 0.025932 and 0.024847. All 60 and
+210 phase fits completed, including 10 and eight full GN fallbacks, without
+exhausted budgets. Thus all three development cases preserve their selected
+results. This does not establish independent DS26 accuracy.
+
+Timing observations remain mixed. DS26-0002 used 251.383 CPU seconds versus
+250.624 in its saved reference; DS26-0102 used 857.910 versus 763.543. Those
+references had 900-second deadlines and an earlier runtime, whereas the new
+screen used 1,200 seconds. `quick-fallback-remaining-001/validation` records
+scientific comparisons without timing ratios. The raw clocks motivate fresh
+comparisons, not a universal speedup claim.
+
+A fresh adjacent v3/v5 pair on DS26-0066 uses identical frozen inputs,
+1,200-second deadlines, CPU affinity and BLAS settings. Frozen v3 completed
+in 428.954 wall / 708.033 CPU seconds; v5 completed in 270.927 wall / 368.605
+CPU seconds. The observed ratios are 1.583 wall and 1.921 CPU. Ownership
+remains unchanged; GPS errors differ by about one meter, as in the native
+baseline comparison. This directly measured wall ratio is below the 2x goal
+and still needs reverse-order repeats. `worker-repeat-0066-001` retains the
+commands, source bindings, complete reports and shared-CLI comparison.
+
+Initial search still costs 34.836 seconds in that candidate. The next bounded
+lever compares the complete initial-search optimizer against untouched GN,
+then tests L-BFGS-B with all branches and five phase rounds. No initial-search
+optimizer change is enabled in the worker. A read-only phase census also
+finds expensive late L-BFGS-B fits on DS26-0002; choosing GN for warm later
+rounds is a separate hypothesis, not a measured hybrid policy.
