@@ -288,3 +288,20 @@ fields. A read-only audit proved the bypass, but reuse and savings remain
 unmeasured. First census prospective keys and independently recompute any
 colliding controls. Keep all scientific fingerprints and unknown-callback
 rejections; do not enable cache reuse until complete results match.
+
+The observational control census now reproduces complete saved native recovery
+on DS26-0002 and DS26-0066. It fingerprints geometry and every mutable scientific
+field, replacing only the known backend object with its bound manifest digest.
+No control is reused. The 0002 case has three different configurations and no
+duplicate keys; its controls cost 4.543 seconds in total. The 0066 case has four
+controls with one key, and all three independently recomputed duplicates match
+the first complete c0/fitted-c pair. Their combined compute cost is 9.311 wall /
+17.727 CPU seconds. Keying all four controls costs 0.882 seconds.
+
+These costs identify a small exact-work opportunity, not a measured worker gain.
+The next gate enables reuse only in the diagnostic replay, preserving complete
+recovery equality before adding a runtime policy. The new checked probe is
+`tools/probe_algo07v5_control_census.py`; raw evidence is in
+`control-census-0002-001` and `control-census-0066-001`. Its 81 focused checks
+cover complete-pair comparisons, copy isolation, unknown callback rejection,
+scientific fingerprints, unchanged controller behavior and failure handling.
