@@ -236,6 +236,19 @@ def test_public_inspector_binds_work_and_validates_every_resume(tmp_path, monkey
         runner.inspect_publication(args)
 
 
+def test_public_inspector_resumes_tuple_ranking_through_json_contract(tmp_path, monkeypatch):
+    args, _, _, evidence, _ = inspection_fixture(tmp_path, monkeypatch)
+    evidence['audit']['initial']['initial_discovery_ranking'] = [dict(
+        node_index=0, signature=(('track', 1, 2, 0),), ranking_score=1.0)]
+    runner.inspect_publication(args)
+    first = args.output.read_bytes()
+    runner.inspect_publication(args)
+    assert args.output.read_bytes() == first
+    evidence['audit']['initial']['initial_discovery_ranking'][0]['ranking_score'] = 2.0
+    with pytest.raises(ValueError, match='Saved work receipt differs'):
+        runner.inspect_publication(args)
+
+
 @pytest.mark.parametrize('tamper', ['request', 'request_digest', 'manifest', 'metrics'])
 def test_public_inspector_rejects_tampered_request_native_or_metrics(tmp_path, monkeypatch, tamper):
     args, report, request, evidence, persist = inspection_fixture(tmp_path, monkeypatch)

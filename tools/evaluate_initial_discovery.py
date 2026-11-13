@@ -380,7 +380,7 @@ def inspect_publication(args):
                       'fresh_radio_seed_budget', 'selected_hypothesis')},
                   initial_ranking=initial.get('initial_discovery_ranking'),
                   recovery_inventory=recovery)
-    if args.output.exists() and read(args.output) != result:
+    if args.output.exists() and digest(read(args.output)) != digest(result):
         raise ValueError('Saved work receipt differs from freshly validated public evidence')
     write(args.output, result)
 
