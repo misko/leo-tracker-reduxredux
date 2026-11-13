@@ -195,3 +195,51 @@ reported as pending, never as completed evaluation.
   coverage from pending paired coverage, and disables timing before comparison.
   The separately frozen runner 004 follows qualification under the same lane
   lock. Full population results remain pending; both policies remain opt-in.
+
+## Continuation checkpoint: 2026-11-13 16:34 UTC
+
+The original v3 versus fast-v5 campaign has 40 complete DS26 pairs and 41
+complete DS29 pairs. Aggregate worker wall ratios are 2.697x and 3.143x;
+median per-pair ratios are 2.210x and 2.470x. Four DS26 and two DS29 attempts
+failed on both sides. These are partial contended results, not full-population
+or serial-repeat qualification. Fast v5 is still the unchanged reference for
+the separate seed experiment.
+
+Median paired position-error change is approximately zero, but tails matter:
+DS29-0399 loses 56 points and changes c0 error from 377.471 to 1269.409 m,
+and fitted-c from 466.076 to 1311.255 m. This recording is now development for
+any future policy informed by this diagnosis; GPS must never become an inference
+trigger. Investigate the missing evidence and a radio-only need-for-recovery
+indicator without changing the active frozen policies.
+
+All four DS29 seed-qualification pairs completed. Three have identical position
+errors; 0412 improves by 1.705/2.562 m with one fewer point. Aggregate worker
+wall is 2.36% lower and CPU 2.79% lower, with large opposing per-case timing
+changes. This does not establish repeatable speed improvement.
+
+DS26 qualification has shared failures: 0156 raises orbit phase interpolation
+out-of-range; 0108 ends with final propagation_fallback. The latter also occurs
+in the original v3 and fast-v5 campaign. Preserve these failed outcomes, with
+no accuracy or speed credit. A separately reviewed continuation gate may admit
+exactly documented matched scientific failures while rejecting input drift,
+contract errors, candidate-only failures and incomplete coverage. Do not bypass
+the orbit or propagation safety guards to make the evaluations complete.
+
+Follow-up diagnosis separates two mechanisms. On DS26-0102, the weak target
+track has 33 points over 23.738 seconds and raw detrended RMS 148.950 Hz,
+below the frozen 250 Hz curved-track threshold. NORAD 68106 is already in
+the 1420-candidate initial catalogue. A radio-only filter for wholly unowned,
+noncurved tracks with sufficient support leaves two targets; this track ranks
+first. A bounded proposal-only probe will test the existing nomination routine
+without changing calibration membership or authorizing position inclusion.
+The saved later RF-qualified label is conditional evidence: the target still
+has zero published ownership in both arms.
+
+On DS29-0399 the lost track was correctly nominated as NORAD 66466, but its
+whole-track residual failed the initial noise gates. The original conditional
+timing-gap stage eventually admitted 56 of its 57 points. Existing timing-only
+gap rules identify exactly this track among the five remaining candidates:
+56 points span 54.235 seconds, with an isolated final point after a 6.022-second
+gap. Investigate direct admission of that component with existing scientific
+checks. Its native-v5 cost is unmeasured; original recovery timings cannot
+establish the speed of this proposed shortcut.
