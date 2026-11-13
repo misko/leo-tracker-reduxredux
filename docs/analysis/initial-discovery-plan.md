@@ -363,3 +363,39 @@ explicit policy; plan-only checks verified schema 5 versus 7 and null inference
 reference. Existing original v3/fast-v5 and seed-policy services remain active.
 Only one fresh pair per case is planned: results will be development evidence,
 not repeatability or full-population qualification. Worker outcomes are pending.
+
+## Bounded conclusion goal
+
+The development screen subsequently completed all six workers with no failures.
+Independent review verified reports, public audits and archives. DS29-0399
+restored exactly 56 owners in each arm, improving reference error from
+1269.409/1311.255 m to 377.472/466.076 m; DS26-0102 rejected an insufficiently
+partitioned gap component and DS26-0002 had no trigger, both preserving exact
+scientific output. The gap stage cost 52.139 s on 0399, versus 0.013/0.004 s
+on the DS26 controls. Single contended timings do not establish repeatability.
+The JSON receipt fix is committed as `a6d8ee002`; the six original workers
+were retained without numerical reruns. Verified evidence and reproduction
+commands are in `direct-gap-runner-002/README.md` under the experiment root.
+
+The user's active goal now fixes the remaining experiment set:
+
+- One fresh paired worker comparison on each preselected whole recording
+  DS26-0263 and DS29-0126, without tuning on outcomes.
+- Three fresh alternating-role paired repetitions on each DS29-0399 and
+  DS26-0002, using fixed CPU/thread settings and matched inputs and budgets.
+- One bounded DS26-0102 weak-track inclusion-and-audit attempt using the saved
+  independently validated annotation and all existing acceptance checks.
+
+This is eight worker pairs (16 workers) plus one inclusion attempt. Failures,
+rejections and timeouts remain outcomes; do not substitute cases or silently
+retry numerical failures. Preserve existing campaigns, freeze the current
+direct-gap scientific policy, and launch no new full-dataset evaluation or RF
+collection. Standard-speed Sol xhigh agents own worker execution, the inclusion
+probe and independent review; the parent coordinates the completion audit.
+
+Completion requires terminal, validated evidence for all listed experiments;
+separate c0/fitted-c position and frequency metrics, exact owner changes,
+wall/CPU/stage work and native fallbacks; committed tested code and reproduction
+commands; and a supported advance/revise/stop recommendation for each lever.
+Original-v3 speedups are a separate denominator. The goal remains active until
+this complete scope is inspected and verified, including unsuccessful outcomes.
