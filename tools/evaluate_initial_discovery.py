@@ -392,6 +392,20 @@ def inspect_publication(args):
                     consumed_targets=evidence['audit']['numerical_recovery']['completed_target_ids'])
     if recovery['selected_targets'] or recovery['consumed_targets']:
         raise ValueError('Zero recovery target policy executed a target')
+    direct_gap_recovery = None
+    if request.get('direct_gap_policy'):
+        selected = gap['selected']
+        direct_gap_recovery = dict(
+            policy=gap['policy'], targets=gap['targets'],
+            selected=(dict(track_id=selected['track_id'], branch_id=selected['branch_id'],
+                           norad=selected['identity']['norad'],
+                           identity_status=selected['identity']['status'],
+                           minimum_identity_margin=selected['identity']['minimum_margin'],
+                           qualified=selected['qualification']['qualified'])
+                      if selected is not None else None),
+            trial_count=len(gap['trials']), stages=gap['stages'],
+            native_receipt_stages=sorted(gap['numerical_receipts']),
+            no_GPS_inference=gap['no_GPS_inference'], causal_only=gap['causal_only'])
     result = dict(public_store_validated=True, result_sha256=args.result_sha256,
                   request_sha256=request_sha256, report_sha256=sha(args.report),
                   source_sha256=source['sha256'], evaluator_sha256=sha(args.evaluator),
@@ -405,7 +419,7 @@ def inspect_publication(args):
                       'fresh_radio_seed_budget', 'selected_hypothesis')},
                   initial_ranking=initial.get('initial_discovery_ranking'),
                   recovery_inventory=recovery,
-                  **({'direct_gap_recovery': gap}
+                  **({'direct_gap_recovery': direct_gap_recovery}
                      if request.get('direct_gap_policy') else {}))
     if args.output.exists() and digest(read(args.output)) != digest(result):
         raise ValueError('Saved work receipt differs from freshly validated public evidence')

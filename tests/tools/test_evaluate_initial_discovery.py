@@ -287,6 +287,7 @@ def inspection_fixture(tmp_path, monkeypatch):
 def test_direct_gap_public_inspection_accepts_no_trigger_and_rejects_missing_audit(
         tmp_path, monkeypatch):
     from leo.contracts import localization_v5
+    import numpy as np
 
     args, report, request, evidence, persist = inspection_fixture(tmp_path, monkeypatch)
     policy = localization_v5.direct_gap_policy()
@@ -294,12 +295,25 @@ def test_direct_gap_public_inspection_accepts_no_trigger_and_rejects_missing_aud
     report['plan']['direct_gap_policy'] = policy
     evidence['provenance']['direct_gap_policy'] = policy
     evidence['audit']['gap_recovery'] = dict(policy=policy, targets=[], selected=None,
-                                            trials=[], stages=[])
+                                            trials=[], stages=[], numerical_receipts={},
+                                            no_GPS_inference=True, causal_only=True)
     evidence['provenance']['request_sha256'] = runner.digest(request)
     persist()
     runner.inspect_publication(args)
     assert runner.read(args.output)['direct_gap_recovery']['targets'] == []
     assert runner.read(args.output)['direct_gap_recovery']['selected'] is None
+    args.output.unlink()
+    evidence['audit']['gap_recovery'].update(
+        targets=[dict(track_id='track', branch_id='branch', points=12, parent_points=13)],
+        selected=dict(track_id='track', branch_id='branch',
+                      identity=dict(norad=123, status='conditionally_supported_identity',
+                                    minimum_margin=42.0),
+                      qualification=dict(qualified=True, internal=np.array([1, 2]))),
+        trials=[dict(internal=np.array([3, 4]))])
+    runner.inspect_publication(args)
+    saved = runner.read(args.output)['direct_gap_recovery']
+    assert saved['selected']['norad'] == 123 and saved['selected']['qualified'] is True
+    assert saved['trial_count'] == 1 and 'internal' not in saved['selected']
     args.output.unlink()
     evidence['audit']['gap_recovery'].pop('policy')
     with pytest.raises(ValueError, match='Direct gap selection'):
