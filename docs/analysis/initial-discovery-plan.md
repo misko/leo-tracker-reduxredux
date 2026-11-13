@@ -304,3 +304,21 @@ the current zero-recovery speed reference. Independently validate the weak-track
 proposal before considering its inclusion. Measure both accuracy tails and
 whole-worker cost; neither successful component probe establishes the final
 population tradeoff.
+
+## Next implementation iteration
+
+The user requested Sol xhigh implementation and review agents with the parent
+remaining the orchestrator. Four independent assignments are active: optional
+direct-gap runtime policy and owned tests; paired worker evaluation preparation;
+read-only scientific/contracts review; and a separate weak-track validation
+probe. Use standard speed. Runtime policy, evaluator, review and weak-probe
+files have separate owners. Freeze only reviewed, tested source before new
+worker runs; preserve both existing evaluation services and their frozen inputs.
+
+The proposed direct-gap integration uses explicit v5 schema 7, binding its
+policy to request identity, provenance and resume. Omitted-policy schemas 1–6
+remain unchanged. The existing gap checkpoint supplies execution/cancellation
+and downstream selection, with independent branch validation replacing the
+parent prerequisites only for the explicit new policy. No-gap samples must
+bypass annotation and fitting without changing published science. This section
+records planned work, not an implemented or qualified policy.
