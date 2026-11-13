@@ -12,7 +12,7 @@ from leo.operations import localization_v3_job
 def make_request(v3_request, backend_manifest, *, annotation_training_policy=None,
                  inclusion_control_policy=None, joint_schedule_policy=None,
                  recovery_target_limit=None, initial_seed_policy=None,
-                 initial_ranking_policy=None):
+                 initial_ranking_policy=None, direct_gap_policy=None):
     from leo.analysis.localization_v4.backend import read_manifest, validate_manifest
 
     localization_v3_job.validate_request(v3_request)
@@ -45,11 +45,17 @@ def make_request(v3_request, backend_manifest, *, annotation_training_policy=Non
             'legacy' if initial_seed_policy is None else initial_seed_policy,
             'legacy' if initial_ranking_policy is None else initial_ranking_policy)
         binding.update(discovery)
+    direct = {}
+    if direct_gap_policy is not None:
+        if recovery_target_limit != 0:
+            raise ValueError('Direct gap policy requires explicit zero recovery targets')
+        direct['direct_gap_policy'] = localization_v5.direct_gap_policy(direct_gap_policy)
+        binding.update(direct)
     job["identity"]["run_id"] = "v5-" + canonical_digest(
         binding
     )[7:47]
     return validate_request(dict(
-        schema_version=(6 if discovery else 5 if targets else 4 if joint
+        schema_version=(7 if direct else 6 if discovery else 5 if targets else 4 if joint
                         else 3 if controls else 2 if training else 1),
         algorithm=localization_v5.MODEL,
         backend_manifest=deepcopy(manifest),
@@ -60,6 +66,7 @@ def make_request(v3_request, backend_manifest, *, annotation_training_policy=Non
         **joint,
         **targets,
         **discovery,
+        **direct,
     ))
 
 
@@ -91,11 +98,17 @@ def validate_request(request):
         keys.update(k for k in ('annotation_training_policy', 'inclusion_control_policy',
                                 'joint_schedule_policy', 'recovery_target_policy')
                     if k in request)
+    if (isinstance(request, dict) and type(request.get('schema_version')) is int
+            and request['schema_version'] == 7):
+        keys.update(('direct_gap_policy', 'recovery_target_policy'))
+        keys.update(k for k in ('annotation_training_policy', 'inclusion_control_policy',
+                                'joint_schedule_policy', 'initial_discovery_policy')
+                    if k in request)
     if (
         not isinstance(request, dict)
         or set(request) != keys
         or type(request["schema_version"]) is not int
-        or request["schema_version"] not in (1, 2, 3, 4, 5, 6)
+        or request["schema_version"] not in (1, 2, 3, 4, 5, 6, 7)
         or request["algorithm"] != localization_v5.MODEL
         or request["initial_control_policy"] != POLICY
     ):
@@ -110,6 +123,10 @@ def validate_request(request):
         localization_v5.validate_recovery_target_policy(request['recovery_target_policy'])
     if 'initial_discovery_policy' in request:
         localization_v5.validate_initial_discovery_policy(request['initial_discovery_policy'])
+    if 'direct_gap_policy' in request:
+        localization_v5.validate_direct_gap_policy(request['direct_gap_policy'])
+        if request['recovery_target_policy']['maximum_targets'] != 0:
+            raise ValueError('Direct gap policy requires explicit zero recovery targets')
     localization_v3_job.validate_request(request["job"])
     if not request["job"]["identity"]["run_id"].startswith("v5-"):
         raise ValueError("Native ALGO07v5 run namespace required")
@@ -133,6 +150,8 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
                if 'recovery_target_policy' in request else {})
     discovery = ({'initial_discovery_policy': request['initial_discovery_policy']}
                  if 'initial_discovery_policy' in request else {})
+    direct = ({'direct_gap_policy': request['direct_gap_policy']}
+              if 'direct_gap_policy' in request else {})
     manifest = request["backend_manifest"]
     if read_manifest(native_manifest) != manifest:
         raise ValueError("Native manifest differs from request backend binding")
@@ -169,6 +188,8 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
             or ('initial_discovery_policy' in provenance) != bool(discovery)
             or provenance.get('initial_discovery_policy') != discovery.get(
                 'initial_discovery_policy')
+            or ('direct_gap_policy' in provenance) != bool(direct)
+            or provenance.get('direct_gap_policy') != direct.get('direct_gap_policy')
         ):
             raise ValueError("Saved result belongs to a different native backend")
         if training:
@@ -198,12 +219,19 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
             initial = evidence.get('audit', {}).get('initial')
             if isinstance(initial, dict) and 'initial_discovery_policy' in initial:
                 raise ValueError('Initial discovery selection requires its explicit policy')
+        gap = evidence.get('audit', {}).get('gap_recovery')
+        if direct:
+            localization_v5.validate_direct_gap_selection(gap, request['direct_gap_policy'])
+        elif isinstance(gap, dict) and 'policy' in gap:
+            raise ValueError('Direct gap selection requires its explicit policy')
 
     execution = {}
     if discovery and backend is not None:
         execution['initial_discovery_policy'] = request['initial_discovery_policy']
     if targets and backend is not None:
         execution['recovery_target_limit'] = request['recovery_target_policy']['maximum_targets']
+    if direct and backend is not None:
+        execution['direct_gap_policy'] = request['direct_gap_policy']
     work = None
     control_factory = None
     schedule_factory = None
@@ -239,7 +267,7 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
         extra_provenance=lambda: dict(
             algorithm=localization_v5.MODEL, native_backend=backend.provenance(),
             initial_control_policy=POLICY, **training, **controls, **joint, **targets,
-            **discovery,
+            **discovery, **direct,
             **({"annotation_training_work": work.provenance()} if work is not None else {}),
             **({'inclusion_control_work': control_factory.provenance()}
                if control_factory is not None else {}),

@@ -338,7 +338,8 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
 
 
 def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage, clock,
-                       maximum_seconds=1200, on_selection=None):
+                       maximum_seconds=1200, on_selection=None, direct_gap_policy=None,
+                       annotation_training_fit=None):
     """Use numerical attempts but protect owners of the actually adopted fit.
 
     This is an owned scientific checkpoint, not a published legacy terminal.
@@ -347,6 +348,8 @@ def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage,
     if numerical['status'] != 'numerical_recovery_evaluated':
         return dict(status=numerical['status'], recovery=None, recovery_complete=False)
     previous = numerical['recovery']
+    if direct_gap_policy is not None and previous.get('selected'):
+        raise ValueError('Direct gap policy cannot compose over numerical recovery')
     if 'attempts' not in previous['candidate']:
         return dict(status='gap_source_incomplete', recovery=None, incumbent=previous,
                     recovery_complete=False)
@@ -361,17 +364,24 @@ def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage,
     result = recover_gaps(prepared_recovery['recovery_context'], inventory, observations,
         previous['candidate'], annotations, owners, run_stage=run_stage, clock=clock,
         maximum_seconds=maximum_seconds,
+        **({'direct_gap_policy': direct_gap_policy} if direct_gap_policy is not None else {}),
+        **({'annotation_training_fit': annotation_training_fit}
+           if direct_gap_policy is not None and annotation_training_fit is not None else {}),
         **({'on_selection': on_selection} if on_selection is not None else {}))
     return dict(status='gap_recovery_evaluated', recovery=result, incumbent=previous,
                 recovery_complete=False)
 
 
 def recover_gap_checkpoint(prepared_recovery, numerical, observations, *, run_stage, clock,
-                           maximum_seconds=1200):
+                           maximum_seconds=1200, direct_gap_policy=None,
+                           annotation_training_fit=None):
     """Keep the chosen gap likelihood; rejection retains the numerical incumbent."""
     selection = []
     result = recover_gap_tracks(prepared_recovery, numerical, observations, run_stage=run_stage,
-        clock=clock, maximum_seconds=maximum_seconds, on_selection=selection.append)
+        clock=clock, maximum_seconds=maximum_seconds, on_selection=selection.append,
+        **({'direct_gap_policy': direct_gap_policy} if direct_gap_policy is not None else {}),
+        **({'annotation_training_fit': annotation_training_fit}
+           if direct_gap_policy is not None and annotation_training_fit is not None else {}))
     return dict(result,
                 selected_state=selection[0] if selection else numerical.get('selected_state'))
 

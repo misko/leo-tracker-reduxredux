@@ -14,6 +14,39 @@ RECOVERY_TARGET_POLICY = "rf-target-prefix-v1"
 INITIAL_DISCOVERY_POLICY = "initial-discovery-v1"
 INITIAL_SEED_POLICIES = ("legacy", "anchor-round-robin-v1")
 INITIAL_RANKING_POLICIES = ("legacy", "warm-center-v1")
+DIRECT_GAP_POLICY = "direct-timing-gap-v1"
+
+
+def direct_gap_policy(identifier=DIRECT_GAP_POLICY):
+    if identifier != DIRECT_GAP_POLICY:
+        raise ValueError("Unknown ALGO07v5 direct gap policy")
+    return dict(
+        id=DIRECT_GAP_POLICY, maximum_components=1, gap_s=5,
+        minimum_points=12, minimum_span_s=10,
+        selection="wholly unowned matched current-large proper timing components; "
+                  "descending points then track and branch IDs",
+        skipped_parent_prerequisites=["parent independent identity",
+                                      "parent shared-family inclusion rejection"],
+        independent_branch_identity_required=True, matched_c_arms=True, GPS_used=False,
+    )
+
+
+def validate_direct_gap_policy(value):
+    expected = direct_gap_policy()
+    if (type(value) is not dict or value.keys() != expected.keys()
+            or any(type(value[key]) is not type(item) or value[key] != item
+                   for key, item in expected.items())):
+        raise ValueError("Complete ALGO07v5 direct gap policy required")
+    return value
+
+
+def validate_direct_gap_selection(gap, policy):
+    validate_direct_gap_policy(policy)
+    if (type(gap) is not dict or gap.get("policy") != policy
+            or type(gap.get("targets")) is not list
+            or len(gap["targets"]) > 1):
+        raise ValueError("Direct gap selection must bind its policy and one-component limit")
+    return gap
 
 
 def initial_discovery_policy(seed_policy="legacy", ranking_policy="legacy"):
@@ -261,6 +294,13 @@ def validate_evidence(evidence):
         validate_target_selection(inventory, evidence['provenance']['recovery_target_policy'])
     elif isinstance(inventory, dict) and 'target_limit' in inventory:
         raise ValueError('Recovery target selection requires its explicit policy')
+    gap = evidence['audit'].get('gap_recovery')
+    if 'direct_gap_policy' in evidence['provenance']:
+        validate_direct_gap_selection(gap, evidence['provenance']['direct_gap_policy'])
+        if evidence['provenance'].get('recovery_target_policy') != recovery_target_policy(0):
+            raise ValueError('Direct gap policy requires explicit zero recovery targets')
+    elif isinstance(gap, dict) and 'policy' in gap:
+        raise ValueError('Direct gap selection requires its explicit policy')
     return evidence
 
 

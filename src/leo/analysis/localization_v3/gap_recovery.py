@@ -6,7 +6,7 @@ from leo.analysis.localization_v3.predictive_annotation import annotate
 from leo.analysis.localization_v3.recovery_inclusion import audit_inclusion, fit_shared
 
 
-def annotate_gap(context, inventory, source, branch_id, observations):
+def annotate_gap(context, inventory, source, branch_id, observations, *, training_fit=None):
     d, target = gap_context(context, inventory, source, branch_id, observations)
     policy = NumericalPolicy(reference_limit_s=30, centered_lbfgsb=True)
     result = annotate(
@@ -17,6 +17,7 @@ def annotate_gap(context, inventory, source, branch_id, observations):
         folds=3,
         target_record=target,
         shifted_origin=False,
+        **({"training_fit": training_fit} if training_fit is not None else {}),
     )
     result["gap_source"] = source
     return result, policy.receipt

@@ -65,6 +65,12 @@ def saved(request):
         policy = deepcopy(request['initial_discovery_policy'])
         evidence['provenance']['initial_discovery_policy'] = policy
         evidence['audit'].setdefault('initial', {})['initial_discovery_policy'] = deepcopy(policy)
+    if 'direct_gap_policy' in request:
+        policy = deepcopy(request['direct_gap_policy'])
+        evidence['provenance']['direct_gap_policy'] = policy
+        evidence['audit']['gap_recovery'] = dict(policy=deepcopy(policy), targets=[],
+            selected=None, candidate=None, trials=[], excluded=[], stages=[],
+            numerical_receipts={}, no_GPS_inference=True, causal_only=True)
     receipt = LocalizationV5Store(request["job"]["output_root"]).save(evidence, pngs)
     return evidence, receipt
 

@@ -45,6 +45,7 @@ class ExecutionPorts:
     joint_schedule_factory: Callable | None = None
     recovery_target_limit: int | None = None
     initial_discovery_policy: dict | None = None
+    direct_gap_policy: dict | None = None
 
 
 class IncompleteStage(ValueError):
@@ -250,6 +251,11 @@ def infer_prepared(
             run_stage=execution.run_gap_stage,
             clock=execution.clock,
             maximum_seconds=1200,
+            **({'direct_gap_policy': execution.direct_gap_policy}
+               if execution.direct_gap_policy is not None else {}),
+            **({'annotation_training_fit': execution.annotation_training_fit}
+               if execution.direct_gap_policy is not None
+               and execution.annotation_training_fit is not None else {}),
         ),
         "gap_recovery_evaluated",
     )

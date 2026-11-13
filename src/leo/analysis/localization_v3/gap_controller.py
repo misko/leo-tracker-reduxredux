@@ -5,14 +5,79 @@ adopted incumbent supplies protected ownership, which can come from a different
 pass. Stage execution/cancellation and the monotonic clock are explicit ports.
 """
 
+import hashlib
 import math
 from copy import deepcopy
 
 from leo.analysis.localization_v3.gap_fragments import prepare_gap
+from leo.analysis.localization_v3.gap_fragments import partitions
 from leo.analysis.localization_v3.gap_recovery import annotate_gap, audit_gap, fit_gap
+from leo.analysis.localization_v3.recovery_acceptance import shared_family_route
+from leo.analysis.localization_v3.recovery_partitions import require_distinct_annotation
 from leo.contracts.fast_graph_position_v4 import qualify
 
 ARMS = ("c0", "fitted_c")
+
+
+def direct_timing_targets(context, inventory, incumbent_owners):
+    """Select one proper native timing component with radio evidence only."""
+    grouped = {arm: {} for arm in ARMS}
+    for row in inventory["tracks"]:
+        if row["arm"] in grouped:
+            grouped[row["arm"]][row["track_id"]] = row
+    occupied = set().union(*(set(owners) for owners in incumbent_owners.values()))
+    candidates = []
+    for tid, target in grouped["c0"].items():
+        other = grouped["fitted_c"].get(tid)
+        if other is None or not target["current_large"] or not other["current_large"]:
+            continue
+        ids = set(target["observation_ids"])
+        if (ids != set(other["observation_ids"])
+                or ids != set(target["all_track_observation_ids"])
+                or ids != set(other["all_track_observation_ids"])
+                or ids & occupied):
+            continue
+        parent = context["scan"].tracks[target["track_index"]]
+        if set(parent["observation_ids"]) != ids:
+            raise ValueError("Direct gap parent differs from matched inventory")
+        times = parent["times"]
+        if not any(b - a > 5 for a, b in zip(times[:-1], times[1:])):
+            continue
+        for start, stop in partitions(times):
+            branch_ids = parent["observation_ids"][start:stop]
+            if len(branch_ids) == len(ids):
+                continue
+            branch_id = hashlib.sha256("\n".join(branch_ids).encode()).hexdigest()[:20]
+            candidates.append(dict(track_id=tid, points=len(branch_ids),
+                                   parent_points=len(ids), branch_id=branch_id))
+    return sorted(candidates, key=lambda row: (-row["points"], row["track_id"],
+                                                row["branch_id"]))[:1]
+
+
+def validate_direct_trial(trial, annotation, incumbent_owners):
+    """A qualified direct fit must add precisely the independently annotated component."""
+    required = dict(matched_c_arms=True, phase_rounds=5, steps=48,
+                    target_calibrates_receiver=False,
+                    target_updates_unobserved_satellite_parameters=False,
+                    original_noise_weights_and_priors=True,
+                    conditional_satellite_refresh=True)
+    protocol = trial["protocol"]
+    if any(protocol.get(key) != value for key, value in required.items()):
+        raise ValueError("Original paired conditional gap fitting protocol required")
+    expected = set(annotation["protocol"]["target"]["observation_ids"])
+    identity = annotation["result"]["annotation"]["norad"]
+    targets = protocol["targets"]
+    if (len(targets) != 1 or set(targets[0]["observation_ids"]) != expected
+            or targets[0]["norad"] != identity):
+        raise ValueError("Direct gap trial changed the independently annotated component")
+    fit = trial["target_0"]
+    for arm in ARMS:
+        before = incumbent_owners[arm]
+        proposed = fit["arms"][arm]["proposed_owners"]
+        if (any(proposed.get(oid) != norad for oid, norad in before.items())
+                or set(proposed) - set(before) != expected
+                or any(proposed[oid] != identity for oid in expected)):
+            raise ValueError("Direct gap trial changed ownership or branch additions")
 
 
 def eligible(decision, annotations, incumbent_owners):
@@ -112,6 +177,8 @@ def recover_gaps(
     clock,
     maximum_seconds=1200,
     on_selection=None,
+    direct_gap_policy=None,
+    annotation_training_fit=None,
 ):
     """Use original eligibility/order/caps and select exactly one qualified fit.
 
@@ -140,7 +207,13 @@ def recover_gaps(
     if not math.isfinite(began):
         raise ValueError("finite monotonic clock required")
     previous = began
-    targets = eligible(decision, annotations, incumbent_owners)
+    if direct_gap_policy is not None:
+        from leo.contracts.localization_v5 import validate_direct_gap_policy
+
+        validate_direct_gap_policy(direct_gap_policy)
+    targets = (direct_timing_targets(context, inventory, incumbent_owners)
+               if direct_gap_policy is not None else
+               eligible(decision, annotations, incumbent_owners))
     rows, stages, excluded, candidates, receipts = [], [], [], {}, {}
     selected_states = {}
 
@@ -181,14 +254,19 @@ def recover_gaps(
                 continue
             parent_ids = source["protocol"]["parent_observation_ids"]
             for branch in source["branches"]:
-                if len(branch["observation_ids"]) == target["points"]:
+                if direct_gap_policy is None and len(branch["observation_ids"]) == target["points"]:
+                    continue
+                if direct_gap_policy is not None and branch["branch_id"] != target["branch_id"]:
                     continue
                 bid = branch["branch_id"]
                 name = prefix + "-" + bid
                 ok, annotated = stage(
                     name + "-annotation",
                     lambda source=source, bid=bid: annotate_gap(
-                        context, inventory, source, bid, observations
+                        context, inventory, source, bid, observations,
+                        **({"training_fit": annotation_training_fit}
+                           if direct_gap_policy is not None and annotation_training_fit is not None
+                           else {}),
                     ),
                     240,
                 )
@@ -199,6 +277,18 @@ def recover_gaps(
                 if identity["status"] != "conditionally_supported_identity":
                     excluded.append(dict(track_id=tid, branch_id=bid, identity=identity))
                     continue
+                if direct_gap_policy is not None:
+                    require_distinct_annotation(annotation["result"], annotation["protocol"])
+                    if annotation_training_fit is not None and (
+                            annotation["protocol"].get("training_optimizer_policy")
+                            != annotation_training_fit.policy):
+                        raise ValueError("Direct gap annotation training policy changed")
+                    shared = shared_family_route(annotation["result"]["folds"],
+                                                 identity["norad"])
+                    if not shared:
+                        excluded.append(dict(track_id=tid, branch_id=bid, identity=identity,
+                                             reason="independent shared identity failed"))
+                        continue
                 ok, fitted = stage(
                     name + "-inclusion",
                     lambda annotation=annotation: fit_gap(
@@ -221,6 +311,8 @@ def recover_gaps(
                 audit, receipts[name + "-audit"] = audited
                 fit = trial["target_0"]
                 qualification = qualify(fit, audit, incumbent_owners, universe)
+                if direct_gap_policy is not None and qualification["qualified"]:
+                    validate_direct_trial(trial, annotation, incumbent_owners)
                 row = dict(
                     track_id=tid, branch_id=bid, identity=identity, qualification=qualification
                 )
@@ -241,6 +333,7 @@ def recover_gaps(
         checkpoint = selected_states[(chosen["track_id"], chosen["branch_id"])]
         on_selection(deepcopy(checkpoint))
     return dict(
+        **({"policy": direct_gap_policy} if direct_gap_policy is not None else {}),
         selected=chosen,
         candidate=candidates[(chosen["track_id"], chosen["branch_id"])] if chosen else None,
         trials=rows,
