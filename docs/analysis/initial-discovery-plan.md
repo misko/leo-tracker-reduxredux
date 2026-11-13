@@ -168,3 +168,18 @@ reported as pending, never as completed evaluation.
   pair also passed the strengthened request validator. Frozen runner 002 is
   superseded by 003 before qualification launch; active quick runner 001 and
   completed evidence are preserved.
+- The remaining DS26 seed-only whole-worker pairs completed and passed the
+  stronger request validator. DS26-0002 and DS26-0066 preserve all reported
+  scientific metrics and point owners exactly. CPU increased from 167.873 to
+  178.757 seconds and from 293.940 to 306.816 seconds respectively; these single
+  contended runs demonstrate no speed gain. The first DS29 qualification worker
+  (0336 baseline) started at 2026-11-13T15:42:06Z under runner 003.
+- DS29-0005 was explicitly marked development before a bounded component test;
+  it is outside the four frozen DS29 qualification groups. Its legacy replay
+  reproduced the saved initial result exactly. Seed diversity expanded unique
+  proposals from five to six and replaced one losing fitted branch, while the
+  complete winning arm payloads remained exact. Warm ranking retained all three
+  branches and exact arm payloads, adding five native calls. Neither policy
+  changed winning endpoints, objectives, or owners. All 90 fits completed with
+  no native fallback; this is not a full-worker accuracy or timing result.
+  Evidence is `component-screen/DS29-0005-summary.json` in the experiment root.
