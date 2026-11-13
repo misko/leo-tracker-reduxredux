@@ -279,3 +279,28 @@ accuracy only; it cannot produce a fresh paired timing claim. The runner fixes
 JSON tuple/list receipt equivalence (`f7b17bd4d`); active numerical sources,
 scientific policies and budgets are unchanged. No full-population result is
 available yet.
+
+The DS29-0399 `direct-timing-gap-v1` probe passed its independent branch
+identity, paired inclusion, audit and qualification checks. The radio-only
+selector found exactly the original 56-point component. All 2066 resulting
+owners match the original gap-stage candidate in both arms; endpoint changes
+are below one millimetre and frequency objective differences below 2.5e-7.
+This is a research trial, not a new public result or full-pipeline accuracy
+qualification. It explicitly omits the original parent annotation and rejected
+fit prerequisites, retaining independent branch validation instead.
+
+Measured serial component wall times were annotation 20.342 s, inclusion
+35.303 s and audit 0.825 s (56.470 s combined). Context replay took 12.066 s;
+total probe time including public evidence loading was 82.562 s, with
+79.509 CPU seconds, 2028 native calls and zero fallbacks. Do not add these
+component timings to older worker timings to claim a new speedup. Seven owned
+tests and independent review passed. Evidence and exact command are under
+`/srv/bulk/leo-dev/initial-discovery-20261113/ds29-0399-gap-diagnosis/`.
+
+Next bounded iteration: expose direct timing-gap recovery as a separate opt-in
+v5 policy, compare complete workers on development scans including 0399 and a
+no-gap control, then freeze the policy before further qualification. Preserve
+the current zero-recovery speed reference. Independently validate the weak-track
+proposal before considering its inclusion. Measure both accuracy tails and
+whole-worker cost; neither successful component probe establishes the final
+population tradeoff.
