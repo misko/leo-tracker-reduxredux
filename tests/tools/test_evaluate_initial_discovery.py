@@ -348,3 +348,193 @@ def test_run_resumes_verified_archive_before_testing_report_existence(tmp_path, 
     monkeypatch.setattr(runner.subprocess, 'run', inspect)
     assert runner.run(path, cpus) == 1  # Candidate is deliberately absent in this one-role crash fixture.
     assert stage.is_symlink() and not parked.exists()
+
+
+def historical_fixture(tmp_path, monkeypatch, *, status='complete'):
+    manifest = protocol(tmp_path)
+    manifest['historical_baseline_root'] = str(tmp_path / 'original-cohort')
+    manifest['schedule'] = [dict(case='A', repetition=0, order=['baseline', 'candidate'])]
+    manifest['selection']['cases'] = ['A']
+    origin = Path(manifest['historical_baseline_root']) / 'A-r0'
+    report_path = origin / 'candidate/report.json'
+    report = worker_report(manifest, side='baseline', status=status)
+    original_output = str(tmp_path / 'original-stage/A-r0/candidate')
+    report['plan']['output'] = original_output
+    request = report['plan']['jobs'][0]['request']
+    request['job']['output_root'] = str(Path(original_output) / 'A-r0/algo07v5/publication')
+    request_path = Path(original_output) / 'A-r0/algo07v5/request.json'
+    report['results'][0].update(request_path=str(request_path), result_sha256='original-result')
+    report['plan_sha256'] = runner.digest(report['plan'])
+    runner.write(report_path, report)
+    command = runner.command(manifest, manifest['schedule'][0], 'baseline', original_output, '0')
+    execution = dict(command=command, execution_mode='bulk_contended')
+    runner.write(origin / 'candidate-execution.json', execution)
+    folder = Path(manifest['output']) / 'A-r0'
+    folder.mkdir(parents=True)
+    calls = []
+
+    def inspect(command, **kwargs):
+        assert 'inspect' in command
+        calls.append(command)
+        runner.write(command[command.index('--output') + 1], dict(public_store_validated=True))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(runner.subprocess, 'run', inspect)
+    return manifest, folder, report_path, execution, calls
+
+
+def test_historical_import_preserves_original_report_plan_and_request_paths(tmp_path, monkeypatch):
+    manifest, folder, path, _, calls = historical_fixture(tmp_path, monkeypatch)
+    original = path.read_bytes()
+    imported = runner.import_historical(manifest, manifest['schedule'][0], folder)
+    assert path.read_bytes() == original
+    assert imported['plan']['output'].endswith('original-stage/A-r0/candidate')
+    assert imported['results'][0]['request_path'].endswith('original-stage/A-r0/candidate/A-r0/algo07v5/request.json')
+    assert calls[0][calls[0].index('--report') + 1] == str(path)
+    receipt = runner.read(folder / 'baseline-historical-import.json')
+    assert receipt['source_report_sha256'] == runner.sha(path) and not receipt['timing_eligible']
+
+
+def test_historical_missing_report_stays_pending_without_work(tmp_path, monkeypatch):
+    manifest = protocol(tmp_path)
+    manifest['historical_baseline_root'] = str(tmp_path / 'not-yet-published')
+    monkeypatch.setattr(runner.subprocess, 'run', lambda *args, **kwargs: pytest.fail('No numerical or inspection work'))
+    assert runner.import_historical(manifest, dict(case='A'), tmp_path) is None
+
+
+def test_historical_import_rejects_disappeared_or_changed_original(tmp_path, monkeypatch):
+    manifest, folder, path, _, _ = historical_fixture(tmp_path, monkeypatch)
+    runner.import_historical(manifest, manifest['schedule'][0], folder)
+    original = path.read_bytes()
+    path.unlink()
+    with pytest.raises(ValueError, match='disappeared'):
+        runner.import_historical(manifest, manifest['schedule'][0], folder)
+    path.write_bytes(original)
+    report = runner.read(path)
+    report['results'][0]['error'] = 'changed origin'
+    runner.write(path, report)
+    with pytest.raises(ValueError, match='Historical import binding changed'):
+        runner.import_historical(manifest, manifest['schedule'][0], folder)
+
+
+def test_historical_execution_wrong_case_or_source_rejected(tmp_path, monkeypatch):
+    manifest, folder, path, execution, _ = historical_fixture(tmp_path, monkeypatch)
+    execution['command'][execution['command'].index('--source-root') + 1] = '/unrelated-source'
+    runner.write(path.parent.parent / 'candidate-execution.json', execution)
+    with pytest.raises(ValueError, match='Historical execution bindings differ'):
+        runner.import_historical(manifest, manifest['schedule'][0], folder)
+
+
+def test_historical_clock_updates_do_not_rebind_the_execution_command(tmp_path, monkeypatch):
+    manifest, folder, path, execution, _ = historical_fixture(tmp_path, monkeypatch)
+    runner.import_historical(manifest, manifest['schedule'][0], folder)
+    execution['after'] = {'utc': 'archive clock added after import'}
+    runner.write(path.parent.parent / 'candidate-execution.json', execution)
+    assert runner.import_historical(manifest, manifest['schedule'][0], folder)['results'][0]['status'] == 'complete'
+
+
+def test_historical_scientific_failure_is_retained_without_inspection(tmp_path, monkeypatch):
+    manifest, folder, _, _, calls = historical_fixture(tmp_path, monkeypatch, status='failed')
+    report = runner.import_historical(manifest, manifest['schedule'][0], folder)
+    assert report['results'][0]['status'] == 'failed' and not calls
+    result = runner.aggregate(manifest, {('A', 0): dict(baseline=report, candidate=worker_report(manifest))})
+    assert result['statuses']['baseline'] == dict(failed=1)
+    assert result['paired_coverage_complete'] and 'timing' not in result
+
+
+def test_historical_missing_input_is_retained_without_inspection(tmp_path, monkeypatch):
+    manifest, folder, path, _, calls = historical_fixture(tmp_path, monkeypatch, status='missing')
+    manifest['members'][0].update(availability='missing', input_sha256=None)
+    report = runner.read(path)
+    report['plan']['jobs'][0].update(availability='missing', request=None)
+    report['results'][0].update(availability='missing', input_sha256=None)
+    report['plan_sha256'] = runner.digest(report['plan'])
+    runner.write(path, report)
+    imported = runner.import_historical(manifest, manifest['schedule'][0], folder)
+    assert imported['results'][0]['status'] == 'missing' and not calls
+    assert runner.read(folder / 'baseline-historical-import.json')['public_work_sha256'] is None
+
+
+def test_historical_comparison_never_computes_timing_or_mutates_original_rows(tmp_path):
+    manifest = protocol(tmp_path)
+    manifest['historical_baseline_root'] = '/original'
+    manifest['schedule'] = [dict(case='A', repetition=0)]
+    manifest['selection']['cases'] = ['A']
+    left, right = worker_report(manifest, side='baseline'), worker_report(manifest)
+    left['results'][0]['process'].update(cpu_seconds='must-never-enter-arithmetic', wall_seconds='same')
+    result = runner.aggregate(manifest, {('A', 0): dict(baseline=left, candidate=right)})
+    assert 'timing' not in result and 'timing' not in result['pairs'][0]
+    assert 'stage_seconds' not in result['pairs'][0]
+    assert left['results'][0]['process']['cpu_complete'] is True
+    assert left['results'][0]['process']['cpu_seconds'] == 'must-never-enter-arithmetic'
+
+
+def test_candidate_full_finishes_while_historical_baseline_is_pending_and_refresh_never_infers(tmp_path, monkeypatch):
+    manifest, path = full_run_fixture(tmp_path, monkeypatch)
+    manifest['historical_baseline_root'] = str(tmp_path / 'original-pending')
+    runner.write(path, manifest)
+    events = []
+    monkeypatch.setattr(runner, 'resources_ready', lambda *args, **kwargs: dict(ready=True))
+    monkeypatch.setattr(runner, 'archive_role', lambda *args, **kwargs: None)
+
+    def execute(command, **kwargs):
+        if 'inspect' in command:
+            events.append('inspect')
+            runner.write(command[command.index('--output') + 1], dict(public_store_validated=True))
+        else:
+            events.append('candidate-worker')
+            destination = Path(command[command.index('--output') + 1])
+            assert destination.name == 'candidate'
+            report = worker_report(manifest)
+            report['results'][0].update(request_path='request', result_sha256='result')
+            runner.write(destination / 'report.json', report)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(runner.subprocess, 'run', execute)
+    assert runner.run(path, str(min(runner.os.sched_getaffinity(0)))) == 0
+    terminal = runner.read(Path(manifest['output']) / 'terminal.json')
+    assert terminal['status'] == 'candidate_complete'
+    assert terminal['candidate_coverage_complete'] and not terminal['paired_coverage_complete']
+    assert events == ['candidate-worker', 'inspect']
+    runner.refresh(path)
+    assert events == ['candidate-worker', 'inspect', 'inspect']
+    summary = runner.read(Path(manifest['output']) / 'comparison.json')
+    assert summary['historical_baseline_pending'] == ['A']
+    assert summary['statuses']['baseline'] == dict(absent=1)
+
+
+def test_refresh_completes_pair_when_original_arrives_without_relaunching_candidate(tmp_path, monkeypatch):
+    manifest, folder, origin, _, calls = historical_fixture(tmp_path, monkeypatch)
+    manifest['archive_root'] = None
+    path = tmp_path / 'manifest.json'
+    runner.write(path, manifest)
+    driver = tmp_path / 'driver'
+    driver.mkdir()
+    monkeypatch.setattr(runner, 'ROOT', driver)
+    monkeypatch.setattr(runner, 'check_bindings', lambda manifest: None)
+    candidate = worker_report(manifest)
+    candidate['results'][0].update(request_path='candidate-request', result_sha256='candidate-result')
+    stage = folder / 'candidate'
+    runner.write(stage / 'report.json', candidate)
+    runner.write(folder / 'candidate-execution.json', dict(command=runner.command(
+        manifest, manifest['schedule'][0], 'candidate', stage, '0')))
+    pending = origin.with_suffix('.pending')
+    origin.rename(pending)
+    runner.refresh(path)
+    assert not runner.read(folder.parent / 'refresh-status.json')['paired_coverage_complete']
+    pending.rename(origin)
+    runner.refresh(path)
+    assert runner.read(folder.parent / 'refresh-status.json')['paired_coverage_complete']
+    assert runner.read(folder.parent / 'terminal.json')['status'] == 'complete'
+    assert len(calls) == 3 and all('inspect' in command for command in calls)
+
+
+def test_refresh_rejects_wrong_execution_before_archive_recovery(tmp_path, monkeypatch):
+    manifest, path = full_run_fixture(tmp_path, monkeypatch)
+    manifest['historical_baseline_root'] = str(tmp_path / 'original-pending')
+    runner.write(path, manifest)
+    folder = Path(manifest['output']) / 'A-r0'
+    runner.write(folder / 'candidate-execution.json', dict(command=['wrong'], archive=dict(verified=True)))
+    monkeypatch.setattr(runner, 'archive_role', lambda *args, **kwargs: pytest.fail('No recovery before command validation'))
+    with pytest.raises(ValueError, match='execution command differs'):
+        runner.refresh(path)

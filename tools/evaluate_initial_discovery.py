@@ -156,6 +156,15 @@ def prepare(args):
                        backend_manifest=read(args.candidate_native_manifest),
                        initial=dict(id='initial-discovery-v1', seed_policy=args.initial_seed_policy,
                                     ranking_policy=args.initial_ranking_policy)))
+    historical = args.historical_baseline_root.resolve() if args.historical_baseline_root else None
+    if historical:
+        protocol = read(historical / 'protocol.json')
+        if (args.profile != 'full' or args.repeats != 1
+                or protocol['snapshot'] != str(snapshot)
+                or protocol['sources']['candidate'] != roles['baseline']['source']
+                or protocol['candidate_limit'] != 0 or protocol['timeout'] != args.timeout
+                or protocol['references'] != (str(args.references.resolve()) if args.references else None)):
+            raise ValueError('Historical controls require the matched frozen full v5-zero cohort')
     paths = [Path(__file__), ROOT / 'initial_discovery_archive.py', snapshot / 'inventory.json', snapshot / 'template-request.json',
              snapshot / 'inputs/config.json', args.baseline_native_manifest.resolve(),
              args.candidate_native_manifest.resolve(),
@@ -167,12 +176,15 @@ def prepare(args):
         paths += [Path(native['provider']['path'])]
     if args.references:
         paths.append(args.references.resolve())
+    if historical:
+        paths.append(historical / 'protocol.json')
     schedule = []
     for repetition in range(args.repeats):
         for index, case in enumerate(selected['cases']):
             schedule.append(dict(case=case, repetition=repetition,
                                  order=list(SIDES if (index + repetition) % 2 == 0 else reversed(SIDES))))
-    return dict(schema_version=2, snapshot=str(snapshot), output=str(output),
+    return dict(schema_version=3 if historical else 2, snapshot=str(snapshot), output=str(output),
+                historical_baseline_root=str(historical) if historical else None,
                 archive_root=str(archive) if archive else None, resource_limits=resources,
                 references=str(args.references.resolve()) if args.references else None,
                 profile=args.profile, seed=args.seed, timeout=args.timeout, repeats=args.repeats,
@@ -212,7 +224,7 @@ def command(manifest, assignment, side, destination, cpus):
     return args
 
 
-def validate_report(report, manifest, assignment, side):
+def validate_report(report, manifest, assignment, side, *, historical_output=None):
     plan = report['plan']
     role = manifest['roles'][side]
     ev = evaluator(role['evaluator'])
@@ -220,7 +232,7 @@ def validate_report(report, manifest, assignment, side):
         raise ValueError('Worker plan hash differs')
     expected = dict(source=role['source'], version='algo07v5', snapshot=manifest['snapshot'],
                     module='leo.cli.algo07v5',
-                    output=str(Path(manifest['output']) / (assignment['case'] + '-r' + str(assignment.get('repetition', 0))) / side),
+                    output=historical_output or str(Path(manifest['output']) / (assignment['case'] + '-r' + str(assignment.get('repetition', 0))) / side),
                     selected=[assignment['case']], timeout_seconds=manifest['timeout'],
                     inventory_sha256=manifest['bindings'][str(Path(manifest['snapshot']) / 'inventory.json')],
                     config_sha256=manifest['bindings'][str(Path(manifest['snapshot']) / 'inputs/config.json')],
@@ -390,6 +402,11 @@ def aggregate(manifest, records):
             if report:
                 row = copy.deepcopy(report['results'][0])
                 row['repetition'] = assignment['repetition']
+                if manifest.get('historical_baseline_root'):
+                    # Comparison inputs are copies. Original process receipts
+                    # stay unchanged in their original reports; historical
+                    # wall/CPU values never enter paired timing arithmetic.
+                    row['process'] = dict(cpu_complete=False)
                 rows.append(row)
         reports[side] = dict(plan=plan, results=rows)
     result = ev.compare(reports['baseline'], reports['candidate'])
@@ -406,7 +423,85 @@ def aggregate(manifest, records):
                       set(value) == set(SIDES) for value in records.values()),
                   manifest_sha256=digest(manifest), expected_pairs=len(manifest['schedule']),
                   inventory_missing=manifest['selection']['missing_cases'])
+    result['candidate_coverage_complete'] = all('candidate' in records.get(
+        (a['case'], a['repetition']), {}) for a in manifest['schedule'])
+    result['paired_coverage_complete'] = result['complete_coverage']
+    if manifest.get('historical_baseline_root'):
+        result.pop('timing', None)
+        result.update(execution_mode='historical_controls_accuracy_only',
+                      historical_baseline_pending=[a['case'] for a in manifest['schedule']
+                          if 'baseline' not in records.get((a['case'], a['repetition']), {})],
+                      note='Historical controls support matched accuracy/work only; no paired timing is computed.')
+        for pair in result['pairs']:
+            pair.pop('stage_seconds', None)
+            pair['execution_modes'] = dict(baseline='historical_import' if pair['baseline_status'] != 'absent'
+                                            else 'historical_pending', candidate='fresh_candidate'
+                                            if pair['candidate_status'] != 'absent' else 'absent')
     return result
+
+
+def validated_work(report, manifest, side, folder, report_path):
+    row = report['results'][0]
+    if row['status'] != 'complete':
+        return report
+    work_path = folder / (side + '-work.json')
+    role = manifest['roles'][side]
+    cmd = [PYTHON, '-B', str(Path(__file__).resolve()), 'inspect',
+           '--source-root', role['source']['root'], '--evaluator', role['evaluator'],
+           '--request', row['request_path'], '--result-sha256', row['result_sha256'],
+           '--report', str(report_path), '--manifest-sha256', digest(manifest),
+           '--output', str(work_path)]
+    subprocess.run(cmd, env=dict(ENVIRONMENT, PYTHONPATH=role['source']['root']), check=True, cwd=ROOT)
+    report = copy.deepcopy(report)
+    report['results'][0]['actual_work'] = read(work_path)
+    return report
+
+
+def import_historical(manifest, assignment, folder):
+    """Keep the original public report and request paths; import no fresh identity."""
+    root = Path(manifest['historical_baseline_root'])
+    origin = root / (assignment['case'] + '-r0')
+    report_path, execution_path = origin / 'candidate/report.json', origin / 'candidate-execution.json'
+    receipt_path = folder / 'baseline-historical-import.json'
+    if not report_path.exists():
+        if receipt_path.exists():
+            raise ValueError('Previously imported historical report disappeared')
+        return None
+    execution = read(execution_path)
+    command_args = execution['command']
+
+    def flag(name):
+        if command_args.count(name) != 1:
+            raise ValueError('Historical command has an ambiguous binding: ' + name)
+        return command_args[command_args.index(name) + 1]
+
+    role = manifest['roles']['baseline']
+    expected = dict(manifest['fast_flags'])
+    expected.update({'--snapshot': manifest['snapshot'], '--cases': assignment['case'],
+                     '--profile': 'quick',
+                     '--version': 'algo07v5', '--source-root': role['source']['root'],
+                     '--native-manifest': role['native_manifest']})
+    if manifest['references']:
+        expected['--references'] = manifest['references']
+    elif '--references' in command_args:
+        raise ValueError('Unexpected historical reference map')
+    if (execution['execution_mode'] != 'bulk_contended' or role['evaluator'] not in command_args
+            or any(flag(name) != value for name, value in expected.items())
+            or float(flag('--timeout')) != manifest['timeout']):
+        raise ValueError('Historical execution bindings differ')
+    report = read(report_path)
+    validate_report(report, manifest, assignment, 'baseline', historical_output=flag('--output'))
+    report = validated_work(report, manifest, 'baseline', folder, report_path)
+    receipt = dict(execution_mode='historical_import', source_report=str(report_path),
+                   source_report_sha256=sha(report_path), source_execution=str(execution_path),
+                   source_command_sha256=digest(command_args), manifest_sha256=digest(manifest),
+                   public_work_sha256=sha(folder / 'baseline-work.json')
+                   if report['results'][0]['status'] == 'complete' else None,
+                   timing_eligible=False)
+    if receipt_path.exists() and read(receipt_path) != receipt:
+        raise ValueError('Historical import binding changed')
+    write(receipt_path, receipt)
+    return report
 
 
 def run(manifest_path, cpus):
@@ -430,6 +525,14 @@ def run(manifest_path, cpus):
             records[(case, repetition)] = {}
             for side in assignment['order']:
                 check_bindings(manifest)
+                if side == 'baseline' and manifest.get('historical_baseline_root'):
+                    imported = import_historical(manifest, assignment, folder)
+                    if imported is not None:
+                        records[(case, repetition)][side] = imported
+                        if imported['results'][0]['status'] not in ('complete', 'missing'):
+                            failures.append(dict(case=case, repetition=repetition, side=side,
+                                                 status=imported['results'][0]['status']))
+                    continue
                 destination = folder / side
                 report_path = destination / 'report.json'
                 receipt_path = folder / (side + '-execution.json')
@@ -466,19 +569,8 @@ def run(manifest_path, cpus):
                     raise ValueError('Saved execution command differs')
                 report = read(report_path)
                 row = validate_report(report, manifest, assignment, side)
-                if row['status'] == 'complete':
-                    work_path = folder / (side + '-work.json')
-                    role = manifest['roles'][side]
-                    cmd = [PYTHON, '-B', str(Path(__file__).resolve()), 'inspect',
-                           '--source-root', role['source']['root'], '--evaluator', role['evaluator'],
-                           '--request', row['request_path'], '--result-sha256', row['result_sha256'],
-                           '--report', str(report_path), '--manifest-sha256', digest(manifest),
-                           '--output', str(work_path)]
-                    subprocess.run(cmd, env=dict(ENVIRONMENT, PYTHONPATH=role['source']['root']),
-                                   check=True, cwd=ROOT)
-                    report = copy.deepcopy(report)
-                    report['results'][0]['actual_work'] = read(work_path)
-                elif row['status'] != 'missing':
+                report = validated_work(report, manifest, side, folder, report_path)
+                if row['status'] not in ('complete', 'missing'):
                     failures.append(dict(case=case, repetition=repetition, side=side, status=row['status']))
                 records[(case, repetition)][side] = report
                 if archive_root:
@@ -490,9 +582,71 @@ def run(manifest_path, cpus):
             write(output / 'progress.json', dict(completed_pairs=sum(set(r) == set(SIDES) for r in records.values()),
                                                 expected=len(manifest['schedule']), statuses=summary['statuses'],
                                                 failures=failures, updated=host()))
-        write(output / 'terminal.json', dict(status='complete' if summary['complete_coverage'] else 'incomplete',
+        done = summary['candidate_coverage_complete'] if manifest.get('historical_baseline_root') else summary['complete_coverage']
+        write(output / 'terminal.json', dict(status='complete' if summary['complete_coverage'] else
+                                            'candidate_complete' if done else 'incomplete',
+                                            candidate_coverage_complete=summary['candidate_coverage_complete'],
+                                            paired_coverage_complete=summary['complete_coverage'],
                                             failures=failures, after=host()))
-    return 0 if summary['complete_coverage'] else 1
+    return 0 if done else 1
+
+
+def refresh(manifest_path):
+    """Read-only scientific refresh; import newly available controls, never infer."""
+    manifest = read(manifest_path)
+    if not manifest.get('historical_baseline_root'):
+        raise ValueError('Refresh requires historical-control mode')
+    output = local(manifest['output'])
+    output.mkdir(parents=True, exist_ok=True)
+    records = {}
+    with (ROOT / 'discovery.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        check_bindings(manifest)
+        for assignment in manifest['schedule']:
+            case, repetition = assignment['case'], assignment['repetition']
+            folder = output / (case + '-r' + str(repetition))
+            folder.mkdir(exist_ok=True)
+            current = records[(case, repetition)] = {}
+            imported = import_historical(manifest, assignment, folder)
+            if imported is not None:
+                current['baseline'] = imported
+            stage = folder / 'candidate'
+            receipt = folder / 'candidate-execution.json'
+            if receipt.exists():
+                execution = read(receipt)
+                saved_command = execution['command']
+                if (len(saved_command) < 3 or saved_command[:2] != ['taskset', '-c']
+                        or saved_command != command(manifest, assignment, 'candidate', stage, saved_command[2])):
+                    raise ValueError('Saved candidate execution command differs')
+            if manifest['archive_root'] and receipt.exists() and read(receipt).get('archive'):
+                archive_role(stage, Path(manifest['archive_root']) / folder.name / 'candidate', receipt,
+                             staging_root=output, archive_root=Path(manifest['archive_root']))
+            report_path = stage / 'report.json'
+            if report_path.exists():
+                if not receipt.exists():
+                    raise ValueError('Candidate report has no execution provenance')
+                report = read(report_path)
+                validate_report(report, manifest, assignment, 'candidate')
+                current['candidate'] = validated_work(report, manifest, 'candidate', folder, report_path)
+        summary = aggregate(manifest, records)
+        write(output / 'comparison.json', summary)
+        write(output / 'refresh-status.json', dict(candidate_coverage_complete=summary['candidate_coverage_complete'],
+                                                  paired_coverage_complete=summary['paired_coverage_complete'],
+                                                  historical_baseline_pending=summary['historical_baseline_pending'],
+                                                  statuses=summary['statuses'], after=host()))
+        terminal_path = output / 'terminal.json'
+        terminal = read(terminal_path) if terminal_path.exists() else {}
+        failures = terminal.get('failures', []) + [dict(case=case, repetition=repetition, side=side,
+            status=report['results'][0]['status']) for (case, repetition), current in records.items()
+            for side, report in current.items() if report['results'][0]['status'] not in ('complete', 'missing')]
+        failures = list({(f['case'], f['repetition'], f['side'], f['status']): f for f in failures}.values())
+        terminal.update(status='complete' if summary['paired_coverage_complete'] else 'candidate_complete'
+                        if summary['candidate_coverage_complete'] else 'incomplete',
+                        candidate_coverage_complete=summary['candidate_coverage_complete'],
+                        paired_coverage_complete=summary['paired_coverage_complete'], failures=failures,
+                        refreshed=host())
+        write(terminal_path, terminal)
+    return 0
 
 
 def main(argv=None):
@@ -508,6 +662,8 @@ def main(argv=None):
     plan.add_argument('--expected-gib', type=float, default=10)
     plan.add_argument('--stage-free-gib', type=float, default=10)
     plan.add_argument('--archive-free-gib', type=float, default=10)
+    plan.add_argument('--historical-baseline-root', type=Path,
+                      help='Original full cohort root; reuse its unchanged candidate reports for accuracy/work only')
     plan.add_argument('--candidate-source', type=Path, required=True)
     plan.add_argument('--candidate-evaluator', type=Path, required=True)
     plan.add_argument('--baseline-source', type=Path, default=ORIGINAL / 'frozen-v5/src')
@@ -527,6 +683,8 @@ def main(argv=None):
     execute = commands.add_parser('run')
     execute.add_argument('--manifest', type=Path, required=True)
     execute.add_argument('--cpus', required=True)
+    update = commands.add_parser('refresh')
+    update.add_argument('--manifest', type=Path, required=True)
     inspect = commands.add_parser('inspect')
     inspect.add_argument('--source-root', type=Path, required=True)
     inspect.add_argument('--evaluator', type=Path, required=True)
@@ -547,6 +705,8 @@ def main(argv=None):
     if args.action == 'inspect':
         inspect_publication(args)
         return 0
+    if args.action == 'refresh':
+        return refresh(args.manifest)
     return run(args.manifest, args.cpus)
 
 
