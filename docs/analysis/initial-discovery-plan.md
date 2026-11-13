@@ -183,3 +183,15 @@ reported as pending, never as completed evaluation.
   changed winning endpoints, objectives, or owners. All 90 fits completed with
   no native fallback; this is not a full-worker accuracy or timing result.
   Evidence is `component-screen/DS29-0005-summary.json` in the experiment root.
+- The first frozen DS29 qualification pair, 0336, completed public validation
+  and archival. Both arms preserve position errors (1.499930/1.423120 km),
+  frequency metrics, all 2973 associated points, and owners exactly. CPU rose
+  from 182.328 to 230.236 seconds and wall from 162.380 to 204.628 seconds in
+  this single contended pair. Native calls were 4103 versus 4104, with no
+  fallback. This material observed timing regression needs fresh repetitions
+  before attributing its size to policy. No general speed benefit is established.
+- Historical-control full evaluation is committed in `588983b7d`. It validates
+  original fast-v5 publications without rewriting them, separates candidate
+  coverage from pending paired coverage, and disables timing before comparison.
+  The separately frozen runner 004 follows qualification under the same lane
+  lock. Full population results remain pending; both policies remain opt-in.
