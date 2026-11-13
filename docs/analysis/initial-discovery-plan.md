@@ -399,3 +399,31 @@ wall/CPU/stage work and native fallbacks; committed tested code and reproduction
 commands; and a supported advance/revise/stop recommendation for each lever.
 Original-v3 speedups are a separate denominator. The goal remains active until
 this complete scope is inspected and verified, including unsuccessful outcomes.
+
+### Reviewed launch and bounded inclusion outcome
+
+The eight-pair sequence launched at 2026-11-13 19:44:34 UTC as
+`leo-direct-gap-followup-001.service`, serially pinned to CPU 21 with one
+BLAS/OMP/MKL thread. Independent review caught and corrected missing consumed
+group bindings before any launch. The corrected scope is
+`direct-gap-followup-001/scope-receipt-v2.json` under the experiment root
+(SHA256 `9fb261f6da6b7ff0ab4531b2ab09afcee4358ab1f4461c824a0bdbc443e324f5`).
+Use only `ds26-fresh-v2`, `ds29-fresh-v2`, `ds29-repeat`, and `ds26-repeat`;
+superseded unlaunched manifests are retained for provenance. Exact launched
+arguments are in `direct-gap-followup-001/launch-receipt.json`. Monitor with:
+
+```bash
+systemctl --user status leo-direct-gap-followup-001.service
+journalctl --user -u leo-direct-gap-followup-001.service -f
+```
+
+The one CPU-20 weak-track inclusion attempt terminated at its 110-second inner
+deadline during the production-conditional Powell retry. Primary fit completed
+in 64.578 s wall / 60.202 s CPU and primary audit in 1.860 / 1.848 s; the
+unfinished retry consumed 28.021 / 27.039 s. All 1043 native calls activated,
+with zero fallbacks. The candidate did not pass primary acceptance; this is
+not an accepted ownership or localization improvement. Raw fit, audit, stage
+and failure receipts are retained at
+`~/.cache/initial-discovery-20261113/weak-track-68106/inclusion-0102-001/`.
+No second numerical attempt is authorized by this fixed experiment scope.
+Per-arm evidence extraction and the worker comparisons remain pending.
