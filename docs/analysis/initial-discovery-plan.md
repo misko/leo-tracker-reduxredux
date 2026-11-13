@@ -322,3 +322,44 @@ and downstream selection, with independent branch validation replacing the
 parent prerequisites only for the explicit new policy. No-gap samples must
 bypass annotation and fitting without changing published science. This section
 records planned work, not an implemented or qualified policy.
+
+Implementation checkpoint: the optional runtime policy is committed as
+`4df0e2c78`, with independent review and 273 focused regression checks passing.
+Schema 7 requires explicit zero recovery targets, rejects unsupported numerical
+recovery composition, and uses the request-bound annotation fitter. This last
+detail differs from the original standalone gap probe's default fitter, so the
+integrated worker requires fresh qualification. Evaluator support is committed
+as `b0860fd51`; 128 tests passed, including old manifest/receipt compatibility.
+
+The predeclared development screen is DS29-0399, DS26-0102 and DS26-0002.
+Read-only saved-evidence inspection found 0399 has one 56-of-57-point timing
+component, 0102 has one 29-of-30-point component, and 0002 has none. The proposed
+DS29-0005 control was replaced before any new candidate outcomes because it has
+two eligible components. Use fresh alternating baseline/candidate workers with
+the same frozen source and explicit direct-gap policy as the only difference.
+
+The independent weak-track validation probe completed in 71.179 s wall and
+59.259 s CPU, including context loading; annotation took 33.211 s. Genuine
+prior replay objective differences were zero in both arms. The radio-only
+selector chose the same 33-point track; every one of three distinct randomized
+holdouts independently nominated NORAD 68106 from the 1420-candidate causal
+bank. All six arm/fold votes favored it over 65875, satisfying the unchanged
+conditionally-supported identity consensus with minimum held-score margin
+326.293. It used the saved request's fallback annotation fitter, with 873 native
+calls and zero fallbacks. Six owned tests and independent review passed.
+
+Evidence: `/srv/bulk/leo-dev/initial-discovery-20261113/weak-track-68106/validation-0102-001/`.
+No position inclusion, ownership change or new public result was performed.
+This establishes independent identity support, not a localization improvement;
+the existing inclusion and physical audit gates remain the next required step.
+
+At 2026-11-13 18:09 UTC the independently reviewed development screen launched
+as `leo-direct-gap-worker-screen-001.service`, serially pinned to CPU 21.
+DS29-0399 baseline started first, followed by its direct candidate and the two
+DS26 pairs. Frozen source, evaluator, native-equivalence receipt and plans are
+under `/srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-worker-001/`.
+Both roles use identical source/native and normalized requests except the
+explicit policy; plan-only checks verified schema 5 versus 7 and null inference
+reference. Existing original v3/fast-v5 and seed-policy services remain active.
+Only one fresh pair per case is planned: results will be development evidence,
+not repeatability or full-population qualification. Worker outcomes are pending.
