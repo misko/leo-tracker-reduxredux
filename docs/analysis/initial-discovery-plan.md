@@ -148,3 +148,23 @@ reported as pending, never as completed evaluation.
   The new driver validates completed publications then archives verified bytes
   outside worker timing, preserving original absolute paths through symlinks.
   Full evaluation remains pending policy selection and archive-driver review.
+- The six bounded initial-only runs completed on DS26-0002 and DS26-0066:
+  legacy replay, seed-only, and ranking-only for each. Both legacy replays
+  reproduced the entire saved initial result exactly. Seed-only preserved all
+  scientific results on both scans. Ranking preserved every per-signature arm
+  result and winner, but swapped the two losing branches; it added four and six
+  native calls respectively. No native fallback occurred. These are component
+  comparisons, not whole-worker speed or position-accuracy measurements.
+- Seed-only is selected for the frozen DS29 then DS26 quick qualification,
+  before inspecting those qualification outcomes. Ranking-only remains a
+  development alternative; combined policies are not justified by these tests.
+  The known 68106 miss is still absent from both initial and final DS26-0102
+  output. Seed diversity added two initially accepted tracks with other NORADs;
+  the final additional identity is 101018. Do not describe this as resolving
+  the known weak-track discovery failure.
+- Replay tooling is committed as `f6131fe81`; the evaluation/archive driver as
+  `705e73ebd`. The driver passed 44 owned tests and independent review of the
+  archive crash windows and actual numerical request binding. The first 0102
+  pair also passed the strengthened request validator. Frozen runner 002 is
+  superseded by 003 before qualification launch; active quick runner 001 and
+  completed evidence are preserved.
