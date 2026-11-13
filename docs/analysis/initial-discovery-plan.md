@@ -128,3 +128,23 @@ reported as pending, never as completed evaluation.
   `early-association-probe/probe-0102-001/result.json` in the experiment root.
   Supporting weaker tracks requires a different proposal mechanism and fresh
   acceptance evidence; repeating the existing pass does not address the miss.
+- Commit `5254d2f35` binds the implemented policies and their tests. The first
+  complete paired worker, seed-only DS26-0102, passed public-store validation:
+  c0 position error 942.645 to 872.348 m; fitted-c 936.345 to 850.464 m.
+  Frequency RMS increased by 0.654 and 1.062 Hz, respectively. Both arms lost
+  two associated points; satellite count increased from 21 to 22. Different
+  ownership means the lower total objective is not a matched-data fit claim.
+  CPU was 233.619 versus 197.991 seconds and wall 190.136 versus 160.243 seconds.
+  This single contended pair does not establish repeatable speed improvement.
+  Validated evidence lives at
+  `/home/mouse9911/.cache/initial-discovery-20261113/dev-seed-only-0102-001`.
+- The initial-only DS26-0066 legacy replay reproduced the entire saved initial
+  result exactly before testing policies. The probe uses the genuine-false
+  original context, both arms, all three branches and all five fitting rounds.
+  Intermittent bulk filesystem stalls required an explicitly hash-verified NVMe
+  source mirror and a real native rebuild with matching numerical bytes and
+  provider settings; its physical paths are bound in the probe plan.
+- Full paired output is estimated at 116 GB, exceeding current root free space.
+  The new driver validates completed publications then archives verified bytes
+  outside worker timing, preserving original absolute paths through symlinks.
+  Full evaluation remains pending policy selection and archive-driver review.
