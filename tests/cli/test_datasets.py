@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -31,8 +32,28 @@ def test_real_catalogue_matches_frozen_membership_counts():
     assert rows["DS26"]["scan_types"] == {"fast": 159, "adaptive": 158, "hop": 0, "unknown": 0}
     assert rows["DS27"]["scans"] == 28
     assert rows["DS28"]["scans"] == 16
+    assert rows["DS29"]["scans"] == 615
+    assert rows["DS29"]["scan_types"] == {"fast": 615, "adaptive": 0, "hop": 0, "unknown": 0}
     assert rows["DSX01"]["scans"] == 5
     assert rows["DS14"]["scans"] is None
+
+
+def test_ds29_retains_incomplete_members_and_bound_authority():
+    result = invoke("--dataset", "DS29", "--json")
+    assert result.exit_code == 0, result.exception
+    row, = json.loads(result.stdout)["datasets"]
+    assert row["revision"] == "1"
+    assert row["scans"] == 615
+    assert row["breakdown"] == [{"scan_type": "fast", "sample_rate_hz": 10000000, "scans": 615}]
+    authority = load_catalogue().datasets
+    ds29, = [item for item in authority if item.dataset == "DS29"]
+    path = Path(__file__).resolve().parents[2] / ds29.sources[0].path
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == ds29.sources[0].sha256
+    document = json.loads(raw)
+    assert document["counts"]["incomplete"] == 3
+    assert document["counts"]["with_tracking_input"] == 612
+    assert len(document["members"]) == row["scans"]
 
 
 def test_filter_counts_selected_type_and_preserves_full_membership():

@@ -16,7 +16,7 @@ JSON also provides the joint recording-type/sample-rate breakdown and the source
 paths and SHA-256 checksums. Dataset selection is case insensitive; repeat
 `--dataset` to select multiple datasets. `--catalogue PATH` reads another snapshot.
 
-The current catalogue includes DS1–DS28, the historical DS2-22 successor and DSX01.
+The current catalogue includes DS1–DS29, the historical DS2-22 successor and DSX01.
 DS14, DS15 and DS19 have unlocated membership authorities and display `unlocated`,
 not zero scans. Default output selects the current revision; `--all-revisions`
 also displays the original DS24 and DS28 snapshots separately.
@@ -29,6 +29,11 @@ revisions, so table rows must not be summed into a corpus total. DS1 nested view
 count unique session IDs, excluded DS4 candidates are omitted, and DSX01 counts
 its five source scans rather than its fifteen overlapping challenge regions.
 
+DS29 revision 1 contains 615 fast 10 MS/s acquisitions after DS28 revision 2,
+through the frozen November 13, 2026 cutoff. It retains three incomplete scans
+without published tracking inputs. See its
+[sealed membership and verification](../../reports/2026_11_13_ds29_fast/README.md).
+
 `Hop` identifies historical hopping recordings whose membership metadata does not
 establish the active adaptive policy. It must not be interpreted as definitely
 non-adaptive. Unknown sample rates stay unknown; the tool does not assume that
@@ -37,7 +42,8 @@ fast means 10 MS/s or use the radio's restoration settings as capture settings.
 ## Updating the catalogue after minting a dataset
 
 Listing is offline and reads a small packaged metadata snapshot, generated on
-November 3, 2026. It does not discover new recordings, read IQ, query PostgreSQL,
+November 13, 2026, with existing rows preserved when DS29 was registered. It does
+not discover new recordings, read IQ, query PostgreSQL,
 or change dataset membership. This keeps listing quick even when a historical
 authority contains hundreds of megabytes of embedded metadata.
 

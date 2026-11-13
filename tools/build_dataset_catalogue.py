@@ -35,6 +35,7 @@ EXTRA_AUTHORITIES = (
         "reports/2026_11_01_ds28_revision2/dataset/previous-revision-manifest.json",
     ),
     ("DS28", "2", True, "reports/2026_11_01_ds28_revision2/dataset/membership-summary.json"),
+    ("DS29", "1", True, "reports/2026_11_13_ds29_fast/dataset/membership-summary.json"),
 )
 
 
