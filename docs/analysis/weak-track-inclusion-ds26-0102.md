@@ -52,8 +52,13 @@ must use a fresh output directory; this outcome is already terminal):
 timeout --signal=TERM --kill-after=5s 120s taskset -c 20 env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=/home/mouse9911/.cache/initial-discovery-20261113/component-screen/frozen-source/src:/home/mouse9911/gits/leo-algo07v5-investigation-20261112/tools /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python tools/probe_weak_track_inclusion.py --request /home/mouse9911/.cache/algo07v5-speed-20261112/worker-joint-schedule-0102-001/DS26-0102-r0/algo07v5/request.json --native-manifest /home/mouse9911/.cache/initial-discovery-20261113/component-screen/frozen-source/native/manifest.json --source-root /home/mouse9911/.cache/initial-discovery-20261113/component-screen/frozen-source/src --validation /srv/bulk/leo-dev/initial-discovery-20261113/weak-track-68106/validation-0102-001 --output /home/mouse9911/.cache/initial-discovery-20261113/weak-track-68106/inclusion-0102-001 --timeout 110 --run
 ```
 
-The existing evidence supports **revising the numerical experiment**, not
-advancing the inclusion policy: a separately approved bounded run could allow
-the unchanged production Powell retry enough declared time, then apply the
-same paired physical audit and exact-owner acceptance gate. There is no basis
-here to credit the 68106 track with improved localization.
+Decision: **stop this weak-track inclusion lever for now**. Independent review
+recomputed all six position errors from raw endpoints, verified the reference
+and artifact hashes, and checked frequency metrics, owners and acceptance.
+The attempt spent 110 seconds without qualification; its unaccepted proposal
+worsened reference error in both arms, with negligible and mixed frequency-fit
+changes. Merely extending the Powell deadline has insufficient demonstrated
+benefit for the current accuracy–speed objective. This single development case
+does not disprove weak-track inclusion generally. Reopening it would require a
+new predeclared scientific hypothesis and independent holdout evidence; no
+further attempt or policy promotion is part of this goal.
