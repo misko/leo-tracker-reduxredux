@@ -84,3 +84,17 @@ Reproducible inputs and evaluation work live under
 `/srv/bulk/leo-dev/ds26-ds29-evaluation-20261113`. Full comparison and repeated
 timing results are pending. DS29's reference-coordinate audit uses the operator
 station authority; these coordinates are not an independent surveyed GNSS fix.
+
+The verified evaluator snapshot contains 612 available native inputs and the
+three missing cases above. Inventory SHA-256 is
+`5e4c8505ac6aff55fbe296aeff1874c0a5dcd7fe11ea0e314d108caaf86e91ac`.
+It freezes 223 unique causal TLE snapshots and the unchanged DS26 configuration.
+Pass its `evaluation-references.json` explicitly when using the shared evaluator;
+the DS29 template has no evaluation-reference fallback.
+
+The full campaign launched at 2026-11-13T05:32:07Z. It retains 159 DS26 and
+615 DS29 cases, with 770 available pairs and all four missing-input cases.
+Its `run_campaign.py` coordinates four fixed accuracy lanes, verified NVMe
+staging/bulk archives, five serial repetitions on each predeclared sample case,
+and final public-evidence validation. See
+[the investigation checkpoint](../../docs/analysis/algo07v4-v5-goal.md).

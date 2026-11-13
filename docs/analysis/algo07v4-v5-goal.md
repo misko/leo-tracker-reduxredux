@@ -1,5 +1,35 @@
 # Algo07v4 baseline and algo07v5 goal
 
+The current user request is a full fixed-candidate comparison on DS26 and newly
+minted [DS29 revision 1](../../reports/2026_11_13_ds29_fast/README.md). DS29 is
+committed as `2a8e4fb99`: 615 fast acquisitions after DS28 revision 2, including
+three incomplete members. Its independently verified native/TLE snapshot has
+612 available inputs and three missing, with no additional binding errors.
+DS26 retains all 159 fast members, including missing DS26-0172.
+
+The campaign started at 2026-11-13T05:32:07Z under
+`/srv/bulk/leo-dev/ds26-ds29-evaluation-20261113`. It compares frozen original v3
+against fixed v5 with zero RF-recovery targets and all three previously tested
+policies. Numerical precision and iteration budgets are unchanged. Candidate
+source is byte-frozen from `7653693c6`, whose runtime implementation is
+`34f072ae8`; native source, wrapper, binary and provider hashes match the earlier
+qualified native build exactly. V4 remains fixed.
+
+Full accuracy work uses four CPU lanes, balanced per-cohort version order and
+matched 2400-second worker deadlines. Timed outputs use bounded NVMe staging;
+verified copies are archived outside worker timing. These bulk wall ratios are
+measurements under concurrent host load. A separate availability-only seeded
+sample, frozen before bulk outcomes, runs five fresh serial pairs each on
+DS26-0241 and DS29-0413. Full scientific coverage and repeatability results are
+pending. Neither an unfinished run nor a missing/failed/timed-out pair earns a
+speed claim.
+
+`run_campaign.py` in that work root resumes the campaign and writes validated
+per-dataset reports plus `final-report.md` after all phases finish. The current
+phase is in `campaign-status.json`; per-cohort `progress.json` files retain every
+not-yet-started or unsuccessful case. DS29's per-recording operator-reference
+map is explicit and kept outside inference; it is not surveyed GNSS truth.
+
 Complete-worker quick screens now cover RF-recovery limits zero, two and four.
 All selected work completes; every attempted target keeps full optimizer and
 audit budgets. On 0102, zero and two give the same final result: 34 fewer
