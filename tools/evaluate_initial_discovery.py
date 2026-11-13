@@ -145,6 +145,13 @@ def prepare(args):
         raise ValueError('Development screen requires explicit cases')
     if any(m['dataset_label'].startswith('DS29-') for m in inventory['members']) and not args.references:
         raise ValueError('DS29 requires its explicit evaluation-only reference map')
+    direct_gap = None
+    if args.direct_gap_policy is not None:
+        if args.initial_seed_policy != 'legacy' or args.initial_ranking_policy != 'legacy':
+            raise ValueError('Direct-gap comparison requires legacy initial discovery on both sides')
+        direct_gap = ev.owned_import('leo.contracts.localization_v5',
+                                     ev.source_binding(args.candidate_source)).direct_gap_policy(
+                                         args.direct_gap_policy)
     roles = dict(
         baseline=dict(source=ev.source_binding(args.baseline_source),
                       evaluator=str(args.baseline_evaluator.resolve()), initial=None,
@@ -154,8 +161,10 @@ def prepare(args):
                        evaluator=str(args.candidate_evaluator.resolve()),
                        native_manifest=str(args.candidate_native_manifest.resolve()),
                        backend_manifest=read(args.candidate_native_manifest),
-                       initial=dict(id='initial-discovery-v1', seed_policy=args.initial_seed_policy,
-                                    ranking_policy=args.initial_ranking_policy)))
+                       initial=(None if direct_gap else dict(
+                           id='initial-discovery-v1', seed_policy=args.initial_seed_policy,
+                           ranking_policy=args.initial_ranking_policy)),
+                       **({'direct_gap': direct_gap} if direct_gap else {})))
     historical = args.historical_baseline_root.resolve() if args.historical_baseline_root else None
     if historical:
         protocol = read(historical / 'protocol.json')
@@ -183,7 +192,10 @@ def prepare(args):
         for index, case in enumerate(selected['cases']):
             schedule.append(dict(case=case, repetition=repetition,
                                  order=list(SIDES if (index + repetition) % 2 == 0 else reversed(SIDES))))
-    return dict(schema_version=3 if historical else 2, snapshot=str(snapshot), output=str(output),
+    if historical and direct_gap:
+        raise ValueError('Direct-gap screen requires fresh paired workers')
+    return dict(schema_version=4 if direct_gap else 3 if historical else 2,
+                snapshot=str(snapshot), output=str(output),
                 historical_baseline_root=str(historical) if historical else None,
                 archive_root=str(archive) if archive else None, resource_limits=resources,
                 references=str(args.references.resolve()) if args.references else None,
@@ -221,6 +233,8 @@ def command(manifest, assignment, side, destination, cpus):
     if role['initial'] is not None:
         args += ['--initial-seed-policy', role['initial']['seed_policy'],
                  '--initial-ranking-policy', role['initial']['ranking_policy']]
+    if role.get('direct_gap') is not None:
+        args += ['--direct-gap-policy', role['direct_gap']['id']]
     return args
 
 
@@ -243,6 +257,8 @@ def validate_report(report, manifest, assignment, side, *, historical_output=Non
             raise ValueError('Worker binding differs: ' + key)
     if plan.get('initial_discovery_policy') != role['initial']:
         raise ValueError('Worker initial policy differs')
+    if plan.get('direct_gap_policy') != role.get('direct_gap'):
+        raise ValueError('Worker direct-gap policy differs')
     policies = dict(annotation_training_policy='lbfgsb-gn-fallback-full5-v1',
                     inclusion_control_policy='native-complete-controls-v1',
                     joint_schedule_policy='defer-factorized-unless-retry-v1',
@@ -271,6 +287,8 @@ def validate_report(report, manifest, assignment, side, *, historical_output=Non
             raise ValueError('GPS leaked into inference')
         if request.get('initial_discovery_policy') != role['initial']:
             raise ValueError('Request initial policy differs')
+        if request.get('direct_gap_policy') != role.get('direct_gap'):
+            raise ValueError('Request direct-gap policy differs')
         template = read(Path(manifest['snapshot']) / 'template-request.json')
         expected_job = copy.deepcopy(template)
         expected_job.update(
@@ -348,9 +366,16 @@ def inspect_publication(args):
             or ev.project(evidence, row['reference']) != row['arms']):
         raise ValueError('Public request/native/metric binding differs')
     for key in ('annotation_training_policy', 'inclusion_control_policy',
-                'joint_schedule_policy', 'recovery_target_policy', 'initial_discovery_policy'):
+                'joint_schedule_policy', 'recovery_target_policy', 'initial_discovery_policy',
+                'direct_gap_policy'):
         if request.get(key) != provenance.get(key):
             raise ValueError('Actual evidence policy differs: ' + key)
+    gap = evidence['audit'].get('gap_recovery')
+    if request.get('direct_gap_policy') is not None:
+        ev.owned_import('leo.contracts.localization_v5', source).validate_direct_gap_selection(
+            gap, request['direct_gap_policy'])
+    elif isinstance(gap, dict) and 'policy' in gap:
+        raise ValueError('Unexpected direct-gap audit policy')
     receipts = provenance['native_backend']['receipts']
     counts = {key: sum(receipt['counts'].get(key, 0) for receipt in receipts)
               for key in sorted({key for receipt in receipts for key in receipt['counts']})}
@@ -379,7 +404,9 @@ def inspect_publication(args):
                       'unique_RF_hypotheses', 'fully_fitted_hypotheses',
                       'fresh_radio_seed_budget', 'selected_hypothesis')},
                   initial_ranking=initial.get('initial_discovery_ranking'),
-                  recovery_inventory=recovery)
+                  recovery_inventory=recovery,
+                  **({'direct_gap_recovery': gap}
+                     if request.get('direct_gap_policy') else {}))
     if args.output.exists() and digest(read(args.output)) != digest(result):
         raise ValueError('Saved work receipt differs from freshly validated public evidence')
     write(args.output, result)
@@ -677,6 +704,8 @@ def main(argv=None):
     plan.add_argument('--quick-groups', type=int, default=4)
     plan.add_argument('--initial-seed-policy', choices=('legacy', 'anchor-round-robin-v1'), default='anchor-round-robin-v1')
     plan.add_argument('--initial-ranking-policy', choices=('legacy', 'warm-center-v1'), default='warm-center-v1')
+    plan.add_argument('--direct-gap-policy', choices=('direct-timing-gap-v1',),
+                      help='Compare only the candidate direct timing-gap policy against fast-v5 zero')
     plan.add_argument('--seed', default='initial-discovery-ds26-ds29-20261113-v1')
     plan.add_argument('--repeats', type=int, default=1)
     plan.add_argument('--timeout', type=int, default=1200)

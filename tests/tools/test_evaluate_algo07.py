@@ -172,6 +172,46 @@ def test_v5_bound_plan_wraps_requests_and_run_supplies_manifest(frozen, monkeypa
     assert '--native-manifest' in report['results'][0]['command']
 
 
+def test_v5_direct_gap_plan_binds_only_explicit_zero_target_policy(frozen, monkeypatch):
+    from leo.contracts import localization_v5
+
+    snapshot, source, output = frozen
+    native = snapshot / 'manifest.json'
+    evaluation.write(native, {'synthetic': 'backend'})
+    calls = []
+
+    def wrap(request, manifest, **policies):
+        calls.append(policies)
+        return dict(job=request, backend_manifest=manifest, schema_version=7,
+                    recovery_target_policy=localization_v5.recovery_target_policy(0),
+                    direct_gap_policy=localization_v5.direct_gap_policy())
+
+    monkeypatch.setattr(evaluation, 'owned_import', lambda module, binding: (
+        localization_v5 if module == 'leo.contracts.localization_v5'
+        else SimpleNamespace(make_request=wrap)))
+    assert evaluation.main(['plan', '--version', 'algo07v5', '--snapshot', str(snapshot),
+        '--source-root', str(source), '--output', str(output), '--native-manifest', str(native),
+        '--cases', 'DS26-0002', '--recovery-target-limit', '0',
+        '--direct-gap-policy', 'direct-timing-gap-v1']) == 0
+    saved = evaluation.read(output / 'plan.json')
+    assert saved['direct_gap_policy'] == localization_v5.direct_gap_policy()
+    assert calls == [dict(annotation_training_policy=None, recovery_target_limit=0,
+                          direct_gap_policy='direct-timing-gap-v1')]
+    assert saved['jobs'][0]['request']['job']['evaluation_reference'] is None
+
+
+@pytest.mark.parametrize('args', [
+    ['--version', 'algo07v4', '--recovery-target-limit', '0'],
+    ['--version', 'algo07v5'],
+    ['--version', 'algo07v5', '--recovery-target-limit', '1'],
+])
+def test_direct_gap_rejects_other_versions_or_nonzero_recovery(frozen, args):
+    snapshot, source, output = frozen
+    assert evaluation.main(['plan', '--snapshot', str(snapshot), '--source-root', str(source),
+        '--output', str(output), *args, '--direct-gap-policy', 'direct-timing-gap-v1']) == 1
+    assert not (output / 'plan.json').exists()
+
+
 @pytest.mark.parametrize('profile', ['quick', 'full'])
 @pytest.mark.parametrize('action', ['plan', 'run'])
 @pytest.mark.parametrize('policy', ['lbfgsb-full5-625-v1', 'lbfgsb-gn-fallback-full5-v1'])

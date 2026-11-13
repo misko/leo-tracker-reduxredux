@@ -94,6 +94,8 @@ def worker_report(manifest, *, side='candidate', case='A', status='complete', re
                 recovery_target_policy=dict(id='rf-target-prefix-v1', maximum_targets=0))
     if role['initial']:
         plan['initial_discovery_policy'] = role['initial']
+    if role.get('direct_gap'):
+        plan['direct_gap_policy'] = role['direct_gap']
     requested_job = runner.read(Path(manifest['snapshot']) / 'template-request.json')
     requested_job.update(evaluation_reference=None,
                          native_input=dict(path=str(Path(manifest['snapshot']) / 'inputs' / case / 'native.json'), sha256='input'),
@@ -107,6 +109,8 @@ def worker_report(manifest, *, side='candidate', case='A', status='complete', re
     request['backend_manifest'] = role['backend_manifest']
     for key in ('annotation_training_policy', 'inclusion_control_policy', 'joint_schedule_policy', 'recovery_target_policy'):
         request[key] = plan[key]
+    if role.get('direct_gap'):
+        request['direct_gap_policy'] = role['direct_gap']
     workload = runner.digest({key: value for key, value in requested_job.items()
                               if key not in ('identity', 'output_root', 'title')})
     plan['jobs'][0].update(availability='available', workload_sha256=workload)
@@ -130,6 +134,61 @@ def test_direct_baseline_and_candidate_use_true_sources_evaluators_and_native_bi
     assert baseline[baseline.index('--native-manifest') + 1] == '/baseline-native.json'
     assert candidate[candidate.index('--native-manifest') + 1] == '/candidate-native.json'
     assert '--recovery-target-limit' in baseline and '--recovery-target-limit' in candidate
+
+
+def test_direct_gap_command_and_report_bind_only_candidate_policy(tmp_path):
+    from leo.contracts.localization_v5 import direct_gap_policy
+
+    manifest = protocol(tmp_path)
+    manifest['roles']['candidate']['initial'] = None
+    manifest['roles']['candidate']['direct_gap'] = direct_gap_policy()
+    assignment = dict(case='A', repetition=0)
+    baseline = runner.command(manifest, assignment, 'baseline', tmp_path / 'baseline', '12')
+    candidate = runner.command(manifest, assignment, 'candidate', tmp_path / 'candidate', '12')
+    assert '--direct-gap-policy' not in baseline
+    assert candidate[candidate.index('--direct-gap-policy') + 1] == 'direct-timing-gap-v1'
+    assert '--initial-seed-policy' not in candidate
+    assert runner.validate_report(worker_report(manifest), manifest, assignment, 'candidate')['status'] == 'complete'
+    wrong = worker_report(manifest)
+    wrong['plan']['jobs'][0]['request'].pop('direct_gap_policy')
+    wrong['plan_sha256'] = runner.digest(wrong['plan'])
+    with pytest.raises(ValueError, match='direct-gap policy'):
+        runner.validate_report(wrong, manifest, assignment, 'candidate')
+
+
+def test_default_plan_omits_direct_gap_role_binding(tmp_path, monkeypatch):
+    snapshot = tmp_path / 'snapshot'
+    (snapshot / 'inputs').mkdir(parents=True)
+    runner.write(snapshot / 'inventory.json', dict(members=[dict(
+        dataset_label='DS26-0002', recording_id='one', availability='available')]))
+    runner.write(snapshot / 'template-request.json', {})
+    runner.write(snapshot / 'inputs/config.json', {})
+    native_file = tmp_path / 'native.bin'
+    native_file.write_bytes(b'native')
+    native = tmp_path / 'manifest.json'
+    runner.write(native, dict(binary=str(native_file), source=str(native_file),
+                              wrapper=str(native_file), provider=dict(path=str(native_file))))
+    source = tmp_path / 'source'
+    source.mkdir()
+    evaluator_path = tmp_path / 'evaluator.py'
+    evaluator_path.write_text('')
+    ev = SimpleNamespace(source_binding=lambda path: dict(root=str(path.resolve()),
+                                                        sha256='source', files={}),
+                         owned_import=lambda name, source: pytest.fail('No direct policy import'))
+    monkeypatch.setattr(runner, 'evaluator', lambda path: ev)
+    args = SimpleNamespace(output=tmp_path / 'output', archive_root=None,
+        reserve_gib=1, expected_gib=1, stage_free_gib=1, archive_free_gib=1,
+        snapshot=snapshot, candidate_evaluator=evaluator_path, baseline_evaluator=evaluator_path,
+        baseline_source=source, candidate_source=source,
+        baseline_native_manifest=native, candidate_native_manifest=native,
+        development_split=[], profile='development', cases='DS26-0002', quick_groups=1,
+        seed='fixed', repeats=1, timeout=1200, references=None,
+        historical_baseline_root=None, initial_seed_policy='anchor-round-robin-v1',
+        initial_ranking_policy='legacy', direct_gap_policy=None)
+    plan = runner.prepare(args)
+    assert 'direct_gap' not in plan['roles']['baseline']
+    assert 'direct_gap' not in plan['roles']['candidate']
+    assert plan['schema_version'] == 2
 
 
 def test_saved_report_binds_request_and_actual_policy(tmp_path):
@@ -208,6 +267,8 @@ def inspection_fixture(tmp_path, monkeypatch):
         project=lambda evidence, reference: worker_report(manifest)['results'][0]['arms'])
     ev.owned_import = lambda name, source: (
         SimpleNamespace(canonical_digest=runner.digest) if name == 'leo.contracts.digests' else
+        __import__('leo.contracts.localization_v5', fromlist=['localization_v5'])
+        if name == 'leo.contracts.localization_v5' else
         SimpleNamespace(LocalizationV5Store=lambda path: SimpleNamespace(load=lambda identity: saved)))
     monkeypatch.setattr(runner, 'evaluator', lambda path: ev)
     args = SimpleNamespace(evaluator=EVALUATOR, source_root=Path('/source'), request=request_path,
@@ -223,12 +284,35 @@ def inspection_fixture(tmp_path, monkeypatch):
     return args, report, request, evidence, persist
 
 
+def test_direct_gap_public_inspection_accepts_no_trigger_and_rejects_missing_audit(
+        tmp_path, monkeypatch):
+    from leo.contracts import localization_v5
+
+    args, report, request, evidence, persist = inspection_fixture(tmp_path, monkeypatch)
+    policy = localization_v5.direct_gap_policy()
+    request['direct_gap_policy'] = policy
+    report['plan']['direct_gap_policy'] = policy
+    evidence['provenance']['direct_gap_policy'] = policy
+    evidence['audit']['gap_recovery'] = dict(policy=policy, targets=[], selected=None,
+                                            trials=[], stages=[])
+    evidence['provenance']['request_sha256'] = runner.digest(request)
+    persist()
+    runner.inspect_publication(args)
+    assert runner.read(args.output)['direct_gap_recovery']['targets'] == []
+    assert runner.read(args.output)['direct_gap_recovery']['selected'] is None
+    args.output.unlink()
+    evidence['audit']['gap_recovery'].pop('policy')
+    with pytest.raises(ValueError, match='Direct gap selection'):
+        runner.inspect_publication(args)
+
+
 def test_public_inspector_binds_work_and_validates_every_resume(tmp_path, monkeypatch):
     args, _, _, _, _ = inspection_fixture(tmp_path, monkeypatch)
     runner.inspect_publication(args)
     work = runner.read(args.output)
     assert work['public_store_validated'] and work['native_counts']['calls'] == 10
     assert work['manifest_sha256'] == 'protocol-sha'
+    assert 'direct_gap_recovery' not in work
     runner.inspect_publication(args)
     work['native_counts']['calls'] = 1
     runner.write(args.output, work)
