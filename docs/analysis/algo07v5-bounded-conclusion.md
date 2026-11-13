@@ -1,8 +1,9 @@
 # Bounded algo07v5 accuracy–speed investigation
 
-Status: **incomplete**. Two fresh pairs and the single weak-track attempt are
-terminal; six alternating repetition pairs remain in progress. Final direct-gap
-recommendation waits for all eight pairs, including failures and timeouts.
+Status: **incomplete**. Two fresh pairs, all three DS29-0399 pairs and the
+single weak-track attempt are terminal. Three DS26-0002 control pairs remain
+in progress. Final direct-gap recommendation waits for all eight pairs,
+including failures and timeouts.
 
 The frozen scope, source/native bindings and exact launch command are in
 [the evaluation guide](initial-discovery-evaluation.md#direct-timing-gap-follow-up).
@@ -45,6 +46,41 @@ Evidence is under
 - `audit-ds29-0126/pair-audit.json`, SHA256
   `b456970d88b01f73f7011a5871ef8498f7a64d2fa8f60b146c8552fad1732bdf`.
 
+## DS29-0399 alternating repetitions
+
+All six workers completed with exit zero. Independent review verified actual
+execution order baseline/candidate, candidate/baseline, baseline/candidate,
+the public audits, exact owner sets and frozen source/native/provider bindings.
+Every role's complete scientific arm dictionaries exactly match its other two
+repetitions and the prior development screen. This establishes reproducibility
+on one development recording, not independent holdout generalization.
+
+| Arm | Baseline → candidate error, m | Frequency score | RMS, Hz |
+| --- | ---: | ---: | ---: |
+| c0 | 1269.409 → 377.472 | 16092.020 → 16774.805 | 101.208 → 104.963 |
+| fitted c | 1311.255 → 466.076 | 16096.445 → 16776.683 | 78.991 → 87.722 |
+
+Each candidate adds exactly the same 56 target observations as NORAD 66466 in
+both arms, retaining all 2010 incumbents unchanged and reaching 2066 owners.
+Each physical audit verifies and the production qualification passes. Frequency
+scores and RMS above cover different observation sets between roles; they do
+not establish a matched-observation frequency improvement. Position accuracy
+comes from the separately held evaluation reference.
+
+| Repetition | Order | Baseline wall, s | Candidate wall, s | Baseline CPU, s | Candidate CPU, s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 0 | B/C | 346.378 | 407.117 | 342.750 | 402.952 |
+| 1 | C/B | 352.475 | 387.787 | 348.775 | 384.304 |
+| 2 | B/C | 333.496 | 396.490 | 330.496 | 393.453 |
+
+Candidate/baseline wall ratios are 1.17535, 1.10018 and 1.18889, with aggregate
+1191.394 / 1032.349 = 1.15406. CPU aggregate is 1180.708 / 1022.021 = 1.15527.
+Paired wall overhead ranges 35.313–62.994 s, median 60.738 s; CPU overhead
+ranges 35.529–62.957 s, median 60.201 s. These are contended host observations,
+not a general latency estimate. Each pair uses 6506 → 8380 native calls,
+20 receipts per role, and zero fallbacks. Per-pair audit receipts are under
+`direct-gap-followup-001/audit-ds29-0399-r{0,1,2}/` in the experiment root.
+
 ## Weak-track inclusion decision
 
 **Stop this lever for now.** The one bounded DS26-0102 attempt completed its
@@ -64,9 +100,9 @@ stop decision are committed as `6305a0cca` and `f682a2dd8`.
 
 ## Remaining evidence
 
-Three fresh pairs each on DS29-0399 and no-trigger DS26-0002 must finish in
-baseline/candidate, candidate/baseline, baseline/candidate order. Their terminal
-reports must establish repeatability of outputs, owner changes, stage work,
-wall/CPU cost and failure/fallback counts. Only then finalize the direct-gap
-advance/revise/stop recommendation. No further experiment, full-cohort launch,
-new RF collection or default promotion is authorized by this bounded goal.
+Three fresh pairs on no-trigger DS26-0002 must finish in baseline/candidate,
+candidate/baseline, baseline/candidate order. Their terminal reports must
+establish repeatability of outputs, owner changes, stage work, wall/CPU cost
+and failure/fallback counts. Only then finalize the direct-gap advance/revise/
+stop recommendation. No further experiment, full-cohort launch, new RF
+collection or default promotion is authorized by this bounded goal.
