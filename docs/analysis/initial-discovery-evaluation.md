@@ -87,3 +87,59 @@ DS26 followed by DS29. Any quick runtime/contract failure stops admission and
 preserves the evidence. Its state and log live under the NVMe experiment root;
 the service is activated only after runner004 review and source freezing.
 No additional RF collection is authorized by this runner.
+
+## Direct timing-gap follow-up
+
+The reviewed eight-pair follow-up launched on 2026-11-13 at 19:44:34 UTC as
+`leo-direct-gap-followup-001.service`. Its frozen scope is
+`/srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-followup-001/scope-receipt-v2.json`
+(SHA256 `9fb261f6da6b7ff0ab4531b2ab09afcee4358ab1f4461c824a0bdbc443e324f5`).
+The receipt binds the preselected fresh groups, consumed-group exclusions,
+source, evaluator, native build, 16 plan-only requests and the eight-pair
+schedule. The two initial fresh manifests were superseded before any numerical
+launch because they did not reproduce the consumed-group selections. Only the
+following corrected manifests were launched, in this order:
+
+| Manifest under `direct-gap-followup-001/plans/` | Whole recording | New pairs and role order | Manifest SHA256 |
+| --- | --- | --- | --- |
+| `ds26-fresh-v2.json` | DS26-0263 | One, baseline then candidate | `37575847c275e5673d9b2290c8dccf8dd98c7e9b57adb2fdaf51b9202d6167e1` |
+| `ds29-fresh-v2.json` | DS29-0126 | One, baseline then candidate | `8f8deb24a41c074ea6a66308c4b6dfe39fb3d9f7a80c3ce347678011bb778aca` |
+| `ds29-repeat.json` | DS29-0399 | Three, baseline/candidate, candidate/baseline, baseline/candidate | `8b0579f42093505b11e7adfd6bee50b5e124a3bf46ed86d4fa9484a601f1af66` |
+| `ds26-repeat.json` | DS26-0002 | Three, baseline/candidate, candidate/baseline, baseline/candidate | `c89426e1f2993166d4fe4e8aa6b1423c8f454e3e131aa80ec2d1296f0b93ef4b` |
+
+Both roles use the same frozen fast-v5 source, evaluator and native manifest
+under `/srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-worker-001`.
+The candidate alone requests `direct-timing-gap-v1`; both roles retain zero
+ordinary recovery targets and legacy initial discovery. The frozen coordinator
+is `direct-gap-runner-002/tools/evaluate_initial_discovery.py` (SHA256
+`0962e4fb4dc37017a4f2bab28c5b497fad9127291e024e1976ee0420c5437e60`).
+Every complete worker uses CPU 21, one BLAS/OMP/MKL thread and a 2,400-second
+cap. The exact launched service command was:
+
+```bash
+systemd-run --user --unit=leo-direct-gap-followup-001 --collect --same-dir \
+  --property=CPUAccounting=yes \
+  --setenv=OPENBLAS_NUM_THREADS=1 --setenv=OMP_NUM_THREADS=1 \
+  --setenv=MKL_NUM_THREADS=1 --setenv=PYTHONDONTWRITEBYTECODE=1 \
+  /usr/bin/taskset -c 21 /bin/bash -lc '
+set -e
+/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-runner-002/tools/evaluate_initial_discovery.py run --manifest /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-followup-001/plans/ds26-fresh-v2.json --cpus 21
+/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-runner-002/tools/evaluate_initial_discovery.py run --manifest /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-followup-001/plans/ds29-fresh-v2.json --cpus 21
+/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-runner-002/tools/evaluate_initial_discovery.py run --manifest /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-followup-001/plans/ds29-repeat.json --cpus 21
+/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-runner-002/tools/evaluate_initial_discovery.py run --manifest /srv/bulk/leo-dev/initial-discovery-20261113/direct-gap-followup-001/plans/ds26-repeat.json --cpus 21
+'
+```
+
+The actual invocation ID, initial PIDs, full shell script and scope binding
+are saved in `direct-gap-followup-001/launch-receipt.json` (SHA256
+`cdfa75acbd3ccc3b61d4e4ba75b77d6f3a18b02254326de0a0ef420ad93eb064`).
+Monitor with `systemctl --user status leo-direct-gap-followup-001.service`
+and `journalctl --user -u leo-direct-gap-followup-001.service -f`. This
+command records the launched run; do not execute it again against attempted
+workers. If a manifest exits nonzero, `set -e` stops the sequence. Keep its
+failed or timed-out report and execution receipt, determine exactly which roles
+were attempted, and start only untouched later manifests in a new durable unit
+using the same frozen bindings. Never silently retry an attempted numerical
+worker. The original-v3 campaign remains a separate timing denominator;
+these contended pairs report complete-worker CPU/wall and c=0/fitted-c
+position and frequency outcomes separately.
