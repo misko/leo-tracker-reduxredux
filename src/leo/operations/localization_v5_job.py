@@ -11,7 +11,8 @@ from leo.operations import localization_v3_job
 
 def make_request(v3_request, backend_manifest, *, annotation_training_policy=None,
                  inclusion_control_policy=None, joint_schedule_policy=None,
-                 recovery_target_limit=None):
+                 recovery_target_limit=None, initial_seed_policy=None,
+                 initial_ranking_policy=None):
     from leo.analysis.localization_v4.backend import read_manifest, validate_manifest
 
     localization_v3_job.validate_request(v3_request)
@@ -38,11 +39,18 @@ def make_request(v3_request, backend_manifest, *, annotation_training_policy=Non
         targets['recovery_target_policy'] = localization_v5.recovery_target_policy(
             recovery_target_limit)
         binding.update(targets)
+    discovery = {}
+    if initial_seed_policy is not None or initial_ranking_policy is not None:
+        discovery['initial_discovery_policy'] = localization_v5.initial_discovery_policy(
+            'legacy' if initial_seed_policy is None else initial_seed_policy,
+            'legacy' if initial_ranking_policy is None else initial_ranking_policy)
+        binding.update(discovery)
     job["identity"]["run_id"] = "v5-" + canonical_digest(
         binding
     )[7:47]
     return validate_request(dict(
-        schema_version=5 if targets else 4 if joint else 3 if controls else 2 if training else 1,
+        schema_version=(6 if discovery else 5 if targets else 4 if joint
+                        else 3 if controls else 2 if training else 1),
         algorithm=localization_v5.MODEL,
         backend_manifest=deepcopy(manifest),
         initial_control_policy=POLICY,
@@ -51,6 +59,7 @@ def make_request(v3_request, backend_manifest, *, annotation_training_policy=Non
         **controls,
         **joint,
         **targets,
+        **discovery,
     ))
 
 
@@ -76,11 +85,17 @@ def validate_request(request):
         keys.add('recovery_target_policy')
         keys.update(k for k in ('annotation_training_policy', 'inclusion_control_policy',
                                 'joint_schedule_policy') if k in request)
+    if (isinstance(request, dict) and type(request.get('schema_version')) is int
+            and request['schema_version'] == 6):
+        keys.add('initial_discovery_policy')
+        keys.update(k for k in ('annotation_training_policy', 'inclusion_control_policy',
+                                'joint_schedule_policy', 'recovery_target_policy')
+                    if k in request)
     if (
         not isinstance(request, dict)
         or set(request) != keys
         or type(request["schema_version"]) is not int
-        or request["schema_version"] not in (1, 2, 3, 4, 5)
+        or request["schema_version"] not in (1, 2, 3, 4, 5, 6)
         or request["algorithm"] != localization_v5.MODEL
         or request["initial_control_policy"] != POLICY
     ):
@@ -93,6 +108,8 @@ def validate_request(request):
         localization_v5.validate_joint_schedule_policy(request['joint_schedule_policy'])
     if 'recovery_target_policy' in request:
         localization_v5.validate_recovery_target_policy(request['recovery_target_policy'])
+    if 'initial_discovery_policy' in request:
+        localization_v5.validate_initial_discovery_policy(request['initial_discovery_policy'])
     localization_v3_job.validate_request(request["job"])
     if not request["job"]["identity"]["run_id"].startswith("v5-"):
         raise ValueError("Native ALGO07v5 run namespace required")
@@ -114,6 +131,8 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
              if 'joint_schedule_policy' in request else {})
     targets = ({'recovery_target_policy': request['recovery_target_policy']}
                if 'recovery_target_policy' in request else {})
+    discovery = ({'initial_discovery_policy': request['initial_discovery_policy']}
+                 if 'initial_discovery_policy' in request else {})
     manifest = request["backend_manifest"]
     if read_manifest(native_manifest) != manifest:
         raise ValueError("Native manifest differs from request backend binding")
@@ -147,6 +166,9 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
             or (not joint and 'joint_schedule_work' in provenance)
             or ('recovery_target_policy' in provenance) != bool(targets)
             or provenance.get('recovery_target_policy') != targets.get('recovery_target_policy')
+            or ('initial_discovery_policy' in provenance) != bool(discovery)
+            or provenance.get('initial_discovery_policy') != discovery.get(
+                'initial_discovery_policy')
         ):
             raise ValueError("Saved result belongs to a different native backend")
         if training:
@@ -169,8 +191,17 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
         if targets:
             localization_v5.validate_target_selection(
                 evidence['audit'].get('recovery_inventory'), request['recovery_target_policy'])
+        if discovery:
+            localization_v5.validate_initial_discovery_selection(
+                evidence['audit'].get('initial'), request['initial_discovery_policy'])
+        else:
+            initial = evidence.get('audit', {}).get('initial')
+            if isinstance(initial, dict) and 'initial_discovery_policy' in initial:
+                raise ValueError('Initial discovery selection requires its explicit policy')
 
     execution = {}
+    if discovery and backend is not None:
+        execution['initial_discovery_policy'] = request['initial_discovery_policy']
     if targets and backend is not None:
         execution['recovery_target_limit'] = request['recovery_target_policy']['maximum_targets']
     work = None
@@ -208,6 +239,7 @@ def execute(request, *, native_manifest, receipts, resume_only=False, emit=lambd
         extra_provenance=lambda: dict(
             algorithm=localization_v5.MODEL, native_backend=backend.provenance(),
             initial_control_policy=POLICY, **training, **controls, **joint, **targets,
+            **discovery,
             **({"annotation_training_work": work.provenance()} if work is not None else {}),
             **({'inclusion_control_work': control_factory.provenance()}
                if control_factory is not None else {}),

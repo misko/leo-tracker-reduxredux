@@ -1,8 +1,48 @@
+from copy import deepcopy
+
 import pytest
 
 from leo.contracts import localization_v3, localization_v4, localization_v5
 from leo.contracts.digests import canonical_digest
 from tests.localization_v5_fixture import evidence_fixture
+
+
+@pytest.mark.parametrize('seed', ['legacy', 'anchor-round-robin-v1'])
+@pytest.mark.parametrize('ranking', ['legacy', 'warm-center-v1'])
+def test_initial_discovery_policy_binds_actual_selection_to_provenance(seed, ranking):
+    evidence, _ = evidence_fixture()
+    policy = localization_v5.initial_discovery_policy(seed, ranking)
+    assert policy == dict(id='initial-discovery-v1', seed_policy=seed, ranking_policy=ranking)
+    evidence['provenance']['initial_discovery_policy'] = policy
+    evidence['audit']['initial'] = dict(initial_discovery_policy=deepcopy(policy))
+    assert localization_v5.validate_evidence(evidence) is evidence
+
+
+@pytest.mark.parametrize('failure', ['missing_receipt', 'missing_initial', 'orphan',
+    'changed_seed', 'changed_ranking', 'unknown', 'extra', 'missing_key'])
+def test_initial_discovery_rejects_missing_unknown_or_misbound_selection(failure):
+    evidence, _ = evidence_fixture()
+    policy = localization_v5.initial_discovery_policy('anchor-round-robin-v1', 'warm-center-v1')
+    evidence['provenance']['initial_discovery_policy'] = policy
+    evidence['audit']['initial'] = dict(initial_discovery_policy=deepcopy(policy))
+    if failure == 'missing_receipt':
+        evidence['audit']['initial'].clear()
+    elif failure == 'missing_initial':
+        del evidence['audit']['initial']
+    elif failure == 'orphan':
+        del evidence['provenance']['initial_discovery_policy']
+    elif failure == 'changed_seed':
+        evidence['audit']['initial']['initial_discovery_policy']['seed_policy'] = 'legacy'
+    elif failure == 'changed_ranking':
+        evidence['audit']['initial']['initial_discovery_policy']['ranking_policy'] = 'legacy'
+    elif failure == 'unknown':
+        policy['seed_policy'] = 'unknown'
+    elif failure == 'extra':
+        policy['extra'] = True
+    else:
+        del policy['ranking_policy']
+    with pytest.raises(ValueError, match='[Ii]nitial discovery'):
+        localization_v5.validate_evidence(evidence)
 
 
 def test_control_policy_is_explicit_and_independent():

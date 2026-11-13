@@ -11,6 +11,34 @@ ANNOTATION_FALLBACK_POLICY = "lbfgsb-gn-fallback-full5-v1"
 INCLUSION_CONTROL_POLICY = "native-complete-controls-v1"
 JOINT_SCHEDULE_POLICY = "defer-factorized-unless-retry-v1"
 RECOVERY_TARGET_POLICY = "rf-target-prefix-v1"
+INITIAL_DISCOVERY_POLICY = "initial-discovery-v1"
+INITIAL_SEED_POLICIES = ("legacy", "anchor-round-robin-v1")
+INITIAL_RANKING_POLICIES = ("legacy", "warm-center-v1")
+
+
+def initial_discovery_policy(seed_policy="legacy", ranking_policy="legacy"):
+    if (type(seed_policy) is not str or seed_policy not in INITIAL_SEED_POLICIES
+            or type(ranking_policy) is not str or ranking_policy not in INITIAL_RANKING_POLICIES):
+        raise ValueError("Unknown ALGO07v5 initial discovery policy")
+    return dict(id=INITIAL_DISCOVERY_POLICY, seed_policy=seed_policy,
+                ranking_policy=ranking_policy)
+
+
+def validate_initial_discovery_policy(value):
+    if (type(value) is not dict
+            or set(value) != {"id", "seed_policy", "ranking_policy"}
+            or value != initial_discovery_policy(value["seed_policy"], value["ranking_policy"])):
+        raise ValueError("Complete ALGO07v5 initial discovery policy required")
+    return value
+
+
+def validate_initial_discovery_selection(initial, policy):
+    validate_initial_discovery_policy(policy)
+    if (type(initial) is not dict
+            or initial.get("initial_discovery_policy") != policy):
+        raise ValueError("Initial discovery selection must bind its policy")
+    validate_initial_discovery_policy(initial["initial_discovery_policy"])
+    return initial
 
 
 def recovery_target_policy(limit):
@@ -206,6 +234,12 @@ def validate_evidence(evidence):
     validate_native_provenance(evidence, MODEL, localization_v4.MODEL)
     if evidence["provenance"].get("initial_control_policy") != INITIAL_CONTROL_POLICY:
         raise ValueError("ALGO07v5 initial control policy binding required")
+    initial = evidence["audit"].get("initial")
+    if "initial_discovery_policy" in evidence["provenance"]:
+        validate_initial_discovery_selection(initial,
+            evidence["provenance"]["initial_discovery_policy"])
+    elif isinstance(initial, dict) and "initial_discovery_policy" in initial:
+        raise ValueError("Initial discovery selection requires its explicit policy")
     if "annotation_training_policy" in evidence["provenance"]:
         validate_annotation_training_policy(evidence["provenance"]["annotation_training_policy"])
     if "inclusion_control_policy" in evidence["provenance"]:

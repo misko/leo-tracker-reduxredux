@@ -89,6 +89,8 @@ def make_plan(args):
     control_policy = getattr(args, 'inclusion_control_policy', None)
     schedule_policy = getattr(args, 'joint_schedule_policy', None)
     target_limit = getattr(args, 'recovery_target_limit', None)
+    initial_seed_policy = getattr(args, 'initial_seed_policy', None)
+    initial_ranking_policy = getattr(args, 'initial_ranking_policy', None)
     if training_policy is not None and args.version != 'algo07v5':
         raise ValueError('--annotation-training-policy requires --version algo07v5')
     if control_policy is not None and args.version != 'algo07v5':
@@ -97,6 +99,10 @@ def make_plan(args):
         raise ValueError('--joint-schedule-policy requires --version algo07v5')
     if target_limit is not None and args.version != 'algo07v5':
         raise ValueError('--recovery-target-limit requires --version algo07v5')
+    if initial_seed_policy is not None and args.version != 'algo07v5':
+        raise ValueError('--initial-seed-policy requires --version algo07v5')
+    if initial_ranking_policy is not None and args.version != 'algo07v5':
+        raise ValueError('--initial-ranking-policy requires --version algo07v5')
     if target_limit is not None and (type(target_limit) is not int or not 0 <= target_limit <= 8):
         raise ValueError('--recovery-target-limit must be an integer in 0..8')
     snapshot, output = args.snapshot.resolve(), local_output(args.output)
@@ -132,6 +138,11 @@ def make_plan(args):
     if target_limit is not None:
         contract = owned_import('leo.contracts.localization_v5', source)
         training['recovery_target_policy'] = contract.recovery_target_policy(target_limit)
+    if initial_seed_policy is not None or initial_ranking_policy is not None:
+        contract = owned_import('leo.contracts.localization_v5', source)
+        training['initial_discovery_policy'] = contract.initial_discovery_policy(
+            'legacy' if initial_seed_policy is None else initial_seed_policy,
+            'legacy' if initial_ranking_policy is None else initial_ranking_policy)
     manifest = read(args.native_manifest) if args.native_manifest else None
     references = read(args.references) if args.references else {}
     config = snapshot / 'inputs/config.json'
@@ -176,7 +187,11 @@ def make_plan(args):
                         **({'joint_schedule_policy': schedule_policy}
                            if schedule_policy is not None else {}),
                         **({'recovery_target_limit': target_limit}
-                           if target_limit is not None else {}))
+                           if target_limit is not None else {}),
+                        **({'initial_seed_policy': initial_seed_policy}
+                           if initial_seed_policy is not None else {}),
+                        **({'initial_ranking_policy': initial_ranking_policy}
+                           if initial_ranking_policy is not None else {}))
                 else:
                     request = module.make_request(request, manifest)
             rows.append(dict(row, status='planned', request=request))
@@ -457,6 +472,11 @@ def main(argv=None):
                              help='Opt-in conditional factorized diagnostics for algo07v5')
         command.add_argument('--recovery-target-limit', type=int, choices=range(9),
                              help='Opt-in RF recovery prefix limit; defaults to original eight')
+        command.add_argument('--initial-seed-policy',
+                             choices=('legacy', 'anchor-round-robin-v1'),
+                             help='Opt-in initial discovery seed policy for algo07v5')
+        command.add_argument('--initial-ranking-policy', choices=('legacy', 'warm-center-v1'),
+                             help='Opt-in initial branch ranking policy for algo07v5')
         command.add_argument('--references', type=Path, help='Per-case evaluation-only GPS map')
         command.add_argument('--cases', help='Comma-separated labels; quick defaults to 3 controls')
         command.add_argument('--repeats', type=int, default=1)

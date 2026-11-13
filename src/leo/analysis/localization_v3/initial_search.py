@@ -29,7 +29,7 @@ def fit_initial_arm(scan, sigma, node, arm, *, rounds, iterations):
 
 def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
                    iterations=48, on_branch=None, map_arms=None, map_branches=None,
-                   initial_control=None):
+                   initial_control=None, seed_policy=None, ranking_policy=None):
     """Fit matched c arms; select their common hypothesis using only the c0 score.
 
     Defaults are the original complete initial-search budgets. Smaller explicit
@@ -49,9 +49,17 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
         raise ValueError('Positive integer search budgets required')
     if map_arms is not None and map_branches is not None:
         raise ValueError('Supply only one initial execution port')
+    if seed_policy not in (None, 'legacy', 'anchor-round-robin-v1'):
+        raise ValueError('Unknown initial seed policy')
+    if ranking_policy not in (None, 'legacy', 'warm-center-v1'):
+        raise ValueError('Unknown initial ranking policy')
+    explicit_policy = seed_policy is not None or ranking_policy is not None
+    seed_policy = seed_policy or 'legacy'
+    ranking_policy = ranking_policy or 'legacy'
     half = scan.search_region.half_width_km
     proposals = ((0., 0.), (-half, -half), (-half, half), (half, -half), (half, half))
-    candidates = fresh_discovery(scan, sigma, budget=seed_budget)
+    discovery_options = {} if seed_policy == 'legacy' else dict(seed_policy=seed_policy)
+    candidates = fresh_discovery(scan, sigma, budget=seed_budget, **discovery_options)
     best = min(candidates, key=lambda r: r['center_score'])
     nodes, seen = [], set()
     for candidate in candidates:
@@ -69,14 +77,25 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
         if key not in seen:
             nodes.append(node)
             seen.add(key)
-    scored = []
+    scored, ranking = [], []
     for node in nodes:
         cold = dict(seed=dict(rows=node['seed']['rows'], state=zero_state(scan)),
                     aliases=node['aliases'])
         p = NormalPosition(scan, cold, sigma, False, reference=np.zeros(len({
             r['candidate_index'] for r in cold['seed']['rows']})))
         residual = p.residual(np.zeros(2))
-        scored.append((float(residual @ residual), cold))
+        cold_score = float(residual @ residual)
+        score = cold_score
+        if ranking_policy == 'warm-center-v1':
+            labels = sorted({r['candidate_index'] for r in node['seed']['rows']})
+            reference = np.clip(np.asarray(node['seed']['state']['phases'])[labels], -15, 15)
+            warm = NormalPosition(scan, node, sigma, False, reference=reference)
+            residual = warm.residual(np.zeros(2))
+            score = float(residual @ residual)
+        scored.append((score, cold))
+        if explicit_policy:
+            ranking.append(dict(node_index=len(ranking), cold_score=cold_score,
+                                ranking_score=score, signature=signature(node)))
     selected = sorted(scored, key=lambda r: r[0])[:branch_budget]
     fitted = None
     if map_branches is not None:
@@ -111,7 +130,7 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
                            reference=np.zeros(len({r['candidate_index']
                                                    for r in winner['node']['seed']['rows']})))
         zero[arm] = fit(p, iterations=iterations)
-    return dict(
+    result = dict(
         status='complete', GPS_used=False, choices=choices,
         selected_hypothesis=winner['hypothesis'], zero_phase_control=zero,
         selection='minimum refreshed c0 full frequency/prior bound; matched branch for fitted c',
@@ -120,3 +139,8 @@ def initial_search(scan, sigma, *, seed_budget=4, branch_budget=3, rounds=5,
         fresh_radio_seed_budget=seed_budget, RF_proposal_points=proposals,
         region_center=scan.search_region.center, box_width_km=scan.search_region.width_km,
         noise_sigma_hz=sigma)
+    if explicit_policy:
+        result['initial_discovery_policy'] = dict(
+            id='initial-discovery-v1', seed_policy=seed_policy, ranking_policy=ranking_policy)
+        result['initial_discovery_ranking'] = ranking
+    return result

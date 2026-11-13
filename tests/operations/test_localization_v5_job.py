@@ -61,6 +61,10 @@ def saved(request):
             target_limit=limit, original_selected_track_ids=original,
             selected_targets=[dict(track_id=tid) for tid in original[:limit]],
             policy_omitted_track_ids=original[limit:])
+    if 'initial_discovery_policy' in request:
+        policy = deepcopy(request['initial_discovery_policy'])
+        evidence['provenance']['initial_discovery_policy'] = policy
+        evidence['audit'].setdefault('initial', {})['initial_discovery_policy'] = deepcopy(policy)
     receipt = LocalizationV5Store(request["job"]["output_root"]).save(evidence, pngs)
     return evidence, receipt
 
@@ -150,14 +154,17 @@ def test_v5_request_rejects_different_policy_or_version(native_manifest, tmp_pat
         validate_request(request)
 
 
+@pytest.mark.parametrize('discovery', [False, True])
 def test_fresh_v5_job_injects_process_bound_and_keeps_full_ports(
-    native_manifest, tmp_path, monkeypatch
+    native_manifest, tmp_path, monkeypatch, discovery
 ):
     from leo.analysis.localization_v4.backend import ProcessBound
     from leo.application import localization_v3_engine as engine
     from leo.operations import localization_v3_job as job
 
-    request = make_request(request_fixture(tmp_path), native_manifest)
+    request = make_request(request_fixture(tmp_path), native_manifest,
+        **(dict(initial_seed_policy='anchor-round-robin-v1',
+                initial_ranking_policy='warm-center-v1') if discovery else {}))
     monkeypatch.setattr(job, "read_bound", lambda record: (
         {"source": {"session_id": "session"}} if record == request["job"]["native_input"]
         else {"config": {}}
@@ -171,6 +178,7 @@ def test_fresh_v5_job_injects_process_bound_and_keeps_full_ports(
         assert ports.map_initial_branches is not None
         assert ports.map_annotation_training is not None
         assert ports.map_grid_batches is not None
+        assert ports.initial_discovery_policy == request.get('initial_discovery_policy')
         return {"status": "no_active_curvature"}
 
     monkeypatch.setattr(engine, "run_native", run)

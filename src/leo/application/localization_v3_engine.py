@@ -44,6 +44,7 @@ class ExecutionPorts:
     inclusion_control_factory: Callable | None = None
     joint_schedule_factory: Callable | None = None
     recovery_target_limit: int | None = None
+    initial_discovery_policy: dict | None = None
 
 
 class IncompleteStage(ValueError):
@@ -131,6 +132,8 @@ def infer_prepared(
             noise_sha256=noise_sha,
             **({"initial_control": execution.initial_control}
                if execution.initial_control is not None else {}),
+            **({"initial_discovery_policy": execution.initial_discovery_policy}
+               if execution.initial_discovery_policy is not None else {}),
             **({"bound": execution.bound} if execution.bound is not None else {}),
             **({"map_branches": execution.map_initial_branches}
                if execution.map_initial_branches is not None else

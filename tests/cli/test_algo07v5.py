@@ -45,8 +45,12 @@ def test_real_supervisor_runs_v5_worker_and_keeps_failure_receipts(native_manife
     assert "absent-native" in supervisor["worker"]["error"]
 
 
-def test_real_resume_publishes_saved_v5_without_native_artifacts(native_manifest, tmp_path):
-    request = make_request(request_fixture(tmp_path), native_manifest)
+@pytest.mark.parametrize('initial_policies', [False, True])
+def test_real_resume_publishes_saved_v5_without_native_artifacts(native_manifest, tmp_path,
+                                                               initial_policies):
+    request = make_request(request_fixture(tmp_path), native_manifest,
+        **(dict(initial_seed_policy='anchor-round-robin-v1',
+                initial_ranking_policy='warm-center-v1') if initial_policies else {}))
     manifest = deepcopy(native_manifest)
     for name in ("source", "wrapper", "binary"):
         manifest[name] = str(tmp_path / ("absent-" + name))
@@ -60,6 +64,16 @@ def test_real_resume_publishes_saved_v5_without_native_artifacts(native_manifest
     assert supervisor["worker"]["resumed"] is True
     assert supervisor["worker"]["publication"]["implementation_model"] == "algo07v5-native-v1"
     assert not (attempt / "native-receipts").exists()
+
+
+def test_schema6_unknown_discovery_policy_rejected_before_worker_launch(native_manifest, tmp_path):
+    request = make_request(request_fixture(tmp_path), native_manifest, initial_seed_policy='legacy')
+    request['initial_discovery_policy']['ranking_policy'] = 'unknown'
+    attempt = tmp_path / 'attempt'
+    process = invoke('run', request, native_manifest, attempt)
+    assert process.returncode == 1
+    assert 'initial discovery policy' in process.stderr
+    assert not attempt.exists()
 
 
 def test_manifest_mismatch_rejected_before_worker_launch(native_manifest, tmp_path):

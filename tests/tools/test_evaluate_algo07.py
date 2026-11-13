@@ -375,6 +375,72 @@ def test_target_limit_rejects_other_versions_before_reading_inputs(tmp_path, ver
     assert not (tmp_path / 'output').exists()
 
 
+@pytest.mark.parametrize('profile', ['quick', 'full'])
+@pytest.mark.parametrize('action', ['plan', 'run'])
+@pytest.mark.parametrize('seed,ranking', [('legacy', None), (None, 'legacy'),
+    ('anchor-round-robin-v1', 'warm-center-v1')])
+def test_initial_discovery_policy_binds_plan_requests_and_preserves_missing_members(
+    frozen, monkeypatch, profile, action, seed, ranking
+):
+    from leo.contracts import localization_v5
+
+    snapshot, source, output = frozen
+    manifest = snapshot / 'manifest.json'
+    evaluation.write(manifest, {'synthetic': 'backend'})
+    calls = []
+    expected = dict(id='initial-discovery-v1', seed_policy=seed or 'legacy',
+                    ranking_policy=ranking or 'legacy')
+
+    def wrap(request, manifest, **policies):
+        calls.append(policies)
+        assert request['evaluation_reference'] is None
+        return dict(job=request, backend_manifest=manifest, schema_version=6,
+                    initial_discovery_policy=copy.deepcopy(expected))
+
+    monkeypatch.setattr(evaluation, 'owned_import', lambda name, binding:
+                        localization_v5 if name == 'leo.contracts.localization_v5'
+                        else SimpleNamespace(make_request=wrap))
+    if action == 'run':
+        monkeypatch.setattr(evaluation, 'run_plan', lambda plan, python: dict(
+            statuses={}, results=[dict(status='missing' if j['status'] == 'missing' else 'complete')
+                                  for j in plan['jobs']]))
+    args = [action, '--version', 'algo07v5', '--profile', profile,
+            '--snapshot', str(snapshot), '--source-root', str(source), '--output', str(output),
+            '--native-manifest', str(manifest)]
+    if seed is not None:
+        args += ['--initial-seed-policy', seed]
+    if ranking is not None:
+        args += ['--initial-ranking-policy', ranking]
+    assert evaluation.main(args) == int(action == 'run' and profile == 'full')
+    result = evaluation.read(output / 'plan.json')
+    assert result['initial_discovery_policy'] == expected
+    assert calls == [dict(annotation_training_policy=None,
+        **({'initial_seed_policy': seed} if seed is not None else {}),
+        **({'initial_ranking_policy': ranking} if ranking is not None else {}))] * 3
+    assert len(result['jobs']) == (3 if profile == 'quick' else 4)
+    assert all(j['request']['initial_discovery_policy'] == expected for j in result['jobs'][:3])
+    if profile == 'full':
+        assert result['jobs'][-1]['status'] == 'missing'
+
+
+@pytest.mark.parametrize('version', ['algo07v3', 'algo07v4'])
+@pytest.mark.parametrize('flag', ['--initial-seed-policy', '--initial-ranking-policy'])
+def test_initial_discovery_policy_rejects_other_versions_before_loading_inputs(tmp_path,
+                                                                            version, flag):
+    assert evaluation.main(['plan', '--version', version, '--snapshot', str(tmp_path / 'absent'),
+        '--output', str(tmp_path / 'output'), flag, 'legacy']) == 1
+    assert not (tmp_path / 'output').exists()
+
+
+@pytest.mark.parametrize('flag', ['--initial-seed-policy', '--initial-ranking-policy'])
+def test_initial_discovery_cli_rejects_unknown_policy(tmp_path, flag):
+    with pytest.raises(SystemExit) as error:
+        evaluation.main(['plan', '--version', 'algo07v5', '--output', str(tmp_path / 'out'),
+                         flag, 'unknown'])
+    assert error.value.code == 2
+    assert not (tmp_path / 'out').exists()
+
+
 @pytest.mark.parametrize('change', ['duplicate', 'missing', 'changed'])
 def test_nested_archive_mutation_never_launches_inference(frozen, monkeypatch, change):
     result = plan(frozen, '--cases', 'DS26-0002')

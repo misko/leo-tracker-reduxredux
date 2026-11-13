@@ -94,7 +94,12 @@ def statistics(groups, bank, corrections, height=0):
     return result
 
 
-def seed_calibrations(stats, beta, budget=160):
+def seed_calibrations(stats, beta, budget=160, *, seed_policy="legacy"):
+    if seed_policy == "anchor-round-robin-v1":
+        yield from _round_robin_calibrations(stats, beta, budget)
+        return
+    if seed_policy != "legacy":
+        raise ValueError("Unknown discovery seed policy")
     beta = beta.copy()
     bound = 150 * DRIFT_BOUND_HZ_S
     beta[4:8] = np.clip(beta[4:8], -bound, bound)
@@ -141,6 +146,34 @@ def seed_calibrations(stats, beta, budget=160):
             emitted += 1
             if emitted >= budget:
                 return
+
+
+def _round_robin_calibrations(stats, beta, budget):
+    """Spend the existing seed cap across anchors before revisiting an anchor."""
+    beta = beta.copy()
+    yield next(seed_calibrations(stats, beta, budget))
+    anchors = np.flatnonzero(stats["active"])
+    anchors = sorted(anchors, key=lambda c: -stats["count"][c])[:20]
+    streams = []
+    for ci in anchors:
+        active = np.zeros_like(stats["active"])
+        active[ci] = True
+        stream = seed_calibrations(dict(stats, active=active), beta, 8)
+        next(stream)
+        streams.append(stream)
+    emitted = 0
+    while streams:
+        remaining = []
+        for stream in streams:
+            seed = next(stream, None)
+            if seed is None:
+                continue
+            yield seed
+            emitted += 1
+            if emitted >= budget:
+                return
+            remaining.append(stream)
+        streams = remaining
 
 
 def improve(
@@ -329,7 +362,9 @@ def zero_state(scan):
     )
 
 
-def fresh_discovery(scan, sigma, *, budget=8):
+def fresh_discovery(scan, sigma, *, budget=8, seed_policy="legacy"):
+    if seed_policy not in ("legacy", "anchor-round-robin-v1"):
+        raise ValueError("Unknown discovery seed policy")
     base = phase_linear_frequency(scan.geometry, *scan.search_region.center)
     stats = statistics(
         scan.groups,
@@ -355,9 +390,12 @@ def fresh_discovery(scan, sigma, *, budget=8):
     proposals_stats["shape_rms"] = np.sqrt(
         np.add.reduceat(shape, stats["starts"], axis=0) / stats["count"][:, None]
     )
-    proposals = list(
-        itertools.islice(seed_calibrations(proposals_stats, initial, budget), budget)
+    calibrations = (
+        seed_calibrations(proposals_stats, initial, budget)
+        if seed_policy == "legacy"
+        else seed_calibrations(proposals_stats, initial, budget, seed_policy=seed_policy)
     )
+    proposals = list(itertools.islice(calibrations, budget))
     candidates = []
     for number, beta in enumerate(proposals):
         state = zero_state(scan)
