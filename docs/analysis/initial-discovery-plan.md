@@ -243,3 +243,39 @@ gap rules identify exactly this track among the five remaining candidates:
 gap. Investigate direct admission of that component with existing scientific
 checks. Its native-v5 cost is unmeasured; original recovery timings cannot
 establish the speed of this proposed shortcut.
+
+The bounded weak-track nomination probe completed successfully. It selected
+two tracks using only radio support and searched all 1420 initial catalogue
+candidates. NORAD 68106 ranked first among retained coarse offers for the
+target (cost 7.183; next offer 3437.702). Both initial arm scores and states
+replayed exactly. Nomination took 2.461 seconds, total probe stage 11.570
+seconds, with eight native calls, no fallbacks and no optimizer fits. These
+are component timings and proposal evidence, not a worker speedup or accepted
+identity. Seven owned tests and independent review passed; the combined
+nomination checks passed 24 tests. Tool commit: `ebc78932b`.
+
+Evidence is preserved under
+`/srv/bulk/leo-dev/initial-discovery-20261113/weak-track-68106/`.
+Next, use the existing independent annotation folds at the genuine-previous
+recovery checkpoint. Each fold must refit calibration excluding held blocks
+and guards, then independently nominate from the full causal bank. Never reuse
+the full-data nominee as a training-fold shortlist or use the saved full-data
+calibration as independent training evidence.
+
+Qualification finished at approximately 16:46 UTC: DS29 has four completed
+pairs; DS26 has two completed pairs and the two documented shared failures.
+DS26-0255 is scientifically exact. DS26-0317 adds 62 associated points but
+worsens position error by 51.36 m (c0) and 58.15 m (fitted-c), while frequency
+RMS rises by 0.842/2.432 Hz. More associated points do not establish better
+localization. Seed diversity remains opt-in and is not an accuracy promotion.
+
+Reviewed continuation service
+`leo-initial-discovery-full-sequence-005.service` is active and queued behind
+the existing ranking development sequence and retirement of coordinator 004.
+It uses separately frozen runner 005 and plans, preserves the two failures,
+and validates their actual requests and public evidence before continuation.
+The full DS26/DS29 candidate evaluation uses historical fast-v5 controls for
+accuracy only; it cannot produce a fresh paired timing claim. The runner fixes
+JSON tuple/list receipt equivalence (`f7b17bd4d`); active numerical sources,
+scientific policies and budgets are unchanged. No full-population result is
+available yet.
