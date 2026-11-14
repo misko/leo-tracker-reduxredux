@@ -170,10 +170,34 @@ def prepare(args):
         protocol = read(historical / 'protocol.json')
         if (args.profile != 'full' or args.repeats != 1
                 or protocol['snapshot'] != str(snapshot)
+                or len(protocol['cases']) != len(selected['cases'])
+                or set(protocol['cases']) != set(selected['cases'])
                 or protocol['sources']['candidate'] != roles['baseline']['source']
                 or protocol['candidate_limit'] != 0 or protocol['timeout'] != args.timeout
                 or protocol['references'] != (str(args.references.resolve()) if args.references else None)):
             raise ValueError('Historical controls require the matched frozen full v5-zero cohort')
+        if direct_gap:
+            original_inputs = [snapshot / name for name in (
+                'inventory.json', 'inputs/config.json', 'template-request.json')]
+            if args.references:
+                original_inputs.append(args.references.resolve())
+            original_inputs.extend(
+                roles['baseline'][key] for key in ('evaluator', 'native_manifest'))
+            for path in original_inputs:
+                path = str(path)
+                if protocol['bindings'].get(path) != sha(path):
+                    raise ValueError('Historical frozen binding differs: ' + path)
+            for path, expected in protocol['bindings'].items():
+                if sha(path) != expected:
+                    raise ValueError('Historical protocol binding changed: ' + path)
+            baseline_native = roles['baseline']['backend_manifest']
+            candidate_native = roles['candidate']['backend_manifest']
+            for key in ('binary', 'source', 'wrapper'):
+                if sha(baseline_native[key]) != sha(candidate_native[key]):
+                    raise ValueError('Candidate native binding differs: ' + key)
+            if (sha(baseline_native['provider']['path'])
+                    != sha(candidate_native['provider']['path'])):
+                raise ValueError('Candidate native provider binding differs')
     paths = [Path(__file__), ROOT / 'initial_discovery_archive.py', snapshot / 'inventory.json', snapshot / 'template-request.json',
              snapshot / 'inputs/config.json', args.baseline_native_manifest.resolve(),
              args.candidate_native_manifest.resolve(),
@@ -187,14 +211,17 @@ def prepare(args):
         paths.append(args.references.resolve())
     if historical:
         paths.append(historical / 'protocol.json')
+        if direct_gap:
+            paths.extend(Path(path) for path in protocol['bindings'])
     schedule = []
     for repetition in range(args.repeats):
         for index, case in enumerate(selected['cases']):
             schedule.append(dict(case=case, repetition=repetition,
                                  order=list(SIDES if (index + repetition) % 2 == 0 else reversed(SIDES))))
-    if historical and direct_gap:
-        raise ValueError('Direct-gap screen requires fresh paired workers')
-    return dict(schema_version=4 if direct_gap else 3 if historical else 2,
+    schema_version = 3 if historical else 2
+    if direct_gap:
+        schema_version = 5 if historical else 4
+    return dict(schema_version=schema_version,
                 snapshot=str(snapshot), output=str(output),
                 historical_baseline_root=str(historical) if historical else None,
                 archive_root=str(archive) if archive else None, resource_limits=resources,
@@ -205,7 +232,9 @@ def prepare(args):
                 baseline='frozen fast v5, recovery_target_limit=0',
                 original_v3_context=str(ORIGINAL), fast_flags=FAST_FLAGS,
                 accuracy='Report c0 and fitted_c separately; DS29 references are operator locations.',
-                performance='E2E CPU/work and contended wall only; serial repeated evidence required for a speed claim.')
+                performance=('Historical controls support accuracy/work only; no paired timing.'
+                             if historical and direct_gap else 'E2E CPU/work and contended wall only; '
+                             'serial repeated evidence required for a speed claim.'))
 
 
 def check_bindings(manifest):

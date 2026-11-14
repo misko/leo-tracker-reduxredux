@@ -191,6 +191,154 @@ def test_default_plan_omits_direct_gap_role_binding(tmp_path, monkeypatch):
     assert plan['schema_version'] == 2
 
 
+def historical_gap_plan_fixture(tmp_path, monkeypatch):
+    snapshot = tmp_path / 'snapshot'
+    runner.write(snapshot / 'inventory.json', dict(members=[
+        dict(dataset_label='A', recording_id='one', availability='available'),
+        dict(dataset_label='E', recording_id='two', availability='missing')]))
+    runner.write(snapshot / 'template-request.json', {})
+    runner.write(snapshot / 'inputs/config.json', {})
+    roots = [tmp_path / side for side in ('original-source', 'gap-source')]
+    evaluators = [tmp_path / (side + '-evaluator.py') for side in ('original', 'gap')]
+    manifests = [tmp_path / (side + '-native.json') for side in ('original', 'gap')]
+    for root, evaluator_path, native_path in zip(roots, evaluators, manifests, strict=True):
+        root.mkdir()
+        evaluator_path.write_text(root.name)
+        files = {}
+        for key in ('binary', 'source', 'wrapper', 'provider'):
+            path = root / key
+            path.write_text(key)
+            files[key] = str(path)
+        runner.write(native_path, dict(
+            binary=files['binary'], source=files['source'], wrapper=files['wrapper'],
+            provider=dict(path=files['provider'])))
+    policy = dict(id='direct-timing-gap-v1')
+    ev = SimpleNamespace(
+        source_binding=lambda path: dict(
+            root=str(path.resolve()), sha256=path.resolve().name, files={}),
+        owned_import=lambda name, source: SimpleNamespace(direct_gap_policy=lambda name: policy))
+    monkeypatch.setattr(runner, 'evaluator', lambda path: ev)
+    historical = tmp_path / 'original-cohort'
+    runner.write(historical / 'protocol.json', dict(
+        snapshot=str(snapshot), cases=['A', 'E'],
+        sources=dict(candidate=ev.source_binding(roots[0])),
+        candidate_limit=0, timeout=2400, references=None,
+        bindings={str(path): runner.sha(path) for path in (
+            snapshot / 'inventory.json', snapshot / 'inputs/config.json',
+            snapshot / 'template-request.json', evaluators[0], manifests[0])}))
+    args = SimpleNamespace(output=tmp_path / 'staging', archive_root=None,
+        reserve_gib=20, expected_gib=10, stage_free_gib=10, archive_free_gib=10,
+        snapshot=snapshot, candidate_evaluator=evaluators[1], baseline_evaluator=evaluators[0],
+        baseline_source=roots[0], candidate_source=roots[1],
+        baseline_native_manifest=manifests[0], candidate_native_manifest=manifests[1],
+        development_split=[], profile='full', cases=None, quick_groups=1,
+        seed='fixed', repeats=1, timeout=2400, references=None,
+        historical_baseline_root=historical, initial_seed_policy='legacy',
+        initial_ranking_policy='legacy', direct_gap_policy='direct-timing-gap-v1')
+    return args
+
+
+def test_full_historical_gap_plan_reuses_original_with_distinct_role_bindings(
+        tmp_path, monkeypatch):
+    args = historical_gap_plan_fixture(tmp_path, monkeypatch)
+    plan = runner.prepare(args)
+    assert plan['schema_version'] == 5
+    assert plan['roles']['baseline']['source']['root'] == str(args.baseline_source)
+    assert plan['roles']['candidate']['source']['root'] == str(args.candidate_source)
+    assert plan['roles']['baseline']['evaluator'] == str(args.baseline_evaluator)
+    assert plan['roles']['candidate']['evaluator'] == str(args.candidate_evaluator)
+    assert plan['roles']['baseline']['native_manifest'] == str(args.baseline_native_manifest)
+    assert plan['roles']['candidate']['native_manifest'] == str(args.candidate_native_manifest)
+    assert plan['roles']['baseline']['initial'] is None
+    assert plan['roles']['candidate']['initial'] is None
+    assert 'direct_gap' not in plan['roles']['baseline']
+    assert plan['roles']['candidate']['direct_gap'] == dict(id='direct-timing-gap-v1')
+    assert plan['historical_baseline_root'] == str(args.historical_baseline_root)
+    assert plan['selection']['cases'] == [a['case'] for a in plan['schedule']]
+    assert 'accuracy/work only' in plan['performance']
+    assert '--direct-gap-policy' in runner.command(
+        plan, plan['schedule'][0], 'candidate', tmp_path / 'candidate', '1')
+    assert '--direct-gap-policy' not in runner.command(
+        plan, plan['schedule'][0], 'baseline', tmp_path / 'baseline', '1')
+    args.historical_baseline_root = None
+    assert runner.prepare(args)['schema_version'] == 4
+
+
+@pytest.mark.parametrize('change', (
+    'profile', 'repeats', 'source', 'snapshot', 'references', 'budget', 'timeout',
+    'cohort_missing', 'cohort_duplicate', 'snapshot_content',
+    'baseline_evaluator', 'baseline_native',
+    'candidate_native'))
+def test_full_historical_gap_plan_rejects_unmatched_cohort(tmp_path, monkeypatch, change):
+    args = historical_gap_plan_fixture(tmp_path, monkeypatch)
+    path = args.historical_baseline_root / 'protocol.json'
+    protocol = runner.read(path)
+    if change == 'profile':
+        args.profile = 'quick'
+        args.cases = 'A,E'
+    elif change == 'repeats':
+        args.repeats = 2
+    elif change == 'source':
+        args.baseline_source = args.candidate_source
+    elif change == 'snapshot':
+        protocol['snapshot'] = '/other/snapshot'
+    elif change == 'references':
+        protocol['references'] = '/other/references.json'
+    elif change == 'budget':
+        protocol['candidate_limit'] = 1
+    elif change == 'timeout':
+        args.timeout = 1200
+    elif change == 'cohort_missing':
+        protocol['cases'] = ['A']
+    elif change == 'cohort_duplicate':
+        protocol['cases'] = ['A', 'A']
+    elif change == 'snapshot_content':
+        inventory = runner.read(args.snapshot / 'inventory.json')
+        inventory['changed'] = True
+        runner.write(args.snapshot / 'inventory.json', inventory)
+    elif change == 'baseline_evaluator':
+        protocol['bindings'].pop(str(args.baseline_evaluator))
+    elif change == 'baseline_native':
+        protocol['bindings'].pop(str(args.baseline_native_manifest))
+    else:
+        (args.candidate_source / 'binary').write_text('different native binary')
+    runner.write(path, protocol)
+    with pytest.raises(ValueError):
+        runner.prepare(args)
+
+
+def test_historical_gap_rejects_equal_native_drift_after_original_protocol_freeze(
+        tmp_path, monkeypatch):
+    args = historical_gap_plan_fixture(tmp_path, monkeypatch)
+    protocol_path = args.historical_baseline_root / 'protocol.json'
+    protocol = runner.read(protocol_path)
+    original_native = runner.read(args.baseline_native_manifest)
+    candidate_native = runner.read(args.candidate_native_manifest)
+    binary = original_native['binary']
+    protocol['bindings'][binary] = runner.sha(binary)
+    runner.write(protocol_path, protocol)
+    Path(binary).write_text('same new native bytes')
+    Path(candidate_native['binary']).write_text('same new native bytes')
+    with pytest.raises(ValueError, match='Historical protocol binding changed'):
+        runner.prepare(args)
+
+
+def test_historical_gap_keeps_all_original_bindings_frozen_during_execution(
+        tmp_path, monkeypatch):
+    args = historical_gap_plan_fixture(tmp_path, monkeypatch)
+    driver = args.historical_baseline_root / 'driver.py'
+    driver.write_text('original cohort driver')
+    protocol_path = args.historical_baseline_root / 'protocol.json'
+    protocol = runner.read(protocol_path)
+    protocol['bindings'][str(driver)] = runner.sha(driver)
+    runner.write(protocol_path, protocol)
+    plan = runner.prepare(args)
+    assert plan['bindings'][str(driver)] == runner.sha(driver)
+    driver.write_text('changed cohort driver')
+    with pytest.raises(ValueError, match='Frozen bound file changed'):
+        runner.check_bindings(plan)
+
+
 def test_saved_report_binds_request_and_actual_policy(tmp_path):
     manifest = protocol(tmp_path)
     report = worker_report(manifest)
@@ -494,6 +642,11 @@ def historical_fixture(tmp_path, monkeypatch, *, status='complete'):
     return manifest, folder, report_path, execution, calls
 
 
+def bind_direct_gap_candidate(manifest):
+    manifest['roles']['candidate']['initial'] = None
+    manifest['roles']['candidate']['direct_gap'] = dict(id='direct-timing-gap-v1')
+
+
 def test_historical_import_preserves_original_report_plan_and_request_paths(tmp_path, monkeypatch):
     manifest, folder, path, _, calls = historical_fixture(tmp_path, monkeypatch)
     original = path.read_bytes()
@@ -504,6 +657,37 @@ def test_historical_import_preserves_original_report_plan_and_request_paths(tmp_
     assert calls[0][calls[0].index('--report') + 1] == str(path)
     receipt = runner.read(folder / 'baseline-historical-import.json')
     assert receipt['source_report_sha256'] == runner.sha(path) and not receipt['timing_eligible']
+
+
+@pytest.mark.parametrize('mutation', (
+    'none', 'request_policy', 'plan_policy', 'evaluator', 'native', 'request'))
+def test_historical_gap_import_accepts_original_null_policies_and_rejects_drift(
+        tmp_path, monkeypatch, mutation):
+    manifest, folder, path, _, calls = historical_fixture(tmp_path, monkeypatch)
+    bind_direct_gap_candidate(manifest)
+    original = runner.read(path)
+    changed = copy.deepcopy(original)
+    if mutation == 'request_policy':
+        changed['plan']['jobs'][0]['request']['direct_gap_policy'] = dict(id='direct-timing-gap-v1')
+    elif mutation == 'plan_policy':
+        changed['plan']['direct_gap_policy'] = dict(id='direct-timing-gap-v1')
+    elif mutation == 'evaluator':
+        changed['plan']['evaluator']['path'] = '/other/evaluator.py'
+    elif mutation == 'native':
+        changed['plan']['jobs'][0]['request']['backend_manifest'] = {'native': 'other'}
+    elif mutation == 'request':
+        changed['plan']['jobs'][0]['request']['job']['search_center'] = [99, 99]
+    changed['plan_sha256'] = runner.digest(changed['plan'])
+    runner.write(path, changed)
+    if mutation == 'none':
+        imported = runner.import_historical(manifest, manifest['schedule'][0], folder)
+        assert imported['results'][0]['status'] == 'complete'
+        assert runner.read(path) == original
+        assert len(calls) == 1
+    else:
+        with pytest.raises(ValueError):
+            runner.import_historical(manifest, manifest['schedule'][0], folder)
+        assert not calls
 
 
 def test_historical_missing_report_stays_pending_without_work(tmp_path, monkeypatch):
@@ -566,8 +750,11 @@ def test_historical_missing_input_is_retained_without_inspection(tmp_path, monke
     assert runner.read(folder / 'baseline-historical-import.json')['public_work_sha256'] is None
 
 
-def test_historical_comparison_never_computes_timing_or_mutates_original_rows(tmp_path):
+@pytest.mark.parametrize('direct_gap', (False, True))
+def test_historical_comparison_never_computes_timing_or_mutates_original_rows(tmp_path, direct_gap):
     manifest = protocol(tmp_path)
+    if direct_gap:
+        bind_direct_gap_candidate(manifest)
     manifest['historical_baseline_root'] = '/original'
     manifest['schedule'] = [dict(case='A', repetition=0)]
     manifest['selection']['cases'] = ['A']
@@ -580,8 +767,12 @@ def test_historical_comparison_never_computes_timing_or_mutates_original_rows(tm
     assert left['results'][0]['process']['cpu_seconds'] == 'must-never-enter-arithmetic'
 
 
-def test_candidate_full_finishes_while_historical_baseline_is_pending_and_refresh_never_infers(tmp_path, monkeypatch):
+@pytest.mark.parametrize('direct_gap', (False, True))
+def test_candidate_full_finishes_while_historical_baseline_is_pending_and_refresh_never_infers(
+        tmp_path, monkeypatch, direct_gap):
     manifest, path = full_run_fixture(tmp_path, monkeypatch)
+    if direct_gap:
+        bind_direct_gap_candidate(manifest)
     manifest['historical_baseline_root'] = str(tmp_path / 'original-pending')
     runner.write(path, manifest)
     events = []
@@ -612,10 +803,15 @@ def test_candidate_full_finishes_while_historical_baseline_is_pending_and_refres
     summary = runner.read(Path(manifest['output']) / 'comparison.json')
     assert summary['historical_baseline_pending'] == ['A']
     assert summary['statuses']['baseline'] == dict(absent=1)
+    assert 'timing' not in summary and all('timing' not in pair for pair in summary['pairs'])
 
 
-def test_refresh_completes_pair_when_original_arrives_without_relaunching_candidate(tmp_path, monkeypatch):
+@pytest.mark.parametrize('direct_gap', (False, True))
+def test_refresh_completes_pair_when_original_arrives_without_relaunching_candidate(
+        tmp_path, monkeypatch, direct_gap):
     manifest, folder, origin, _, calls = historical_fixture(tmp_path, monkeypatch)
+    if direct_gap:
+        bind_direct_gap_candidate(manifest)
     manifest['archive_root'] = None
     path = tmp_path / 'manifest.json'
     runner.write(path, manifest)
@@ -638,6 +834,9 @@ def test_refresh_completes_pair_when_original_arrives_without_relaunching_candid
     assert runner.read(folder.parent / 'refresh-status.json')['paired_coverage_complete']
     assert runner.read(folder.parent / 'terminal.json')['status'] == 'complete'
     assert len(calls) == 3 and all('inspect' in command for command in calls)
+    comparison = runner.read(folder.parent / 'comparison.json')
+    assert 'timing' not in comparison and 'timing' not in comparison['pairs'][0]
+    assert set(comparison['pairs'][0]['arms']) == {'c0', 'fitted_c'}
 
 
 def test_refresh_rejects_wrong_execution_before_archive_recovery(tmp_path, monkeypatch):
