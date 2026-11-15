@@ -46,6 +46,8 @@ class ExecutionPorts:
     recovery_target_limit: int | None = None
     initial_discovery_policy: dict | None = None
     direct_gap_policy: dict | None = None
+    recovery_target_selector: Callable | None = None
+    gap_target_filter: Callable | None = None
 
 
 class IncompleteStage(ValueError):
@@ -178,7 +180,9 @@ def infer_prepared(
         "inventory",
         lambda: policy.prepare_track_recovery(prepared, signed, cavity, identities=identities,
             **({'recovery_target_limit': execution.recovery_target_limit}
-               if execution.recovery_target_limit is not None else {})),
+               if execution.recovery_target_limit is not None else {}),
+            **({'recovery_target_selector': execution.recovery_target_selector}
+               if execution.recovery_target_selector is not None else {})),
         "track_recovery_prepared",
     )
     inventory_seconds = timing.rows[-1]["seconds"]
@@ -253,6 +257,8 @@ def infer_prepared(
             maximum_seconds=1200,
             **({'direct_gap_policy': execution.direct_gap_policy}
                if execution.direct_gap_policy is not None else {}),
+            **({'gap_target_filter': execution.gap_target_filter}
+               if execution.gap_target_filter is not None else {}),
             **({'annotation_training_fit': execution.annotation_training_fit}
                if execution.direct_gap_policy is not None
                and execution.annotation_training_fit is not None else {}),

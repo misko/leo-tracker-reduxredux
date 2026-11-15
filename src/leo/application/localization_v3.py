@@ -6,6 +6,7 @@ ordered recovery remains unfinished.
 """
 import hashlib
 import json
+from copy import deepcopy
 
 from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 from leo.analysis.localization_v3.elements import ElementParser
@@ -19,7 +20,7 @@ from leo.analysis.localization_v3.phase_prior import forecast
 from leo.analysis.localization_v3.predictive_annotation import annotate
 from leo.analysis.localization_v3.recovery_controller import recover_tracks
 from leo.analysis.localization_v3.recovery_inclusion import include_annotation
-from leo.analysis.localization_v3.recovery_inventory import prepare_recovery
+from leo.analysis.localization_v3.recovery_inventory import prepare_recovery, select_targets
 from leo.analysis.localization_v3.residual_preflight import preflight, rank_targets
 from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.localization_v3.selected_incumbent import reconstruct_incumbent
@@ -162,7 +163,8 @@ def fit_family_cavity(signed):
                 recovery_complete=False)
 
 
-def prepare_track_recovery(prepared, signed, cavity, *, identities, recovery_target_limit=None):
+def prepare_track_recovery(prepared, signed, cavity, *, identities, recovery_target_limit=None,
+                           recovery_target_selector=None):
     """Replay the selected policy and identify the original recovery targets."""
     if (cavity.get('cavity_fit') or {}).get('status') != 'complete':
         return dict(status='cavity_incomplete', recovery_context=None, inventory=None,
@@ -170,8 +172,41 @@ def prepare_track_recovery(prepared, signed, cavity, *, identities, recovery_tar
     context, result = prepare_recovery(signed['signed_context']['scan'], cavity['cavity_fit'],
         prepared['tracks']['observations'], identities=identities,
         **({'target_limit': recovery_target_limit} if recovery_target_limit is not None else {}))
+    if recovery_target_selector is not None:
+        result = _experimental_recovery_targets(context, result, recovery_target_selector)
     return dict(status='track_recovery_prepared', recovery_context=context, inventory=result,
                 recovery_complete=False)
+
+
+def _experimental_recovery_targets(context, evidence, selector):
+    """Bind experimental nominations to complete, unowned original inventory rows."""
+    result = deepcopy(evidence)
+    inventory = result['inventory']
+    targets, _ = select_targets(inventory, limit=len(inventory['tracks']))
+    fitted = {r['track_id']: r for r in inventory['tracks'] if r['arm'] == 'fitted_c'}
+    occupied = set().union(*(set(owners) for owners in result['owners'].values()))
+    eligible = {}
+    for target in targets:
+        other = fitted[target['track_id']]
+        ids = set(target['observation_ids'])
+        if (not target['inactive_fragment']
+                and ids == set(other['all_track_observation_ids'])
+                and not ids & occupied):
+            eligible[target['track_id']] = target
+    receipt = selector(context, deepcopy(evidence))
+    selected = receipt.get('targets') if isinstance(receipt, dict) else None
+    if not isinstance(selected, list) or len(selected) > 2:
+        raise ValueError('Experimental recovery selection requires at most two targets')
+    ids = [target.get('track_id') if isinstance(target, dict) else None for target in selected]
+    if (any(not isinstance(tid, str) or tid not in eligible for tid in ids)
+            or len(set(ids)) != len(ids)):
+        raise ValueError('Experimental recovery targets must be unique matched unowned large tracks')
+    selected = [deepcopy(eligible[tid]) for tid in ids]
+    for key in ('target_limit', 'original_selected_track_ids', 'policy_omitted_track_ids'):
+        result.pop(key, None)
+    result['selected_targets'] = selected
+    result['experimental_selection'] = dict(deepcopy(receipt), targets=deepcopy(selected))
+    return result
 
 
 def annotate_recovery_target(prepared_recovery, target, *, on_proposal=None,
@@ -339,7 +374,7 @@ def recover_numerical_checkpoint(prepared_recovery, predictive, *, run_stage,
 
 def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage, clock,
                        maximum_seconds=1200, on_selection=None, direct_gap_policy=None,
-                       annotation_training_fit=None):
+                       annotation_training_fit=None, gap_target_filter=None):
     """Use numerical attempts but protect owners of the actually adopted fit.
 
     This is an owned scientific checkpoint, not a published legacy terminal.
@@ -365,6 +400,7 @@ def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage,
         previous['candidate'], annotations, owners, run_stage=run_stage, clock=clock,
         maximum_seconds=maximum_seconds,
         **({'direct_gap_policy': direct_gap_policy} if direct_gap_policy is not None else {}),
+        **({'gap_target_filter': gap_target_filter} if gap_target_filter is not None else {}),
         **({'annotation_training_fit': annotation_training_fit}
            if direct_gap_policy is not None and annotation_training_fit is not None else {}),
         **({'on_selection': on_selection} if on_selection is not None else {}))
@@ -374,12 +410,13 @@ def recover_gap_tracks(prepared_recovery, numerical, observations, *, run_stage,
 
 def recover_gap_checkpoint(prepared_recovery, numerical, observations, *, run_stage, clock,
                            maximum_seconds=1200, direct_gap_policy=None,
-                           annotation_training_fit=None):
+                           annotation_training_fit=None, gap_target_filter=None):
     """Keep the chosen gap likelihood; rejection retains the numerical incumbent."""
     selection = []
     result = recover_gap_tracks(prepared_recovery, numerical, observations, run_stage=run_stage,
         clock=clock, maximum_seconds=maximum_seconds, on_selection=selection.append,
         **({'direct_gap_policy': direct_gap_policy} if direct_gap_policy is not None else {}),
+        **({'gap_target_filter': gap_target_filter} if gap_target_filter is not None else {}),
         **({'annotation_training_fit': annotation_training_fit}
            if direct_gap_policy is not None and annotation_training_fit is not None else {}))
     return dict(result,

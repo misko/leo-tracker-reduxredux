@@ -179,6 +179,7 @@ def recover_gaps(
     on_selection=None,
     direct_gap_policy=None,
     annotation_training_fit=None,
+    gap_target_filter=None,
 ):
     """Use original eligibility/order/caps and select exactly one qualified fit.
 
@@ -216,6 +217,7 @@ def recover_gaps(
                eligible(decision, annotations, incumbent_owners))
     rows, stages, excluded, candidates, receipts = [], [], [], {}, {}
     selected_states = {}
+    experimental_selection = None
 
     def stage(name, operation, cap):
         nonlocal previous
@@ -240,6 +242,30 @@ def recover_gaps(
             )
         )
         return ok, value
+
+    if direct_gap_policy is not None and gap_target_filter is not None:
+        original_targets = deepcopy(targets)
+        ok, receipt = stage(
+            'experimental-target-filter',
+            lambda: gap_target_filter(context, deepcopy(inventory), deepcopy(observations),
+                                      deepcopy(incumbent_owners), deepcopy(original_targets)),
+            maximum_seconds,
+        )
+        if not ok:
+            raise ValueError('Experimental gap target filter did not complete')
+        retained = receipt.get('targets') if isinstance(receipt, dict) else None
+        if not isinstance(retained, list):
+            raise ValueError('Experimental gap filter requires an ordered target subset')
+        selected, cursor = [], 0
+        for target in retained:
+            while cursor < len(original_targets) and target != original_targets[cursor]:
+                cursor += 1
+            if cursor == len(original_targets):
+                raise ValueError('Experimental gap filter changed, duplicated or reordered targets')
+            selected.append(deepcopy(original_targets[cursor]))
+            cursor += 1
+        targets = selected
+        experimental_selection = dict(deepcopy(receipt), targets=deepcopy(targets))
 
     try:
         for index, target in enumerate(targets):
@@ -334,6 +360,8 @@ def recover_gaps(
         on_selection(deepcopy(checkpoint))
     return dict(
         **({"policy": direct_gap_policy} if direct_gap_policy is not None else {}),
+        **({'experimental_selection': experimental_selection}
+           if experimental_selection is not None else {}),
         selected=chosen,
         candidate=candidates[(chosen["track_id"], chosen["branch_id"])] if chosen else None,
         trials=rows,
