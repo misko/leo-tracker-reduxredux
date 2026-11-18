@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import evaluate_accuracy_repair as repair
 import pytest
+import run_accuracy_repair_campaign as campaign
 
 
 def members():
@@ -396,6 +397,11 @@ def test_plan_is_deterministic_binds_helpers_and_never_runs_inference(tmp_path, 
     args.profile = "full"
     full = repair.prepare(args)
     assert {row["case"] for row in full["schedule"]} == {row["dataset_label"] for row in members()}
+    args.repeats = 2
+    repeated = repair.prepare(args)
+    for case in full["cohorts"]["DS26"]["selection"]["cases"]:
+        pair = [row for row in repeated["schedule"] if row["case"] == case]
+        assert pair[1]["order"] == list(reversed(pair[0]["order"]))
 
 
 def test_one_proposal_variant_sets_only_explicit_selector_cap(tmp_path, monkeypatch):
@@ -541,3 +547,51 @@ def test_validation_cache_cannot_escape_worker_directory_or_write_to_qnap(tmp_pa
     request["job"]["output_root"] = "/mnt/qnap01/forbidden"
     with pytest.raises(ValueError, match="QNAP"):
         repair.inspect_artifact_cached(request, record["worker"])
+
+
+def test_campaign_preserves_recording_cpu_across_cases_and_repeats(tmp_path, monkeypatch):
+    document = manifest(tmp_path)
+    document["schedule"][1]["group"] = document["schedule"][0]["group"]
+    document["schedule"] += [dict(row, repetition=1) for row in document["schedule"]]
+    path, _ = fake_run(monkeypatch, document)
+    cpus = sorted(os.sched_getaffinity(0))[:2]
+    planned = campaign.plan(path, ",".join(map(str, cpus)))
+    assert len({row["lane"] for row in planned["assignments"]}) == 1
+    assert campaign.check_plan(planned) == document
+    planned["assignments"][0]["lane"] += 1
+    with pytest.raises(ValueError, match="assignments changed"):
+        campaign.check_plan(planned)
+
+
+def test_campaign_runs_all_roles_twice_retains_missing_and_resumes_without_inference(
+    tmp_path, monkeypatch
+):
+    document = manifest(tmp_path, cases=("DS26-0100", "DS26-0300"), roles=repair.ROLES)
+    document["repeats"] = 2
+    document["schedule"] += [dict(row, repetition=1, order=list(reversed(row["order"])))
+                              for row in document["schedule"]]
+    path, calls = fake_run(monkeypatch, document)
+    planned = campaign.plan(path, str(min(os.sched_getaffinity(0))))
+    campaign_path = tmp_path / "campaign.json"
+    repair.write(campaign_path, planned)
+    assert campaign.run(campaign_path, wave_seconds=10, reserve_gib=0) == 0
+    assert len(calls) == 8
+    result = repair.ev.read(Path(document["output"]) / "repeat-comparison.json")
+    assert result["expected_workers"] == result["finished_workers"] == 16
+    assert result["coverage_complete"]
+    assert result["expected_cases"] == 2
+    assert result["same_successful_cases"] == ["DS26-0100"]
+    assert result["statuses"]["baseline"] == {"complete": 2, "missing": 2}
+    baseline = result["repeat_variation"]["baseline"]["same_successful_cohort"]
+    assert baseline["wall_seconds"]["ratio"]["median"] == 1
+    assert baseline["wall_seconds"]["delta"]["max"] == 0
+    assert baseline["wall_seconds"]["population_cv"]["median"] == 0
+    assert campaign.run(campaign_path, wave_seconds=10, reserve_gib=0) == 0
+    assert len(calls) == 8
+
+
+def test_campaign_statistics_include_mean_tail_and_repeat_variation():
+    result = campaign.distribution([1, 2, 3, None, float("nan")])
+    assert result == dict(count=3, mean=2, median=2, p90=2.8, p95=2.9, p99=2.98, max=3)
+    pair = campaign.repeat_measurements([10, 20])
+    assert pair == dict(first=10, second=20, delta=10, ratio=2, population_cv=1/3)

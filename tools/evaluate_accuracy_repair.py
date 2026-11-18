@@ -193,7 +193,10 @@ def prepare(args):
         for repetition in range(args.repeats):
             for case in selected["cases"]:
                 order = list(roles)
-                random.Random(args.seed + ":" + case + ":" + str(repetition)).shuffle(order)
+                # Adjacent repetitions counterbalance first/last role positions exactly.
+                random.Random(args.seed + ":" + case + ":" + str(repetition // 2)).shuffle(order)
+                if repetition % 2:
+                    order.reverse()
                 schedule.append(
                     dict(
                         dataset=name,

@@ -107,6 +107,59 @@ started workers are retained for investigation. `report --manifest PATH`
 revalidates completed archives and regenerates accuracy, fit, ownership, coverage
 and wall/CPU comparisons without inference.
 
+## DS26 four-configuration repeated campaign
+
+The explicitly authorized DS26 campaign started at 2026-11-15 18:32:18 UTC.
+Its frozen runner, manifests, logs and results are beneath
+`/srv/bulk/leo-dev/accuracy-repair-20261115/ds26-four-configs-twice-001`.
+It retains all 159 inventory members and runs baseline, selective-gap,
+omitted-track-one and omitted-tracks twice: 1,272 expected outcomes.
+DS26-0172 has no native run and contributes eight explicit missing outcomes;
+1,264 workers have available inputs. Completion and failure counts must be
+read from the result files; launching the campaign does not establish coverage.
+
+The first role order is seeded random for each case, and the second is its
+exact reverse. Recording groups and both repetitions stay on one fixed lane.
+Four lanes use physical CPUs 16, 17, 18 and 19, with one worker per lane and
+one BLAS thread. Existing historical work uses CPU 21. Other host activity is
+not isolated, so runtime differences remain descriptive. The coordinator records
+load and CPU pressure before and after workers. It admits complete 1,200-second
+worker deadlines in bounded 1,800-second waves, automatically resumes finished
+outcomes, and preserves interrupted started workers for investigation.
+
+The user service `leo-ds26-four-configs-twice-20261115.service` owns execution;
+`systemctl --user status leo-ds26-four-configs-twice-20261115` inspects it.
+`run_accuracy_repair_campaign.py plan` freezes CPU assignments and coordinator
+bindings before inference; `run --campaign PATH` executes the complete saved
+campaign, and `report --campaign PATH` regenerates reports without inference.
+
+Results include `comparison.json`, `repeat-comparison.json`, `report.md`,
+`repeat-report.md` and `campaign-progress.json`. The repeated comparison retains
+all 159 cases in coverage, reports all successful workers and the same cases
+successful across all four configurations and both repeats, and gives mean,
+median, p90, p95, p99 and maximum position errors, wall times and CPU times.
+Frequency scores and residuals remain separate from localization accuracy.
+Both calibration arms are reported. Per-case repeat deltas, ratios and
+population coefficients of variation accompany aggregate variation summaries.
+
+The original transient service disappeared during a simultaneous disruption of
+multiple unrelated user services at 2026-11-17 17:57:51 UTC. It did not complete
+the campaign. Three started workers had no completed result or archive:
+DS26-0126-r0/omitted-tracks, DS26-0217-r0/omitted-track-one and
+DS26-0309-r0/selective-gap. Recovery preserved their original records and partial
+artifact hashes under `recovery-20261118-001/evidence`, then recorded explicit
+externally interrupted failures with incomplete CPU accounting. These attempts
+are excluded from accuracy and timing comparisons and were not rerun.
+
+At 2026-11-18 03:10:39 UTC the same service name resumed through an enabled
+persistent user unit with restart on failure. It uses
+`recover_accuracy_repair_campaign.py` as a preflight around the unchanged frozen
+coordinator. The preflight refuses live workers, possible completed evidence,
+request drift or conflicting execution locks; it preserves every finished
+outcome. Recovery accounted for 1,024 outcomes and left 248 unstarted outcomes.
+Scientific source, manifests, native bindings, CPU lanes and timeout policy
+remain frozen. The shutdown journal is saved beside the recovery evidence.
+
 ## Validation
 
 The 69 new component and harness tests pass. A separate 138-test application
