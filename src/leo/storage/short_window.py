@@ -16,6 +16,11 @@ import numpy as np
 import zstandard as zstd
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.multirate_window_recording import (
+    ShortWindowChunkV2,
+    ShortWindowIndexV2,
+    ShortWindowManifestV2,
+)
 from leo.contracts.short_window_recording import (
     ShortWindowChunkV1,
     ShortWindowIndexV1,
@@ -48,6 +53,7 @@ class ShortWindowWriter:
         receiver_ids: tuple[int, ...],
         chunk_windows: int = 64,
         compression_level: int = 1,
+        schema_version: int = 1,
     ) -> None:
         resolved = root.resolve()
         if resolved == Path("/mnt/qnap01") or Path("/mnt/qnap01") in resolved.parents:
@@ -64,6 +70,18 @@ class ShortWindowWriter:
         # Freeze caller-owned dictionaries before the asynchronous writer uses them.
         configuration = json.loads(canonical_json_bytes(configuration))
         radio = json.loads(canonical_json_bytes(radio))
+        if schema_version not in (1, 2):
+            raise ValueError("unsupported window recording schema")
+        self.schema_version = schema_version
+        self.rate = configuration.get("sample_rate_hz", 2_500_000)
+        if schema_version == 2 and self.rate not in (
+            1_250_000,
+            2_500_000,
+            5_000_000,
+            7_500_000,
+            10_000_000,
+        ):
+            raise ValueError("unsupported native window rate")
         self.root = resolved
         self.root.mkdir(parents=True, exist_ok=True)
         self.destination = resolved / session_id
@@ -105,12 +123,12 @@ class ShortWindowWriter:
             values.dtype != np.dtype("<i2")
             or values.ndim != 3
             or values.shape[1:] != (len(self.receiver_ids), 2)
-            or len(values) > 50_000
+            or len(values) > (50_000 if self.schema_version == 1 else self.rate // 50)
             or not values.flags.c_contiguous
         ):
-            raise ValueError("window must contain at most 50000 CI16 sample/receiver/IQ values")
+            raise ValueError("window exceeds native CI16 sample/receiver/IQ geometry")
         payload = memoryview(values.reshape(-1)).cast("B")
-        row = ShortWindowIndexV1(
+        row = (ShortWindowIndexV1 if self.schema_version == 1 else ShortWindowIndexV2)(
             sequence=sequence,
             target_id=target_id,
             sample_count=len(values),
@@ -146,7 +164,7 @@ class ShortWindowWriter:
             stream.write(index_bytes)
             stream.flush()
             os.fsync(stream.fileno())
-        chunk = ShortWindowChunkV1(
+        chunk = (ShortWindowChunkV1 if self.schema_version == 1 else ShortWindowChunkV2)(
             chunk_index=len(self.chunks),
             first_sequence=self._rows[0].sequence,
             window_count=len(self._rows),
@@ -170,7 +188,9 @@ class ShortWindowWriter:
         if self._closed:
             raise RuntimeError("recording writer is closed")
         self._finish_chunk()
-        manifest = ShortWindowManifestV1(
+        manifest_type = ShortWindowManifestV1 if self.schema_version == 1 else ShortWindowManifestV2
+        manifest = manifest_type(
+            **({"sample_rate_hz": self.rate} if self.schema_version == 2 else {}),
             session_id=self.session_id,
             configuration=self.configuration,
             radio=self.radio,
@@ -208,7 +228,15 @@ class ShortWindowReader:
         self.path = path.resolve(strict=True)
         payload = ScannerIqStore._read_regular(self.path / "manifest.json", 16 * 1024**2)
         try:
-            self.manifest = ShortWindowManifestV1.model_validate_json(payload)
+            document = json.loads(payload)
+            if not isinstance(document, dict):
+                raise ValueError("short-window manifest must be an object")
+            manifest_type = (
+                ShortWindowManifestV2
+                if document.get("schema_version") == 2
+                else ShortWindowManifestV1
+            )
+            self.manifest = manifest_type.model_validate(document)
         except ValueError as error:
             raise BundleCorruptionError(f"invalid short-window manifest: {error}") from error
         if self.path.name != self.manifest.session_id:
@@ -222,16 +250,30 @@ class ShortWindowReader:
             raise BundleCorruptionError(f"short-window member changed: {name}")
         return payload
 
-    def windows(self) -> Iterator[ShortWindowRead]:
+    def windows(
+        self, *, start_sequence: int = 0, stop_sequence: int | None = None
+    ) -> Iterator[ShortWindowRead]:
+        stop_sequence = self.manifest.window_count if stop_sequence is None else stop_sequence
+        if (
+            type(start_sequence) is not int
+            or type(stop_sequence) is not int
+            or not 0 <= start_sequence <= stop_sequence <= self.manifest.window_count
+        ):
+            raise ValueError("window range must be inside the sealed inventory")
+        if start_sequence == stop_sequence:
+            return
+        index_type = ShortWindowIndexV1 if self.manifest.schema_version == 1 else ShortWindowIndexV2
         for chunk in self.manifest.chunks:
+            if (
+                chunk.first_sequence + chunk.window_count <= start_sequence
+                or chunk.first_sequence >= stop_sequence
+            ):
+                continue
             index_bytes = self._member(
                 chunk.index_relative_path, chunk.index_bytes, chunk.index_sha256
             )
             try:
-                rows = [
-                    ShortWindowIndexV1.model_validate_json(line)
-                    for line in index_bytes.splitlines()
-                ]
+                rows = [index_type.model_validate_json(line) for line in index_bytes.splitlines()]
             except (ValueError, json.JSONDecodeError) as error:
                 raise BundleCorruptionError("invalid short-window index") from error
             if len(rows) != chunk.window_count:
@@ -248,6 +290,7 @@ class ShortWindowReader:
                             row.sequence != chunk.first_sequence + number
                             or row.payload_offset_bytes != offset
                             or row.receiver_count != len(self.manifest.receiver_ids)
+                            or row.sample_count > self.manifest.sample_rate_hz // 50
                         ):
                             raise BundleCorruptionError("window index geometry is not consecutive")
                         raw = stream.read(row.payload_bytes)
@@ -258,7 +301,8 @@ class ShortWindowReader:
                         values = np.frombuffer(raw, dtype="<i2").reshape(
                             row.sample_count, row.receiver_count, 2
                         )
-                        yield ShortWindowRead(row, values)
+                        if start_sequence <= row.sequence < stop_sequence:
+                            yield ShortWindowRead(row, values)
                     if stream.read(1):
                         raise BundleCorruptionError("unexpected trailing IQ bytes")
             except zstd.ZstdError as error:

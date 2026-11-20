@@ -17,6 +17,7 @@ from leo.contracts.fast_scan import (
     FastScanSegmentResultV1,
     FastScanWindowResultV1,
 )
+from leo.contracts.fast_scan_native import FastScanWindowResultV2
 from leo.pipeline import ProductSpec, StageOutcome, StageResult, StageSpec
 from leo.scanner.fast_scan_detector import Glrt64SearchGeometry, analyze_glrt64_dwell
 
@@ -28,6 +29,7 @@ class VerifiedFastWindow:
     acquisition: dict
     target: dict
     samples: np.ndarray
+    sample_rate_hz: int = 2_500_000
 
 
 class FastWindowSource(Protocol):
@@ -46,8 +48,11 @@ def production_glrt(window, receivers):
     actual = window.acquisition["actual_if_center_hz"]
     center = target["rf_center_hz"] - target["lnb_lo_hz"] - actual
     offsets = edge_frequencies_hz(target["edge"])
+    half_bandwidth = window.sample_rate_hz / 2
     width = min(
-        800000.0, center + float(offsets.min()) + 1250000, 1250000 - center - float(offsets.max())
+        800000.0,
+        center + float(offsets.min()) + half_bandwidth,
+        half_bandwidth - center - float(offsets.max()),
     )
     if width <= 0:
         raise ValueError("pilot lies outside recorded sample bandwidth")
@@ -67,18 +72,18 @@ def production_glrt(window, receivers):
         tuple(range(2, 302, 14)),
     )
     configuration = SimpleNamespace(
-        dwell_samples=50000,
-        probe_samples=50000,
+        dwell_samples=len(window.samples),
+        probe_samples=len(window.samples),
         probe_stride_ms=20,
-        probe_stride_samples=50000,
+        probe_stride_samples=len(window.samples),
         scheduled_probe_count=1,
-        sample_rate_hz=2500000,
+        sample_rate_hz=window.sample_rate_hz,
         receiver_ids=receivers,
         probe_ms=20,
         glrt64_margin_gate=0.025,
         maximum_acquisition_candidates=8,
     )
-    samples = np.empty((50000, len(receivers)), np.complex64)
+    samples = np.empty((len(window.samples), len(receivers)), np.complex64)
     samples.real = window.samples[:, :, 0]
     samples.imag = window.samples[:, :, 1]
     result = analyze_glrt64_dwell(
@@ -93,6 +98,7 @@ def production_glrt(window, receivers):
 
 
 def analyze_window(window, receiver_ids, predictor, policy, detector=production_glrt):
+    result_type = FastScanWindowResultV2 if policy.schema_version == 2 else FastScanWindowResultV1
     a = window.acquisition
     t = window.target
     fields = dict(
@@ -110,7 +116,8 @@ def analyze_window(window, receiver_ids, predictor, policy, detector=production_
         rf_mapping_authority=t.get("rf_mapping_authority", "unknown"),
     )
     valid = (
-        window.samples.shape == (50000, len(receiver_ids), 2)
+        window.sample_rate_hz == policy.sample_rate_hz
+        and window.samples.shape == (policy.window_samples, len(receiver_ids), 2)
         and a.get("complete") is True
         and a.get("validity_authority") == "provider_attested"
         and a.get("validity_includes_guard") is True
@@ -118,26 +125,30 @@ def analyze_window(window, receiver_ids, predictor, policy, detector=production_
         and a.get("actual_if_center_hz") is not None
         and type(a.get("sample_start")) is int
         and type(a.get("generation")) is int
-        and a.get("sample_end") == a["sample_start"] + 50000
+        and a.get("sample_end") == a["sample_start"] + policy.window_samples
     )
     if not valid:
-        return FastScanWindowResultV1(
+        return result_type(
             **fields, status="invalid_capture", reason="invalid sample support or retune quality"
         )
-    scores = tuple(
-        FastScanScoreV1(receiver_id=rx, **s)
-        for rx, s in zip(receiver_ids, predictor.score_ci16(window.samples), strict=True)
+    scores = (
+        ()
+        if policy.schema_version == 2
+        else tuple(
+            FastScanScoreV1(receiver_id=rx, **s)
+            for rx, s in zip(receiver_ids, predictor.score_ci16(window.samples), strict=True)
+        )
     )
     passes = any(s.margin >= policy.threshold for s in scores)
     if policy.mode == "gated" and not passes:
-        return FastScanWindowResultV1(
+        return result_type(
             **fields,
             status="skipped_fast_score",
             reason="all receiver scores below cutoff",
             scores=scores,
         )
     receivers = detector(window, receiver_ids)
-    return FastScanWindowResultV1(
+    return result_type(
         **fields,
         status="processed",
         reason="paired GLRT completed",

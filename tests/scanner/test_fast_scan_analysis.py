@@ -50,3 +50,46 @@ def test_owned_predictor_matches_independent_reference(edge):
         z = samples[:, rx, 0].astype(float) + 1j * samples[:, rx, 1]
         expected = template_features(z, bank)
         assert observed[rx]["margin"] == pytest.approx(expected["margin"], abs=2e-14)
+
+
+def test_native_window_disables_predictor_and_glrt_keeps_native_samples():
+    from leo.contracts.fast_scan_native import FastScanPolicyV2
+    from leo.scanner.fast_scan_analysis import VerifiedFastWindow
+    from tests.fast_scan_support import TARGET
+
+    samples = np.zeros((200_000, 2, 2), dtype="<i2")
+    samples[:, :, 0] = 100
+    acquisition = dict(
+        global_visit=0,
+        sample_start=1000,
+        sample_end=201000,
+        generation=1,
+        actual_if_center_hz=959687500,
+        complete=True,
+        validity_authority="provider_attested",
+        validity_includes_guard=True,
+        quality_flags=[],
+    )
+    window = VerifiedFastWindow(
+        0, "sha256:" + "a" * 64, acquisition, TARGET, samples, sample_rate_hz=10_000_000
+    )
+    seen = []
+
+    class Diagnostic:
+        def score_ci16(self, values):
+            raise AssertionError("native 10 MS/s must not use the 2.5 MS/s predictor")
+
+    def native_detector(value, receivers):
+        seen.append(value)
+        return detector(value, receivers)
+
+    result = analyze_window(window, (0, 1), Diagnostic(), FastScanPolicyV2(), native_detector)
+    assert result.status == "processed"
+    assert not result.scores
+    assert seen == [window]
+    assert seen[0].samples is samples
+    assert result.sample_end == 201000
+    assert (
+        analyze_window(window, (0, 1), Diagnostic(), FastScanPolicyV1(), native_detector).status
+        == "invalid_capture"
+    )

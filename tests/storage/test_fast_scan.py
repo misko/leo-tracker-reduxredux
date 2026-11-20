@@ -38,6 +38,18 @@ def test_rejects_rate_generation_and_unsafe_names(tmp_path):
         store.detail("../secret")
 
 
+def test_bounded_segment_keeps_the_original_window_id_and_sample_rate(tmp_path):
+    store = FastScanStore(tmp_path / "bulk")
+    _, _, inventory = store.ingest(recording(tmp_path / "raw"))
+    entry = inventory["segments"][0]
+    original = list(FastSegmentSource(entry).windows())
+    (window,) = FastSegmentSource(entry, start_sequence=1, stop_sequence=2).windows()
+    assert (window.sequence, window.iq_sha256) == (original[1].sequence, original[1].iq_sha256)
+    assert window.sample_rate_hz == 2_500_000
+    with pytest.raises(ValueError, match="scope"):
+        FastSegmentSource(entry, start_sequence=1, stop_sequence=4)
+
+
 def test_owned_publications_reject_symlinked_directories(tmp_path):
     from leo.storage.errors import PathConfinementError
 

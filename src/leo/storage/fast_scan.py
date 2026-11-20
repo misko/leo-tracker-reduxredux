@@ -39,7 +39,7 @@ def immutable_json(path, document):
 
 
 class FastSegmentSource:
-    def __init__(self, entry):
+    def __init__(self, entry, *, start_sequence=0, stop_sequence=None):
         from leo.storage.short_window import ShortWindowReader
 
         self.reader = ShortWindowReader(Path(entry["path"]))
@@ -51,10 +51,14 @@ class FastSegmentSource:
         self.targets = {t["target_id"]: t for t in self.reader.manifest.configuration["targets"]}
         configuration = self.reader.manifest.configuration
         if (
-            configuration.get("sample_rate_hz") != 2500000
-            or self.reader.manifest.sample_rate_hz != 2500000
+            configuration.get("sample_rate_hz") != self.reader.manifest.sample_rate_hz
+            or self.reader.manifest.sample_rate_hz not in (2500000, 10000000)
+            or (
+                self.reader.manifest.sample_rate_hz == 10000000
+                and self.reader.manifest.schema_version != 2
+            )
         ):
-            raise ValueError("fast-scan predictor is qualified only at 2.5 MS/s")
+            raise ValueError("fast-scan source requires v1 2.5 MS/s or native v2 10 MS/s")
         if not self.targets or len(self.targets) != len(configuration["targets"]):
             raise ValueError("fast-scan targets must be nonempty and unique")
         for target in self.targets.values():
@@ -67,17 +71,33 @@ class FastSegmentSource:
                 raise ValueError("fast-scan GLRT requires an explicit channel and RF/LO hypothesis")
         if not 1 <= self.reader.manifest.window_count <= 4096:
             raise ValueError("fast-scan segment must contain 1 to 4096 windows")
+        self.start_sequence = start_sequence
+        self.stop_sequence = (
+            self.reader.manifest.window_count if stop_sequence is None else stop_sequence
+        )
+        if (
+            type(self.start_sequence) is not int
+            or type(self.stop_sequence) is not int
+            or not 0
+            <= self.start_sequence
+            < self.stop_sequence
+            <= self.reader.manifest.window_count
+        ):
+            raise ValueError("fast-scan window scope lies outside the sealed segment")
 
     def windows(self):
         from leo.scanner.fast_scan_analysis import VerifiedFastWindow
 
-        for w in self.reader.windows():
+        for w in self.reader.windows(
+            start_sequence=self.start_sequence, stop_sequence=self.stop_sequence
+        ):
             yield VerifiedFastWindow(
                 w.index.sequence,
                 w.index.iq_sha256,
                 w.index.acquisition,
                 self.targets[w.index.target_id],
                 w.samples,
+                sample_rate_hz=self.reader.manifest.sample_rate_hz,
             )
 
 

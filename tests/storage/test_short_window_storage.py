@@ -144,3 +144,10 @@ def test_reader_rejects_escaping_chunk_path(tmp_path: Path) -> None:
     manifest_path.write_bytes(canonical_json_bytes(manifest))
     with pytest.raises(BundleCorruptionError):
         ShortWindowReader(path)
+
+
+def test_reader_rejects_a_non_object_manifest(tmp_path: Path) -> None:
+    path = writer(tmp_path).finish(stop_reason="empty")
+    (path / "manifest.json").write_text("[]")
+    with pytest.raises(BundleCorruptionError, match="manifest"):
+        ShortWindowReader(path)
