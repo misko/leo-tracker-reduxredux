@@ -2,6 +2,8 @@
 
 **Active development, November 20, 2026.** Use **algo07v5 fast, no repair** as the accuracy reference and **compact v5, five-refresh secant** as the smaller receiver under development. The four v5 configurations and compact v5 can all consume the same saved GLRT detections. The deployed fast-scan Standard path has its own production identity, **ALGO07**. [Original DS26 evaluation](docs/analysis/algo07v5-ds26-performance.md) · [Compact evaluation](reports/2026_11_19_receiver_screening/secant-full/README.md) · [Production release](reports/ALGO07/README.md)
 
+The November 20 progress report compares original GLRT, one scan and two-scan cancellation on Gauss and shows how each affected original and compact v5 position fixes. [Dated algorithm report](2026_11_20_algorithms.md)
+
 ## Active algo07 variants and compact v5
 
 | Algorithm | Status | What it does | How to select it |
