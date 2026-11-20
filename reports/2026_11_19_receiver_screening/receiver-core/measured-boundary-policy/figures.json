@@ -1,0 +1,48 @@
+{
+  "charts": [
+    {
+      "caption": "One installed compact fit per offer on two roof recordings. The 20 m rule can withhold both arms without changing their numerical endpoints.",
+      "cases": "sealed",
+      "condition_labels": {
+        "near-inside": "Near inside",
+        "near-outside": "Near omission",
+        "six-outside": "6 km omitted"
+      },
+      "id": "measured-boundary-policy",
+      "method": "phase_release_guard_20m",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Endpoint at tile face",
+          "key": "candidate",
+          "label": "20 m guard",
+          "value": "phase_release_guard_20m"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Guard off",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "request_sha256"
+          ],
+          "value": "phase_release_guard_off"
+        }
+      ],
+      "title": "20 m publication guard on six measured roof offers"
+    }
+  ],
+  "version": 1
+}

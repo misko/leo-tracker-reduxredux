@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_optional_cavity",
+      "method": "v5_optional_cavity",
+      "scope": "roof",
+      "title": "Family-local cavity failure in compact v5",
+      "caption": "The stock and candidate consume the same complete native GLRT and causal TLE history. The candidate skips a family only when its optional exclusion calibration fails. The four archived v5 roles retain their failed measurements where applicable.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "series": [
+        {"key": "one", "label": "Family-local cavity rejection", "file": "comparison.jsonl.gz", "value": "v5_optional_cavity"},
+        {"key": "stock", "label": "Fresh compact secant stock", "file": "comparison.jsonl.gz", "value": "v5_secant_fit", "match": ["native_sha256", "catalog_sha256", "track_config_sha256", "frozen_request_sha256"]}
+      ]
+    }
+  ]
+}

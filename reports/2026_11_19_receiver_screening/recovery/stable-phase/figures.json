@@ -1,0 +1,71 @@
+{
+  "charts": [
+    {
+      "caption": "The compact secant solver can end initial and salvage phase updates after both orbit timing and position settle. Both methods receive the same stored GLRT factors and causal TLEs.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "stable_phase-timing",
+      "method": "v5_stable_phase",
+      "scope": "roof",
+      "seal": "timing-figure-lock.json",
+      "series": [
+        {
+          "file": "v5_stable_phase-timing.jsonl.gz",
+          "key": "one",
+          "label": "Converged phase updates",
+          "value": "v5_stable_phase"
+        },
+        {
+          "file": "v5_secant_fit-timing.jsonl.gz",
+          "key": "stock",
+          "label": "Five phase updates",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "v5_secant_fit"
+        }
+      ],
+      "title": "Stop settled orbital updates on paired timing recordings"
+    },
+    {
+      "caption": "The compact secant solver can end initial and salvage phase updates after both orbit timing and position settle. Both methods receive the same stored GLRT factors and causal TLEs.",
+      "cases": [
+        "DS26-0255",
+        "DS26-0150",
+        "DS29-0357",
+        "DS26-0016"
+      ],
+      "id": "stable_phase-confirmation",
+      "method": "v5_stable_phase",
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "v5_stable_phase-confirmation.jsonl.gz",
+          "key": "one",
+          "label": "Converged phase updates",
+          "value": "v5_stable_phase"
+        },
+        {
+          "file": "v5_secant_fit-confirmation.jsonl.gz",
+          "key": "stock",
+          "label": "Five phase updates",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "v5_secant_fit"
+        }
+      ],
+      "title": "Stop settled orbital updates on four hash-selected roof recordings"
+    }
+  ],
+  "version": 1
+}

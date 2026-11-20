@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_armijo_aligned_finish",
+      "method": "v5_armijo_aligned_finish",
+      "scope": "roof",
+      "title": "Armijo finish with checked phase alignment",
+      "caption": "Four previously inspected inputs test the guarded initialization of phases for newly adopted satellites. The unaligned control retains the original DS26-0066 failure.",
+      "cases": ["DS26-0066", "DS26-0287", "DS26-0002", "DS29-0082"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["matched-requests.json", "stock-cavity-positions.jsonl.gz"],
+      "series": [
+        {"key": "one", "label": "Aligned Armijo finish", "file": "positions.jsonl.gz", "value": "v5_armijo_aligned_finish", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Original Armijo finish", "file": "unaligned-positions.jsonl.gz", "value": "v5_armijo_finish", "where": {"mode": "matched-tile"}, "match": ["input_sha256"]},
+        {"key": "all_visits", "label": "Armijo cavity endpoint", "file": "armijo-cavity-positions.jsonl.gz", "value": "v5_armijo_fit", "where": {"mode": "matched-tile"}, "match": ["input_sha256"]},
+        {"key": "one_native_factors", "label": "Stock compact finish", "file": "stock-finish-positions.jsonl.gz", "value": "compact_finish", "where": {"mode": "matched-tile"}, "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "charts": [
+    {
+      "caption": "Six held recordings with identical per-RF original-call budgets. The scheduled compact fits use the selected archived packets.",
+      "cases": "sealed",
+      "id": "adaptive-visits-held",
+      "method": "adaptive_visits_novel",
+      "provenance": [
+        "prediction-lock.json",
+        "summary.csv",
+        "fit-resources.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "one",
+          "label": "Track novelty",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_visits_novel"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched hash",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_visits_hash"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Always fast",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_visits_fast"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Always original",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_visits_original"
+        }
+      ],
+      "title": "Select original detector visits by fast track novelty"
+    }
+  ],
+  "version": 2
+}

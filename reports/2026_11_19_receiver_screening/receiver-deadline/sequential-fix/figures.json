@@ -1,0 +1,100 @@
+{
+  "charts": [
+    {
+      "caption": "Six recordings with the original roof offer. The two prefix fits share earlier GLRT visits. Early release requires agreement and causal support in both arms.",
+      "cases": "sealed",
+      "id": "sequential-fix-roof",
+      "method": "sequential_fix",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "timing.csv",
+        "summary.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "255 s gate or complete fallback",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "sequential_fix"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete compact",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "full_compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "210 s checkpoint",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "compact_210"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "255 s checkpoint",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "compact_255"
+        }
+      ],
+      "title": "Cumulative compact release and full fallback"
+    },
+    {
+      "caption": "Two anchor recordings at the same physical site. The supplied position square moves 15 km east while the causal catalogue and detector observations stay paired.",
+      "cases": "sealed",
+      "condition_labels": {
+        "shifted": "25 km offer moved 15 km east"
+      },
+      "id": "sequential-fix-shifted",
+      "method": "sequential_fix_shifted",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "timing.csv",
+        "summary.json"
+      ],
+      "queries": "shifted-queries.json",
+      "scope": "transfer",
+      "seal": "shifted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "255 s constrained diagnostic",
+          "key": "candidate",
+          "label": "Early release",
+          "value": "shifted_early"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete compact",
+          "value": "shifted_full"
+        }
+      ],
+      "title": "Cumulative compact with the offered square moved east"
+    }
+  ],
+  "version": 2
+}

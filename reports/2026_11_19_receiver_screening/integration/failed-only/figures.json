@@ -1,0 +1,75 @@
+{
+  "charts": [
+    {
+      "caption": "Measured standalone compact and repair workers, combined offline under the frozen retry rule. All original offers and both calibration arms remain.",
+      "cases": "ds26-all159",
+      "id": "failed-only-all159",
+      "method": "v5_failed_only_archive",
+      "provenance": [
+        "scores.csv",
+        "summary.json",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "all159-figure-lock.json",
+      "series": [
+        {
+          "file": "all159-replay.jsonl.gz",
+          "key": "one",
+          "label": "Stock-first exception replay",
+          "value": "v5_failed_only_archive"
+        },
+        {
+          "file": "all159-stock.jsonl.gz",
+          "key": "stock",
+          "label": "Unchanged compact v5",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "frozen_request_sha256",
+            "tile"
+          ],
+          "value": "v5_secant_fit"
+        }
+      ],
+      "title": "Stock-first compact v5 exception replay \u00b7 all159"
+    },
+    {
+      "caption": "Measured standalone compact and repair workers, combined offline under the frozen retry rule. All original offers and both calibration arms remain.",
+      "cases": "ds26-excluded32",
+      "id": "failed-only-excluded32",
+      "method": "v5_failed_only_archive",
+      "provenance": [
+        "scores.csv",
+        "summary.json",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "excluded32-figure-lock.json",
+      "series": [
+        {
+          "file": "excluded32-replay.jsonl.gz",
+          "key": "one",
+          "label": "Stock-first exception replay",
+          "value": "v5_failed_only_archive"
+        },
+        {
+          "file": "excluded32-stock.jsonl.gz",
+          "key": "stock",
+          "label": "Unchanged compact v5",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "frozen_request_sha256",
+            "tile"
+          ],
+          "value": "v5_secant_fit"
+        }
+      ],
+      "title": "Stock-first compact v5 exception replay \u00b7 excluded32"
+    }
+  ],
+  "version": 1
+}

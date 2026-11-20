@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "coincident_beacon_difference",
+      "method": "coincident_beacon_difference",
+      "scope": "transfer",
+      "title": "Coincident beacon differences at eight measured StarLoc sites",
+      "caption": "The fit uses exact shared STFT timestamps from released anonymous beacon curves. Each measured site receives one containing tile, one omitted tile and one within-capture time-shift control. All 24 results withheld. Forced coordinates show where the same solver searched when coincident pairs were available.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {"supplied-tile": "Containing tile", "omitted-tile": "Receiver omitted", "shuffled": "Time-shift control"},
+      "provenance": ["plan.json", "prediction-lock.json", "source-lock.json", "simultaneous-coverage.json", "scores.json"],
+      "series": [
+        {"key": "candidate", "label": "Coincident difference · published", "forced_label": "Coincident difference · forced", "file": "positions.jsonl.gz", "value": "coincident_beacon_difference"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "charts": [
+    {
+      "caption": "Anonymous GLRT peak pairs, causal orbits and independent clocks. The stationary prior spans six acquisitions at one roof. Differences within each RF lane cancel fixed calibration exactly.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Original containing offer",
+        "far_missing": "Far missing offer",
+        "near_missing": "Near missing offer"
+      },
+      "id": "stationary-sessions",
+      "method": "stationary-sessions",
+      "provenance": [
+        "scores.csv",
+        "summary.json",
+        "decision-lock.json"
+      ],
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "All sessions (diagnostic)",
+          "key": "candidate",
+          "label": "All sessions",
+          "value": "all_sessions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Early group (diagnostic)",
+          "key": "stock",
+          "label": "Early group",
+          "value": "early_group"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Later group (diagnostic)",
+          "key": "one",
+          "label": "Later group",
+          "value": "late_group"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "First session (diagnostic)",
+          "key": "four",
+          "label": "First session",
+          "value": "session_1"
+        }
+      ],
+      "title": "Stationary position across six roof recordings"
+    },
+    {
+      "caption": "Anonymous GLRT peak pairs, causal orbits and independent clocks. The stationary prior spans six acquisitions at one roof. Differences within each RF lane cancel fixed calibration exactly.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Original containing offer",
+        "far_missing": "Far missing offer",
+        "near_missing": "Near missing offer"
+      },
+      "id": "stationary-controls",
+      "method": "stationary-controls",
+      "provenance": [
+        "scores.csv",
+        "summary.json",
+        "decision-lock.json"
+      ],
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "All sessions (diagnostic)",
+          "key": "candidate",
+          "label": "All sessions",
+          "value": "all_sessions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "73 s time shuffle (diagnostic)",
+          "key": "stock",
+          "label": "73 s time shuffle",
+          "value": "time_shuffle"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "No data, offer center (diagnostic)",
+          "key": "one",
+          "label": "No data, offer center",
+          "value": "center"
+        }
+      ],
+      "title": "Stationary likelihood against time shuffle and no data"
+    }
+  ],
+  "version": 2
+}

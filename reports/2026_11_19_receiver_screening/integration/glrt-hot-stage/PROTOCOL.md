@@ -1,0 +1,7 @@
+# Wave8 ordinary GLRT host protocol
+
+Replay the frozen ordinary wave8 held roster for DS26-0036 and DS29-0082, using segments 9 and 10 and sequence IDs 13, 17, 23 and 29. Preserve the archived validity decisions. Compare against the original native x86 library. Also replay the same empty, seeded Gaussian noise, and 48 kHz weak planted controls in each band.
+
+Record disjoint native wrapper CPU and wall timers and nested search counters. Sum proposal once and avoid adding inclusive acquisition and fine timing. Run five alternating paired calls in persistent contexts created before timing. Measure cold context creation separately. Split local saved-CI16 reads, C detector CPU, and full Python-call wall time. Compare private short-window prepared-buffer retention to ordinary on the same byte-identical CI16. The prepared inputs are refreshed on every invocation and are retained only within the context. Test direct buffered/file-array reads against an mmap path with all pages read before recording read time. Timing gate is 20 ms end-to-end over actual dual-RX visits, report distribution and pass counts even when the gate misses.
+
+Require identical canonical native payload and positive keys across repetitions and between builds, including ranked candidate fields, both templates, and gates. Replay from local saved archives only. A scientific payload difference requires a same-input native-factor position replay in both calibration arms. A detector-only result keeps its native scope explicit and leaves position unscored.

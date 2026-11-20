@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_lazy_pair",
+      "method": "v5_lazy_pair",
+      "scope": "roof",
+      "title": "Skip a rejected predictive fit in compact v5",
+      "caption": "Both modes fit the same stored detector factors through final positions. The fitted predictive pass is skipped only when c=0 fails, saving one pass in two of the four gate-selected cases. Both arm endpoints coincide with the eager controls.",
+      "cases": ["DS26-0036", "DS29-0082", "DS26-0002", "DS26-0070"],
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "selection.json", "comparison.json", "source-lock.json", "archived-gates.csv"],
+      "series": [
+        {"key": "one", "label": "Lazy compact v5", "file": "positions.jsonl.gz", "value": "v5_lazy_pair"},
+        {"key": "stock", "label": "Same-core eager compact v5", "file": "control-positions.jsonl.gz", "value": "compact_finish_eager", "match": ["input_sha256", "cpu", "frozen_request_sha256"]}
+      ]
+    }
+  ]
+}

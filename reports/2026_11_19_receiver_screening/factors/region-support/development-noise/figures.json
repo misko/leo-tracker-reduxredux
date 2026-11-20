@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "tile_region_empirical-fresh",
+      "method": "tile_region_empirical",
+      "scope": "transfer",
+      "title": "Held region support with development-calibrated noise",
+      "caption": "Two independently drawn native sites with causal TLE history and three offers per site. Containing near-edge truth is 1.5 km inside a face. Both calibration arms share the gate but fit RF independently after admission.",
+      "cases": "sealed",
+      "seal": "fresh-figure-lock.json",
+      "queries": "fresh-queries.json",
+      "condition_labels": {"present": "Containing tile", "edge": "Containing tile near edge", "missing": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Development-calibrated region support", "file": "fresh-positions.jsonl.gz", "value": "tile_region_empirical"}
+      ]
+    },
+    {
+      "id": "tile_region_empirical-replay",
+      "method": "tile_region_empirical",
+      "scope": "transfer",
+      "title": "Development-calibrated region support on hard offers",
+      "caption": "The same native and causal orbit packets compare against the earlier halo-missed containing offer and coverage false omission. These are development controls.",
+      "cases": "sealed",
+      "seal": "replay-figure-lock.json",
+      "queries": "replay-queries.json",
+      "condition_labels": {"present": "Containing tile", "missing": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Development-calibrated region support", "file": "replay-positions.jsonl.gz", "value": "tile_region_empirical"},
+        {"key": "stock", "label": "Previous region gate", "file": "replay-stock.jsonl.gz", "value": "prior_region_gate", "match": ["input_sha256", "document_sha256", "history_sha256"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,848 @@
+{
+  "method": "synthetic-trained tiny coordinate network from anonymous shape-only Doppler",
+  "timing_scope": "scan close; per case reads and parses archived graph, fresh causal TLE read and SGP4, candidates, 49-cell shape map, float32 network, and RF diagnostic; excludes precomputed graph construction, training, sensitivity and scoring",
+  "cases": [
+    {
+      "case": "DS26-0036",
+      "bank": {
+        "snapshot": "1792904651911878285-15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86.tle",
+        "eligible": 11086,
+        "regional": 890,
+        "knots": 64,
+        "float32_bytes": 1139200
+      },
+      "scan_open_utc_ns": 1792908972366467298,
+      "scan_duration_s": 299.9955791,
+      "available_curved_tracks": 59,
+      "wall_s": 0.2444056011736393,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.842113035356675,
+            -122.48870399233367
+          ],
+          "xy_km": [
+            4.944685459136963,
+            -7.0914530754089355
+          ],
+          "rms_hz": 110.62621158278208,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 23,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.842113035356675,
+            -122.48870399233367
+          ],
+          "xy_km": [
+            4.944685459136963,
+            -7.0914530754089355
+          ],
+          "rms_hz": 110.62621158278208,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 23,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.004670249298214912,
+        "causal_tle_and_sgp4": 0.22460330929607153,
+        "candidates_and_shape_map": 0.014679806306958199,
+        "forward_pass": 3.138836473226547e-05,
+        "rf_diagnostic": 0.00041748397052288055
+      },
+      "tracks": 40,
+      "candidates_examined": 18693,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.83092492492492,
+        -122.49756185645211
+      ],
+      "feature_range": {
+        "peak": 0.8210423689258274,
+        "contrast": 0.22734908664994002
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 1.3322676295501878e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 3.268496584496461e-13
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 7.549516567451064e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 2.4158453015843406e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 0.8150300593756092,
+        "shape_grid_peak": 2.267827978071652,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 10.822075978820529,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0070",
+      "bank": {
+        "snapshot": "1792958654186240136-6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20.tle",
+        "eligible": 9803,
+        "regional": 834,
+        "knots": 64,
+        "float32_bytes": 1067520
+      },
+      "scan_open_utc_ns": 1792962657770249740,
+      "scan_duration_s": 300.0044826,
+      "available_curved_tracks": 64,
+      "wall_s": 0.1676303381100297,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.93677727824718,
+            -122.43231563967889
+          ],
+          "xy_km": [
+            9.897481918334961,
+            3.4162778854370117
+          ],
+          "rms_hz": 391.05560404524124,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 19,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.93677727824718,
+            -122.43231563967889
+          ],
+          "xy_km": [
+            9.897481918334961,
+            3.4162778854370117
+          ],
+          "rms_hz": 391.05560404524124,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 19,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.006562915630638599,
+        "causal_tle_and_sgp4": 0.14708230085670948,
+        "candidates_and_shape_map": 0.013548605144023895,
+        "forward_pass": 3.0265189707279205e-05,
+        "rf_diagnostic": 0.00040192995220422745
+      },
+      "tracks": 40,
+      "candidates_examined": 16686,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.94353753753754,
+        -122.40268556935634
+      ],
+      "feature_range": {
+        "peak": 0.5328461835179787,
+        "contrast": 0.15219753008045828
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 4.440892098500626e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 1.0231815394945443e-12
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 7.549516567451064e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 2.8421709430404007e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 10.822075978820529,
+        "shape_grid_peak": 12.78609197656018,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 3.4550022455978673,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0112",
+      "bank": {
+        "snapshot": "1793023462314268247-aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86.tle",
+        "eligible": 11109,
+        "regional": 1110,
+        "knots": 64,
+        "float32_bytes": 1420800
+      },
+      "scan_open_utc_ns": 1793028667563363096,
+      "scan_duration_s": 300.0049451,
+      "available_curved_tracks": 80,
+      "wall_s": 0.1855281973257661,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.84684064380543,
+            -122.44650142599119
+          ],
+          "xy_km": [
+            8.65149211883545,
+            -6.566688537597656
+          ],
+          "rms_hz": 211.93998595670524,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 25,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.84684064380543,
+            -122.44650142599119
+          ],
+          "xy_km": [
+            8.65149211883545,
+            -6.566688537597656
+          ],
+          "rms_hz": 211.93998595670524,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 25,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.007854901254177094,
+        "causal_tle_and_sgp4": 0.15853389911353588,
+        "candidates_and_shape_map": 0.018692705780267715,
+        "forward_pass": 3.553088754415512e-05,
+        "rf_diagnostic": 0.00040896423161029816
+      },
+      "tracks": 40,
+      "candidates_examined": 22368,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.83092492492492,
+        -122.40268556935634
+      ],
+      "feature_range": {
+        "peak": 0.737537215656004,
+        "contrast": 0.2611428159266306
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 2.6645352591003757e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 8.526512829121202e-14
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 2.275957200481571e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 1.9895196601282805e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 3.4550022455978673,
+        "shape_grid_peak": 7.567829819994898,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 2.61910397539658,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0122",
+      "bank": {
+        "snapshot": "1793041331314091153-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle",
+        "eligible": 11091,
+        "regional": 872,
+        "knots": 64,
+        "float32_bytes": 1116160
+      },
+      "scan_open_utc_ns": 1793044943564240953,
+      "scan_duration_s": 300.0330464,
+      "available_curved_tracks": 87,
+      "wall_s": 0.1830855356529355,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.84637061553818,
+            -122.45611619509266
+          ],
+          "xy_km": [
+            7.8069915771484375,
+            -6.618861675262451
+          ],
+          "rms_hz": 266.1307395714065,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 18,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.84637061553818,
+            -122.45611619509266
+          ],
+          "xy_km": [
+            7.8069915771484375,
+            -6.618861675262451
+          ],
+          "rms_hz": 266.1307395714065,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 18,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.007695518434047699,
+        "causal_tle_and_sgp4": 0.1610501054674387,
+        "candidates_and_shape_map": 0.013876237906515598,
+        "forward_pass": 3.831833600997925e-05,
+        "rf_diagnostic": 0.0004224320873618126
+      },
+      "tracks": 40,
+      "candidates_examined": 16656,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.83092492492492,
+        -122.45012371290423
+      ],
+      "feature_range": {
+        "peak": 0.7823205103675461,
+        "contrast": 0.30758989103323897
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 3.552713678800501e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 2.8421709430404007e-13
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 1.7763568394002505e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 3.410605131648481e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 2.61910397539658,
+        "shape_grid_peak": 3.722138004524547,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 3.41925963696605,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0203",
+      "bank": {
+        "snapshot": "1793185228910602426-4c641810f9578d212b2fce8d2a87c144aac5517f989612ab6d5f5bb83a645763.tle",
+        "eligible": 11149,
+        "regional": 882,
+        "knots": 64,
+        "float32_bytes": 1128960
+      },
+      "scan_open_utc_ns": 1793185265342162019,
+      "scan_duration_s": 299.9767348,
+      "available_curved_tracks": 66,
+      "wall_s": 0.24512102548033,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.85750561375661,
+            -122.44830213697938
+          ],
+          "xy_km": [
+            8.493329048156738,
+            -5.382876873016357
+          ],
+          "rms_hz": 230.6716660893719,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 15,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.85750561375661,
+            -122.44830213697938
+          ],
+          "xy_km": [
+            8.493329048156738,
+            -5.382876873016357
+          ],
+          "rms_hz": 230.6716660893719,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 15,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.006843638606369495,
+        "causal_tle_and_sgp4": 0.22306336741894484,
+        "candidates_and_shape_map": 0.014769594185054302,
+        "forward_pass": 3.529153764247894e-05,
+        "rf_diagnostic": 0.00040587782859802246
+      },
+      "tracks": 40,
+      "candidates_examined": 18331,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.83092492492492,
+        -122.45012371290423
+      ],
+      "feature_range": {
+        "peak": 0.7389122623689521,
+        "contrast": 0.26261781563866127
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 9.325873406851315e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 9.947598300641403e-13
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 7.993605777301127e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 1.1368683772161603e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 3.41925963696605,
+        "shape_grid_peak": 3.722138004524547,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 3.0865412538438286,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0209",
+      "bank": {
+        "snapshot": "1793192693669869138-5ba18ecc0f72b38f1a32cdb62053e1321fb3ac8a3465617d4464f77f203b9f46.tle",
+        "eligible": 11141,
+        "regional": 935,
+        "knots": 64,
+        "float32_bytes": 1196800
+      },
+      "scan_open_utc_ns": 1793195812082113056,
+      "scan_duration_s": 299.9990627,
+      "available_curved_tracks": 78,
+      "wall_s": 0.17814863566309214,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.83219889920896,
+            -122.4578298976664
+          ],
+          "xy_km": [
+            7.656470775604248,
+            -8.191922187805176
+          ],
+          "rms_hz": 289.41814795168676,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 18,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.83219889920896,
+            -122.4578298976664
+          ],
+          "xy_km": [
+            7.656470775604248,
+            -8.191922187805176
+          ],
+          "rms_hz": 289.41814795168676,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 18,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.00705117080360651,
+        "causal_tle_and_sgp4": 0.1546941278502345,
+        "candidates_and_shape_map": 0.01596404891461134,
+        "forward_pass": 2.9105693101882935e-05,
+        "rf_diagnostic": 0.00040721986442804337
+      },
+      "tracks": 40,
+      "candidates_examined": 19309,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.83092492492492,
+        -122.40268556935634
+      ],
+      "feature_range": {
+        "peak": 0.6780569729294844,
+        "contrast": 0.22344588163043566
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 2.220446049250313e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 5.684341886080802e-14
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 8.881784197001252e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 3.979039320256561e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 3.0865412538438286,
+        "shape_grid_peak": 7.567829819994898,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 7.04000486722645,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0277",
+      "bank": {
+        "snapshot": "1793297047368813889-91362ddd01a725beeb7c70d3ee72eb8f34d3c58698d97a8637e1d351f928862f.tle",
+        "eligible": 10792,
+        "regional": 916,
+        "knots": 64,
+        "float32_bytes": 1172480
+      },
+      "scan_open_utc_ns": 1793303494230007472,
+      "scan_duration_s": 300.0380727,
+      "available_curved_tracks": 85,
+      "wall_s": 0.174662115983665,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.897063926134024,
+            -122.43345235708406
+          ],
+          "xy_km": [
+            9.797639846801758,
+            -0.9919041991233826
+          ],
+          "rms_hz": 131.60494574476783,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 17,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.897063926134024,
+            -122.43345235708406
+          ],
+          "xy_km": [
+            9.797639846801758,
+            -0.9919041991233826
+          ],
+          "rms_hz": 131.60494574476783,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 17,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.008211208507418633,
+        "causal_tle_and_sgp4": 0.15217412542551756,
+        "candidates_and_shape_map": 0.01384824514389038,
+        "forward_pass": 3.268662840127945e-05,
+        "rf_diagnostic": 0.00039306096732616425
+      },
+      "tracks": 40,
+      "candidates_examined": 17362,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.906,
+        -122.40268556935634
+      ],
+      "feature_range": {
+        "peak": 0.8002156544468224,
+        "contrast": 0.2729200049407754
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 8.881784197001252e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 7.673861546209082e-13
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 1.7590096046404824e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 8.526512829121202e-14
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 7.04000486722645,
+        "shape_grid_peak": 9.655866263985518,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 2.0974983436990797,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    },
+    {
+      "case": "DS26-0311",
+      "bank": {
+        "snapshot": "1793354675408927643-b9271cb0b50e60a49b547c429fe146947a6175bf547734f766a32d691467e2af.tle",
+        "eligible": 11131,
+        "regional": 953,
+        "knots": 64,
+        "float32_bytes": 1219840
+      },
+      "scan_open_utc_ns": 1793360766302906443,
+      "scan_duration_s": 300.0225953,
+      "available_curved_tracks": 71,
+      "wall_s": 0.17971072252839804,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.84600903980152,
+            -122.4621763390314
+          ],
+          "xy_km": [
+            7.274706840515137,
+            -6.65899658203125
+          ],
+          "rms_hz": 116.49862806005304,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 21,
+          "clipped": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.84600903980152,
+            -122.4621763390314
+          ],
+          "xy_km": [
+            7.274706840515137,
+            -6.65899658203125
+          ],
+          "rms_hz": 116.49862806005304,
+          "rms_kind": "in_sample_demeaned_all_nominated_tracks",
+          "satellite_families": 21,
+          "clipped": false
+        }
+      },
+      "stage_s": {
+        "graph_read": 0.006783188320696354,
+        "causal_tle_and_sgp4": 0.15690926648676395,
+        "candidates_and_shape_map": 0.01559296902269125,
+        "forward_pass": 2.6409514248371124e-05,
+        "rf_diagnostic": 0.00039668381214141846
+      },
+      "tracks": 40,
+      "candidates_examined": 18272,
+      "map_candidate_scores": 23520,
+      "grid_peak_latlon": [
+        37.86846246246246,
+        -122.45012371290423
+      ],
+      "feature_range": {
+        "peak": 0.8849524226316262,
+        "contrast": 0.36781325415522415
+      },
+      "sensitivity": [
+        {
+          "injected_c_hz_per_ghz": -200000.0,
+          "feature_max_abs_delta": 1.3322676295501878e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 9.237055564881302e-13
+        },
+        {
+          "injected_c_hz_per_ghz": 200000.0,
+          "feature_max_abs_delta": 4.440892098500626e-15,
+          "displacement_km": 0.0,
+          "rms_delta_hz": 1.5631940186722204e-13
+        }
+      ],
+      "evaluation_only_errors_km": {
+        "network": 2.0974983436990797,
+        "shape_grid_peak": 3.799484360802911,
+        "no_radio_center": 8.19320223196156,
+        "mismatched_maps": 0.8150300593756092,
+        "shared_site_no_radio_memorizer": 0.0
+      }
+    }
+  ],
+  "checks": {
+    "correctness": {
+      "profiled_cost_max_abs_error": 4.263256414560601e-14,
+      "single_vs_batch_forward_check": true
+    },
+    "seed": 261118,
+    "training_snapshots": [
+      {
+        "case": "DS26-0002",
+        "scan_open_utc_ns": 1792855328907395694,
+        "scan_end_utc_ns": 1792855628903183094,
+        "snapshot": "1792854010992568693-cfbdc568e4bb37c73fc644b2228eed8f434857bf3ff8bb51c68b3c4e652a94b4.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0004",
+        "scan_open_utc_ns": 1792859545460900049,
+        "scan_end_utc_ns": 1792859845490746949,
+        "snapshot": "1792857641591188433-824b7ac22df364ae0f9177f53d00b20635fa41fca54535ce753eff829a4a229b.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0006",
+        "scan_open_utc_ns": 1792862559477912751,
+        "scan_end_utc_ns": 1792862859497703651,
+        "snapshot": "1792861409759120072-e674a7a2e97115058c1abd9e71b71045adcdf1702ea8e7d15ef5d9e2189ee029.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0010",
+        "scan_open_utc_ns": 1792869789362008460,
+        "scan_end_utc_ns": 1792870089393332360,
+        "snapshot": "1792868634934172973-d6bfe3dfb800888b911cac0adfa7b97983fc6b28c9981f7ef039cd4a858436c1.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0012",
+        "scan_open_utc_ns": 1792872803378081928,
+        "scan_end_utc_ns": 1792873103358484028,
+        "snapshot": "1792872287417353927-91e0f72e5ebfdf7f5c7664349fd9630166b52bc4115e9d150dadddbcef117ab8.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0018",
+        "scan_open_utc_ns": 1792881845386328409,
+        "scan_end_utc_ns": 1792882145423044009,
+        "snapshot": "1792879297979688185-e5740abc6f217a2cc60221da38dda20d7a1443ce734127965e3905cb1fb9342a.tle",
+        "examples": 48
+      }
+    ],
+    "validation_snapshots": [
+      {
+        "case": "DS26-0020",
+        "scan_open_utc_ns": 1792884860851884177,
+        "scan_end_utc_ns": 1792885160841514977,
+        "snapshot": "1792882996049843434-1e8d8100919552dfa306ab793a73c1fb0387a93d555d76c357c2f5bab520c5ac.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0024",
+        "scan_open_utc_ns": 1792890889522670864,
+        "scan_end_utc_ns": 1792891189522755064,
+        "snapshot": "1792890102630988918-d94a2000de84cbb1c0d1ccbf1717d0be65cd234e432a5752e93f319179f986d5.tle",
+        "examples": 48
+      },
+      {
+        "case": "DS26-0032",
+        "scan_open_utc_ns": 1792902943500558550,
+        "scan_end_utc_ns": 1792903243521183850,
+        "snapshot": "1792900859719622327-2c69db8a50d1f101be66fbaf1f23cd2f58936dbefbb32bcd8154d8f06a546fb4.tle",
+        "examples": 48
+      }
+    ],
+    "snapshot_content_disjoint": true,
+    "optimizer": {
+      "iterations": 160,
+      "converged": false,
+      "message": "STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT",
+      "regularized_loss": 0.04174884573961598
+    },
+    "calibration": "Stationary c times RF offset is constant within a single-channel track. The shape features remove every track mean before nomination and fitting. Both arms are the same estimator, and no c was fitted.",
+    "synthetic_validation_error_km": {
+      "network": {
+        "n": 144,
+        "median": 2.8584936718971363,
+        "p95": 6.1479879775739255,
+        "maximum": 9.743805344040723
+      },
+      "shape_grid_peak": {
+        "n": 144,
+        "median": 2.2017745929753145,
+        "p95": 4.268835574892565,
+        "maximum": 5.569214829045956
+      },
+      "no_radio_center": {
+        "n": 144,
+        "median": 10.129001152357203,
+        "p95": 14.871565071249442,
+        "maximum": 15.83158307465885
+      },
+      "mismatched_maps": {
+        "n": 144,
+        "median": 14.40032411520352,
+        "p95": 23.04643315721174,
+        "maximum": 26.549946205911922
+      }
+    },
+    "synthetic_train_error_km": {
+      "n": 288,
+      "median": 2.694463751779372,
+      "p95": 5.351406806470975,
+      "maximum": 7.313357852722631
+    },
+    "ds26_evaluation_error_km": {
+      "network": {
+        "n": 8,
+        "median": 3.252900445404939,
+        "p95": 9.498351089762599,
+        "maximum": 10.822075978820529
+      },
+      "shape_grid_peak": {
+        "n": 8,
+        "median": 5.6836570903989045,
+        "p95": 11.690512977159045,
+        "maximum": 12.78609197656018
+      },
+      "no_radio_center": {
+        "n": 8,
+        "median": 8.19320223196156,
+        "p95": 8.19320223196156,
+        "maximum": 8.19320223196156
+      },
+      "mismatched_maps": {
+        "n": 8,
+        "median": 3.252900445404939,
+        "p95": 9.498351089762599,
+        "maximum": 10.822075978820529
+      },
+      "shared_site_no_radio_memorizer": {
+        "n": 8,
+        "median": 0.0,
+        "p95": 0.0,
+        "maximum": 0.0
+      }
+    },
+    "label_control": "Single shared campaign reference assigned to DS26-0002 after model inference and used to fit a constant two-coordinate output. This intentionally reuses the geography of the test scans.",
+    "model": {
+      "layers": [
+        51,
+        32,
+        2
+      ],
+      "parameters": 1730,
+      "float32_weight_bytes": 6920,
+      "float_multiply_accumulates_per_pass": 1696,
+      "single_case_repeated_mean_forward_us": 3.5026315599679947,
+      "sha256": "8a16c78c6a14835203eb5f5fa3c689cb88cba08ef4a7bf280cfb87026af911cc",
+      "train_feature_wall_s": 6.425368965603411,
+      "training_wall_s": 0.04221055842936039,
+      "validation_feature_wall_s": 3.017329969443381
+    }
+  }
+}

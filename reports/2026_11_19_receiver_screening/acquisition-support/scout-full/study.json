@@ -1,0 +1,21 @@
+{
+  "id": "scout-centers",
+  "title": "Search four or sixteen pilot start times before the position fit",
+  "caption": "Full recorded IQ, the same wide frequency search and the same position solver. Each receiver proposes four or sixteen pilot start times. All recordings use one physical roof.",
+  "control": {"label": "Four pilot start times", "sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66"},
+  "candidate": {"label": "Sixteen pilot start times", "sha256": "85a62f4867f9959b9cc51edee1acb6c688aaee437c9a82b298f9f538e1d9c682"},
+  "limit_s": 360,
+  "cases": [
+    {"id": "DS26-0036", "cpus": [0, 1], "first": "candidate", "cohort": "development"},
+    {"id": "DS29-0082", "cpus": [18, 19], "first": "control", "cohort": "development"},
+    {"id": "DS26-0237", "cpus": [20, 21], "first": "control", "cohort": "previous confirmation"},
+    {"id": "DS29-0174", "cpus": [22, 23], "first": "candidate", "cohort": "previous confirmation"},
+    {"id": "DS26-0122", "cpus": [18, 19], "first": "candidate", "cohort": "previous reserve"},
+    {"id": "DS29-0247", "cpus": [0, 1], "first": "control", "cohort": "previous reserve"},
+    {"id": "DS26-0014", "cpus": [20, 21], "first": "candidate", "cohort": "first complete detector comparison"},
+    {"id": "DS29-0127", "cpus": [22, 23], "first": "control", "cohort": "first complete detector comparison"}
+  ],
+  "additional_panels": [
+    {"id": "new-iq", "title": "Pilot start-time budget on two new complete waveforms", "cohort": "first complete detector comparison"}
+  ]
+}

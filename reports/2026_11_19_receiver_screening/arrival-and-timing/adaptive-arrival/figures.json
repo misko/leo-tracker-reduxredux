@@ -1,0 +1,62 @@
+{
+  "charts": [
+    {
+      "caption": "Paced stock, fifth-center and adaptive emissions feed identical geometry. Both calibration arms are measured. Original v5 uses capture-era factors.",
+      "cases": "sealed",
+      "id": "adaptive-arrival-position",
+      "method": "adaptive_arrival_adaptive",
+      "provenance": [
+        "position-prediction-lock.json",
+        "position-source-lock.json",
+        "position-scores.csv",
+        "position-summary.json",
+        "position-v5-controls.csv"
+      ],
+      "scope": "roof",
+      "seal": "position-figure-lock.json",
+      "series": [
+        {
+          "file": "paced-positions.jsonl.gz",
+          "key": "one",
+          "label": "Queue-triggered fifth center",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "position_source_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_arrival_adaptive"
+        },
+        {
+          "file": "paced-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Paced stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "position_source_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_arrival_stock"
+        },
+        {
+          "file": "paced-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Paced fifth center",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "position_source_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "adaptive_arrival_fifth"
+        }
+      ],
+      "title": "Position after measured queue-triggered detection"
+    }
+  ],
+  "version": 1
+}

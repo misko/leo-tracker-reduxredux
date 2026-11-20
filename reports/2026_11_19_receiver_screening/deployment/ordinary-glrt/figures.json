@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "ordinary_glrt_band",
+      "method": "ordinary_glrt_band",
+      "scope": "roof",
+      "title": "Ordinary GLRT with a compact fine-frequency cache",
+      "caption": "Fresh clock + offset fits combine modified ordinary GLRT factors from eight DS26 visits and four DS29 visits with archived factors for the remaining visits. The complete ordinary replay gives the matched control. Both DS29 arms withheld the fix.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "position-receipts.json"],
+      "series": [
+        {"key": "one", "label": "Fine band · partial saved IQ replay", "file": "positions.jsonl.gz", "value": "ordinary_glrt_band", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "forced_label": "Fine band forced diagnostics"},
+        {"key": "stock", "label": "Original GLRT · complete replay", "file": "control-positions.jsonl.gz", "value": "ordinary_glrt_band_capture_control", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "observation_sha256", "tile"]}
+      ]
+    }
+  ]
+}

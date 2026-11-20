@@ -1,0 +1,27 @@
+# The roof Qin detector on a physical Austin waveform
+
+The stock wide detector recovered the published Qin phase in all six edge/window evaluations of the UT Austin excerpt. The exact-template margin was **0.828–0.896**, against the frozen 0.025 gate. The worst wrapped discrepancy from the authors’ relative frame times was 0.671 sample on the 10 MS/s grid, about 67 ns. Four evaluations use nonoverlapping time windows and two use an overlapping coverage window. The two edges share the same receiver and waveform. The excerpt comes from the Qin authors’ own supplement, so this tests transfer away from the project’s roof and may overlap the authors’ template derivation. [Source publication](https://arxiv.org/abs/2602.02627) · [Primary supplement guide](https://rnl-data.ae.utexas.edu/datastore/supplementaryMaterial/qin-starlink-pilots/GUIDE.txt) · [Archived native scores](native-scores.csv)
+
+| Search evidence | Gate passes | Matches known or authored phase |
+| --- | ---: | ---: |
+| Physical excerpt, exact Qin | 6/6 | 6/6 |
+| Physical excerpt, 17-symbol cyclic roll | 6/6 | 6/6 at the predicted shifted phase |
+| Physical excerpt, noncyclic shuffled symbols | 3/6 | 0/6 |
+| Phase-randomized controls, all three templates | 0/18 | Relative frame absent |
+| Independent 250 MS/s planted controls, exact Qin | 2/2 | 2/2 |
+
+Free epoch search could re-align the cyclic roll about 74.8 µs early. It produced strong margins of 0.764–0.812, which makes it a phase ambiguity control. Noncyclic shuffling preserved the symbol energy and tones. Its strongest gate passes missed the real reference phase by at least 0.327 ms among the passing cases. The peak phase-randomized margin was 0.0223. Both synthetic positives traversed RF mixing and decimation at their original 250 MS/s and recovered the planted phase within 0.206 sample, with wrapped CFO errors of 3.0 and 10.6 Hz. Their amplitude is a positive implementation check. [Blind native chart](native-acquisition.png) · [All native outputs](native-outputs.jsonl.gz) · [Frozen thresholds and controls](PROTOCOL.md)
+
+## Authored time marks and code order
+
+The separate time-conditioned test used all seven complete published relative frame marks on each edge. Each exact and control search used 36,701 hypotheses spanning the same seven phase offsets and the same ±800 kHz CFO band. Exact Qin won all 14 comparisons. Its normalized squared coherence ranged from 0.1937 to 0.2208, versus a maximum of 0.00145 across the cyclic and noncyclic controls. In the closest pair exact coherence was 145× the larger control. The exact fit selected the published rounded start or one sample later on all 14 traces. This diagnostic grants the authors’ relative time as input. [Conditioned chart](conditioned/conditioned-frames.png) · [Per-frame search results](conditioned-frames.csv) · [Author time labels opened after the native seal](relative-frame-labels.json)
+
+## RF and clock authority
+
+The export contains 12,500,000 little-endian complex sc16 samples at 250 MS/s with actual center 12,075,117,197.1668 Hz and zero documented export shift. The processing uses the roof scan’s tuning centers of 11,959,687,500 Hz and 12,190,312,500 Hz. Their mixing offsets are −115,429,697.1668 Hz and +115,195,302.8332 Hz. Each full 10 MHz output support lies inside the sampled source band. A deterministic 801-tap Kaiser FIR filters before 25× decimation. Input and output amplitudes use ADC-relative counts. [Official ZIP and MATLAB reader](https://rnl-data.ae.utexas.edu/datastore/supplementaryMaterial/qin-starlink-pilots/raw-iq-data/exemplar250-257.zip) · [Bound source and template digests](source-lock.json) · [RF transform receipt](transform-receipt.json)
+
+The published eight-tone template centres are 117.1875 kHz below both roof scan tuning centres under nominal channel geometry. The time-conditioned peaks were −195.007 kHz on the lower edge and −141.602 kHz on the upper edge relative to those scan mixers. The upper native exact tracking estimate was about one symbol alias below its conditioned peak. These values include nominal template centring, signal Doppler and instrument terms. The file's `unix_time` field has undocumented units and there is no independently calibrated receiver coordinate or causal orbit history in the excerpt. The raw archive identifies one physical receiver and the dated source guide tags one exemplar satellite. The study measures relative waveform acquisition and resolves no absolute range, position, or calibration coefficient. [Prior independent-source audit](../../physical/raw-source-audit.json)
+
+## Reproduce
+
+The single permitted ZIP fetch was 40,653,199 bytes. The script authenticates the two previously locked ZIP byte ranges, four metadata members and the 50,000,000-byte raw member, then binds the whole-file and raw SHA-256. Run `python -m tools.pipeline_eval.qualification.austin_waveform /path/to/exemplar250-257.zip` with a fresh `--out` containing `PROTOCOL.md`, followed by `python -m tools.pipeline_eval.qualification.austin_waveform_figures --out ...`. The native detector is the previously qualified stock wide build, using its single-RX ABI. Median CPU was 14.32 ms across the six physical exact calls and 12.11 ms across all 42 native calls, measured after IF conversion. The two conversions used about 1.62 CPU s apiece. [Native prediction seal](native-lock.json) · [Score seal](score-lock.json) · [Stage descriptor](stage-figure.json)

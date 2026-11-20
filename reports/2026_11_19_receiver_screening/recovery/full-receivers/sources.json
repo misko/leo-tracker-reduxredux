@@ -1,0 +1,179 @@
+{
+  "aggregator_sha256": "0cbd54ce32a4bfd482477210278e76c157eec86c3067c914d5f168f1deca8ed9",
+  "frozen_corpus": {
+    "path": "tools/pipeline_eval/frozen/provenance.json",
+    "sha256": "a86586708a7eb8deb31cdf9b4fd899f37ebf22424e8bda4679e52b6ef7cab03d"
+  },
+  "methods": {
+    "late_preflight_archive": {
+      "bypassed": 16,
+      "chart": {
+        "files": {
+          "outcomes.json.gz": "eeabb700cc8f2862e2d0a57676bb9c148c44d17a9a2ced36aae49ebc6a500e64",
+          "positions.jsonl.gz": "2864ea38156175050b46051cea4a7a714a41e65a3578f9690c620e126363bd01",
+          "predecision-lock.json": "362a60fba07e8b0c3f5f520adfb673b1caee58759f4eae536dfadb20dbeeac04",
+          "predecision.json.gz": "981e1389a1e1ff18d0597ec74122acff7e8b8efb093a4c5eff647e0b9d9da826",
+          "scores.csv": "2c37340f23177efa42ece7c171a431b81b0159d045eae4157eb2df23c3693050",
+          "summary.json": "b251bec8765b4ea2c02264477dff377d78240ef66d5e36d7174a151b33c78746"
+        },
+        "prediction": "reports/2026_11_19_receiver_screening/recovery/late-preflight/positions.jsonl.gz",
+        "prediction_sha256": "2864ea38156175050b46051cea4a7a714a41e65a3578f9690c620e126363bd01",
+        "receipt": "reports/2026_11_19_receiver_screening/recovery/late-preflight/roof-lock.json",
+        "receipt_sha256": "87a2082ca237c505783239f42bc6e2e8cdbb58f14d7cf3768467884acc49c25f"
+      },
+      "origin": "archived_stage_decision_replay"
+    },
+    "native_agreement_cascade": {
+      "agreement_ceiling_km": 0.5,
+      "chart": {
+        "files": {
+          "positions.jsonl.gz": "9fbac2d3a22d2216437bb88efe0914699040ea03608c4de683313ca898f559a2",
+          "routing.json": "fbd9c3c6f22cf75006248437abc2a5a6eae3bd1f37755deac7a42b002a074b63",
+          "sources.json": "e8dfe181b1ccb01585e4bd5fb8addb07d3da24a48abdecb471dbf5136855d8f0"
+        },
+        "prediction": "reports/2026_11_19_receiver_screening/recovery/cascade/positions.jsonl.gz",
+        "prediction_sha256": "9fbac2d3a22d2216437bb88efe0914699040ea03608c4de683313ca898f559a2",
+        "receipt": "reports/2026_11_19_receiver_screening/recovery/cascade/roof-figure-lock.json",
+        "receipt_sha256": "027b282bbbf384bf096a6669a96d3348928c805e58f9698e5e59e50e112ea30c"
+      },
+      "origin": "archived_route_with_matched_compact_fallback",
+      "routes": {
+        "fallback": 134,
+        "fast": 1
+      }
+    },
+    "native_clock_offset_ou": {
+      "chart": {
+        "files": {
+          "all-model-positions.jsonl.gz": "61f02df074a197408fcd9c3c284f67fc4a020e02d62e4da080ba7f1d34636382"
+        },
+        "prediction": "reports/2026_11_19_receiver_screening/recovery/clock-offset/full/all-model-positions.jsonl.gz",
+        "prediction_sha256": "61f02df074a197408fcd9c3c284f67fc4a020e02d62e4da080ba7f1d34636382",
+        "receipt": "reports/2026_11_19_receiver_screening/recovery/clock-offset/full/all_roof-figure-lock.json",
+        "receipt_sha256": "f673479cc64e70ac19adf14afd32efd8c2e033a2865837c2dd10e2e321082061"
+      },
+      "origin": "measured_complete_native_replay",
+      "run": {
+        "files": {
+          "plan.json": "319893ed7756517cefa70e79356b54a65f0ea4e77a90f463ca3a397468b57a87",
+          "positions.jsonl.gz": "c1c773b406a7386103fc6d8a2e9855bdbe9c48890645e1e9e989b8c3ec18b23e"
+        },
+        "prediction": "reports/2026_11_19_receiver_screening/recovery/clock-offset/full/positions.jsonl.gz",
+        "prediction_sha256": "c1c773b406a7386103fc6d8a2e9855bdbe9c48890645e1e9e989b8c3ec18b23e",
+        "receipt": "reports/2026_11_19_receiver_screening/recovery/clock-offset/full/prediction-lock.json",
+        "receipt_sha256": "041afa5f09979fe3c8abf4dbd84ae7d4673aaf33f686806698995ea4efaefd02"
+      }
+    },
+    "v5_secant_fit": {
+      "caps": {
+        "max_replay_wall_s": 2280,
+        "max_worker_wall_s": 480
+      },
+      "files": {
+        "orbit_projector.jsonl.gz": "6ee1e9f2a8ba1b589f07835ff2a09da3f2a15698aa5139dfdd0484c7c47084bc",
+        "original-v5-inputs.json": "c83b99080452b0df91fefee18d880e98a652e2a41a192ee5bd4be542bf8342a9",
+        "plan.json": "cc43e0de3b4212cb0bd92d47d143d7305a76b204a02bd79dc579609d4b6d5713",
+        "prediction-lock.json": "9317d8077292bbd1e2bf2f2908a13f782ddc29042568a371319c448acf30945d",
+        "v5_secant_fit.jsonl.gz": "3a0131810fd04935bab6f81ff61ed47e5a3a35cfd7f3d60fe17d59660da29e31"
+      },
+      "origin": "matched_compact_replays",
+      "plan": "reports/2026_11_19_receiver_screening/secant-full/plan.json",
+      "prediction": "reports/2026_11_19_receiver_screening/secant-full/v5_secant_fit.jsonl.gz",
+      "receipt": "reports/2026_11_19_receiver_screening/secant-full/receipt.json",
+      "receipt_sha256": "6f8e38082273e579526336036e28f1f82866510ce6994d45306513762edebe59",
+      "replay": {
+        "attempted": 121,
+        "cpus": [
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "fresh_statuses": {
+          "ok": 121
+        },
+        "launcher": {
+          "ActiveEnterTimestamp": "Thu 2026-11-19 07:07:30 UTC",
+          "InvocationID": "ad6502f3bf084aee90a65edf3c43426b",
+          "KillMode": "control-group",
+          "KillSignal": "9",
+          "MainPID": "1240492",
+          "RuntimeMaxUSec": "38min",
+          "WorkingDirectory": "/home/mouse9911/gits/leo-tracker-reduxredux",
+          "unit": "leo-secant-full-20261119.service"
+        },
+        "requested": 121,
+        "supervisor_log_sha256": "bee4d2aefdc7caff3a19b31851a624ed64f0bf6feb3931e46d08b697ec29e2f9",
+        "wall_s": 2204.374085635878
+      },
+      "sha256": "3a0131810fd04935bab6f81ff61ed47e5a3a35cfd7f3d60fe17d59660da29e31"
+    }
+  },
+  "native_route_sources": {
+    "anchors": {
+      "caps": {
+        "deadline_s": 60,
+        "wall_cap_s": 720
+      },
+      "files": {
+        "plan.json": "eef74f1b86d0efdb451a5beb2243549f1140a93dddfd7b5b37bc568ce6363e6e",
+        "positions.jsonl.gz": "dc61e6698e00f25c6bc2070c8a3104107103f05e362ddfc72d172e25ceb3bb68"
+      },
+      "plan": "reports/2026_11_19_receiver_screening/refinement/anchor-full/plan.json",
+      "prediction": "reports/2026_11_19_receiver_screening/refinement/anchor-full/positions.jsonl.gz",
+      "receipt": "reports/2026_11_19_receiver_screening/refinement/anchor-full/prediction-lock.json",
+      "receipt_sha256": "784b94bed8e4b9a6ef32d1091d328420f738fa942453acd9b012f7b0cab62728",
+      "replay": {
+        "attempted": 144,
+        "scheduled": 144,
+        "statuses": {
+          "ok": 108,
+          "withheld": 36
+        },
+        "wall_s": 107.14609430730343
+      },
+      "sha256": "dc61e6698e00f25c6bc2070c8a3104107103f05e362ddfc72d172e25ceb3bb68"
+    },
+    "clock": {
+      "caps": {
+        "deadline_s": 60,
+        "wall_cap_s": 720
+      },
+      "files": {
+        "plan.json": "196c3474284b8bb7570ee8c69d802a2fe7f849582845d8f1a4af2eb90f7a6595",
+        "positions.jsonl.gz": "0a21877d33cebff9efa211359b0f6c6cb67083ec9b65f1d44a291edfb7653ceb"
+      },
+      "plan": "reports/2026_11_19_receiver_screening/factors/native-clock-full/plan.json",
+      "prediction": "reports/2026_11_19_receiver_screening/factors/native-clock-full/positions.jsonl.gz",
+      "receipt": "reports/2026_11_19_receiver_screening/factors/native-clock-full/prediction-lock.json",
+      "receipt_sha256": "846d999c4bd2d91a10fbae79588897b4c6069202d8920bc1a8684864c7c458f2",
+      "replay": {
+        "attempted": 144,
+        "scheduled": 144,
+        "statuses": {
+          "ok": 119,
+          "withheld": 25
+        },
+        "wall_s": 219.08823215123266
+      },
+      "sha256": "0a21877d33cebff9efa211359b0f6c6cb67083ec9b65f1d44a291edfb7653ceb"
+    }
+  },
+  "original_v5": {
+    "audited_executions": 540,
+    "bindings": "reports/2026_11_19_receiver_screening/secant-full/original-v5-inputs.json",
+    "bindings_sha256": "c83b99080452b0df91fefee18d880e98a652e2a41a192ee5bd4be542bf8342a9",
+    "receipt": "reports/2026_11_19_receiver_screening/secant-full/receipt.json",
+    "receipt_sha256": "6f8e38082273e579526336036e28f1f82866510ce6994d45306513762edebe59",
+    "roles": [
+      "baseline",
+      "selective-gap",
+      "omitted-track-one",
+      "omitted-tracks"
+    ]
+  }
+}

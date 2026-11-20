@@ -1,0 +1,65 @@
+{
+  "charts": [
+    {
+      "caption": "Two lower-edge recordings from one roof. All three policies used the same phase-release position model, causal catalogue and offer. Original v5 used capture-era factors.",
+      "cases": "sealed",
+      "id": "staggered-whole",
+      "method": "staggered_native_whole",
+      "provenance": [
+        "prediction-lock.json",
+        "matched-positions.jsonl.gz",
+        "position-scores.csv",
+        "probe-parity.json",
+        "parent-prediction-lock.json",
+        "parent-score-lock.json",
+        "roof-authority.json",
+        "fresh-v5.jsonl.gz"
+      ],
+      "roof_references": {
+        "authority": "roof-authority.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Measured staggered fifth center",
+          "native_field": "paired_capture_sha256",
+          "value": "staggered_native_whole"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock four centers",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile",
+            "mode"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "receiver_choice_four"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Fifth center on both antennas",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile",
+            "mode"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "receiver_choice_five"
+        }
+      ],
+      "title": "Staggered fifth center on complete saved IQ"
+    }
+  ],
+  "version": 2
+}

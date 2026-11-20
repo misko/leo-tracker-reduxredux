@@ -1,0 +1,26 @@
+# Original detector duty and Doppler continuity
+
+Short bursts preserved nearby detections but did not produce a usable Graph track on either recording. At 96 original dual-receiver calls per recording, periodic spacing yielded 0 close winning pairs and bursts yielded 29 and 39. At the higher diagnostic budget of 416 calls, periodic spacing again yielded 0 and bursts yielded 136 and 142. Of these eight sparse fits, zero published a position or conditional Doppler RMS in either calibration arm. Both complete capture-era compact controls published both positions. [Capped position predictions](positions.jsonl.gz) · [Position scores](scores.csv) · [Packet audit](packet-audit.csv)
+
+## What stopped the fit
+
+The fixed, pre-detector decision spends 12 calls per RF channel in the primary comparison and 52 in the higher-cost diagnostic. Both policies use the first 832 valid opportunities in each channel and the same original fractional candidates on every admitted visit. The low-duty bursts hold four neighboring same-channel opportunities early, midway and late in the five-minute recording. The diagnostic repeats four opportunities every 64. The alternative spacing allocates the same calls evenly. Both receivers share each decision. The archived delivery clocks, invalid visits, valid probe headers and original candidate rows on the selected visits all passed the explicit byte-value audit. The experiment produced no stored-IQ detector calls of its own. [Frozen procedure](PROTOCOL.md) · [Selected visits](schedule.json)
+
+An independent replay of the identical installed Graph preparation produced zero tracks in all eight sparse configurations. The complete factors produced 155 tracks, including 84 with active curvature, on DS26-0164 and 151 tracks, including 77 with active curvature, on DS29-0357. Graph requires eight points over at least six seconds, with no link longer than ten seconds. On the retained arrival clocks the largest chain of winning observations in one same-receiver, same-RF lane had at most five points across all sparse configurations, even before any Doppler compatibility check. Four-visit bursts helped the 600 ms pairing statistic, while gaps between bursts still split the data into pieces too short for Graph. [Exact Graph replay](graph-tracks.csv) · [Measured support and modeled queue](frontier.png)
+
+## Position and frequency
+
+| Complete original factors | `c = 0` position error | Fitted `c` position error | `c = 0` conditional RMS | Fitted `c` conditional RMS |
+| --- | ---: | ---: | ---: | ---: |
+| DS26-0164 | 1.228 km | 1.246 km | 58.11 Hz | 58.09 Hz |
+| DS29-0357 | 0.436 km | 0.434 km | 64.82 Hz | 64.88 Hz |
+
+All ten new services completed under 512 MiB and zero swap with a 210-second control-group limit. Full compact supervisor wall was 134.35 and 197.55 s, with 123.81 and 128.39 s of numerical service CPU. The eight sparse attempts stopped after the Graph check in 2.72–3.52 s supervisor wall. Their quick terminal status records insufficient observations. Peak memory was 429.3 and 416.4 MiB on the full controls and 173.2–175.6 MiB on the sparse jobs. The independent archived four original v5 choices appear in each standard chart and their published frequency summaries have their original measurement definitions. [Resources](solver-resources.csv) · [All four capture-era v5 choices](capture-era-v5.csv) · [Both-arm charts](charts/README.md)
+
+## CPU budget and arrival queue
+
+The timing authority is 57 warm measurements from four separate recordings of the original dual-receiver detector. Observed CPU per call was 0.548–2.742 s. Individual measured wall time met the 20 ms window on 0/57 calls. The equal-cohort mean CPU is 1.457 s per call. Applying that transfer value to the 96-call schedule gives 139.92 CPU seconds over about 300 s of acquisition clocks. This is 0.47 of one core on average and 20.65 ms per original recorded visit. The observed CPU envelope gives 7.77–38.86 ms per original visit. The higher-cost diagnostic requires 606.30 CPU seconds, about 2.02 cores on average and 89.50 ms per original visit.
+
+In a single-core FIFO using actual recorded arrival times and constant transferred mean call cost, the primary periodic schedule's worst arrival-to-completion time was 3.91–5.02 seconds. Bursts raised it to 40.31–41.06 seconds at the same total work. The high duty overloaded the model with either schedule. These are nominal detector-only estimates before archive I/O, scheduling, resource contention or localization. The measured solver clocks and 20 ms observed detector-call success are separate results. The two cases use the same physical roof. [Cost model](detector-costs.csv) · [Clock authority](cost-authority.json) · [Stage evidence seal](frontier-lock.json)
+
+The first preflight found that the capture UTC endpoints in these original native files were null before any numerical worker launched. The final prospective plan uses their valid first and last monotonic delivery clocks to calculate span. Under the frozen selection salt, DS26-0136 was excluded because a channel lacked 832 valid opportunities. The next DS26 case and the first DS29 case fixed the roster before scoring. [Prospective inputs and exclusion](plan.json)

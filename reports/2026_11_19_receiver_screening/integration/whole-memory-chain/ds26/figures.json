@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "whole_memory_chain_ds26",
+      "method": "whole_memory_chain",
+      "scope": "roof",
+      "title": "DS26 whole-IQ attempt at 512 MiB",
+      "caption": "Ordinary DS26 factors matched exactly. The capped solver ran out of memory in signed context. Original v5 choices use capture-era factors.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["stages.json.gz"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Full saved-IQ replay", "file": "positions.jsonl.gz", "value": "whole_memory_chain", "native_authority": "ordinary", "where": {"mode": "matched-tile"}}
+      ]
+    }
+  ]
+}

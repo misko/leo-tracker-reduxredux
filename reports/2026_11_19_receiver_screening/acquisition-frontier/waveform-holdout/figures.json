@@ -1,0 +1,84 @@
+{
+  "charts": [
+    {
+      "caption": "One simulated site with twelve revised emitter orbits and dual 10 MS/s CI16. Visits include fades, gaps and OFDM. All offers share stock GLRT factors. Publishing in either omitted region counts as a false fix.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "far-omitted": "25 km far omitted",
+        "omitted": "25 km near omitted"
+      },
+      "id": "waveform-holdout-phase-release",
+      "method": "waveform_holdout_phase_release",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.json",
+        "reference-prediction-lock.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Phase release",
+          "value": "waveform_holdout_phase_release"
+        },
+        {
+          "file": "reference-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original v5 reference",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "waveform_v5_original"
+        }
+      ],
+      "title": "Phase release on a blind stressed Qin waveform site"
+    },
+    {
+      "caption": "One simulated site with twelve revised emitter orbits and dual 10 MS/s CI16. Visits include fades, gaps and OFDM. All offers share stock GLRT factors. Publishing in either omitted region counts as a false fix.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "far-omitted": "25 km far omitted",
+        "omitted": "25 km near omitted"
+      },
+      "id": "waveform-holdout-interior",
+      "method": "waveform_holdout_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.json",
+        "reference-prediction-lock.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Interior forced fit",
+          "key": "candidate",
+          "label": "20 m interior",
+          "value": "waveform_holdout_interior"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Phase release",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "waveform_holdout_phase_release"
+        }
+      ],
+      "title": "20 m interior on a blind stressed Qin waveform site"
+    }
+  ],
+  "version": 1
+}

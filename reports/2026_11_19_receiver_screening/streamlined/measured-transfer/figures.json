@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "beacon_observability",
+      "method": "beacon_observability",
+      "scope": "transfer",
+      "title": "Measured beacon observability with supplied orbit identities",
+      "caption": "Eight measured StarLoc sites, two offers each. The author supplied the orbit identities. Forced points are controls. Two sites had zero clock-invariant contrast.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {"supplied-tile": "Containing tile", "omitted-tile": "Receiver omitted"},
+      "provenance": ["plan.json", "prediction-lock.json", "source-lock.json", "scores.json"],
+      "series": [
+        {"key": "candidate", "label": "Labelled beacon · published", "forced_label": "Labelled beacon · forced control", "file": "positions.jsonl.gz", "value": "beacon_observability"}
+      ]
+    }
+  ]
+}

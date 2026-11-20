@@ -1,0 +1,55 @@
+{
+  "charts": [
+    {
+      "caption": "Two days from one Bellaterra station. Three tiles per offer and no supplied identities. Upstream retention used surveyed geometry. Fitted c is unidentifiable.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "3 tiles incl. survey",
+        "omitted": "3 tiles omit survey"
+      },
+      "id": "external-blind-orbcomm-tile-board",
+      "method": "orbcomm_blind_held",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Held gate \u00b7 forced",
+          "key": "candidate",
+          "label": "Held gate",
+          "value": "orbcomm_blind_held"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same solver, no gate",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_blind_ungated"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Time-reversed CFO \u00b7 forced",
+          "key": "one",
+          "label": "Time-reversed CFO",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_blind_reversed"
+        }
+      ],
+      "title": "Measured anonymous VHF across mixed geographic offers"
+    }
+  ],
+  "version": 2
+}

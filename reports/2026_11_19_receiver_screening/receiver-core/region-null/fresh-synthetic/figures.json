@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_region_time_null-fresh-synthetic",
+      "method": "native_region_time_null",
+      "scope": "transfer",
+      "title": "Track-time null at two new synthetic sites",
+      "caption": "Same native factors, anonymous Graph and causal catalogue for both series.",
+      "cases": [
+        "5f6c97b4726176eb7885",
+        "8fbf0ba83013988fa576",
+        "c2e1d9105c4e60494f04",
+        "d93d37b3a562f9cf389f",
+        "64439d5886c32181bace",
+        "95214155ecb8b920881e",
+        "c3698157751ffb7d780f",
+        "dee9504b7246865ee78f"
+      ],
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "centered": "Centered",
+        "near-inside": "Near inside",
+        "near-outside": "Near omission",
+        "far-outside": "15 km omitted"
+      },
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Track-time null gate",
+          "file": "native_region_time_null.jsonl.gz",
+          "value": "native_region_time_null"
+        },
+        {
+          "key": "stock",
+          "label": "Native smooth",
+          "forced_label": "Smooth \u00b7 forced",
+          "file": "native_joint_clock_model.jsonl.gz",
+          "value": "native_joint_clock_model",
+          "match": [
+            "input_sha256",
+            "tile"
+          ]
+        }
+      ]
+    }
+  ]
+}

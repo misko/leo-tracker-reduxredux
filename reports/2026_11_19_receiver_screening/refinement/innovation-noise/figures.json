@@ -1,0 +1,91 @@
+{
+  "charts": [
+    {
+      "caption": "Both workers start from the same complete GLRT factors and use the same tracks, orbital catalogue, noise covariance and position gates.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082",
+        "DS26-0223",
+        "DS29-0316",
+        "DS26-0082",
+        "DS26-0072",
+        "DS26-0112",
+        "DS26-0275",
+        "DS26-0122",
+        "DS26-0100",
+        "DS29-0127",
+        "DS29-0174"
+      ],
+      "id": "innovation_noise-roof",
+      "method": "native_innovation_noise",
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "native_innovation_noise.jsonl.gz",
+          "key": "one",
+          "label": "Scalar noise filter",
+          "value": "native_innovation_noise",
+          "where": {
+            "cohort": "roof"
+          }
+        },
+        {
+          "file": "native_joint_orbits.jsonl.gz",
+          "key": "stock",
+          "label": "Dense track covariance",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "roof"
+          }
+        }
+      ],
+      "title": "Scalar Doppler noise filter on roof recordings"
+    },
+    {
+      "caption": "Both workers start from the same complete GLRT factors and use the same tracks, orbital catalogue, noise covariance and position gates.",
+      "cases": [
+        "DS29-0604-omitted",
+        "DS26-0070-omitted",
+        "DS29-0357-omitted"
+      ],
+      "id": "innovation_noise-omitted",
+      "method": "native_innovation_noise",
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "native_innovation_noise.jsonl.gz",
+          "key": "candidate",
+          "label": "Scalar noise filter",
+          "value": "native_innovation_noise",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "native_joint_orbits.jsonl.gz",
+          "key": "stock",
+          "label": "Dense track covariance",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Scalar Doppler noise filter with the roof outside the offered region"
+    }
+  ],
+  "version": 1
+}

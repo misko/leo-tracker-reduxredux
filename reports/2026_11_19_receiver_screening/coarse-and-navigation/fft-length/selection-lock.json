@@ -1,0 +1,54 @@
+{
+  "development": {
+    "DS29-0082-development.json.gz": "618139bd61c43b521afbd2ba73fffaf353c39e53b7062420bbb53c541ae1d8cc",
+    "DS29-0082-planned.json.gz": "57daaedeb6d3c978181fc5cf0405d0b765bd9382b2a5dd9a3fa6a93c0ff59f99",
+    "DS29-0519-development.json.gz": "beb3de14e7a9d770c65a1050b05f2f49a953945a79eada2884a880cb9f6e543f",
+    "DS29-0519-planned.json.gz": "1f45a0ee808872e6825ad51d5920c7e9b660b129b06f53f9dce4312d7036df51"
+  },
+  "input_lock_sha256": "bb97d7701eb3d7d95274c5748b77a816c0075852da2e866c011a6ca35ad4f2a9",
+  "measured_ratios": {
+    "256": 0.9160227465091814,
+    "512": 0.9511855434349988
+  },
+  "paired_native_ratio": {
+    "1024": 1.0545622071868506,
+    "128": 1.5571282269714362,
+    "2048": 1.9115366326853698,
+    "256": 1.0075059991351962,
+    "512": 1.0,
+    "64": 2.3694913164475557
+  },
+  "planner": "stored-measure",
+  "planning_sha256": "d960b8ca86bbfc93481ac63915f19ce4989cf48f50f18697da28649b9fbcf973",
+  "selected": 256,
+  "selected_build": {
+    "command": [
+      "cc",
+      "-std=c11",
+      "-O3",
+      "-ffp-contract=off",
+      "-fno-fast-math",
+      "-fPIC",
+      "-shared",
+      "-pthread",
+      "-march=native",
+      "-fopenmp-simd",
+      "-fno-math-errno",
+      "-fno-trapping-math",
+      "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/capture_fft.c",
+      "-lfftw3f",
+      "-lm",
+      "-o",
+      "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so"
+    ],
+    "generated": {
+      "capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+      "fftw.wisdom": "5343fa0b1de9d15f793906b4818402748ac4edf7cc1cd0c75fd81a21e914d7d9",
+      "folded_bank.c": "e524399aef9a1a1d8aa9b46219971dbb185355ac90095bcadf49e326d2e85763",
+      "original_kernel_cache.h": "e4d597458bca8e6fb4ff9fc3a057dba9fbcaedca9e7a49240c842f2d3beb1eac"
+    },
+    "path": "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so",
+    "planning_cpu_ns": 42124652,
+    "sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286"
+  }
+}

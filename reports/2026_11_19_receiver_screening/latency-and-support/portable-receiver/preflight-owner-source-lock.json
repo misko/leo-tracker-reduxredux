@@ -1,0 +1,79 @@
+{
+  "catalogue_sha256": "de9942b747d507907006ceef9cfa8537c8ace6df6ada13f2d5c470255aa321e1",
+  "cgroup": {
+    "cpu": [
+      10,
+      11
+    ],
+    "limit_s": 450,
+    "memory_max": 536870912,
+    "nice": 10,
+    "swap_max": 0
+  },
+  "command": [
+    "sudo",
+    "-n",
+    "-u",
+    "leo",
+    "--",
+    "bwrap",
+    "--unshare-user",
+    "--unshare-pid",
+    "--unshare-net",
+    "--unshare-ipc",
+    "--unshare-uts",
+    "--die-with-parent",
+    "--ro-bind",
+    "/",
+    "/",
+    "--dev",
+    "/dev",
+    "--proc",
+    "/proc",
+    "--tmpfs",
+    "/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--tmpfs",
+    "/opt",
+    "--bind",
+    "/var/tmp/leo-portable-demo-owned-20261119",
+    "/var/tmp/leo-portable-demo-owned-20261119",
+    "--chdir",
+    "/var/tmp/leo-portable-demo-owned-20261119",
+    "--clearenv",
+    "--setenv",
+    "PATH",
+    "/usr/bin:/bin",
+    "--setenv",
+    "TMPDIR",
+    "/var/tmp/leo-portable-demo-owned-20261119",
+    "/var/tmp/leo-portable-python-20261119/bin/python",
+    "-IB",
+    "/var/tmp/leo-portable-relocated-20261119/receive.py",
+    "/var/tmp/leo-portable-demo-owned-20261119/recording-input.json",
+    "--out",
+    "/var/tmp/leo-portable-demo-owned-20261119/run",
+    "--cpus",
+    "10",
+    "11"
+  ],
+  "detector_sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66",
+  "id": "DS26-0197",
+  "installed_component_bytes": 5109596,
+  "installed_files": 201,
+  "manifest_sha256": "106968d34eb61934d1c2cb46f4c693cd8c9534831b331a620fe3cc9e60a8c1b4",
+  "native_sha256": "3b372eff740c25e2ba680fb73a0b257f527ac40a67ceb9560fab9e8783b8550e",
+  "original_request_sha256": "3b9ca05b5d991d7b57d6dd02043e19c24778f6a0cf5c756b0ba167325565dfa4",
+  "package_sha256": "058367e314034d26e24a79544d25c9e01eeed5b9f2d7b933d201aa11d0551528",
+  "programs": {
+    "tools/pipeline_eval/qualification/portable_receiver_demo.py": "20c0eb015de747fa95bac2ec9a4642d16e68087b1ad46755472a7ffb672d2db9"
+  },
+  "protocol_sha256": "b3b5485d5498ab0b9561838e05be1d928ed330dce111e76919b2e6f966a36ec3",
+  "stock_prediction_sha256": "14ab3e27d00c79c090896a55c6d9340fe6eb2c99077d59ddfbc0f4d0a1a31c6a",
+  "tile": {
+    "center": [
+      37.906,
+      -122.545
+    ],
+    "id": "original"
+  }
+}

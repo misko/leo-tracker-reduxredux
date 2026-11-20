@@ -1,0 +1,133 @@
+{
+  "charts": [
+    {
+      "caption": "Offline attribution on the same two complete recorded IQ inputs. Every stock positive stays exact. Stock and union positions are measured parent endpoints. Capture-era agreement labels only the added probe packets.",
+      "cases": "sealed",
+      "id": "negative-rescue-attribution-corroborated",
+      "method": "rescue_attribution_corroborated",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "effects.csv",
+        "graph-support.csv",
+        "resources.csv",
+        "capture-era-v5.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Capture-corroborated additions",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rescue_attribution_corroborated"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rescue_attribution_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Complete negative rescue",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rescue_attribution_union"
+        }
+      ],
+      "title": "Negative rescue split \u00b7 Capture-corroborated additions"
+    },
+    {
+      "caption": "Offline attribution on the same two complete recorded IQ inputs. Every stock positive stays exact. Stock and union positions are measured parent endpoints. Capture-era agreement labels only the added probe packets.",
+      "cases": "sealed",
+      "id": "negative-rescue-attribution-remainder",
+      "method": "rescue_attribution_remainder",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "effects.csv",
+        "graph-support.csv",
+        "resources.csv",
+        "capture-era-v5.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Remaining differential additions",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rescue_attribution_remainder"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rescue_attribution_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Complete negative rescue",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rescue_attribution_union"
+        }
+      ],
+      "title": "Negative rescue split \u00b7 Remaining differential additions"
+    }
+  ],
+  "version": 1
+}

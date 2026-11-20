@@ -6,6 +6,7 @@ from dataclasses import FrozenInstanceError
 import numpy as np
 import pytest
 
+import leo.analysis.starlink.acquisition as acquisition_module
 from leo.analysis.starlink import (
     NumericalStatus,
     ReceiverFrequencyCalibration,
@@ -16,6 +17,41 @@ from leo.analysis.starlink import (
 from leo.contracts.states import StarlinkEdge
 
 RATE = 2_500_000.0
+
+
+@pytest.mark.parametrize("seed", range(16))
+def test_coarse_peak_heap_matches_original_stable_sort(seed: int) -> None:
+    rng = np.random.default_rng(seed)
+    epoch_count = int(rng.integers(2, 6_000))
+    residuals = tuple(float(value) for value in range(-400_000, 400_001, 80_000))
+    rows = tuple(
+        np.round(rng.random(epoch_count), decimals=int(rng.integers(1, 8)))
+        for _ in residuals
+    )
+    peaks = [
+        (float(scores[epoch]), epoch, residual)
+        for residual, scores in zip(residuals, rows, strict=True)
+        for epoch in acquisition_module._local_peak_indexes(scores)
+    ]
+    peaks.sort(key=lambda item: (item[0], -abs(item[2]), -item[1]), reverse=True)
+    expected = acquisition_module._retain_separated(
+        peaks,
+        8,
+        20,
+        80_000.0,
+        epoch_count,
+    )
+
+    actual = acquisition_module._retain_score_map_peaks(
+        residuals,
+        rows,
+        8,
+        20,
+        80_000.0,
+        epoch_count,
+    )
+
+    assert actual == expected
 
 
 def test_acquisition_has_no_implicit_edge() -> None:

@@ -1,0 +1,44 @@
+{
+  "charts": [
+    {
+      "caption": "One saved roof waveform, a shared native ABI and one detector worker. Both calibration arms fit each clock's actual emitted data.",
+      "cases": "sealed",
+      "id": "pace-direct-partner-hit",
+      "method": "paced_hit_conditional",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "timing.csv",
+        "scores.csv",
+        "common-cost.json",
+        "arrival-decomposition.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Partner on hit",
+          "native_field": "paired_capture_sha256",
+          "value": "paced_hit_conditional"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock dual",
+          "match": [
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "paced_hit_stock_dual"
+        }
+      ],
+      "title": "Direct partner-on-hit versus stock dual under the original receive clock"
+    }
+  ],
+  "version": 2
+}

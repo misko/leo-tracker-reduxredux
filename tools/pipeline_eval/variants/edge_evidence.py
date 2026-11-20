@@ -1,0 +1,108 @@
+"""Compare local in-tile and out-of-tile Doppler on fixed held support."""
+
+from math import cos, radians
+
+import numpy as np
+
+from .v5_secant_fit import STOP_KM
+
+ARMS = ("c0", "fitted_c")
+HALO_KM = 1.5
+MIN_FAMILIES = 4
+MIN_POINTS_PER_SIDE = 6
+ONE_SIDED_Z = 1.64
+
+
+def normal_hypotheses(result, tile):
+    lat, lon = tile["center"]
+    scale = np.asarray((111.32 * cos(radians(lat)), 111.0))
+    xy = np.array(
+        [(np.asarray(arm["latlon"])[::-1] - (lon, lat)) * scale for arm in result["arms"].values()]
+    )
+    radius = tile["width_km"] / 2
+    face = {
+        (int(axis), int(np.sign(xy[row, axis])))
+        for row, axis in np.argwhere(abs(xy) >= radius - STOP_KM)
+    }
+    if len(face) != 1:
+        return None
+    axis, sign = face.pop()
+    center = xy.mean(axis=0)
+    center[axis] = sign * radius
+    normal = np.zeros(2)
+    normal[axis] = sign * HALO_KM
+    return center - normal, center, center + normal
+
+
+def split(times, families, keep):
+    train, held, owners = np.asarray(keep, dtype=bool).copy(), np.zeros(len(keep), bool), []
+    for family in np.unique(families[keep]):
+        member = (families == family) & keep
+        unique = np.unique(times[member])
+        if len(unique) < 3 * MIN_POINTS_PER_SIDE:
+            continue
+        low, high = unique[len(unique) // 3], unique[(2 * len(unique)) // 3]
+        middle = member & (times >= low) & (times < high)
+        train[middle] = False
+        held[middle] = True
+        owners.append(middle)
+    return train, held, owners
+
+
+def contrast(loss):
+    # A family contributes one normalized contrast even if its points span two receiver lanes.
+    loss = np.asarray(loss, dtype=float)
+    if len(loss) < MIN_FAMILIES or not np.isfinite(loss).all():
+        return dict(state="insufficient", families=len(loss))
+    delta = loss[:, 2] - loss[:, 0]
+    gain = float(np.mean(delta))
+    error = float(np.std(delta, ddof=1) / np.sqrt(len(delta)))
+    count = int(np.count_nonzero(delta > 0))
+    if gain > ONE_SIDED_Z * error and 3 * count >= 2 * len(delta):
+        state = "inside"
+    elif gain < -ONE_SIDED_Z * error and 3 * int(np.count_nonzero(delta < 0)) >= 2 * len(delta):
+        state = "outside"
+    else:
+        state = "weak"
+    return dict(
+        state=state,
+        families=len(loss),
+        inside_votes=count,
+        contrast=gain,
+        se=error,
+        mean_normalized_loss=np.mean(loss, axis=0).tolist(),
+    )
+
+
+def evaluate(ctx, triplet):
+    from leo.analysis.localization_v3.history_position import make_problem
+
+    base = ctx["base"]
+    owners = np.asarray(base.labels)[base.flat_labels]
+    train, held, masks = split(base.flat_times, owners, ctx["keep"])
+    if len(masks) < MIN_FAMILIES:
+        return {arm: dict(state="insufficient", families=len(masks)) for arm in ARMS}
+    scale = np.asarray(base.point_noise)
+    weights = np.ones(len(ctx["powers"]))
+    reference = np.clip(ctx["means"], -15, 15)
+    pairs = {}
+    for arm in ARMS:
+        p = make_problem(
+            ctx["scan"],
+            ctx["node"],
+            train,
+            arm,
+            reference,
+            weights,
+            ctx["means"],
+            ctx["model"]["multiplier"],
+            ctx["model"]["nu"],
+        )
+        residual = np.stack([p.calculate(x)["conditional_residual_hz"] for x in triplet])
+        losses = [np.mean((residual[:, mask] / scale[mask]) ** 2, axis=1) for mask in masks]
+        pairs[arm] = dict(
+            contrast(losses),
+            held_points=int(held.sum()),
+            held_rms_hz=np.sqrt(np.mean(residual[:, held] ** 2, axis=1)).tolist(),
+        )
+    return pairs

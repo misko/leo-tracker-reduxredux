@@ -1,0 +1,195 @@
+{
+  "charts": [
+    {
+      "caption": "The last scheduled arrival closes the position input. The curves count all scheduled recordings. Position runtime starts after the cutoff.",
+      "cases": "sealed",
+      "id": "parallel-separate-replace",
+      "method": "parallel_separate_replace",
+      "provenance": [
+        "positions.jsonl.gz",
+        "scores.csv",
+        "support.csv",
+        "timing.csv",
+        "position-input-lock.json",
+        "materializer.py.gz",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Fast detector only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_wide"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original detector only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_original"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Use the original pair on overlap",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_replace"
+        }
+      ],
+      "title": "Use the original pair on overlap \u00b7 Detector runs on separate clocks aligned to the recording"
+    },
+    {
+      "caption": "The last scheduled arrival closes the position input. The curves count all scheduled recordings. Position runtime starts after the cutoff.",
+      "cases": "sealed",
+      "id": "parallel-separate-fill",
+      "method": "parallel_separate_fill",
+      "provenance": [
+        "positions.jsonl.gz",
+        "scores.csv",
+        "support.csv",
+        "timing.csv",
+        "position-input-lock.json",
+        "materializer.py.gz",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Fast detector only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_wide"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original detector only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_original"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Fill a missed antenna from the original",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_fill"
+        }
+      ],
+      "title": "Fill a missed antenna from the original \u00b7 Detector runs on separate clocks aligned to the recording"
+    },
+    {
+      "caption": "The last scheduled arrival closes the position input. The curves count all scheduled recordings. Position runtime starts after the cutoff.",
+      "cases": "sealed",
+      "id": "parallel-separate-timely",
+      "method": "parallel_separate_timely",
+      "provenance": [
+        "positions.jsonl.gz",
+        "scores.csv",
+        "support.csv",
+        "timing.csv",
+        "position-input-lock.json",
+        "materializer.py.gz",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Fast detector only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_wide"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original detector only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_original"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Keep only packets within 20 ms",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_timely"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Use the original pair on overlap",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "parallel_separate_replace"
+        }
+      ],
+      "title": "Keep only packets within 20 ms \u00b7 Detector runs on separate clocks aligned to the recording"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,11 @@
+# Exclusive RF routing on recorded waveforms
+
+The original row-wise GLRT takes one physical RF per recording. The wide four-region detector takes the remaining RFs. Each visit carries both physical receivers to its assigned detector. A valid visit that finds its assigned queue full is a busy drop. The peer keeps its unassigned disposition. Hardware-invalid visits bypass both queues.
+
+DS26-0237 assigns 12,209,687,500 Hz to original and uses CPU 4 for wide, CPU 5 for original, and CPU 20 for the publisher and source stage. DS29-0082 assigns 12,690,312,500 Hz to original and uses CPUs 6, 7, and 21 in the same roles. Each assignment was fixed before the replay and can be reproduced by ranking the configured integer-Hz centers with a SHA-256 seed derived from the authenticated capture manifest. A live deployment can provision the assignment at startup. Routing uses each released visit’s physical RF and the fixed assignment.
+
+The separate source service authenticates the capture, publishes the complete physical ledger, and independently hashes the read-only staged CI16 inode. It remains charged for staged IQ through the last release. Each detector reauthenticates the visited IQ. Each worker has one service reservation and one waiting slot. The two workers and publisher have independently measured 512 MiB cgroup caps with zero swap. The two five-minute recording clocks ran concurrently, with one shared monotonic barrier and one publisher per recording.
+
+Every physical visit is represented in both branch traces. The cutoff is the scheduled last physical delivery, including invalid visits. Each measured stereo packet is checked exactly against its detector’s independent complete waveform packet, and both reference ledgers are checked against every staged physical visit. Finish is when the in-memory packet is complete. The trace retains packets that finish after the cutoff and marks their timing separately.
+
+The simultaneous receiver-deadline replay is a historical clock control. Its original worker used the installed peak selector, and its workers and publisher used different CPU assignments. Its packet parity supports evaluating the current original output. Its measured wall and CPU times are descriptive for the two replay configurations.

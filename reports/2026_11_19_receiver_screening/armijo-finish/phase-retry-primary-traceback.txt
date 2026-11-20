@@ -1,0 +1,53 @@
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/v5_armijo_finish.py", line 80, in <module>
+    worker(*sys.argv[1:])
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/v5_armijo_finish.py", line 63, in worker
+    compact_finish.worker(request, target, library)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/compact_finish.py", line 222, in worker
+    orbit_projector.worker(request, result, library)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/orbit_projector.py", line 175, in worker
+    v5_core.worker(request, result, **options)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/v5_core.py", line 219, in worker
+    result = infer(
+             ^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/compact_finish.py", line 210, in infer
+    result = finish(
+             ^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/compact_finish.py", line 112, in finish
+    final = stage(
+            ^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/compact_finish.py", line 40, in stage
+    result = operation(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/application/localization_v3.py", line 560, in fit_reassociation
+    result = recover(prepared['context'], prepared['owners'], baseline, screened['admission'],
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/reassociation_recovery.py", line 157, in recover
+    candidate = remap(candidate, hypothesis, ledger)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/reassociation_remap.py", line 81, in remap
+    result["problems"][arm] = build(result, arm, ref)[0], x
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/reassociation_context.py", line 37, in build
+    problem = make_event_problem(
+              ^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/event_position.py", line 74, in make_event_problem
+    p = factory(scan, node, keep, arm, reference, powers, means, model["multiplier"], model["nu"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/history_position.py", line 59, in make_problem
+    p = problem(scan, node, arm, keep, reference)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/history_position.py", line 18, in problem
+    p = NormalPosition(
+        ^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/position.py", line 18, in __init__
+    super().__init__(scan, node['seed'], fitted_c, variant='radio_noise', sigma=sigma,
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/marginal.py", line 92, in __init__
+    base = AnchoredFamilies(scan, seed, "receiver_smooth", fitted_c, [0, 0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/families.py", line 242, in __init__
+    super().__init__(scan, seed, method, "continuous", fitted_c)
+  File "/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src/leo/analysis/localization_v3/families.py", line 98, in __init__
+    parameter(("phases", j), self.starts["phases"][j], 1, -15, 15)
+                             ~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: index 1376 is out of bounds for axis 0 with size 1376

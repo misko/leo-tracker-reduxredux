@@ -1,0 +1,109 @@
+{
+  "charts": [
+    {
+      "caption": "Complete capture-era GLRT factors enter a bounded streaming Graph worker. Its control uses the same exact fitter on tracks rebuilt from the same artifacts. The original v5 references use the same supplied tile.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "native_lean-smoke",
+      "method": "native_lean",
+      "provenance": [
+        "deployment.json"
+      ],
+      "scope": "roof",
+      "seal": "smoke-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Streaming native GLRT",
+          "value": "native_lean",
+          "where": {
+            "cohort": "smoke"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same fitter \u00b7 prepared tracks",
+          "match": [
+            "observation_sha256"
+          ],
+          "value": "native_lean_prepared",
+          "where": {
+            "cohort": "smoke"
+          }
+        }
+      ],
+      "title": "Streaming native GLRT through the exact robust receiver \u00b7 smoke"
+    },
+    {
+      "caption": "Complete capture-era GLRT factors enter a bounded streaming Graph worker. Its control uses the same exact fitter on tracks rebuilt from the same artifacts. The original v5 references use the same supplied tile.",
+      "cases": [
+        "DS26-0187",
+        "DS26-0197",
+        "DS29-0519"
+      ],
+      "id": "native_lean-confirmation",
+      "method": "native_lean",
+      "provenance": [
+        "deployment.json"
+      ],
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Streaming native GLRT",
+          "value": "native_lean",
+          "where": {
+            "cohort": "confirmation"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same fitter \u00b7 prepared tracks",
+          "match": [
+            "observation_sha256"
+          ],
+          "value": "native_lean_prepared",
+          "where": {
+            "cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Streaming native GLRT through the exact robust receiver \u00b7 confirmation"
+    },
+    {
+      "caption": "DS26-0036 uses the same recorded factors and causal catalogue as its roof run. The frozen alternate r0 tile omits the correct region. Geographic errors of forced coordinates are diagnostic.",
+      "cases": "sealed",
+      "id": "native_lean-wrong-region",
+      "method": "native_lean",
+      "queries": "wrong-queries.json",
+      "scope": "transfer",
+      "seal": "wrong-figure-lock.json",
+      "series": [
+        {
+          "file": "wrong-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Streaming native GLRT \u00b7 published",
+          "value": "native_lean"
+        },
+        {
+          "file": "wrong-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same fitter \u00b7 prepared tracks",
+          "match": [
+            "observation_sha256"
+          ],
+          "value": "native_lean_prepared"
+        }
+      ],
+      "title": "Streaming native GLRT with the correct region omitted"
+    }
+  ],
+  "version": 1
+}

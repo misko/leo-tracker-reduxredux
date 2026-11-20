@@ -1,0 +1,26 @@
+Running as unit: leo-portable-receiver-3431581e4989.service; invocation ID: 83ec1018e1bd48c2b061dcc149d3c47b
+Traceback (most recent call last):
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 357, in <module>
+    main()
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 353, in main
+    replay(args.manifest.resolve(strict=True), args.out.resolve(), args.cpus, args.raw_deadline)
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 254, in replay
+    job = bindings(source)
+          ^^^^^^^^^^^^^^^^
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 57, in bindings
+    path = resolved(item, {"path", "sha256"})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 53, in resolved
+    return (source.parent / item["path"]).resolve(strict=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1240, in resolve
+    s = self._flavour.realpath(self, strict=strict)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen posixpath>", line 424, in realpath
+  File "<frozen posixpath>", line 468, in _joinrealpath
+PermissionError: [Errno 13] Permission denied: '/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261028-083017-8d30b2df-1-lower'
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 146ms
+             CPU time consumed: 120ms
+                   Memory peak: 14.8M (swap: 0B)

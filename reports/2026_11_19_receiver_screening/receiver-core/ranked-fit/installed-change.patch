@@ -1,0 +1,13 @@
+--- a/leo/analysis/localization_v3/family_cavity.py
++++ b/leo/analysis/localization_v3/family_cavity.py
+@@ -191,8 +191,8 @@
+             position_km=p.mode_bank["position_km"][3 * k : 3 * k + 3],
+             velocity_km_s=p.mode_bank["velocity_km_s"][3 * k : 3 * k + 3],
+         )
+-    else:
+-        mode_bank = build_modes(d["scan"], [j], [j] if supported else [], "physical")[0]
++    elif supported:
++        mode_bank = build_modes(d["scan"], [j], [j], "physical")[0]
+     bank = dict(
+         time_s=d["scan"].sky["time_s"],
+         position_km=d["scan"].sky["position_km"][[j]],

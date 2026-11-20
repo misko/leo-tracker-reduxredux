@@ -1,0 +1,975 @@
+{
+  "capture": {
+    "case": {
+      "id": "DS26-0162",
+      "run_id": "fast-3efc06261b7799730bfe52f48a2f18e2",
+      "session_id": "fast-747c1cca6641883f7474dfc6dd279407"
+    },
+    "edge": "upper",
+    "input_manifest_sha256": "sha256:747c1cca6641883f7474dfc6dd279407bbefcd957706440732e22499afb9bcfd"
+  },
+  "counts": {
+    "DS26-0162": 6713,
+    "DS26-0237": 6766,
+    "DS29-0519": 6727
+  },
+  "id": "DS26-0162",
+  "libraries": {
+    "batched32": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_batched_fft.so",
+      "sha256": "5c7f96f8219d29a776660c4b0de5deafadaf4983774432e5868e1817423144ec"
+    },
+    "cfo": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/conditioned.so",
+      "sha256": "378219a59d7b9b13f7548d9d056917853aad369c720ded4b1d07c32d661bfa1e"
+    },
+    "fused": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/fused.so",
+      "sha256": "dc34f7196391931e27105425217bfcac3a47833571cb36fe8260686a9ce1ffb0"
+    }
+  },
+  "memory_max": 536870912,
+  "original": {
+    "catalog": {
+      "path": "leo-dev/algo07v3-shortcuts-20261107/inputs/DS26-0162/tle/archive/space-track/1793109794463324811-1ecb8d206dd6057aee58db5be10f50652cb951ccad2264dfafc461754c66be16.tle",
+      "sha256": "1ecb8d206dd6057aee58db5be10f50652cb951ccad2264dfafc461754c66be16"
+    },
+    "causal_snapshots": {
+      "1792854010992568693-cfbdc568e4bb37c73fc644b2228eed8f434857bf3ff8bb51c68b3c4e652a94b4.tle": "cfbdc568e4bb37c73fc644b2228eed8f434857bf3ff8bb51c68b3c4e652a94b4",
+      "1792857641591188433-824b7ac22df364ae0f9177f53d00b20635fa41fca54535ce753eff829a4a229b.tle": "824b7ac22df364ae0f9177f53d00b20635fa41fca54535ce753eff829a4a229b",
+      "1792861409759120072-e674a7a2e97115058c1abd9e71b71045adcdf1702ea8e7d15ef5d9e2189ee029.tle": "e674a7a2e97115058c1abd9e71b71045adcdf1702ea8e7d15ef5d9e2189ee029",
+      "1792868634934172973-d6bfe3dfb800888b911cac0adfa7b97983fc6b28c9981f7ef039cd4a858436c1.tle": "d6bfe3dfb800888b911cac0adfa7b97983fc6b28c9981f7ef039cd4a858436c1",
+      "1792872287417353927-91e0f72e5ebfdf7f5c7664349fd9630166b52bc4115e9d150dadddbcef117ab8.tle": "91e0f72e5ebfdf7f5c7664349fd9630166b52bc4115e9d150dadddbcef117ab8",
+      "1792879297979688185-e5740abc6f217a2cc60221da38dda20d7a1443ce734127965e3905cb1fb9342a.tle": "e5740abc6f217a2cc60221da38dda20d7a1443ce734127965e3905cb1fb9342a",
+      "1792882996049843434-1e8d8100919552dfa306ab793a73c1fb0387a93d555d76c357c2f5bab520c5ac.tle": "1e8d8100919552dfa306ab793a73c1fb0387a93d555d76c357c2f5bab520c5ac",
+      "1792890102630988918-d94a2000de84cbb1c0d1ccbf1717d0be65cd234e432a5752e93f319179f986d5.tle": "d94a2000de84cbb1c0d1ccbf1717d0be65cd234e432a5752e93f319179f986d5",
+      "1792893874678172582-d94a2000de84cbb1c0d1ccbf1717d0be65cd234e432a5752e93f319179f986d5.tle": "d94a2000de84cbb1c0d1ccbf1717d0be65cd234e432a5752e93f319179f986d5",
+      "1792900859719622327-2c69db8a50d1f101be66fbaf1f23cd2f58936dbefbb32bcd8154d8f06a546fb4.tle": "2c69db8a50d1f101be66fbaf1f23cd2f58936dbefbb32bcd8154d8f06a546fb4",
+      "1792904651911878285-15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86.tle": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86",
+      "1792911802637440923-9f12e6ace64c7fbb284ffa1077291136dcd9c048365db4180b596e3a81f24cb6.tle": "9f12e6ace64c7fbb284ffa1077291136dcd9c048365db4180b596e3a81f24cb6",
+      "1792918804454539856-5f80f8cd937e2be95d232733fa0057e9e2b6cb475e12bac4f82672a84414cc77.tle": "5f80f8cd937e2be95d232733fa0057e9e2b6cb475e12bac4f82672a84414cc77",
+      "1792922509170071055-1fac05ece2ffab2bde422ca9daad5c5d99e370d627f346464ae5484d4030e35c.tle": "1fac05ece2ffab2bde422ca9daad5c5d99e370d627f346464ae5484d4030e35c",
+      "1792926221975959925-1fac05ece2ffab2bde422ca9daad5c5d99e370d627f346464ae5484d4030e35c.tle": "1fac05ece2ffab2bde422ca9daad5c5d99e370d627f346464ae5484d4030e35c",
+      "1792933489005847531-45fed75e1919918e66d61ef7da79281ba20cb793ccd21edad5ec4fa1045e0b34.tle": "45fed75e1919918e66d61ef7da79281ba20cb793ccd21edad5ec4fa1045e0b34",
+      "1792940470886867948-f74b410a3c9e0425fb11e12dfc9514ed263cc96702fedc24faf4a2ef9f85039f.tle": "f74b410a3c9e0425fb11e12dfc9514ed263cc96702fedc24faf4a2ef9f85039f",
+      "1792947677452251421-e882b3d8ebb5c3af66ec3de13bcefdaeb7ca748473ea291724ee9b2401bb4230.tle": "e882b3d8ebb5c3af66ec3de13bcefdaeb7ca748473ea291724ee9b2401bb4230",
+      "1792951277675340728-e8805628cbaf29d30b07267700e12cf9925c4419e86ad61f0f67bfd895e6fac8.tle": "e8805628cbaf29d30b07267700e12cf9925c4419e86ad61f0f67bfd895e6fac8",
+      "1792954962690423372-6f3f9c061d7555a52cefba93d71285491b7d50592cd52d343d51cce49f578b30.tle": "6f3f9c061d7555a52cefba93d71285491b7d50592cd52d343d51cce49f578b30",
+      "1792958654186240136-6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20.tle": "6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20",
+      "1792965722171268466-fb3aa73527f4551bcb2558549bdaf228fd369293ae4aaad3fa7749588de24037.tle": "fb3aa73527f4551bcb2558549bdaf228fd369293ae4aaad3fa7749588de24037",
+      "1792969373158938406-fb3aa73527f4551bcb2558549bdaf228fd369293ae4aaad3fa7749588de24037.tle": "fb3aa73527f4551bcb2558549bdaf228fd369293ae4aaad3fa7749588de24037",
+      "1792973073931284626-fb3aa73527f4551bcb2558549bdaf228fd369293ae4aaad3fa7749588de24037.tle": "fb3aa73527f4551bcb2558549bdaf228fd369293ae4aaad3fa7749588de24037",
+      "1792980046690612319-2fdf01681313189429476a1840847a21119adbbf680b1abbf6a00dd5ae664d80.tle": "2fdf01681313189429476a1840847a21119adbbf680b1abbf6a00dd5ae664d80",
+      "1792983734643931755-945012bc2dcd2a32914087b6820b5ffa4a46ec91aafd9b371d745b6d4cb8af27.tle": "945012bc2dcd2a32914087b6820b5ffa4a46ec91aafd9b371d745b6d4cb8af27",
+      "1792987453669148863-a9822dabf39c6e5a5b10b0f08ca31a27549a7865fa4855dc22a7f621e3291c97.tle": "a9822dabf39c6e5a5b10b0f08ca31a27549a7865fa4855dc22a7f621e3291c97",
+      "1792994678206629210-aa4d92ab30a2b040f012b83d622ae372aadfee0ca678cac546e3fbba189ba7c9.tle": "aa4d92ab30a2b040f012b83d622ae372aadfee0ca678cac546e3fbba189ba7c9",
+      "1793001669657420778-c37a6ec475104a59adc11ec43df6356ffd6b7d97b90d2bab07c2fd3bf428856a.tle": "c37a6ec475104a59adc11ec43df6356ffd6b7d97b90d2bab07c2fd3bf428856a",
+      "1793005378991496309-fe3cd2130ce924d06c594734d5efa647ea7ef4738ead1a62e1594017bad7ac96.tle": "fe3cd2130ce924d06c594734d5efa647ea7ef4738ead1a62e1594017bad7ac96",
+      "1793009042671771985-81a643cac826ec7e2390ffb2fae5ae2bdd96d142e2056e1521d02f4507284549.tle": "81a643cac826ec7e2390ffb2fae5ae2bdd96d142e2056e1521d02f4507284549",
+      "1793016028527784605-66250bc33686bdd709c5b28521500c7a6e0326fd549518ed1077335f9badcdc4.tle": "66250bc33686bdd709c5b28521500c7a6e0326fd549518ed1077335f9badcdc4",
+      "1793019687698317599-b408acb5dcd8b8ebd3de00538d7a070954c3afeb22dc11abe2d04c9ab42d31b6.tle": "b408acb5dcd8b8ebd3de00538d7a070954c3afeb22dc11abe2d04c9ab42d31b6",
+      "1793023462314268247-aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86.tle": "aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86",
+      "1793030404414222763-892eed9041e3458b58eb814abc9e69fcf41502e81f2e175ec2e51fa834c8a0c2.tle": "892eed9041e3458b58eb814abc9e69fcf41502e81f2e175ec2e51fa834c8a0c2",
+      "1793034234059342981-892eed9041e3458b58eb814abc9e69fcf41502e81f2e175ec2e51fa834c8a0c2.tle": "892eed9041e3458b58eb814abc9e69fcf41502e81f2e175ec2e51fa834c8a0c2",
+      "1793041331314091153-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle": "fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033",
+      "1793048616868784492-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle": "fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033",
+      "1793055747385021942-923b5f3cde5a2423e5ca6b916d8be8f35a85239051e88c2e1334edfaac9405e5.tle": "923b5f3cde5a2423e5ca6b916d8be8f35a85239051e88c2e1334edfaac9405e5",
+      "1793062963523254892-5f6ee0279f678d60e69ac2faf6f9c3707d1405ff0f603fde5bdae23b46be9fca.tle": "5f6ee0279f678d60e69ac2faf6f9c3707d1405ff0f603fde5bdae23b46be9fca",
+      "1793070067421585238-5f6ee0279f678d60e69ac2faf6f9c3707d1405ff0f603fde5bdae23b46be9fca.tle": "5f6ee0279f678d60e69ac2faf6f9c3707d1405ff0f603fde5bdae23b46be9fca",
+      "1793073707659831880-2c8547692e6c06f3f6eaf9e68786d17e78f5522b408ed7dd698c6630a18974ed.tle": "2c8547692e6c06f3f6eaf9e68786d17e78f5522b408ed7dd698c6630a18974ed",
+      "1793080871874575798-9cee7e0fd019727a489af1d8c1638a5dbfc4e0fc599351c54b1f986d32f3b21a.tle": "9cee7e0fd019727a489af1d8c1638a5dbfc4e0fc599351c54b1f986d32f3b21a",
+      "1793084636445983103-433add8a528a69a0cf7c2e092f54046897bb965fa2b9283267acd8825c676f53.tle": "433add8a528a69a0cf7c2e092f54046897bb965fa2b9283267acd8825c676f53",
+      "1793091878292215183-31733661e2dac1d843954196bb13a43d34e77bc03ddee22c230dc5c4acb71066.tle": "31733661e2dac1d843954196bb13a43d34e77bc03ddee22c230dc5c4acb71066",
+      "1793098833668678059-7a49669badf358b6ae80e4d8c6f11aaad965429dd781019492189cbec3bc4c1c.tle": "7a49669badf358b6ae80e4d8c6f11aaad965429dd781019492189cbec3bc4c1c",
+      "1793102455838260903-77225d65653b8b51b96eb80e6729a77dd58d10385d27870831d2ea05b22e0747.tle": "77225d65653b8b51b96eb80e6729a77dd58d10385d27870831d2ea05b22e0747",
+      "1793109794463324811-1ecb8d206dd6057aee58db5be10f50652cb951ccad2264dfafc461754c66be16.tle": "1ecb8d206dd6057aee58db5be10f50652cb951ccad2264dfafc461754c66be16"
+    },
+    "native": {
+      "path": "leo-dev/algo07v3-shortcuts-20261107/inputs/DS26-0162/native.json",
+      "sha256": "fd43c1a3df0a08ba7ca2e7c54742a9958ace638131694fcb5e92a349c3d29079"
+    },
+    "request": {
+      "path": "leo-dev/accuracy-repair-20261115/ds26-four-configs-twice-001/results/DS26-0162-r0/baseline/experimental-request.json",
+      "sha256": "633c8480b0de4b74973ca4e1d6d0e2c696b13d53c95c2b49b6e94ef15d64570c"
+    },
+    "tile": {
+      "center": [
+        37.906,
+        -122.545
+      ],
+      "id": "original"
+    }
+  },
+  "position_limit_s": 180,
+  "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+  "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+  "python_sha256": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+  "qualification_sha256": "b9c3dab46d4d34106d9c5b8e20fbaa80a761fa7b5f27a3097891ddccff4c1e2f",
+  "raw_limit_s": 600,
+  "receiver": "/srv/bulk/leo-dev/whole-band-BCw8KqMY/receiver-phase-release",
+  "receiver_files": {
+    "__main__.py": "ed8e07472460c772ae70535c80c3b48c7cbde39044b454eba1e95302bfc47eaf",
+    "leo/__init__.py": "2da1f7559b1a315e7bb4d6516309a7ebbc8aaafc728f730fdbefcde67a18427b",
+    "leo/analysis/__init__.py": "d27727b82ffdc60145490879891a15314b9758ae762577f51b0227d68f662925",
+    "leo/analysis/glrt_frequency_input.py": "e7ad53bf41c596042c654184c8f212f4ec187c9281d4944725344d7f5e3ee58b",
+    "leo/analysis/graph_tracklets.py": "74575f44c4e9716707faaac56e3e7c35bb423ba0f75332656d7c6576cd8f2c27",
+    "leo/analysis/localization_v3/__init__.py": "c339d10076b8e23e03f8f9dec8dbe84eee0bbd2c13b3251c83013f9a2996fa5a",
+    "leo/analysis/localization_v3/acceptance.py": "d4a3c3d8331c9e24d678d3c271139fbb8da62356b66274f93042774c89196353",
+    "leo/analysis/localization_v3/cavity_prediction.py": "be422d23c3a547dcb964987155276440dee82babe32a21afd84570c13a0e3e19",
+    "leo/analysis/localization_v3/conservative_recovery.py": "f13444cfb87cfd615741eb1ef3080cbe50be77c0feb534d0085591e6a994a5ea",
+    "leo/analysis/localization_v3/discovery.py": "7ca045c3809c8da7b57268b9d9bcc4b8a49366e88376250d0b11227ce6d7e26a",
+    "leo/analysis/localization_v3/discovery_likelihood.py": "15cab9c4d398a19271dedf5ce57b469da184951e8b8f4d9be1602fabb4fc1a93",
+    "leo/analysis/localization_v3/elements.py": "57fd319a948fcae52ed1761e217dd432a9d773c836c71c6cc25a01fa57c9a01e",
+    "leo/analysis/localization_v3/event_position.py": "e8a9bcf79c9bee6e8be89b145dd346c9e28a00c44dabe229c5fdb79e3dec0f97",
+    "leo/analysis/localization_v3/families.py": "d165b623a36a1a3c396348b665ca5a9ad51342c6bc7472d5b05694cc1619150c",
+    "leo/analysis/localization_v3/family_cavity.py": "acb306a67983a94f3c7f88667733496ccbb7e80c99f718c6b4105598e8626bd5",
+    "leo/analysis/localization_v3/family_weighting.py": "e5f8148044ef993aeed83c6a85cbbb57af9c952d1cce86f8d2ec92e11ab93459",
+    "leo/analysis/localization_v3/feasible.py": "86922fff38e147c38d1c4380d71715d490d642db771c11f69d943aecd97c53bd",
+    "leo/analysis/localization_v3/hierarchical.py": "c906a5992ca3428c29b5c44326264549e18dc4206653b3d6f2fd12b48638607e",
+    "leo/analysis/localization_v3/history_policy.py": "429c230cb01438a4889f6e77256b7f00df4435b3522632bbef8cc2a83d223ca1",
+    "leo/analysis/localization_v3/history_position.py": "00e349de1a25ac62fb287f970a005737675b5f2e6d45273baa9c914e8a7918f0",
+    "leo/analysis/localization_v3/marginal.py": "c80ac51249578e8a2c6c6a13a04aaa22a168353b2c758155858106b91507b609",
+    "leo/analysis/localization_v3/noise.py": "9e5256d3814031936561b233e2913713c447b18be73d6ab4939813cb34e88d1b",
+    "leo/analysis/localization_v3/orbit_modes.py": "778104949ad9467b613ffab820a75db013b33fa86ad810ea00b226841fdc8b52",
+    "leo/analysis/localization_v3/orbits.py": "6d2b3db52f68abb93bd3a72211e6e8bc6030d5b939981287922a2beebc4f028d",
+    "leo/analysis/localization_v3/phase_prior.py": "4659c0f6a49dbc3ae8e7f65272d2db9567dd67e6908fcb10c36bf0324decd6dd",
+    "leo/analysis/localization_v3/position.py": "c3507e6ecaba0adf6d3677f56d8056afcccbcf90d6a561bca7a42b06b0daef9d",
+    "leo/analysis/localization_v3/predictive_linear.py": "1c1930b8fc71b6fafd43fa744661a785b7d243b74b1ab39ab1f59d8fe800dcc6",
+    "leo/analysis/localization_v3/region.py": "4fc3b3ec6087fcb03e76fb431758375ffedda3fd823070dbe2b58a0e8a77938b",
+    "leo/analysis/localization_v3/retained_position.py": "b16864783625d7c1f1c71d5f25dc35ee4ac7a61695ad8c401f2ca3609eb4b337",
+    "leo/analysis/localization_v3/scan.py": "3f61cf764d9f8dd5666bbe53956cd02cc0938fd3e41414e1791c05e668c7ae6d",
+    "leo/analysis/localization_v3/signed_context.py": "d87ec1c03364bf82a212f351a92df0f571b0df62a77fe3f7f3f06fb72fb82cd6",
+    "leo/analysis/localization_v3/signed_phase.py": "bf1f5d5de5af21a49446a8a62d5054c6db018b3b33d4480b87b3d8a32f40d1f8",
+    "leo/analysis/localization_v3/tracks.py": "db44a947666c2dd7946534f69bf6af72ced63c8af553bb1b089c0fba3d5b7b6f",
+    "leo/analysis/localization_v4/__init__.py": "4ee6a577d9204a240d13d5587e62a26f82d59df229d867bcdeb06ac0db073eb9",
+    "leo/analysis/localization_v4/backend.py": "b48f4292decfc12072ffe1bf1a1b9ae9765ea0b09c609cebac1798bed43cc0b1",
+    "leo/analysis/localization_v4/native_bound.py": "fa7b67e0e539be9971ee1a530c2d1d941c7940701d40dae7cc6744cbc20de6a2",
+    "leo/analysis/polynomial_tracklets.py": "933b83ce5e414a8441c62d17f8e5eb75e07b79cada283bf681193f7316346922",
+    "leo/analysis/research/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "leo/analysis/research/component_frequency_bias.py": "d4afbfefb59704f99bdb9ff1132b3e0df6355b9725c98eee2a424cf4bf96d75f",
+    "leo/analysis/research/continuous_curve_fit.py": "693a580ccbf8b134858448e4700a9b495dc5b9cc301b7ffc3a1e5dae4fab847d",
+    "leo/analysis/research/orbit_phase_geometry.py": "8affea2a053f3acd2edf38d7daaa2cfe7fcdc86293261fbff69e9e14a0df4d56",
+    "leo/analysis/research/orbit_uncertainty.py": "b6bf1a89c15abd071681241d7259ca0d2b9b97bc22bdf4f9b75f4c5d896fa370",
+    "leo/analysis/research/orbital_support.py": "24c66aa16fd5730cf965b502700a2b413b84f741e0666766bd9d6e830600ca26",
+    "leo/analysis/research/phase_linear_geometry.py": "c21c07ec7b5ee206290e8578d4cbd46dcd85fe7cfd742dafb38a70d8a112529e",
+    "leo/analysis/research/polynomial_satellite_diagnostics.py": "8bf7d7935b74bba728d437d2652af636e5532be74d798ed4f56c6641be7352c5",
+    "leo/analysis/research/prepared_phase_geometry.py": "df57600e500f731e61b2636e03d682221b74e65b8b624ddb262942213cfbb01c",
+    "leo/analysis/research/retained_track_likelihood.py": "73c24d054d5676c7d7051779a6960f8f692ce0d97bc23d292470aa01f6110bcf",
+    "leo/analysis/research/shared_orbit_phase_fit.py": "a93ff2401ddc18a3dbe450ba65e599baf83ee0f20da0533958f16f5cd534bf40",
+    "leo/analysis/research/track_catalogue_geometry.py": "966a536413483a4663679affa98f13be5f63670ffc30a9f94f0856590b775edf",
+    "leo/analysis/sparse_glrt_likelihood.py": "23c642ebdd6bbab1d1f9eb148bfc5a23b061c090193caaf538b99d5fce6ed7dc",
+    "leo/analysis/tracklet_fitting.py": "8e3917e1bb94bf59e37d97a7a3782254612e459d36075f67acfdfe15b3a19414",
+    "leo/application/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "leo/application/localization_v3.py": "15321b051400964799bc16b549c66fb0f2795f639e7786adf5c6684978fe6011",
+    "leo/application/localization_v3_engine.py": "e3459bf60f0fe60acbfbacfdca138aca5394ff87d24b48f87709e6f69ccded7e",
+    "leo/contracts/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "leo/contracts/base.py": "07e1dfd1a8c1102e8b2e69de4fe11e5899de4d4ae63f7c413a49485f78c02abc",
+    "leo/contracts/digests.py": "9cf74423dd2eb0e2b66d5b3b955e438d28260d6b22e53281ae2e1481da9dd9b9",
+    "leo/contracts/sky.py": "3ece9325660308c87528d9982cccc837b0985f16a3f2c61214fdcd63e1e5f66d",
+    "leo/operations/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "leo/operations/causal_tle_catalogue.py": "5076a2182ba9f551f54df78ba1dee53eb223e922d7aac86088fcd4cf429dc6a8",
+    "leo/operations/localization_v3_inputs.py": "68aa4a6587cb56e12a778785405c40d00ec5013f29df243c9356df099b7c6650",
+    "leo/operations/tle_archive.py": "4197f5e8cbbe43018df88318872746dfbec253aac1285a7971290c7439024da1",
+    "leo/sky/__init__.py": "07d1b59b6bcee55fe4f2861bac6ff22380145d99086d234fa0903cd9d550678c",
+    "leo/sky/doppler.py": "16c1093c3e21e79983051906292c4c4cf24bb0e938c681791ce71c288fe86380",
+    "leo/sky/frames.py": "b6c98c11d25957c8f535d09a4f4cc47f3f82745b63ca57c61f9e8d5949fbb8e0",
+    "leo/sky/propagation.py": "238f45112bacd3b14b37f296fb17f056d66a860e469363cca44d876514ac544f",
+    "leo/sky/sampling.py": "a9a61817e80a4c010c0618f6310904aaaa6c04ba84a302062350463118982aa9",
+    "leo/sky/screening.py": "6a8f185b53f0c83641bf056112de25d73039ff77de2248b86b57246cb8803a94",
+    "leo/sky/sites.py": "17056c8b01759f85583116ca4486b4578550a2a7cd48b6fdc2fa90d155783dd9",
+    "native/manifest.json": "60d39a1f34a6e795ddd478d6fadb7ad1f3ec589ed075e89847d5ae27ee6bddc8",
+    "native/native_bound.so": "c649042b2a5ddf7890177d84b302a19edcf7a662aea16c18cb177317ccba818b",
+    "projector.so": "7a183da26216e8d86c571aef8e48f29bade29a2c3b34bde56b26aebfefe6059d",
+    "tools/__init__.py": "5acd9efb718402324cdba9b8c1ff7b9111f5a99dc72da209bde62d216bfa8e08",
+    "tools/pipeline_eval/__init__.py": "545fa4a94dfcedb2feb64040859d581002ea50f4b34d10489c5392765a461efc",
+    "tools/pipeline_eval/variants/__init__.py": "531ec144c4dd19e8232a8f876099bbc31c229768f87449bc93e7aeb409fe236b",
+    "tools/pipeline_eval/variants/compact_cavity_optimizer.py": "5bceea78eaece66c20f1e12c1fd109182a8cc5cc2e8b6d410f2d68d93e9110a3",
+    "tools/pipeline_eval/variants/direct_lifetime_kernels.py": "5b533e4ecc415bf3faa606fce9e31e6395fc28f26fc803e1a6f8a5d52b37d8f8",
+    "tools/pipeline_eval/variants/orbit_projector.py": "21c61416958aba030c38d5ef78312a4122f5736ab0d8dcebf25eca9b22d781b0",
+    "tools/pipeline_eval/variants/v5_core.py": "04900f5e710894d296e978801f453e12595a7082673d1a415d26748085112fa1",
+    "tools/pipeline_eval/variants/v5_direct_cavity.py": "2de6380d81cad32c666b09beee5ed5bc7e9546964a1f258b6a8225fd636e0dda",
+    "tools/pipeline_eval/variants/v5_direct_lifetime.py": "58cb348831ff344ae6502dcbb6ad13d7bd56285d1fe059d2278a84c193cb2de3"
+  },
+  "recording": {
+    "segments": [
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000000/manifest.json",
+        "sha256": "01eac9f44d50616b2b537b512fb0896331dcf7064847dea5da04fdeadfe81edc"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000001/manifest.json",
+        "sha256": "23707889498171a038e168e27c0918b40b04c459c0925ed2637f3ab089380147"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000002/manifest.json",
+        "sha256": "d8d2f132b40e070ac27bc93ed8bf6d2cedd84837e8cf79232f2f5fa2c36e5c3b"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000003/manifest.json",
+        "sha256": "8d0c47d3e4f7019823b6716ad5bd1609219e1de29871591a6fdcc900b9a74c38"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000004/manifest.json",
+        "sha256": "2d6dc16195a6a37730eaef7c02ceb86e312675c94a6ed1ff1c3920084d712585"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000005/manifest.json",
+        "sha256": "688aa072fffe3dde9eef95505a88f74efb7decd70088d0f6a5253075137e2d3d"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000006/manifest.json",
+        "sha256": "c59922e791ee9e02e8f8112cb15eb0a710b71475773b10af96eaa830759199dc"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000007/manifest.json",
+        "sha256": "7922700299fed3a88ac42081e57337de538abf3fddaf0dc9bf8f4287060116e6"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000008/manifest.json",
+        "sha256": "1471694885f192fed4db61d6ee95daac1f4ccbdef58c440adfabe9f06939445e"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000009/manifest.json",
+        "sha256": "122f4e328eb5e2ce56d5d17a63f6b4a9fa77a2b61a434b08bada82f2bdb4f195"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000010/manifest.json",
+        "sha256": "39024c572368ab6799379f47a943762e0d02c59583fb55141432f57fddc6c05b"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000011/manifest.json",
+        "sha256": "50d6e32cf5096e172660ab947a0f1154b65c876a4c427b18dec9decd32055a62"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000012/manifest.json",
+        "sha256": "70a73e97e7ae98b8c9f1bcb6bfb4dbdbaf48c5ff1f22fc5af4e8b79217337f31"
+      },
+      {
+        "path": "leo/fast-scan-recordings/fast8-auto-20261027-145135-04d24abc-1-upper/fast8-auto-20261027-145135-04d24abc-1-upper-segment-00000013/manifest.json",
+        "sha256": "a16c71275d2b0d4c1f953146f701b53800752a48da57935c5a343401f50b3ebb"
+      }
+    ],
+    "window_count": 6772
+  },
+  "schedule_sha256": "60e62bc21a0c39fc73c543fe52c33eee7e0af4a094fa974fcd9108d1c4c2a4bd",
+  "scheduled": 1693,
+  "selected_valid": 1675,
+  "smoke": [
+    [
+      0,
+      2,
+      2
+    ],
+    [
+      0,
+      19,
+      19
+    ],
+    [
+      10,
+      111,
+      5231
+    ]
+  ],
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/antenna-confirmation/capture-exact/PROTOCOL.md": "aab5a6dce549aec13baed98b9b29c0f84940816eaedc3c9f56b77ee54e7d34b6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/original-support/scheduled-waveform/PROTOCOL.md": "06935f52ed4d4c74195f6b4c4ade924409bf4305338e31abab1d092945b62678",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_exact_trial.py": "9e105aa0d3ff39e420b97fea8fe06a2c26d9377e97c40f85b516fd1c28122ece",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_fft_trial.py": "bee7bb92d8c4aee31bc814ca4d96ff7cfc92fb7faa4e1d167ff55074bace833d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_starts.py": "756d119e827fe43ffadf982ddf01b46c02b9fc4dc8990b1cc7b5ace607c54ee8",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_whole.py": "e93063ea97b120aceb5f714985aa3f22d816cea3fde8a527089dbd310fde5bff",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/scheduled_capture_waveform.py": "4952f6f2b662259ca3047c123f36f153e7a5212cd771948c3ecc819d74a3bffa",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/capture_batched_fft.py": "f8c53c5b9fe30f2cece56aa25ebe8676447f19301b438366bbdcf01b5d32f306",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/capture_fft.py": "c80c248e29d71add2fe55b87686306050131f508800806374290bc171eb9a675",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.py": "1e0a834bf60789df75b38df4ed1cf41c827ff203ff282629d8d0355ebe4ec9b4",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/folded_bank.c": "6af2aab7595533b5cba9dfb2c460bc95e1440952aefcaf3d04fd67d7a94f99e6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.py": "34986485227b71a8e23ad8898904c8a25ff48961995cf2bd71949780c4770cf6",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_fractional.py": "ae177873aee33dc4efad0e7737fc0cd8f6785dfd9b2c9e698644d3d86b00e3f7",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+    "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83",
+    "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/folded_bank.c": "5db305f9d1ec8b1a761b47561204768efee6bef43bb012dfa42679c934bf5b94",
+    "/usr/lib/x86_64-linux-gnu/libfftw3.so.3": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7",
+    "/usr/lib/x86_64-linux-gnu/libfftw3f.so.3": "8fae0bc5d15b6caf5bb843f6a9328d2b08cd5440bef97722401cffdebc553611"
+  },
+  "workers": [
+    [
+      2,
+      284,
+      [
+        [
+          0,
+          0,
+          64,
+          0
+        ],
+        [
+          1,
+          64,
+          128,
+          512
+        ],
+        [
+          1,
+          448,
+          512,
+          512
+        ],
+        [
+          2,
+          384,
+          448,
+          1024
+        ],
+        [
+          2,
+          448,
+          512,
+          1024
+        ],
+        [
+          3,
+          384,
+          448,
+          1536
+        ],
+        [
+          4,
+          256,
+          320,
+          2048
+        ],
+        [
+          5,
+          384,
+          448,
+          2560
+        ],
+        [
+          6,
+          128,
+          192,
+          3072
+        ],
+        [
+          6,
+          320,
+          384,
+          3072
+        ],
+        [
+          7,
+          192,
+          256,
+          3584
+        ],
+        [
+          8,
+          64,
+          128,
+          4096
+        ],
+        [
+          8,
+          448,
+          512,
+          4096
+        ],
+        [
+          9,
+          256,
+          320,
+          4608
+        ],
+        [
+          9,
+          384,
+          448,
+          4608
+        ],
+        [
+          10,
+          320,
+          384,
+          5120
+        ],
+        [
+          11,
+          256,
+          320,
+          5632
+        ],
+        [
+          12,
+          192,
+          256,
+          6144
+        ]
+      ]
+    ],
+    [
+      3,
+      283,
+      [
+        [
+          0,
+          64,
+          128,
+          0
+        ],
+        [
+          1,
+          128,
+          192,
+          512
+        ],
+        [
+          2,
+          0,
+          64,
+          1024
+        ],
+        [
+          3,
+          0,
+          64,
+          1536
+        ],
+        [
+          3,
+          128,
+          192,
+          1536
+        ],
+        [
+          3,
+          448,
+          512,
+          1536
+        ],
+        [
+          4,
+          320,
+          384,
+          2048
+        ],
+        [
+          5,
+          448,
+          512,
+          2560
+        ],
+        [
+          6,
+          384,
+          448,
+          3072
+        ],
+        [
+          7,
+          256,
+          320,
+          3584
+        ],
+        [
+          8,
+          128,
+          192,
+          4096
+        ],
+        [
+          9,
+          0,
+          64,
+          4608
+        ],
+        [
+          9,
+          448,
+          512,
+          4608
+        ],
+        [
+          10,
+          256,
+          320,
+          5120
+        ],
+        [
+          10,
+          384,
+          448,
+          5120
+        ],
+        [
+          11,
+          320,
+          384,
+          5632
+        ],
+        [
+          12,
+          256,
+          320,
+          6144
+        ],
+        [
+          13,
+          64,
+          116,
+          6656
+        ]
+      ]
+    ],
+    [
+      4,
+      270,
+      [
+        [
+          0,
+          192,
+          256,
+          0
+        ],
+        [
+          1,
+          192,
+          256,
+          512
+        ],
+        [
+          2,
+          64,
+          128,
+          1024
+        ],
+        [
+          3,
+          64,
+          128,
+          1536
+        ],
+        [
+          4,
+          0,
+          64,
+          2048
+        ],
+        [
+          4,
+          384,
+          448,
+          2048
+        ],
+        [
+          5,
+          0,
+          64,
+          2560
+        ],
+        [
+          6,
+          0,
+          64,
+          3072
+        ],
+        [
+          6,
+          448,
+          512,
+          3072
+        ],
+        [
+          7,
+          320,
+          384,
+          3584
+        ],
+        [
+          8,
+          192,
+          256,
+          4096
+        ],
+        [
+          9,
+          64,
+          128,
+          4608
+        ],
+        [
+          10,
+          0,
+          64,
+          5120
+        ],
+        [
+          10,
+          448,
+          512,
+          5120
+        ],
+        [
+          11,
+          192,
+          256,
+          5632
+        ],
+        [
+          11,
+          384,
+          448,
+          5632
+        ],
+        [
+          12,
+          320,
+          384,
+          6144
+        ]
+      ]
+    ],
+    [
+      5,
+      270,
+      [
+        [
+          0,
+          320,
+          384,
+          0
+        ],
+        [
+          1,
+          256,
+          320,
+          512
+        ],
+        [
+          2,
+          128,
+          192,
+          1024
+        ],
+        [
+          3,
+          192,
+          256,
+          1536
+        ],
+        [
+          4,
+          64,
+          128,
+          2048
+        ],
+        [
+          4,
+          448,
+          512,
+          2048
+        ],
+        [
+          5,
+          64,
+          128,
+          2560
+        ],
+        [
+          6,
+          64,
+          128,
+          3072
+        ],
+        [
+          7,
+          0,
+          64,
+          3584
+        ],
+        [
+          7,
+          384,
+          448,
+          3584
+        ],
+        [
+          8,
+          256,
+          320,
+          4096
+        ],
+        [
+          9,
+          128,
+          192,
+          4608
+        ],
+        [
+          10,
+          64,
+          128,
+          5120
+        ],
+        [
+          11,
+          0,
+          64,
+          5632
+        ],
+        [
+          11,
+          448,
+          512,
+          5632
+        ],
+        [
+          12,
+          0,
+          64,
+          6144
+        ],
+        [
+          12,
+          384,
+          448,
+          6144
+        ]
+      ]
+    ],
+    [
+      6,
+      284,
+      [
+        [
+          0,
+          128,
+          192,
+          0
+        ],
+        [
+          0,
+          384,
+          448,
+          0
+        ],
+        [
+          0,
+          448,
+          512,
+          0
+        ],
+        [
+          1,
+          320,
+          384,
+          512
+        ],
+        [
+          2,
+          256,
+          320,
+          1024
+        ],
+        [
+          3,
+          256,
+          320,
+          1536
+        ],
+        [
+          4,
+          128,
+          192,
+          2048
+        ],
+        [
+          5,
+          128,
+          192,
+          2560
+        ],
+        [
+          5,
+          192,
+          256,
+          2560
+        ],
+        [
+          6,
+          192,
+          256,
+          3072
+        ],
+        [
+          7,
+          64,
+          128,
+          3584
+        ],
+        [
+          7,
+          448,
+          512,
+          3584
+        ],
+        [
+          8,
+          320,
+          384,
+          4096
+        ],
+        [
+          9,
+          192,
+          256,
+          4608
+        ],
+        [
+          10,
+          128,
+          192,
+          5120
+        ],
+        [
+          11,
+          64,
+          128,
+          5632
+        ],
+        [
+          12,
+          64,
+          128,
+          6144
+        ],
+        [
+          12,
+          448,
+          512,
+          6144
+        ]
+      ]
+    ],
+    [
+      7,
+      284,
+      [
+        [
+          0,
+          256,
+          320,
+          0
+        ],
+        [
+          1,
+          0,
+          64,
+          512
+        ],
+        [
+          1,
+          384,
+          448,
+          512
+        ],
+        [
+          2,
+          192,
+          256,
+          1024
+        ],
+        [
+          2,
+          320,
+          384,
+          1024
+        ],
+        [
+          3,
+          320,
+          384,
+          1536
+        ],
+        [
+          4,
+          192,
+          256,
+          2048
+        ],
+        [
+          5,
+          256,
+          320,
+          2560
+        ],
+        [
+          5,
+          320,
+          384,
+          2560
+        ],
+        [
+          6,
+          256,
+          320,
+          3072
+        ],
+        [
+          7,
+          128,
+          192,
+          3584
+        ],
+        [
+          8,
+          0,
+          64,
+          4096
+        ],
+        [
+          8,
+          384,
+          448,
+          4096
+        ],
+        [
+          9,
+          320,
+          384,
+          4608
+        ],
+        [
+          10,
+          192,
+          256,
+          5120
+        ],
+        [
+          11,
+          128,
+          192,
+          5632
+        ],
+        [
+          12,
+          128,
+          192,
+          6144
+        ],
+        [
+          13,
+          0,
+          64,
+          6656
+        ]
+      ]
+    ]
+  ]
+}

@@ -1,0 +1,199 @@
+{
+  "charts": [
+    {
+      "caption": "Tile centre and training-only forced estimates in both calibration views.",
+      "cases": [
+        "DS26-0261",
+        "DS29-0519"
+      ],
+      "id": "differenced_orbits-known",
+      "method": "differenced_orbits",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "known-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Staggered RF contrast \u00b7 forced",
+          "key": "one",
+          "label": "Staggered RF contrast",
+          "value": "differenced_orbits",
+          "where": {
+            "cohort": "known"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Offered tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "differenced_orbits_tile_center",
+          "where": {
+            "cohort": "known"
+          }
+        }
+      ],
+      "title": "Staggered RF contrasts on two matched roof recordings"
+    },
+    {
+      "caption": "Tile centre and training-only forced estimates in both calibration views.",
+      "cases": [
+        "DS26-0261-omitted",
+        "DS29-0519-omitted",
+        "DS26-0283-omitted",
+        "DS26-0136-omitted",
+        "DS26-0124-omitted",
+        "DS29-0082-omitted"
+      ],
+      "condition_labels": {
+        "omitted": "Omitted"
+      },
+      "id": "differenced_orbits-omitted",
+      "method": "differenced_orbits",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Staggered RF contrast \u00b7 forced",
+          "key": "candidate",
+          "label": "Staggered RF contrast",
+          "value": "differenced_orbits",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Offered tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "differenced_orbits_tile_center",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Staggered RF contrasts with the receiver outside the offer"
+    },
+    {
+      "caption": "Tile centre and training-only forced estimates in both calibration views.",
+      "cases": [
+        "DS26-0261-time-sham",
+        "DS29-0519-time-sham",
+        "DS26-0283-time-sham",
+        "DS26-0136-time-sham",
+        "DS26-0124-time-sham",
+        "DS29-0082-time-sham"
+      ],
+      "condition_labels": {
+        "time-sham": "Time Sham"
+      },
+      "id": "differenced_orbits-time-sham",
+      "method": "differenced_orbits",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "time-sham-queries.json",
+      "scope": "transfer",
+      "seal": "time-sham-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Staggered RF contrast \u00b7 forced",
+          "key": "candidate",
+          "label": "Staggered RF contrast",
+          "value": "differenced_orbits",
+          "where": {
+            "cohort": "time-sham"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Offered tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "differenced_orbits_tile_center",
+          "where": {
+            "cohort": "time-sham"
+          }
+        }
+      ],
+      "title": "Staggered RF contrasts with orbit time advanced by 79 seconds"
+    },
+    {
+      "caption": "Tile centre and training-only forced estimates in both calibration views.",
+      "cases": [
+        "DS26-0283",
+        "DS26-0136",
+        "DS26-0124",
+        "DS29-0082"
+      ],
+      "condition_labels": {
+        "fresh": "Fresh"
+      },
+      "id": "differenced_orbits-fresh",
+      "method": "differenced_orbits",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "fresh-queries.json",
+      "scope": "transfer",
+      "seal": "fresh-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Staggered RF contrast \u00b7 forced",
+          "key": "candidate",
+          "label": "Staggered RF contrast",
+          "value": "differenced_orbits",
+          "where": {
+            "cohort": "fresh"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Offered tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "differenced_orbits_tile_center",
+          "where": {
+            "cohort": "fresh"
+          }
+        }
+      ],
+      "title": "Staggered RF contrasts on four hash-selected roof recordings"
+    }
+  ],
+  "version": 2
+}

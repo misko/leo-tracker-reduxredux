@@ -1,0 +1,153 @@
+{
+  "charts": [
+    {
+      "caption": "First compact runs used a 210 s outer service limit. The chart retains their timeouts and includes authenticated reused controls.",
+      "cases": "sealed",
+      "id": "two-rate-holdout-first-attempt",
+      "method": "two_rate_fill",
+      "provenance": [
+        "prediction-lock.json",
+        "first-attempt-scores.csv",
+        "cost.csv",
+        "packet-audit.json",
+        "fit-attempts.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions-first.jsonl.gz",
+          "key": "one",
+          "label": "Negative-lane fill",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_fill"
+        },
+        {
+          "file": "positions-first.jsonl.gz",
+          "key": "stock",
+          "label": "Fast four",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_wide"
+        },
+        {
+          "file": "positions-first.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Whole-visit replacement",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_replace"
+        },
+        {
+          "file": "positions-first.jsonl.gz",
+          "key": "all_visits",
+          "label": "Full original compact",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_original"
+        }
+      ],
+      "title": "Two-rate replay at the ordinary compact deadline"
+    },
+    {
+      "caption": "Accuracy shown with same-input retries at a 420 s outer service limit. See the first-attempt chart for the 210 s terminal outcomes.",
+      "cases": "sealed",
+      "id": "two-rate-holdout",
+      "method": "two_rate_fill",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "cost.csv",
+        "packet-audit.json",
+        "fit-attempts.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Negative-lane fill (2 retried)",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_fill"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Fast four",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Whole-visit replacement",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_replace"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Full original compact (1 retried)",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "two_rate_original"
+        }
+      ],
+      "title": "Two-rate accuracy with same-input timeout retries"
+    }
+  ],
+  "version": 2
+}

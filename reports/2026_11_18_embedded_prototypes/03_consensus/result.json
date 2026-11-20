@@ -1,0 +1,853 @@
+{
+  "method": "Geometry-balanced leave-satellite-family-fold-out consensus",
+  "timing_scope": "Single-thread host Python wall time from reading the existing graph through both consensus arms. Includes graph JSON decode, causal TLE propagation, descriptors and common grid vote. Control and checks are measured separately. Excludes graph production, IQ, transport and device time.",
+  "cases": [
+    {
+      "case": "DS26-0036",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.83709214950561,
+            -122.47097616931555
+          ],
+          "xy_km": [
+            6.501785373209323,
+            -7.648771404877635
+          ],
+          "rms_hz": 183.28175536255986,
+          "rms_inlier_hz": 183.28175536255986,
+          "consensus_loss_per_family": 1.3225829629034818,
+          "tracks": 58,
+          "satellites": 24,
+          "inlier_families": 24,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 58,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.8362208038574,
+            -122.47096294605097
+          ],
+          "xy_km": [
+            6.502946821184567,
+            -7.74549077182857
+          ],
+          "rms_hz": 151.12240697061898,
+          "rms_inlier_hz": 151.12240697061898,
+          "consensus_loss_per_family": 1.2789397171603873,
+          "tracks": 58,
+          "satellites": 24,
+          "inlier_families": 24,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 58,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": -652.5586632507159,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.32209190260618925,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 58,
+            "satellites": 24,
+            "rms_hz": 176.05355808944242,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.83062559308849,
+              -122.47233211960989
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 58,
+            "satellites": 24,
+            "rms_hz": 138.22169525186362,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.82994318821134,
+              -122.47154173627041
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.007115989923477173,
+        "graph_read_wall_s": 0.009039604105055332,
+        "common_frontend_wall_s": 0.29596526455134153,
+        "consensus_both_arms_wall_s": 0.017087033949792385,
+        "causal_tle_snapshot": "1792904651911878285-15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86.tle",
+        "curved_tracks_described": 59,
+        "shortlisted_tracks": 58,
+        "unique_tracks": 58,
+        "family_count": 24,
+        "families_per_fold": [
+          6,
+          6,
+          6,
+          6
+        ],
+        "gram_arrays_bytes": 156832,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0070",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.910091113343206,
+            -122.40638780779952
+          ],
+          "xy_km": [
+            12.174818777474698,
+            0.4541135810956592
+          ],
+          "rms_hz": 1225.7386241141744,
+          "rms_inlier_hz": 519.2066498795701,
+          "consensus_loss_per_family": 3.8105459664610777,
+          "tracks": 38,
+          "satellites": 15,
+          "inlier_families": 14,
+          "rejected_catalog_ids": [
+            67054
+          ],
+          "inlier_tracks": 33,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.914097981629176,
+            -122.40268556935634
+          ],
+          "xy_km": [
+            12.5,
+            0.8988759608385694
+          ],
+          "rms_hz": 1227.6652684768717,
+          "rms_inlier_hz": 521.3721723500671,
+          "consensus_loss_per_family": 3.83772019254952,
+          "tracks": 38,
+          "satellites": 15,
+          "inlier_families": 14,
+          "rejected_catalog_ids": [
+            67054
+          ],
+          "inlier_tracks": 33,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": false,
+          "c_hz_per_ghz": 217.40659121834764,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": true
+        }
+      },
+      "wall_s": 0.2521134866401553,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 38,
+            "satellites": 15,
+            "rms_hz": 1254.167344732815,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.88779828706561,
+              -122.40539741310067
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 38,
+            "satellites": 15,
+            "rms_hz": 1247.91097008258,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.88863751862183,
+              -122.40589195322751
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.002108084037899971,
+        "graph_read_wall_s": 0.007317502051591873,
+        "common_frontend_wall_s": 0.23770711570978165,
+        "consensus_both_arms_wall_s": 0.0070888688787817955,
+        "causal_tle_snapshot": "1792958654186240136-6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 38,
+        "unique_tracks": 38,
+        "family_count": 15,
+        "families_per_fold": [
+          4,
+          3,
+          4,
+          4
+        ],
+        "gram_arrays_bytes": 102752,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0112",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.82752760333444,
+            -122.44026290197267
+          ],
+          "xy_km": [
+            9.199444634112005,
+            -8.71043602987727
+          ],
+          "rms_hz": 286.95830081235727,
+          "rms_inlier_hz": 286.95830081235727,
+          "consensus_loss_per_family": 1.939213465504106,
+          "tracks": 54,
+          "satellites": 29,
+          "inlier_families": 29,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 54,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.827486651093984,
+            -122.44025497552413
+          ],
+          "xy_km": [
+            9.200140843248194,
+            -8.714981728567484
+          ],
+          "rms_hz": 289.1027280952993,
+          "rms_inlier_hz": 289.1027280952993,
+          "consensus_loss_per_family": 1.93873245292335,
+          "tracks": 54,
+          "satellites": 29,
+          "inlier_families": 29,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 54,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 73.33508601055604,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.3575785383582115,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 54,
+            "satellites": 29,
+            "rms_hz": 224.62550180258287,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.80984187741269,
+              -122.44049790981592
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 54,
+            "satellites": 29,
+            "rms_hz": 220.1861608601559,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.80988897503112,
+              -122.44063026864319
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.004371605813503265,
+        "graph_read_wall_s": 0.007639751769602299,
+        "common_frontend_wall_s": 0.3415239602327347,
+        "consensus_both_arms_wall_s": 0.008414826355874538,
+        "causal_tle_snapshot": "1793023462314268247-aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 54,
+        "unique_tracks": 54,
+        "family_count": 29,
+        "families_per_fold": [
+          7,
+          7,
+          7,
+          8
+        ],
+        "gram_arrays_bytes": 146016,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0122",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.84789248301228,
+            -122.45295559227901
+          ],
+          "xy_km": [
+            8.084598949724747,
+            -6.449934385636968
+          ],
+          "rms_hz": 262.967820793503,
+          "rms_inlier_hz": 262.967820793503,
+          "consensus_loss_per_family": 1.375572209431292,
+          "tracks": 54,
+          "satellites": 21,
+          "inlier_families": 21,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 54,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.84785350545271,
+            -122.45298056876892
+          ],
+          "xy_km": [
+            8.08240517273006,
+            -6.454260894748757
+          ],
+          "rms_hz": 263.4298255288834,
+          "rms_inlier_hz": 263.4298255288834,
+          "consensus_loss_per_family": 1.3781968842858088,
+          "tracks": 54,
+          "satellites": 21,
+          "inlier_families": 21,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 54,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 46.80791956682714,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.29290877003222704,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 54,
+            "satellites": 21,
+            "rms_hz": 249.19158097111028,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.829570537743635,
+              -122.45663285754553
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 54,
+            "satellites": 21,
+            "rms_hz": 249.04133163463084,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.82959866222867,
+              -122.45660413295943
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.005098138004541397,
+        "graph_read_wall_s": 0.00837276503443718,
+        "common_frontend_wall_s": 0.27237432822585106,
+        "consensus_both_arms_wall_s": 0.0121616767719388,
+        "causal_tle_snapshot": "1793041331314091153-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 54,
+        "unique_tracks": 54,
+        "family_count": 21,
+        "families_per_fold": [
+          5,
+          6,
+          5,
+          5
+        ],
+        "gram_arrays_bytes": 146016,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0203",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.80608519537184,
+            -122.42847746877818
+          ],
+          "xy_km": [
+            10.234602588684465,
+            -11.090543313725425
+          ],
+          "rms_hz": 255.52242808807148,
+          "rms_inlier_hz": 249.27666752410934,
+          "consensus_loss_per_family": 2.385897882790741,
+          "tracks": 57,
+          "satellites": 21,
+          "inlier_families": 20,
+          "rejected_catalog_ids": [
+            67953
+          ],
+          "inlier_tracks": 54,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": false,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.801048282063384,
+            -122.41650515735166
+          ],
+          "xy_km": [
+            11.28617474587622,
+            -11.649640690964148
+          ],
+          "rms_hz": 218.23085634472415,
+          "rms_inlier_hz": 212.5804877961068,
+          "consensus_loss_per_family": 2.363260497585972,
+          "tracks": 57,
+          "satellites": 21,
+          "inlier_families": 20,
+          "rejected_catalog_ids": [
+            67953
+          ],
+          "inlier_tracks": 54,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": -484.7313225738033,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.3008768241852522,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 57,
+            "satellites": 21,
+            "rms_hz": 226.8891294510056,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.817384321365374,
+              -122.43154098630663
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 57,
+            "satellites": 21,
+            "rms_hz": 195.8231621108886,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.8185906238486,
+              -122.43071255367997
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.0029574288055300713,
+        "graph_read_wall_s": 0.008652347140014172,
+        "common_frontend_wall_s": 0.2845600377768278,
+        "consensus_both_arms_wall_s": 0.007664439268410206,
+        "causal_tle_snapshot": "1793185228910602426-4c641810f9578d212b2fce8d2a87c144aac5517f989612ab6d5f5bb83a645763.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 57,
+        "unique_tracks": 57,
+        "family_count": 21,
+        "families_per_fold": [
+          6,
+          5,
+          5,
+          5
+        ],
+        "gram_arrays_bytes": 154128,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0209",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.85799963863675,
+            -122.41612859735662
+          ],
+          "xy_km": [
+            11.319249395556907,
+            -5.328040111321115
+          ],
+          "rms_hz": 544.0196614776901,
+          "rms_inlier_hz": 544.0196614776901,
+          "consensus_loss_per_family": 2.491535689180339,
+          "tracks": 53,
+          "satellites": 23,
+          "inlier_families": 23,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 53,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.86017359184312,
+            -122.41707936864165
+          ],
+          "xy_km": [
+            11.235739655826604,
+            -5.086731305413219
+          ],
+          "rms_hz": 535.2130991312953,
+          "rms_inlier_hz": 535.2130991312953,
+          "consensus_loss_per_family": 2.4357025811163537,
+          "tracks": 53,
+          "satellites": 23,
+          "inlier_families": 23,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 53,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": -814.0635274703642,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.2637662412598729,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 53,
+            "satellites": 23,
+            "rms_hz": 537.4589132047112,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.83438994279439,
+              -122.45430234831873
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 53,
+            "satellites": 23,
+            "rms_hz": 534.6668308915484,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.837492009542544,
+              -122.45416442319467
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.003410632722079754,
+        "graph_read_wall_s": 0.007272003218531609,
+        "common_frontend_wall_s": 0.24822380393743515,
+        "consensus_both_arms_wall_s": 0.008270434103906155,
+        "causal_tle_snapshot": "1793192693669869138-5ba18ecc0f72b38f1a32cdb62053e1321fb3ac8a3465617d4464f77f203b9f46.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 53,
+        "unique_tracks": 53,
+        "family_count": 23,
+        "families_per_fold": [
+          5,
+          6,
+          6,
+          6
+        ],
+        "gram_arrays_bytes": 143312,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0277",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.867627651708936,
+            -122.43214746524696
+          ],
+          "xy_km": [
+            9.912253297384268,
+            -4.259330660307717
+          ],
+          "rms_hz": 157.22991903885514,
+          "rms_inlier_hz": 157.22991903885514,
+          "consensus_loss_per_family": 1.04072272396205,
+          "tracks": 64,
+          "satellites": 20,
+          "inlier_families": 20,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 64,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.867629513170066,
+            -122.43213726709139
+          ],
+          "xy_km": [
+            9.913149038905791,
+            -4.259124038122788
+          ],
+          "rms_hz": 156.842167497864,
+          "rms_inlier_hz": 156.842167497864,
+          "consensus_loss_per_family": 1.0405842707605961,
+          "tracks": 64,
+          "satellites": 20,
+          "inlier_families": 20,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 64,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 15.337615921979177,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.30649679992347956,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 64,
+            "satellites": 20,
+            "rms_hz": 143.09829493971623,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.86437434356903,
+              -122.43113878465431
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 64,
+            "satellites": 20,
+            "rms_hz": 142.13649980732137,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.86462683558837,
+              -122.43077814751479
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.0031434139236807823,
+        "graph_read_wall_s": 0.007914955727756023,
+        "common_frontend_wall_s": 0.28790239803493023,
+        "consensus_both_arms_wall_s": 0.010679446160793304,
+        "causal_tle_snapshot": "1793297047368813889-91362ddd01a725beeb7c70d3ee72eb8f34d3c58698d97a8637e1d351f928862f.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 64,
+        "unique_tracks": 64,
+        "family_count": 20,
+        "families_per_fold": [
+          5,
+          5,
+          5,
+          5
+        ],
+        "gram_arrays_bytes": 173056,
+        "max_shared_solve_dimension": 9
+      }
+    },
+    {
+      "case": "DS26-0311",
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "latlon": [
+            37.851457668299126,
+            -122.46521064702262
+          ],
+          "xy_km": [
+            7.008192406816513,
+            -6.054198818796942
+          ],
+          "rms_hz": 184.17368291632343,
+          "rms_inlier_hz": 184.17368291632343,
+          "consensus_loss_per_family": 0.550359709049827,
+          "tracks": 64,
+          "satellites": 27,
+          "inlier_families": 27,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 64,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": 0.0,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "latlon": [
+            37.85223504547248,
+            -122.46470863766623
+          ],
+          "xy_km": [
+            7.052285735415929,
+            -5.967909952554076
+          ],
+          "rms_hz": 149.86690667125833,
+          "rms_inlier_hz": 149.86690667125833,
+          "consensus_loss_per_family": 0.5267627169956732,
+          "tracks": 64,
+          "satellites": 27,
+          "inlier_families": 27,
+          "rejected_catalog_ids": [],
+          "inlier_tracks": 64,
+          "proposals": 5,
+          "winning_omitted_fold": null,
+          "refit_kept": true,
+          "c_hz_per_ghz": -436.0985017954103,
+          "rf_column_independent_of_lane_offsets": true,
+          "on_boundary": false
+        }
+      },
+      "wall_s": 0.2808639397844672,
+      "checks": {
+        "compact_same_tracks": {
+          "c0": {
+            "status": "estimate",
+            "tracks": 64,
+            "satellites": 27,
+            "rms_hz": 155.75699636714575,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.84951846647213,
+              -122.49094819388422
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "tracks": 64,
+            "satellites": 27,
+            "rms_hz": 117.94316064155025,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.85066648690916,
+              -122.4896362405447
+            ]
+          }
+        },
+        "compact_both_arms_wall_s": 0.0046212151646614075,
+        "graph_read_wall_s": 0.006303251720964909,
+        "common_frontend_wall_s": 0.2660575117915869,
+        "consensus_both_arms_wall_s": 0.008503176271915436,
+        "causal_tle_snapshot": "1793354675408927643-b9271cb0b50e60a49b547c429fe146947a6175bf547734f766a32d691467e2af.tle",
+        "curved_tracks_described": 64,
+        "shortlisted_tracks": 64,
+        "unique_tracks": 64,
+        "family_count": 27,
+        "families_per_fold": [
+          6,
+          7,
+          7,
+          7
+        ],
+        "gram_arrays_bytes": 173056,
+        "max_shared_solve_dimension": 9
+      }
+    }
+  ],
+  "checks": {
+    "duplicate_on_first_case": {
+      "pass_exact": true,
+      "repeated_family": 58594,
+      "copies_added": 5,
+      "rows_added": 25
+    },
+    "gross_outlier_on_first_case": {
+      "family": 58594,
+      "perturbed_tracks": 5,
+      "alternating_sample_error_hz": 6000.0,
+      "arms": {
+        "c0": {
+          "consensus_status": "estimate",
+          "compact_status": "estimate",
+          "family_rejected": true,
+          "winning_omitted_fold": null,
+          "consensus_shift_km": 0.0572055241044504,
+          "compact_shift_km": 0.5115939435268683
+        },
+        "fitted_c": {
+          "consensus_status": "estimate",
+          "compact_status": "estimate",
+          "family_rejected": true,
+          "winning_omitted_fold": null,
+          "consensus_shift_km": 0.09020759616816927,
+          "compact_shift_km": 0.5802424853546188
+        }
+      }
+    }
+  }
+}

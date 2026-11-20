@@ -1,0 +1,150 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh same-core pairs use the same native factors and scientific request. The control includes the previous qualification instrumentation.",
+      "cases": [
+        "DS29-0082"
+      ],
+      "id": "compact-entry-ordinary",
+      "method": "v5_compact_receiver",
+      "provenance": [
+        "timings.csv",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "ordinary-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Direct numerical entry",
+          "native_authority": "ordinary",
+          "value": "v5_compact_receiver",
+          "where": {
+            "detector": "ordinary"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Instrumented prior entry",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_recovery_reads",
+          "where": {
+            "detector": "ordinary"
+          }
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Direct row-major compact v5 entry \u00b7 ordinary"
+    },
+    {
+      "caption": "Fresh same-core pairs use the same native factors and scientific request. The control includes the previous qualification instrumentation.",
+      "cases": [
+        "DS26-0026",
+        "DS29-0174"
+      ],
+      "id": "compact-entry-capture-era",
+      "method": "v5_compact_receiver",
+      "provenance": [
+        "timings.csv",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "capture-era-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Direct numerical entry",
+          "native_authority": "frozen",
+          "value": "v5_compact_receiver",
+          "where": {
+            "detector": "capture-era"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Instrumented prior entry",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "frozen",
+          "value": "v5_recovery_reads",
+          "where": {
+            "detector": "capture-era"
+          }
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Direct row-major compact v5 entry \u00b7 capture-era"
+    },
+    {
+      "caption": "Same direct run and bound input. The fresh control retry follows the primary control\u2019s scratch write failure.",
+      "cases": [
+        "DS29-0082"
+      ],
+      "id": "compact-entry-ordinary-retry",
+      "method": "v5_compact_receiver",
+      "provenance": [
+        "timings.csv",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "ordinary-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Direct numerical entry",
+          "native_authority": "ordinary",
+          "value": "v5_compact_receiver",
+          "where": {
+            "detector": "ordinary"
+          }
+        },
+        {
+          "file": "retry-control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same-core control retry",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_recovery_reads",
+          "where": {
+            "detector": "ordinary"
+          }
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Direct row-major compact v5 entry \u00b7 ordinary control retry"
+    }
+  ],
+  "version": 1
+}

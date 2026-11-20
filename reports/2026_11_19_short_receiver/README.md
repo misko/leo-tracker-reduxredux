@@ -1,0 +1,35 @@
+# Position error and runtime of shorter LEO receiver pipelines
+
+[Open the charts for these trials](../2026_11_19_position_atlas/short-receiver/index.html) · [Open every receiver comparison](../2026_11_19_position_atlas/index.html) · [Download the fitted-calibration roof charts](../2026_11_19_position_atlas/short-receiver/fitted_c/modifications.pdf) · [Download the zero-calibration roof charts](../2026_11_19_position_atlas/short-receiver/c0/modifications.pdf)
+
+Stopping v5 at the cavity fit remains the strongest measured reduction in overall work. It returned all 135 rooftop positions, preserved the no-repair v5 median and P95 on both datasets, and reduced median post-GLRT time from 266.62 to 135.88 seconds in six paired host runs. Under fitted calibration, 133 of 135 individual errors were within 10% of v5 or better. The two larger regressions were 1.218 to 2.370 km and 0.440 to 0.689 km. The original 25 km search tile was supplied throughout. [135-recording chart](../2026_11_19_position_atlas/roof/fitted_c/v5_stop_cavity.png) · [Timing and scientific boundary](../2026_11_19_receiver_simplification/README.md)
+
+| Change | What actually ran | Position and runtime evidence |
+|---|---|---|
+| Fuse integer and fractional GLRT refinement | 16 scheduled raw visits across two recordings, 14 valid. Full v5 ran again with those visits replaced. | Every candidate and both position fits matched. Refinement CPU fell 70.4%, full detector CPU fell 13.2%. Other visits used archived detections. [Study](glrt-refinement/README.md) |
+| Share repeated satellite-association calculations | Complete recorded GLRT through both v5 position arms, with the same set of starts and recovery steps. | The original schedule returned three of four fixes. The fourth timed out after stock had used 484 s of the 650 s pair budget. A separate 354 s run reproduced its stock position. Association CPU improved 1.69× and 2.54× on the two primary cases, with mixed whole-worker timing. [Study](shared-search/README.md) |
+| Refine only the first ranked assignment | Six paired timing replays, 135 archived initial checkpoints and 39 final fits concentrated on branch disagreements. | All 39 final fixes returned. Fitted median / P95 was 0.869 / 3.549 km against 0.917 / 4.568 km for v5. Five individual errors exceeded 110% of v5. Median paired whole-worker speedup across the six timing recordings was 0.93×. [Study](search-budget/README.md) · [Broad replay](search-budget/broad/README.md) |
+| Start from one center seed | Full GLRT to paired cavity fixes on six recordings. | All six returned. Fitted median / P95 was 0.878 / 1.897 km, versus 0.832 / 1.395 for v5. Paired median speedup was 1.12×. [Study](search-budget/README.md) |
+| Stop after 180 seconds of RF | Six matched archived full and early detection sets, plus two complete raw-IQ prefix replays. | The six early fits took 1.68× less solver time by paired median. Fitted median error rose from 0.832 to 1.977 km. One of the two raw-prefix errors exceeded 5 km. [Study](prefix/README.md) |
+| Fit identities and position jointly from anonymous tracks | Six full archived track sets with the original tile and a causal catalogue. | Five fixes, fitted median 2.136 km. Original v5 issued six at a median of 0.832 km. Track-to-position workers took 1.41–2.23 s. [Study](robust-em/README.md) |
+| Run the anonymous-track fit from full detector input | Two complete raw IQ replays plus four authenticated ordinary detector files, with fresh tracking and fitting in all six. Capture-era detections supplied a second matched control. | Ordinary detections yielded four fixes, fitted median 1.666 km. Capture-era detections yielded five. Both v5 controls issued six. Raw-to-position stage times totaled 170.27 and 119.24 s on the two fresh replays. [Study](raw-robust/README.md) |
+| Identify satellites with carrier shape and frame timing | Six measured recordings, three wrong-region offers and a newly generated four-site synthetic panel. The receiver used anonymous GLRT output, UTC, a supplied tile and a causal catalogue. | Two of six rooftop fixes, zero of three false rooftop publications. Four of four correct-tile synthetic fixes, with a 48.625 km false fix on one omitted tile with fitted calibration. [Archive study](joint-pass/README.md) · [Fresh synthetic trial](fresh-scenes/README.md) |
+
+## What transfers to a different location
+
+DS26 and DS29 are recordings from the **same installation**. Four independent StarLoc sites supplied genuine measured anonymous beacon tracks. A worldwide receiver fit published one position 9,471 km from the GNSS reference and withheld the other three. It withheld all four correct-tile and all four omitted-tile results. None of the independent-site sources found on disk had the wideband Qin pilot measurements needed for the same complete raw-IQ receiver comparison. All reported runtimes were measured on the x86 host. [Physical-site results and source audit](physical-transfer/README.md) · [Location figures, fitted calibration](../2026_11_19_position_atlas/short-receiver/fitted_c/transfer.pdf)
+
+In a separate synthetic development test, the receiver could identify all 96 lane tracklets when given the correct location and both carrier and timing evidence. Supplying the correct satellite identities instead let it localize all four sites within 82 m. At receiver positions displaced 10, 50 and 100 km from truth, joint identity recall fell to 98.7%, 39.6% and 11.5%, respectively. All the true satellites were still visible. This isolates satellite identity as a limitation in that synthetic model. [Diagnostics, displacement plots and paired calibration](observability/README.md)
+
+The fresh synthetic acceptance trial used new inputs with receiver code frozen before scoring. Four correct regions were also tested as omitted, and a time shuffle had no true position. Both fitted receivers returned all four correct-tile fixes. The carrier-and-timing receiver also returned one wrong-tile fix, and the pass-geometry receiver returned two. [Fresh-site comparisons and zero-calibration controls](fresh-scenes/README.md)
+
+## Read and reproduce the charts
+
+The upper curve gives the fraction of the cohort with a published position at or below each horizontal error. The lower rows show one dot per returned position, the count returned over the count scheduled, and a diamond at the median. A forced estimate has its own row when one was saved. Every roof chart shows the four original v5 options on the same recordings. The physical and synthetic panels name the reference available for that experiment. Calibration settings have separate charts and underlying CSVs.
+
+From the repository root, the first command rebuilds the complete gallery and the second builds this round alone. Both use the saved measurements.
+
+```sh
+.venv/bin/python -m tools.pipeline_eval figures --panel atlas --out /tmp/receiver-position-charts
+.venv/bin/python -m tools.pipeline_eval figures --panel short-receiver --out /tmp/short-receiver-charts
+```

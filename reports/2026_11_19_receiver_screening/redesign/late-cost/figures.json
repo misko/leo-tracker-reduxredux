@@ -1,0 +1,40 @@
+{
+  "charts": [
+    {
+      "caption": "Complete stored GLRT factors and matching causal requests. The workers in each pair ran on the same core.",
+      "cases": "sealed",
+      "id": "late-cost-roof",
+      "method": "v5_late_rf_preflight",
+      "provenance": [
+        "pairs.json",
+        "scores.csv",
+        "summary.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh guarded finish",
+          "value": "v5_late_rf_preflight"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Fresh aligned finish",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "input_sha256",
+            "scientific_request_sha256"
+          ],
+          "value": "v5_armijo_aligned_finish"
+        }
+      ],
+      "title": "Fresh same-core aligned v5 and RF preflight"
+    }
+  ],
+  "version": 1
+}

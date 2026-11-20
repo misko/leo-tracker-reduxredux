@@ -1,0 +1,32 @@
+"""Withhold paired compact positions that meet a face of the fitted tile."""
+
+from math import cos, radians
+
+from .v5_secant_fit import STOP_KM
+
+
+def margin(point, tile):
+    """Invert the exact linear local basis of the frozen SearchRegion."""
+    lat, lon = tile["center"]
+    north = (point[0] - lat) * 111.0
+    east = (point[1] - lon) * 111.32 * cos(radians(lat))
+    return tile["width_km"] / 2 - max(abs(east), abs(north))
+
+
+def guard(result, tile):
+    if result["status"] != "ok":
+        return result
+    arms = result["arms"]
+    margins = {arm: margin(row["latlon"], tile) for arm, row in arms.items()}
+    data = dict(result, metrics=dict(result["metrics"], exact_tile_margin_km=margins))
+    if min(margins.values()) <= STOP_KM:
+        return dict(
+            data,
+            status="withheld",
+            reason="terminal_compact_fit_at_tile_face",
+            arms={
+                arm: dict(row, latlon=None, forced_latlon=row["latlon"])
+                for arm, row in arms.items()
+            },
+        )
+    return data

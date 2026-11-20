@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_outside_predictive-archived-roof",
+      "method": "native_outside_predictive",
+      "scope": "transfer",
+      "title": "Held Doppler on measured roof offers",
+      "caption": "Complementary held blocks with fixed calibration and matched held peaks.",
+      "cases": [
+        "15b30a4eff19c1ecd3af",
+        "72aaa1db3143b2f3dc96",
+        "a60af4f23f523c5b9ef3",
+        "b708eb266bebdaaeafc2",
+        "2d257491c63945c990fd",
+        "93ee25c019f934d4c2df",
+        "ae62c6cd475c45788842",
+        "dba84955072d859bf006"
+      ],
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "original": "Original containing",
+        "near-inside": "Near inside",
+        "near-outside": "Near omission",
+        "six-outside": "6 km omitted"
+      },
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Held exterior evidence",
+          "file": "native_outside_predictive.jsonl.gz",
+          "value": "native_outside_predictive"
+        },
+        {
+          "key": "stock",
+          "label": "Native smooth",
+          "forced_label": "Smooth \u00b7 forced",
+          "file": "native_joint_clock_model.jsonl.gz",
+          "value": "native_joint_clock_model",
+          "match": [
+            "input_sha256",
+            "tile"
+          ]
+        }
+      ]
+    }
+  ]
+}

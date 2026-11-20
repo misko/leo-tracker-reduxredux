@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "affine_beacon_curvature",
+      "method": "affine_beacon_curvature",
+      "scope": "transfer",
+      "title": "Affine beacon curvature at four measured StarLoc sites",
+      "caption": "Each measured site was tested globally, with its correct 25 km tile, and with the correct region omitted. The receiver used prepared center-beacon curves. Forced estimates remain visible.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "provenance": ["plan.json", "prediction-lock.json", "score-lock.json", "source-lock.json", "scores.json"],
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Affine beacon curvature · published",
+          "forced_label": "Affine beacon curvature · forced",
+          "file": "positions.jsonl.gz",
+          "value": "affine_beacon_curvature"
+        }
+      ]
+    }
+  ]
+}

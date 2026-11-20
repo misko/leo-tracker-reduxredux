@@ -1,0 +1,121 @@
+{
+  "charts": [
+    {
+      "caption": "Both modes use identical recorded original GLRT and the same numerical fits. The published pair requires both fits to clear the nearest 25 km tile face by more than 20 m. All recordings come from one measured roof.",
+      "cases": "sealed",
+      "id": "final-region-roof",
+      "method": "final_region_roof",
+      "provenance": [
+        "source-authority.json",
+        "scores.csv",
+        "summary.json",
+        "prospective-prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Withheld fit, diagnostic only",
+          "key": "one",
+          "label": "20 m paired guard",
+          "value": "roof_guarded"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Guard off",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "roof_stock"
+        }
+      ],
+      "title": "Terminal tile guard on the 135 original roof offers"
+    },
+    {
+      "caption": "Both modes use identical recorded original GLRT and the same numerical fits. The published pair requires both fits to clear the nearest 25 km tile face by more than 20 m. All recordings come from one measured roof.",
+      "cases": "sealed",
+      "condition_labels": {
+        "disjoint": "Disjoint offer, 30 km east",
+        "shifted-containing": "Containing offer, 15 km east"
+      },
+      "id": "final-region-released",
+      "method": "final_region_released",
+      "provenance": [
+        "source-authority.json",
+        "scores.csv",
+        "summary.json",
+        "prospective-prediction-lock.json"
+      ],
+      "queries": "released-queries.json",
+      "scope": "transfer",
+      "seal": "released-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Withheld fit, diagnostic only",
+          "key": "candidate",
+          "label": "20 m paired guard",
+          "value": "released_guarded"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Guard off",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "released_stock"
+        }
+      ],
+      "title": "Terminal tile guard on the four released offer controls"
+    },
+    {
+      "caption": "Both modes use identical recorded original GLRT and the same numerical fits. The published pair requires both fits to clear the nearest 25 km tile face by more than 20 m. All recordings come from one measured roof.",
+      "cases": "sealed",
+      "condition_labels": {
+        "clear-omission": "Disjoint offer, site outside",
+        "near-containing": "Near face, site inside",
+        "near-omission": "Near face, site outside"
+      },
+      "id": "final-region-prospective",
+      "method": "final_region_prospective",
+      "provenance": [
+        "source-authority.json",
+        "scores.csv",
+        "summary.json",
+        "prospective-prediction-lock.json"
+      ],
+      "queries": "prospective-queries.json",
+      "scope": "transfer",
+      "seal": "prospective-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Withheld fit, diagnostic only",
+          "key": "candidate",
+          "label": "20 m paired guard",
+          "value": "prospective_guarded"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Guard off",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "prospective_stock"
+        }
+      ],
+      "title": "Terminal tile guard on 18 prospective recorded roof offers"
+    }
+  ],
+  "version": 2
+}

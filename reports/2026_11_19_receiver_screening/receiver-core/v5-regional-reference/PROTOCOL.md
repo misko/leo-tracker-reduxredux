@@ -1,0 +1,9 @@
+# Private regional numerical reference for original v5
+
+Run the frozen original no-repair v5 numerical worker through its unchanged endpoint extraction on an authentic DS29-0082 roof request. Compare both coordinates, conditional RF RMS, frequency scores, associated-observation counts, total observation and track counts, and stage names exactly against the stored original numerical worker result. Allow runtime to vary. DS29-0082 has a prior completed one-core run and all 18 measured stages.
+
+Hold the width at the frozen 25 km. Keep the original runtime, source lock, numerical manifest, fit ports, scientific policy, schema, clock, and causal archive validation. Run the original metadata validator with its required roof frame, then pass the actual offered region through the unchanged numerical worker. The existing numerical endpoint route omits post-fit publication figures. Use explicit broad screen coordinates from each paired truth-free offer. Keep pole and longitude-seam configurations outside the local regional coordinate domain.
+
+The paired synthetic requests will use one earliest-sorted opaque session and its two sealed offers from the independent controller. Their native bytes, captured clock basis, track config, catalogue cutoff and past-only snapshot history are matched to the compact receiver inputs. The selected offers carry only their supplied centers. The controller keeps the geographic truth, offer roles and emitter identities separate until original v5 predictions seal. Preserve operational timeouts, errors and all final decisions. Compare both `c` arms, report conditional RF and geography separately, and keep all actual counters.
+
+Use one pinned CPU 23, one numerical thread, a 3 GiB no-swap cap, nice 10 and a 240-second service deadline per call. Keep the locally prepared input and scratch off the read-only archive. Synthetic input is post-GLRT simulated factors, with no new physical capture.

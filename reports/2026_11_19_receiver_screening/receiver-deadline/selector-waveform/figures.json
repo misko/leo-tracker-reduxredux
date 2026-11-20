@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "DS26-0237 used its original 25 km offer and causal catalogue. Both compared detectors replayed the original capture from authenticated saved IQ.",
+      "cases": "sealed",
+      "id": "lane-peak-selector-waveform",
+      "method": "original_capture_prepared_lane_selector_full_iq",
+      "provenance": [
+        "source-lock.json",
+        "audit.json",
+        "scores.csv",
+        "comparison.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier full stock four-region IQ replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh complete prepared + lane selector",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_prepared_lane_selector_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Earlier full fifth-region IQ replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Earlier complete prepared detector",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_prepared_full_iq"
+        }
+      ],
+      "title": "Position from the exact lane peak selector"
+    }
+  ],
+  "version": 2
+}

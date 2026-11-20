@@ -1,0 +1,7 @@
+# Common-sample overlap check
+
+This diagnostic reopens the authenticated CI16 after acquisition predictions have been sealed. It measures the selected two-pilot offers, the first distinct positive beside the original winner on each targeted lane, and the original winner beside a distinct, already nominated primary when the primary missed the winner. It uses original coordinates only for scoring those last two categories.
+
+Split the held 10 ms into four common absolute 2.5 ms sample blocks. For each candidate at its fixed literal CFO and fractional phase, project the exact and rolled waveforms orthogonal to the other candidate's exact waveform. Compare their normalized squared correlations on the same raw samples. Call the pair supported if both exact-minus-rolled contrasts exceed four in at least two common blocks with normalized exact-template correlation below 0.5. The two-template calculation is a descriptive check of shared support. It reuses the acquisition holdout and estimates a local nuisance projection there. The acquisition branch still fits its cancellation amplitude on training samples only.
+
+Run the check on both Qin edges using the original two-pilot injection, the strong-only injection, and a sequential version with the weak pilot removed from the first two held blocks and the strong pilot removed from the last two. The single and sequential controls distinguish joint support from a strong sidelobe and from signals that recur in different parts of the visit.

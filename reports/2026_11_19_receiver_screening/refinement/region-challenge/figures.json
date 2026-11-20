@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "anonymous_native_region_challenge",
+      "method": "native_joint_clock_model",
+      "scope": "transfer",
+      "title": "Anonymous native receiver transfer at five new sites",
+      "caption": "Each site contributes one native packet across four offers. The five geographic sites are independent. Edge offers put truth 1.5 km inside or 2 km outside the tile, and far omitted offers put it 25 km outside. The lane shuffle has no true location. Forced coordinates are diagnostic.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "present": "5 km inside",
+        "inside-edge": "1.5 km inside",
+        "outside-edge": "2 km outside",
+        "omitted": "25 km outside",
+        "shuffle": "Lane shuffle"
+      },
+      "series": [
+        {"key": "candidate", "label": "Native smooth clock", "file": "positions.jsonl.gz", "value": "native_joint_clock_model"},
+        {"key": "stock", "label": "Native joint orbit", "file": "positions.jsonl.gz", "value": "native_joint_orbits", "match": ["input_sha256", "native_sha256", "catalog_sha256"]},
+        {"key": "one", "label": "Native fixed training", "file": "positions.jsonl.gz", "value": "native_train_update", "match": ["input_sha256", "native_sha256", "catalog_sha256"]},
+        {"key": "four", "label": "Prepared smooth clock · parity", "file": "positions.jsonl.gz", "value": "prepared_joint_clock_model", "match": ["input_sha256", "native_sha256", "catalog_sha256"]}
+      ]
+    }
+  ]
+}

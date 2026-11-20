@@ -1,0 +1,47 @@
+{
+  "charts": [
+    {
+      "caption": "Physical 512 MiB, zero-swap factor-to-position pairs on the same narrow-band input, causal catalogue and offer. Includes one development reserve and two held recordings. Original v5 used the capture-era detector.",
+      "cases": [
+        "DS29-0247",
+        "DS29-0174",
+        "DS26-0237"
+      ],
+      "id": "constrained-cavity-phase-fit-work",
+      "method": "v5_fit_work",
+      "provenance": [
+        "resources.csv",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fixed residual-gate projection",
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "v5_fit_work"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Phase-release compact v5",
+          "match": [
+            "tile",
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "v5_fit_work_stock"
+        }
+      ],
+      "title": "Compact v5 with prepared time-domain position gates"
+    }
+  ],
+  "version": 1
+}

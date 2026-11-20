@@ -47,6 +47,7 @@ dev = [
   "astropy>=8,<9",
   "httpx>=0.28,<1",
   "mypy>=1.15,<2",
+  "pypdf>=6.16,<7",
   "pytest>=8.3,<10",
   "ruff>=0.12,<1",
   "scipy>=1.14,<2",
@@ -99,6 +100,8 @@ line-length = 100
 # This report subtree is a byte-preserving forensic archive whose file hashes
 # are recorded in its snapshot manifest.  It is evidence, not live source.
 extend-exclude = [
+  # The receiver benchmark verifies the reviewed numerical controls byte for byte.
+  "tools/pipeline_eval/reference",
   "reports/2026_08_25_post_refill_24h_retrospective/code/snapshot",
   # These retained execution recipes are hash-bound by their archive manifests.
   # tests/deploy/test_archived_glrt_evidence.py verifies their original bytes.

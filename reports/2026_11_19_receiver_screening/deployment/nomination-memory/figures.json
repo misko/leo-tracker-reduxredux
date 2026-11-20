@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_nomination_memory",
+      "method": "v5_nomination_memory",
+      "scope": "roof",
+      "title": "Row-bounded family nomination",
+      "caption": "The 512 MiB worker finished nomination and was killed in the first late orbit-bank write. Matched results use ordinary native factors. Original v5 choices use capture-era factors.",
+      "cases": ["DS29-0082"],
+      "seal": "prediction-lock.json",
+      "provenance": ["memory-cap.json", "comparison.json", "nomination-parity.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Tiled nomination", "file": "uncapped-positions.jsonl.gz", "value": "v5_nomination_memory", "native_authority": "ordinary", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Dense nomination", "file": "control-positions.jsonl.gz", "value": "v5_signed_context_memory", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "tile"]},
+        {"key": "all_visits", "label": "512 MiB cap", "file": "capped-positions.jsonl.gz", "value": "v5_nomination_memory", "native_authority": "ordinary", "where": {"mode": "memory-cap"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

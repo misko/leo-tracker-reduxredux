@@ -1,0 +1,72 @@
+{
+  "classification": "setup detector binary path inaccessible to leo before either lane decoded",
+  "logs": {
+    "replayed-0.log": {
+      "sha256": "7f53dacf19693c7e16fef5282480dec01081973b073e1067daa528cf7ac850bf",
+      "text": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_memory_chain_worker.py\", line 237, in <module>\n    main()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_memory_chain_worker.py\", line 233, in main\n    raw_lane()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_memory_chain_worker.py\", line 119, in raw_lane\n    previous.main()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/recording_to_v5.py\", line 598, in main\n    args.native_library.resolve(strict=True),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/leo-fast-auto/20261010-r1/python/lib/python3.12/pathlib.py\", line 1240, in resolve\n    s = self._flavour.realpath(self, strict=strict)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen posixpath>\", line 424, in realpath\n  File \"<frozen posixpath>\", line 468, in _joinrealpath\nPermissionError: [Errno 13] Permission denied: '/home/mouse9911/.cache/leo-winners-scratch'\n"
+    },
+    "replayed-1.log": {
+      "sha256": "7f53dacf19693c7e16fef5282480dec01081973b073e1067daa528cf7ac850bf",
+      "text": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_memory_chain_worker.py\", line 237, in <module>\n    main()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_memory_chain_worker.py\", line 233, in main\n    raw_lane()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_memory_chain_worker.py\", line 119, in raw_lane\n    previous.main()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/recording_to_v5.py\", line 598, in main\n    args.native_library.resolve(strict=True),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/leo-fast-auto/20261010-r1/python/lib/python3.12/pathlib.py\", line 1240, in resolve\n    s = self._flavour.realpath(self, strict=strict)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen posixpath>\", line 424, in realpath\n  File \"<frozen posixpath>\", line 468, in _joinrealpath\nPermissionError: [Errno 13] Permission denied: '/home/mouse9911/.cache/leo-winners-scratch'\n"
+    },
+    "service.log": {
+      "sha256": "c305ef47eaf6847bb079aa63f5dd8670c828e445c9d7892820e9dbf3f199b39c",
+      "text": "Running as unit: leo-iq-bench-71a712e5bd03.service; invocation ID: 380377dd2b9a462f9edcc6b88e9e0ffc\nstage: full recorded IQ enter\nTraceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py\", line 297, in <module>\n    main()\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py\", line 281, in main\n    worker(args.attempt)\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py\", line 163, in worker\n    recording.run_recording(\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/recording_to_v5.py\", line 565, in run_recording\n    return (fit if finish is None else finish)(output, case_id, deadline_s, detector)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py\", line 145, in finish\n    summary = complete_raw(out, case, cpus, plan[\"detector_sha256\"])\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py\", line 82, in complete_raw\n    raise ValueError(\"the two raw lanes must both complete on their assigned cores\")\nValueError: the two raw lanes must both complete on their assigned cores\n          Finished with result: exit-code\nMain processes terminated with: code=exited, status=1/FAILURE\n               Service runtime: 2.363s\n             CPU time consumed: 3.631s\n                   Memory peak: 206.5M (swap: 0B)\n"
+    }
+  },
+  "plan_sha256": "b1efe97e973e56e3cd560ff0e6d595759a38292c3ca6a87249d2a10e1e79537c",
+  "replacement_study_sha256": "3a7c415c86bf2f4fe2dfd3e8b196cf863bb5ff58c92fe54c457344ec57643189",
+  "result": {
+    "binding": {
+      "attempt": "/home/mouse9911/.cache/leo-winners-scratch/full.h4hi7/study/attempts/DS29-0082/stock",
+      "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-71a712e5bd03.service",
+      "cgroup_state": "removed",
+      "invocation_id": "380377dd2b9a462f9edcc6b88e9e0ffc",
+      "plan_sha256": "b1efe97e973e56e3cd560ff0e6d595759a38292c3ca6a87249d2a10e1e79537c"
+    },
+    "exit_code": 1,
+    "log_sha256": "c305ef47eaf6847bb079aa63f5dd8670c828e445c9d7892820e9dbf3f199b39c",
+    "monotonic": {
+      "active_enter_usec": 5783715690681,
+      "active_exit_usec": 5783718054597,
+      "inactive_enter_usec": 5783718054597,
+      "source": "systemd-manager"
+    },
+    "reason": null,
+    "service_active_s": 2.363916,
+    "service_wall_s": 2.363916,
+    "supervisor_s": 2.422213495709002,
+    "systemd": {
+      "ActiveEnterTimestampMonotonic": "5783715690681",
+      "ActiveExitTimestampMonotonic": "5783718054597",
+      "ActiveState": "failed",
+      "CPUUsageNSec": "3631530000",
+      "ControlGroup": "",
+      "ControlPID": "0",
+      "Environment": "TMPDIR=/home/mouse9911/.cache/leo-winners-scratch/full.h4hi7/study/attempts/DS29-0082/stock OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
+      "ExecMainCode": "1",
+      "ExecMainExitTimestampMonotonic": "5783718054430",
+      "ExecMainPID": "1712255",
+      "ExecMainStartTimestampMonotonic": "5783715689452",
+      "ExecMainStatus": "1",
+      "ExecStart": "{ path=/usr/bin/taskset ; argv[]=/usr/bin/taskset -c 3,5 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -B -m tools.pipeline_eval.whole_iq worker /home/mouse9911/.cache/leo-winners-scratch/full.h4hi7/study/attempts/DS29-0082/stock ; ignore_errors=no ; start_time=[Thu 2026-11-19 15:34:44 UTC] ; stop_time=[Thu 2026-11-19 15:34:46 UTC] ; pid=1712255 ; code=exited ; status=1 }",
+      "Id": "leo-iq-bench-71a712e5bd03.service",
+      "InactiveEnterTimestampMonotonic": "5783718054597",
+      "InvocationID": "380377dd2b9a462f9edcc6b88e9e0ffc",
+      "KillMode": "control-group",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "536870912",
+      "MemoryPeak": "216584192",
+      "MemorySwapMax": "0",
+      "MemorySwapPeak": "0",
+      "Result": "exit-code",
+      "RuntimeMaxUSec": "4min 46s",
+      "SubState": "failed",
+      "Transient": "yes"
+    },
+    "unit": "leo-iq-bench-71a712e5bd03"
+  },
+  "study_sha256": "188705c19843e74d1c855680f9eeb7097ffab6fbc4c56043b41e6622dd4176e7"
+}

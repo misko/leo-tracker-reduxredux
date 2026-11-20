@@ -1,0 +1,138 @@
+{
+  "charts": [
+    {
+      "caption": "Worldwide from native peaks and causal orbits. Offers stay in scoring.",
+      "cases": [
+        "DS26-0261",
+        "DS29-0519"
+      ],
+      "id": "orbit_proposals-containing",
+      "method": "orbit_proposals",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "containing-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Inverse sites \u00b7 forced",
+          "key": "one",
+          "label": "Inverse sites",
+          "value": "orbit_proposals",
+          "where": {
+            "cohort": "containing"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Uniform grid",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "orbit_proposals_uniform_control",
+          "where": {
+            "cohort": "containing"
+          }
+        }
+      ],
+      "title": "Orbit-derived proposals on measured roofs"
+    },
+    {
+      "caption": "Worldwide from native peaks and causal orbits. Offers stay in scoring.",
+      "cases": [
+        "DS26-0070-omitted",
+        "DS29-0316-omitted"
+      ],
+      "id": "orbit_proposals-omitted",
+      "method": "orbit_proposals",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Inverse sites \u00b7 forced",
+          "key": "candidate",
+          "label": "Inverse sites",
+          "value": "orbit_proposals",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Uniform grid \u00b7 forced",
+          "key": "stock",
+          "label": "Uniform grid",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "orbit_proposals_uniform_control",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Orbit-derived proposals with omitted offers"
+    },
+    {
+      "caption": "Worldwide from native peaks and causal orbits. Offers stay in scoring.",
+      "cases": [
+        "DS26-0261-profile-shuffle",
+        "DS29-0519-profile-shuffle"
+      ],
+      "id": "orbit_proposals-shuffle",
+      "method": "orbit_proposals",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "shuffle-queries.json",
+      "scope": "transfer",
+      "seal": "shuffle-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Inverse sites \u00b7 forced",
+          "key": "candidate",
+          "label": "Inverse sites",
+          "value": "orbit_proposals",
+          "where": {
+            "cohort": "shuffle"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Uniform grid \u00b7 forced",
+          "key": "stock",
+          "label": "Uniform grid",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "orbit_proposals_uniform_control",
+          "where": {
+            "cohort": "shuffle"
+          }
+        }
+      ],
+      "title": "Orbit-derived proposals on shuffled shapes"
+    }
+  ],
+  "version": 2
+}

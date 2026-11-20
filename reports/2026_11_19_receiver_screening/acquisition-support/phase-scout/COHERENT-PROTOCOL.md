@@ -1,0 +1,7 @@
+# Coherent sub-aperture diagnostic
+
+Use the same sealed raw IQ, Scout16 timing neighborhoods, and complete-grid reference outputs. At all three epochs in a Scout16 neighborhood, split 40 taps of each of the 12 ordinary coarse pilot symbols into eight five-tap groups on 14 complete frames. Remove the known complex pilot within each group, and measure the complex lag-one and lag-three group correlations, representing approximately five and 15 samples. The nominal short lag stays unambiguous inside the offered band. Construct the expected complex phase of each feature directly from the finite pilot tap energy at all 21 grid frequencies.
+
+Normalize each lag by both coherent group energies. Admit only a neighborhood with at least 0.09 coherence on both lags in both even and odd frame splits. Select the epoch with strongest minimum coherence, compare the full and split phase fits on both lags, require all selected bins within one grid step and fitted circular residual no larger than 0.55 rad. Allocate the nearest five bins in each admitted neighborhood. Other neighborhoods retain all 21. Fix these parameters before running the alternative.
+
+This is an allocation diagnostic on actual saved and planted IQ. It tests whether direct pilot-coherent phase supplies missing evidence without waiting for GLRT. Compare the allocated cells against the original full-grid coarse candidates and winning fractional GLRT factors after sealing. Measure actual x86 prototype compute and allocated cell counts, without treating a shadow mask as a verified downstream detector.

@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "Both full FFT lengths and fast controls share the signed recording, the original 25 km offer and the causal TLE request.",
+      "cases": "sealed",
+      "id": "fft256-waveform",
+      "method": "original_capture_fft256_complete_iq",
+      "provenance": [
+        "source-lock.json",
+        "audit.json",
+        "comparison.json",
+        "positions.jsonl.gz"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh complete stored 256 FFT",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_fft256_complete_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Earlier complete prepared 512 FFT",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_batched_fine_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier complete fast four-region replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Earlier complete fast five-region replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        }
+      ],
+      "title": "DS29-0519 position from matched complete FFT lengths"
+    }
+  ],
+  "version": 2
+}

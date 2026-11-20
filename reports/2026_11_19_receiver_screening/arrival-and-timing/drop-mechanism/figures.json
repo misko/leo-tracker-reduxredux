@@ -1,0 +1,135 @@
+{
+  "charts": [
+    {
+      "caption": "Complete and dropped factors from the same two original recordings. Reconnect uses observed gated positives and missing-visit lane clocks.",
+      "cases": "sealed",
+      "id": "drop-reconnect-real",
+      "method": "drop_mechanism_corrected-real",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "resources.csv",
+        "path-effects.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Reconnect policy",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "complete_native_sha256",
+            "real_native_sha256",
+            "hash_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "drop_mechanism_corrected-real"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original complete factors",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "complete_native_sha256",
+            "real_native_sha256",
+            "hash_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "drop_mechanism_full"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Genuine queue loss",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "complete_native_sha256",
+            "real_native_sha256",
+            "hash_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "drop_mechanism_retained"
+        }
+      ],
+      "title": "Private track reconnect \u00b7 Genuine queue loss"
+    },
+    {
+      "caption": "Complete and dropped factors from the same two original recordings. Reconnect uses observed gated positives and missing-visit lane clocks.",
+      "cases": "sealed",
+      "id": "drop-reconnect-hash",
+      "method": "drop_mechanism_corrected-hash",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "resources.csv",
+        "path-effects.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Reconnect policy",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "complete_native_sha256",
+            "real_native_sha256",
+            "hash_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "drop_mechanism_corrected-hash"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original complete factors",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "complete_native_sha256",
+            "real_native_sha256",
+            "hash_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "drop_mechanism_full"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Count-matched hash loss",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "complete_native_sha256",
+            "real_native_sha256",
+            "hash_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "drop_mechanism_hash"
+        }
+      ],
+      "title": "Private track reconnect \u00b7 Count-matched hash loss"
+    }
+  ],
+  "version": 1
+}

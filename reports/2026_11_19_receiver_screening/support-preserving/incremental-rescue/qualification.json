@@ -1,0 +1,537 @@
+{
+  "attempts": 36,
+  "clocks": {
+    "full": {
+      "cpu_ms": {
+        "max": 39.915993,
+        "mean": 30.539498685185187,
+        "min": 15.766687,
+        "n": 108,
+        "p10": 17.2650886,
+        "p25": 29.2217575,
+        "p50": 33.111847,
+        "p75": 35.9124525,
+        "p90": 37.245638299999996,
+        "p95": 38.36126675,
+        "p99": 39.35792403,
+        "within_20": 24
+      },
+      "wall_ms": {
+        "max": 228.767464,
+        "mean": 34.562911981481484,
+        "min": 15.877838,
+        "n": 108,
+        "p10": 17.3470432,
+        "p25": 30.30077375,
+        "p50": 34.2112015,
+        "p75": 37.6372965,
+        "p90": 40.8136493,
+        "p95": 46.81944654999999,
+        "p99": 82.57460079999986,
+        "within_20": 24
+      }
+    },
+    "incremental": {
+      "cpu_ms": {
+        "max": 28.393012,
+        "mean": 22.20221160185185,
+        "min": 16.181692,
+        "n": 108,
+        "p10": 17.2070121,
+        "p25": 19.099377750000002,
+        "p50": 22.783131,
+        "p75": 24.880377250000002,
+        "p90": 26.7549441,
+        "p95": 27.25474875,
+        "p99": 28.310996039999996,
+        "within_20": 33
+      },
+      "wall_ms": {
+        "max": 262.958965,
+        "mean": 26.178072796296295,
+        "min": 16.245853,
+        "n": 108,
+        "p10": 17.3112563,
+        "p25": 19.515623249999997,
+        "p50": 23.465653,
+        "p75": 25.8601995,
+        "p90": 28.8428368,
+        "p95": 32.34124229999998,
+        "p99": 93.9249494399996,
+        "within_20": 31
+      }
+    },
+    "sham": {
+      "cpu_ms": {
+        "max": 24.936674,
+        "mean": 19.633417990740742,
+        "min": 15.862175,
+        "n": 108,
+        "p10": 17.3185293,
+        "p25": 18.30846875,
+        "p50": 19.7266765,
+        "p75": 20.633324,
+        "p90": 22.0805411,
+        "p95": 23.1021448,
+        "p99": 24.536631229999994,
+        "within_20": 64
+      },
+      "wall_ms": {
+        "max": 86.63269,
+        "mean": 21.450445333333334,
+        "min": 15.948167,
+        "n": 108,
+        "p10": 17.5911571,
+        "p25": 18.63536225,
+        "p50": 20.172530000000002,
+        "p75": 21.7420805,
+        "p90": 23.779867999999997,
+        "p95": 26.410495349999987,
+        "p99": 51.63421678999988,
+        "within_20": 51
+      }
+    },
+    "stock": {
+      "cpu_ms": {
+        "max": 23.30714,
+        "mean": 16.366443305555556,
+        "min": 12.514597,
+        "n": 108,
+        "p10": 14.1411963,
+        "p25": 15.52103975,
+        "p50": 16.252487000000002,
+        "p75": 17.502308749999997,
+        "p90": 18.1282337,
+        "p95": 18.695985999999998,
+        "p99": 19.516986389999996,
+        "within_20": 107
+      },
+      "wall_ms": {
+        "max": 30.542804,
+        "mean": 17.299107842592594,
+        "min": 12.900466,
+        "n": 108,
+        "p10": 14.3176398,
+        "p25": 15.9529775,
+        "p50": 17.029753499999998,
+        "p75": 18.09621575,
+        "p90": 19.997178799999997,
+        "p95": 21.50831245,
+        "p99": 25.494615529999997,
+        "within_20": 97
+      }
+    }
+  },
+  "coarse_cfo_bins": 21,
+  "controls": {
+    "lower:alternate-sign": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 9,
+        "incremental": 9,
+        "sham": 9,
+        "stock": 9
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 2,
+        "stock": 2
+      },
+      "target_count": 2
+    },
+    "lower:cw": {
+      "decisions": [
+        "donor_negative",
+        "donor_negative"
+      ],
+      "gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 0
+    },
+    "lower:noise": {
+      "decisions": [
+        "donor_negative",
+        "donor_negative"
+      ],
+      "gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 0
+    },
+    "lower:one-frame": {
+      "decisions": [
+        "rescued",
+        "rescued"
+      ],
+      "gates": {
+        "full": 6,
+        "incremental": 6,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 2
+    },
+    "lower:strong": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 10,
+        "incremental": 10,
+        "sham": 10,
+        "stock": 10
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 2,
+        "stock": 2
+      },
+      "target_count": 2
+    },
+    "lower:two_family": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 16,
+        "incremental": 16,
+        "sham": 16,
+        "stock": 16
+      },
+      "physical_gates": {
+        "full": 4,
+        "incremental": 4,
+        "sham": 4,
+        "stock": 4
+      },
+      "target_count": 4
+    },
+    "lower:weak": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 8,
+        "incremental": 8,
+        "sham": 8,
+        "stock": 8
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 2,
+        "stock": 2
+      },
+      "target_count": 2
+    },
+    "lower:zero": {
+      "decisions": [
+        "no_hint",
+        "no_hint"
+      ],
+      "gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 0
+    },
+    "upper:alternate-sign": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 12,
+        "incremental": 12,
+        "sham": 12,
+        "stock": 12
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 2,
+        "stock": 2
+      },
+      "target_count": 2
+    },
+    "upper:cw": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 8,
+        "incremental": 8,
+        "sham": 8,
+        "stock": 8
+      },
+      "physical_gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 0
+    },
+    "upper:noise": {
+      "decisions": [
+        "donor_negative",
+        "donor_negative"
+      ],
+      "gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 0
+    },
+    "upper:one-frame": {
+      "decisions": [
+        "rescued",
+        "rescued"
+      ],
+      "gates": {
+        "full": 8,
+        "incremental": 8,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 2
+    },
+    "upper:strong": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 12,
+        "incremental": 12,
+        "sham": 12,
+        "stock": 12
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 2,
+        "stock": 2
+      },
+      "target_count": 2
+    },
+    "upper:two_family": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 14,
+        "incremental": 14,
+        "sham": 14,
+        "stock": 14
+      },
+      "physical_gates": {
+        "full": 4,
+        "incremental": 4,
+        "sham": 4,
+        "stock": 4
+      },
+      "target_count": 4
+    },
+    "upper:weak": {
+      "decisions": [
+        "stock_positive",
+        "stock_positive"
+      ],
+      "gates": {
+        "full": 8,
+        "incremental": 8,
+        "sham": 8,
+        "stock": 8
+      },
+      "physical_gates": {
+        "full": 2,
+        "incremental": 2,
+        "sham": 2,
+        "stock": 2
+      },
+      "target_count": 2
+    },
+    "upper:zero": {
+      "decisions": [
+        "no_hint",
+        "no_hint"
+      ],
+      "gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "physical_gates": {
+        "full": 0,
+        "incremental": 0,
+        "sham": 0,
+        "stock": 0
+      },
+      "target_count": 0
+    }
+  },
+  "excluded": [],
+  "full_extra_epochs": 672,
+  "gate_counts": {
+    "full": 191,
+    "incremental": 196,
+    "sham": 161,
+    "stock": 161
+  },
+  "host_scope": "Intel Core Ultra 9 285K, pinned separate x86 host cores 0/1, nice 10",
+  "incremental_decisions": {
+    "donor_negative": 27,
+    "overlap": 1,
+    "rescued": 9,
+    "stock_positive": 35
+  },
+  "incremental_extra_epochs": 108,
+  "lanes": 72,
+  "paired_added_gates": {
+    "full": 30,
+    "incremental": 35,
+    "sham": 0
+  },
+  "paired_clock_delta_ms_incremental_minus_full": {
+    "cpu_ms": {
+      "max": 4.925309000000002,
+      "mean": -8.337287083333333,
+      "min": -20.669544000000002,
+      "n": 108,
+      "p10": -14.014839600000004,
+      "p25": -12.07209,
+      "p50": -10.275766999999998,
+      "p75": -5.1297735,
+      "p90": 0.32953079999999935,
+      "p95": 0.7651292499999968,
+      "p99": 1.6635670500000017
+    },
+    "wall_ms": {
+      "max": 62.862906,
+      "mean": -8.384839185185186,
+      "min": -64.226743,
+      "n": 108,
+      "p10": -15.030020899999997,
+      "p25": -13.260566000000004,
+      "p50": -11.172528999999999,
+      "p75": -2.2941172499999984,
+      "p90": 0.5899831,
+      "p95": 1.8223956999999982,
+      "p99": 32.4533176299998
+    }
+  },
+  "paired_clock_delta_ms_incremental_minus_stock": {
+    "cpu_ms": {
+      "max": 13.366710999999999,
+      "mean": 5.835768296296297,
+      "min": -1.9553280000000015,
+      "n": 108,
+      "p10": 0.276675200000001,
+      "p25": 2.2299929999999977,
+      "p50": 5.992292999999998,
+      "p75": 9.083796500000002,
+      "p90": 11.142859300000001,
+      "p95": 12.023216499999997,
+      "p99": 12.6595594
+    },
+    "wall_ms": {
+      "max": 244.21826299999998,
+      "mean": 8.878964953703703,
+      "min": -3.851177,
+      "n": 108,
+      "p10": -0.16193699999999905,
+      "p25": 1.3642645000000009,
+      "p50": 6.346166,
+      "p75": 9.670282,
+      "p90": 12.3316301,
+      "p95": 13.633297199999998,
+      "p99": 77.3560222799996
+    }
+  },
+  "paired_lost_gates": {
+    "full": 0,
+    "incremental": 0,
+    "sham": 0
+  },
+  "physical_targets": {
+    "matched": {
+      "by_method": {
+        "full": 8,
+        "incremental": 8,
+        "sham": 8,
+        "stock": 8
+      },
+      "n": 8
+    },
+    "miss": {
+      "by_method": {
+        "full": 7,
+        "incremental": 8,
+        "sham": 0,
+        "stock": 0
+      },
+      "n": 24
+    }
+  },
+  "position_attempted": false,
+  "valid": 36
+}

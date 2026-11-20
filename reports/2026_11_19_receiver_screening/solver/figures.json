@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_armijo_fit",
+      "method": "v5_armijo_fit",
+      "scope": "roof",
+      "title": "Armijo steps in the compact v5 position solver",
+      "caption": "The Armijo fit, the archived secant fit and the archived bounded solver use the same complete detector factors and retain all five outer phase passes.",
+      "cases": "timing-six",
+      "seal": "prediction-lock.json",
+      "series": [
+        {"key": "one", "label": "Armijo steps", "file": "armijo-positions.jsonl.gz", "field": "variant", "value": "v5_armijo_fit"},
+        {"key": "stock", "label": "Archived bounded solver", "file": "reference-positions.jsonl.gz", "field": "variant", "value": "compact-v5-bounded-gn", "match": ["input_sha256"]},
+        {"key": "all_visits", "label": "Archived secant solver", "file": "secant-positions.jsonl.gz", "field": "variant", "value": "v5_secant_fit", "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

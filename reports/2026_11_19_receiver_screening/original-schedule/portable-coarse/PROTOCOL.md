@@ -1,0 +1,7 @@
+# Verify standalone original coarse acquisition
+
+Build the rolling pilot grid, fixed original peak selector, clipped fine-grid construction and the reviewed portable verifier into one static program with libm. Its input contains physical dual CI16, lane mask, edge, sample count and calibrated frequency geometry only. The program regenerates both Qin templates from the published states and uses the verifier's fractional gate to control partner retry.
+
+Use the three saved development visits from the rolling pilot bank to compare full score grids and ordered peaks for both receiver lanes and both anchor counts. Use six separate, previously frozen raw-IQ verifier cases from three authenticated producers as the held comparison. Strip stored templates and supplied coarse seeds before executing the new program. Compare emitted seeds exactly, verify all integer and fractional gate decisions and ranks against the original oracle and archived projections, and compare numerical fields under the prior verifier tolerances. Keep the synthetic ties, receiver mask, null and truncated cases separate from authentic qualification.
+
+Record host coarse, verifier, initialization and memory metrics. Run short authentic windows with both edge geometries under offline AArch64 and Cortex-A9 emulation. Emulated timing measures the host emulator. Positioning and an on-device measurement are outside this comparison.

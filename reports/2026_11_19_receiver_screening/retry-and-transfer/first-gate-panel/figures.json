@@ -1,0 +1,65 @@
+{
+  "charts": [
+    {
+      "caption": "Six original recordings. Prefixes retain every earlier rejected row in post-acquisition rank order. The figure includes first-attempt outcomes and four original v5 options.",
+      "cases": "sealed",
+      "id": "first-gate-panel",
+      "method": "first_gate_first",
+      "provenance": [
+        "prediction-lock.json",
+        "guarded-positions.jsonl.gz",
+        "geographic.csv",
+        "geographic-summary.csv",
+        "frequency.csv",
+        "calibration.csv",
+        "publication-and-position-timing.csv",
+        "original-v5-references.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "one",
+          "label": "First pass",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "first_gate_first"
+        },
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Two passes",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "first_gate_second"
+        },
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full original GLRT",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "first_gate_full"
+        }
+      ],
+      "title": "Compact position after one or two GLRT passes"
+    }
+  ],
+  "version": 2
+}

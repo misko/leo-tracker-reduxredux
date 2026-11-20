@@ -1,0 +1,43 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh portable C factors, independent archived-factor compact fit and four original v5 roles. Same causal catalogue, 25 km tile and survey.",
+      "cases": [
+        "DS29-0082"
+      ],
+      "id": "portable-command-ds29-0082",
+      "method": "portable_command",
+      "provenance": [
+        "prediction-lock.json",
+        "original-v5-receipts.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Portable command",
+          "native_field": "archived_native_sha256",
+          "value": "portable_command"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived compact",
+          "match": [
+            "archived_native_sha256",
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "archived_native_sha256",
+          "value": "capture_archived_factors_compact"
+        }
+      ],
+      "title": "Portable receiver from DS29-0082 saved I/Q"
+    }
+  ],
+  "version": 2
+}

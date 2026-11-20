@@ -1,0 +1,1227 @@
+{
+  "scope": "Archived raw IQ supplemental sample. RX1 fixed. Two distinct 20 ms windows per case. Blind and guided comparisons within each test use identical second-window samples.",
+  "selection": "Windows 0 and 8 for fixed panel positions 1, 4 and 8; windows 0 and 1 otherwise. Every window 0 also has a disjoint first-10-ms blind seed versus second-10-ms blind and guided comparison. Guided tests require an available prior seed and never condition selection on the test window outcome.",
+  "read_cap_mib": 62,
+  "compressed_bytes_read": 65011712,
+  "qin_bank": {
+    "rate_hz": 10000000,
+    "folded_lags_samples": [
+      4,
+      20
+    ],
+    "max_epoch_proposals": 8,
+    "epoch_refinement_half_samples": 4,
+    "ofdm_symbols": 64,
+    "aliases": [
+      -2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "fft_cells": 512,
+    "illustrative_margin": 0.1
+  },
+  "timing_scope": "Single numerical thread on host. Bank wall time includes folded proposals and matched bank, excludes archive reads, decoding, template construction and Python import.",
+  "timing_wall_s": 5.248058805242181,
+  "synthetic_check": "passed",
+  "cases": [
+    {
+      "case": "DS26-0036",
+      "status": "checked",
+      "compressed_bytes_read": 14680064,
+      "decompressed_prefix_bytes": 14400000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "lower",
+          "valid_start_counter": 5913168033303,
+          "iq_sha256": "sha256:6d787ab4f03ec0855cba0765a320b0efa4508bc37cec60a0abe975e69c739c71",
+          "blind": {
+            "winner": {
+              "epoch_sample": 9274,
+              "phase_us": 927.4,
+              "cfo_hz": -31072.44318181818,
+              "alias_cfo_hz": -258345.17045454544,
+              "exact": 0.3926258463934473,
+              "control": 0.03710301355802638,
+              "margin": 0.3555228328354209,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.334658272564411,
+            "total_wall_ms": 66.2262849509716
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -174778.09588373368,
+            "phase_us": 481.28222662344933,
+            "margin": 0.4179310477508773
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 83567.07457081178,
+            "abs_wrapped_phase_us": 446.11777337655064,
+            "within_8khz_and_1p6us": false
+          },
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 9274,
+                "phase_us": 927.4,
+                "cfo_hz": -30628.551136363636,
+                "alias_cfo_hz": -257901.2784090909,
+                "exact": 0.39841132518786065,
+                "control": 0.05297755693600903,
+                "margin": 0.3454337682518516,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 3.7919189780950546,
+              "total_wall_ms": 34.914116375148296
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 2608,
+                "phase_us": 927.4666666666667,
+                "cfo_hz": -31072.44318181818,
+                "alias_cfo_hz": -258345.17045454544,
+                "exact": 0.38747076775295264,
+                "control": 0.05313907717512483,
+                "margin": 0.3343316905778278,
+                "frames": 8,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.641257226467133,
+              "total_wall_ms": 34.92754325270653
+            },
+            "second_guided": {
+              "winner": {
+                "epoch_sample": 2608,
+                "phase_us": 927.4666666666667,
+                "cfo_hz": -31072.44318181818,
+                "alias_cfo_hz": -258345.17045454544,
+                "exact": 0.3874707677529525,
+                "control": 0.019129988840949977,
+                "margin": 0.36834077891200256,
+                "frames": 8,
+                "passed": true
+              },
+              "tested_epochs": 69,
+              "scored_epoch_alias_cfo_cells": 2070,
+              "coarse_wall_ms": 4.085932858288288,
+              "total_wall_ms": 25.24904254823923
+            },
+            "gate": {
+              "frequency": -30628.551136363636,
+              "phase_us": 927.4,
+              "half_hz": 880.0,
+              "half_us": 12.3
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 0.0,
+                "abs_wrapped_phase_us": 0.0,
+                "within_8khz_and_1p6us": true
+              }
+            }
+          }
+        },
+        {
+          "sequence": 8,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "lower",
+          "valid_start_counter": 5913171578941,
+          "iq_sha256": "sha256:9289ed85eeab356f1f286b84fe986275201345d74ef0c77e858144018b7614e9",
+          "blind": {
+            "winner": {
+              "epoch_sample": 10304,
+              "phase_us": 927.5333333333335,
+              "cfo_hz": -31960.227272727272,
+              "alias_cfo_hz": -259232.95454545453,
+              "exact": 0.379503495817673,
+              "control": 0.03444492444117762,
+              "margin": 0.34505857137649537,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.252676740288734,
+            "total_wall_ms": 66.49855803698301
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -259396.23511932,
+            "phase_us": 927.5372380147912,
+            "margin": 0.35077467492212633
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 163.28057386544242,
+            "abs_wrapped_phase_us": 0.003904681457697734,
+            "within_8khz_and_1p6us": true
+          },
+          "first_revisit": {
+            "seed": "previous full archived native candidates",
+            "elapsed_s": 0.3545638,
+            "gates": [
+              {
+                "frequency": -174778.09588373368,
+                "phase_us": 481.28222662344933,
+                "half_hz": 3636.5103999999997,
+                "half_us": 22.636913999999997
+              }
+            ],
+            "guided": {
+              "winner": {
+                "epoch_sample": 5866,
+                "phase_us": 483.73333333333335,
+                "cfo_hz": 51491.47727272727,
+                "alias_cfo_hz": -175781.25,
+                "exact": 0.3169570575493701,
+                "control": 0.02212228891415312,
+                "margin": 0.29483476863521696,
+                "frames": 15,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 11520,
+              "coarse_wall_ms": 9.218930266797543,
+              "total_wall_ms": 29.31500505656004
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 83451.70454545454,
+                "abs_wrapped_phase_us": 443.80000000000007,
+                "within_8khz_and_1p6us": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "DS26-0070",
+      "status": "checked",
+      "compressed_bytes_read": 4194304,
+      "decompressed_prefix_bytes": 3200000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "upper",
+          "valid_start_counter": 7347862728057,
+          "iq_sha256": "sha256:0934af1753ed3c025ae7a265c4f90d8587ba050cb1820092fab7a632ae6bd1ea",
+          "blind": {
+            "winner": {
+              "epoch_sample": 8017,
+              "phase_us": 801.7,
+              "cfo_hz": -3107.244318181818,
+              "alias_cfo_hz": -3107.244318181818,
+              "exact": 0.04599988439170302,
+              "control": 0.030627449610886124,
+              "margin": 0.015372434780816898,
+              "frames": 15,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.651117026805878,
+            "total_wall_ms": 68.34454089403152
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null,
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 2034,
+                "phase_us": 203.4,
+                "cfo_hz": 67471.59090909091,
+                "alias_cfo_hz": -387073.86363636365,
+                "exact": 0.059156153039344246,
+                "control": 0.03928005251278489,
+                "margin": 0.01987610052655936,
+                "frames": 8,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.131602123379707,
+              "total_wall_ms": 36.31231747567654
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 2022,
+                "phase_us": 868.8666666666666,
+                "cfo_hz": -87890.625,
+                "alias_cfo_hz": -315163.3522727273,
+                "exact": 0.06173452627753009,
+                "control": 0.037812338959134315,
+                "margin": 0.023922187318395773,
+                "frames": 8,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.800538532435894,
+              "total_wall_ms": 34.7623098641634
+            },
+            "second_guided": null,
+            "gate": null,
+            "comparison": {
+              "blind_passed": false,
+              "guided_passed": false,
+              "agreement": null
+            }
+          }
+        },
+        {
+          "sequence": 1,
+          "receiver_id": 0,
+          "channel": 2,
+          "edge": "upper",
+          "valid_start_counter": 7347863171067,
+          "iq_sha256": "sha256:2f0dac9f99fe4e008a4dde000f4cd5060c5287db4bb39f672447dc6eb4e77f5e",
+          "blind": {
+            "winner": {
+              "epoch_sample": 7555,
+              "phase_us": 1056.5,
+              "cfo_hz": 68359.375,
+              "alias_cfo_hz": -158913.35227272726,
+              "exact": 0.04340058282577071,
+              "control": 0.031137509497754727,
+              "margin": 0.012263073328015982,
+              "frames": 15,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 10.141585022211075,
+            "total_wall_ms": 70.61960827559233
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null
+        }
+      ]
+    },
+    {
+      "case": "DS26-0112",
+      "status": "checked",
+      "compressed_bytes_read": 4194304,
+      "decompressed_prefix_bytes": 3200000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "lower",
+          "valid_start_counter": 9105506472740,
+          "iq_sha256": "sha256:c09bc8c86d8d71fbaff8805e46d8cb8b3159747b1df5081d8408f62f31365c26",
+          "blind": {
+            "winner": {
+              "epoch_sample": 13089,
+              "phase_us": 1308.9,
+              "cfo_hz": -58593.75,
+              "alias_cfo_hz": -58593.75,
+              "exact": 0.6365673447631822,
+              "control": 0.03975449939010748,
+              "margin": 0.5968128453730748,
+              "frames": 14,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 10.298079811036587,
+            "total_wall_ms": 66.35772995650768
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -58575.22447522136,
+            "phase_us": 1308.9134761482944,
+            "margin": 0.6107682352701533
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 18.52552477864083,
+            "abs_wrapped_phase_us": 0.013476148294330415,
+            "within_8khz_and_1p6us": true
+          },
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 13088,
+                "phase_us": 1308.8,
+                "cfo_hz": -58593.75,
+                "alias_cfo_hz": -58593.75,
+                "exact": 0.6517048507350272,
+                "control": 0.05136694766809641,
+                "margin": 0.6003379030669307,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.19574324041605,
+              "total_wall_ms": 35.00881511718035
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 6423,
+                "phase_us": 1308.9666666666667,
+                "cfo_hz": -59037.642045454544,
+                "alias_cfo_hz": -59037.642045454544,
+                "exact": 0.6416623821440208,
+                "control": 0.05728179740745314,
+                "margin": 0.5843805847365677,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.476515576243401,
+              "total_wall_ms": 32.97591581940651
+            },
+            "second_guided": {
+              "winner": {
+                "epoch_sample": 6423,
+                "phase_us": 1308.9666666666667,
+                "cfo_hz": -59037.642045454544,
+                "alias_cfo_hz": -59037.642045454544,
+                "exact": 0.6416623821440212,
+                "control": 0.02081694113156899,
+                "margin": 0.6208454410124522,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 2160,
+              "coarse_wall_ms": 4.925290122628212,
+              "total_wall_ms": 22.947573103010654
+            },
+            "gate": {
+              "frequency": -58593.75,
+              "phase_us": 1308.8,
+              "half_hz": 880.0,
+              "half_us": 12.3
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 0.0,
+                "abs_wrapped_phase_us": 0.0,
+                "within_8khz_and_1p6us": true
+              }
+            }
+          }
+        },
+        {
+          "sequence": 1,
+          "receiver_id": 0,
+          "channel": 2,
+          "edge": "lower",
+          "valid_start_counter": 9105506915405,
+          "iq_sha256": "sha256:1a8ce08085a32649957671c50c429f9ac9c7891e07bbf0cff3b49d79768479d4",
+          "blind": {
+            "winner": {
+              "epoch_sample": 2517,
+              "phase_us": 518.2,
+              "cfo_hz": 61257.10227272727,
+              "alias_cfo_hz": -166015.625,
+              "exact": 0.5550183434834477,
+              "control": 0.03697799680076109,
+              "margin": 0.5180403466826866,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 10.109459981322289,
+            "total_wall_ms": 67.56019406020641
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -166308.26973109672,
+            "phase_us": 518.2545836926068,
+            "margin": 0.6663918340844741
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 292.6447310967342,
+            "abs_wrapped_phase_us": 0.05458369260679774,
+            "within_8khz_and_1p6us": true
+          }
+        }
+      ]
+    },
+    {
+      "case": "DS26-0122",
+      "status": "checked",
+      "compressed_bytes_read": 14680064,
+      "decompressed_prefix_bytes": 14400000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "upper",
+          "valid_start_counter": 9542672992289,
+          "iq_sha256": "sha256:1e5517e363bb041962774541faf3522355d8bde089919d5f988c9da8c8975bee",
+          "blind": {
+            "winner": {
+              "epoch_sample": 8401,
+              "phase_us": 840.1,
+              "cfo_hz": -72354.40340909091,
+              "alias_cfo_hz": -72354.40340909091,
+              "exact": 0.44355420190291456,
+              "control": 0.0343886878213976,
+              "margin": 0.40916551408151697,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.625457227230072,
+            "total_wall_ms": 72.49377015978098
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -72299.85468401958,
+            "phase_us": 840.0635839894925,
+            "margin": 0.5916929103164104
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 54.54872507133405,
+            "abs_wrapped_phase_us": 0.03641601050753707,
+            "within_8khz_and_1p6us": true
+          },
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 8400,
+                "phase_us": 840.0,
+                "cfo_hz": -72354.40340909091,
+                "alias_cfo_hz": -72354.40340909091,
+                "exact": 0.481825256514839,
+                "control": 0.04646568123983053,
+                "margin": 0.43535957527500846,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.92140743881464,
+              "total_wall_ms": 35.578093491494656
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 1734,
+                "phase_us": 840.0666666666666,
+                "cfo_hz": -72354.40340909091,
+                "alias_cfo_hz": -72354.40340909091,
+                "exact": 0.4303578888567704,
+                "control": 0.040126694545378684,
+                "margin": 0.3902311943113917,
+                "frames": 8,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 3.9265379309654236,
+              "total_wall_ms": 33.753110095858574
+            },
+            "second_guided": {
+              "winner": {
+                "epoch_sample": 1734,
+                "phase_us": 840.0666666666666,
+                "cfo_hz": -72354.40340909091,
+                "alias_cfo_hz": -72354.40340909091,
+                "exact": 0.4303578888567703,
+                "control": 0.012958922931434956,
+                "margin": 0.4173989659253353,
+                "frames": 8,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 2160,
+              "coarse_wall_ms": 4.278611391782761,
+              "total_wall_ms": 25.098812766373158
+            },
+            "gate": {
+              "frequency": -72354.40340909091,
+              "phase_us": 840.0,
+              "half_hz": 880.0,
+              "half_us": 12.3
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 0.0,
+                "abs_wrapped_phase_us": 0.0,
+                "within_8khz_and_1p6us": true
+              }
+            }
+          }
+        },
+        {
+          "sequence": 8,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "upper",
+          "valid_start_counter": 9542676542635,
+          "iq_sha256": "sha256:8ae0bce666f133c2ef4400ec11b97ee803497bfd48ba2ac2cb98baa4018fd8e9",
+          "blind": {
+            "winner": {
+              "epoch_sample": 4743,
+              "phase_us": 842.2333333333333,
+              "cfo_hz": -73242.1875,
+              "alias_cfo_hz": -73242.1875,
+              "exact": 0.38325675418822186,
+              "control": 0.034789171463026444,
+              "margin": 0.3484675827251954,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 8.758234791457653,
+            "total_wall_ms": 70.89297939091921
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -73455.64540482643,
+            "phase_us": 842.2502470367925,
+            "margin": 0.4978238350265331
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 213.4579048264277,
+            "abs_wrapped_phase_us": 0.016913703459181306,
+            "within_8khz_and_1p6us": true
+          },
+          "first_revisit": {
+            "seed": "previous full archived native candidates",
+            "elapsed_s": 0.3550346,
+            "gates": [
+              {
+                "frequency": -72299.85468401958,
+                "phase_us": 840.0635839894925,
+                "half_hz": 3640.2767999999996,
+                "half_us": 22.651038
+              },
+              {
+                "frequency": -72528.55736876858,
+                "phase_us": 840.0644604910672,
+                "half_hz": 3640.2767999999996,
+                "half_us": 22.651038
+              }
+            ],
+            "guided": {
+              "winner": {
+                "epoch_sample": 4743,
+                "phase_us": 842.2333333333333,
+                "cfo_hz": -73242.1875,
+                "alias_cfo_hz": -73242.1875,
+                "exact": 0.3832567541882218,
+                "control": 0.023402282860209254,
+                "margin": 0.35985447132801257,
+                "frames": 15,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 12240,
+              "coarse_wall_ms": 8.72656237334013,
+              "total_wall_ms": 30.306858010590076
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 0.0,
+                "abs_wrapped_phase_us": 0.0,
+                "within_8khz_and_1p6us": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "DS26-0203",
+      "status": "checked",
+      "compressed_bytes_read": 4194304,
+      "decompressed_prefix_bytes": 3200000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "upper",
+          "valid_start_counter": 13340402924501,
+          "iq_sha256": "sha256:0304e02881b2b6373a9ecd93172ba5d1569e276c1cef6b91e027f3e73ee06aee",
+          "blind": {
+            "winner": {
+              "epoch_sample": 11965,
+              "phase_us": 1196.5,
+              "cfo_hz": -15092.329545454544,
+              "alias_cfo_hz": 212180.3977272727,
+              "exact": 0.05479391943838309,
+              "control": 0.035207398675881366,
+              "margin": 0.019586520762501725,
+              "frames": 14,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.79954469949007,
+            "total_wall_ms": 63.34010045975447
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null,
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 8147,
+                "phase_us": 814.7,
+                "cfo_hz": 15092.329545454544,
+                "alias_cfo_hz": 15092.329545454544,
+                "exact": 0.0654925827811833,
+                "control": 0.03909511069901963,
+                "margin": 0.026397472082163677,
+                "frames": 7,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.13700845092535,
+              "total_wall_ms": 32.35742449760437
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 67,
+                "phase_us": 673.3666666666667,
+                "cfo_hz": -22638.494318181816,
+                "alias_cfo_hz": -249911.2215909091,
+                "exact": 0.07394449349761896,
+                "control": 0.04858254807857531,
+                "margin": 0.02536194541904365,
+                "frames": 8,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.3330565094947815,
+              "total_wall_ms": 33.5507532581687
+            },
+            "second_guided": null,
+            "gate": null,
+            "comparison": {
+              "blind_passed": false,
+              "guided_passed": false,
+              "agreement": null
+            }
+          }
+        },
+        {
+          "sequence": 1,
+          "receiver_id": 0,
+          "channel": 2,
+          "edge": "upper",
+          "valid_start_counter": 13340403366316,
+          "iq_sha256": "sha256:16683875a0dc8c873b0fed4bdcdff64e228d7d36e7b07fd5b60c6c28a022ad95",
+          "blind": {
+            "winner": {
+              "epoch_sample": 9233,
+              "phase_us": 1104.8,
+              "cfo_hz": -82120.02840909091,
+              "alias_cfo_hz": -536665.4829545454,
+              "exact": 0.05216860966278236,
+              "control": 0.0368063985632766,
+              "margin": 0.015362211099505758,
+              "frames": 15,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 11.211039498448372,
+            "total_wall_ms": 66.686169244349
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null
+        }
+      ]
+    },
+    {
+      "case": "DS26-0209",
+      "status": "checked",
+      "compressed_bytes_read": 4194304,
+      "decompressed_prefix_bytes": 3200000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "lower",
+          "valid_start_counter": 13620445007285,
+          "iq_sha256": "sha256:bcd33f5e05e746c7a2bd27716aef0cefcd0cf115ad52cbb730c860e5a1b310e1",
+          "blind": {
+            "winner": {
+              "epoch_sample": 8986,
+              "phase_us": 898.6,
+              "cfo_hz": -11985.085227272726,
+              "alias_cfo_hz": -239257.8125,
+              "exact": 0.7952359011972218,
+              "control": 0.04149021177122155,
+              "margin": 0.7537456894260002,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.279764257371426,
+            "total_wall_ms": 65.8748708665371
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -239225.3335952313,
+            "phase_us": 898.6574115509989,
+            "margin": 0.7530001937506304
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 32.478904768722714,
+            "abs_wrapped_phase_us": 0.05741155099883599,
+            "within_8khz_and_1p6us": true
+          },
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 8987,
+                "phase_us": 898.7,
+                "cfo_hz": -11985.085227272726,
+                "alias_cfo_hz": -239257.8125,
+                "exact": 0.79687106809193,
+                "control": 0.04169024981137776,
+                "margin": 0.7551808182805522,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 3.846443258225918,
+              "total_wall_ms": 34.84681434929371
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 2320,
+                "phase_us": 898.6666666666666,
+                "cfo_hz": -11985.085227272726,
+                "alias_cfo_hz": -239257.8125,
+                "exact": 0.806524523146404,
+                "control": 0.04647793554636162,
+                "margin": 0.7600465876000424,
+                "frames": 8,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.143411293625832,
+              "total_wall_ms": 35.09184345602989
+            },
+            "second_guided": {
+              "winner": {
+                "epoch_sample": 2320,
+                "phase_us": 898.6666666666666,
+                "cfo_hz": -11985.085227272726,
+                "alias_cfo_hz": -239257.8125,
+                "exact": 0.8065245231464038,
+                "control": 0.02804793198880697,
+                "margin": 0.7784765911575968,
+                "frames": 8,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 2160,
+              "coarse_wall_ms": 4.259934648871422,
+              "total_wall_ms": 26.353762485086918
+            },
+            "gate": {
+              "frequency": -11985.085227272726,
+              "phase_us": 898.7,
+              "half_hz": 880.0,
+              "half_us": 12.3
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 0.0,
+                "abs_wrapped_phase_us": 0.0,
+                "within_8khz_and_1p6us": true
+              }
+            }
+          }
+        },
+        {
+          "sequence": 1,
+          "receiver_id": 0,
+          "channel": 2,
+          "edge": "lower",
+          "valid_start_counter": 13620445448819,
+          "iq_sha256": "sha256:8cc2c217a095cfb6ae6b698dd8847defa7ee61fb19719d16bbd470cfb7a15703",
+          "blind": {
+            "winner": {
+              "epoch_sample": 2725,
+              "phase_us": 425.9,
+              "cfo_hz": -104758.52272727272,
+              "alias_cfo_hz": -104758.52272727272,
+              "exact": 0.3939365228681274,
+              "control": 0.041111104124584116,
+              "margin": 0.3528254187435433,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 7.782414555549622,
+            "total_wall_ms": 64.79038018733263
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -104520.70624514882,
+            "phase_us": 425.8848375241273,
+            "margin": 0.48713428350856147
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 237.81648212390428,
+            "abs_wrapped_phase_us": 0.015162475872671166,
+            "within_8khz_and_1p6us": true
+          }
+        }
+      ]
+    },
+    {
+      "case": "DS26-0277",
+      "status": "checked",
+      "compressed_bytes_read": 4194304,
+      "decompressed_prefix_bytes": 3200000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "lower",
+          "valid_start_counter": 16493064574228,
+          "iq_sha256": "sha256:bfbd8fa367a520cf8fed8e845b79020ea574a45779c9b860df515fcbbd5df050",
+          "blind": {
+            "winner": {
+              "epoch_sample": 10479,
+              "phase_us": 1047.9,
+              "cfo_hz": 79456.67613636363,
+              "alias_cfo_hz": 79456.67613636363,
+              "exact": 0.045686639305775364,
+              "control": 0.032386841575931184,
+              "margin": 0.01329979772984418,
+              "frames": 14,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.843533858656883,
+            "total_wall_ms": 66.3583092391491
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null,
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 2570,
+                "phase_us": 257.0,
+                "cfo_hz": -54598.72159090909,
+                "alias_cfo_hz": -54598.72159090909,
+                "exact": 0.05626778953682738,
+                "control": 0.034787427754435066,
+                "margin": 0.021480361782392314,
+                "frames": 8,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.504083655774593,
+              "total_wall_ms": 35.20647902041674
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 6383,
+                "phase_us": 1304.9666666666667,
+                "cfo_hz": 108753.55113636363,
+                "alias_cfo_hz": 563299.0056818181,
+                "exact": 0.06621687749193886,
+                "control": 0.04182895427439479,
+                "margin": 0.024387923217544065,
+                "frames": 7,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.853515885770321,
+              "total_wall_ms": 34.193847328424454
+            },
+            "second_guided": null,
+            "gate": null,
+            "comparison": {
+              "blind_passed": false,
+              "guided_passed": false,
+              "agreement": null
+            }
+          }
+        },
+        {
+          "sequence": 1,
+          "receiver_id": 0,
+          "channel": 2,
+          "edge": "lower",
+          "valid_start_counter": 16493065016855,
+          "iq_sha256": "sha256:1a4423704b80840a7878355b011b25da3acb7c404c717332974c5758b895ff1d",
+          "blind": {
+            "winner": {
+              "epoch_sample": 6040,
+              "phase_us": 866.7,
+              "cfo_hz": 20862.926136363636,
+              "alias_cfo_hz": -433682.5284090909,
+              "exact": 0.04398422829210118,
+              "control": 0.03167650232462141,
+              "margin": 0.012307725967479768,
+              "frames": 15,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 9.057275019586086,
+            "total_wall_ms": 62.03322112560272
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null
+        }
+      ]
+    },
+    {
+      "case": "DS26-0311",
+      "status": "checked",
+      "compressed_bytes_read": 14680064,
+      "decompressed_prefix_bytes": 14400000,
+      "windows": [
+        {
+          "sequence": 0,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "upper",
+          "valid_start_counter": 18038795383369,
+          "iq_sha256": "sha256:8219c6d82fb8a5c44cab03bff8f4f7e5b830674fa616bb167ac47d77129e20ee",
+          "blind": {
+            "winner": {
+              "epoch_sample": 5422,
+              "phase_us": 542.2,
+              "cfo_hz": -113636.36363636363,
+              "alias_cfo_hz": -340909.0909090909,
+              "exact": 0.5831489706835259,
+              "control": 0.04156752170528439,
+              "margin": 0.5415814489782415,
+              "frames": 15,
+              "passed": true
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 8.740892633795738,
+            "total_wall_ms": 69.4020101800561
+          },
+          "archived_blind_winner": {
+            "cfo_hz": -113290.89652343432,
+            "phase_us": 542.2653002368032,
+            "margin": 0.6563019192015203
+          },
+          "raw_vs_archived": {
+            "abs_wrapped_cfo_hz": 345.46711292931286,
+            "abs_wrapped_phase_us": 0.06530023680318209,
+            "within_8khz_and_1p6us": true
+          },
+          "split_10ms": {
+            "first_blind": {
+              "winner": {
+                "epoch_sample": 5423,
+                "phase_us": 542.3,
+                "cfo_hz": -113636.36363636363,
+                "alias_cfo_hz": -340909.0909090909,
+                "exact": 0.5809840865448165,
+                "control": 0.040701719799436466,
+                "margin": 0.54028236674538,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 3.904213197529316,
+              "total_wall_ms": 32.706450670957565
+            },
+            "second_blind": {
+              "winner": {
+                "epoch_sample": 12089,
+                "phase_us": 542.2333333333333,
+                "cfo_hz": -113636.36363636363,
+                "alias_cfo_hz": -340909.0909090909,
+                "exact": 0.5901160727637702,
+                "control": 0.04900050875556563,
+                "margin": 0.5411155640082046,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 368640,
+              "coarse_wall_ms": 4.112874157726765,
+              "total_wall_ms": 33.35249051451683
+            },
+            "second_guided": {
+              "winner": {
+                "epoch_sample": 12089,
+                "phase_us": 542.2333333333333,
+                "cfo_hz": -113636.36363636363,
+                "alias_cfo_hz": -340909.0909090909,
+                "exact": 0.5901160727637705,
+                "control": 0.023117966257745034,
+                "margin": 0.5669981065060256,
+                "frames": 7,
+                "passed": true
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 2160,
+              "coarse_wall_ms": 4.046828486025333,
+              "total_wall_ms": 22.9092538356781
+            },
+            "gate": {
+              "frequency": -113636.36363636363,
+              "phase_us": 542.3,
+              "half_hz": 880.0,
+              "half_us": 12.3
+            },
+            "comparison": {
+              "blind_passed": true,
+              "guided_passed": true,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 0.0,
+                "abs_wrapped_phase_us": 0.0,
+                "within_8khz_and_1p6us": true
+              }
+            }
+          }
+        },
+        {
+          "sequence": 8,
+          "receiver_id": 0,
+          "channel": 1,
+          "edge": "upper",
+          "valid_start_counter": 18038798923947,
+          "iq_sha256": "sha256:8b94ddea359c41ca823abda88928c3a67cd38da077028012a5a16cc4b1868481",
+          "blind": {
+            "winner": {
+              "epoch_sample": 12718,
+              "phase_us": 662.9333333333332,
+              "cfo_hz": -13760.653409090908,
+              "alias_cfo_hz": 213512.07386363635,
+              "exact": 0.05212020391636963,
+              "control": 0.035880445099901445,
+              "margin": 0.016239758816468185,
+              "frames": 14,
+              "passed": false
+            },
+            "tested_epochs": 72,
+            "scored_epoch_alias_cfo_cells": 368640,
+            "coarse_wall_ms": 8.154534734785557,
+            "total_wall_ms": 63.439871184527874
+          },
+          "archived_blind_winner": null,
+          "raw_vs_archived": null,
+          "first_revisit": {
+            "seed": "previous full archived native candidates",
+            "elapsed_s": 0.3540578,
+            "gates": [
+              {
+                "frequency": -113290.89652343432,
+                "phase_us": 542.2653002368032,
+                "half_hz": 3632.4624,
+                "half_us": 22.621734
+              },
+              {
+                "frequency": -113292.0643806109,
+                "phase_us": 542.2652796071984,
+                "half_hz": 3632.4624,
+                "half_us": 22.621734
+              },
+              {
+                "frequency": -340812.7411501757,
+                "phase_us": 542.2374552492541,
+                "half_hz": 3632.4624,
+                "half_us": 22.621734
+              }
+            ],
+            "guided": {
+              "winner": {
+                "epoch_sample": 11336,
+                "phase_us": 524.7333333333333,
+                "cfo_hz": 111416.90340909091,
+                "alias_cfo_hz": 338689.6306818182,
+                "exact": 0.035466958013326465,
+                "control": 0.01876878436004692,
+                "margin": 0.016698173653279545,
+                "frames": 14,
+                "passed": false
+              },
+              "tested_epochs": 72,
+              "scored_epoch_alias_cfo_cells": 11520,
+              "coarse_wall_ms": 9.737207554280758,
+              "total_wall_ms": 30.48499394208193
+            },
+            "comparison": {
+              "blind_passed": false,
+              "guided_passed": false,
+              "agreement": {
+                "abs_wrapped_cfo_hz": 102095.17045454543,
+                "abs_wrapped_phase_us": 138.19999999999982,
+                "within_8khz_and_1p6us": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "raw_windows": 16,
+    "raw_blind_positive": 9,
+    "archived_winner_present": 9,
+    "raw_blind_positive_and_matched_archived": 8,
+    "matched": {
+      "split": {
+        "preselected": 8,
+        "gates_available_and_tested": 5,
+        "blind_positives_with_guided_test": 5,
+        "guided_positives": 5,
+        "both_positive_matching": 5,
+        "median_blind_wall_ms": 33.753110095858574,
+        "median_guided_wall_ms": 25.098812766373158,
+        "median_cell_fraction": 0.005859375
+      },
+      "revisit": {
+        "preselected": 3,
+        "gates_available_and_tested": 3,
+        "blind_positives_with_guided_test": 2,
+        "guided_positives": 2,
+        "both_positive_matching": 1,
+        "median_blind_wall_ms": 66.49855803698301,
+        "median_guided_wall_ms": 30.306858010590076,
+        "median_cell_fraction": 0.03125
+      }
+    }
+  }
+}

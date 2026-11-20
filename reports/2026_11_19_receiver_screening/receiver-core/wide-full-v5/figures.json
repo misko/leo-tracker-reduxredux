@@ -1,0 +1,47 @@
+{
+  "charts": [
+    {
+      "caption": "Both methods receive the same complete four-start \u00b1800 kHz factors. The four original v5 references use capture-era factors. One roof.",
+      "cases": [
+        "DS26-0122",
+        "DS26-0237",
+        "DS29-0082",
+        "DS29-0127"
+      ],
+      "id": "wide-full-v5",
+      "method": "original_full_v5_wide",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Original full v5 \u00b7 wide GLRT",
+          "native_field": "capture_era_native_sha256",
+          "value": "original_full_v5_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Compact phase-release \u00b7 wide GLRT",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "capture_era_native_sha256",
+          "value": "compact_phase_release_wide"
+        }
+      ],
+      "title": "Original full v5 and compact on identical wide GLRT factors"
+    }
+  ],
+  "version": 1
+}

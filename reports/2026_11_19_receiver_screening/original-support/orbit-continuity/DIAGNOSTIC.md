@@ -1,0 +1,3 @@
+# Privileged continuation audit
+
+After the anonymous predictions have been committed, score the exact surveyed coordinate separately on the five real recordings. Run the same early orbit, shared drift, intercept and late native forecast code. Skip geometry search and local/global rankings. Compare early binding counts, late visibility opportunities and coherent visits at the known coordinate to the blind winner. This isolates loss due to site search from loss caused by the causal orbit, early binding, visible scheduling or wrapped CFO transport. Use no known satellite labels. Neither survey results nor this diagnostic's scoring coordinates enter blind eligibility, site selection or publication.

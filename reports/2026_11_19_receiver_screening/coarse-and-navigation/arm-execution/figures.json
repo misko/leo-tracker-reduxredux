@@ -1,0 +1,82 @@
+{
+  "charts": [
+    {
+      "caption": "Selected executions use the paired decision and return the requested fit.",
+      "cases": "sealed",
+      "id": "arm-execution-roof",
+      "method": "arm_execution_independent_selection",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parity.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed paired control",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "arm_execution_paired_control"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Independently selected arms",
+          "value": "arm_execution_independent_selection"
+        }
+      ],
+      "title": "Compact position from one requested calibration"
+    },
+    {
+      "caption": "Selected executions use the paired decision and return the requested fit.",
+      "cases": "sealed",
+      "condition_labels": {
+        "near-inside": "Near inside, known guard edge"
+      },
+      "id": "arm-execution-edge",
+      "method": "arm_execution_independent_selection",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parity.json",
+        "scores.csv"
+      ],
+      "queries": "edge-queries.json",
+      "scope": "transfer",
+      "seal": "edge-figure-lock.json",
+      "series": [
+        {
+          "file": "edge-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed paired control",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "arm_execution_paired_control"
+        },
+        {
+          "file": "edge-positions.jsonl.gz",
+          "forced_label": "Candidate, withheld endpoint",
+          "key": "candidate",
+          "label": "Independently selected arms",
+          "value": "arm_execution_independent_selection"
+        }
+      ],
+      "title": "Paired guard on the shifted archived offer"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "whole_pair",
+      "method": "whole_cavity",
+      "scope": "roof",
+      "title": "Same whole-IQ cavity on DS26 and DS29",
+      "caption": "Both ordinary replays use the same capped cavity worker. The four original v5 choices use capture-era factors.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["stages.json.gz", "comparison.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Ordinary cavity at 512 MiB", "file": "positions.jsonl.gz", "value": "whole_cavity", "native_authority": "ordinary", "where": {"mode": "matched-tile"}}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "iq_schedule",
+      "method": "iq_schedule",
+      "scope": "roof",
+      "title": "Three-of-four ordinary saved-IQ visits",
+      "caption": "Scheduled and full ordinary runs share the saved capture and cavity method. Only the scheduled runs omit valid detector calls. Original v5 choices use capture-era factors.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["stages.json.gz", "comparison.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Scheduled ordinary visits", "file": "positions.jsonl.gz", "value": "iq_schedule", "native_authority": "ordinary", "native_field": "origin_native_sha256", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Full ordinary visits", "file": "control-positions.jsonl.gz", "value": "whole_cavity", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["tile"]}
+      ]
+    }
+  ]
+}

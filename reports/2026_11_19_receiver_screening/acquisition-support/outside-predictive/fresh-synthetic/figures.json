@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_outside_predictive-fresh-synthetic",
+      "method": "native_outside_predictive",
+      "scope": "transfer",
+      "title": "Held Doppler at two new synthetic sites",
+      "caption": "Complementary held blocks with fixed calibration and matched held peaks.",
+      "cases": [
+        "05a41cc7f6a29ea60850",
+        "848a82ad23554747c316",
+        "b959b7d09bf3181775c5",
+        "cb14e0e1c5bc8ee0de8d",
+        "546823fa33441b2aae2e",
+        "90703967284cc2b054b7",
+        "bc70bb0d9e4bbd7fb8fa",
+        "cfcd67302b1d0ee24ea4"
+      ],
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "centered": "Centered",
+        "near-inside": "Near inside",
+        "near-outside": "Near omission",
+        "far-outside": "15 km omitted"
+      },
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Held exterior evidence",
+          "file": "native_outside_predictive.jsonl.gz",
+          "value": "native_outside_predictive"
+        },
+        {
+          "key": "stock",
+          "label": "Native smooth",
+          "forced_label": "Smooth \u00b7 forced",
+          "file": "native_joint_clock_model.jsonl.gz",
+          "value": "native_joint_clock_model",
+          "match": [
+            "input_sha256",
+            "tile"
+          ]
+        }
+      ]
+    }
+  ]
+}

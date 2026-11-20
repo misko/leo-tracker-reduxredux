@@ -1,0 +1,88 @@
+{
+  "charts": [
+    {
+      "caption": "Blind generated site. The unrestricted RF-linear coefficient is a gauge. The c0 arm fixes this gauge and retains forced diagnostics.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far_missing": "Far missing",
+        "near_missing": "Near missing"
+      },
+      "id": "clock-carrier-simulated-position",
+      "method": "clock-carrier-simulated-position",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Carried fit",
+          "key": "candidate",
+          "label": "Carried carrier",
+          "value": "carried"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Clock fit",
+          "key": "stock",
+          "label": "Receiver clock",
+          "value": "clock_only"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Local track fit",
+          "key": "one",
+          "label": "Local track clock",
+          "value": "free_track"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Center point",
+          "key": "four",
+          "label": "Offer center",
+          "value": "offer_center"
+        }
+      ],
+      "title": "Carried carrier versus receiver-only and local clocks"
+    },
+    {
+      "caption": "Blind generated site. The unrestricted RF-linear coefficient is a gauge. The c0 arm fixes this gauge and retains forced diagnostics.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far_missing": "Far missing",
+        "near_missing": "Near missing"
+      },
+      "id": "clock-carrier-simulated-identity",
+      "method": "clock-carrier-simulated-identity",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Carried fit",
+          "key": "candidate",
+          "label": "Carried carrier",
+          "value": "carried"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Sham fit",
+          "key": "stock",
+          "label": "Identity sham",
+          "value": "identity_sham"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Center point",
+          "key": "one",
+          "label": "Offer center",
+          "value": "offer_center"
+        }
+      ],
+      "title": "Carried carrier versus an identity sham"
+    }
+  ],
+  "version": 2
+}

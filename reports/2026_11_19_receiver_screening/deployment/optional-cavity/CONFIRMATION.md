@@ -1,0 +1,5 @@
+# Curved incumbent receipt
+
+The first paired run showed that the diagnosed recordings reached a curved-only signed incumbent after the optional family failure. The frozen curved fit stores the last phase change in `history[-1].phase_change_s`. Its finalized linear/signed fit stores the equivalent result at `final_phase_change_s`. The first candidate gate expected the latter form and failed on both recordings. The matched control calls and the first diagnostic failures remain sealed.
+
+Repeat only DS26-0191 and DS26-0199 using the same archived input, complete search, phase convergence criterion, RF checks, and paired tile gate. The corrected adapter supplies the existing history value to the gate when the signed model was declined and there are no linear entries. Leave inputs, fitting, accepted independent cavity candidates and gate thresholds intact. Run on CPUs 5 and 6 at nice 12 with the same 170 s per-call cap. Report the retried wall and CPU separately from the first attempts. No geographic scores were consulted before this correction.

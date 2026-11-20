@@ -1,0 +1,149 @@
+{
+  "charts": [
+    {
+      "caption": "One Prague rooftop and two visits. One coordinate per train/holdout direction. Author-selected peaks and unaudited ECEF availability.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far-northeast": "Far Northeast",
+        "far-northwest": "Far Northwest",
+        "far-southeast": "Far Southeast",
+        "far-southwest": "Far Southwest",
+        "near-east": "Near East",
+        "near-north": "Near North",
+        "near-south": "Near South",
+        "near-west": "Near West"
+      },
+      "id": "session-geometry-prague-ablation",
+      "method": "session-geometry-prague-ablation",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced phase + clock",
+          "key": "candidate",
+          "label": "Phase + clock",
+          "value": "phase-clock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced fixed orbit",
+          "key": "stock",
+          "label": "Fixed orbit",
+          "value": "fixed"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced phase only",
+          "key": "one",
+          "label": "Phase only",
+          "value": "phase"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced clock only",
+          "key": "four",
+          "label": "Clock only",
+          "value": "clock"
+        }
+      ],
+      "title": "Prague static position \u00b7 ablation"
+    },
+    {
+      "caption": "One Prague rooftop and two visits. One coordinate per train/holdout direction. Author-selected peaks and unaudited ECEF availability.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far-northeast": "Far Northeast",
+        "far-northwest": "Far Northwest",
+        "far-southeast": "Far Southeast",
+        "far-southwest": "Far Southwest",
+        "near-east": "Near East",
+        "near-north": "Near North",
+        "near-south": "Near South",
+        "near-west": "Near West"
+      },
+      "id": "session-geometry-prague-pooling",
+      "method": "session-geometry-prague-pooling",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced phase + clock",
+          "key": "candidate",
+          "label": "Phase + clock",
+          "value": "phase-clock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced fit median",
+          "key": "stock",
+          "label": "Fit median",
+          "value": "median"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Offer centre",
+          "value": "center"
+        }
+      ],
+      "title": "Prague static position \u00b7 pooling"
+    },
+    {
+      "caption": "One Prague rooftop and two visits. One coordinate per train/holdout direction. Author-selected peaks and unaudited ECEF availability.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far-northeast": "Far Northeast",
+        "far-northwest": "Far Northwest",
+        "far-southeast": "Far Southeast",
+        "far-southwest": "Far Southwest",
+        "near-east": "Near East",
+        "near-north": "Near North",
+        "near-south": "Near South",
+        "near-west": "Near West"
+      },
+      "id": "session-geometry-prague-controls",
+      "method": "session-geometry-prague-controls",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced phase + clock",
+          "key": "candidate",
+          "label": "Phase + clock",
+          "value": "phase-clock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced rotated orbit",
+          "key": "stock",
+          "label": "Rotated orbit",
+          "value": "rotated"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Offer centre",
+          "value": "center"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Forced cfo shuffle",
+          "key": "four",
+          "label": "CFO shuffle",
+          "value": "shuffle"
+        }
+      ],
+      "title": "Prague static position \u00b7 controls"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,7 @@
+# One physical receiver on capture-era GLRT
+
+The frozen difficult recordings are DS26-0122, DS26-0162, DS26-0197, DS26-0241, DS29-0082 and DS29-0357. The distinct controls are DS26-0014 and DS29-0519. No geographic scores enter selection or fitting.
+
+Use the original no-repair capture-era detections and immutable calibration, clock, causal catalogue and search offer. The RF key comes from authenticated saved-IQ segment target manifests. At each valid visit of a given integer physical RF center, select RX0 then RX1 repeatedly, independent of detector candidates. Invalid visits retain their exclusions and do not advance the alternator. Keep both probe slots, their lane metadata and all clocks. Replace the nonselected slot's candidate array with an empty array. Compare this against fresh unchanged capture-era packets on the identical installed phase-release receiver. Both c arms run in the original search budget, on the same pinned core within a case, physical 512 MiB limit with no swap and a 210 s cap. Alternate the two model inputs' ordering by case. These are stored-factor diagnostics, with no raw detector timing claim.
+
+Use authenticated complete fixed-four both-receiver runs and fixed-four runs or verified factor projections on the same physical schedule as separate comparisons. Original four v5 execution outputs are historical references. Freeze predictions before joining target coordinates. Report candidate and published-position counts, paired geographic changes and conditional frequency errors separately.

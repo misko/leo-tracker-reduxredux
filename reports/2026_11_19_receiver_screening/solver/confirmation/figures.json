@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_armijo_fit-confirmation",
+      "method": "v5_armijo_fit",
+      "scope": "roof",
+      "title": "Armijo fit on eight independent roof recordings",
+      "caption": "Four DS26 recordings in frozen hash order and four DS29 recordings in lexical order retain the complete capture-era factors and causal catalogue. Both archived solver comparisons use those same inputs.",
+      "cases": ["DS26-0142", "DS26-0223", "DS26-0301", "DS26-0018", "DS29-0127", "DS29-0316", "DS29-0357", "DS29-0519"],
+      "seal": "prediction-lock.json",
+      "provenance": ["original-positions.jsonl.gz"],
+      "series": [
+        {"key": "one", "label": "Armijo steps", "file": "armijo-positions.jsonl.gz", "field": "variant", "value": "v5_armijo_fit"},
+        {"key": "stock", "label": "Archived bounded solver", "file": "reference-positions.jsonl.gz", "field": "variant", "value": "compact-v5-bounded-gn", "match": ["input_sha256"]},
+        {"key": "all_visits", "label": "Archived secant solver", "file": "secant-positions.jsonl.gz", "field": "variant", "value": "v5_secant_fit", "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

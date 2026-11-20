@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "ordinary_prepared",
+      "method": "ordinary_prepared",
+      "scope": "roof",
+      "title": "Ordinary GLRT with reusable CI16 preparation",
+      "caption": "Saved dual-receiver detector stage. Each admitted CI16 visit reproduced the exact archived candidate payload on both builds and both read paths. The two calibration views show the position reference and explicitly unmeasured candidate positions.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "source-lock.json", "DS26-0036.json.gz", "DS29-0082.json.gz"],
+      "series": [
+        {"key": "one", "label": "Reusable preparation · GLRT stage", "file": "stage-results.jsonl.gz", "value": "ordinary_prepared", "native_authority": "ordinary", "native_field": "source_ordinary_sha256"},
+        {"key": "stock", "label": "Original preparation · GLRT stage", "file": "stage-results.jsonl.gz", "value": "ordinary_prepared_stock", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "native_visit_receipt_sha256"]}
+      ]
+    },
+    {
+      "id": "ordinary_prepared_position",
+      "method": "ordinary_prepared_position",
+      "scope": "roof",
+      "title": "Position after partial reusable-preparation GLRT replay",
+      "caption": "Fresh native clock and offset fits use newly measured prepared-GLRT factors from eight DS26 visits and four DS29 visits alongside all other authenticated ordinary factors. Stock is the complete ordinary replay. Both calibration arms use the same inputs and budget.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "source-lock.json", "position-receipts.json"],
+      "series": [
+        {"key": "one", "label": "Reusable preparation · partial GLRT replay", "file": "positions.jsonl.gz", "value": "ordinary_prepared_position", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "forced_label": "Partial replay forced diagnostics"},
+        {"key": "stock", "label": "Original GLRT · complete replay", "file": "control-positions.jsonl.gz", "value": "ordinary_prepared_capture_control", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "observation_sha256", "tile"]}
+      ]
+    }
+  ]
+}

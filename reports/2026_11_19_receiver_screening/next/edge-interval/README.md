@@ -1,0 +1,34 @@
+# Signed position intervals at a compact tile face
+
+The split-subscan interval changed **none of the frozen field-policy decisions** across the fresh panel. The two methods kept both center fixes and one of two legitimate near-edge fixes in each calibration arm. They both published a false interior fix on a fresh near-omitted tile. This omission had fitted endpoints 2.31/2.12 km inside the offered square, so a check triggered by face contact never ran. The separate measured shifted-offer negative remained withheld. [Sealed predictions](prediction-lock.json) · [Position and RF scores](scores.json)
+
+The experiment uses disjoint response blocks to estimate physical displacement normal to a contacted tile face. It keeps the original initial compatibility gate, recovery limits, assignments and aliases. Each of four interleaved subscans profiles the original receiver and causal-orbit nuisance model within a symmetric 6 km halo. Both calibration arms must put their entire conditional interval inside the face before the receiver can publish the unchanged terminal compact endpoints. A fit that hits the halo boundary or exhausts subscan iterations cannot certify the decision. [Locked protocol](PROTOCOL.md) · [Source lock](source-lock.json)
+
+The signed interval compares positions across disjoint response subsets. RF in each subset is the conditional fit statistic on that subset. The four subsets reuse full-scan assignments and share orbital and clock model assumptions. Their interval measures subscan repeatability conditional on that fit. Its nominal Student-t coverage also requires independently distributed, unbiased subscan errors. [Earlier held RF comparison](../../streamlined/edge-evidence/README.md)
+
+## Archived diagnostic before the blind draw
+
+The previously withheld southern tile with true site 1.193 km inside gave a signed inward interval of **−1.875 to +0.484 km** at zero calibration and **−2.033 to −0.968 km** with fitted calibration. Its matched omission gave **−3.390 to −2.509 km** and **−4.046 to −3.086 km**, respectively. The fitted-calibration subscans on the valid tile agreed on the wrong side. Their conditional RMS values of 42–62 Hz were comparable with the 46–60 Hz range for the omitted offer. This diagnosis exposed a geometric/model error that the narrower empirical interval did not capture. The archived fit did not record subscan stop reasons. The prospective rule additionally withholds unresolved subscan iterations. [Archived paired diagnostics](archived-pair-diagnostics.json)
+
+The first geographical draw plan failed the existing 1,000 km separation from earlier sites before generating a public packet or running a receiver. The replacement North American and Patagonian boxes were chosen solely from distances to old public sites. Their private seeds were drawn after that replacement and the position decision rule were locked. [Rejected geography plan](rejected-sites/PROTOCOL.md)
+
+## Fresh simulated sites
+
+The new sites at 38.62°N and 43.42°S were at least 1,749 and 1,487 km from their nearest bound previous site, respectively. Each site uses one simulated 300 s native GLRT factor stream with recorded donor residual and visit-gap windows, paired with unique authentic causal TLE payloads and their preceding histories. Each compares four tile offers over the same stream. New and frozen field decisions share the exact full scientific fit. The independent far stock worker was separately run without the early majority gate. [Input commitments](inputs.json) · [Causal history](history.json) · [Released sites and seeds](released-labels.json)
+
+All paired values below follow zero/fitted calibration. Horizontal errors are in kilometres. The true edge margin refers to the closest physical tangent-plane face.
+
+| Site | Center published error | True near-edge margin | Valid inside offer | Outside offer | Far omission |
+|---|---:|---:|---|---|---|
+| 38.62°N | 1.898 / 2.074 | ±0.811 km | Withheld, forced 4.884 / 4.133 | Withheld, forced 1.850 / 1.191 | Withheld before recovery |
+| 43.42°S | 1.573 / 2.319 | ±1.513 km | Published 0.884 / 1.517 | False fix 5.558 / 5.600 | Withheld before recovery |
+
+The northern valid near-edge assessment used the one contacted face. The known site's projection onto that face normal was +1.900 km inward. The zero-calibration interval was −1.136 to +5.786 km. Fitted calibration produced −1.087 to +5.516 km with one of four subscans reaching its iteration budget. In both arms one subscan moved outside. The northern omitted offer contacted more than one signed face across the endpoints and remained withheld without a subscan interval. The complete north far stock control falsely published 58.122 km error in both arms. The south far stock case was not run independently. [Signed-subscan intervals](signed-subscan-intervals.pdf) · [Zero-calibration transfer plots](figures/c0/transfer.pdf) · [Fitted-calibration transfer plots](figures/fitted_c/transfer.pdf)
+
+Center conditional RF RMS was 73.421/73.139 Hz in the north and 71.817/71.825 Hz in the south. The accepted southern near-inside endpoint had 73.152/73.074 Hz. The southern interior false fix had lower conditional RF RMS, at 63.476/63.488 Hz. The northern full far stock control measured 79.881/79.863 Hz. Original stock conditional RF and the refitted subset RF are separate columns in the scores. For the northern valid withheld offer, the four subscan values ranged from 62.50 to 77.29 Hz at zero calibration and 59.17 to 77.19 Hz at fitted calibration. [RF and position records](scores.json)
+
+## Measured negative control and runtime
+
+The full measured DS26-0036 replay reused authenticated detector factors and clocks, and moved the offered center 22 km east. The measured site was 4.355 km outside the closest physical face. Both methods withheld; the original diagnostic endpoints had 4.334/4.329 km error and conditional RF of 74.631/74.572 Hz. The four-subscan interval estimates were −5.607 to −1.970 km and −5.625 to −2.117 km. One subscan in each arm reached the outer 6 km search bound. These are censored diagnostics and the rule preserved the original terminal rejection. The measured site's reference projected onto the tested normal was −4.321 km. [Measured request and timings](scores.json)
+
+Ten numerical jobs finished in 266.23 s on CPUs 9 and 10, without outer deadlines. The compatibility veto took 29.35 s on the northern far request; the independent stock replay took 90.22 s. The two computed subscan checks added 0.495 s on the simulated fit and 2.970 s on the measured fit. The unresolved northern fitted-`c` subscan, ambiguous northern omission, halo-bound measured interval and both early far stops remain in the denominators. This experiment leaves the current policy's close inside loss and its interior omission exposure intact.

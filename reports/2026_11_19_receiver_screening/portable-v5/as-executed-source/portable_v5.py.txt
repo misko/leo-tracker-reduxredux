@@ -1,0 +1,210 @@
+"""Run the existing paired compact-v5 cavity policy on a supplied geographic tile."""
+
+import hashlib
+from contextlib import ExitStack
+from dataclasses import dataclass
+from pathlib import Path
+from time import perf_counter
+from unittest.mock import patch
+
+from tools.pipeline_eval.variants import orbit_projector, v5_core, v5_lean
+
+METHOD = "portable_v5"
+BOUNDARY = "Native GLRT clocked captures and causal TLE history to portable compact v5 cavity"
+NS_HOUR = 3_600_000_000_000
+TRACK_CONFIG = dict(
+    alias_spacing_hz=1 / 4.4e-6,
+    association_sigma=3.0,
+    breakpoint_penalty=10.0,
+    joint_iterations=4,
+    max_degree=4,
+    max_gap_s=10.0,
+    max_join_gap_s=8.0,
+    max_proposals=256,
+    max_slope_hz_s=8000,
+    max_tracks=64,
+    min_points=8,
+    min_span_s=6.0,
+    noise_sigma_hz=150.0,
+    points_per_coefficient=4,
+    random_seed=1701,
+    seed_trials=96,
+    track_penalty=18.0,
+    window_lengths_s=[24.0, 48.0, 96.0],
+)
+PRESERVED_PROVENANCE = frozenset(
+    (
+        "excluded_windows",
+        "invalid_capture",
+        "processed_windows",
+        "rf_mapping_authorities",
+        "run_id",
+        "scope",
+        "skipped_fast_score",
+        "window_count",
+    )
+)
+SOURCE_FIELDS = ("session_id", "probe_ms", "sample_rate_hz", "qualified", "probes")
+
+
+def native_input(document):
+    """Admit only the native clock authority and detector fields the preparation consumes."""
+    source = {key: document["source"][key] for key in SOURCE_FIELDS}
+    if source["qualified"] is not True:
+        raise ValueError("native capture is not qualified")
+    anchor = document["clock_anchor"]
+
+    def clock(value):
+        return {key: value[key] for key in ("monotonic_ns", "realtime_ns")}
+
+    return dict(
+        source=source,
+        clock_anchor=dict(
+            sample_counter=anchor["sample_counter"],
+            before=clock(anchor["before"]),
+            after=clock(anchor["after"]),
+        ),
+        delivery_clocks=[clock(c) for c in document["delivery_clocks"]],
+        last_sample_counter=document["last_sample_counter"],
+        provenance={k: v for k, v in document["provenance"].items() if k in PRESERVED_PROVENANCE},
+    )
+
+
+@dataclass(frozen=True, order=True)
+class Snapshot:
+    collected_utc_ns: int
+    sha256: str
+    provider: str = "space-track"
+
+    @property
+    def digest(self):
+        return f"sha256:{self.sha256}"
+
+
+class SnapshotArchive:
+    """Implement the two read-only snapshot operations used by frozen preparation."""
+
+    def __init__(self, rows, cutoff, root):
+        paths = {}
+        for row in rows:
+            ref = Snapshot(row["collected_utc_ns"], row["sha256"])
+            if type(ref.collected_utc_ns) is not int or ref.collected_utc_ns > cutoff:
+                raise ValueError("snapshot collection must be causal at the native clock cutoff")
+            if len(ref.sha256) != 64 or any(c not in "0123456789abcdef" for c in ref.sha256):
+                raise ValueError("snapshot must carry a bare SHA-256")
+            if cutoff - ref.collected_utc_ns <= 72 * NS_HOUR:
+                # Paths derive from the validated object digest, never from packet file names.
+                paths[ref] = Path(root) / f"{ref.sha256}.tle"
+        self._paths = paths
+        self._text = {}
+
+    def list_snapshots(self, provider):
+        return tuple(sorted(r for r in self._paths if r.provider == provider))
+
+    def read(self, ref):
+        path = self._paths[ref]
+        if ref.sha256 not in self._text:
+            raw = path.read_bytes()
+            if hashlib.sha256(raw).hexdigest() != ref.sha256:
+                raise ValueError("snapshot content differs from its sealed history digest")
+            self._text[ref.sha256] = raw.decode("ascii")
+        return self._text[ref.sha256]
+
+
+def unavailable(reason, metrics=None):
+    return dict(
+        status="unavailable",
+        boundary=BOUNDARY,
+        reason=reason,
+        metrics=metrics or {},
+        arms={a: {"latlon": None} for a in v5_lean.ARMS},
+    )
+
+
+def run(document, *, tile, archive, bound, library, screen_center=None):
+    """Prepare new candidates from the offered tile and past-only orbital data."""
+    from leo.analysis.localization_v3 import (
+        conservative_recovery,
+        discovery,
+        family_weighting,
+        scan,
+    )
+    from leo.analysis.localization_v3.region import SearchRegion
+    from leo.analysis.polynomial_tracklets import TrackConfig
+    from leo.analysis.research.phase_linear_geometry import phase_linear_frequency
+    from leo.application import localization_v3 as policy
+    from leo.application.localization_v3_engine import _prepared_values
+
+    start = perf_counter()
+    clean = native_input(document)
+    cutoff = clean["clock_anchor"]["before"]["realtime_ns"]
+    snapshots = archive.list_snapshots("space-track")
+    recent = [s for s in snapshots if cutoff - 48 * NS_HOUR <= s.collected_utc_ns <= cutoff]
+    metrics = dict(
+        history_snapshots=len(snapshots),
+        distinct_history_snapshots=len({s.sha256 for s in snapshots}),
+        recent_snapshots=len(recent),
+        cutoff_utc_ns=cutoff,
+    )
+    if any(s.collected_utc_ns > cutoff for s in snapshots):
+        return unavailable("history contains a post-cutoff snapshot", metrics)
+    if len({s.sha256 for s in recent}) < 2:
+        return unavailable("distinct causal snapshot history within 48 hours is required", metrics)
+    region = SearchRegion(tuple(tile["center"]), width_km=tile.get("width_km", 25.0))
+    screen = region.center if screen_center is None else tuple(screen_center)
+    SearchRegion(screen)
+    for xy in region.grid:
+        lat, lon = region.latlon(xy)
+        if not (-90 < lat < 90 and -180 <= lon <= 180):
+            return unavailable(
+                "the frozen local tile crosses the geographic coordinate seam", metrics
+            )
+    metrics["screen_center"] = list(screen)
+    try:
+        prepared = _prepared_values(
+            policy.prepare_native_scan(
+                clean,
+                archive,
+                TrackConfig(**TRACK_CONFIG),
+                screen_latitude_deg=screen[0],
+                screen_longitude_deg=screen[1],
+            )
+        )
+    except ValueError as exc:
+        if str(exc) in (
+            "no past TLE snapshots in declared age window",
+            "no eligible past Starlink elements",
+            "no previous causal catalogue; cannot replay declared orbit priors",
+        ):
+            return unavailable(str(exc), metrics)
+        raise
+    stage_s = {"native_preparation": perf_counter() - start}
+    if prepared["status"] == "inputs_prepared":
+        sky = prepared["sky"]
+        previous = sky["genuine_previous_receipt"]["sources"]
+        metrics.update(
+            genuine_previous_orbits=len(previous),
+            screened_orbits=sky["metadata"]["candidate_count"],
+            phase_history_transitions=len(prepared["phase_forecast"]["transitions"]),
+        )
+        if not previous:
+            return unavailable("no genuine preceding orbit epoch in the screened tile", metrics)
+
+    projector = orbit_projector.Projector(library)
+
+    def evaluate(grid, *args, **kwargs):
+        operation = (
+            projector.evaluate
+            if isinstance(grid, orbit_projector.Stencil)
+            else phase_linear_frequency
+        )
+        return operation(grid, *args, **kwargs)
+
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(scan, "prepare_phase_geometry", orbit_projector.prepare))
+        for module in (scan, discovery, family_weighting, conservative_recovery):
+            stack.enter_context(patch.object(module, "phase_linear_frequency", evaluate))
+        result = v5_core.infer(prepared, region, bound, stage_s)
+    result["boundary"] = BOUNDARY
+    result["metrics"].update(metrics, compact_projections=projector.calls)
+    return result

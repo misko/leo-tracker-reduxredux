@@ -1,0 +1,39 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh stored-GLRT workers and sealed same-request aligned controls. DS26-0066 ran reassociation. DS29-0082 bypassed it. Paired positions coincide.",
+      "cases": "sealed",
+      "id": "late-preflight-live",
+      "method": "v5_late_rf_preflight",
+      "provenance": [
+        "comparison.json",
+        "evidence-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh RF preflight",
+          "value": "v5_late_rf_preflight"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Sealed aligned finish",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "input_sha256",
+            "scientific_request_sha256"
+          ],
+          "value": "v5_armijo_aligned_finish"
+        }
+      ],
+      "title": "Fresh late-preflight receiver checks"
+    }
+  ],
+  "version": 1
+}

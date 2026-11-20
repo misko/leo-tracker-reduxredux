@@ -1,0 +1,145 @@
+{
+  "charts": [
+    {
+      "caption": "The RF assignment is fixed before the first visit. The 20 ms limit applies to detector packets. Position fitting follows the final arrival.",
+      "cases": "sealed",
+      "id": "rf-lane-position-recorded",
+      "method": "rf_lane_recorded",
+      "provenance": [
+        "scores.csv",
+        "position-timing.csv",
+        "support.csv",
+        "prediction-lock.json",
+        "position-input-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Packets received by final arrival",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_recorded"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete frequency assignment",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_complete"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Full fast detector",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_reference_wide"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Full original detector",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_reference_original"
+        }
+      ],
+      "title": "One frequency on the original detector at recording speed"
+    },
+    {
+      "caption": "The RF assignment is fixed before the first visit. The 20 ms limit applies to detector packets. Position fitting follows the final arrival.",
+      "cases": "sealed",
+      "id": "rf-lane-position-timely",
+      "method": "rf_lane_timely",
+      "provenance": [
+        "scores.csv",
+        "position-timing.csv",
+        "support.csv",
+        "prediction-lock.json",
+        "position-input-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Packets received within 20 ms",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_timely"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Packets received by final arrival",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_recorded"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Only the seven fast frequencies",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_other_lanes"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Complete frequency assignment",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_complete"
+        }
+      ],
+      "title": "Position from frequency-routed packets delivered within 20 ms"
+    }
+  ],
+  "version": 2
+}

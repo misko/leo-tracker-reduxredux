@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_clock_online_full_roof",
+      "method": "native-clock-online-full",
+      "scope": "roof",
+      "title": "Stable native clock stop on the full 135-recording roof panel",
+      "caption": "The online rule executes causally ordered prefixes to an actual stop. The native terminal control uses all recorded visits and the compact v5 test uses its complete capture. Four frozen original v5 roles are shown as archive controls.",
+      "cases": "roof135",
+      "seal": "matched-figure-lock.json",
+      "series": [
+        {"key": "one", "label": "Online stable stop", "file": "matched-positions.jsonl.gz", "value": "native-clock-online-full"},
+        {"key": "stock", "label": "Native smooth-clock terminal", "file": "matched-positions.jsonl.gz", "value": "online-full-terminal", "match": ["native_sha256", "catalog_sha256"]},
+        {"key": "one_native_factors", "label": "Compact v5 secant", "file": "matched-positions.jsonl.gz", "value": "v5_secant_fit", "match": ["native_sha256", "catalog_sha256"]}
+      ]
+    },
+    {
+      "id": "native_clock_online_distant_omitted",
+      "method": "native-clock-online-full",
+      "scope": "transfer",
+      "title": "Online native clock under nine distant omissions",
+      "caption": "The online receiver and terminal control share the same original distant omitted offer and causal capture history. A published position with the correct region omitted is false.",
+      "cases": "sealed",
+      "seal": "distant-omitted-figure-lock.json",
+      "queries": "distant-omitted-queries.json",
+      "condition_labels": {"distant-omitted": "Distant omitted offer"},
+      "series": [
+        {"key": "candidate", "label": "Online stable stop", "file": "distant-omitted-positions.jsonl.gz", "value": "native-clock-online-full"},
+        {"key": "stock", "label": "Native terminal", "file": "distant-omitted-positions.jsonl.gz", "value": "online-full-terminal", "match": ["native_sha256", "catalog_sha256"]}
+      ]
+    },
+    {
+      "id": "native_clock_online_near_omitted",
+      "method": "native-clock-online-full",
+      "scope": "transfer",
+      "title": "Online native clock under 32 close omissions",
+      "caption": "The 26 diagnostic and six reserve offers put the roof truth 1–2 km outside their squares. A published point is false, and forced fits remain diagnostic.",
+      "cases": "sealed",
+      "seal": "near-omitted-figure-lock.json",
+      "queries": "near-omitted-queries.json",
+      "condition_labels": {"near-omitted": "Near-edge omitted offer"},
+      "series": [
+        {"key": "candidate", "label": "Online stable stop", "file": "near-omitted-positions.jsonl.gz", "value": "native-clock-online-full"},
+        {"key": "stock", "label": "Native terminal", "file": "near-omitted-positions.jsonl.gz", "value": "online-full-terminal", "match": ["native_sha256", "catalog_sha256"]}
+      ]
+    }
+  ]
+}

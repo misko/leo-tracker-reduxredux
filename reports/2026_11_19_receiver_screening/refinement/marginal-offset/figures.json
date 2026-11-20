@@ -1,0 +1,148 @@
+{
+  "charts": [
+    {
+      "caption": "Paired native runs share owners and CFO aliases. The candidate integrates one constant per Graph track.",
+      "cases": [
+        "DS26-0197",
+        "DS29-0316",
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "marginal_offset-diagnostic",
+      "method": "marginal_offset",
+      "provenance": [
+        "source-lock.json",
+        "plan.json",
+        "summary.json",
+        "per-recording.csv"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Marginal offset \u00b7 1000 Hz",
+          "value": "marginal_offset",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched zero-offset fit",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "marginal_offset_zero",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        }
+      ],
+      "title": "Marginal Doppler offset \u00b7 Four diagnostic roof captures"
+    },
+    {
+      "caption": "Paired native runs share owners and CFO aliases. The candidate integrates one constant per Graph track.",
+      "cases": [
+        "DS26-0072",
+        "DS26-0144",
+        "DS26-0291",
+        "DS29-0127",
+        "DS29-0174",
+        "DS29-0247"
+      ],
+      "id": "marginal_offset-confirmation",
+      "method": "marginal_offset",
+      "provenance": [
+        "source-lock.json",
+        "plan.json",
+        "summary.json",
+        "per-recording.csv"
+      ],
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Marginal offset \u00b7 1000 Hz",
+          "value": "marginal_offset",
+          "where": {
+            "cohort": "confirmation"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched zero-offset fit",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "marginal_offset_zero",
+          "where": {
+            "cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Marginal Doppler offset \u00b7 Six salted roof captures"
+    },
+    {
+      "caption": "Paired native runs share owners and CFO aliases. The candidate integrates one constant per Graph track.",
+      "cases": [
+        "DS29-0357-omitted",
+        "DS26-0203-omitted",
+        "DS26-0277-omitted"
+      ],
+      "condition_labels": {
+        "omitted": "Correct tile omitted"
+      },
+      "id": "marginal_offset-omitted",
+      "method": "marginal_offset",
+      "provenance": [
+        "source-lock.json",
+        "plan.json",
+        "summary.json",
+        "per-recording.csv"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Marginal offset \u00b7 1000 Hz",
+          "value": "marginal_offset",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched zero-offset fit",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "marginal_offset_zero",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Marginal Doppler offset \u00b7 Three prior omitted offers"
+    }
+  ],
+  "version": 1
+}

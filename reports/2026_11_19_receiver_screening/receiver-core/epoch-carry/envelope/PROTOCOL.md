@@ -1,0 +1,7 @@
+# One independent pilot-energy timing proposal
+
+Use authentic 20 ms dual-RX windows from DS26-0014 and DS29-0127, both from segments 9 and 13 and sequences 3, 8, 13 and 18 in each segment. Add both signed pilot templates on fixed planted and noise-only IQ. The recorded waveform selections are fixed before reading their reference candidates.
+
+Leave the first three exact ordinary differential scout centers unchanged. Independently fold sample power in its same eight frame indices and correlate the demeaned power against the CFO-invariant known pilot energy. Use the same 8,192-point resampled period. Select the strongest local positive maximum at normalized correlation ≥0.08 that is at least five circular samples from each of the first three centers. Use it in the fourth timing slot. The ordinary fourth center remains if no independent proposal qualifies. The correlation screen is about seven times the nominal single-cell white-noise scale. Measure host allocation CPU and held eligibility within ±1 and ±2 samples before any full-stream deployment decision.
+
+Use the frozen Scout16 diagnostic executable, which checks the genuine four-center outputs equal its first four ranks on these very windows. Run the original wide four-center GLRT on the same raw windows for reference. Seal both proposed lists and current-waveform detector payloads before scoring against the distinct capture-era factors. A shadow shortlist comparison does not replay the candidate detector's downstream likelihood.

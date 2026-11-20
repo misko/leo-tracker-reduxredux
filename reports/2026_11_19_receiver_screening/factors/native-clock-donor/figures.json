@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_joint_clock_model-ordinary-donors",
+      "method": "native_joint_clock_model",
+      "scope": "roof",
+      "title": "Shared receiver clock on two ordinary detector donors",
+      "caption": "The clock-on, clock-off and as-built joint controls share the same complete stored ordinary factors, Graph, TLE and tile. The archived compact secant fit shares the factor input and uses its own inference. The four original v5 curves use the capture-era factors. Withheld as-built positions stay null.",
+      "cases": "smoke-two",
+      "seal": "figure-lock.json",
+      "source_lock": {"file": "plan.json", "digest_key": "plan_sha256"},
+      "series": [
+        {"key": "one", "label": "Shared fractional receiver clock", "file": "native_joint_clock_model.jsonl.gz", "field": "variant", "value": "native_joint_clock_model", "native_authority": "ordinary"},
+        {"key": "stock", "label": "Exact matched clock-off", "file": "native_joint_fixed_reference.jsonl.gz", "field": "variant", "value": "native_joint_fixed_reference", "native_authority": "ordinary", "match": ["input_sha256", "observation_sha256"]},
+        {"key": "one_native_factors", "label": "Archived ordinary joint", "file": "iq_to_joint.jsonl.gz", "field": "variant", "value": "iq_to_joint", "native_authority": "ordinary", "match": ["input_sha256", "observation_sha256"]},
+        {"key": "all_visits", "label": "Archived ordinary compact secant", "file": "ordinary_v5_secant_fit.jsonl.gz", "field": "variant", "value": "ordinary_v5_secant_fit", "native_authority": "ordinary", "match": ["native_sha256", "catalog_sha256", "tile"]}
+      ]
+    }
+  ]
+}

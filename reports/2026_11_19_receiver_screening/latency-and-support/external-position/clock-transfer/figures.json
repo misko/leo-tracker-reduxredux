@@ -1,0 +1,101 @@
+{
+  "charts": [
+    {
+      "caption": "One measured Bellaterra receiver, unused April 7/8 observations. Only the shared-offset model estimates a conditional RF slope.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "external-orbcomm-shared-offset",
+      "method": "orbcomm_shared_offset",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Shared receiver offset",
+          "value": "orbcomm_shared_offset"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Zero offsets",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_zero_offset"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Free per pass",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_free_pass"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "four",
+          "label": "Time reversal",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_final_time_reverse"
+        }
+      ],
+      "title": "Shared receiver carrier offset on the final VHF day pair"
+    },
+    {
+      "caption": "One measured Bellaterra receiver, unused April 7/8 observations. Only the shared-offset model estimates a conditional RF slope.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "external-orbcomm-shared-offset-prior",
+      "method": "orbcomm_shared_offset",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Shared receiver offset",
+          "value": "orbcomm_shared_offset"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Offer center",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_final_offer_center"
+        }
+      ],
+      "title": "Shared offset against the offered local center"
+    }
+  ],
+  "version": 2
+}

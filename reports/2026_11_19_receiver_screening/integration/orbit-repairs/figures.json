@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_causal_orbit_fit",
+      "method": "v5_causal_orbit_fit",
+      "scope": "roof",
+      "title": "Composed causal orbit and cavity repairs",
+      "caption": "Ten complete attempts, including eight known exceptions. Five failed recordings now publish. All ten match the corresponding standalone decisions.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["runtime.json"],
+      "series": [
+        {"key": "one", "label": "Three composed repairs", "file": "positions.jsonl.gz", "value": "v5_causal_orbit_fit", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Unchanged compact secant", "file": "compact-positions.jsonl.gz", "value": "v5_secant_fit", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "frozen_request_sha256"]},
+        {"key": "all_visits", "label": "Matched standalone repair", "file": "standalone-positions.jsonl.gz", "value": "standalone_orbit_repair", "where": {"mode": "matched-tile"}, "match": ["native_sha256", "catalog_sha256", "frozen_request_sha256", "tile"]}
+      ]
+    }
+  ]
+}

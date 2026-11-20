@@ -1,0 +1,149 @@
+{
+  "charts": [
+    {
+      "caption": "Same surveyed roof, same recordings, original four v5 reference options. Every scheduled complete-IQ receiver run counts.",
+      "cases": "sealed",
+      "id": "complete-detector-roster-all",
+      "method": "complete_five_regions",
+      "provenance": [
+        "roster.json",
+        "inputs.json",
+        "scores.csv",
+        "summary.csv",
+        "paired-errors.csv",
+        "roof-authority.json",
+        "fresh-v5.jsonl.gz"
+      ],
+      "roof_references": {
+        "authority": "roof-authority.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "all-figure-lock.json",
+      "series": [
+        {
+          "file": "all-positions.jsonl.gz",
+          "key": "one",
+          "label": "Five timing regions",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        },
+        {
+          "file": "all-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Four timing regions",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        }
+      ],
+      "title": "Four and five GLRT timing regions on twenty complete recordings"
+    },
+    {
+      "caption": "Same surveyed roof, same recordings, original four v5 reference options. Every scheduled complete-IQ receiver run counts.",
+      "cases": "sealed",
+      "id": "complete-detector-roster-ten",
+      "method": "complete_five_regions",
+      "provenance": [
+        "roster.json",
+        "inputs.json",
+        "scores.csv",
+        "summary.csv",
+        "paired-errors.csv"
+      ],
+      "scope": "roof",
+      "seal": "ten-figure-lock.json",
+      "series": [
+        {
+          "file": "ten-positions.jsonl.gz",
+          "key": "one",
+          "label": "Five timing regions",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        },
+        {
+          "file": "ten-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Four timing regions",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        }
+      ],
+      "title": "Adding the extra timing region on all ten previously stock-only recordings"
+    },
+    {
+      "caption": "Same surveyed roof, same recordings, original four v5 reference options. Published first-launch results replace stock on the earlier twelve only.",
+      "cases": "sealed",
+      "id": "complete-detector-roster-first",
+      "method": "complete_four_first_attempt",
+      "provenance": [
+        "roster.json",
+        "inputs.json",
+        "scores.csv",
+        "summary.csv",
+        "paired-errors.csv",
+        "roof-authority.json",
+        "fresh-v5.jsonl.gz"
+      ],
+      "roof_references": {
+        "authority": "roof-authority.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "first-figure-lock.json",
+      "series": [
+        {
+          "file": "first-positions.jsonl.gz",
+          "key": "one",
+          "label": "Stock with historical first attempts",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_first_attempt"
+        },
+        {
+          "file": "first-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Four timing regions",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        }
+      ],
+      "title": "Stock coverage using the earlier twelve-recording first-attempt ledger"
+    }
+  ],
+  "version": 2
+}

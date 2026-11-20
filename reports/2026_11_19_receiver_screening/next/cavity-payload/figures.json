@@ -1,0 +1,93 @@
+{
+  "charts": [
+    {
+      "caption": "Ordinary factors. Same recording across both packages; 512 MiB, zero swap. Original v5 options used capture-era factors.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "cavity-payload-ordinary",
+      "method": "v5_cavity_payload_small",
+      "provenance": [
+        "resources.csv",
+        "parity.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "ordinary-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Small source package",
+          "native_authority": "ordinary",
+          "value": "v5_cavity_payload_small",
+          "where": {
+            "detector": "ordinary"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full source package",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_cavity_payload_full",
+          "where": {
+            "detector": "ordinary"
+          }
+        }
+      ],
+      "title": "Standalone position receiver with a smaller distribution"
+    },
+    {
+      "caption": "Capture-era factors. Same recording across both packages; 512 MiB, zero swap. Original v5 options used capture-era factors.",
+      "cases": [
+        "DS26-0112",
+        "DS29-0127"
+      ],
+      "id": "cavity-payload-capture-era",
+      "method": "v5_cavity_payload_small",
+      "provenance": [
+        "resources.csv",
+        "parity.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "capture-era-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Small source package",
+          "value": "v5_cavity_payload_small",
+          "where": {
+            "detector": "capture-era"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full source package",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "v5_cavity_payload_full",
+          "where": {
+            "detector": "capture-era"
+          }
+        }
+      ],
+      "title": "Standalone position receiver with a smaller distribution"
+    }
+  ],
+  "version": 1
+}

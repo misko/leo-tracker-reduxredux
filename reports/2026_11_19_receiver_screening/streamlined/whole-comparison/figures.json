@@ -1,0 +1,61 @@
+{
+  "charts": [
+    {
+      "caption": "Same five-minute stored IQ, compact cavity, 512 MiB and zero swap. One recording per roof panel. Original v5 used capture-era factors.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "whole-iq-three-frontends",
+      "method": "whole_fractional",
+      "provenance": [
+        "comparisons.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "whole-fractional.jsonl.gz",
+          "key": "one",
+          "label": "Optimized GLRT \u00b7 all visits",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "origin_native_sha256",
+          "value": "whole_fractional"
+        },
+        {
+          "file": "whole-pair.jsonl.gz",
+          "key": "stock",
+          "label": "Ordinary GLRT \u00b7 all visits",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "native_sha256",
+          "value": "whole_cavity"
+        },
+        {
+          "file": "iq-schedule.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Ordinary GLRT \u00b7 three of four",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "origin_native_sha256",
+          "value": "iq_schedule"
+        }
+      ],
+      "title": "Three detector choices from complete saved IQ to position"
+    }
+  ],
+  "version": 1
+}

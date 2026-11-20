@@ -1,0 +1,157 @@
+{
+  "charts": [
+    {
+      "caption": "The compact fits use whole stored fast factors. The linear gate uses fast signal features. The oracle requires retrospective teacher labels. All recordings are from one roof.",
+      "cases": [
+        "DS26-0237",
+        "DS29-0174",
+        "DS26-0122",
+        "DS29-0247"
+      ],
+      "id": "pilot-distillation-narrow",
+      "method": "pilot_distill_learned",
+      "provenance": [
+        "scores.csv",
+        "v5-controls.csv",
+        "prediction-lock.json",
+        "oracle-amendment-lock.json",
+        "teacher-agreement.csv"
+      ],
+      "scope": "roof",
+      "seal": "narrow-figure-lock.json",
+      "series": [
+        {
+          "file": "narrow-positions.jsonl.gz",
+          "key": "one",
+          "label": "Distilled gate",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_learned"
+        },
+        {
+          "file": "narrow-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Ordinary stock gate",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_stock"
+        },
+        {
+          "file": "narrow-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Strongest margin, same count",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_strength"
+        },
+        {
+          "file": "narrow-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Attainable teacher-family oracle",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_oracle"
+        }
+      ],
+      "title": "Distilled pilot admission on the held narrow detector roster"
+    },
+    {
+      "caption": "The compact fits use whole stored fast factors. The linear gate uses fast signal features. The oracle requires retrospective teacher labels. All recordings are from one roof.",
+      "cases": [
+        "DS26-0144",
+        "DS29-0491"
+      ],
+      "id": "pilot-distillation-wide",
+      "method": "pilot_distill_learned",
+      "provenance": [
+        "scores.csv",
+        "v5-controls.csv",
+        "prediction-lock.json",
+        "oracle-amendment-lock.json",
+        "teacher-agreement.csv"
+      ],
+      "roof_references": {
+        "authority": "wide-roof.json",
+        "predictions": "wide-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "wide-figure-lock.json",
+      "series": [
+        {
+          "file": "wide-positions.jsonl.gz",
+          "key": "one",
+          "label": "Distilled gate",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_learned"
+        },
+        {
+          "file": "wide-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Ordinary stock gate",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_stock"
+        },
+        {
+          "file": "wide-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Strongest margin, same count",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_strength"
+        },
+        {
+          "file": "wide-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Attainable teacher-family oracle",
+          "match": [
+            "paired_ordinary_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "pilot_distill_oracle"
+        }
+      ],
+      "title": "Distilled pilot admission on the held wide detector roster"
+    }
+  ],
+  "version": 2
+}

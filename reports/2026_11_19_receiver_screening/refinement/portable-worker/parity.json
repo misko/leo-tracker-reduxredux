@@ -1,0 +1,725 @@
+{
+  "benchmarks": {
+    "iq-to-joint": {
+      "prediction": "reports/2026_11_19_receiver_screening/factors/iq-to-joint/positions.jsonl.gz",
+      "prediction_sha256": "703052ff25b60c7730e6c5ec948813652ba976ec28d5fb01146bab4ceeff87da",
+      "receipt": "reports/2026_11_19_receiver_screening/factors/iq-to-joint/prediction-lock.json",
+      "receipt_sha256": "5bce82756732b67f24461469341c76ee629a1a9021f0fedd70796bb0a6b8409c"
+    },
+    "native-clock-full": {
+      "prediction": "reports/2026_11_19_receiver_screening/factors/native-clock-full/positions.jsonl.gz",
+      "prediction_sha256": "0a21877d33cebff9efa211359b0f6c6cb67083ec9b65f1d44a291edfb7653ceb",
+      "receipt": "reports/2026_11_19_receiver_screening/factors/native-clock-full/prediction-lock.json",
+      "receipt_sha256": "846d999c4bd2d91a10fbae79588897b4c6069202d8920bc1a8684864c7c458f2"
+    },
+    "native-full": {
+      "prediction": "reports/2026_11_19_receiver_screening/factors/native-full/positions.jsonl.gz",
+      "prediction_sha256": "214775c592b877b4c45ebb79c850c4dd2d49fa45d4be60ecc9fbd57f40f151b5",
+      "receipt": "reports/2026_11_19_receiver_screening/factors/native-full/prediction-lock.json",
+      "receipt_sha256": "56fb65ea7c0530986f7af83696d04a12872b889459a1ddf9b8df878a54b00763"
+    }
+  },
+  "replays": [
+    {
+      "address_space_limit_mib": 512,
+      "arms": {
+        "c0": {
+          "c_hz_per_ghz": 0.0,
+          "forced_latlon": [
+            37.84996527711509,
+            -122.50659735847097
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 495.38258582112087,
+          "held_normalized_mean_loss": 20.149613131376547,
+          "held_score": 0.552957846273482,
+          "latlon": [
+            37.84996527711509,
+            -122.50659735847097
+          ],
+          "radius_km": 1.4265731779416757,
+          "region_id": "original",
+          "rf_rms_hz": 164.3479770739279
+        },
+        "fitted_c": {
+          "c_hz_per_ghz": -480.6004986343364,
+          "forced_latlon": [
+            37.8474211842431,
+            -122.49712784415506
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 417.05165078512226,
+          "held_normalized_mean_loss": 19.931944733805068,
+          "held_score": 0.6042728462957074,
+          "latlon": [
+            37.8474211842431,
+            -122.49712784415506
+          ],
+          "radius_km": 1.447315272243847,
+          "region_id": "original",
+          "rf_rms_hz": 135.17591987000694
+        }
+      },
+      "capture_utc_ns": 1792908972455244319,
+      "catalogue_acquired_utc_ns": 1792904651911878285,
+      "command_wall_s": 3.8954980364069343,
+      "cutoff_utc_ns": 1792908972366467298,
+      "entry": "standard benchmark",
+      "errors_km": {
+        "c0": {
+          "forced": 1.8332326109986756,
+          "published": 1.8332326109986756
+        },
+        "fitted_c": {
+          "forced": 1.0155627096720825,
+          "published": 1.0155627096720825
+        }
+      },
+      "id": "DS26-0036",
+      "imported_first_party": [
+        "/worker/leo/__init__.py",
+        "/worker/leo/analysis/__init__.py",
+        "/worker/leo/analysis/graph_tracklets.py",
+        "/worker/leo/analysis/polynomial_tracklets.py",
+        "/worker/leo/analysis/tracklet_fitting.py",
+        "/worker/leo/contracts/base.py",
+        "/worker/leo/contracts/digests.py",
+        "/worker/leo/contracts/sky.py",
+        "/worker/leo/sky/frames.py",
+        "/worker/leo/sky/propagation.py",
+        "/worker/leo/sky/sampling.py",
+        "/worker/tools/pipeline_eval/reference/grid.py",
+        "/worker/tools/pipeline_eval/reference/native_archive.py",
+        "/worker/tools/pipeline_eval/variants/joint_orbits.py",
+        "/worker/tools/pipeline_eval/variants/lean_receiver_cli.py",
+        "/worker/tools/pipeline_eval/variants/native_lean.py",
+        "/worker/tools/pipeline_eval/variants/projected_fit.py",
+        "/worker/tools/pipeline_eval/variants/robust_em.py",
+        "/worker/tools/pipeline_eval/variants/robust_orbit_fit.py"
+      ],
+      "input_files_sha256": {
+        "catalogue": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86",
+        "native": "c49d1ca9a3eae0ebae1ba20f976a26931d2fbf72f3093f03c21ffc582da68f7d",
+        "track_config": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      },
+      "input_sha256": "81861079cb239c17c85937dde332c5f44f6b889d860d29e198b6c172cb6aaafa",
+      "interface_sha256": "171faa586b31784099ad163b9bdb04f58820a71019ae30ed19eac32abf42c9bf",
+      "memory_kib": {
+        "VmHWM": 142056,
+        "VmPeak": 382948
+      },
+      "observation_sha256": "52bd7ed6f1db093a5a050e45ad6a891e0be91e1deb655d8436aac605d0b84586",
+      "reason": null,
+      "runtime": {
+        "annotated_types": "0.8.0",
+        "numpy": "2.5.2",
+        "pydantic": "2.13.4",
+        "pydantic_core": "2.46.4",
+        "scipy": "1.18.1",
+        "sgp4": "2.27",
+        "typing_extensions": "4.16.0",
+        "typing_inspection": "0.4.4"
+      },
+      "sealed_science_match": true,
+      "solver": "joint",
+      "source_files": 19,
+      "source_lines": 4274,
+      "source_sha256": "b8d3dc141c9d9d8017ea094f7ccdb86274ff9f208f8ef98e29d6fcecb10196ef",
+      "stages": {
+        "archive_and_peak_selection": {
+          "cpu_s": 0.146550354,
+          "wall_s": 0.1467563956975937
+        },
+        "backend_import": {
+          "cpu_s": 0.381345168,
+          "wall_s": 0.39087133575230837
+        },
+        "catalogue_read": {
+          "cpu_s": 0.0025224910000000156,
+          "wall_s": 0.002519620582461357
+        },
+        "graph": {
+          "cpu_s": 1.9075818839999998,
+          "wall_s": 1.9091591015458107
+        },
+        "position_backend": {
+          "cpu_s": 1.2229656370000002,
+          "wall_s": 1.2239779261872172
+        }
+      },
+      "status": "ok",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      },
+      "verified_against": "native-full",
+      "worker": {
+        "cpu_s": 3.664186071,
+        "wall_s": 3.6765231089666486
+      },
+      "worker_wall_s": 3.8800201658159494
+    },
+    {
+      "address_space_limit_mib": 512,
+      "arms": {
+        "c0": {
+          "c_hz_per_ghz": 0.0,
+          "forced_latlon": [
+            37.85130212147464,
+            -122.49022497209207
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 451.244434158952,
+          "held_normalized_mean_loss": 22.644811670365804,
+          "held_score": 0.2881982378230241,
+          "latlon": [
+            37.85130212147464,
+            -122.49022497209207
+          ],
+          "radius_km": 3.4985879972938476,
+          "region_id": "original",
+          "rf_rms_hz": 233.85021682264082
+        },
+        "fitted_c": {
+          "c_hz_per_ghz": -596.8291072591026,
+          "forced_latlon": [
+            37.85006666814607,
+            -122.49129179476054
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 397.8115477154098,
+          "held_normalized_mean_loss": 24.960161872004957,
+          "held_score": 0.3339811416305147,
+          "latlon": [
+            37.85006666814607,
+            -122.49129179476054
+          ],
+          "radius_km": 3.4992371427485702,
+          "region_id": "original",
+          "rf_rms_hz": 197.31895543386642
+        }
+      },
+      "capture_utc_ns": 1793727300680833200,
+      "catalogue_acquired_utc_ns": 1793725398225506404,
+      "command_wall_s": 2.924441121518612,
+      "cutoff_utc_ns": 1793727300592098060,
+      "entry": "detached command",
+      "errors_km": {
+        "c0": {
+          "forced": 0.4651921358840043,
+          "published": 0.4651921358840043
+        },
+        "fitted_c": {
+          "forced": 0.49896591786425665,
+          "published": 0.49896591786425665
+        }
+      },
+      "id": "DS29-0082",
+      "imported_first_party": [
+        "/worker/leo/__init__.py",
+        "/worker/leo/analysis/__init__.py",
+        "/worker/leo/analysis/graph_tracklets.py",
+        "/worker/leo/analysis/polynomial_tracklets.py",
+        "/worker/leo/analysis/tracklet_fitting.py",
+        "/worker/leo/contracts/base.py",
+        "/worker/leo/contracts/digests.py",
+        "/worker/leo/contracts/sky.py",
+        "/worker/leo/sky/frames.py",
+        "/worker/leo/sky/propagation.py",
+        "/worker/leo/sky/sampling.py",
+        "/worker/tools/pipeline_eval/reference/grid.py",
+        "/worker/tools/pipeline_eval/reference/native_archive.py",
+        "/worker/tools/pipeline_eval/variants/joint_clock_model.py",
+        "/worker/tools/pipeline_eval/variants/joint_orbits.py",
+        "/worker/tools/pipeline_eval/variants/lean_receiver_cli.py",
+        "/worker/tools/pipeline_eval/variants/native_lean.py",
+        "/worker/tools/pipeline_eval/variants/projected_fit.py",
+        "/worker/tools/pipeline_eval/variants/robust_em.py",
+        "/worker/tools/pipeline_eval/variants/robust_orbit_fit.py"
+      ],
+      "input_files_sha256": {
+        "catalogue": "ac5115781df3dc522c9a04c14cab7cbfb678dd1a8927e35e28f0231f996de92c",
+        "native": "fe2b362bb0c6324db2084e7ea926393bed38acced14d48dafdf6221376d2ad40",
+        "track_config": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      },
+      "input_sha256": "080d0c7fa922637fec0c2513a3c6ff552bdb18823143dddbb7f7d72aa546bc18",
+      "interface_sha256": "ec44ad2bff170edaa893cea7dee74e6f3d70089c0d6eff2ab138b493a1603d16",
+      "memory_kib": {
+        "VmHWM": 143228,
+        "VmPeak": 385132
+      },
+      "observation_sha256": "f0f7e62d6df2c323c696e35a0603cf9ba38d5dd9aa3365ac6974603689682177",
+      "reason": null,
+      "runtime": {
+        "annotated_types": "0.8.0",
+        "numpy": "2.5.2",
+        "pydantic": "2.13.4",
+        "pydantic_core": "2.46.4",
+        "scipy": "1.18.1",
+        "sgp4": "2.27",
+        "typing_extensions": "4.16.0",
+        "typing_inspection": "0.4.4"
+      },
+      "sealed_science_match": true,
+      "solver": "smooth-clock",
+      "source_files": 20,
+      "source_lines": 4529,
+      "source_sha256": "1e1eaccdea2f9b95fe561978d8ed1962c8979e6a4027aae96be7fa21c8af0b86",
+      "stages": {
+        "archive_and_peak_selection": {
+          "cpu_s": 0.10406309000000002,
+          "wall_s": 0.34508362505584955
+        },
+        "backend_import": {
+          "cpu_s": 0.372796971,
+          "wall_s": 0.38590347953140736
+        },
+        "catalogue_read": {
+          "cpu_s": 0.0029231869999999938,
+          "wall_s": 0.0029203761368989944
+        },
+        "graph": {
+          "cpu_s": 0.7860643359999999,
+          "wall_s": 0.7914116643369198
+        },
+        "position_backend": {
+          "cpu_s": 1.148699514,
+          "wall_s": 1.1487476406618953
+        }
+      },
+      "status": "ok",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      },
+      "verified_against": "native-clock-full",
+      "worker": {
+        "cpu_s": 2.416992527,
+        "wall_s": 2.676527986302972
+      },
+      "worker_wall_s": 2.9162797210738063
+    },
+    {
+      "address_space_limit_mib": 512,
+      "arms": {
+        "c0": {
+          "c_hz_per_ghz": 0.0,
+          "forced_latlon": [
+            37.64623657092213,
+            -122.4183508570337
+          ],
+          "forced_region_id": "r0",
+          "frequency_score": 1428.8446273950663,
+          "held_normalized_mean_loss": 23.32996203984208,
+          "held_score": 0.39820940410576633,
+          "latlon": null,
+          "radius_km": 2.223711840030059,
+          "region_id": null,
+          "rf_rms_hz": 401.5242074789419
+        },
+        "fitted_c": {
+          "c_hz_per_ghz": -204.60178552699992,
+          "forced_latlon": [
+            37.64623811996505,
+            -122.41582904561626
+          ],
+          "forced_region_id": "r0",
+          "frequency_score": 1417.5621193290513,
+          "held_normalized_mean_loss": 23.04875404729589,
+          "held_score": 0.3956371236736259,
+          "latlon": null,
+          "radius_km": 2.226053047311387,
+          "region_id": null,
+          "rf_rms_hz": 398.5415607678627
+        }
+      },
+      "capture_utc_ns": 1792908972455244319,
+      "catalogue_acquired_utc_ns": 1792904651911878285,
+      "command_wall_s": 4.666439645923674,
+      "cutoff_utc_ns": 1792908972366467298,
+      "entry": "detached command",
+      "errors_km": {
+        "c0": {
+          "forced": 23.31868473500444,
+          "published": null
+        },
+        "fitted_c": {
+          "forced": 23.375849144615717,
+          "published": null
+        }
+      },
+      "id": "DS26-0036-r0",
+      "imported_first_party": [
+        "/worker/leo/__init__.py",
+        "/worker/leo/analysis/__init__.py",
+        "/worker/leo/analysis/graph_tracklets.py",
+        "/worker/leo/analysis/polynomial_tracklets.py",
+        "/worker/leo/analysis/tracklet_fitting.py",
+        "/worker/leo/contracts/base.py",
+        "/worker/leo/contracts/digests.py",
+        "/worker/leo/contracts/sky.py",
+        "/worker/leo/sky/frames.py",
+        "/worker/leo/sky/propagation.py",
+        "/worker/leo/sky/sampling.py",
+        "/worker/tools/pipeline_eval/reference/grid.py",
+        "/worker/tools/pipeline_eval/reference/native_archive.py",
+        "/worker/tools/pipeline_eval/variants/joint_clock_model.py",
+        "/worker/tools/pipeline_eval/variants/joint_orbits.py",
+        "/worker/tools/pipeline_eval/variants/lean_receiver_cli.py",
+        "/worker/tools/pipeline_eval/variants/native_lean.py",
+        "/worker/tools/pipeline_eval/variants/projected_fit.py",
+        "/worker/tools/pipeline_eval/variants/robust_em.py",
+        "/worker/tools/pipeline_eval/variants/robust_orbit_fit.py"
+      ],
+      "input_files_sha256": {
+        "catalogue": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86",
+        "native": "c49d1ca9a3eae0ebae1ba20f976a26931d2fbf72f3093f03c21ffc582da68f7d",
+        "track_config": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      },
+      "input_sha256": "d58ad58daa3262ae853d4bc1942491b9e71b32446fe172bc7ad779e490e59517",
+      "interface_sha256": "d4a1406e05145ffe1c8c179d5ae3432c07ed4c54c7caa61a18ea2cc9ad989a7d",
+      "memory_kib": {
+        "VmHWM": 143772,
+        "VmPeak": 385636
+      },
+      "observation_sha256": "52bd7ed6f1db093a5a050e45ad6a891e0be91e1deb655d8436aac605d0b84586",
+      "reason": "weak_position_geometry",
+      "runtime": {
+        "annotated_types": "0.8.0",
+        "numpy": "2.5.2",
+        "pydantic": "2.13.4",
+        "pydantic_core": "2.46.4",
+        "scipy": "1.18.1",
+        "sgp4": "2.27",
+        "typing_extensions": "4.16.0",
+        "typing_inspection": "0.4.4"
+      },
+      "sealed_science_match": true,
+      "solver": "smooth-clock",
+      "source_files": 20,
+      "source_lines": 4529,
+      "source_sha256": "1e1eaccdea2f9b95fe561978d8ed1962c8979e6a4027aae96be7fa21c8af0b86",
+      "stages": {
+        "archive_and_peak_selection": {
+          "cpu_s": 0.14559674099999997,
+          "wall_s": 0.1455968702211976
+        },
+        "backend_import": {
+          "cpu_s": 0.39699699,
+          "wall_s": 0.39702973142266273
+        },
+        "catalogue_read": {
+          "cpu_s": 0.002343325999999979,
+          "wall_s": 0.0023411447182297707
+        },
+        "graph": {
+          "cpu_s": 1.861474427,
+          "wall_s": 1.8657502587884665
+        },
+        "position_backend": {
+          "cpu_s": 1.9477544210000004,
+          "wall_s": 1.9579237950965762
+        }
+      },
+      "status": "withheld",
+      "tile": {
+        "center": [
+          37.533635708245555,
+          -122.34462293893709
+        ],
+        "id": "r0"
+      },
+      "verified_against": "native-clock-full",
+      "worker": {
+        "cpu_s": 4.357415927,
+        "wall_s": 4.371903748251498
+      },
+      "worker_wall_s": 4.658342223614454
+    },
+    {
+      "address_space_limit_mib": 512,
+      "arms": {
+        "c0": {
+          "c_hz_per_ghz": 0.0,
+          "forced_latlon": [
+            37.84784773759919,
+            -122.49832359611874
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 854.8899392321396,
+          "held_normalized_mean_loss": 3.1484505925127784,
+          "held_score": 0.6134959330460837,
+          "latlon": [
+            37.84784773759919,
+            -122.49832359611874
+          ],
+          "radius_km": 1.5370279124207313,
+          "region_id": "original",
+          "rf_rms_hz": 176.14122602183855
+        },
+        "fitted_c": {
+          "c_hz_per_ghz": -484.23376236954493,
+          "forced_latlon": [
+            37.84587156807644,
+            -122.48896899755314
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 777.526526728496,
+          "held_normalized_mean_loss": 2.6874176422468197,
+          "held_score": 0.6718139924766018,
+          "latlon": [
+            37.84587156807644,
+            -122.48896899755314
+          ],
+          "radius_km": 1.5545321549944675,
+          "region_id": "original",
+          "rf_rms_hz": 147.42048396036424
+        }
+      },
+      "capture_utc_ns": 1792908972455244319,
+      "catalogue_acquired_utc_ns": 1792904651911878285,
+      "command_wall_s": 4.1134220296517015,
+      "cutoff_utc_ns": 1792908972366467298,
+      "entry": "detached command",
+      "errors_km": {
+        "c0": {
+          "forced": 1.1122561566005258,
+          "published": 1.1122561566005258
+        },
+        "fitted_c": {
+          "forced": 0.45357020444366,
+          "published": 0.45357020444366
+        }
+      },
+      "id": "DS26-0036",
+      "imported_first_party": [
+        "/worker/leo/__init__.py",
+        "/worker/leo/analysis/__init__.py",
+        "/worker/leo/analysis/graph_tracklets.py",
+        "/worker/leo/analysis/polynomial_tracklets.py",
+        "/worker/leo/analysis/tracklet_fitting.py",
+        "/worker/leo/contracts/base.py",
+        "/worker/leo/contracts/digests.py",
+        "/worker/leo/contracts/sky.py",
+        "/worker/leo/sky/frames.py",
+        "/worker/leo/sky/propagation.py",
+        "/worker/leo/sky/sampling.py",
+        "/worker/tools/pipeline_eval/reference/grid.py",
+        "/worker/tools/pipeline_eval/reference/native_archive.py",
+        "/worker/tools/pipeline_eval/variants/joint_orbits.py",
+        "/worker/tools/pipeline_eval/variants/lean_receiver_cli.py",
+        "/worker/tools/pipeline_eval/variants/native_lean.py",
+        "/worker/tools/pipeline_eval/variants/projected_fit.py",
+        "/worker/tools/pipeline_eval/variants/robust_em.py",
+        "/worker/tools/pipeline_eval/variants/robust_orbit_fit.py"
+      ],
+      "input_files_sha256": {
+        "catalogue": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86",
+        "native": "41b74326231d17abcc1ed6e8cfd37574a2f5752c366bc1e8b959c39c1ec5f94e",
+        "track_config": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      },
+      "input_sha256": "6c3ee18115ffe27e179b8755ac72b078c579b67e120c4bff0d3d28a8eedfe35e",
+      "interface_sha256": "6fbc192df58b5d61d71d317e727c70fbe60e42e0244e6c51c96a9a3a26932a81",
+      "memory_kib": {
+        "VmHWM": 144312,
+        "VmPeak": 384360
+      },
+      "observation_sha256": "38124d94670a0f7ce78d64b2810503dfb3141859175d10affbbbe81b0e884bc0",
+      "reason": null,
+      "runtime": {
+        "annotated_types": "0.8.0",
+        "numpy": "2.5.2",
+        "pydantic": "2.13.4",
+        "pydantic_core": "2.46.4",
+        "scipy": "1.18.1",
+        "sgp4": "2.27",
+        "typing_extensions": "4.16.0",
+        "typing_inspection": "0.4.4"
+      },
+      "sealed_science_match": true,
+      "solver": "joint",
+      "source_files": 19,
+      "source_lines": 4274,
+      "source_sha256": "b8d3dc141c9d9d8017ea094f7ccdb86274ff9f208f8ef98e29d6fcecb10196ef",
+      "stages": {
+        "archive_and_peak_selection": {
+          "cpu_s": 0.14711487000000006,
+          "wall_s": 0.1471150992438197
+        },
+        "backend_import": {
+          "cpu_s": 0.40318634400000003,
+          "wall_s": 0.40329569578170776
+        },
+        "catalogue_read": {
+          "cpu_s": 0.003400418000000016,
+          "wall_s": 0.00339716300368309
+        },
+        "graph": {
+          "cpu_s": 1.615918142,
+          "wall_s": 1.6186928916722536
+        },
+        "position_backend": {
+          "cpu_s": 1.68396838,
+          "wall_s": 1.6845482746139169
+        }
+      },
+      "status": "ok",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      },
+      "verified_against": "iq-to-joint",
+      "worker": {
+        "cpu_s": 3.857403583,
+        "wall_s": 3.8608845118433237
+      },
+      "worker_wall_s": 4.095485896803439
+    },
+    {
+      "address_space_limit_mib": 512,
+      "arms": {
+        "c0": {
+          "c_hz_per_ghz": 0.0,
+          "forced_latlon": [
+            37.83249833924735,
+            -122.46814120635769
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 611.8213960016726,
+          "held_normalized_mean_loss": 15.9375361903227,
+          "held_score": 0.26262342658042426,
+          "latlon": null,
+          "radius_km": 2.1057254519363546,
+          "region_id": null,
+          "rf_rms_hz": 206.5818031465915
+        },
+        "fitted_c": {
+          "c_hz_per_ghz": -665.8252708099349,
+          "forced_latlon": [
+            37.83648636910985,
+            -122.47041812528374
+          ],
+          "forced_region_id": "original",
+          "frequency_score": 531.293592100466,
+          "held_normalized_mean_loss": 15.832165502595474,
+          "held_score": 0.28991979622381037,
+          "latlon": null,
+          "radius_km": 2.107439942446853,
+          "region_id": null,
+          "rf_rms_hz": 149.76484381648189
+        }
+      },
+      "capture_utc_ns": 1793727300680833200,
+      "catalogue_acquired_utc_ns": 1793725398225506404,
+      "command_wall_s": 2.7063289871439338,
+      "cutoff_utc_ns": 1793727300592098060,
+      "entry": "detached command",
+      "errors_km": {
+        "c0": {
+          "forced": 2.404616726793049,
+          "published": null
+        },
+        "fitted_c": {
+          "forced": 1.9409478006806296,
+          "published": null
+        }
+      },
+      "id": "DS29-0082",
+      "imported_first_party": [
+        "/worker/leo/__init__.py",
+        "/worker/leo/analysis/__init__.py",
+        "/worker/leo/analysis/graph_tracklets.py",
+        "/worker/leo/analysis/polynomial_tracklets.py",
+        "/worker/leo/analysis/tracklet_fitting.py",
+        "/worker/leo/contracts/base.py",
+        "/worker/leo/contracts/digests.py",
+        "/worker/leo/contracts/sky.py",
+        "/worker/leo/sky/frames.py",
+        "/worker/leo/sky/propagation.py",
+        "/worker/leo/sky/sampling.py",
+        "/worker/tools/pipeline_eval/reference/grid.py",
+        "/worker/tools/pipeline_eval/reference/native_archive.py",
+        "/worker/tools/pipeline_eval/variants/joint_orbits.py",
+        "/worker/tools/pipeline_eval/variants/lean_receiver_cli.py",
+        "/worker/tools/pipeline_eval/variants/native_lean.py",
+        "/worker/tools/pipeline_eval/variants/projected_fit.py",
+        "/worker/tools/pipeline_eval/variants/robust_em.py",
+        "/worker/tools/pipeline_eval/variants/robust_orbit_fit.py"
+      ],
+      "input_files_sha256": {
+        "catalogue": "ac5115781df3dc522c9a04c14cab7cbfb678dd1a8927e35e28f0231f996de92c",
+        "native": "9b66406e24a94f2cf11adfe858289dbd45696d4e1244d5374b5679d32e8bec49",
+        "track_config": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      },
+      "input_sha256": "cfa779adcb9c72b2d8dc9e42f9151043de136796d26b6e9242a5f5094987f134",
+      "interface_sha256": "e819d08dd4e7e3c5f380598c880432898553e935eb739db9d9288132ff17a0ec",
+      "memory_kib": {
+        "VmHWM": 141128,
+        "VmPeak": 382460
+      },
+      "observation_sha256": "db378a819642bf9ab58077b87253a66980edeeb17af728b186fb2fcb3c8d10d2",
+      "reason": "weak_held_track_support",
+      "runtime": {
+        "annotated_types": "0.8.0",
+        "numpy": "2.5.2",
+        "pydantic": "2.13.4",
+        "pydantic_core": "2.46.4",
+        "scipy": "1.18.1",
+        "sgp4": "2.27",
+        "typing_extensions": "4.16.0",
+        "typing_inspection": "0.4.4"
+      },
+      "sealed_science_match": true,
+      "solver": "joint",
+      "source_files": 19,
+      "source_lines": 4274,
+      "source_sha256": "b8d3dc141c9d9d8017ea094f7ccdb86274ff9f208f8ef98e29d6fcecb10196ef",
+      "stages": {
+        "archive_and_peak_selection": {
+          "cpu_s": 0.109964603,
+          "wall_s": 0.11000989656895399
+        },
+        "backend_import": {
+          "cpu_s": 0.41197694199999996,
+          "wall_s": 0.4121796563267708
+        },
+        "catalogue_read": {
+          "cpu_s": 0.0029203200000000318,
+          "wall_s": 0.0029169274494051933
+        },
+        "graph": {
+          "cpu_s": 0.7117971139999999,
+          "wall_s": 0.7119682636111975
+        },
+        "position_backend": {
+          "cpu_s": 1.161028607,
+          "wall_s": 1.1612611711025238
+        }
+      },
+      "status": "withheld",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      },
+      "verified_against": "iq-to-joint",
+      "worker": {
+        "cpu_s": 2.400958555,
+        "wall_s": 2.4016261948272586
+      },
+      "worker_wall_s": 2.6920079523697495
+    }
+  ],
+  "schema_version": 1
+}

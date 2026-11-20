@@ -1,0 +1,124 @@
+{
+  "inventory": {
+    "v5_compact_receiver": {
+      "all_paths": {
+        "files": 1170,
+        "lines": 125676
+      },
+      "frozen_runner": {
+        "files": 4,
+        "lines": 205
+      },
+      "frozen_v5": {
+        "files": 286,
+        "lines": 28846
+      },
+      "qualification_imports": [],
+      "repository": {
+        "files": 22,
+        "lines": 1581
+      },
+      "virtualenv": {
+        "files": 858,
+        "lines": 95044
+      }
+    },
+    "v5_recovery_reads": {
+      "all_paths": {
+        "files": 1332,
+        "lines": 140780
+      },
+      "frozen_runner": {
+        "files": 4,
+        "lines": 205
+      },
+      "frozen_v5": {
+        "files": 286,
+        "lines": 28846
+      },
+      "qualification_imports": [
+        "tools.pipeline_eval.qualification.armijo_confirmation",
+        "tools.pipeline_eval.qualification.armijo_finish_phase_retry",
+        "tools.pipeline_eval.qualification.armijo_finish_trial",
+        "tools.pipeline_eval.qualification.armijo_fit_trial",
+        "tools.pipeline_eval.qualification.broad_search_budget",
+        "tools.pipeline_eval.qualification.capture_release",
+        "tools.pipeline_eval.qualification.compact_memory_combined_worker",
+        "tools.pipeline_eval.qualification.composed_memory_worker",
+        "tools.pipeline_eval.qualification.embedded_figures",
+        "tools.pipeline_eval.qualification.full_v5_check",
+        "tools.pipeline_eval.qualification.initial_branch_audit",
+        "tools.pipeline_eval.qualification.nomination_memory_worker",
+        "tools.pipeline_eval.qualification.prefix_figures",
+        "tools.pipeline_eval.qualification.projector_roof",
+        "tools.pipeline_eval.qualification.recording_to_v5",
+        "tools.pipeline_eval.qualification.recovery_reads_worker",
+        "tools.pipeline_eval.qualification.search_budget",
+        "tools.pipeline_eval.qualification.secant_end_to_end_worker",
+        "tools.pipeline_eval.qualification.secant_fit_trial",
+        "tools.pipeline_eval.qualification.signed_context_memory_worker",
+        "tools.pipeline_eval.qualification.v5_postfit",
+        "tools.pipeline_eval.qualification.v5_prefix_audit",
+        "tools.pipeline_eval.qualification.working_memory_worker"
+      ],
+      "repository": {
+        "files": 51,
+        "lines": 2874
+      },
+      "virtualenv": {
+        "files": 991,
+        "lines": 108855
+      }
+    }
+  },
+  "lines_file": "trace-lines.json.gz",
+  "lines_sha256": "15e2cab52a126f9c90e21471390eb18581bd09a05a7075cb15848c6a6f5bcfa1",
+  "runs": {
+    "v5_compact_receiver": {
+      "compared_to": "primary",
+      "exact_endpoints": true,
+      "status": "ok",
+      "trace_source_sha256": "db283c44c4c8c80e629d9a4dfdf5c3a6a0ad9667c5742f4233200e14e284ef5d"
+    },
+    "v5_recovery_reads": {
+      "compared_to": "same_pin_retry_after_short_write",
+      "exact_endpoints": true,
+      "status": "ok",
+      "trace_source_sha256": "db283c44c4c8c80e629d9a4dfdf5c3a6a0ad9667c5742f4233200e14e284ef5d"
+    }
+  },
+  "timing": {
+    "v5_compact_receiver": {
+      "cpu_overhead_s": 5.3126931970000015,
+      "ordinary": {
+        "child_peak_rss_kib": 525600,
+        "cpu_s": 85.219039311,
+        "self_peak_rss_kib": 140484,
+        "wall_s": 87.01680896058679
+      },
+      "traced": {
+        "child_peak_rss_kib": 559532,
+        "cpu_s": 90.531732508,
+        "self_peak_rss_kib": 140988,
+        "wall_s": 101.0069199744612
+      },
+      "wall_overhead_s": 13.990111013874412
+    },
+    "v5_recovery_reads": {
+      "cpu_overhead_s": -3.3918332700000065,
+      "ordinary": {
+        "child_peak_rss_kib": 542396,
+        "cpu_s": 88.573374996,
+        "self_peak_rss_kib": 140876,
+        "wall_s": 91.76237787585706
+      },
+      "traced": {
+        "child_peak_rss_kib": 560324,
+        "cpu_s": 85.18154172599999,
+        "self_peak_rss_kib": 140896,
+        "wall_s": 91.04148357827216
+      },
+      "wall_overhead_s": -0.7208942975848913
+    }
+  }
+}

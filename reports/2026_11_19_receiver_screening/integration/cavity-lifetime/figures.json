@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_cavity_lifetime_roof4",
+      "method": "v5_cavity_lifetime",
+      "scope": "roof",
+      "title": "Compact cavity publication under 512 MiB",
+      "caption": "Four authenticated native GLRT captures through the same compact cavity numerics. The lifetime variant releases finished fit state and trims free allocator pages. Every Linux memory kill remains in the denominator.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "provenance": ["plan.json", "direct-lock.json", "scores.json"],
+      "series": [
+        {"key": "one", "label": "Direct release at 512 MiB", "file": "positions.jsonl.gz", "value": "v5_cavity_lifetime"},
+        {"key": "stock", "label": "Unrestricted compact cavity", "file": "positions.jsonl.gz", "value": "v5_secant_fit", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile", "resolved_request_sha256"]},
+        {"key": "all_visits", "label": "Earlier 512 MiB receiver", "file": "positions.jsonl.gz", "value": "v5_bounded_cavity", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile", "resolved_request_sha256"]}
+      ]
+    },
+    {
+      "id": "v5_cavity_lifetime_allocator",
+      "method": "v5_cavity_lifetime",
+      "scope": "roof",
+      "title": "Allocator trim and direct release at 512 MiB",
+      "caption": "The three previous OOM cases had identical physical caps and scientific computations. Collection and arena trim alone completed one case. Direct last-use release with the same reclamation completed all three.",
+      "cases": "sealed",
+      "seal": "allocator-figure-lock.json",
+      "provenance": ["plan.json", "gc-trim-lock.json", "scores.json"],
+      "series": [
+        {"key": "one", "label": "Direct release, GC and trim", "file": "allocator-diagnostic.jsonl.gz", "value": "v5_cavity_lifetime"},
+        {"key": "stock", "label": "Unrestricted compact cavity", "file": "allocator-diagnostic.jsonl.gz", "value": "v5_secant_fit", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile", "resolved_request_sha256"]},
+        {"key": "one_native_factors", "label": "GC and trim", "file": "allocator-diagnostic.jsonl.gz", "value": "v5_cavity_gc_trim", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile", "resolved_request_sha256"]}
+      ]
+    }
+  ]
+}

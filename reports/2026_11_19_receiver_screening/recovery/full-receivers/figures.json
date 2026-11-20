@@ -1,0 +1,62 @@
+{
+  "charts": [
+    {
+      "caption": "Complete stored GLRT, same causal catalogue and same supplied tile. The four original v5 options form the reference range. The cascade uses archived routing. RF preflight replays saved late-stage decisions.",
+      "cases": "roof135",
+      "id": "receiver_recovery-roof135",
+      "method": "receiver_recovery",
+      "provenance": [
+        "sources.json",
+        "summary.json",
+        "summary.csv",
+        "scores.csv",
+        "pairings.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Compact v5 secant",
+          "value": "v5_secant_fit"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Native clock + offset OU",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_clock_offset_ou"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Cascade \u00b7 archived routing",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_agreement_cascade"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "RF preflight \u00b7 archive replay",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "late_preflight_archive"
+        }
+      ],
+      "title": "Receiver recovery decisions on 135 matched roof recordings"
+    }
+  ],
+  "version": 1
+}

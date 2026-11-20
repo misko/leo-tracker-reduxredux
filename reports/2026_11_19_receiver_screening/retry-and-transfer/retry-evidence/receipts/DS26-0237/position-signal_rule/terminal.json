@@ -1,0 +1,32 @@
+{
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-capture-position-signal_rule-ad2459f0",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=180s",
+    "taskset",
+    "-c",
+    "16",
+    "env",
+    "TMPDIR=/srv/bulk/leo-dev/retry-evidence-20261119-A/DS26-0237/position-signal_rule",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.whole_iq",
+    "position",
+    "/srv/bulk/leo-dev/retry-evidence-20261119-A/DS26-0237/position-signal_rule"
+  ],
+  "exit_code": 0,
+  "log_sha256": "d3d9a06d1732b7bf944c200e054000ffde3bfdd917fd80f46d2b632320765a43",
+  "wall_s": 71.51065686065704
+}

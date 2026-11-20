@@ -1,0 +1,50 @@
+{
+  "archive_files": {
+    "fifth-detector-arm": "84e067793abb74c3f2c6da9e0c7cd108c9c2dc8ce7b82b49412cb1b8d77e2d46",
+    "lower-control.c16": "dec98dd9e105438a52546795cf1f45c659be3d3a67c4e2e50e63015a7524b15c",
+    "lower-energies.f64": "d4e5a1b9399451f3336c534da5b9b693c535dfcabb6b08417744bdb39a62ff36",
+    "lower-exact.c16": "19b81fba293a06cc813dcdb394f98ce4cfc2737818a595989d1f0c445bc33d2f",
+    "lower-filters.c8": "a10a5fd5e5048b64156cea16df07b340f40145006270c754127e9b50bbce9875",
+    "lower-strong.ci16": "ff543dd991c8a894f32bc22888f2e407c5e124deddb7969b8444300ac78735b7",
+    "runtime/lib/ld-linux-armhf.so.3": "a039578005865d55715e89ea7a16720c31f712eb3cd385fb4882e6331fbc4f56",
+    "runtime/lib/libc.so.6": "057eff01375ed70daff20c9568709d80ea190511b656c6c60ebeca1375cad374",
+    "runtime/lib/libm.so.6": "e9a7529ff8e15362f523d52af6655263f6f175b0df5a075f533a4c43fdc32622",
+    "runtime/usr/lib/libfftw3.so.3": "311b6ee1acd0aee1c1db9b7f9e8a41d4a918463b70cce441aad5f4679665eef4",
+    "upper-control.c16": "b2e64a1be8cc8b3106a01c5a3136e8a35725a1600fa801f802857228dc5cba73",
+    "upper-energies.f64": "18cf80def9b784a49091b574b2bd6acee9606670d5a8968634217b762bef880c",
+    "upper-exact.c16": "acec1e78a6ee3093bda4d1f7a56ebbe907db7797e11a4c0eddcc77aaa3e40f0c",
+    "upper-filters.c8": "c560bd568183d15b10b2378a2ff9d676b7fa1c1d831531a6a3f27272b6bb5c96"
+  },
+  "archive_sha256": "6a89c22b27e108b92e2f17460dcb5d16049c9d7088c873ea87a588249a6d2496",
+  "input": "lower-strong",
+  "modes": {
+    "stock": {
+      "exact_rank16": true,
+      "exact_science": true,
+      "exact_trace": true,
+      "stdout_sha256": "92d2f33e95fcb3a605ed9d7ae8eda5c5cebacd3efe3214402b0f519a11c391ff"
+    },
+    "union": {
+      "exact_rank16": true,
+      "exact_science": true,
+      "exact_trace": true,
+      "stdout_sha256": "32ef163da352d66d8ef0b525c20fa9a0f5d67d1c6b9b4f56fd083635c824df1e"
+    }
+  },
+  "qemu_argv": [
+    "qemu-arm",
+    "-cpu",
+    "cortex-a9",
+    "-L",
+    "runtime",
+    "./fifth-detector-arm",
+    "{stock|union}",
+    "lower-strong.ci16",
+    "lower-exact.c16",
+    "lower-control.c16",
+    "lower-filters.c8",
+    "lower-energies.f64",
+    "1"
+  ],
+  "timeout_s": 15
+}

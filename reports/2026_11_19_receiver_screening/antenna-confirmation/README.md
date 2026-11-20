@@ -1,0 +1,50 @@
+# Which receiver changes hold up outside the discovery recordings?
+
+The antenna experiment first found a benefit on six difficult recordings and two controls. It then froze the rule and ran it on the other 14 recordings in the same waveform benchmark. Two additional complete saved-I/Q recordings came from outside all 22. Every Starlink recording here comes from the same surveyed roof. Each position chart retains the scheduled recordings, the original four v5 options where measured, and both zero and fitted RF calibration. [Run the confirmation benchmark](benchmark/README.md) · [Charts by modification](index.html) · [Offline figures and data](modification-charts.zip)
+
+## The original GLRT from a whole recording to a position
+
+On DS29-0082, the batched FFT and compiled refinement reproduced all 42,162 ordered candidates across 9,736 physical antenna outputs. Every recorded gate, clock and hardware exclusion matched. Running the compact solver separately on these newly measured candidates and on the archived original candidates produced identical coordinates, RF fits and decisions in both calibration settings. Both fits took about 27.5 s. The four original v5 options and the two faster detectors used the same recording and offered region. [Error distribution with all four v5 options](capture-whole/charts/fitted_c/capture-whole-original.png) · [Zero-calibration distribution](capture-whole/charts/c0/capture-whole-original.png) · [Measured candidate comparison](capture-whole/audit.json)
+
+| DS29-0082 horizontal error | Zero calibration | Fitted calibration |
+| --- | ---: | ---: |
+| Original v5, no repair or selective gap | 0.567 km | 0.517 km |
+| Original v5, one or two omitted tracks | 0.115 km | 0.486 km |
+| Accelerated original GLRT through compact position | 0.568 km | 0.516 km |
+| Four timing regions through compact position | 2.489 km | 2.346 km |
+| Five timing regions through compact position | 1.735 km | 1.757 km |
+
+The original GLRT took 3,035 s of total detector CPU and 498 s of elapsed time across ten host workers on this roughly five-minute recording. All 4,868 valid windows exceeded 20 ms. Median dual-antenna detector time was 600 ms of CPU and 634 ms elapsed. The four-region detector had a lower fitted RF residual of 84.25 Hz, against 96.68 Hz on the accelerated original inputs, despite its larger position error. The recording verifies fidelity on a complete input and quantifies the remaining real-time gap. [Timing distribution](capture-whole/timing.png) · [Geographic and RF scores](capture-whole/scores.csv) · [Replay protocol](capture-whole/PROTOCOL.md)
+
+## What the second antenna contributes
+
+The receiver rotates the primary antenna independently at each RF centre. The conditional mode searches the second antenna when the first reports a pilot above the ordinary fractional margin threshold. On 14 held recordings this improved 11 fixes at zero calibration and 10 at fitted calibration over using only the primary. The median paired geographic improvements were 263 and 222 m. All four predeclared sign tests exceeded the adjusted 0.05 threshold. [Paired tests and effect sizes](benchmark/verdict.json) · [Individual positions and measured support](partner-holdout/README.md)
+
+| Held 14 | Error median / P95 at zero calibration | Error median / P95 at fitted calibration | Fitted fixes within +10% of original v5 | Median conditional RF residual, zero / fitted |
+| --- | ---: | ---: | ---: | ---: |
+| Four search regions on both antennas | 0.774 / 1.517 km | 0.765 / 1.375 km | 11/14 | 92.906 / 92.868 Hz |
+| Second antenna after a primary hit | 0.742 / 2.424 km | 0.688 / 2.405 km | 10/14 | 89.756 / 89.751 Hz |
+
+On DS26-0168 the conditional mode increased fitted error from 0.796 to 4.154 km. Replaying the original samples, real exclusions and delivery clocks reproduced the stored-factor result. The other overlap recording, DS29-0174, moved from 0.806 to 0.893 km. On the two recordings outside the 22, the conditional pipeline again raised both errors, by 180 and 536 m with fitted calibration. The whole host replays shortened from 189.5 to 105.2 s and from 156.7 to 83.9 s. [Direct checks within the 14](on-hit-waveforms/README.md) · [Outside the 22, including all four original v5 references](fresh-full/README.md)
+
+One follow-up also searched the partner on every fourth primary miss. On the 14 recordings that motivated the change it scheduled 74.4% of the two-antenna calls. The fitted median was 0.648 km and the P95 was 2.379 km. Nine of 14 stayed within the original v5 +10% allowance in each calibration setting. The added measurements improved both prospective recordings over checking hits alone. Fitted error fell from 2.371 to 2.238 km and from 1.628 to 1.384 km. Searching both antennas throughout gave 2.191 and 1.093 km on those recordings. These follow-up position jobs used recorded detector outputs, so their call counts express the schedule and their clocks cover the position solver. [Calibration results and recording-level comparisons](quarter-miss/README.md) · [All timing and error rows](quarter-miss/summary.csv)
+
+The standalone receiver supports either conditional antenna policy with one or two visit workers. It obtains its primary, partner decision and measurement identity directly from the captured samples and metadata. Workers commit results in capture order. Both worker counts produced byte-identical native inputs on the two validation recordings. With two workers the complete host replay shortened by 26.8 s on DS26-0168 and lengthened by 14.2 s on DS29-0174. The proportion of detector calls finishing within 20 ms fell on both recordings. The release defaults to one visit worker for these policies. [Standalone application and resources](portable-stream/README.md) · [Operator command](portable-stream/USAGE.md) · [Stock and second-on-miss compatibility on 1,904 invalid visits](portable-stream/compatibility/README.md)
+
+At the original five-minute arrival pace on DS29-0174, a single worker with one waiting slot returned 3,529 of 6,704 valid windows within 20 ms with the conditional policy, up from 67 with both antennas. Only 4 of the 2,076 windows where the primary detected a pilot met that deadline. With both antennas the fitted fix was 0.607 km from the roof. With the conditional policy it was 1.085 km away, above the 10% allowance relative to the original 0.917 km fix. At zero calibration the three errors were 0.562, 0.993 and 0.885 km, respectively. The conditional policy retained 896 fewer observations and lowered the fitted RF residual from 101.16 to 98.06 Hz. [Paced position errors](paced-hit/scores.csv) · [Deadline and drop distributions](paced-hit/pace.png) · [Clock and memory boundary](paced-hit/README.md)
+
+## Computing the original measurements and positions more cheaply
+
+| Change | Measured cost and scientific results |
+| --- | --- |
+| Batch the original capture detector’s frequency search and reuse compiled refinement | On held original waveform pairs the complete public candidates matched on both receivers. Median detector CPU on three legacy recordings fell from 2.17–2.50 s to 0.56–0.57 s per visit. The screened receiver improved by 1.47×. Internal grid values differed by up to 2.53 × 10⁻⁸ across 2.24 million evaluated cells. [Waveform timings, output comparison and numerical audit](capture-exact/README.md) |
+| Construct orbit models only for the selected satellites on previously validated catalogue text | Four paired position jobs skipped 2.82 million of 4.99 million SGP4 object constructions. Total input-preparation wall time fell 28.9%, whole CPU fell 4.4%, and summed whole wall time fell 7.9%. Both geographic solutions, conditional RF values and decisions matched exactly. Both capture-era pairs nevertheless took longer end to end. [Measured pairs and preparation checks](compact-cost/README.md) |
+| Use the primary antenna’s pilot times as seeds for a local partner search | Median partner detector CPU fell from 12.01 to 3.45 ms. The local search recovered 17 of 49 distinct stock partner detections on the held visits. The remaining 32 had no admitted primary seed within two samples. [Gated positive controls, selected epochs and end-to-end call cost](partner-local/README.md) |
+
+## Independent locations and anonymous orbital geometry
+
+At eight measured beacon locations, new independently jittered search boards eliminated the earlier symmetric decoy cue. Anonymous Doppler ranking chose the containing tile on 24/24 containing offers; choosing its centre using the coarse regional prior alone succeeded on 19/24. The median forced errors were 3.77 and 12.18 km. The looser Doppler publication rule produced 11/24 containing fixes and 5/24 false fixes on near omissions. The strict rule gave zero containing fixes and one false omission fix. These experiments use prepared single-frequency beacon traces. Per-arc frequency offsets leave the fitted RF calibration coefficient unidentifiable. [Per-site offers, geometry-only comparator and scores](asymmetric-sites/README.md)
+
+Starting with anonymous GLRT observations and a causal catalogue, a worldwide search fitted shared receiver drift on early arcs and scored the resulting location on completely held arcs. It withheld on all four recorded inputs and both shuffled controls. The winning training positions were 2,125–9,806 km from the surveyed roof. Scoring the surveyed coordinate only after locking the predictions located a stronger local fit on three recordings. [Worldwide search, null trials and separately labeled survey diagnostic](anonymous-geometry/README.md)
+
+Using Doppler slope and curvature to propose locations from each orbit placed an initial candidate closer to the surveyed roof on all four recordings. On DS29-0519 the best training position moved from 5,047 km away to 7.80 km away. Held measurements favored a different location, so the receiver withheld that fix. The other three training positions had larger errors than the earlier worldwide search. This version also withheld all six requests. [Per-recording positions and held scores](orbit-proposals/README.md)

@@ -1,0 +1,48 @@
+Use six disjoint frequency changes from twelve evenly spaced observation indices
+per curved track. Pair sample indices 0–5 with 6, 8, 10, 7, 9, 11 respectively.
+The different baselines sample different parts of a pass. Each observed endpoint
+appears in one pair, so independent, equal-variance endpoint errors would give
+independent difference errors with twice the endpoint variance. The 180 Hz
+endpoint scale is a nominal study scale. Graph errors can be correlated.
+
+Use at most the 64 longest curves and nominate up to twelve TLE satellite
+hypotheses per track from all satellites visible at the sample times. Nomination
+compares each observed frequency change with the satellite's expected change
+modulo the detector's 1 / 4.4 μs CFO period, including an orbit-time prior of 2 s.
+A 7 × 7 grid in the declared 25 km box votes with profiled track time shifts.
+Four robust least-squares updates refine the position with grid associations held
+fixed, a common shift per satellite, and a shared drift per receiver/side lane.
+The linearized Doppler bank uses causal TLEs at 5 s knots. Position and detection
+time are distinct parameters. The endpoint is a scan-end fix using archived
+anonymous graph tracks through that scan's end. Bank linearization accuracy and
+early-fix latency are outside this prototype.
+
+Subtracting within a track annihilates a constant offset, including c times the
+track's constant channel RF. The fitted-c arm has a zero data column for c and
+the same objective, shortlist, associations and endpoint as c=0. It reports c
+as unidentifiable. The matched level control keeps the same six changes and
+nominees, adds the wrapped track mean as an observation, and fits four constant
+lane offsets. It initializes each active lane's offset with a 73-point circular
+grid and nine local offsets. Its two c arms use the same winning associations
+and budgets. The fitted-c arm uses a zero-centered 200 kHz/GHz Gaussian scale.
+Both methods report paired-change RMS. The control also reports absolute
+track-mean RMS. RMS uses each method's fitted inlier track associations, which
+can differ between the primary and the control.
+
+Source inputs are the declared DS26 anonymous candidate track JSON and causal
+TLE snapshots at the protocol paths. Archived graph tracks are conditional on
+the recorded LNB reference hypotheses. Fits use only the current scan's
+observations and causal orbit elements. The control estimates are available for
+independent comparison against the held-out geography.
+
+Run the following command from the repository root.
+  OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src .venv/bin/python reports/2026_11_18_embedded_prototypes/07_differences/run.py
+Add --check for the quick check. It verifies the pair construction and known
+frequency change with large synthetic level shifts, then runs DS26-0036 through
+nomination and optimization with track offsets, an RF-dependent term, and
+independent integer period lifts. The panel repeats the perturbation check for
+each case. wall_s covers JSON read, the TLE bank, the primary shortlist and grid,
+and the single identifiable primary fit. The matched control's additional time
+starts after the shared source read and bank are complete and includes its own
+descriptor recomputation and both fits. Verification, JSON output, and offline
+position scoring are outside the primary time. These are host timings.

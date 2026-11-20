@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "raw_stream",
+      "method": "raw_stream",
+      "scope": "roof",
+      "title": "Bounded compressed IQ replay through the secant fit",
+      "caption": "The replay streams authenticated compressed IQ through the complete ordinary detector and secant solver. The earlier ordinary whole-IQ control uses identical native factors and returns identical positions.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["stage-receipts.json", "graph-receipts.json", "reader-probe.json"],
+      "series": [
+        {"key": "one", "label": "Bounded compressed IQ replay", "file": "positions.jsonl.gz", "value": "raw_stream", "native_authority": "ordinary", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Earlier ordinary whole-IQ control", "file": "ordinary-positions.jsonl.gz", "value": "v5_secant_fit", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["native_sha256", "capture_era_native_sha256", "catalog_sha256", "input_sha256"]}
+      ]
+    }
+  ]
+}

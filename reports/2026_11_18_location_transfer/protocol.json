@@ -1,0 +1,21 @@
+{
+  "purpose": "Stress the existing frozen designs before using DS26 to select a receiver for other locations.",
+  "real_cases": ["DS26-0036", "DS26-0070", "DS26-0112", "DS26-0122", "DS26-0203", "DS26-0209", "DS26-0277", "DS26-0311"],
+  "real_tile_offsets_east_north_km": {"original":[0,0],"east5":[5,0],"west5":[-5,0],"north5":[0,5],"south5":[0,-5],"east150":[150,0],"north150":[0,150]},
+  "real_held_out_region_contest": "Original/east150/north150 only. Fit on whole tracks ending by 150 seconds and score whole tracks starting at or after 150 seconds at the frozen position. Maximize mean bounded shape evidence with the original 12 nominees and phase prior. Missing held-out tracks contribute zero. Evaluate which tile wins with no label in the score.",
+  "time_shift_abstention_followup": "After the three-region ranking, freeze this exploratory rejection rule before computing any shifted-track scores. Slide each held-out track over its allowable start range in the second half by j/20 modulo one for j=1..19, preserving its duration, samples and channel. Renominate candidates at each new time. Publish only if the best unshifted score exceeds the best score in every shifted tournament over the same regions. Run with and without the original tile. No learned threshold.",
+  "synthetic_centers_latlon": {"equator":[0,35],"europe":[45,10],"high_north":[65,-20],"pacific_south":[-34,151],"andes":[-33,-70],"date_line":[12,179.97]},
+  "synthetic_cases": ["DS26-0036","DS26-0203"],
+  "synthetic_offsets_east_north_km": [[-8,-6],[-8,6],[8,-6],[8,6]],
+  "synthetic_orbits": ["causal","later"],
+  "updated_catalogue_sensitivity": "The first distinct later file changed zero of 1,152 selected track elements in the first epoch. Keep that original run. For a separate paired sensitivity use the first file 12 to 36 hours later with updated epoch or mean motion for at least 80% of common Starlink elements. This rule was added after inspecting orbit metadata and before inspecting the synthetic geographic summaries. Count each test epoch once per comparison.",
+  "confirmation_cases": ["DS26-0112","DS26-0277"],
+  "confirmation_centers_latlon": {"boreal":[55,-105],"deccan":[18,78],"patagonia":[-49,-70],"borneo":[-2,115]},
+  "confirmation": "Exploratory follow-up frozen after the first six-region geographic summary: the four balanced offsets put the truth at the same distance from coarse grid cells. Test a parameter-free subcell physics control on fresh sky regions, dates and 32 distinct geographic points, one randomized offset in each quadrant per region/epoch with each component magnitude uniform from 1 to 11.5 km. Compare the frozen network, same-input grid peak, and same-score local refinement. Keep existing physics baselines. Use the materially updated paired orbit policy, report the later mode as primary. Freeze all settings before running these scenes.",
+  "synthetic_design": "At each hidden position generate 48 candidate tracks from actual channel visit times, a visible satellite drawn at the synthetic site, and fresh exact orbital propagation. Keep timing, satellite choice, offsets, drift, noise, and outlier draws identical in the paired orbit runs. For later simulation use the first distinct archived snapshot 12 to 36 hours after the scan. Give the solver only the pre-scan catalog. Alternate 0 and 1.2 km receiver height and open or west-only sky across offsets and epochs. Receiver height in the regional solver stays at its published zero. No real DS26 frequency values enter generated tracks.",
+  "policies": ["geometry12","full","longest12","random12","coordinate_network","shape_grid","prior_center"],
+  "oracle_diagnostic": "On synthetic data only, give true satellite IDs for clean tracks whose true ID survived blind shortlisting. Reuse the blind receiver bias seed. This diagnoses the remaining estimation problem conditional on those IDs.",
+  "fit_arms": ["c0","fitted_c"],
+  "report": "Return estimates, failures, in-sample Hz and geographic error separately. Report by region, by orbit condition, prior-only and frozen-network controls. No threshold or weight tuning on this panel.",
+  "seed": 26111804
+}

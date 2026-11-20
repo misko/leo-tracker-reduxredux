@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_screen_winner",
+      "method": "v5_screen_winner",
+      "scope": "roof",
+      "title": "Two-refresh branch screening with the stock v5 solver",
+      "caption": "Score the three initial branches after two refreshes and finish the selected branch. Later recovery and cavity budgets stay fixed. The archived compact projector supplies the matching five-refresh control.",
+      "cases": "timing-six",
+      "seal": "receipt.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Screened stock solver", "file": "v5_screen_winner-positions.jsonl.gz", "value": "v5_screen_winner"},
+        {"key": "stock", "label": "Archived five-refresh stock", "file": "orbit_projector-positions.jsonl.gz", "value": "orbit_projector", "match": ["input_sha256"]}
+      ]
+    },
+    {
+      "id": "v5_screen_secant",
+      "method": "v5_screen_secant",
+      "scope": "roof",
+      "title": "Two-refresh branch screening with the secant solver",
+      "caption": "The same screening schedule uses the secant optimizer. All later phase budgets are shared with the archived five-refresh secant control.",
+      "cases": "timing-six",
+      "seal": "receipt.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Screened secant solver", "file": "v5_screen_secant-positions.jsonl.gz", "value": "v5_screen_secant"},
+        {"key": "stock", "label": "Archived five-refresh secant", "file": "v5_secant_fit-positions.jsonl.gz", "value": "v5_secant_fit", "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

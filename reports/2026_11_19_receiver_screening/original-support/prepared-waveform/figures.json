@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "DS26-0237 used its original 25 km offer and causal catalogue. The prepared FFT cache ran on every valid visit.",
+      "cases": "sealed",
+      "id": "prepared-original-waveform",
+      "method": "original_capture_prepared_full_iq",
+      "provenance": [
+        "source-lock.json",
+        "audit.json",
+        "scores.csv",
+        "cache.csv"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier full stock four-region IQ replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh complete capture-era replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_prepared_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original archived capture factors, fresh compact solver",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_archived_factors_compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Earlier full fifth-region IQ replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        }
+      ],
+      "title": "Prepared original detector from complete saved IQ"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,44 @@
+{
+  "charts": [
+    {
+      "caption": "The two anchors kept their capture and causal candidate catalogue. The supplied 25 km square moved 30 km east, leaving a 5 km gap.",
+      "cases": "sealed",
+      "condition_labels": {
+        "omitted": "Disjoint offer, 30 km east"
+      },
+      "id": "sequential-fix-omitted",
+      "method": "sequential_fix_omitted",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "position-stages.csv"
+      ],
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Release or full fallback",
+          "value": "sequential_fix_omitted"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete compact",
+          "value": "full_compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "255 s constrained diagnostic",
+          "key": "one",
+          "label": "255 s gate alone",
+          "value": "early_gate"
+        }
+      ],
+      "title": "Early and fallback positions in a verified omitted square"
+    }
+  ],
+  "version": 2
+}

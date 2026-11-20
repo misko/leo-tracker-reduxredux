@@ -1,0 +1,62 @@
+{
+  "charts": [
+    {
+      "caption": "The fused replay uses CPUs 20/21. Earlier CPU18 runs used adaptive first and fifth second. The four v5 options use their capture-era factors.",
+      "cases": "sealed",
+      "id": "combined-native-paced",
+      "method": "combined_native_fifth",
+      "provenance": [
+        "position-lock.json",
+        "scores.csv",
+        "paced-comparison.json",
+        "raw-summary.json",
+        "raw-witness.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "overlay-positions.jsonl.gz",
+          "key": "one",
+          "label": "Fused paced fifth \u00b7 CPUs 20/21",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "combined_native_fifth"
+        },
+        {
+          "file": "overlay-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Earlier paced fifth \u00b7 CPU18 second",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fresh_adaptive_fifth"
+        },
+        {
+          "file": "overlay-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier paced adaptive \u00b7 CPU18 first",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fresh_adaptive_adaptive"
+        }
+      ],
+      "title": "Combined fifth-center receiver at the original arrival pace"
+    }
+  ],
+  "version": 2
+}

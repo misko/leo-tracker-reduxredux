@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_stream_recovery",
+      "method": "v5_stream_recovery",
+      "scope": "roof",
+      "title": "Row-bounded causal orbit banks at complete recovery",
+      "caption": "Two same-core position pairs start from independently authenticated ordinary GLRT factors. Recovery projects each catalogue in 128-row blocks and retains the existing decisions and paired calibration fits.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Row-bounded recovery", "file": "stream-positions.jsonl.gz", "value": "v5_stream_recovery", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Aligned compact finish", "file": "control-positions.jsonl.gz", "value": "v5_armijo_aligned_finish", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

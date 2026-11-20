@@ -1,0 +1,59 @@
+{
+  "charts": [
+    {
+      "caption": "A signed CFO correction from eight other sessions was applied to complete held fast factors before normal compact rediscovery.",
+      "cases": "sealed",
+      "id": "fast-calibration-position",
+      "method": "fast_calibration_corrected",
+      "provenance": [
+        "model-lock.json",
+        "prediction-plan.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fast with frozen CFO correction",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fast_calibration_corrected"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Unchanged full fast",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fast_calibration_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Full original factors",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fast_calibration_original"
+        }
+      ],
+      "title": "Position after shared-pilot CFO calibration"
+    }
+  ],
+  "version": 2
+}

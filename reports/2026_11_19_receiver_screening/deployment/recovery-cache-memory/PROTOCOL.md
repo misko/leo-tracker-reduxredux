@@ -1,0 +1,5 @@
+# Bound page-cache retention during streamed late orbit writes
+
+The tiled nomination worker at 512 MiB completed all family nominations and died entering the first streamed recovery-state writer. Keep the exact existing bank, propagation, row order, bytes and readers. Sync and advise eviction of each completed page-aligned write range after 8 MiB per writer, including the final shorter range. This controls the lifetime of dirty scratch cache during streaming.
+
+Bind source and prior tiled-nomination prediction locks before replaying ordinary DS29-0082. Run one unrestricted replay on CPU 17 at nice 10 with a 240 second deadline, compare complete scientific and nomination evidence bitwise, then impose a true 512 MiB Linux cgroup cap with zero swap and a 180 second deadline. Record CPU, wall, process and capped memory, scratch writes and first incomplete call, if any. Use the same authenticated request, both calibration fits and original downstream recovery. Seal before geographic reporting.

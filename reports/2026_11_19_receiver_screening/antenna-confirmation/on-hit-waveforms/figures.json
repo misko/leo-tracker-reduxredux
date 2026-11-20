@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "Actual saved IQ on two confirmation recordings with original causal inputs and 25 km offers. One and miss use earlier projected factors.",
+      "cases": "sealed",
+      "id": "on-hit-waveforms",
+      "method": "partner_on_hit_whole",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "summary.json",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Partner on primary hit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "partner_on_hit_whole"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Alternating one antenna",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "one_lane_roster"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Both stock antennas",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Partner on primary miss",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "second_on_miss_roster"
+        }
+      ],
+      "title": "Partner on hit from complete waveforms to compact position"
+    }
+  ],
+  "version": 2
+}

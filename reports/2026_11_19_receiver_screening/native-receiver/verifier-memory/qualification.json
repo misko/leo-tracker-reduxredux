@@ -1,0 +1,4140 @@
+{
+  "builds": {
+    "aarch64-compact-full": {
+      "command": [
+        "aarch64-linux-gnu-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=armv8-a",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "tools/pipeline_eval/variants/portable_coarse.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "8a2290c9cc0755f8b0948be48f419705de4502cf23554ec59c9dee796f7267b4",
+        "tools/pipeline_eval/variants/fine_search.c": "959152f8f5c922ff642be84ddbe70694bb56de9ee2a9f03369d5c3c773e9aaea",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "f1dab110e9fa7e5e2632bff030deff7ff60ccdadb2cbfddbcd92daeed99164d2",
+        "tools/pipeline_eval/variants/portable_fine.h": "9496c78c83bad78ae7ead5b697894a30720719d9651e156234623facb8833376",
+        "tools/pipeline_eval/variants/portable_verifier.c": "3e5a6632e8c01127e408b5839f742fd1d5a66c165d776840ae9e3d5387f1f381",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "a38f6101e479cd5f7746f980ba0ae10c29cb4fc92c6693e63b025538f88f8062"
+      },
+      "compiler": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {
+        "tools/pipeline_eval/variants/c_fine_memory.h": "aca2d1665849d144bac9c33d61fd6a52a0c2502ec06c9acba1811445ac561a0f",
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc": "cee069c705118182c88aba5d1b946d9795b08030b2217b2bc1295770171bde7f",
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc": "bee7b4dd4e592714fa34cfe6bf34ecf557c7515fe8b213839d8ad07762d24de8",
+        "tools/pipeline_eval/variants/c_fine_memory_held.inc": "ed832aad177f30f0d85d90a19bf9558e0397443ca8c56e14bea72895e23b2e45"
+      },
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "e34d0cab179d60ea2a7533b634ed08d4a01c83adde7a95dcff435681cc56efba",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          240,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          240,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:25:13:require.part.0": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:28:13:take": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:31:13:put.part.0": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:34:17:ns.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:40:13:run": [
+          256,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:74:5:main": [
+          31360,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc:4:6:fine_search_transform": [
+          448,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc:3:12:fractional_correlations": [
+          224,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          144,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          224,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          736,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3456,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:103:6:portable_coarse_free": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:104:8:portable_coarse_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:106:28:portable_coarse_template": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:111:15:portable_coarse_scores": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:117:17:portable_coarse_support": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:134:10:portable_coarse_select": [
+          256,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:320:13:grid": [
+          53136,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:348:5:portable_coarse_acquire": [
+          688,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal": [
+          160,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal.constprop": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:92:17:portable_coarse_create": [
+          176,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:35:5:portable_fine_score": [
+          208,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:103:6:portable_verifier_free": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:107:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:111:5:portable_verifier_load": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:131:15:direct_conditioned": [
+          400,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:280:5:portable_verifier_acquire": [
+          8688,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:326:12:compare_double": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:331:15:glrt_spectrum": [
+          1200,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt": [
+          7840,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt.constprop": [
+          7840,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:433:5:portable_verifier_glrt": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:75:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:52:6:correlated_integer": [
+          288,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:80:6:correlated_fractional": [
+          304,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "aarch64-compact-stage": {
+      "command": [
+        "aarch64-linux-gnu-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=armv8-a",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "8a2290c9cc0755f8b0948be48f419705de4502cf23554ec59c9dee796f7267b4",
+        "tools/pipeline_eval/variants/fine_search.c": "959152f8f5c922ff642be84ddbe70694bb56de9ee2a9f03369d5c3c773e9aaea",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "f1dab110e9fa7e5e2632bff030deff7ff60ccdadb2cbfddbcd92daeed99164d2",
+        "tools/pipeline_eval/variants/portable_fine.h": "9496c78c83bad78ae7ead5b697894a30720719d9651e156234623facb8833376",
+        "tools/pipeline_eval/variants/portable_verifier.c": "3e5a6632e8c01127e408b5839f742fd1d5a66c165d776840ae9e3d5387f1f381",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "a38f6101e479cd5f7746f980ba0ae10c29cb4fc92c6693e63b025538f88f8062"
+      },
+      "compiler": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {
+        "tools/pipeline_eval/variants/c_fine_memory.h": "aca2d1665849d144bac9c33d61fd6a52a0c2502ec06c9acba1811445ac561a0f",
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc": "cee069c705118182c88aba5d1b946d9795b08030b2217b2bc1295770171bde7f",
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc": "bee7b4dd4e592714fa34cfe6bf34ecf557c7515fe8b213839d8ad07762d24de8",
+        "tools/pipeline_eval/variants/c_fine_memory_held.inc": "ed832aad177f30f0d85d90a19bf9558e0397443ca8c56e14bea72895e23b2e45"
+      },
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "9d2e5f07b9c42b9568371f10c526a726117f0768cb7ea7901c95271bd36537d8",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          240,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          240,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:14:13:require.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:24:13:take": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:68:5:main": [
+          8160,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc:4:6:fine_search_transform": [
+          448,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc:3:12:fractional_correlations": [
+          224,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          144,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          224,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          736,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3456,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:35:5:portable_fine_score": [
+          208,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:103:6:portable_verifier_free": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:107:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:111:5:portable_verifier_load": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:131:15:direct_conditioned": [
+          400,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:280:5:portable_verifier_acquire": [
+          8688,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:326:12:compare_double": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:331:15:glrt_spectrum": [
+          1200,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt": [
+          7840,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt.constprop": [
+          7840,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:433:5:portable_verifier_glrt": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:75:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:52:6:correlated_integer": [
+          288,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:80:6:correlated_fractional": [
+          304,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "aarch64-stock-full": {
+      "command": [
+        "aarch64-linux-gnu-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=armv8-a",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "tools/pipeline_eval/variants/portable_coarse.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      },
+      "compiler": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {},
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "07b2f8f582094e76f2cd968838de3da63b0f7e4267d8c6c41f3f388b36aa2a49",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          240,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          240,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:25:13:require.part.0": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:28:13:take": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:31:13:put.part.0": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:34:17:ns.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:40:13:run": [
+          256,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:74:5:main": [
+          31360,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          144,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          144,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:120:6:fine_search_transform": [
+          736,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3456,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:103:6:portable_coarse_free": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:104:8:portable_coarse_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:106:28:portable_coarse_template": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:111:15:portable_coarse_scores": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:117:17:portable_coarse_support": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:134:10:portable_coarse_select": [
+          256,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:320:13:grid": [
+          53136,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:348:5:portable_coarse_acquire": [
+          688,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal": [
+          160,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal.constprop": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:92:17:portable_coarse_create": [
+          176,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:36:5:portable_fine_score": [
+          192,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:100:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:104:5:portable_verifier_load": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:124:15:direct_conditioned": [
+          400,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:224:15:pilots": [
+          624,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:271:5:portable_verifier_acquire": [
+          8624,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:318:12:compare_double": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:323:15:glrt_spectrum": [
+          1200,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt": [
+          7952,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt.constprop": [
+          7808,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:448:5:portable_verifier_glrt": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:69:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:96:6:portable_verifier_free": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:51:6:correlated_integer": [
+          288,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:78:6:correlated_fractional": [
+          272,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "aarch64-stock-stage": {
+      "command": [
+        "aarch64-linux-gnu-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=armv8-a",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      },
+      "compiler": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {},
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "9b174234d15bec336569ee99c4fe506eb18d12d6197a6cfb3bc49c2d6001fdb9",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          240,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          240,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:14:13:require.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:24:13:take": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:68:5:main": [
+          8160,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          144,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          144,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:120:6:fine_search_transform": [
+          736,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3456,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:36:5:portable_fine_score": [
+          192,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:100:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:104:5:portable_verifier_load": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:124:15:direct_conditioned": [
+          400,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:224:15:pilots": [
+          624,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:271:5:portable_verifier_acquire": [
+          8624,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:318:12:compare_double": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:323:15:glrt_spectrum": [
+          1200,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt": [
+          7952,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt.constprop": [
+          7808,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak": [
+          0,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:448:5:portable_verifier_glrt": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:69:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:96:6:portable_verifier_free": [
+          32,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:51:6:correlated_integer": [
+          288,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:78:6:correlated_fractional": [
+          272,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "cortex-a9-compact-full": {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "tools/pipeline_eval/variants/portable_coarse.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "8a2290c9cc0755f8b0948be48f419705de4502cf23554ec59c9dee796f7267b4",
+        "tools/pipeline_eval/variants/fine_search.c": "959152f8f5c922ff642be84ddbe70694bb56de9ee2a9f03369d5c3c773e9aaea",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "f1dab110e9fa7e5e2632bff030deff7ff60ccdadb2cbfddbcd92daeed99164d2",
+        "tools/pipeline_eval/variants/portable_fine.h": "9496c78c83bad78ae7ead5b697894a30720719d9651e156234623facb8833376",
+        "tools/pipeline_eval/variants/portable_verifier.c": "3e5a6632e8c01127e408b5839f742fd1d5a66c165d776840ae9e3d5387f1f381",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "a38f6101e479cd5f7746f980ba0ae10c29cb4fc92c6693e63b025538f88f8062"
+      },
+      "compiler": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]",
+      "extra_sources": {
+        "tools/pipeline_eval/variants/c_fine_memory.h": "aca2d1665849d144bac9c33d61fd6a52a0c2502ec06c9acba1811445ac561a0f",
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc": "cee069c705118182c88aba5d1b946d9795b08030b2217b2bc1295770171bde7f",
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc": "bee7b4dd4e592714fa34cfe6bf34ecf557c7515fe8b213839d8ad07762d24de8",
+        "tools/pipeline_eval/variants/c_fine_memory_held.inc": "ed832aad177f30f0d85d90a19bf9558e0397443ca8c56e14bea72895e23b2e45"
+      },
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "6f16fcba1458d0aee5a080814a7730343aa96dabd9dc2bfcabd5a5231e88ec67",
+      "stack": {
+        "c_fine_memory_fft.inc:4:6:fine_search_transform": [
+          408,
+          "static"
+        ],
+        "c_fine_memory_fractional.inc:3:12:fractional_correlations": [
+          232,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          88,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:55:6:conditioned_single": [
+          48,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:7:13:moments": [
+          64,
+          "static"
+        ],
+        "fft_full.c:158:6:leo_fft_forward": [
+          128,
+          "static"
+        ],
+        "fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "fft_full.c:34:5:leo_fft_init": [
+          72,
+          "static"
+        ],
+        "fft_full.c:72:6:leo_fft_free": [
+          8,
+          "static"
+        ],
+        "fft_full.c:85:13:transform": [
+          144,
+          "static"
+        ],
+        "fine_search.c:37:6:fine_search_twiddles": [
+          3392,
+          "static"
+        ],
+        "portable_coarse.c:103:6:portable_coarse_free": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:104:8:portable_coarse_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:106:28:portable_coarse_template": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:111:15:portable_coarse_scores": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:117:17:portable_coarse_support": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:134:10:portable_coarse_select": [
+          208,
+          "static"
+        ],
+        "portable_coarse.c:320:13:grid": [
+          52832,
+          "static"
+        ],
+        "portable_coarse.c:348:5:portable_coarse_acquire": [
+          552,
+          "static"
+        ],
+        "portable_coarse.c:47:28:ideal": [
+          136,
+          "static"
+        ],
+        "portable_coarse.c:47:28:ideal.constprop": [
+          40,
+          "static"
+        ],
+        "portable_coarse.c:92:17:portable_coarse_create": [
+          120,
+          "static"
+        ],
+        "portable_coarse_cli.c:25:13:require.part.0": [
+          8,
+          "static"
+        ],
+        "portable_coarse_cli.c:34:17:ns.constprop": [
+          24,
+          "static"
+        ],
+        "portable_coarse_cli.c:40:13:run": [
+          160,
+          "static"
+        ],
+        "portable_coarse_cli.c:74:5:main": [
+          31272,
+          "static"
+        ],
+        "portable_fine.c:102:5:portable_fine_peak": [
+          56,
+          "static"
+        ],
+        "portable_fine.c:16:6:portable_fine_prepare": [
+          8,
+          "static"
+        ],
+        "portable_fine.c:35:5:portable_fine_score": [
+          120,
+          "static"
+        ],
+        "portable_verifier.c:103:6:portable_verifier_free": [
+          8,
+          "static"
+        ],
+        "portable_verifier.c:107:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:111:5:portable_verifier_load": [
+          32,
+          "static"
+        ],
+        "portable_verifier.c:131:15:direct_conditioned": [
+          360,
+          "static"
+        ],
+        "portable_verifier.c:280:5:portable_verifier_acquire": [
+          8528,
+          "static"
+        ],
+        "portable_verifier.c:326:12:compare_double": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:331:15:glrt_spectrum": [
+          1128,
+          "static"
+        ],
+        "portable_verifier.c:369:12:glrt": [
+          7768,
+          "static"
+        ],
+        "portable_verifier.c:369:12:glrt.constprop": [
+          7776,
+          "static"
+        ],
+        "portable_verifier.c:412:5:portable_verifier_fractional_peak": [
+          48,
+          "static"
+        ],
+        "portable_verifier.c:433:5:portable_verifier_glrt": [
+          120,
+          "static"
+        ],
+        "portable_verifier.c:75:19:portable_verifier_create": [
+          40,
+          "static"
+        ],
+        "refine_bank.c:52:6:correlated_integer": [
+          312,
+          "static"
+        ],
+        "refine_bank.c:80:6:correlated_fractional": [
+          312,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "cortex-a9-compact-stage": {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "8a2290c9cc0755f8b0948be48f419705de4502cf23554ec59c9dee796f7267b4",
+        "tools/pipeline_eval/variants/fine_search.c": "959152f8f5c922ff642be84ddbe70694bb56de9ee2a9f03369d5c3c773e9aaea",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "f1dab110e9fa7e5e2632bff030deff7ff60ccdadb2cbfddbcd92daeed99164d2",
+        "tools/pipeline_eval/variants/portable_fine.h": "9496c78c83bad78ae7ead5b697894a30720719d9651e156234623facb8833376",
+        "tools/pipeline_eval/variants/portable_verifier.c": "3e5a6632e8c01127e408b5839f742fd1d5a66c165d776840ae9e3d5387f1f381",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "a38f6101e479cd5f7746f980ba0ae10c29cb4fc92c6693e63b025538f88f8062"
+      },
+      "compiler": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]",
+      "extra_sources": {
+        "tools/pipeline_eval/variants/c_fine_memory.h": "aca2d1665849d144bac9c33d61fd6a52a0c2502ec06c9acba1811445ac561a0f",
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc": "cee069c705118182c88aba5d1b946d9795b08030b2217b2bc1295770171bde7f",
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc": "bee7b4dd4e592714fa34cfe6bf34ecf557c7515fe8b213839d8ad07762d24de8",
+        "tools/pipeline_eval/variants/c_fine_memory_held.inc": "ed832aad177f30f0d85d90a19bf9558e0397443ca8c56e14bea72895e23b2e45"
+      },
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "bbd8d794463340f0c702839bb3d2c172e6acb131bfc1f014ba37f30e35318ef1",
+      "stack": {
+        "c_fine_memory_fft.inc:4:6:fine_search_transform": [
+          408,
+          "static"
+        ],
+        "c_fine_memory_fractional.inc:3:12:fractional_correlations": [
+          232,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          88,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:55:6:conditioned_single": [
+          48,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:7:13:moments": [
+          64,
+          "static"
+        ],
+        "fft_full.c:158:6:leo_fft_forward": [
+          128,
+          "static"
+        ],
+        "fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "fft_full.c:34:5:leo_fft_init": [
+          72,
+          "static"
+        ],
+        "fft_full.c:72:6:leo_fft_free": [
+          8,
+          "static"
+        ],
+        "fft_full.c:85:13:transform": [
+          144,
+          "static"
+        ],
+        "fine_search.c:37:6:fine_search_twiddles": [
+          3392,
+          "static"
+        ],
+        "portable_fine.c:102:5:portable_fine_peak": [
+          56,
+          "static"
+        ],
+        "portable_fine.c:16:6:portable_fine_prepare": [
+          8,
+          "static"
+        ],
+        "portable_fine.c:35:5:portable_fine_score": [
+          120,
+          "static"
+        ],
+        "portable_verifier.c:103:6:portable_verifier_free": [
+          8,
+          "static"
+        ],
+        "portable_verifier.c:107:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:111:5:portable_verifier_load": [
+          32,
+          "static"
+        ],
+        "portable_verifier.c:131:15:direct_conditioned": [
+          360,
+          "static"
+        ],
+        "portable_verifier.c:280:5:portable_verifier_acquire": [
+          8528,
+          "static"
+        ],
+        "portable_verifier.c:326:12:compare_double": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:331:15:glrt_spectrum": [
+          1128,
+          "static"
+        ],
+        "portable_verifier.c:369:12:glrt": [
+          7768,
+          "static"
+        ],
+        "portable_verifier.c:369:12:glrt.constprop": [
+          7776,
+          "static"
+        ],
+        "portable_verifier.c:412:5:portable_verifier_fractional_peak": [
+          48,
+          "static"
+        ],
+        "portable_verifier.c:433:5:portable_verifier_glrt": [
+          120,
+          "static"
+        ],
+        "portable_verifier.c:75:19:portable_verifier_create": [
+          40,
+          "static"
+        ],
+        "portable_verifier_cli.c:14:13:require.part.0": [
+          8,
+          "static"
+        ],
+        "portable_verifier_cli.c:18:17:now": [
+          24,
+          "static"
+        ],
+        "portable_verifier_cli.c:18:17:now.constprop": [
+          24,
+          "static"
+        ],
+        "portable_verifier_cli.c:68:5:main": [
+          8000,
+          "static"
+        ],
+        "refine_bank.c:52:6:correlated_integer": [
+          312,
+          "static"
+        ],
+        "refine_bank.c:80:6:correlated_fractional": [
+          312,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "cortex-a9-stock-full": {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "tools/pipeline_eval/variants/portable_coarse.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      },
+      "compiler": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]",
+      "extra_sources": {},
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "6c412e00b99c41109af46116660df246060765aea23e870c9332e081f9c968c1",
+      "stack": {
+        "conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          88,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:55:6:conditioned_single": [
+          40,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:7:13:moments": [
+          64,
+          "static"
+        ],
+        "fft_full.c:158:6:leo_fft_forward": [
+          128,
+          "static"
+        ],
+        "fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "fft_full.c:34:5:leo_fft_init": [
+          72,
+          "static"
+        ],
+        "fft_full.c:72:6:leo_fft_free": [
+          8,
+          "static"
+        ],
+        "fft_full.c:85:13:transform": [
+          144,
+          "static"
+        ],
+        "fine_search.c:120:6:fine_search_transform": [
+          592,
+          "static"
+        ],
+        "fine_search.c:37:6:fine_search_twiddles": [
+          3392,
+          "static"
+        ],
+        "portable_coarse.c:103:6:portable_coarse_free": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:104:8:portable_coarse_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:106:28:portable_coarse_template": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:111:15:portable_coarse_scores": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:117:17:portable_coarse_support": [
+          0,
+          "static"
+        ],
+        "portable_coarse.c:134:10:portable_coarse_select": [
+          208,
+          "static"
+        ],
+        "portable_coarse.c:320:13:grid": [
+          52832,
+          "static"
+        ],
+        "portable_coarse.c:348:5:portable_coarse_acquire": [
+          552,
+          "static"
+        ],
+        "portable_coarse.c:47:28:ideal": [
+          136,
+          "static"
+        ],
+        "portable_coarse.c:47:28:ideal.constprop": [
+          40,
+          "static"
+        ],
+        "portable_coarse.c:92:17:portable_coarse_create": [
+          120,
+          "static"
+        ],
+        "portable_coarse_cli.c:25:13:require.part.0": [
+          8,
+          "static"
+        ],
+        "portable_coarse_cli.c:34:17:ns.constprop": [
+          24,
+          "static"
+        ],
+        "portable_coarse_cli.c:40:13:run": [
+          160,
+          "static"
+        ],
+        "portable_coarse_cli.c:74:5:main": [
+          31272,
+          "static"
+        ],
+        "portable_fine.c:102:5:portable_fine_peak": [
+          56,
+          "static"
+        ],
+        "portable_fine.c:16:6:portable_fine_prepare": [
+          8,
+          "static"
+        ],
+        "portable_fine.c:36:5:portable_fine_score": [
+          128,
+          "static"
+        ],
+        "portable_verifier.c:100:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:104:5:portable_verifier_load": [
+          36,
+          "static"
+        ],
+        "portable_verifier.c:124:15:direct_conditioned": [
+          360,
+          "static"
+        ],
+        "portable_verifier.c:224:15:pilots": [
+          568,
+          "static"
+        ],
+        "portable_verifier.c:271:5:portable_verifier_acquire": [
+          8496,
+          "static"
+        ],
+        "portable_verifier.c:318:12:compare_double": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:323:15:glrt_spectrum": [
+          1128,
+          "static"
+        ],
+        "portable_verifier.c:359:12:glrt": [
+          7880,
+          "static"
+        ],
+        "portable_verifier.c:427:5:portable_verifier_fractional_peak": [
+          48,
+          "static"
+        ],
+        "portable_verifier.c:448:5:portable_verifier_glrt": [
+          120,
+          "static"
+        ],
+        "portable_verifier.c:69:19:portable_verifier_create": [
+          40,
+          "static"
+        ],
+        "portable_verifier.c:96:6:portable_verifier_free": [
+          8,
+          "static"
+        ],
+        "refine_bank.c:51:6:correlated_integer": [
+          312,
+          "static"
+        ],
+        "refine_bank.c:78:6:correlated_fractional": [
+          304,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "cortex-a9-stock-stage": {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      },
+      "compiler": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]",
+      "extra_sources": {},
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "969c4780a4c7e193db99a72eecd4e298af3d909bf953d531728e034be9203ea6",
+      "stack": {
+        "conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          88,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:55:6:conditioned_single": [
+          40,
+          "static"
+        ],
+        "conditioned_cfo_bank.c:7:13:moments": [
+          64,
+          "static"
+        ],
+        "fft_full.c:158:6:leo_fft_forward": [
+          128,
+          "static"
+        ],
+        "fft_full.c:25:13:leo_fft_backend_identity": [
+          0,
+          "static"
+        ],
+        "fft_full.c:34:5:leo_fft_init": [
+          72,
+          "static"
+        ],
+        "fft_full.c:72:6:leo_fft_free": [
+          8,
+          "static"
+        ],
+        "fft_full.c:85:13:transform": [
+          144,
+          "static"
+        ],
+        "fine_search.c:120:6:fine_search_transform": [
+          592,
+          "static"
+        ],
+        "fine_search.c:37:6:fine_search_twiddles": [
+          3392,
+          "static"
+        ],
+        "portable_fine.c:102:5:portable_fine_peak": [
+          56,
+          "static"
+        ],
+        "portable_fine.c:16:6:portable_fine_prepare": [
+          8,
+          "static"
+        ],
+        "portable_fine.c:36:5:portable_fine_score": [
+          128,
+          "static"
+        ],
+        "portable_verifier.c:100:8:portable_verifier_workspace_bytes": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:104:5:portable_verifier_load": [
+          36,
+          "static"
+        ],
+        "portable_verifier.c:124:15:direct_conditioned": [
+          360,
+          "static"
+        ],
+        "portable_verifier.c:224:15:pilots": [
+          568,
+          "static"
+        ],
+        "portable_verifier.c:271:5:portable_verifier_acquire": [
+          8496,
+          "static"
+        ],
+        "portable_verifier.c:318:12:compare_double": [
+          0,
+          "static"
+        ],
+        "portable_verifier.c:323:15:glrt_spectrum": [
+          1128,
+          "static"
+        ],
+        "portable_verifier.c:359:12:glrt": [
+          7880,
+          "static"
+        ],
+        "portable_verifier.c:427:5:portable_verifier_fractional_peak": [
+          48,
+          "static"
+        ],
+        "portable_verifier.c:448:5:portable_verifier_glrt": [
+          120,
+          "static"
+        ],
+        "portable_verifier.c:69:19:portable_verifier_create": [
+          40,
+          "static"
+        ],
+        "portable_verifier.c:96:6:portable_verifier_free": [
+          8,
+          "static"
+        ],
+        "portable_verifier_cli.c:14:13:require.part.0": [
+          8,
+          "static"
+        ],
+        "portable_verifier_cli.c:18:17:now": [
+          24,
+          "static"
+        ],
+        "portable_verifier_cli.c:18:17:now.constprop": [
+          24,
+          "static"
+        ],
+        "portable_verifier_cli.c:68:5:main": [
+          8000,
+          "static"
+        ],
+        "refine_bank.c:51:6:correlated_integer": [
+          312,
+          "static"
+        ],
+        "refine_bank.c:78:6:correlated_fractional": [
+          304,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "x86-compact-full": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=x86-64-v3",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "tools/pipeline_eval/variants/portable_coarse.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "8a2290c9cc0755f8b0948be48f419705de4502cf23554ec59c9dee796f7267b4",
+        "tools/pipeline_eval/variants/fine_search.c": "959152f8f5c922ff642be84ddbe70694bb56de9ee2a9f03369d5c3c773e9aaea",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "f1dab110e9fa7e5e2632bff030deff7ff60ccdadb2cbfddbcd92daeed99164d2",
+        "tools/pipeline_eval/variants/portable_fine.h": "9496c78c83bad78ae7ead5b697894a30720719d9651e156234623facb8833376",
+        "tools/pipeline_eval/variants/portable_verifier.c": "3e5a6632e8c01127e408b5839f742fd1d5a66c165d776840ae9e3d5387f1f381",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "a38f6101e479cd5f7746f980ba0ae10c29cb4fc92c6693e63b025538f88f8062"
+      },
+      "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {
+        "tools/pipeline_eval/variants/c_fine_memory.h": "aca2d1665849d144bac9c33d61fd6a52a0c2502ec06c9acba1811445ac561a0f",
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc": "cee069c705118182c88aba5d1b946d9795b08030b2217b2bc1295770171bde7f",
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc": "bee7b4dd4e592714fa34cfe6bf34ecf557c7515fe8b213839d8ad07762d24de8",
+        "tools/pipeline_eval/variants/c_fine_memory_held.inc": "ed832aad177f30f0d85d90a19bf9558e0397443ca8c56e14bea72895e23b2e45"
+      },
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "c261b3bf94ddd2969dbd554bf4722c32e3384e870d2a0e05eb42b4953f4b770a",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          176,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          8,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          208,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:25:13:require.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:28:13:take": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:31:13:put.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:34:17:ns.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:40:13:run": [
+          272,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:74:5:main": [
+          31472,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc:4:6:fine_search_transform": [
+          480,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc:3:12:fractional_correlations": [
+          256,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          672,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          1760,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3424,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:103:6:portable_coarse_free": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:104:8:portable_coarse_workspace_bytes": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:106:28:portable_coarse_template": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:111:15:portable_coarse_scores": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:117:17:portable_coarse_support": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:134:10:portable_coarse_select": [
+          272,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:320:13:grid": [
+          53824,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:348:5:portable_coarse_acquire": [
+          768,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal": [
+          112,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal.constprop": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:92:17:portable_coarse_create": [
+          160,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          160,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:35:5:portable_fine_score": [
+          1056,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:103:6:portable_verifier_free": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:107:8:portable_verifier_workspace_bytes": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:111:5:portable_verifier_load": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:131:15:direct_conditioned": [
+          384,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:280:5:portable_verifier_acquire": [
+          8880,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:326:12:compare_double": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:331:15:glrt_spectrum": [
+          1248,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt": [
+          7904,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt.constprop": [
+          7904,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:433:5:portable_verifier_glrt": [
+          112,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:75:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:52:6:correlated_integer": [
+          480,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:80:6:correlated_fractional": [
+          368,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "x86-compact-stage": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=x86-64-v3",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "8a2290c9cc0755f8b0948be48f419705de4502cf23554ec59c9dee796f7267b4",
+        "tools/pipeline_eval/variants/fine_search.c": "959152f8f5c922ff642be84ddbe70694bb56de9ee2a9f03369d5c3c773e9aaea",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "f1dab110e9fa7e5e2632bff030deff7ff60ccdadb2cbfddbcd92daeed99164d2",
+        "tools/pipeline_eval/variants/portable_fine.h": "9496c78c83bad78ae7ead5b697894a30720719d9651e156234623facb8833376",
+        "tools/pipeline_eval/variants/portable_verifier.c": "3e5a6632e8c01127e408b5839f742fd1d5a66c165d776840ae9e3d5387f1f381",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "a38f6101e479cd5f7746f980ba0ae10c29cb4fc92c6693e63b025538f88f8062"
+      },
+      "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {
+        "tools/pipeline_eval/variants/c_fine_memory.h": "aca2d1665849d144bac9c33d61fd6a52a0c2502ec06c9acba1811445ac561a0f",
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc": "cee069c705118182c88aba5d1b946d9795b08030b2217b2bc1295770171bde7f",
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc": "bee7b4dd4e592714fa34cfe6bf34ecf557c7515fe8b213839d8ad07762d24de8",
+        "tools/pipeline_eval/variants/c_fine_memory_held.inc": "ed832aad177f30f0d85d90a19bf9558e0397443ca8c56e14bea72895e23b2e45"
+      },
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "88b3b32ab020e75fd61acce441e5fcee76a906b1fb2976d4ac0a91fea7f101ce",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          176,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          8,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          208,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:14:13:require.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:24:13:take": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:68:5:main": [
+          8272,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fft.inc:4:6:fine_search_transform": [
+          480,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/c_fine_memory_fractional.inc:3:12:fractional_correlations": [
+          256,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          672,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          1760,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3424,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          160,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:35:5:portable_fine_score": [
+          1056,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:103:6:portable_verifier_free": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:107:8:portable_verifier_workspace_bytes": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:111:5:portable_verifier_load": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:131:15:direct_conditioned": [
+          384,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:280:5:portable_verifier_acquire": [
+          8880,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:326:12:compare_double": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:331:15:glrt_spectrum": [
+          1248,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt": [
+          7904,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:369:12:glrt.constprop": [
+          7904,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:412:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:433:5:portable_verifier_glrt": [
+          112,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:75:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:52:6:correlated_integer": [
+          480,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:80:6:correlated_fractional": [
+          368,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "x86-stock-full": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=x86-64-v3",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "tools/pipeline_eval/variants/portable_coarse.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      },
+      "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {},
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "413fa11bafc1eb1158a11d077137d3c34e82bfd94316df199d755519235193f2",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          176,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          8,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          208,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:25:13:require.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:28:13:take": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:31:13:put.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:34:17:ns.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:40:13:run": [
+          272,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c:74:5:main": [
+          31472,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          160,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          288,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:120:6:fine_search_transform": [
+          608,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3424,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:103:6:portable_coarse_free": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:104:8:portable_coarse_workspace_bytes": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:106:28:portable_coarse_template": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:111:15:portable_coarse_scores": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:117:17:portable_coarse_support": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:134:10:portable_coarse_select": [
+          272,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:320:13:grid": [
+          53824,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:348:5:portable_coarse_acquire": [
+          768,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal": [
+          112,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:47:28:ideal.constprop": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_coarse.c:92:17:portable_coarse_create": [
+          160,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          160,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:36:5:portable_fine_score": [
+          192,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:100:8:portable_verifier_workspace_bytes": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:104:5:portable_verifier_load": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:124:15:direct_conditioned": [
+          384,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:224:15:pilots": [
+          640,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:271:5:portable_verifier_acquire": [
+          8816,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:318:12:compare_double": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:323:15:glrt_spectrum": [
+          1248,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt": [
+          7968,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt.constprop": [
+          7904,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:448:5:portable_verifier_glrt": [
+          112,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:69:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:96:6:portable_verifier_free": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:51:6:correlated_integer": [
+          416,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:78:6:correlated_fractional": [
+          368,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    },
+    "x86-stock-stage": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=x86-64-v3",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c",
+        "tools/pipeline_eval/variants/portable_verifier.c",
+        "tools/pipeline_eval/variants/portable_fine.c",
+        "tools/pipeline_eval/variants/fine_search.c",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "tools/pipeline_eval/variants/refine_bank.c",
+        "native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "detector"
+      ],
+      "compiled_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "a6f5ab629f7530cde357749b99c16b16ab13066f6d04437e558287038e750659",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      },
+      "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "extra_sources": {},
+      "revision": "234490f2b9b437d55ad4357c6ecc6dbad740bab6",
+      "sha256": "60c5c2002a2cd04b3820716e6ad191e754741afaf01742c14ffe837652c5f301",
+      "stack": {
+        "native/adaptive/detector/kernel/private/fft_full.c:158:6:leo_fft_forward": [
+          176,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:25:13:leo_fft_backend_identity": [
+          8,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:34:5:leo_fft_init": [
+          96,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:72:6:leo_fft_free": [
+          32,
+          "static"
+        ],
+        "native/adaptive/detector/kernel/private/fft_full.c:85:13:transform": [
+          208,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:14:13:require.part.0": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:18:17:now.constprop": [
+          48,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:24:13:take": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c:68:5:main": [
+          8272,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:37:6:conditioned_moments": [
+          128,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:55:6:conditioned_single": [
+          160,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c:7:13:moments": [
+          288,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:120:6:fine_search_transform": [
+          608,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/fine_search.c:37:6:fine_search_twiddles": [
+          3424,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:102:5:portable_fine_peak": [
+          160,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:16:6:portable_fine_prepare": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_fine.c:36:5:portable_fine_score": [
+          192,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:100:8:portable_verifier_workspace_bytes": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:104:5:portable_verifier_load": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:124:15:direct_conditioned": [
+          384,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:224:15:pilots": [
+          640,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:271:5:portable_verifier_acquire": [
+          8816,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:318:12:compare_double": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:323:15:glrt_spectrum": [
+          1248,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt": [
+          7968,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:359:12:glrt.constprop": [
+          7904,
+          "dynamic,bounded"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak": [
+          8,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:427:5:portable_verifier_fractional_peak.part.0": [
+          80,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:448:5:portable_verifier_glrt": [
+          112,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:69:19:portable_verifier_create": [
+          64,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/portable_verifier.c:96:6:portable_verifier_free": [
+          16,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:51:6:correlated_integer": [
+          416,
+          "static"
+        ],
+        "tools/pipeline_eval/variants/refine_bank.c:78:6:correlated_fractional": [
+          368,
+          "static"
+        ]
+      },
+      "stock_sources": {
+        "native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+        "native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+        "tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+        "tools/pipeline_eval/qualification/portable_verifier_cli.c": "f6884b3c57ffc467cd3c2758dddc2748cc468ef15e2cce199c5d359383ca7f96",
+        "tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+        "tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+        "tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+        "tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+        "tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+        "tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+        "tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+        "tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+        "tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+      }
+    }
+  },
+  "checks": {
+    "aarch64-arm-full": {
+      "closest_fractional_margin": {
+        "fail": 0.010722234275726508,
+        "pass": null
+      },
+      "counts": {
+        "candidates": 32,
+        "conditioned_tie": 0,
+        "different_numeric_records": 32,
+        "equivalent_tie": 0,
+        "fine_guard": 0,
+        "fractional_complete": 14,
+        "fractional_pass": 0,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 0,
+        "short_conditioned_frames": 32
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.5612511283791264e-17,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 1.734723475976807e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "aarch64-arm-stage.bin": {
+      "closest_fractional_margin": {
+        "fail": 0.002669727605971374,
+        "pass": 0.025002313684650508
+      },
+      "counts": {
+        "candidates": 16,
+        "conditioned_tie": 0,
+        "different_numeric_records": 16,
+        "equivalent_tie": 4,
+        "fine_guard": 0,
+        "fractional_complete": 12,
+        "fractional_pass": 8,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 7,
+        "short_conditioned_frames": 16
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.1102230246251565e-16,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 8.326672684688674e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "cortex-a9-arm-stage.bin": {
+      "closest_fractional_margin": {
+        "fail": 0.002669727605971367,
+        "pass": 0.025002313684650494
+      },
+      "counts": {
+        "candidates": 16,
+        "conditioned_tie": 0,
+        "different_numeric_records": 0,
+        "equivalent_tie": 4,
+        "fine_guard": 0,
+        "fractional_complete": 12,
+        "fractional_pass": 8,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 7,
+        "short_conditioned_frames": 16
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 0,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 0,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-DS26-0237-stage.bin": {
+      "closest_fractional_margin": {
+        "fail": 0.024928365588199358,
+        "pass": 0.025002313684650508
+      },
+      "counts": {
+        "candidates": 32,
+        "conditioned_tie": 0,
+        "different_numeric_records": 32,
+        "equivalent_tie": 10,
+        "fine_guard": 0,
+        "fractional_complete": 25,
+        "fractional_pass": 15,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 14,
+        "short_conditioned_frames": 32
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.1102230246251565e-16,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 5.551115123125783e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-DS29-0082-stage.bin": {
+      "closest_fractional_margin": {
+        "fail": 0.012770190934743388,
+        "pass": 0.025063875350189654
+      },
+      "counts": {
+        "candidates": 64,
+        "conditioned_tie": 0,
+        "different_numeric_records": 64,
+        "equivalent_tie": 2,
+        "fine_guard": 0,
+        "fractional_complete": 32,
+        "fractional_pass": 4,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 3,
+        "short_conditioned_frames": 64
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 5.551115123125783e-17,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 1.3877787807814457e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-DS29-0519-stage.bin": {
+      "closest_fractional_margin": {
+        "fail": 0.011736468742384931,
+        "pass": null
+      },
+      "counts": {
+        "candidates": 16,
+        "conditioned_tie": 0,
+        "different_numeric_records": 16,
+        "equivalent_tie": 2,
+        "fine_guard": 0,
+        "fractional_complete": 7,
+        "fractional_pass": 0,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 0,
+        "short_conditioned_frames": 16
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.5612511283791264e-17,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 1.5612511283791264e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-development": {
+      "closest_fractional_margin": {
+        "fail": 0.024928365588199358,
+        "pass": 0.0250023136846505
+      },
+      "counts": {
+        "candidates": 112,
+        "conditioned_tie": 0,
+        "different_numeric_records": 112,
+        "equivalent_tie": 14,
+        "fine_guard": 0,
+        "fractional_complete": 64,
+        "fractional_pass": 19,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 17,
+        "short_conditioned_frames": 112
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.1102230246251565e-16,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 5.551115123125783e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-guard-full": {
+      "closest_fractional_margin": {
+        "fail": 0.007071602436432622,
+        "pass": null
+      },
+      "counts": {
+        "candidates": 16,
+        "conditioned_tie": 0,
+        "different_numeric_records": 16,
+        "equivalent_tie": 0,
+        "fine_guard": 0,
+        "fractional_complete": 8,
+        "fractional_pass": 0,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 0,
+        "short_conditioned_frames": 16
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 6.938893903907228e-18,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 1.0408340855860843e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-guard-stage.bin": {
+      "closest_fractional_margin": {
+        "fail": 0.008923621354638582,
+        "pass": null
+      },
+      "counts": {
+        "candidates": 15,
+        "conditioned_tie": 10,
+        "different_numeric_records": 5,
+        "equivalent_tie": 6,
+        "fine_guard": 10,
+        "fractional_complete": 5,
+        "fractional_pass": 0,
+        "gate_guard": 0,
+        "glrt_bin_tie": 5,
+        "integer_pass": 0,
+        "short_conditioned_frames": 9
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.0408340855860843e-17,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 6.938893903907228e-18,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    },
+    "x86-held": {
+      "closest_fractional_margin": {
+        "fail": 0.02350470241058103,
+        "pass": 0.026019820909316316
+      },
+      "counts": {
+        "candidates": 224,
+        "conditioned_tie": 0,
+        "different_numeric_records": 224,
+        "equivalent_tie": 26,
+        "fine_guard": 0,
+        "fractional_complete": 127,
+        "fractional_pass": 38,
+        "gate_guard": 0,
+        "glrt_bin_tie": 0,
+        "integer_pass": 37,
+        "short_conditioned_frames": 224
+      },
+      "max_absolute_errors": {
+        "acquired_hz": 0,
+        "conditioned_grid_hz": 0,
+        "conditioned_scores": 1.3877787807814457e-16,
+        "curvature": 0,
+        "fine_hz": 0,
+        "fractional_margin": 0,
+        "fractional_offset": 0,
+        "fractional_scores": 0,
+        "glrt_hz": 0,
+        "held_scores": 8.326672684688674e-17,
+        "integer_margin": 0,
+        "integer_scores": 0
+      }
+    }
+  },
+  "inputs": {
+    "held": [
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS26-0237",
+        "edge": "lower",
+        "iq_sha256": "sha256:e2be4f34937348883623054afe5a7833f95cc6f859c8db18681de62d53442c9c",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "purpose": "rejected",
+        "visit": 4344
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS26-0237",
+        "edge": "lower",
+        "iq_sha256": "sha256:c456f8f486c43cdd2cfecf05e99864cd77181b5368d17ef63d4d7812ac4e995c",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "purpose": "dilute",
+        "visit": 3686
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS26-0237",
+        "edge": "lower",
+        "iq_sha256": "sha256:6557b4075ce61baef04c8a3d1a26d1bdf5ad5b5c473f79dc226776edfef3949f",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "purpose": "equivalent",
+        "visit": 3983
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS26-0237",
+        "edge": "lower",
+        "iq_sha256": "sha256:8a958c91435d809a0441e341074ccd5dcf88f448e8ed89243f1eb55459600da2",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "purpose": "stereo",
+        "visit": 763
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0082",
+        "edge": "upper",
+        "iq_sha256": "sha256:1c68a35cd5767d72bce21ba630aff8a9a69d1488ea45fdf4d3c3f7e041aad20c",
+        "producer": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "purpose": "rejected",
+        "visit": 887
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0082",
+        "edge": "upper",
+        "iq_sha256": "sha256:05244f0c11e8d4ceab56b8f8976e6c397b8f26dd95a2bf4116bcdeaeba33cc22",
+        "producer": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "purpose": "dilute",
+        "visit": 6718
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0082",
+        "edge": "upper",
+        "iq_sha256": "sha256:b890c6544bf22716fe8643e11f00bfc58702437852e7bd776b5efe3e17307108",
+        "producer": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "purpose": "equivalent",
+        "visit": 679
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0082",
+        "edge": "upper",
+        "iq_sha256": "sha256:6ae53e648799f0d141d358e5a5fd020ef7c4464f1de62c2ab21980e1ea753757",
+        "producer": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "purpose": "stereo",
+        "visit": 5594
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0519",
+        "edge": "lower",
+        "iq_sha256": "sha256:dd268cf75a98b7ad3ee8db8b8dfc15035afdf14ab554f1b8ba67fdb8b2747b3f",
+        "producer": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "purpose": "rejected",
+        "visit": 925
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0519",
+        "edge": "lower",
+        "iq_sha256": "sha256:d1d89752c6bc9707be6d6abb71fd9734e2b863c1e5de79db8f5de32f51a1fde3",
+        "producer": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "purpose": "dilute",
+        "visit": 5863
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0519",
+        "edge": "lower",
+        "iq_sha256": "sha256:d7c2a860d2615b3738547dedc2bbfd890f73171699cea1423b245cc8243c471e",
+        "producer": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "purpose": "equivalent",
+        "visit": 6504
+      },
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "case": "DS29-0519",
+        "edge": "lower",
+        "iq_sha256": "sha256:f052f246f2b0789236ff7d42ce7150b3cec27da44a890955acd3c28a72513e84",
+        "producer": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "purpose": "stereo",
+        "visit": 5892
+      }
+    ],
+    "references": {
+      "reports/2026_11_19_receiver_screening/coarse-and-navigation/portable-verifier": "481a79c7581330d68dfd1ed5dd35e4fe27bac4bc77c1a3996d4907e782a6b9ec",
+      "reports/2026_11_19_receiver_screening/original-schedule/verifier-integration": "c20332eac653646adef761d6e9c6d150e623a0e8fad5fc22de7261476fdc1f53"
+    },
+    "retained": {
+      "DS26-0237-stage.bin": {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "edge": "lower",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "sha256": "20839f4b2cc0f1d42711fb909c9e6fcef88276131fa6f78735375e1a32966a4c",
+        "visits": [
+          {
+            "iq_sha256": "c80ef2417a54de70d39740016bfd9847f2dc4a0c2f3e7e227e58fcafbbc1259e",
+            "purpose": "closest recorded above gate",
+            "visit": 1561
+          },
+          {
+            "iq_sha256": "36a538162ddc07c23a3eeab75587a924b9689cc02d5e3c60832431135d896706",
+            "purpose": "closest recorded below gate",
+            "visit": 3235
+          }
+        ]
+      },
+      "DS29-0082-stage.bin": {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "edge": "upper",
+        "producer": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "sha256": "efc15d0b6fbb0e4cd2277b7d2bfa310c0f2b31ece565f4d8ff31e78e3479e3ee",
+        "visits": [
+          {
+            "iq_sha256": "cb928af9f149e7f92a194e05772d5700ef8e5d5c6df4127a78e99dfeba211623",
+            "purpose": "dual positive",
+            "visit": 141
+          },
+          {
+            "iq_sha256": "97068c1aff4868409d50557c09884f9cd8994850734a00619529b2d64b3d4cc9",
+            "purpose": "no pass",
+            "visit": 152
+          },
+          {
+            "iq_sha256": "7cac17f3b9f426fbdec7fb1453e5bc1e6bde191027b466d87f1c3c3e9ba28c52",
+            "purpose": "closest recorded above gate",
+            "visit": 5855
+          }
+        ]
+      },
+      "DS29-0519-stage.bin": {
+        "bounds": [
+          0.0,
+          0.0,
+          -800000.0,
+          800000.0
+        ],
+        "edge": "lower",
+        "producer": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "sha256": "c3aa207fff43b0653eac2781ba7a916ee7c145c68df44132df77fd2e2230e3a4",
+        "visits": [
+          {
+            "iq_sha256": "b510500d3e3b11db97431be857565fcbf2f794e3cf7382e33fde914c03fe017a",
+            "purpose": "equivalent candidate tie",
+            "visit": 153
+          }
+        ]
+      }
+    },
+    "streams": {
+      "DS26-0237-stage.bin": "20839f4b2cc0f1d42711fb909c9e6fcef88276131fa6f78735375e1a32966a4c",
+      "DS29-0082-stage.bin": "efc15d0b6fbb0e4cd2277b7d2bfa310c0f2b31ece565f4d8ff31e78e3479e3ee",
+      "DS29-0519-stage.bin": "c3aa207fff43b0653eac2781ba7a916ee7c145c68df44132df77fd2e2230e3a4",
+      "arm-full.bin": "91745d56c7dc1c947f8735f870c8dae8bfb211e6c4bdae69617e005923c77506",
+      "arm-stage.bin": "74ccf5c9d7c6c932dbe0afd8a1ee4a33cb2138fd92a30a0945b32e92e3dcbe73",
+      "development.bin": "ffe6b9e14acd65d02da62f96178e837add376aca68b83c1ed79c1a04d5622980",
+      "guard-full.bin": "4f09ad5e3104fac8f9ec830d164fccf133ceb1711c2b9569dd56124e43bdccb8",
+      "guard-stage.bin": "abffa63acd6b95e72f002f2781c03a18f95ee9b5e5f34fdfa24565e998378ed9",
+      "held.bin": "733662701b708b0aabb2905e9c8f4f6fa7f90f04b444912de6294e27792d0d0c",
+      "truncated.bin": "197929dbd0bbea178baa2a375dfb06e5a079974d5ceb5f2e4af7391daa9c6882"
+    }
+  },
+  "metadata": {
+    "host_model": "Intel(R) Core(TM) Ultra 9 285K",
+    "load_end": "58.35 58.78 56.07 55/3368 2449513",
+    "load_start": "57.63 59.50 55.69 58/3285 2443965"
+  },
+  "original_self_tests_passed": true,
+  "timings": [
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2874913420,
+      "coarse_wall_ns": 2916430370,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4662800205,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4600084759,
+      "repeat": 0,
+      "setup_cpu_ns": 18089190,
+      "setup_wall_ns": 19032097,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1694495305,
+      "verify_wall_ns": 1714030649,
+      "visits": 12,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2863584239,
+      "coarse_wall_ns": 2965370207,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4228472559,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4090312146,
+      "repeat": 0,
+      "setup_cpu_ns": 17902108,
+      "setup_wall_ns": 18224013,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1197395946,
+      "verify_wall_ns": 1232652294,
+      "visits": 12,
+      "vm_hwm_kib": 10264
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2837557639,
+      "coarse_wall_ns": 2917781392,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 4115991492,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4033266677,
+      "repeat": 1,
+      "setup_cpu_ns": 16679045,
+      "setup_wall_ns": 18277832,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1169540410,
+      "verify_wall_ns": 1169661733,
+      "visits": 12,
+      "vm_hwm_kib": 10260
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2842783620,
+      "coarse_wall_ns": 3041390750,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 4662346372,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4462245222,
+      "repeat": 1,
+      "setup_cpu_ns": 18645186,
+      "setup_wall_ns": 18650034,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1590718128,
+      "verify_wall_ns": 1591517722,
+      "visits": 12,
+      "vm_hwm_kib": 13576
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2848710299,
+      "coarse_wall_ns": 2909555918,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4140493432,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4044989404,
+      "repeat": 2,
+      "setup_cpu_ns": 16417251,
+      "setup_wall_ns": 16466287,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1170401272,
+      "verify_wall_ns": 1204514343,
+      "visits": 12,
+      "vm_hwm_kib": 10264
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2835908756,
+      "coarse_wall_ns": 2883485411,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4429116225,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4349140340,
+      "repeat": 2,
+      "setup_cpu_ns": 17741157,
+      "setup_wall_ns": 18481778,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1486898722,
+      "verify_wall_ns": 1517568993,
+      "visits": 12,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2826812363,
+      "coarse_wall_ns": 2849753974,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 4396241109,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4358629905,
+      "repeat": 3,
+      "setup_cpu_ns": 17643372,
+      "setup_wall_ns": 17709420,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1504133014,
+      "verify_wall_ns": 1518207295,
+      "visits": 12,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2838148880,
+      "coarse_wall_ns": 2859886389,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 4066104657,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4034583125,
+      "repeat": 3,
+      "setup_cpu_ns": 17110938,
+      "setup_wall_ns": 17465540,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1169281173,
+      "verify_wall_ns": 1177920178,
+      "visits": 12,
+      "vm_hwm_kib": 10268
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2839420427,
+      "coarse_wall_ns": 2868694588,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4488780338,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4420999890,
+      "repeat": 4,
+      "setup_cpu_ns": 17215341,
+      "setup_wall_ns": 17669478,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1555128337,
+      "verify_wall_ns": 1592451126,
+      "visits": 12,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2835539218,
+      "coarse_wall_ns": 2874201373,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4068845790,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4023638255,
+      "repeat": 4,
+      "setup_cpu_ns": 16692315,
+      "setup_wall_ns": 16976421,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1162129946,
+      "verify_wall_ns": 1167855719,
+      "visits": 12,
+      "vm_hwm_kib": 10264
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2821224701,
+      "coarse_wall_ns": 2834442893,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 4027833866,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4008142994,
+      "repeat": 5,
+      "setup_cpu_ns": 16912604,
+      "setup_wall_ns": 17033069,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1159999301,
+      "verify_wall_ns": 1165321034,
+      "visits": 12,
+      "vm_hwm_kib": 10264
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2817179755,
+      "coarse_wall_ns": 2952482641,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 5995865766,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4400462215,
+      "repeat": 5,
+      "setup_cpu_ns": 17522241,
+      "setup_wall_ns": 17565939,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1556001365,
+      "verify_wall_ns": 3015284679,
+      "visits": 12,
+      "vm_hwm_kib": 13576
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2839799315,
+      "coarse_wall_ns": 2857771583,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4055368843,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4018819513,
+      "repeat": 6,
+      "setup_cpu_ns": 16322078,
+      "setup_wall_ns": 16372140,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1153861955,
+      "verify_wall_ns": 1171710566,
+      "visits": 12,
+      "vm_hwm_kib": 10268
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2852704482,
+      "coarse_wall_ns": 2937665470,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 4430458512,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4284756512,
+      "repeat": 6,
+      "setup_cpu_ns": 17181204,
+      "setup_wall_ns": 17435280,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1405969987,
+      "verify_wall_ns": 1465811935,
+      "visits": 12,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "stock",
+      "candidates": 224,
+      "coarse_cpu_ns": 2836331260,
+      "coarse_wall_ns": 2891040964,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 4305453418,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 4212149694,
+      "repeat": 7,
+      "setup_cpu_ns": 16693382,
+      "setup_wall_ns": 16784325,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 1351006057,
+      "verify_wall_ns": 1388833073,
+      "visits": 12,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "compact",
+      "candidates": 224,
+      "coarse_cpu_ns": 2820623894,
+      "coarse_wall_ns": 2823911861,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 11,
+      "elapsed_ns": 3987668179,
+      "fixture": "held",
+      "groups": 28,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 3979548790,
+      "repeat": 7,
+      "setup_cpu_ns": 16675623,
+      "setup_wall_ns": 17777129,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 1134386196,
+      "verify_wall_ns": 1137486846,
+      "visits": 12,
+      "vm_hwm_kib": 10264
+    },
+    {
+      "arm": "stock",
+      "candidates": 112,
+      "coarse_cpu_ns": 1426375889,
+      "coarse_wall_ns": 1485016595,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 2312337814,
+      "fixture": "development",
+      "groups": 14,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 2161640304,
+      "repeat": 0,
+      "setup_cpu_ns": 17572351,
+      "setup_wall_ns": 17600886,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 712657136,
+      "verify_wall_ns": 804280006,
+      "visits": 6,
+      "vm_hwm_kib": 13576
+    },
+    {
+      "arm": "compact",
+      "candidates": 112,
+      "coarse_cpu_ns": 1433884243,
+      "coarse_wall_ns": 1548838780,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 2177489987,
+      "fixture": "development",
+      "groups": 14,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 2040180039,
+      "repeat": 0,
+      "setup_cpu_ns": 16725597,
+      "setup_wall_ns": 17123138,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 585674682,
+      "verify_wall_ns": 607261067,
+      "visits": 6,
+      "vm_hwm_kib": 10264
+    },
+    {
+      "arm": "stock",
+      "candidates": 16,
+      "coarse_cpu_ns": 388919373,
+      "coarse_wall_ns": 401012206,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 513325075,
+      "fixture": "guard-full",
+      "groups": 6,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 498594700,
+      "repeat": 0,
+      "setup_cpu_ns": 11216141,
+      "setup_wall_ns": 13432911,
+      "target": "x86",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 96208830,
+      "verify_wall_ns": 96250987,
+      "visits": 3,
+      "vm_hwm_kib": 13580
+    },
+    {
+      "arm": "compact",
+      "candidates": 16,
+      "coarse_cpu_ns": 391846946,
+      "coarse_wall_ns": 436382763,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 535541363,
+      "fixture": "guard-full",
+      "groups": 6,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 487851052,
+      "repeat": 0,
+      "setup_cpu_ns": 10488639,
+      "setup_wall_ns": 10775230,
+      "target": "x86",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 83270333,
+      "verify_wall_ns": 85924692,
+      "visits": 3,
+      "vm_hwm_kib": 10256
+    },
+    {
+      "acquire_cpu_ns": 147934090,
+      "arm": "stock",
+      "candidates": 32,
+      "cpu": 11,
+      "elapsed_ns": 199012062,
+      "fixture": "DS26-0237-stage.bin",
+      "glrt_cpu_ns": 46097781,
+      "groups": 4,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 2660289,
+      "peak_rss_kib": 8648,
+      "process_cpu_ns": 198792946,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 450274,
+      "target": "x86",
+      "visits": 2,
+      "workspace_bytes": 5858144
+    },
+    {
+      "acquire_cpu_ns": 130505169,
+      "arm": "compact",
+      "candidates": 32,
+      "cpu": 11,
+      "elapsed_ns": 224701724,
+      "fixture": "DS26-0237-stage.bin",
+      "glrt_cpu_ns": 46661942,
+      "groups": 4,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 1235060,
+      "peak_rss_kib": 5264,
+      "process_cpu_ns": 180489587,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 198206,
+      "target": "x86",
+      "visits": 2,
+      "workspace_bytes": 2378232
+    },
+    {
+      "acquire_cpu_ns": 348505299,
+      "arm": "stock",
+      "candidates": 64,
+      "cpu": 11,
+      "elapsed_ns": 555248658,
+      "fixture": "DS29-0082-stage.bin",
+      "glrt_cpu_ns": 84689568,
+      "groups": 8,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 3765777,
+      "peak_rss_kib": 8652,
+      "process_cpu_ns": 439552676,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 356619,
+      "target": "x86",
+      "visits": 3,
+      "workspace_bytes": 5858144
+    },
+    {
+      "acquire_cpu_ns": 252379713,
+      "arm": "compact",
+      "candidates": 64,
+      "cpu": 11,
+      "elapsed_ns": 359552457,
+      "fixture": "DS29-0082-stage.bin",
+      "glrt_cpu_ns": 75564467,
+      "groups": 8,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 1655972,
+      "peak_rss_kib": 5264,
+      "process_cpu_ns": 331929143,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 208391,
+      "target": "x86",
+      "visits": 3,
+      "workspace_bytes": 2378232
+    },
+    {
+      "acquire_cpu_ns": 76719253,
+      "arm": "stock",
+      "candidates": 16,
+      "cpu": 11,
+      "elapsed_ns": 99807166,
+      "fixture": "DS29-0519-stage.bin",
+      "glrt_cpu_ns": 19218166,
+      "groups": 2,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 1626124,
+      "peak_rss_kib": 8652,
+      "process_cpu_ns": 99059846,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 422506,
+      "target": "x86",
+      "visits": 1,
+      "workspace_bytes": 5858144
+    },
+    {
+      "acquire_cpu_ns": 62307937,
+      "arm": "compact",
+      "candidates": 16,
+      "cpu": 11,
+      "elapsed_ns": 83659577,
+      "fixture": "DS29-0519-stage.bin",
+      "glrt_cpu_ns": 17813949,
+      "groups": 2,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 927983,
+      "peak_rss_kib": 5264,
+      "process_cpu_ns": 82737302,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 250773,
+      "target": "x86",
+      "visits": 1,
+      "workspace_bytes": 2378232
+    },
+    {
+      "acquire_cpu_ns": 203675675,
+      "arm": "stock",
+      "candidates": 15,
+      "cpu": 11,
+      "elapsed_ns": 249126122,
+      "fixture": "guard-stage.bin",
+      "glrt_cpu_ns": 14109803,
+      "groups": 6,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 2898240,
+      "peak_rss_kib": 8652,
+      "process_cpu_ns": 223189059,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 359604,
+      "target": "x86",
+      "visits": 3,
+      "workspace_bytes": 5858144
+    },
+    {
+      "acquire_cpu_ns": 141047816,
+      "arm": "compact",
+      "candidates": 15,
+      "cpu": 11,
+      "elapsed_ns": 158359093,
+      "fixture": "guard-stage.bin",
+      "glrt_cpu_ns": 13255905,
+      "groups": 6,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 1403587,
+      "peak_rss_kib": 5268,
+      "process_cpu_ns": 158034122,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 196130,
+      "target": "x86",
+      "visits": 3,
+      "workspace_bytes": 2378232
+    },
+    {
+      "arm": "stock",
+      "candidates": 32,
+      "coarse_cpu_ns": 23757894982,
+      "coarse_wall_ns": 24275909175,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 28552329509,
+      "fixture": "arm-full",
+      "groups": 4,
+      "input_bytes": 1600000,
+      "order": 0,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 27947468182,
+      "repeat": 0,
+      "setup_cpu_ns": 96138266,
+      "setup_wall_ns": 97253328,
+      "target": "aarch64",
+      "verifier_workspace_bytes": 5858144,
+      "verify_cpu_ns": 4086771842,
+      "verify_wall_ns": 4172429108,
+      "visits": 2,
+      "vm_hwm_kib": 20492
+    },
+    {
+      "arm": "compact",
+      "candidates": 32,
+      "coarse_cpu_ns": 23753351063,
+      "coarse_wall_ns": 24125050812,
+      "coarse_workspace_bytes": 5374168,
+      "cpu": 10,
+      "elapsed_ns": 28355941253,
+      "fixture": "arm-full",
+      "groups": 4,
+      "input_bytes": 1600000,
+      "order": 1,
+      "peak_rss_kib": 101508,
+      "process_cpu_ns": 27966696530,
+      "repeat": 0,
+      "setup_cpu_ns": 92192543,
+      "setup_wall_ns": 92586133,
+      "target": "aarch64",
+      "verifier_workspace_bytes": 2378232,
+      "verify_cpu_ns": 4115432724,
+      "verify_wall_ns": 4132847748,
+      "visits": 2,
+      "vm_hwm_kib": 17196
+    },
+    {
+      "acquire_cpu_ns": 1594367018,
+      "arm": "stock",
+      "candidates": 16,
+      "cpu": 11,
+      "elapsed_ns": 2163549234,
+      "fixture": "arm-stage.bin",
+      "glrt_cpu_ns": 531032441,
+      "groups": 2,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 4340337,
+      "peak_rss_kib": 15240,
+      "process_cpu_ns": 2135853243,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 2519207,
+      "target": "aarch64",
+      "visits": 1,
+      "workspace_bytes": 5858144
+    },
+    {
+      "acquire_cpu_ns": 1633988279,
+      "arm": "compact",
+      "candidates": 16,
+      "cpu": 11,
+      "elapsed_ns": 2174332393,
+      "fixture": "arm-stage.bin",
+      "glrt_cpu_ns": 508939848,
+      "groups": 2,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 1232339,
+      "peak_rss_kib": 11944,
+      "process_cpu_ns": 2150000181,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 2197576,
+      "target": "aarch64",
+      "visits": 1,
+      "workspace_bytes": 2378232
+    },
+    {
+      "acquire_cpu_ns": 1634951692,
+      "arm": "stock",
+      "candidates": 16,
+      "cpu": 11,
+      "elapsed_ns": 9859936723,
+      "fixture": "arm-stage.bin",
+      "glrt_cpu_ns": 7772027309,
+      "groups": 2,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 2568145,
+      "peak_rss_kib": 15552,
+      "process_cpu_ns": 9417640095,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 4298782,
+      "target": "cortex-a9",
+      "visits": 1,
+      "workspace_bytes": 5858096
+    },
+    {
+      "acquire_cpu_ns": 1595561454,
+      "arm": "compact",
+      "candidates": 16,
+      "cpu": 11,
+      "elapsed_ns": 9706820916,
+      "fixture": "arm-stage.bin",
+      "glrt_cpu_ns": 7784164288,
+      "groups": 2,
+      "input_alloc_bytes": 2026656,
+      "load_cpu_ns": 1404333,
+      "peak_rss_kib": 12144,
+      "process_cpu_ns": 9389292867,
+      "repeat": 0,
+      "rusage_maxrss_kib": 101508,
+      "setup_cpu_ns": 4154840,
+      "target": "cortex-a9",
+      "visits": 1,
+      "workspace_bytes": 2378184
+    }
+  ],
+  "trial_source_sha256": {
+    "tests/pipeline_eval/test_c_fine_memory.py": "a40c586728c2995dadfa5b394f0db474907fcbda6118e8c215bcf8c5faa3de57",
+    "tools/pipeline_eval/qualification/c_fine_memory_build.py": "8448839fd8c8c6fe70475e5e550d67a1c5dc3432ac0be18a0f5daed57a484e13",
+    "tools/pipeline_eval/qualification/c_fine_memory_stage.py": "e8ffe7fca8d1fef09e3ff482a8fcfdc0203d3376a01224e70a3bb4d8e50df57e",
+    "tools/pipeline_eval/qualification/c_fine_memory_trial.py": "816172053f4a9d197bfa91664f006935509634f30eeae072b324d049c36877ef"
+  },
+  "truncated_raw_rejected": true,
+  "x86_sampling_profile": {
+    "compact": {
+      "executable_sha256": "ec16c7705b281758b777d863b15d9c73eeed5bc425ddb6b98caa1dbf66d322cc",
+      "flat_profile": [
+        " time   seconds   seconds    calls   s/call   s/call  name    ",
+        " 68.30      2.78     2.78      130     0.02     0.02  grid",
+        " 10.57      3.21     0.43     3136     0.00     0.00  fine_search_transform",
+        "  3.69      3.36     0.15                             __sincos_fma",
+        "  3.19      3.49     0.13      896     0.00     0.00  conditioned_single",
+        "  2.95      3.61     0.12   166208     0.00     0.00  moments",
+        "  2.21      3.70     0.09     1879     0.00     0.00  correlated_fractional",
+        "  1.72      3.77     0.07       28     0.00     0.02  portable_coarse_acquire",
+        "  1.72      3.84     0.07       28     0.00     0.03  portable_verifier_acquire",
+        "  1.47      3.90     0.06    41876     0.00     0.00  leo_fft_forward",
+        "  1.47      3.96     0.06     1120     0.00     0.00  correlated_integer",
+        "  0.74      3.99     0.03      224     0.00     0.00  portable_fine_score",
+        "  0.74      4.02     0.03                             __memset_avx2_unaligned_erms",
+        "  0.49      4.04     0.02                             hypotf32x"
+      ],
+      "sample_resolution": "Each sample counts as 0.01 seconds."
+    },
+    "stock": {
+      "executable_sha256": "c64b50cea7f405640d1d2fb7d42f188817c131f1e5515700083296b91459c2f5",
+      "flat_profile": [
+        " time   seconds   seconds    calls   s/call   s/call  name    ",
+        " 66.20      2.84     2.84      130     0.02     0.02  grid",
+        "  9.56      3.25     0.41     3136     0.00     0.00  fine_search_transform",
+        "  5.83      3.50     0.25      896     0.00     0.00  conditioned_single",
+        "  3.96      3.67     0.17   166208     0.00     0.00  moments",
+        "  3.50      3.82     0.15                             __sincos_fma",
+        "  2.56      3.93     0.11      224     0.00     0.00  portable_fine_score",
+        "  2.10      4.02     0.09     1120     0.00     0.00  correlated_integer",
+        "  1.40      4.08     0.06      672     0.00     0.00  pilots",
+        "  1.17      4.13     0.05       28     0.00     0.02  portable_coarse_acquire",
+        "  1.17      4.18     0.05       28     0.00     0.04  portable_verifier_acquire",
+        "  0.93      4.22     0.04      127     0.00     0.00  correlated_fractional",
+        "  0.47      4.24     0.02     1247     0.00     0.00  glrt",
+        "  0.23      4.25     0.01    79200     0.00     0.00  ideal"
+      ],
+      "sample_resolution": "Each sample counts as 0.01 seconds."
+    }
+  }
+}

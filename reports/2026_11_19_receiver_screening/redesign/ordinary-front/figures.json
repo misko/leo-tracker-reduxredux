@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "ordinary_front",
+      "method": "ordinary_front",
+      "scope": "roof",
+      "title": "Portable ordinary GLRT fractional interpolation",
+      "caption": "Fresh clock + offset fits use 8 DS26 and 7 DS29 held visits with modified detector outputs and archived ordinary factors elsewhere. The control is the independent complete ordinary replay. Both DS29 arms withheld their fixes.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "position-receipts.json"],
+      "series": [
+        {"key": "one", "label": "Batched GLRT · partial IQ replay", "file": "positions.jsonl.gz", "value": "ordinary_front", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "forced_label": "Batched GLRT forced diagnostics"},
+        {"key": "stock", "label": "Original GLRT · complete replay", "file": "control-positions.jsonl.gz", "value": "ordinary_front_capture_control", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "observation_sha256", "tile"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "charts": [
+    {
+      "caption": "Oracle probe-availability intervention. All jointly positive probes retain the full wide candidates and winners. Stock capture keeps its own winners across all probes.",
+      "cases": "sealed",
+      "id": "probe-support-remove",
+      "method": "probe_support_remove",
+      "provenance": [
+        "prediction-lock.json",
+        "treatment-audit.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Remove wide-only positives",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_remove"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Exact stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Exact stock capture-era",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_capture"
+        }
+      ],
+      "title": "Remove wide-only positives in stored wide GLRT"
+    },
+    {
+      "caption": "Oracle probe-availability intervention. All jointly positive probes retain the full wide candidates and winners. Stock capture keeps its own winners across all probes.",
+      "cases": "sealed",
+      "id": "probe-support-restore",
+      "method": "probe_support_restore",
+      "provenance": [
+        "prediction-lock.json",
+        "treatment-audit.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Restore capture-only positives",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_restore"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Exact stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Exact stock capture-era",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_capture"
+        }
+      ],
+      "title": "Restore capture-only positives in stored wide GLRT"
+    },
+    {
+      "caption": "Oracle probe-availability intervention. All jointly positive probes retain the full wide candidates and winners. Stock capture keeps its own winners across all probes.",
+      "cases": "sealed",
+      "id": "probe-support-both",
+      "method": "probe_support_both",
+      "provenance": [
+        "prediction-lock.json",
+        "treatment-audit.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Remove wide-only and restore capture-only positives",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_both"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Exact stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Exact stock capture-era",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "probe_support_capture"
+        }
+      ],
+      "title": "Remove wide-only and restore capture-only positives in stored wide GLRT"
+    }
+  ],
+  "version": 1
+}

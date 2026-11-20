@@ -1,0 +1,105 @@
+{
+  "charts": [
+    {
+      "caption": "Four disjoint VHF day pairs at one station with deposited site-conditioned identities. Per-pass offsets span the RF calibration term. Only c = 0 is fit.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "external-orbcomm-held-position",
+      "method": "orbcomm_held_shape",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "positions.jsonl.gz",
+        "score-lock.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Held shape",
+          "value": "orbcomm_held_shape"
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Unguarded",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_ungated_shape"
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "one",
+          "label": "Absolute CFO",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_absolute"
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "four",
+          "label": "Time-reversed",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_time_reverse"
+        }
+      ],
+      "title": "External measured VHF position with a held day"
+    },
+    {
+      "caption": "Four disjoint VHF day pairs at one station with deposited site-conditioned identities. Per-pass offsets span the RF calibration term. Only c = 0 is fit.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "external-orbcomm-geography-prior",
+      "method": "orbcomm_held_shape",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "positions.jsonl.gz",
+        "score-lock.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Held shape",
+          "value": "orbcomm_held_shape"
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Offer center",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "orbcomm_offer_center"
+        }
+      ],
+      "title": "External VHF position against the offered center"
+    }
+  ],
+  "version": 2
+}

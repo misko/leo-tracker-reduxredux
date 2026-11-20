@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_secant_fit-full-iq",
+      "method": "v5_secant_fit",
+      "scope": "roof",
+      "title": "Raw IQ to v5 position with secant steps",
+      "caption": "Both fits use the same fresh ordinary dual-lane GLRT replay. The stock fit starts at those detector outputs. The original four v5 choices use the capture-era detector on the same recordings.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["stage-receipts.json"],
+      "series": [
+        {
+          "key": "one",
+          "label": "Secant · fresh ordinary IQ",
+          "file": "positions.jsonl.gz",
+          "value": "v5_secant_fit",
+          "native_field": "capture_era_native_sha256",
+          "where": {"mode": "matched-tile"}
+        },
+        {
+          "key": "stock",
+          "label": "Stock fit · same fresh GLRT",
+          "file": "stock-positions.jsonl.gz",
+          "value": "orbit_projector",
+          "native_field": "capture_era_native_sha256",
+          "where": {"mode": "matched-tile"},
+          "match": ["native_sha256", "input_sha256", "catalog_sha256"]
+        }
+      ]
+    }
+  ]
+}

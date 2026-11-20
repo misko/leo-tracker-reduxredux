@@ -1,0 +1,9 @@
+# Full native replay of the fixed 1,000 Hz track prior
+
+Replay both frozen marginal-offset variants fresh on all 135 original roof requests and all nine previously sealed omitted-tile requests. Each paired worker receives the same native detections, causal catalogue, Graph, tile, ownership rules, CFO aliases and calibration budgets. The only fitted-model difference is the frozen 1,000 Hz independent per-Graph-track prior versus zero variance. The audit additionally records the held relative log-determinant contribution without using it to change a decision.
+
+The primary geographic cohort is the 125 roof recordings outside the four fixed diagnostics and six salted cases of the initial comparison. Report the original ten separately and give all 135 as context. Score the original three attempted omitted offers and six new-to-this-test omitted offers separately. The receiver has access to the supplied offer. Truth and original v5 positions enter only after the prediction seal.
+
+Check the prospective hypothesis that the prior lowers common-fix median error in both calibration settings while preserving or improving the all-attempt count within 5 km and issuing zero positions on the nine omitted requests. Report p95, worst, coverage, common-fix and forced distributions, and the full decomposition of changes in publication. Assess held Gaussian deviance, relative determinant and raw RF RMS independently of geography. Numeric or scheduling failures retain a null endpoint and their actual status.
+
+The fixed base trial sources and archive plans are authenticated before execution. Each pair runs fresh on the same pinned lane, with numerical libraries single-threaded and a 512 MiB address-space cap. Pair order alternates by frozen roster. Start pairs for at most seven minutes on CPUs 0, 2, 3, 6, 7, 10, 11 and 17. Each worker has its existing 60-second limit. The replay starts from stored native detections.

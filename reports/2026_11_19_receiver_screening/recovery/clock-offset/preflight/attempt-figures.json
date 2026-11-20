@@ -1,0 +1,224 @@
+{
+  "charts": [
+    {
+      "caption": "Four exact final fits share the anonymous native owners, aliases and first-fit gate. Forced coordinates are diagnostic.",
+      "cases": [
+        "DS26-0211",
+        "DS26-0187",
+        "DS26-0052",
+        "DS26-0074"
+      ],
+      "id": "native_clock_offset-first",
+      "method": "native_clock_offset_ou",
+      "scope": "roof",
+      "seal": "first-figure-lock.json",
+      "series": [
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "one",
+          "label": "Clock + offset, OU",
+          "value": "native_clock_offset_ou",
+          "where": {
+            "study_cohort": "first"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Clock + offset, diagonal",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_offset_diag",
+          "where": {
+            "study_cohort": "first"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Clock only, OU",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_only_ou",
+          "where": {
+            "study_cohort": "first"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Offset only, OU",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_offset_only_ou",
+          "where": {
+            "study_cohort": "first"
+          }
+        }
+      ],
+      "source_lock": {
+        "digest_key": "plan_sha256",
+        "file": "plan.json"
+      },
+      "title": "Joint receiver clock and component offsets on first offers"
+    },
+    {
+      "caption": "Four exact final fits share the anonymous native owners, aliases and first-fit gate. Forced coordinates are diagnostic.",
+      "cases": [
+        "DS29-0316-omitted",
+        "DS26-0277-omitted",
+        "53d116793d35b00f6b21"
+      ],
+      "id": "native_clock_offset-omitted",
+      "method": "native_clock_offset_ou",
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "forced_label": "Clock + offset, OU forced diagnostic",
+          "key": "candidate",
+          "label": "Clock + offset, OU",
+          "value": "native_clock_offset_ou",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "forced_label": "Clock + offset, diagonal forced diagnostic",
+          "key": "stock",
+          "label": "Clock + offset, diagonal",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_offset_diag",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "forced_label": "Clock only, OU forced diagnostic",
+          "key": "one",
+          "label": "Clock only, OU",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_only_ou",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "forced_label": "Offset only, OU forced diagnostic",
+          "key": "four",
+          "label": "Offset only, OU",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_offset_only_ou",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        }
+      ],
+      "source_lock": {
+        "digest_key": "plan_sha256",
+        "file": "plan.json"
+      },
+      "title": "Joint receiver clock and component offsets on omitted offers"
+    },
+    {
+      "caption": "Four exact final fits share the anonymous native owners, aliases and first-fit gate. Forced coordinates are diagnostic.",
+      "cases": [
+        "DS26-0257",
+        "DS26-0068",
+        "DS26-0271",
+        "DS26-0146",
+        "DS26-0120",
+        "DS26-0098"
+      ],
+      "id": "native_clock_offset-reserve",
+      "method": "native_clock_offset_ou",
+      "scope": "roof",
+      "seal": "reserve-figure-lock.json",
+      "series": [
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "one",
+          "label": "Clock + offset, OU",
+          "value": "native_clock_offset_ou",
+          "where": {
+            "study_cohort": "reserve"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Clock + offset, diagonal",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_offset_diag",
+          "where": {
+            "study_cohort": "reserve"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Clock only, OU",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_only_ou",
+          "where": {
+            "study_cohort": "reserve"
+          }
+        },
+        {
+          "file": "all-model-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Offset only, OU",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_offset_only_ou",
+          "where": {
+            "study_cohort": "reserve"
+          }
+        }
+      ],
+      "source_lock": {
+        "digest_key": "plan_sha256",
+        "file": "plan.json"
+      },
+      "title": "Joint receiver clock and component offsets on reserve offers"
+    }
+  ],
+  "version": 1
+}

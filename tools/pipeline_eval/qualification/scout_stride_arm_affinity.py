@@ -1,0 +1,155 @@
+"""Keep the frozen ARM detector ABI while applying the intended host CPU affinity."""
+
+import argparse
+import gzip
+import json
+import os
+import subprocess
+from pathlib import Path
+from time import perf_counter
+from unittest.mock import patch
+
+from ..__main__ import encoded, save_json, write
+from . import ordinary_front_eval, scout_stride_arm_build
+from . import scout_stride_arm_eval as trial
+from .full_v5_check import PRODUCERS, _sha
+from .scout_budget_results import unpack
+from .wide_regional_eval import templates, validate
+
+
+def setup(work):
+    bench = work / "cpu2"
+    bench.mkdir(exist_ok=False)
+    for name in ("arm-control", "arm-stride", "compiler-temp", "release.json"):
+        (bench / name).symlink_to(work / name)
+    source = work / "arm-control-source" / "native_glrt_cli.c"
+    target = bench / "abi-driver"
+    receipt = json.loads((bench / "arm-control" / "build-receipt.json").read_bytes())
+    if _sha(source) != receipt["sources"]["native_glrt_cli.c"]:
+        raise ValueError("ABI driver must use the frozen serializer")
+    subprocess.run(
+        [
+            receipt["compiler"],
+            "-std=c11",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-mcpu=cortex-a9",
+            "-mfpu=neon",
+            "-mfloat-abi=hard",
+            "-DLEO_NATIVE_GLRT_SHORT_WINDOW_CLI=1",
+            str(source),
+            "-L",
+            str(bench / "arm-control"),
+            "-lleo-adaptive-detector",
+            "-o",
+            str(target),
+        ],
+        env={**os.environ, "TMPDIR": str(bench / "compiler-temp")},
+        check=True,
+    )
+    contents = [target, *(bench / f"arm-{m}" / scout_stride_arm_build.LIBRARY for m in trial.MODES)]
+    for binary in contents:
+        refs = subprocess.check_output(["nm", "-D", str(binary)], text=True)
+        if "sched_setaffinity" in refs:
+            raise ValueError("The pinned emulator trial may not change its initial CPU affinity")
+    return bench
+
+
+def command(work, bank, edge, label):
+    folder = work / f"{label}-local"
+    folder.mkdir(exist_ok=False)
+    exact, control, iq, rss = (folder / f for f in ("exact.c128", "ctrl.c128", "visit.ci16", "rss"))
+    for path, array in zip((exact, control), templates(trial.RATE, edge), strict=True):
+        array.tofile(path)
+    qemu = ["qemu-arm", "-cpu", "cortex-a9", "-L", bank["sysroot"]]
+    libraries = {}
+    for mode in trial.MODES:
+        lib = libraries[mode] = folder / mode
+        lib.mkdir()
+        (lib / "libleo-adaptive-detector.so.1").symlink_to(
+            work / f"arm-{mode}" / scout_stride_arm_build.LIBRARY
+        )
+
+    def call(samples, mode):
+        samples.tofile(iq)
+        argv = [
+            *qemu,
+            "-E",
+            f"LD_LIBRARY_PATH={libraries[mode]}",
+            str(work / "abi-driver"),
+            "--rate-hz",
+            str(trial.RATE),
+            "--fractional-epoch",
+            "--exact-template",
+            str(exact),
+            "--control-template",
+            str(control),
+            "--input-ci16",
+            str(iq),
+        ]
+        start = perf_counter()
+        result = subprocess.run(
+            ["/usr/bin/time", "-f", "%M", "-o", str(rss), *argv],
+            capture_output=True,
+            check=True,
+            timeout=18,
+        )
+        wall = perf_counter() - start
+        data = json.loads(result.stdout)
+        validate(ordinary_front_eval._payload(data), 800_000)
+        return data, dict(external_wall_s=wall, emulator_peak_kib=int(rss.read_text()))
+
+    return call, qemu, (exact, control, iq, rss)
+
+
+def run(work):
+    if os.sched_getaffinity(0) != {2}:
+        raise ValueError("Launch the CPU2 study with taskset -c 2")
+    frozen = json.loads((trial.REPORT / "source-lock.json").read_bytes())
+    if frozen != trial.sources():
+        raise ValueError("Frozen roster or source changed")
+    bench = setup(work)
+    bank = trial.load_arm(bench)
+    audit = trial.REPORT / "released-cli-cpu0"
+    audit.mkdir(exist_ok=False)
+    names = [*(f"{case}.json.gz" for case in PRODUCERS), "controls.json.gz"]
+    for name in names:
+        write(audit / name, (trial.REPORT / name).read_bytes())
+    with patch.object(trial, "command", command):
+        pairs = [(f"{case}.json.gz", trial.real(case, bench, bank)) for case in PRODUCERS]
+        pairs.append(("controls.json.gz", trial.controls(bench, bank)))
+    comparisons = {}
+    for name, data in pairs:
+        old = unpack(audit / name)
+        if "rows" in old:
+            before = [r for r in old["rows"] if r["status"] == "processed"]
+            after = [r for r in data["rows"] if r["status"] == "processed"]
+        else:
+            before = [old["results"][i] for i in data["results"]]
+            after = list(data["results"].values())
+        values = [
+            r["iq_sha256"] == s["iq_sha256"] and r["payloads"] == s["payloads"]
+            for r, s in zip(before, after, strict=True)
+        ]
+        if not all(values):
+            raise ValueError("Thin pinned ABI driver differs from the pinned ARM CLI")
+        comparisons[name] = dict(exact_pairs=sum(values), original_sha256=_sha(audit / name))
+        write(trial.REPORT / name, gzip.compress(encoded(data), mtime=0))
+    save_json(
+        trial.REPORT / "affinity-receipt.json",
+        dict(
+            runner_sha256=_sha(Path(__file__)),
+            path=str(bench),
+            cpu_affinity=[2],
+            abi_driver_sha256=_sha(bench / "abi-driver"),
+            prior_cli_payload_equivalence=comparisons,
+        ),
+    )
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--work", type=Path, default=scout_stride_arm_build.WORK)
+    run(p.parse_args().work)

@@ -1,0 +1,51 @@
+Stationary forecast with sparse fixes
+
+Generate a fresh position fix every 16th member of the chronological DS26
+fast-only schedule, starting at slot zero. The eight panel scans are held out in
+full. At each panel start, forecast the componentwise median east and north of
+up to four eligible anchors from the preceding 48 hours. Both calibration arms
+share the schedule, tracks, candidate bank, proposal, selected observations,
+priors and fit iteration limits. Each arm maintains its own completed fixes.
+The newest eligible anchor alone is the control at the same forecast times.
+
+The newest fix expires when its capture age exceeds 24 hours. The state then
+drops its history and abstains until a fresh fix initializes it. An older capture
+that arrives after a newer one is discarded. The startup forecast can use a
+single anchor. Stability depends on the current installation remaining in the
+same place and the anchor fixes having small systematic errors.
+
+The fast-only membership manifest supplies capture starts. Each historical fix
+uses the archived anonymous graph and the candidate/TLE inputs declared in the
+shared protocol. The cold solver uses a TLE snapshot and element epochs from
+before each anchor capture. The archive loader runs only once a scheduled
+six-minute capture envelope has passed. Modeled fix publication follows the
+later of that envelope and actual archive capture end plus 60 seconds, with the
+measured paired anchor job time added to both arms. The 60-second allowance
+is a replay assumption for detector and graph availability. The matched
+availability cutoff is strict and the implementation accesses zero panel RF,
+evaluation coordinates or v5 endpoints.
+
+From this directory, run the following command on the repository host.
+
+    OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 \
+      PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src \
+      ../../../.venv/bin/python stationary.py
+
+The same environment and `../../../.venv/bin/python test_stationary.py` run the
+synthetic checks alone. They exercise a cold start, anchor expiry and reset,
+failed-anchor cost, capture and fix cutoffs, the bounded history, and a 10 km
+outlier or move. The median rejects the single synthetic outlier. After the
+first valid relocated fix, the forecast still misses the new site by 10 km.
+
+Foreground wall time covers completed-fix updates and both forecasts. The
+historical job ledger measures host graph reads, TLE propagation, proposal and
+fits and includes all attempted jobs. Standalone per-arm cost charges the
+shared work once to each arm. The ten jobs used about 50 minutes of already
+archived RF, and their graph-to-fix timing excludes detector and graph creation,
+process startup and RF capture. All eight panel starts produce a forecast in
+both arms using two or three anchors, with newest ages from 0.84 to 11.13 h.
+Forecasts carry null RF residuals. The fitted coefficient lowers the in-sample
+anchor RF RMS on all ten jobs, with median paired reduction of 17.75 Hz.
+Geographic scoring is performed by the shared study evaluator. The replay
+benchmarks a stationary installation on a host and includes synthetic outage
+checks. Hardware collection and embedded latency are outside this host replay.

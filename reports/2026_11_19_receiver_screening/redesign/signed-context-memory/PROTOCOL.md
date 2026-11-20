@@ -1,0 +1,5 @@
+# Sample causal widths in the signed-context consumer
+
+The two-change compact worker completed family confidence under the 512 MiB no-swap cap and was killed before family nomination. In the frozen call chain, `signed_context` is the intervening function. It uses only the alignment-derived phase widths and receipts from its previous-catalogue lookup. Reuse the exact three-sample family-width reader in that consumer alone. Leave the original signed qualification, means, widths, recovery, and both calibration arms unchanged.
+
+Seal the two-change source and prediction lock, signed consumer source, new worker and this protocol before binding the same archived ordinary DS29-0082 factors. Replay unrestricted on logical CPU 17 at nice 10 with a 240 second worker deadline, verify scientific decisions and both calibration arms against the latest unrestricted control, then rerun the same worker at 512 MiB with zero swap and a 180 second systemd deadline. Record the signed stage's RSS, timings, width and decision digests alongside the earlier stages. Seal endpoints and stage trace before scoring geography.

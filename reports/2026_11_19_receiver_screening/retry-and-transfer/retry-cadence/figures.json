@@ -1,0 +1,196 @@
+{
+  "charts": [
+    {
+      "caption": "Same original measurements, 25 km offer and causal orbital catalogue. Each antenna and RF has a two-second interval and equal-budget control.",
+      "cases": "sealed",
+      "id": "peer-retry-cadence-miss",
+      "method": "cadence_miss",
+      "provenance": [
+        "schedule-lock.json",
+        "prediction-lock.json",
+        "support.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Wait after a failed retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_miss"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Run every eligible retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_full"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Skip all retries",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_primary"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Same count per antenna and RF",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_miss_control"
+        }
+      ],
+      "title": "Wait after a failed retry"
+    },
+    {
+      "caption": "Same original measurements, 25 km offer and causal orbital catalogue. Each antenna and RF has a two-second interval and equal-budget control.",
+      "cases": "sealed",
+      "id": "peer-retry-cadence-hit",
+      "method": "cadence_hit",
+      "provenance": [
+        "schedule-lock.json",
+        "prediction-lock.json",
+        "support.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Wait after a successful retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_hit"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Run every eligible retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_full"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Skip all retries",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_primary"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Same count per antenna and RF",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_hit_control"
+        }
+      ],
+      "title": "Wait after a successful retry"
+    },
+    {
+      "caption": "Same original measurements, 25 km offer and causal orbital catalogue. The oracle knows which retries will succeed.",
+      "cases": "sealed",
+      "id": "peer-retry-cadence-oracle",
+      "method": "cadence_oracle",
+      "provenance": [
+        "schedule-lock.json",
+        "prediction-lock.json",
+        "support.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one",
+          "label": "Known successful retries only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_oracle"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "stock",
+          "label": "Run every eligible retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_full"
+        },
+        {
+          "file": "decisions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Skip all retries",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cadence_primary"
+        }
+      ],
+      "title": "Known successful retries only"
+    }
+  ],
+  "version": 2
+}

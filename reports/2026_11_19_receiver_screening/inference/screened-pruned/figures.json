@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_screened_pruned_finish",
+      "method": "v5_screened_pruned_finish",
+      "scope": "roof",
+      "title": "Screened discovery and the pruned v5 finish",
+      "caption": "Two fixed roof recordings start from authenticated stored native detector factors and causal TLE. Both calibration arms reproduce the aligned Armijo final position and conditional RF exactly. The original v5 role positions come from their sealed replay receipts.",
+      "cases": ["DS26-0175", "DS29-0357"],
+      "seal": "figure-lock.json",
+      "provenance": ["plan.json", "source-lock.json", "prediction-lock.json", "comparison.json", "original-baseline-positions.jsonl.gz", "original-selective-gap-positions.jsonl.gz", "original-omitted-track-one-positions.jsonl.gz", "original-omitted-tracks-positions.jsonl.gz"],
+      "series": [
+        {"key": "one", "label": "Screened and pruned v5", "file": "positions.jsonl.gz", "value": "v5_screened_pruned_finish"},
+        {"key": "stock", "label": "Aligned Armijo finish", "file": "aligned-positions.jsonl.gz", "value": "v5_armijo_aligned_finish", "match": ["input_sha256", "native_sha256", "catalog_sha256", "frozen_request_sha256", "scientific_request_sha256"]}
+      ]
+    }
+  ]
+}

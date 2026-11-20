@@ -1,0 +1,82 @@
+{
+  "charts": [
+    {
+      "caption": "Whole stereo visits are assigned exclusively to one detector. The count-matched comparison uses the complete recorded visit census. New compact fits use a 210 s service limit. Archived controls retain prior first-attempt results and paired publication uses the 20 m tile guard.",
+      "cases": "sealed",
+      "id": "rf-lane-panel",
+      "method": "rf_lane_whole",
+      "provenance": [
+        "prediction-lock.json",
+        "guarded-positions.jsonl.gz",
+        "geographic.csv",
+        "frequency.csv",
+        "geographic-summary.csv",
+        "publication-and-position-timing.csv",
+        "calibration.csv",
+        "original-v5-references.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "one",
+          "label": "Original on one RF",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_whole"
+        },
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Count-matched across RFs",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_spread"
+        },
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full fast four",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_fast"
+        },
+        {
+          "file": "guarded-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Full original compact",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "rf_lane_original"
+        }
+      ],
+      "title": "Position with the original GLRT on one physical RF"
+    }
+  ],
+  "version": 2
+}

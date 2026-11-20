@@ -1,0 +1,62 @@
+{
+  "charts": [
+    {
+      "caption": "One worker and one waiting slot at the same modeled load. Selected native packets feed compact phase-release. Original v5 uses capture-era factors. Both calibration arms are measured.",
+      "cases": "sealed",
+      "id": "queue-capacity-position",
+      "method": "queue_capacity_adaptive",
+      "provenance": [
+        "prediction-lock.json",
+        "queue-model.csv",
+        "position-scores.csv",
+        "capture-era-v5.csv",
+        "one-x-audit.json"
+      ],
+      "scope": "roof",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Adaptive",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "model_scale"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "queue_capacity_adaptive"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "model_scale"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "queue_capacity_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Fifth center",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "model_scale"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "queue_capacity_fifth"
+        }
+      ],
+      "title": "Compact fixes after a 2.25\u00d7 queue load"
+    }
+  ],
+  "version": 1
+}

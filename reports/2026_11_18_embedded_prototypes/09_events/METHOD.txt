@@ -1,0 +1,75 @@
+Anonymous Doppler inflection time with injective past-TLE matching
+
+Decision. Abstain on all eight full scans and all 24 prefix decisions at
+90, 180 and 240 seconds. Each full scan admits grid points at least 20.8 km
+from its forced winner with a cost within 4.61 of the optimum. The forced
+winners have 0.22–0.70 s timing RMS after selecting identities and location.
+At least one circularly shifted schedule matches or beats that cost in each
+scan. Median per-event candidate count at the best location is 4–7. The
+shadow grid winners in diagnostics are excluded from primary position output.
+
+Observation and candidate policy. Replay archived native detector exports
+under /srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs. At each deadline
+ingest only complete probes through that deadline. Reuse the shared causal
+anonymous tracker with at most eight live hypotheses per lane. Check
+fragments with at least 16 observations over at least 20 s. Fit independent
+cubics to odd and even retune visits. Keep a negative-slope inflection in
+the supported interior with significant positive cubic coefficient and up
+to 1 s split disagreement. Cluster marks in a 0.65 s total-width window
+to reduce duplicate detections across lanes. Full scans give 8–20 clusters.
+After extraction the matcher uses event time and split/repeat scatter.
+
+Select the last SHA-256-verified catalog snapshot available before the
+capture clock bracket. Include Starlink TLE epochs within the previous
+48 hours. Screen the regional horizon and predict visible inflections
+from SGP4 and a 2 s finite-difference grid. Linearize predicted times in
+horizontal position by centered differences at ±1 km. There are 231–318
+event candidates per full scan. Recomputing with a 0.5 s propagation grid
+and nonlinear geometry gives a maximum finite corner error of 9.3 ms.
+Ten corner predictions leave the broad horizon gate in that check.
+The median event-time gradient is about 0.149 s/km. Weak-axis conditional
+uncertainty at the forced winner ranges from 3.2 to 7.8 km with identities
+held fixed. These geometry checks use no reference location or identities.
+
+Joint fit. Use a 21 × 21 grid across the prescribed 25 km box and a
+one-to-one minimum-cost assignment per point. Costs are squared timing
+residuals divided by variance with a 1.25 s timing floor. Outlier slots
+cost 2.5². Publish an interior estimate only with four or more matches,
+conditional weak-axis uncertainty at most 5 km, no location at least
+5 km away within 4.61 cost units, and a lower cost than all 19 time-shift
+controls. The 19 evenly spaced nonzero circular shifts preserve event
+counts and their spacing around the circle while breaking absolute
+alignment. Their ranks and the 4.61 profile threshold are descriptive
+ambiguity measures. They have no calibrated probabilistic interpretation.
+Neither any external satellite association nor the v5 outputs nor GPS
+coordinates enter the replay.
+
+Calibration. Within each fixed-RF track the c term adds a constant to
+CFO, which its second derivative removes. There is no c parameter in the
+timing likelihood and no frequency residual. Both canonical arms use the
+same event and candidate policy. The fitted-c field reports the invariant
+decision, with a 120,000 Hz/GHz injected coefficient as a numerical stress
+control. Maximum time/scatter change was 6.3e-13 s. The test also verified
+identical assignments and decisions. The run requires no learned c value.
+
+Timing and scope. Full decisions took 0.29–0.57 s wall time, median 0.42 s,
+on the host with one numerical thread. Timing covers archived winner
+selection, linkage, extraction, causal TLE I/O, propagation, matching,
+and the 19 time-shift gates. It excludes JSON hydration, acquisition,
+detector execution, the 0.5 s projection check, prefix and duplicate
+calibration checks. Matcher storage includes about 10 kB for the largest
+event bank and 1.1 MB for the largest grid table. Peak temporary dense
+orbital state arrays alone take up to 8.6 MB. Total peak process memory,
+detector throughput, ARM runtime and incremental streaming were outside
+this replay. The detector archive is hydrated once in the harness;
+prefix calls pass only observations available at their respective times.
+
+Run from the repository root with the recorded inputs mounted:
+
+  OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 \
+  PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src \
+  .venv/bin/python reports/2026_11_18_embedded_prototypes/09_events/prototype.py
+
+Add --check for synthetic root, assignment and grid-recovery assertions.
+The synthetic grid input has known, widely separated candidates. The
+same decision gates accept its planted position.

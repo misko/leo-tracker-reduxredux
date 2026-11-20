@@ -1,0 +1,32 @@
+{
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-capture-position-holdout_two_failures_hash-35db4b55",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=180s",
+    "taskset",
+    "-c",
+    "2",
+    "env",
+    "TMPDIR=/srv/bulk/leo-dev/retry-policy-holdout-20261119-B/position-holdout_two_failures_hash",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.whole_iq",
+    "position",
+    "/srv/bulk/leo-dev/retry-policy-holdout-20261119-B/position-holdout_two_failures_hash"
+  ],
+  "exit_code": 0,
+  "log_sha256": "1ecbfeaeea0c13e97480d320abc4778a2c7afe0c1c44c6d1d1cf59784df7d07b",
+  "wall_s": 72.8657226935029
+}

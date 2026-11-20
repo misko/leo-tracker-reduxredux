@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_smooth_exterior_evidence-reserve",
+      "method": "native_smooth_exterior_evidence",
+      "scope": "transfer",
+      "title": "Exterior held evidence on six reserved roof captures",
+      "caption": "Four exterior checks completed. Five original-offer candidates remain unmeasured.",
+      "cases": [
+        "05fdcad79ccf58c076b1",
+        "c4da87836d708aaadf53",
+        "38cf78d54845349283e6",
+        "c8068df0688f56ea1841",
+        "29ccd63853d1ca4850a8",
+        "e915f412b34126100c50",
+        "4d5969ba2ecbb9ca7216",
+        "86eefd9db30aaa71a616",
+        "130c69713ee251523c73",
+        "e652c635c4fadf561c95",
+        "517d2b839689d5284963",
+        "ac97a51fd9432c8c3ee4",
+        "f7cd05991a62dec8f79c",
+        "faf0d775d19b1d273183",
+        "2141cde9cd271323b831",
+        "19ec5f63518d247efc61",
+        "091fb052f50b9793c374",
+        "b9311154f662d45aa879",
+        "2afc6a52abd4d5b35f13",
+        "cebe4385352d643ed182",
+        "9795a83c1f45766e20c7",
+        "c2a42952d2490808d4e3",
+        "2af7022621c810f615d0",
+        "2cb5fd74ee3719604c3d"
+      ],
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "original": "Original",
+        "near-inside": "1.5 km inside",
+        "near-outside": "1.5 km outside",
+        "six-outside": "6 km outside"
+      },
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Exterior gate applied",
+          "file": "plot-positions.jsonl.gz",
+          "value": "native_smooth_exterior_evidence",
+          "forced_label": "Gated smooth \u00b7 forced"
+        },
+        {
+          "key": "stock",
+          "label": "Native smooth",
+          "file": "native_joint_clock_model.jsonl.gz",
+          "value": "native_joint_clock_model",
+          "forced_label": "Native smooth \u00b7 forced",
+          "match": [
+            "input_sha256",
+            "tile",
+            "observation_sha256"
+          ]
+        }
+      ]
+    }
+  ]
+}

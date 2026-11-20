@@ -1,0 +1,82 @@
+Receiver-nuisance-aware 12-track geometry coreset
+
+Primary design fixed before scoring geography. Use the shared cold replay to
+form up to 64 track descriptors, each with 12 anonymous satellite candidates,
+from the recorded graph and the latest eligible pre-cutoff TLE snapshot. Vote
+for the four receiver/side bias seeds over the common descriptors. At the
+declared search center, score all candidates at c=0 and keep the best three
+per track for the selector only. Mix their information blocks using a soft
+ranking by central RF cost and downweight large individual costs. This
+heuristic leaves all 12 candidates available to the position grid for each
+selected track.
+
+The information block contains the east and north Doppler derivatives,
+receiver/side offsets and drifts, and the RF slope. Use the shared solver's
+shape/level scales and profile an independent local phase with its prior.
+Greedily maximize the log-determinant gain of the horizontal information
+after removing shared nuisances by a Schur complement. Add a 10 km horizontal
+regularizer solely for selection. Cover all observed receiver/side groups
+first, then use all remaining candidates. Divide gain by one plus the number
+of already selected tracks whose provisional best candidate shares that
+satellite. This approximate design keeps sums and inverses small. It can
+misweight tracks whose central assignments or linearized derivatives are wrong.
+
+Run the same 49-cell search, cut at cost <12, and fit winner IDs with the
+shared robust solver. Compare against the 12 longest available descriptors
+by sampled track span and against the full descriptor set. All use the same
+graph, bank, candidate lists, and shared bias seed. For each policy, use the
+same grid start, observations, candidate assignments, non-c priors, and four
+robust iterations with c=0 and fitted c. The final solver shares one phase
+per assigned satellite. RMS is the absolute CFO error over the selected
+inlier samples, so it is paired across c arms of a policy. Inlier sets may
+differ between policies. Grid scores likewise sum over differing track sets.
+
+Observability diagnostics use the final assigned inliers and reprofile the
+measurement Jacobian against the shared lane offsets, drifts, satellite
+phases, and the RF slope in the fitted-c arm. Omit priors and robust weights
+for this diagnostic. Report both eigenvalues of the 2D information matrix,
+the condition number, rank, and the weakest rank and smallest eigenvalue
+after deleting one satellite family at a time. The synthetic check includes
+one short track that alone adds the second horizontal direction. Longest12
+has rank one, and deleting that family removes geometry12's rank advantage.
+These diagnostics quantify local geometry conditional on the chosen
+assignments.
+
+Observations are existing anonymous graph tracks in
+/srv/bulk/leo/research/algo07v3-20261104/tracks001/candidate/
+with TLE snapshots under /srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs/.
+This is a stationary scan-end replay using the archive's graph and duration.
+The only location input is the shared search center. The observation time
+boundary is the end of the scan. The upstream graph pipeline provides the
+graph. First-fix latency, raw-IQ work, and embedded board performance are
+outside the measurement scope.
+
+Wall times use perf_counter on one host numerical thread. The main case
+includes graph read, TLE bank build, descriptor formation, common bias vote,
+selection, grid, and both endpoint fits. Control totals reuse the measured
+shared front-end time and add each control's measured selection, grid and
+fits. Timing excludes correctness checks, controls from the primary time,
+and all conditioning diagnostics. Counts and descriptor-array byte sizes
+track the reduced grid work and fit rows. Selection still uses the full
+descriptor pool and builds a common TLE bank. The resource reduction applies
+to the grid and solve stages.
+
+On this eight-case panel all three policies returned an estimate in both
+arms. Geometry12 used a median of 7,056 grid candidate-cell evaluations and
+156 measurement rows per robust fit step. Full used 37,632 evaluations and
+721.5 rows. Median graph-to-fit times were 250.4 ms for geometry12, 248.7 ms
+for longest12, and 251.6 ms for full. All conditional Jacobians had rank two,
+even after a single assigned satellite deletion. In the fitted-c arm the
+median smallest eigenvalue was 0.03885 km^-2 for geometry12, 0.01027 km^-2
+for longest12, and 0.20096 km^-2 for full. Fitting c changed geometry12's
+absolute CFO RMS by a median paired -1.94 Hz, with decreases in six cases.
+Geographic scoring uses the stored endpoints and is independent of the
+RF RMS and conditioning results.
+
+Run from the repository root:
+
+  OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src \
+    .venv/bin/python reports/2026_11_18_embedded_prototypes/06_coreset/coreset.py
+
+Use --check for the synthetic observability counterexample only.

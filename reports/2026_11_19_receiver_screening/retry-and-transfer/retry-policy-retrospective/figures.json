@@ -1,0 +1,60 @@
+{
+  "charts": [
+    {
+      "caption": "Across policies, each recording uses its original offer and causal catalogue. The hash matches attempt counts by physical receiver and RF. Full conditional uses the independently sealed compact result. The prospective DS26-0162 recording is shown separately.",
+      "cases": "sealed",
+      "id": "retry-policy-retrospective",
+      "method": "retry_retrospective_two_failures",
+      "provenance": [
+        "retry-counts.csv",
+        "selection-lock.json",
+        "holdout-policy-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "0.8 s after two failed retries",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "retry_retrospective_two_failures"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full conditional",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "retry_retrospective_full_conditional"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Physical-key matched hash",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "retry_retrospective_hash"
+        }
+      ],
+      "title": "Retrospective position with the two-failure retry policy"
+    }
+  ],
+  "version": 2
+}

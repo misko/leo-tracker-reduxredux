@@ -1,0 +1,149 @@
+{
+  "charts": [
+    {
+      "caption": "The candidate uses the same merged observations and normal cavity acceptance. A rejected numerical endpoint is diagnostic. Stock and merged controls are authenticated parent measurements.",
+      "cases": "sealed",
+      "id": "stock-cavity-replay-negative-rescue",
+      "method": "stock_cavity_replay_challenger",
+      "provenance": [
+        "prediction-lock.json",
+        "candidate-evidence.json",
+        "resources.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "negative-rescue-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Rejected challenger",
+          "key": "one",
+          "label": "Actual challenger-enabled receiver",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256",
+            "stock_native_sha256",
+            "merged_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "stock_cavity_replay_challenger",
+          "where": {
+            "cohort": "negative-rescue"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256",
+            "stock_native_sha256",
+            "merged_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "stock_cavity_replay_stock",
+          "where": {
+            "cohort": "negative-rescue"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Ordinary merged input",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256",
+            "stock_native_sha256",
+            "merged_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "stock_cavity_replay_merged",
+          "where": {
+            "cohort": "negative-rescue"
+          }
+        }
+      ],
+      "title": "One stock-derived cavity challenger \u00b7 negative-rescue"
+    },
+    {
+      "caption": "The candidate uses the same merged observations and normal cavity acceptance. A rejected numerical endpoint is diagnostic. Stock and merged controls are authenticated parent measurements.",
+      "cases": "sealed",
+      "id": "stock-cavity-replay-restore-only",
+      "method": "stock_cavity_replay_challenger",
+      "provenance": [
+        "prediction-lock.json",
+        "candidate-evidence.json",
+        "resources.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "restore-only-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Rejected challenger",
+          "key": "one",
+          "label": "Actual challenger-enabled receiver",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256",
+            "stock_native_sha256",
+            "merged_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "stock_cavity_replay_challenger",
+          "where": {
+            "cohort": "restore-only replication"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256",
+            "stock_native_sha256",
+            "merged_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "stock_cavity_replay_stock",
+          "where": {
+            "cohort": "restore-only replication"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Ordinary merged input",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256",
+            "stock_native_sha256",
+            "merged_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "stock_cavity_replay_merged",
+          "where": {
+            "cohort": "restore-only replication"
+          }
+        }
+      ],
+      "title": "One stock-derived cavity challenger \u00b7 restore-only replication"
+    }
+  ],
+  "version": 1
+}

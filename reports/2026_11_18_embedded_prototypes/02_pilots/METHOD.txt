@@ -1,0 +1,102 @@
+Causal gated pilot search and blind reacquisition
+
+Primary design
+Per receiver, channel and RF lane, a blind scout seeds up to three confirmed
+margin-gated pilot hypotheses. A scout runs at the first visit and at most four
+visits after the last blind search. For a live hypothesis the next search is a
+circular rectangle in aliased CFO and sample-counter-referenced frame phase.
+Single-hit rectangles have broad rate allowances. A second hit initializes
+linear rates; later hits update them by exponential averaging. The fixed gate
+grows on coasting, expires after five seconds, and permits only the strongest
+eligible peak to propagate to the position tracker. Two consecutive guided
+misses trigger a blind search on that same probe. An unsuccessful blind search
+clears the lane to idle until its next scout. Each lane makes decisions using
+its own prior accepted peaks, current search returns and visit count.
+
+Run from the repository root
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src
+.venv/bin/python reports/2026_11_18_embedded_prototypes/02_pilots/run.py --check-only
+.venv/bin/python reports/2026_11_18_embedded_prototypes/02_pilots/iq_check.py --check-only
+.venv/bin/python reports/2026_11_18_embedded_prototypes/02_pilots/iq_check.py
+.venv/bin/python reports/2026_11_18_embedded_prototypes/02_pilots/run.py
+
+Data and test scope
+All eight panel cases run on the pinned 10 MS/s, 20 ms native detector-candidate
+exports in /srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs. For each case
+the guided path emits the best surviving archived candidate and the control
+emits the archived all-blind winner. Both use the same downstream bounded
+stream linker, causal TLE orbit bank, 7 x 7 regional grid, score threshold and
+refinement budget. For each frontend, c=0 and fitted-c share observations,
+satellite assignments, other priors and iteration limits. True position and v5
+outputs are absent from this run. `compared_with_blind` gives endpoint motion
+and own-fit RMS changes. Each frontend fits its own tracked samples, so
+cross-frontend RMS differences are descriptive. The separate panel scorer
+judges geographic accuracy.
+
+`wall_s` is host monotonic time covering native JSON load, decoded candidate
+replay, all-blind winner representation validation, the causal orbit bank,
+guided track linking and both guided endpoint fits. The blind endpoint fit is
+timed separately with the shared bank already built. The rectangular
+frequency–phase area divided by the full search area is a search-cell proxy.
+Multiple rectangles are charged by the clipped sum of their areas, and rescue
+is charged for both the missed local gate and full blind search. This proxy
+excludes folding, fixed DSP costs, candidate generation and raw sample I/O.
+Wall time measures the replay and position solver on the host.
+
+The candidate-replay synthetic check exercises both circular boundaries, a substitute, lost-lock
+rescue, an idle lane, a periodic scout, and isolated receiver state. The panel
+run compares exact emitted rows on each causal half-prefix against the full run
+and verifies the all-blind control against the shared winner iterator.
+
+Panel result
+The scheduler charged 28.01% of the full blind search-cell proxy and reproduced
+12,403 of 35,391 archived winners (35.05%). It emitted 63 substitutes, with
+median absolute wrapped CFO separation from the archived winner of 74.4 kHz.
+Idle visits accounted for 22,730 of 22,925 omissions. Full rescue found a winner
+on 46 of 8,146 visits. In this panel the loss trigger mainly fired in short
+gaps, then left the returning pilots invisible until a scout. This operating
+point sacrifices too much winner coverage to claim equivalent detection.
+
+Both arms estimated all eight endpoints for both frontends. The guided endpoints
+moved a median 2.34 km (c=0) and 2.35 km (fitted-c) from their all-blind controls.
+Within the guided frontend, fitted-c shifted endpoints by a median 0.11 km.
+The median paired change in own-fit RMS was -3.51 Hz. Geographic error requires
+the separate panel scorer.
+
+Supplemental raw IQ check
+`iq_check.py` read 62 MiB of compressed IQ from the first short-window archive
+chunk across eight scans. `sudo -n -u leo` ran only bounded, read-only `head` and
+`dd` operations. Decompression, sample digest verification, and analysis ran
+as the invoking user. The capture source was dual RX, 10 MS/s, signed CI16. All
+detector comparisons use physical RX1 and sample-counter-matched input with
+verified per-window SHA-256. The fixed raw windows were sequences 0 and 8 on
+panel positions 1, 4 and 8, and sequences 0 and 1 on the other five scans.
+Sequences 0 and 8 are the first two distinct visits to the same lane about
+0.355 s apart. Reaching sequence 8 required a larger compressed prefix, so
+that replay was limited to three fixed cases to stay within the read budget.
+
+The sampled detector adapts the existing two-lag folded scout to 10 MS/s. It
+evaluates 64 known Qin symbols against the 17-symbol-rolled control with five
+CFO alias hypotheses spaced at the OFDM symbol rate. Blind and guided use the same score and 0.10
+exploratory margin. Both include the full folded proposal cost. The guided bank
+admits only phase proposals and CFO bins in the predicted rectangles, using a
+pruned DFT for admissible frequency cells. The full bank uses a 512-bin FFT per
+candidate. The matching criterion is joint wrapped CFO within 8 kHz and frame
+phase within 1.6 microseconds. This is a small waveform sanity test of the
+restricted bank. It does not qualify native detector parity, false-alarm rate,
+or actual raw coverage and runtime over the complete scans.
+
+The raw blind bank and archived native blind detector called the same nine
+of 16 windows positive, and eight of those nine winners met the joint match
+criterion. For the 10 ms check, a blind bank on the first half seeded the gate
+for the second half of window 0. Guided and paired blind processing saw the
+same second-half samples. The five cases with an available seed yielded five
+joint matches. Median host bank time was 33.75 ms blind and 25.10 ms guided.
+At the three actual revisits the primary scheduler's archived prior candidate
+peaks supplied the gates. One positive guided winner matched blind, a second
+positive selected a different peak, and both banks rejected the third visit.
+Median host bank time was 66.50 ms blind and 30.31 ms guided. Timings include
+the shared fold computation and exclude data loading and template creation.
+The waveform check and timing are recorded in `iq-check.json`. All position
+endpoints and full-panel scheduler measurements still come from `result.json`.

@@ -1,0 +1,838 @@
+{
+  "binary": {
+    "aarch64": {
+      "archive": "aarch64-portable-coarse.gz",
+      "bss_bytes": 21744,
+      "bytes": 777416,
+      "command": [
+        "aarch64-linux-gnu-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=armv8-a",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/portable-coarse-20261120/qualified/aarch64/portable-coarse"
+      ],
+      "data_bytes": 21564,
+      "sha256": "7121588ed58946391dede913ccb38f0389603bba788ea9a31e8428c60eb8aa12",
+      "text_bytes": 618321,
+      "tool": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+    },
+    "cortex-a9": {
+      "archive": "cortex-a9-portable-coarse.gz",
+      "bss_bytes": 3000,
+      "bytes": 5146168,
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/portable-coarse-20261120/qualified/cortex-a9/portable-coarse"
+      ],
+      "data_bytes": 3928,
+      "sha256": "0b4f6076cac957ceb55f2e6b771c2d36b9493154b4fb5d59aae75d57d4218bc4",
+      "text_bytes": 544976,
+      "tool": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]"
+    },
+    "x86": {
+      "archive": "x86-portable-coarse.gz",
+      "bss_bytes": 22560,
+      "bytes": 958016,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=x86-64-v3",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/portable-coarse-20261120/qualified/x86/portable-coarse"
+      ],
+      "data_bytes": 22864,
+      "sha256": "12aa74254ee879c4268d16a2d5acdb8bb8b6b670aa8528e7d306391ab1e3b90f",
+      "text_bytes": 831128,
+      "tool": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+    }
+  },
+  "counts": {
+    "aarch64": {
+      "candidates": 40,
+      "complete": 25,
+      "conditioned_cells": 1640,
+      "conditioned_ties": 0,
+      "equivalent_candidates": 4,
+      "fine_guard": 0,
+      "fractional_pass": 11,
+      "gate_guard": 0,
+      "glrt_bin_ties": 0,
+      "groups": 5,
+      "integer_pass": 10,
+      "retries": 1,
+      "seeds": 40,
+      "timing_cells": 200,
+      "visits": 2
+    },
+    "cortex-a9": {
+      "candidates": 40,
+      "complete": 25,
+      "conditioned_cells": 1640,
+      "conditioned_ties": 0,
+      "equivalent_candidates": 4,
+      "fine_guard": 0,
+      "fractional_pass": 11,
+      "gate_guard": 0,
+      "glrt_bin_ties": 0,
+      "groups": 5,
+      "integer_pass": 10,
+      "retries": 1,
+      "seeds": 40,
+      "timing_cells": 200,
+      "visits": 2
+    },
+    "x86": {
+      "candidates": 112,
+      "complete": 64,
+      "conditioned_cells": 4592,
+      "conditioned_ties": 0,
+      "equivalent_candidates": 14,
+      "equivalent_seed_reorders": 2,
+      "fine_guard": 0,
+      "fractional_pass": 19,
+      "gate_guard": 0,
+      "glrt_bin_ties": 0,
+      "groups": 14,
+      "integer_pass": 17,
+      "retries": 2,
+      "seeds": 112,
+      "timing_cells": 560,
+      "visits": 6
+    }
+  },
+  "cross_diagnostic_only": {
+    "aarch64": {
+      "cpu_ms": {
+        "max": 15447.311124,
+        "median": 12758.601601,
+        "min": 10069.892078,
+        "n": 2
+      },
+      "wall_ms": {
+        "max": 15889.78232,
+        "median": 13039.9599905,
+        "min": 10190.137661,
+        "n": 2
+      }
+    },
+    "cortex-a9": {
+      "cpu_ms": {
+        "max": 20155.818713,
+        "median": 16744.797513,
+        "min": 13333.776313,
+        "n": 2
+      },
+      "wall_ms": {
+        "max": 20260.545442,
+        "median": 16859.0986725,
+        "min": 13457.651903,
+        "n": 2
+      }
+    }
+  },
+  "development": {
+    "DS26-0237": {
+      "grid_error": 8.492391823100576e-08,
+      "grids": 4,
+      "ordered": true,
+      "template_errors": [
+        1.6595238909195703e-16,
+        1.6595238909195703e-16
+      ],
+      "visit": 37
+    },
+    "DS29-0082": {
+      "grid_error": 9.038865306232324e-08,
+      "grids": 4,
+      "ordered": true,
+      "template_errors": [
+        2.3551386808064053e-16,
+        1.9664981274029646e-16
+      ],
+      "visit": 39
+    },
+    "DS29-0519": {
+      "grid_error": 9.111433738051566e-08,
+      "grids": 4,
+      "ordered": true,
+      "template_errors": [
+        1.6595238909195703e-16,
+        1.6595238909195703e-16
+      ],
+      "visit": 37
+    }
+  },
+  "native_direct_resources": {
+    "coarse_workspace_bytes": 5374168,
+    "input_bytes": 1600000,
+    "peak_rss_kib": 13320,
+    "setup_cpu_ns": 4565225,
+    "setup_wall_ns": 5450909,
+    "verifier_workspace_bytes": 5858144
+  },
+  "native_source_payload": {
+    "portable_coarse.c": {
+      "bytes": 16286,
+      "lines": 381
+    },
+    "portable_coarse.h": {
+      "bytes": 2007,
+      "lines": 49
+    },
+    "portable_coarse_cli.c": {
+      "bytes": 6920,
+      "lines": 146
+    },
+    "portable_coarse_qin.h": {
+      "bytes": 2890,
+      "lines": 29
+    }
+  },
+  "native_timing": {
+    "complete_primary": {
+      "cpu_ms": {
+        "max": 226.663339,
+        "median": 214.45527299999998,
+        "min": 207.362848,
+        "n": 12
+      },
+      "wall_ms": {
+        "max": 267.449249,
+        "median": 218.499874,
+        "min": 212.566077,
+        "n": 12
+      }
+    },
+    "complete_retry": {
+      "cpu_ms": {
+        "max": 357.81807,
+        "median": 355.2937625,
+        "min": 342.467965,
+        "n": 6
+      },
+      "wall_ms": {
+        "max": 383.094374,
+        "median": 362.4258155,
+        "min": 343.262917,
+        "n": 6
+      }
+    },
+    "primary": {
+      "cpu_ms": {
+        "max": 71.84361,
+        "median": 67.454284,
+        "min": 62.736617,
+        "n": 36
+      },
+      "wall_ms": {
+        "max": 85.860389,
+        "median": 68.6255655,
+        "min": 64.608789,
+        "n": 36
+      }
+    },
+    "retry": {
+      "cpu_ms": {
+        "max": 99.020713,
+        "median": 96.5069355,
+        "min": 92.056508,
+        "n": 6
+      },
+      "wall_ms": {
+        "max": 99.368781,
+        "median": 97.6317305,
+        "min": 92.759655,
+        "n": 6
+      }
+    },
+    "setup": {
+      "cpu_ms": {
+        "max": 5.264308,
+        "median": 4.526479,
+        "min": 4.089963,
+        "n": 9
+      },
+      "wall_ms": {
+        "max": 5.765093,
+        "median": 5.034229,
+        "min": 4.240085,
+        "n": 9
+      }
+    },
+    "verify": {
+      "cpu_ms": {
+        "max": 47.635004,
+        "median": 40.322365000000005,
+        "min": 36.874888,
+        "n": 42
+      },
+      "wall_ms": {
+        "max": 64.059859,
+        "median": 40.7809145,
+        "min": 36.908892,
+        "n": 42
+      }
+    }
+  },
+  "numeric_maximums": {
+    "aarch64": {
+      "acquire_score": 7.93809462606987e-15,
+      "conditioned_cfo_hz": 1.1641532182693481e-10,
+      "conditioned_grid_hz": 1.1641532182693481e-10,
+      "conditioned_residual_hz": 1.1641532182693481e-10,
+      "conditioned_screen_scores": 9.031221603894579e-11,
+      "conditioned_winning_score": 1.106753577673203e-15,
+      "fine_interpolation_hz": 1.1641532182693481e-10,
+      "fractional_control": 6.811912145465726e-14,
+      "fractional_control_grid": 1.339206523454095e-15,
+      "fractional_epoch_offset_samples": 1.3167245072054357e-13,
+      "fractional_exact": 7.582823258189819e-14,
+      "fractional_exact_grid": 2.220446049250313e-15,
+      "fractional_log_curvature": 4.085620730620576e-14,
+      "fractional_margin": 7.79445952225899e-14,
+      "fractional_residual_hz": 0,
+      "integer_control": 1.061650767297806e-15,
+      "integer_exact": 1.0269562977782698e-15,
+      "integer_margin": 1.2212453270876722e-15,
+      "integer_residual_hz": 0,
+      "verify_control_score": 1.5352302762394743e-15,
+      "verify_score": 7.216449660063518e-15
+    },
+    "cortex-a9": {
+      "acquire_score": 7.840950111415168e-15,
+      "conditioned_cfo_hz": 1.1641532182693481e-10,
+      "conditioned_grid_hz": 1.1641532182693481e-10,
+      "conditioned_residual_hz": 1.1641532182693481e-10,
+      "conditioned_screen_scores": 9.031221950839274e-11,
+      "conditioned_winning_score": 1.1119577481011333e-15,
+      "fine_interpolation_hz": 1.1641532182693481e-10,
+      "fractional_control": 6.811912145465726e-14,
+      "fractional_control_grid": 1.339206523454095e-15,
+      "fractional_epoch_offset_samples": 1.3167245072054357e-13,
+      "fractional_exact": 7.582823258189819e-14,
+      "fractional_exact_grid": 2.220446049250313e-15,
+      "fractional_log_curvature": 4.085620730620576e-14,
+      "fractional_margin": 7.79445952225899e-14,
+      "fractional_residual_hz": 0,
+      "integer_control": 1.0685896612017132e-15,
+      "integer_exact": 1.033895191682177e-15,
+      "integer_margin": 1.2490009027033011e-15,
+      "integer_residual_hz": 0,
+      "verify_control_score": 1.5213524884316598e-15,
+      "verify_score": 7.244205235679146e-15
+    },
+    "x86": {
+      "acquire_score": 7.882583474838611e-15,
+      "conditioned_cfo_hz": 1.1641532182693481e-10,
+      "conditioned_grid_hz": 1.1641532182693481e-10,
+      "conditioned_residual_hz": 1.1641532182693481e-10,
+      "conditioned_screen_scores": 9.031221256949884e-11,
+      "conditioned_winning_score": 1.2542050731312315e-15,
+      "fine_interpolation_hz": 1.1641532182693481e-10,
+      "fractional_control": 6.811912145465726e-14,
+      "fractional_control_grid": 1.8943180357666733e-15,
+      "fractional_epoch_offset_samples": 3.006483950684924e-13,
+      "fractional_exact": 7.582823258189819e-14,
+      "fractional_exact_grid": 2.220446049250313e-15,
+      "fractional_log_curvature": 1.5143442055887135e-13,
+      "fractional_margin": 7.79445952225899e-14,
+      "fractional_residual_hz": 0,
+      "integer_control": 1.2281842209915794e-15,
+      "integer_exact": 1.3600232051658168e-15,
+      "integer_margin": 1.908195823574488e-15,
+      "integer_residual_hz": 0,
+      "verify_control_score": 1.6167622796103842e-15,
+      "verify_score": 7.216449660063518e-15
+    }
+  },
+  "outputs": {
+    "aarch64": {
+      "DS26-0237": {
+        "byte_equal_x86": false,
+        "closest_above_gate": {
+          "distance": 2.3136846536014888e-06,
+          "lane": 1,
+          "measured_margin": 0.0250023136846505,
+          "original_margin": 0.025002313684653603,
+          "seed": 4,
+          "visit": 1561
+        },
+        "closest_below_gate": {
+          "distance": 0.022330272394093728,
+          "lane": 0,
+          "measured_margin": 0.002669727605971367,
+          "original_margin": 0.0026697276059062733,
+          "seed": 5,
+          "visit": 1561
+        },
+        "counts": {
+          "candidates": 16,
+          "complete": 12,
+          "conditioned_cells": 656,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 4,
+          "fine_guard": 0,
+          "fractional_pass": 8,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 2,
+          "integer_pass": 7,
+          "timing_cells": 80,
+          "visits": 1
+        },
+        "max_absolute_output_delta_vs_x86": 2.6645352591003757e-15,
+        "maximum_errors": {
+          "acquire_score": 7.93809462606987e-15,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 9.031221603894579e-11,
+          "conditioned_winning_score": 1.106753577673203e-15,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 4.693467836602849e-14,
+          "fractional_control_grid": 1.339206523454095e-15,
+          "fractional_epoch_offset_samples": 1.3167245072054357e-13,
+          "fractional_exact": 5.695444116327053e-14,
+          "fractional_exact_grid": 1.8041124150158794e-15,
+          "fractional_log_curvature": 4.085620730620576e-14,
+          "fractional_margin": 6.88338275267597e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.061650767297806e-15,
+          "integer_exact": 1.0269562977782698e-15,
+          "integer_margin": 1.0824674490095276e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 1.3461454173580023e-15,
+          "verify_score": 7.216449660063518e-15
+        },
+        "retries": 0,
+        "seeds": 16
+      },
+      "DS29-0082": {
+        "byte_equal_x86": false,
+        "closest_above_gate": {
+          "distance": 0.18504356824682497,
+          "lane": 0,
+          "measured_margin": 0.210043568246837,
+          "original_margin": 0.21004356824682496,
+          "seed": 7,
+          "visit": 141
+        },
+        "closest_below_gate": {
+          "distance": 0.01237649642186188,
+          "lane": 1,
+          "measured_margin": 0.012623503578139884,
+          "original_margin": 0.012623503578138122,
+          "seed": 7,
+          "visit": 141
+        },
+        "counts": {
+          "candidates": 24,
+          "complete": 13,
+          "conditioned_cells": 984,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 0,
+          "fine_guard": 0,
+          "fractional_pass": 3,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 3,
+          "integer_pass": 3,
+          "timing_cells": 120,
+          "visits": 1
+        },
+        "max_absolute_output_delta_vs_x86": 6.536438057480609e-15,
+        "maximum_errors": {
+          "acquire_score": 5.950101522600448e-16,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 5.307231910889332e-11,
+          "conditioned_winning_score": 7.563394355258879e-16,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 6.811912145465726e-14,
+          "fractional_control_grid": 1.0269562977782698e-15,
+          "fractional_epoch_offset_samples": 7.197714646522968e-14,
+          "fractional_exact": 7.582823258189819e-14,
+          "fractional_exact_grid": 2.220446049250313e-15,
+          "fractional_log_curvature": 1.509903313490213e-14,
+          "fractional_margin": 7.79445952225899e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.0269562977782698e-15,
+          "integer_exact": 7.216449660063518e-16,
+          "integer_margin": 1.2212453270876722e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 1.5352302762394743e-15,
+          "verify_score": 1.1553258350005535e-15
+        },
+        "retries": 1,
+        "seeds": 24
+      }
+    },
+    "cortex-a9": {
+      "DS26-0237": {
+        "byte_equal_x86": false,
+        "closest_above_gate": {
+          "distance": 2.3136846536014888e-06,
+          "lane": 1,
+          "measured_margin": 0.025002313684650522,
+          "original_margin": 0.025002313684653603,
+          "seed": 4,
+          "visit": 1561
+        },
+        "closest_below_gate": {
+          "distance": 0.022330272394093728,
+          "lane": 0,
+          "measured_margin": 0.00266972760597136,
+          "original_margin": 0.0026697276059062733,
+          "seed": 5,
+          "visit": 1561
+        },
+        "counts": {
+          "candidates": 16,
+          "complete": 12,
+          "conditioned_cells": 656,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 4,
+          "fine_guard": 0,
+          "fractional_pass": 8,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 2,
+          "integer_pass": 7,
+          "timing_cells": 80,
+          "visits": 1
+        },
+        "max_absolute_output_delta_vs_x86": 1.7832957333041577e-15,
+        "maximum_errors": {
+          "acquire_score": 7.840950111415168e-15,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 9.031221950839274e-11,
+          "conditioned_winning_score": 1.1119577481011333e-15,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 4.693467836602849e-14,
+          "fractional_control_grid": 1.339206523454095e-15,
+          "fractional_epoch_offset_samples": 1.3167245072054357e-13,
+          "fractional_exact": 5.694750226936662e-14,
+          "fractional_exact_grid": 1.8041124150158794e-15,
+          "fractional_log_curvature": 4.085620730620576e-14,
+          "fractional_margin": 6.894484982922222e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.0685896612017132e-15,
+          "integer_exact": 1.033895191682177e-15,
+          "integer_margin": 1.0824674490095276e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 1.3461454173580023e-15,
+          "verify_score": 7.244205235679146e-15
+        },
+        "retries": 0,
+        "seeds": 16
+      },
+      "DS29-0082": {
+        "byte_equal_x86": false,
+        "closest_above_gate": {
+          "distance": 0.18504356824682497,
+          "lane": 0,
+          "measured_margin": 0.210043568246837,
+          "original_margin": 0.21004356824682496,
+          "seed": 7,
+          "visit": 141
+        },
+        "closest_below_gate": {
+          "distance": 0.01237649642186188,
+          "lane": 1,
+          "measured_margin": 0.012623503578139884,
+          "original_margin": 0.012623503578138122,
+          "seed": 7,
+          "visit": 141
+        },
+        "counts": {
+          "candidates": 24,
+          "complete": 13,
+          "conditioned_cells": 984,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 0,
+          "fine_guard": 0,
+          "fractional_pass": 3,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 3,
+          "integer_pass": 3,
+          "timing_cells": 120,
+          "visits": 1
+        },
+        "max_absolute_output_delta_vs_x86": 3.885780586188048e-15,
+        "maximum_errors": {
+          "acquire_score": 5.93275428784068e-16,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 5.307231910889332e-11,
+          "conditioned_winning_score": 7.494005416219807e-16,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 6.811912145465726e-14,
+          "fractional_control_grid": 1.0269562977782698e-15,
+          "fractional_epoch_offset_samples": 7.493311526829416e-14,
+          "fractional_exact": 7.582823258189819e-14,
+          "fractional_exact_grid": 2.220446049250313e-15,
+          "fractional_log_curvature": 1.4654943925052066e-14,
+          "fractional_margin": 7.79445952225899e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.0269562977782698e-15,
+          "integer_exact": 7.216449660063518e-16,
+          "integer_margin": 1.2490009027033011e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 1.5213524884316598e-15,
+          "verify_score": 1.1501216645726231e-15
+        },
+        "retries": 1,
+        "seeds": 24
+      }
+    },
+    "x86": {
+      "DS26-0237": {
+        "byte_equal_x86": false,
+        "closest_above_gate": {
+          "distance": 2.3136846536014888e-06,
+          "lane": 1,
+          "measured_margin": 0.0250023136846505,
+          "original_margin": 0.025002313684653603,
+          "seed": 4,
+          "visit": 1561
+        },
+        "closest_below_gate": {
+          "distance": 7.163441180064317e-05,
+          "lane": 1,
+          "measured_margin": 0.024928365588199296,
+          "original_margin": 0.024928365588199358,
+          "seed": 3,
+          "visit": 3235
+        },
+        "counts": {
+          "candidates": 32,
+          "complete": 25,
+          "conditioned_cells": 1312,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 10,
+          "equivalent_seed_reorders": 2,
+          "fine_guard": 0,
+          "fractional_pass": 15,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 4,
+          "integer_pass": 14,
+          "timing_cells": 160,
+          "visits": 2
+        },
+        "max_absolute_output_delta_vs_x86": 2.6645352591003757e-15,
+        "maximum_errors": {
+          "acquire_score": 7.882583474838611e-15,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 9.031221256949884e-11,
+          "conditioned_winning_score": 1.1136924715771102e-15,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 4.693467836602849e-14,
+          "fractional_control_grid": 1.339206523454095e-15,
+          "fractional_epoch_offset_samples": 1.3167245072054357e-13,
+          "fractional_exact": 5.694750226936662e-14,
+          "fractional_exact_grid": 1.8041124150158794e-15,
+          "fractional_log_curvature": 4.085620730620576e-14,
+          "fractional_margin": 6.905587213168474e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.061650767297806e-15,
+          "integer_exact": 1.0547118733938987e-15,
+          "integer_margin": 1.3253287356462806e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 1.3444106938820255e-15,
+          "verify_score": 7.216449660063518e-15
+        },
+        "retries": 0,
+        "seeds": 32
+      },
+      "DS29-0082": {
+        "byte_equal_x86": false,
+        "closest_above_gate": {
+          "distance": 6.387535016445095e-05,
+          "lane": 0,
+          "measured_margin": 0.025063875350189647,
+          "original_margin": 0.025063875350164452,
+          "seed": 1,
+          "visit": 5855
+        },
+        "closest_below_gate": {
+          "distance": 0.012229809065249439,
+          "lane": 1,
+          "measured_margin": 0.012770190934743374,
+          "original_margin": 0.012770190934750562,
+          "seed": 0,
+          "visit": 5855
+        },
+        "counts": {
+          "candidates": 64,
+          "complete": 32,
+          "conditioned_cells": 2624,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 2,
+          "fine_guard": 0,
+          "fractional_pass": 4,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 8,
+          "integer_pass": 3,
+          "timing_cells": 320,
+          "visits": 3
+        },
+        "max_absolute_output_delta_vs_x86": 2.9103830456733704e-11,
+        "maximum_errors": {
+          "acquire_score": 1.313185671314443e-15,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 5.394602473063337e-11,
+          "conditioned_winning_score": 1.2542050731312315e-15,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 6.811912145465726e-14,
+          "fractional_control_grid": 1.3877787807814457e-15,
+          "fractional_epoch_offset_samples": 2.1926904736346842e-13,
+          "fractional_exact": 7.582823258189819e-14,
+          "fractional_exact_grid": 2.220446049250313e-15,
+          "fractional_log_curvature": 1.5143442055887135e-13,
+          "fractional_margin": 7.79445952225899e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.1934897514720433e-15,
+          "integer_exact": 1.3600232051658168e-15,
+          "integer_margin": 1.908195823574488e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 1.6167622796103842e-15,
+          "verify_score": 1.1934897514720433e-15
+        },
+        "retries": 2,
+        "seeds": 64
+      },
+      "DS29-0519": {
+        "byte_equal_x86": false,
+        "closest_above_gate": null,
+        "closest_below_gate": {
+          "distance": 0.01326353125761439,
+          "lane": 1,
+          "measured_margin": 0.011736468742384924,
+          "original_margin": 0.011736468742385611,
+          "seed": 2,
+          "visit": 153
+        },
+        "counts": {
+          "candidates": 16,
+          "complete": 7,
+          "conditioned_cells": 656,
+          "conditioned_ties": 0,
+          "equivalent_candidates": 2,
+          "fine_guard": 0,
+          "fractional_pass": 0,
+          "gate_guard": 0,
+          "glrt_bin_ties": 0,
+          "groups": 2,
+          "integer_pass": 0,
+          "timing_cells": 80,
+          "visits": 1
+        },
+        "max_absolute_output_delta_vs_x86": 3.774758283725532e-15,
+        "maximum_errors": {
+          "acquire_score": 6.626643678231403e-16,
+          "conditioned_cfo_hz": 1.1641532182693481e-10,
+          "conditioned_grid_hz": 1.1641532182693481e-10,
+          "conditioned_residual_hz": 1.1641532182693481e-10,
+          "conditioned_screen_scores": 4.8456033456545367e-11,
+          "conditioned_winning_score": 9.766493169749424e-16,
+          "fine_interpolation_hz": 1.1641532182693481e-10,
+          "fractional_control": 4.431871536425547e-14,
+          "fractional_control_grid": 1.8943180357666733e-15,
+          "fractional_epoch_offset_samples": 3.006483950684924e-13,
+          "fractional_exact": 2.1212198664244397e-14,
+          "fractional_exact_grid": 1.3114509478384662e-15,
+          "fractional_log_curvature": 8.348877145181177e-14,
+          "fractional_margin": 5.958428195285137e-14,
+          "fractional_residual_hz": 0,
+          "integer_control": 1.2281842209915794e-15,
+          "integer_exact": 8.049116928532385e-16,
+          "integer_margin": 1.2698175844150228e-15,
+          "integer_residual_hz": 0,
+          "verify_control_score": 5.793976409762536e-16,
+          "verify_score": 1.1136924715771102e-15
+        },
+        "retries": 0,
+        "seeds": 16
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "charts": [
+    {
+      "caption": "DS26-0036 with all three methods replayed on the same CPU.",
+      "cases": [
+        "DS26-0036"
+      ],
+      "id": "bridge_support_comparison",
+      "method": "bridge_support",
+      "scope": "roof",
+      "seal": "receipt.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Whole-track reclassification",
+          "value": "bridge_support"
+        },
+        {
+          "file": "prior-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Prior bridge, fresh matched replay",
+          "match": [
+            "input_sha256",
+            "scientific_request_sha256"
+          ],
+          "value": "bridge_cavity"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Compact cavity",
+          "match": [
+            "input_sha256",
+            "scientific_request_sha256"
+          ],
+          "value": "orbit_projector"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Held-component bridge \u00b7 Prior favorable comparison"
+    }
+  ],
+  "version": 1
+}

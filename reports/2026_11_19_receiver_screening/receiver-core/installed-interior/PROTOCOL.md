@@ -1,0 +1,7 @@
+# Installed 20 m interior profile
+
+Build the opt-in `interior` profile on local ext4. Compare all four legacy profiles across pre-change and post-change builds at the same absolute install locations. The interior profile inherits measured phase-release scientific files and compiled libraries. It runs the sealed policy inside its own launcher after the only numerical call, with the tile passed to that call.
+
+Replay two already authenticated measured roof offers from the separate stdin-policy study. Use DS26-0102 near inside, offer `ae62c6cd475c45788842`, for the legitimate publication. Use DS26-0070 near omission, offer `72aaa1db3143b2f3dc96`, for the forced-only diagnostic. This is installed-entry parity on known outcomes. Preserve the original native factors, causal catalogue, screen, offer, configured width, and both calibration arms. Keep coordinates, forced coordinates, conditional RF RMS, objectives and other scientific values exact.
+
+Use CPU 12 for the legitimate offer and CPU 13 for the near omission. Launch the public interpreter command directly outside the project checkout at nice 10 with a physical 512 MiB limit, zero swap, one numerical thread, and a 210-second service deadline. Sample the cgroup from outside. Service wall includes interpreter startup, preparation, solve, terminal decision and JSON output. Measure no separate filter startup in this route. Keep each outcome, including an expired deadline, and compare to the earlier sealed decision without treating elapsed times from the two studies as matched.

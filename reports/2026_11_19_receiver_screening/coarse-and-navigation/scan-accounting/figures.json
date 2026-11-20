@@ -1,0 +1,46 @@
+{
+  "charts": [
+    {
+      "caption": "Both collectors reproduced the same complete native input. Each recording has one fresh compact fit and a matched prior waveform fit.",
+      "cases": "sealed",
+      "id": "scan-accounting-position",
+      "method": "scan_accounting_shared_compact",
+      "provenance": [
+        "plan.json",
+        "audit.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh compact on shared factors",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "scan_accounting_shared_compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Prior matched fresh waveform",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "scan_accounting_prior_compact"
+        }
+      ],
+      "title": "Position after normal receiver accounting changes"
+    }
+  ],
+  "version": 2
+}

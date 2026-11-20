@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "clock_chain",
+      "method": "clock_chain",
+      "scope": "roof",
+      "title": "Complete stored-IQ replay through shared clock and track offsets",
+      "caption": "Both captures use fresh complete saved-IQ, ordinary GLRT, Graph, causal propagation and clock-offset fits. The independently measured compact v5 comparator shares the exact ordinary factors, catalogue and tile. The four original v5 options use the capture-era factors. The DS29 clock-offset result withheld both arms.",
+      "cases": "smoke-two",
+      "seal": "figure-lock.json",
+      "provenance": ["PROTOCOL.md", "source-lock.json", "prediction-lock.json", "stage-receipts.json", "positions.jsonl.gz", "same-ordinary-v5.jsonl.gz", "v5-options.jsonl.gz"],
+      "series": [
+        {"key": "one", "label": "Fresh clock + offset, OU", "file": "positions.jsonl.gz", "field": "variant", "value": "native_clock_offset_ou", "native_authority": "ordinary", "forced_label": "Clock + offset forced diagnostics"},
+        {"key": "stock", "label": "Archived compact v5 · same ordinary factors", "file": "same-ordinary-v5.jsonl.gz", "value": "history_stream_prep", "native_authority": "ordinary", "match": ["native_sha256", "catalog_sha256", "tile"]},
+        {"key": "one_native_factors", "label": "Fresh clock only, OU", "file": "positions.jsonl.gz", "field": "variant", "value": "native_clock_only_ou", "native_authority": "ordinary", "match": ["input_sha256", "observation_sha256"]},
+        {"key": "all_visits", "label": "Fresh offset only, OU", "file": "positions.jsonl.gz", "field": "variant", "value": "native_offset_only_ou", "native_authority": "ordinary", "match": ["input_sha256", "observation_sha256"]}
+      ]
+    }
+  ]
+}

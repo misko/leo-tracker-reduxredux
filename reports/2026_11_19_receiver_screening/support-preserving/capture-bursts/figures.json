@@ -1,0 +1,129 @@
+{
+  "charts": [
+    {
+      "caption": "Four adjacent same-channel visits and equal-duty uniform spacing. Both use original detector packets and fresh capped compact fits.",
+      "cases": "sealed",
+      "id": "capture-bursts-primary",
+      "method": "capture_bursts_burst",
+      "provenance": [
+        "plan.json",
+        "schedule.json",
+        "prediction-lock.json",
+        "packet-audit.csv",
+        "scores.csv",
+        "capture-era-v5.csv",
+        "detector-costs.csv",
+        "solver-resources.csv",
+        "graph-tracks.csv",
+        "graph-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Four-visit bursts",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_bursts_burst"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Matched periodic calls",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_bursts_periodic"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete capture-era compact",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_bursts_full"
+        }
+      ],
+      "title": "Original detector only \u00b7 12 valid calls per channel"
+    },
+    {
+      "caption": "Four adjacent same-channel visits and equal-duty uniform spacing. Both use original detector packets and fresh capped compact fits.",
+      "cases": "sealed",
+      "id": "capture-bursts-high",
+      "method": "capture_bursts_burst_high",
+      "provenance": [
+        "plan.json",
+        "schedule.json",
+        "prediction-lock.json",
+        "packet-audit.csv",
+        "scores.csv",
+        "capture-era-v5.csv",
+        "detector-costs.csv",
+        "solver-resources.csv",
+        "graph-tracks.csv",
+        "graph-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Four-visit bursts",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_bursts_burst_high"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Matched periodic calls",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_bursts_periodic_high"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete capture-era compact",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_bursts_full"
+        }
+      ],
+      "title": "Original detector only \u00b7 52 valid calls per channel"
+    }
+  ],
+  "version": 1
+}

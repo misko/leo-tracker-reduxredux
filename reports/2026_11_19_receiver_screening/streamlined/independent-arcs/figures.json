@@ -1,0 +1,187 @@
+{
+  "charts": [
+    {
+      "caption": "Full anonymous native GLRT and one causal TLE on the same 25 km offer. Pair evidence keeps unmatched receiver visits and checks identities on held time.",
+      "cases": [
+        "DS26-0197",
+        "DS29-0316"
+      ],
+      "id": "independent_arcs-diagnostic",
+      "method": "independent_arcs",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Independent arcs \u00b7 forced",
+          "key": "one",
+          "label": "Independent arcs \u00b7 publication",
+          "value": "independent_arcs",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Paired peaks \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "paired_peaks",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Elapsed-time paths \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "peak_paths",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        }
+      ],
+      "title": "Independent GLRT arcs on diagnosed captures"
+    },
+    {
+      "caption": "Full anonymous native GLRT and one causal TLE on the same 25 km offer. Pair evidence keeps unmatched receiver visits and checks identities on held time.",
+      "cases": [
+        "DS26-0203",
+        "DS26-0279",
+        "DS26-0084",
+        "DS26-0175"
+      ],
+      "id": "independent_arcs-confirmation",
+      "method": "independent_arcs",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Independent arcs \u00b7 forced",
+          "key": "one",
+          "label": "Independent arcs \u00b7 publication",
+          "value": "independent_arcs",
+          "where": {
+            "cohort": "confirmation"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Paired peaks \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "paired_peaks",
+          "where": {
+            "cohort": "confirmation"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Elapsed-time paths \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "peak_paths",
+          "where": {
+            "cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Independent GLRT arcs on archive reserves"
+    },
+    {
+      "caption": "Full anonymous native GLRT and one causal TLE on the same 25 km offer. Pair evidence keeps unmatched receiver visits and checks identities on held time.",
+      "cases": [
+        "DS26-0277-omitted",
+        "DS29-0604-omitted"
+      ],
+      "id": "independent_arcs-omitted",
+      "method": "independent_arcs",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Independent arcs \u00b7 forced",
+          "key": "candidate",
+          "label": "Independent arcs \u00b7 publication",
+          "value": "independent_arcs",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "forced_label": "Paired peaks \u00b7 forced",
+          "key": "one",
+          "label": "Paired peaks \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "paired_peaks",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "forced_label": "Elapsed-time paths \u00b7 forced",
+          "key": "stock",
+          "label": "Elapsed-time paths \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "peak_paths",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Independent GLRT arcs with the correct tile omitted"
+    }
+  ],
+  "version": 1
+}

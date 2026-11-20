@@ -1,0 +1,48 @@
+{
+  "charts": [
+    {
+      "caption": "DS29-0082 at its recorded pace with one worker and one waiting window. Inputs consist of authenticated physical emissions.",
+      "cases": "sealed",
+      "id": "paced-rf-position",
+      "method": "paced_oldest_rf",
+      "provenance": [
+        "rf-support.csv",
+        "resources.csv",
+        "geographic.csv",
+        "frequency-fit.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "one",
+          "label": "Least recently started RF",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "paced_oldest_rf"
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Actual original-detector FIFO",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "paced_capture_original"
+        }
+      ],
+      "title": "Actual oldest-RF and FIFO emissions through compact position"
+    }
+  ],
+  "version": 2
+}

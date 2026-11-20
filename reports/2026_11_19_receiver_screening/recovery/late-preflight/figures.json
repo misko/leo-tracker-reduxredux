@@ -1,0 +1,38 @@
+{
+  "charts": [
+    {
+      "caption": "Archive-stage replay from captured cavity RF. The guard selects the saved post-addition incumbent or the original full late result on the same request.",
+      "cases": "roof135",
+      "id": "late-preflight-roof135",
+      "method": "late_preflight_archive",
+      "provenance": [
+        "scores.csv",
+        "summary.json",
+        "predecision-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Archived RF preflight replay",
+          "value": "late_preflight_archive"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original cavity cutoff",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "late_preflight_cavity_archive"
+        }
+      ],
+      "title": "RF preflight for late v5 recovery on 135 recordings"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,133 @@
+{
+  "charts": [
+    {
+      "caption": "Both workers run the same causal joint orbit solver with the same region and calibration arms. Track membership is the experimental variable.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082",
+        "DS26-0187",
+        "DS26-0197",
+        "DS29-0519"
+      ],
+      "id": "native_simple_tracks-primary",
+      "method": "native_simple_tracks",
+      "provenance": [
+        "deployment.json",
+        "source-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "primary-figure-lock.json",
+      "series": [
+        {
+          "file": "sparse-positions.jsonl.gz",
+          "key": "one",
+          "label": "Sparse velocity-continuous tracks",
+          "value": "native_simple_tracks",
+          "where": {
+            "cohort": "primary"
+          }
+        },
+        {
+          "file": "graph-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Graph tracks \u00b7 same joint fitter",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "scenario_sha256"
+          ],
+          "value": "native_simple_tracks_graph",
+          "where": {
+            "cohort": "primary"
+          }
+        }
+      ],
+      "title": "Sparse native GLRT tracks with the matched joint orbit fit \u00b7 primary"
+    },
+    {
+      "caption": "Both workers run the same causal joint orbit solver with the same region and calibration arms. Track membership is the experimental variable.",
+      "cases": [
+        "DS26-0275",
+        "DS26-0092",
+        "DS29-0604"
+      ],
+      "id": "native_simple_tracks-confirmation",
+      "method": "native_simple_tracks",
+      "provenance": [
+        "deployment.json",
+        "source-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "sparse-positions.jsonl.gz",
+          "key": "one",
+          "label": "Sparse velocity-continuous tracks",
+          "value": "native_simple_tracks",
+          "where": {
+            "cohort": "confirmation"
+          }
+        },
+        {
+          "file": "graph-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Graph tracks \u00b7 same joint fitter",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "scenario_sha256"
+          ],
+          "value": "native_simple_tracks_graph",
+          "where": {
+            "cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Sparse native GLRT tracks with the matched joint orbit fit \u00b7 confirmation"
+    },
+    {
+      "caption": "Both workers run the same causal joint orbit solver with the same region and calibration arms. Track membership is the experimental variable.",
+      "cases": [
+        "DS26-0036-wrong",
+        "DS26-0036-shuffle"
+      ],
+      "id": "native_simple_tracks-transfer",
+      "method": "native_simple_tracks",
+      "provenance": [
+        "deployment.json",
+        "source-lock.json"
+      ],
+      "queries": "transfer-queries.json",
+      "scope": "transfer",
+      "seal": "transfer-figure-lock.json",
+      "series": [
+        {
+          "file": "sparse-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Sparse velocity-continuous tracks",
+          "value": "native_simple_tracks",
+          "where": {
+            "cohort": "transfer"
+          }
+        },
+        {
+          "file": "graph-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Graph tracks \u00b7 same joint fitter",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "scenario_sha256"
+          ],
+          "value": "native_simple_tracks_graph",
+          "where": {
+            "cohort": "transfer"
+          }
+        }
+      ],
+      "title": "Sparse native GLRT tracks with the matched joint orbit fit \u00b7 transfer"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,60 @@
+{
+  "charts": [
+    {
+      "caption": "Both calibration arms used the same original request, catalogue, and search budget. The every-opportunity comparator uses preexisting compact fits.",
+      "cases": "sealed",
+      "id": "pre-retry-pilot-evidence-position",
+      "method": "signal_rule",
+      "provenance": [
+        "policy-lock.json",
+        "retry-outcomes.csv",
+        "position-timings.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Retry on every opportunity",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "all_retries"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Signal rule",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "signal_rule"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Same-count time-spread",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "time_spread"
+        }
+      ],
+      "title": "Whole-recording position under selected anchor retries"
+    }
+  ],
+  "version": 2
+}

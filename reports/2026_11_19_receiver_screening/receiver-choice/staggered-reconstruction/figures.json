@@ -1,0 +1,72 @@
+{
+  "charts": [
+    {
+      "caption": "Complete stored stock and fifth packets are selected per physical RF. The candidate measures a new phase-release position fit. Detector runtime is unavailable for this post-acquisition reconstruction.",
+      "cases": "sealed",
+      "id": "staggered-reconstructed-roof20",
+      "method": "staggered_reconstruction",
+      "provenance": [
+        "prediction-lock.json",
+        "packet-audit.json",
+        "scores.csv",
+        "capture-era-v5.csv",
+        "summary.json",
+        "paired-effects.csv",
+        "paired-summary.json",
+        "raw-support.csv",
+        "resources.csv",
+        "roof-authority.json",
+        "fresh-v5.jsonl.gz"
+      ],
+      "roof_references": {
+        "authority": "roof-authority.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Alternating fifth region by RF and lane",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "staggered_reconstruction"
+        },
+        {
+          "file": "stock-fifth-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete four regions",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "stock-fifth-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Complete fifth region",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        }
+      ],
+      "title": "Alternating one fifth-region lane across the full roof roster"
+    }
+  ],
+  "version": 2
+}

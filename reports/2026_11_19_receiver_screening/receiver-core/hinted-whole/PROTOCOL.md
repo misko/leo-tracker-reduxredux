@@ -1,0 +1,5 @@
+# Chronological hint feedback on the complete saved recording
+
+DS26-0237 and the additional DS29-0519 are fixed before opening results. Run DS26 stock then hinted on CPU 0 and DS29 hinted then stock on CPU 18. Every worker uses one strictly chronological dual-RX detector lane, followed by the same phase-release winner-stream solver, capped at 512 MiB with zero swap, nice 10, and 450 s. Run the lanes concurrently on separate cores.
+
+Each detector maintains its own scout, with no past archive output, study labels, future data, or Graph results on the live selector path. Freeze both receivers' proposals before processing either receiver. The measured ABI can replace only slot four with the first causal proposal. It retains the original four-center budget and gate. On stock, compute shadow proposals on its own results with no intervention. Measure actual replacements and detector CPU separately from feedback and total wall. Use the original capture authority, each full causal catalogue, original tile, and both calibration arms.

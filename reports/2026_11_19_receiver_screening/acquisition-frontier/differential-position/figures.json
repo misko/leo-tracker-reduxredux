@@ -1,0 +1,64 @@
+{
+  "charts": [
+    {
+      "caption": "Eight visits per recording substitute real stock, blind rank-one or sham packets. All other visits retain stock wide factors. The four original v5 options use archived capture-era factors at the same roof.",
+      "cases": [
+        "DS26-0162",
+        "DS26-0237",
+        "DS29-0082",
+        "DS29-0519"
+      ],
+      "id": "differential-partial-iq-position",
+      "method": "differential_position_causal",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "window-audit.jsonl.gz",
+        "resources.json",
+        "graph-tracks.jsonl.gz",
+        "graph-probes.csv",
+        "graph-support.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Blind rank-one hint",
+          "native_field": "capture_era_native_sha256",
+          "value": "differential_position_causal"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide phase-release",
+          "match": [
+            "stock_native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "capture_era_native_sha256",
+          "value": "differential_position_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Sham hint",
+          "match": [
+            "stock_native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "capture_era_native_sha256",
+          "value": "differential_position_sham"
+        }
+      ],
+      "title": "Differential pilot timing on 32 scheduled raw windows"
+    }
+  ],
+  "version": 1
+}

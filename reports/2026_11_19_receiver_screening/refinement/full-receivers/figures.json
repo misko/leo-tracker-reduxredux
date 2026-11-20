@@ -1,0 +1,61 @@
+{
+  "charts": [
+    {
+      "caption": "Same stored GLRT inputs, causal catalogue and supplied tile. The four original v5 roles form the shaded range. Native variants rebuild the anonymous Graph. Curves use all offered recordings as the denominator.",
+      "cases": "roof135",
+      "id": "full-receiver-refinement-roof135",
+      "method": "full_receiver_refinement",
+      "provenance": [
+        "sources.json",
+        "summary.json",
+        "scores.csv",
+        "crossings.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Compact v5 secant",
+          "value": "v5_secant_fit"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Native smooth clock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_joint_clock_model"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Native curve anchors",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_anchor_receiver"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Native adaptive phase",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "phase_support_causal"
+        }
+      ],
+      "title": "Full receivers on 135 original roof recordings"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,7 @@
+# Dateline-crossing local coordinates
+
+Bind the measured 78-source small compact cavity release and its original C binaries. Modify only the two chart-to-coordinate producers and the inter-origin longitude difference. Keep the same local linear scales and all numerical fits, tracking, history, search budgets and selection rules. Validate nonpolar center support, tile width up to 25 km, and separation between the tile and broad screen. This is a longitude-chart test without a new local Earth model.
+
+Use one predeclared synthetic dateline scene with genuine paired causal and later element histories and recorded GLRT disturbance replay. The receiver lies near 36°N and 179.98°E. The disclosed broad screen lies on the other side of the dateline, and one 25 km tile contains the simulated location. A paired tile is 50 km east of the screen and omits it. Retain the raw failure, withheld result or published estimates for either offer. The original numeric gate has no truth or wrong-offer certificate.
+
+Take ordinary DS29-0082 as an in-range bitwise control against the existing sealed small-package entry. Execute isolated one-thread stored-native services at nice 10 on CPU 6 and 7 with 512 MiB of cgroup charge, zero swap and the old 165-second deadline. The scene tests synthetic geometry. It supplies no new independent field measurements or target-board times. Score geographic error and conditional RF fit separately after sealing predictions.

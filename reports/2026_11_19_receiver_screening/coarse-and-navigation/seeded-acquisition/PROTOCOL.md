@@ -1,0 +1,9 @@
+# Causal seeded pilot acquisition protocol
+
+Select one fixed, outcome-blind 128-visit span in each recording by hashing complete adjacent chunks with at least 80 valid visits. Use lower DS26-0237 for development and upper DS29-0082 for holdout. Give each physical RF its first and every sixth valid visit as an original conditional 12/22-anchor scan. The schedule is independent of detector outcomes. A gate-positive original candidate seeds a physical receiver in its current stream generation and RF. A failed anchor clears only that receiver's seed.
+
+At follow visits, extrapolate frame phase using the actual hardware sample counter, the 750 Hz frame period and a bounded rate. Carry signed CFO and a capped rate. Rank a bounded epoch neighborhood from actual known-symbol correlation and confirm two proposals with original conditioned fractional GLRT at the original gate. Successful local results update only their own state. Never feed stock native or archived measurements into that state.
+
+Compare fixed uncertainties of 220 and 550 samples per second on development, selecting the greatest number of signed matches with fewer unmatched positives and lower CPU as tie-breaks. Freeze the chosen uncertainty and the native follow-call fraction from development timings before opening held output. Both held controls use identical measured original anchors. The shifted control offsets the seed by half a frame. The native control spaces an approximately matched follow-CPU budget per RF, with the ratio set solely from development and realized costs reported on holdout.
+
+Use the original captured factor ledger for gate, epoch and signed CFO comparison. Preserve every physical window, including invalid windows, skipped calls and unseeded receiver rows. Report complete signed and aliased identity matches separately. Replay only stored IQ in capped host services. Short spans qualify the acquisition stage.

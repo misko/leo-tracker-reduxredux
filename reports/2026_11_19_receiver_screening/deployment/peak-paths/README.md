@@ -1,0 +1,20 @@
+# Positioning with orbital paths through native GLRT peaks
+
+The elapsed-time path decoder published **6/8 matched offers**, with **5/8 within 5 km** in each calibration arm. The matched Graph-free folded Doppler published 4/8, with 1/8 within 5 km. Original no-repair v5 published all eight matched cases with errors of 0.19–1.01 km. Both Graph-free methods withheld on both authentic omissions. The time shuffle produced no path support or position. [Sealed position scores](scores.csv) · [Standard figures](figures.json)
+
+The receiver reads native GLRT peaks directly. Per orbital hypothesis, an ordered decoder scores active peak states and an explicit zero-score background. The transition cost compares wrapped changes in CFO with the orbit’s predicted Doppler and maintains one carried offset estimate per surviving state. It retains at most one peak per receiver visit, even where orbit explanations overlap. Candidate paths establish folded clock levels and one seed phase per orbit. A robust nonlinear fit shares east/north position, bounded receiver/band offset and drift, and residual orbital phase across the chosen paths. The two calibration arms use the same paths and bounds. The `c = 0` arm holds its coefficient within 10⁻¹² Hz/GHz to satisfy the bounded solver’s strict interval requirement. All captures provide multiple observed RF channels within all four clock groups. This supplies RF contrast for the fitted coefficient, though its independence from orbital phase and clock remains conditional on the selected paths.
+
+The initial fixed-visit bridge yielded zero admitted paths on all 11 attempts, even with authentic TLEs. On the DS26-0197 diagnostic, the measured same-lane spacing was about 0.354 s. Allowing two misses capped the usable gap near 1.06 s and cut plausible paths down to 5–11 s. Before any geographic scoring, the rerun made 2.6 s of actual time the controlling limit and lowered the cost of missed visits. The source and lock for the first pass are preserved. The elapsed rerun used the same frozen reserve roster and other parameters. The folded comparator was freshly measured on identical original inputs. It cancels the RF calibration coefficient and supplies one estimate to both arms. [Original protocol](PROTOCOL.md) · [Elapsed gap change](ELAPSED-BRIDGE.md) · [First-pass evidence](first-pass/prediction-lock.json)
+
+| Measurement | Peak paths | Folded Doppler |
+| --- | ---: | ---: |
+| Published on the six reserves | 5/6 | 3/6 |
+| Median error of published matched cases, c0 / fitted c | 2.97 / 2.82 km | 8.38 / 8.38 km |
+| Median native-load-to-result wall time | 28.88 s | 8.89 s |
+| Median worker CPU time | 17.58 s | 3.45 s |
+| Median worker peak RSS | 186.6 MiB | 421.9 MiB |
+| Estimator source lines, Python + C | 473 + 82 | 397 + 131 |
+
+Both arms published DS29-0316 at 2.88/3.04 km with 203 held points each. DS29-0519 reached 0.54/0.56 km. One published estimate exceeded 6 km on DS29-0357, and DS26-0197 withheld with forced error near 21 km. The selected support ranged from 14 to 49 disjoint paths and 428 to 1,627 native visits. Held 15-second intervals were never used to choose or fit training paths. Held RF RMS is conditional on the peaks the frozen fit could decode, using a 1.4 kHz residual limit. It measures a different subset from training RMS. For instance, DS29-0316’s training RMS was 769/767 Hz and held RMS was 366/368 Hz. No withheld or forced estimate is counted as a publication. [Path and RF figure](path-support.png) · [Trace with exact receiver/visit IDs](path-traces.jsonl.gz)
+
+The numerical batches took 193.5 and 90.9 seconds on CPUs 8–11 at niceness 10. Timings include child startup and fresh kernel compilation in wall time, with worker CPU and peak RSS measured separately inside each isolated process. The shuffle permuted complete peak lists only within their native receiver/RF lane and has no geographic score. Four component tests cover harmonic wrap, two and six missing visits, empty background, the holdout guard, and disjoint ownership. [Input and source seal](elapsed-plan.json) · [Negative shuffle result](shuffle-position.jsonl.gz)

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "differential_gate",
+      "method": "differential_gate",
+      "scope": "roof",
+      "title": "Differential acquisition with a paired partial-IQ v5 fit",
+      "caption": "The experimental DS26-0036 fit substitutes eight measured scout visits and retains 6,757 valid archived visits. The paired control is a fresh fit from the complete original archive. The rejected scout missed 22 of 26 baseline fractional positives across the separate two-session detector audit.",
+      "cases": ["DS26-0036"],
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "source-lock.json", "qualification.json", "positions.jsonl.gz", "control-positions.jsonl.gz"],
+      "series": [
+        {
+          "key": "one",
+          "label": "Differential acquisition · partial IQ",
+          "file": "positions.jsonl.gz",
+          "value": "differential_gate",
+          "native_field": "source_archive_sha256"
+        },
+        {
+          "key": "stock",
+          "label": "Capture-era archive control",
+          "file": "control-positions.jsonl.gz",
+          "value": "differential_gate_capture_control",
+          "native_field": "source_archive_sha256",
+          "match": ["source_archive_sha256", "catalog_sha256"]
+        }
+      ]
+    }
+  ]
+}

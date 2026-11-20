@@ -1,0 +1,219 @@
+{
+  "charts": [
+    {
+      "caption": "Four offered squares and matching anonymous Doppler samples. Forced coordinates are diagnostics.",
+      "cases": [
+        "c5d8ef400a4a7eee1d5d",
+        "c0465157c452ee2ee8c0",
+        "aaa8f0b4e7a1629c0ffc",
+        "a977cacd5df50ea6d45a",
+        "d9caafb67f0c2bfb38f7",
+        "692994338513ff1cb3c5",
+        "955e6fe915adf6a3fa32",
+        "3baf6bb410eb3eaf8baf",
+        "d8e76167f7ddb04c40ac",
+        "7201a0f45914deb9a95b",
+        "3a97bb7a062b1f4353b8",
+        "5d42aafc366db7f28924",
+        "edefaf1dbd6cdb29fd21",
+        "cc55c294acfb5d0ab93e",
+        "9722e525c4cc1d11b9c8",
+        "d34e9bff0bdefca33cf1",
+        "78b5bd2b3b4fcd94b801",
+        "aa6822f5b86e3c418ff4",
+        "a195cf988fcbc604b8e1",
+        "b1ef108c5d43d4030419",
+        "58c91ccbc615a5f40f0e",
+        "e4ea8d42973b7d390817",
+        "7f6938dafa699ba4f49b",
+        "b2372a3869ddff7aa61a",
+        "a78ce855bdf6ca05f000",
+        "7555c20eec342a755b27",
+        "e3b91b24ac5b18ae17fa",
+        "bb1c2018e80e02e221b2",
+        "96a843c9fcbd32408792",
+        "f0af1df7de8c4295876c",
+        "84a86360635fd52c8a93",
+        "a2b2757adf47cdc83f1f",
+        "96d2a2b66d511d95873e",
+        "06bc6b6a0cff89e57294",
+        "30130023093776c6ab7d",
+        "df50a5f42d398d3ad5f1",
+        "8dae88e1e9ff06036ae7",
+        "ed68158e855e2e51c807",
+        "b3bee001b9cb0a31a4fd",
+        "a46c47cfe6b2c87345c0",
+        "5b84e1e63e2def4b5f33",
+        "2509e8cfb5669014c050",
+        "6a0234367924c4a44b92",
+        "66cb6528434250e5533a",
+        "21befc8d0fc9b35e7e69",
+        "86e8b87679666cc3b168",
+        "a6eb41e1921ec3b728c2",
+        "02c0feadc963bf0d51e0"
+      ],
+      "condition_labels": {
+        "far-omitted": "Far rivals \u00b7 omitted",
+        "far-present": "Far rivals \u00b7 containing",
+        "near-omitted": "Near rivals \u00b7 omitted",
+        "near-present": "Near rivals \u00b7 containing"
+      },
+      "id": "site-region-sets-physical",
+      "method": "site_region_set",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "physical-queries.json",
+      "scope": "transfer",
+      "seal": "physical-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Doppler shape \u00b7 forced",
+          "key": "candidate",
+          "label": "Doppler shape",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "site_region_set",
+          "where": {
+            "cohort": "physical"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Frozen rerun \u00b7 forced",
+          "key": "stock",
+          "label": "Frozen rerun",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "frozen_regional",
+          "where": {
+            "cohort": "physical"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Held shuffle \u00b7 forced",
+          "key": "one",
+          "label": "Held shuffle",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "shuffled_held",
+          "where": {
+            "cohort": "physical"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Tile medoid \u00b7 forced",
+          "key": "four",
+          "label": "Tile medoid",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "geometric_medoid",
+          "where": {
+            "cohort": "physical"
+          }
+        }
+      ],
+      "title": "Competing regions on eight StarLoc sites"
+    },
+    {
+      "caption": "Four offered squares and matching anonymous Doppler samples. Forced coordinates are diagnostics.",
+      "cases": [
+        "d1c1a455d6b8ddb86df5",
+        "d6c3343d3a892426c878"
+      ],
+      "condition_labels": {
+        "near-omitted": "Near rivals \u00b7 omitted",
+        "near-present": "Near rivals \u00b7 containing"
+      },
+      "id": "site-region-sets-simulation",
+      "method": "site_region_set",
+      "provenance": [
+        "prediction-lock.json",
+        "score-lock.json"
+      ],
+      "queries": "simulation-queries.json",
+      "scope": "transfer",
+      "seal": "simulation-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Doppler shape \u00b7 forced",
+          "key": "candidate",
+          "label": "Doppler shape",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "site_region_set",
+          "where": {
+            "cohort": "simulation"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Frozen rerun \u00b7 forced",
+          "key": "stock",
+          "label": "Frozen rerun",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "frozen_regional",
+          "where": {
+            "cohort": "simulation"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Held shuffle \u00b7 forced",
+          "key": "one",
+          "label": "Held shuffle",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "shuffled_held",
+          "where": {
+            "cohort": "simulation"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Tile medoid \u00b7 forced",
+          "key": "four",
+          "label": "Tile medoid",
+          "match": [
+            "input_sha256",
+            "sample_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "geometric_medoid",
+          "where": {
+            "cohort": "simulation"
+          }
+        }
+      ],
+      "title": "Competing regions at a simulated Portuguese site"
+    }
+  ],
+  "version": 2
+}

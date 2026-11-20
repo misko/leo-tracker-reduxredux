@@ -1,0 +1,64 @@
+{
+  "charts": [
+    {
+      "caption": "Actual paced adaptive and always-fifth packets use the same saved waveforms. Unpaced stock uses all valid visits.",
+      "cases": "sealed",
+      "id": "fresh-paced-adaptive",
+      "method": "fresh_adaptive_adaptive",
+      "provenance": [
+        "prediction-lock.json",
+        "roof-authority.json",
+        "fresh-v5.jsonl.gz",
+        "scores.csv",
+        "raw-budget.csv",
+        "position-resources.csv"
+      ],
+      "roof_references": {
+        "authority": "roof-authority.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Paced adaptive five or four",
+          "match": [
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fresh_adaptive_adaptive"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete unpaced four-region stock",
+          "match": [
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fresh_adaptive_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Paced always fifth",
+          "match": [
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fresh_adaptive_fifth"
+        }
+      ],
+      "title": "Adaptive fifth-region admission on two new recordings"
+    }
+  ],
+  "version": 1
+}

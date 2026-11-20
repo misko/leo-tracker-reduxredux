@@ -1,0 +1,49 @@
+{
+  "candidate": {
+    "command": [
+      "cc",
+      "-std=c11",
+      "-O3",
+      "-ffp-contract=off",
+      "-fno-fast-math",
+      "-fPIC",
+      "-shared",
+      "-pthread",
+      "-march=native",
+      "-fopenmp-simd",
+      "-fno-math-errno",
+      "-fno-trapping-math",
+      "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/capture_fft.c",
+      "-lfftw3f",
+      "-lm",
+      "-o",
+      "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so"
+    ],
+    "generated": {
+      "capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+      "fftw.wisdom": "5343fa0b1de9d15f793906b4818402748ac4edf7cc1cd0c75fd81a21e914d7d9",
+      "folded_bank.c": "e524399aef9a1a1d8aa9b46219971dbb185355ac90095bcadf49e326d2e85763",
+      "original_kernel_cache.h": "e4d597458bca8e6fb4ff9fc3a057dba9fbcaedca9e7a49240c842f2d3beb1eac"
+    },
+    "path": "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so",
+    "planning_cpu_ns": 42124652,
+    "sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286"
+  },
+  "length": 256,
+  "libraries": {
+    "/srv/bulk/leo-dev/fine-batch-20261119/frozen/fine_batch.so": "98a23962c45e8077b4f9a98904d836d77d99041d08e06aeb9bb0f635778c6f65",
+    "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/conditioned.so": "378219a59d7b9b13f7548d9d056917853aad369c720ded4b1d07c32d661bfa1e",
+    "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/fused.so": "dc34f7196391931e27105425217bfcac3a47833571cb36fe8260686a9ce1ffb0"
+  },
+  "planner": "stored-measure",
+  "roster_sha256": "bb97d7701eb3d7d95274c5748b77a816c0075852da2e866c011a6ca35ad4f2a9",
+  "selection_sha256": "34c0134f6331f429326ff963adf435bb89202df3f91de3a3863606e7605df566",
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_exact_trial.py": "9e105aa0d3ff39e420b97fea8fe06a2c26d9377e97c40f85b516fd1c28122ece",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_fft_trial.py": "bee7bb92d8c4aee31bc814ca4d96ff7cfc92fb7faa4e1d167ff55074bace833d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/fft_length_eval.py": "1a184f0482a607be1bd6cb0055bc6ccb6d0f0dd58aa5f250c18a1bd6362abf36",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_batch.c": "226d35c4d2f7c0babf0a08b80b03b1e79d74077c02a92d341c12aaf6732f316c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_batch.py": "08ed341c3dbe928b6ecb420ae4b2b050c037120efb52bd7d90a4564560cb4cad",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/prepared_hotpath_peaks.py": "a4198d5e47fdf337b1ee8605c715d9da24672cffddf3774b1a8265d5ad929527"
+  }
+}

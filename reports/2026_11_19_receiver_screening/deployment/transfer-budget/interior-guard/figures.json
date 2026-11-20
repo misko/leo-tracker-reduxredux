@@ -1,0 +1,42 @@
+{
+  "charts": [
+    {
+      "caption": "One new simulated receiver, three paired tiles and authentic causal TLE history. Forced endpoints preserve the original fit when the candidate reaches a tile face.",
+      "cases": "sealed",
+      "id": "compact-terminal-interior-guard",
+      "method": "v5_secant_transfer_interior",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "input-lock.json",
+        "released-truth.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Original endpoint at tile face",
+          "key": "candidate",
+          "label": "Terminal interior guard",
+          "value": "v5_secant_transfer_interior"
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Recovery budget alone",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_budget"
+        }
+      ],
+      "title": "Compact terminal interior guard on an independent simulated site"
+    }
+  ],
+  "version": 1
+}

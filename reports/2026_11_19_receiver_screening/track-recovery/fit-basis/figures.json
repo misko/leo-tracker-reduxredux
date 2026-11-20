@@ -1,0 +1,96 @@
+{
+  "charts": [
+    {
+      "caption": "Same complete archived wide factors and causal catalogue, capped at 512 MiB. The four original v5 references use their capture-era factors.",
+      "cases": [
+        "DS26-0237",
+        "DS29-0082"
+      ],
+      "id": "wide-fit-basis-development",
+      "method": "v5_fit_basis",
+      "provenance": [
+        "candidate-witness.json",
+        "resources.csv",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock-development.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fused sufficient-statistic pass",
+          "native_field": "capture_era_native_sha256",
+          "value": "v5_fit_basis",
+          "where": {
+            "cohort": "development"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original compact phase-release",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile"
+          ],
+          "native_field": "capture_era_native_sha256",
+          "value": "v5_fit_basis_stock",
+          "where": {
+            "cohort": "development"
+          }
+        }
+      ],
+      "title": "Compact v5 with fused Doppler and phase moments \u00b7 development"
+    },
+    {
+      "caption": "Same complete archived wide factors and causal catalogue, capped at 512 MiB. The four original v5 references use their capture-era factors.",
+      "cases": [
+        "DS29-0127"
+      ],
+      "id": "wide-fit-basis-held",
+      "method": "v5_fit_basis",
+      "provenance": [
+        "candidate-witness.json",
+        "resources.csv",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock-held.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fused sufficient-statistic pass",
+          "native_field": "capture_era_native_sha256",
+          "value": "v5_fit_basis",
+          "where": {
+            "cohort": "held"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original compact phase-release",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile"
+          ],
+          "native_field": "capture_era_native_sha256",
+          "value": "v5_fit_basis_stock",
+          "where": {
+            "cohort": "held"
+          }
+        }
+      ],
+      "title": "Compact v5 with fused Doppler and phase moments \u00b7 held"
+    }
+  ],
+  "version": 1
+}

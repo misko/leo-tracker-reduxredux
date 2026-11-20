@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "wide-reference-recovery",
+      "method": "wide_original_v5_recovery",
+      "title": "Original v5 numerical repeat · same wide factors",
+      "scope": "roof",
+      "cases": ["DS26-0122", "DS29-0082"],
+      "seal": "comparison-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["prediction-lock.json", "comparison-source.json", "resources.json", "scores.csv", "parity.json", "original-residuals.json"],
+      "caption": "Same sealed wide factors and causal request. The numerical repeat skips evidence rendering and preserves the original scientific stages. The original DS26 timeout remains in the primary series. Four archived v5 roles use capture-era factors.",
+      "series": [
+        {"file": "positions.jsonl.gz", "key": "one", "label": "Original v5 numerical repeat", "value": "wide_original_v5_recovery", "native_authority": "frozen", "native_field": "capture_era_native_sha256"},
+        {"file": "positions.jsonl.gz", "key": "stock", "label": "Original v5 full evidence worker", "value": "original_full_v5_wide", "native_authority": "frozen", "native_field": "capture_era_native_sha256", "match": ["native_sha256", "catalog_sha256", "tile"]},
+        {"file": "positions.jsonl.gz", "key": "all_visits", "label": "Compact phase release", "value": "compact_phase_release_wide", "native_authority": "frozen", "native_field": "capture_era_native_sha256", "match": ["native_sha256", "catalog_sha256", "tile"]}
+      ]
+    }
+  ]
+}

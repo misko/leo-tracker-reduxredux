@@ -1,0 +1,550 @@
+{
+  "panel": [
+    "DS26-0036",
+    "DS26-0070",
+    "DS26-0112",
+    "DS26-0122",
+    "DS26-0203",
+    "DS26-0209",
+    "DS26-0277",
+    "DS26-0311"
+  ],
+  "reference": {
+    "schema": "dataset-evaluation-reference/v1",
+    "dataset_id": "DS26",
+    "dataset_manifest_sha256": "sha256:5b13587575ced423a7879cc272c1454dc4474bd6167328cb2021939845b8bb55",
+    "latitude_deg": 37.849061591561885,
+    "longitude_deg": -122.48574968092912,
+    "elevation_m": null,
+    "scope": "all DS26 acquisitions, including October 30 captures",
+    "authority": "explicit user confirmation on 2026-10-30",
+    "usage": "evaluation only; excluded from inference, membership selection, and RF model selection"
+  },
+  "result_sha256": {
+    "01_stream": "0a360e522da540f91d9ff516c17e1913372de3877f6c2c17727c2081e21f8a1c",
+    "02_pilots": "7d0828208d9dfbc142626bfcbf6f5193b3ebf3740b726c4489ab5dab353fd693",
+    "03_consensus": "630fa27b109619098065d48fc5cd45cee7eefd1d5e76ddf9b0461265e32733d6",
+    "04_compact": "ac9a7d92d1cf94f705daa84233e71fcd953db2a347547d28a4806cb5681f4e41",
+    "05_stationary": "6f60e86e587c8d1e6aab4e9336bc0e844ce5027f31e00fb9a4636fa7493c16fe",
+    "06_coreset": "6ba7d0dc996f5bc6ae2b7649290d385dced5dfd5c627d241e1d1b7408ec91729",
+    "07_differences": "ff0238891a951dac1689e7b6efbd3b9d65a1e6de113c5cbbdfa2f19cd3c2ae44",
+    "08_grid": "116e71aa9115796cc8afad5f60d128ce67c159dd3d41253dd077a3b739bcbd2b",
+    "09_events": "51991692d21ee695076044ef7e2a90e90084d5c1e2f3d54160f7a252012319aa",
+    "10_network": "046b5e197f18eb39e766b7fb7a3f04f6424c21b13fee938f8c2f5549d2b42607"
+  },
+  "evidence_sha256": {
+    "panel.json": "93398861bcde05e2d932271d98fb2a915cd1157cef8412ca55e8d314cb55dcad",
+    "scoring-reference.json": "6a8790790db3652b6c44cf3b2963545347de1627e28d5881c9601c5386ca1914",
+    "controls.json": "c7bc1b12f02749612c19f72f3a4fe4a0d7d6c41a1dbc08bfd4d53449fb941a4a",
+    "02_pilots/iq-check.json": "2a89d91177f01b88d83841bd264cb2e44c32605b3d5dc4166ed4f3474607c407",
+    "02_pilots/scout-policy-control.json": "878d6b0cc4cc7c310334c6e59cc6b0577360e33988d85669a44d4d28ab9c7a10",
+    "stream_coreset_check/result.json": "cb9ba2ee5c54fb687b77e1771317ca5278a5a3059472fd33458ac78ed3b50c11",
+    "10_network/weights.npy": "8a16c78c6a14835203eb5f5fa3c689cb88cba08ef4a7bf280cfb87026af911cc"
+  },
+  "methods": {
+    "v5_r0": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 1.279478766068162,
+          "mean_error_km": 2.729955059679608,
+          "worst_error_km": 7.2689058813227465,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 95.89078979803848,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 0.0,
+          "closer_than_v5": 0
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 1.258856438325914,
+          "mean_error_km": 2.676985666284388,
+          "worst_error_km": 6.857982345479839,
+          "worst_case": "DS26-0203",
+          "median_selected_rms_hz": 88.48178726389091,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 0.0,
+          "closer_than_v5": 0
+        }
+      },
+      "timing_scope": "Recorded complete-worker wall time, includes scientific evidence and figures.",
+      "median_wall_s": 491.6508836252615
+    },
+    "graph_compact": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.219858327526239,
+          "mean_error_km": 4.3197174399945455,
+          "worst_error_km": 8.264521277878064,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 225.75731562679425,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.5897623803149379,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.239434716633026,
+          "mean_error_km": 4.306785587209578,
+          "worst_error_km": 8.276706665118533,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 208.00466148552226,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.6297999209251903,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "Prepared file and orbit table in memory through both numerical arms.",
+      "median_wall_s": 0.0879261358641088
+    },
+    "stream_compact": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 5.196366395561217,
+          "mean_error_km": 4.945882569366831,
+          "worst_error_km": 9.517199271708039,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 236.64778414316766,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.215927509687223,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 5.1282021986898485,
+          "mean_error_km": 4.988181066654877,
+          "worst_error_km": 9.571721632068368,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 234.07445812953597,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.311195400370489,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "Chronological detector winners and orbit table in memory through both arms.",
+      "median_wall_s": 0.08948581665754318
+    },
+    "01_stream": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 3.4230027489822374,
+          "mean_error_km": 4.0190496904595845,
+          "worst_error_km": 10.636894649742167,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 230.03873702043506,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.2890946307799767,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 3.403461814111229,
+          "mean_error_km": 4.05903736412139,
+          "worst_error_km": 10.789963241920207,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 202.2240237699741,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.3820516978370019,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "Full native candidate archive open, decode, deduplicate, link, freeze, causal orbit bank, shortlist, bias/grid and both c fits. Host wall and cpu. Prefix and graph controls are separate. IQ and detector execution excluded.",
+      "median_wall_s": 0.42626941204071045
+    },
+    "02_pilots": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.26793807999589,
+          "mean_error_km": 4.269284883733706,
+          "worst_error_km": 7.760624305551349,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 231.05389217314354,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.5393298240540978,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.361339022630018,
+          "mean_error_km": 4.334212874712419,
+          "worst_error_km": 7.80989484492737,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 224.14752615073618,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.6572272084280308,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "Host wall time from decoded-input load through the guided full-record endpoint in both c arms, including candidate replay, prior orbit table and blind-control row validation; separate timed blind endpoint fit. Excludes IQ detection and radio acquisition.",
+      "median_wall_s": 0.5844599199481308
+    },
+    "03_consensus": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.897965250690253,
+          "mean_error_km": 4.90193424063919,
+          "worst_error_km": 9.724606794975031,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 259.2451244407872,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.1719791809595823,
+          "closer_than_v5": 0
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.899887040905456,
+          "mean_error_km": 5.125810417689058,
+          "worst_error_km": 10.268533721077864,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 240.83034093680376,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.44882475140467,
+          "closer_than_v5": 0
+        }
+      },
+      "timing_scope": "Single-thread host Python wall time from reading the existing graph through both consensus arms. Includes graph JSON decode, causal TLE propagation, descriptors and common grid vote. Control and checks are measured separately. Excludes graph production, IQ, transport and device time.",
+      "median_wall_s": 0.2968927971087396
+    },
+    "04_compact": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 5.018719432293379,
+          "mean_error_km": 4.609058069203613,
+          "worst_error_km": 8.179349830013678,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 217.8016948975581,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.8791030095240049,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 5.018215273476724,
+          "mean_error_km": 4.631605323397145,
+          "worst_error_km": 8.182842940919747,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 204.92367542541615,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.954619657112757,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "Host elapsed wall time from archived graph JSON read and track sampling through causal TLE selection, SGP4, compact table construction, shared acquisition and both continuous c arms. Independent float64 and geometry checks excluded.",
+      "median_wall_s": 0.5218788268975914
+    },
+    "05_stationary": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 1.8665000534974063,
+          "mean_error_km": 1.8742330134343743,
+          "worst_error_km": 2.3624231471528385,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": null,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": -0.8557220462452335,
+          "closer_than_v5": 3
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 1.855047836921941,
+          "mean_error_km": 1.9007215653197287,
+          "worst_error_km": 2.458879070534876,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": null,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": -0.7762641009646591,
+          "closer_than_v5": 3
+        }
+      },
+      "timing_scope": "Foreground releases of finished fixes and both forecasts. Historical anchor graph I/O, TLE propagation, association and fit have separate measured costs. No IQ or detector timing.",
+      "median_wall_s": 4.7217123210430145e-05
+    },
+    "06_coreset": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 2.4752998678226996,
+          "mean_error_km": 2.302246377992387,
+          "worst_error_km": 3.3310546571344237,
+          "worst_case": "DS26-0311",
+          "median_selected_rms_hz": 151.2009230175561,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": -0.42770868168722087,
+          "closer_than_v5": 3
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 2.3548171898106807,
+          "mean_error_km": 2.244411139838485,
+          "worst_error_km": 3.1529161173233433,
+          "worst_case": "DS26-0209",
+          "median_selected_rms_hz": 145.52480011454315,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": -0.4325745264459029,
+          "closer_than_v5": 3
+        }
+      },
+      "timing_scope": "one CPU thread, archived graph read through TLE bank, descriptors, common bias, selection, grid and both robust endpoint fits, excluding controls and diagnostics",
+      "median_wall_s": 0.25039232429116964
+    },
+    "07_differences": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 5.129651591228881,
+          "mean_error_km": 5.217796191740857,
+          "worst_error_km": 8.543236328546207,
+          "worst_case": "DS26-0112",
+          "median_selected_rms_hz": 226.61753074516008,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.4878411320612486,
+          "closer_than_v5": 1
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 5.129651591228881,
+          "mean_error_km": 5.217796191740857,
+          "worst_error_km": 8.543236328546207,
+          "worst_case": "DS26-0112",
+          "median_selected_rms_hz": 226.61753074516008,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.5408105254564686,
+          "closer_than_v5": 1
+        }
+      },
+      "timing_scope": "Scan-end graph JSON read, causal TLE bank, pair descriptor nomination, 49-point position vote, and one identifiable bounded robust fit",
+      "median_wall_s": 0.28205956192687154
+    },
+    "08_grid": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.49565343957468,
+          "mean_error_km": 5.109853498013711,
+          "worst_error_km": 10.339245244832725,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 174.54337919867356,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.3798984383341035,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 4.62415135991555,
+          "mean_error_km": 5.12248397109222,
+          "worst_error_km": 10.339245244832725,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 168.3181560621734,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 2.4454983048078316,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "single-thread host wall time for graph read, causal TLE bank, descriptors, shared bias vote, both primary and reused coarse-only grid results, and paired diagnostics. Holdout timed separately.",
+      "median_wall_s": 0.3683083080686629
+    },
+    "09_events": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 0,
+          "statuses": {
+            "abstain": 8
+          },
+          "median_error_km": null,
+          "mean_error_km": null,
+          "worst_error_km": null,
+          "worst_case": null,
+          "median_selected_rms_hz": null,
+          "paired_v5_n": 0,
+          "paired_v5_mean_delta_km": null,
+          "closer_than_v5": 0
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 0,
+          "statuses": {
+            "abstain": 8
+          },
+          "median_error_km": null,
+          "mean_error_km": null,
+          "worst_error_km": null,
+          "worst_case": null,
+          "median_selected_rms_hz": null,
+          "paired_v5_n": 0,
+          "paired_v5_mean_delta_km": null,
+          "closer_than_v5": 0
+        }
+      },
+      "timing_scope": "Full scan detector export to position decision, inclusive of winner selection, linking, time extraction, causal TLE I/O, propagation, matching and 19 rotated-time controls. Excludes RF acquisition, detector, JSON hydration, prefix diagnostics and duplicate invariance run.",
+      "median_wall_s": 0.41701699094846845
+    },
+    "10_network": {
+      "arms": {
+        "c0": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 3.252900445404939,
+          "mean_error_km": 4.169314545115749,
+          "worst_error_km": 10.822075978820529,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 221.30582602303858,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.4393594854361413,
+          "closer_than_v5": 2
+        },
+        "fitted_c": {
+          "n_cases": 8,
+          "n_estimates": 8,
+          "statuses": {
+            "estimate": 8
+          },
+          "median_error_km": 3.252900445404939,
+          "mean_error_km": 4.169314545115749,
+          "worst_error_km": 10.822075978820529,
+          "worst_case": "DS26-0070",
+          "median_selected_rms_hz": 221.30582602303858,
+          "paired_v5_n": 8,
+          "paired_v5_mean_delta_km": 1.4923288788313613,
+          "closer_than_v5": 2
+        }
+      },
+      "timing_scope": "scan close; per case reads and parses archived graph, fresh causal TLE read and SGP4, candidates, 49-cell shape map, float32 network, and RF diagnostic; excludes precomputed graph construction, training, sensitivity and scoring",
+      "median_wall_s": 0.18139812909066677
+    }
+  },
+  "stream_coreset_compatibility": {
+    "arms": {
+      "c0": {
+        "n_cases": 8,
+        "n_estimates": 8,
+        "statuses": {
+          "estimate": 8
+        },
+        "median_error_km": 1.859050184317708,
+        "mean_error_km": 3.635629802975917,
+        "worst_error_km": 13.504225395314617,
+        "worst_case": "DS26-0070",
+        "median_selected_rms_hz": 151.4372477538842,
+        "paired_v5_n": 8,
+        "paired_v5_mean_delta_km": 0.9056747432963094,
+        "closer_than_v5": 4
+      },
+      "fitted_c": {
+        "n_cases": 8,
+        "n_estimates": 8,
+        "statuses": {
+          "estimate": 8
+        },
+        "median_error_km": 1.8436787701203428,
+        "mean_error_km": 3.633106756494483,
+        "worst_error_km": 13.53306554339144,
+        "worst_case": "DS26-0070",
+        "median_selected_rms_hz": 123.52240449570832,
+        "paired_v5_n": 8,
+        "paired_v5_mean_delta_km": 0.956121090210095,
+        "closer_than_v5": 4
+      }
+    },
+    "timing_scope": "Single-thread host wall from native detector archive open through linking, freeze, causal bank, descriptors, bias, geometry selection, grid and both fits. Full control adds its measured grid/fit after shared stages. Conditioning and reproduction checks are outside both clocks.",
+    "median_wall_s": 0.42139201471582055
+  }
+}

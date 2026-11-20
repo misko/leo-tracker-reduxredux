@@ -1,0 +1,233 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_clock_offset_ou-clock-transfer",
+      "method": "native_clock_offset_ou",
+      "scope": "transfer",
+      "title": "Clock + offset, OU across six independent simulated locations",
+      "caption": "Controller-generated GLRT factors carry measured residual and visit-gap windows. Workers use the earlier TLEs and construct their own Graph. Forced estimates are diagnostic. White-noise and reduced fits share the gate.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "Correct tile supplied": "Correct tile supplied",
+        "Near edge \u00b7 site inside": "Near edge \u00b7 site inside",
+        "Near edge \u00b7 site outside": "Near edge \u00b7 site outside",
+        "Far omitted tile": "Far omitted tile",
+        "Time shuffle \u00b7 no geographic truth": "Time shuffle \u00b7 no geographic truth"
+      },
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json",
+        "frozen-clock-offset-results.py.txt",
+        "truth.json",
+        "predictions.jsonl.gz"
+      ],
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Clock + offset, OU",
+          "forced_label": "Clock + offset, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_offset_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        },
+        {
+          "key": "stock",
+          "label": "Clock + offset, diagonal",
+          "forced_label": "Clock + offset, diagonal \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_offset_diag",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        },
+        {
+          "key": "one",
+          "label": "Clock only, OU",
+          "forced_label": "Clock only, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_only_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        },
+        {
+          "key": "four",
+          "label": "Offset only, OU",
+          "forced_label": "Offset only, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_offset_only_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_clock_offset_diag-clock-transfer",
+      "method": "native_clock_offset_diag",
+      "scope": "transfer",
+      "title": "Clock + offset, diagonal across six independent simulated locations",
+      "caption": "Controller-generated GLRT factors carry measured residual and visit-gap windows. Workers use the earlier TLEs and construct their own Graph. Forced estimates are diagnostic. White-noise and reduced fits share the gate.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "Correct tile supplied": "Correct tile supplied",
+        "Near edge \u00b7 site inside": "Near edge \u00b7 site inside",
+        "Near edge \u00b7 site outside": "Near edge \u00b7 site outside",
+        "Far omitted tile": "Far omitted tile",
+        "Time shuffle \u00b7 no geographic truth": "Time shuffle \u00b7 no geographic truth"
+      },
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json",
+        "frozen-clock-offset-results.py.txt",
+        "truth.json",
+        "predictions.jsonl.gz"
+      ],
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Clock + offset, diagonal",
+          "forced_label": "Clock + offset, diagonal \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_offset_diag",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        },
+        {
+          "key": "stock",
+          "label": "Clock + offset, OU",
+          "forced_label": "Clock + offset, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_offset_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_clock_only_ou-clock-transfer",
+      "method": "native_clock_only_ou",
+      "scope": "transfer",
+      "title": "Clock only, OU across six independent simulated locations",
+      "caption": "Controller-generated GLRT factors carry measured residual and visit-gap windows. Workers use the earlier TLEs and construct their own Graph. Forced estimates are diagnostic. White-noise and reduced fits share the gate.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "Correct tile supplied": "Correct tile supplied",
+        "Near edge \u00b7 site inside": "Near edge \u00b7 site inside",
+        "Near edge \u00b7 site outside": "Near edge \u00b7 site outside",
+        "Far omitted tile": "Far omitted tile",
+        "Time shuffle \u00b7 no geographic truth": "Time shuffle \u00b7 no geographic truth"
+      },
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json",
+        "frozen-clock-offset-results.py.txt",
+        "truth.json",
+        "predictions.jsonl.gz"
+      ],
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Clock only, OU",
+          "forced_label": "Clock only, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_only_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        },
+        {
+          "key": "stock",
+          "label": "Clock + offset, OU",
+          "forced_label": "Clock + offset, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_offset_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native_offset_only_ou-clock-transfer",
+      "method": "native_offset_only_ou",
+      "scope": "transfer",
+      "title": "Offset only, OU across six independent simulated locations",
+      "caption": "Controller-generated GLRT factors carry measured residual and visit-gap windows. Workers use the earlier TLEs and construct their own Graph. Forced estimates are diagnostic. White-noise and reduced fits share the gate.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "Correct tile supplied": "Correct tile supplied",
+        "Near edge \u00b7 site inside": "Near edge \u00b7 site inside",
+        "Near edge \u00b7 site outside": "Near edge \u00b7 site outside",
+        "Far omitted tile": "Far omitted tile",
+        "Time shuffle \u00b7 no geographic truth": "Time shuffle \u00b7 no geographic truth"
+      },
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json",
+        "frozen-clock-offset-results.py.txt",
+        "truth.json",
+        "predictions.jsonl.gz"
+      ],
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Offset only, OU",
+          "forced_label": "Offset only, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_offset_only_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        },
+        {
+          "key": "stock",
+          "label": "Clock + offset, OU",
+          "forced_label": "Clock + offset, OU \u00b7 forced",
+          "file": "figure-positions.jsonl.gz",
+          "value": "native_clock_offset_ou",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "launch": {
+    "attempt": "/var/tmp/leo-adaptive-arrival-boj14my4/raw/DS26-0197/fifth",
+    "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+    "command": [
+      "systemd-run",
+      "--user",
+      "--wait",
+      "--pipe",
+      "--unit=leo-iq-bench-e6adddbc9a7d",
+      "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+      "--property=MemoryMax=536870912",
+      "--property=MemorySwapMax=0",
+      "--property=Nice=10",
+      "--property=KillMode=control-group",
+      "--property=RuntimeMaxSec=350s",
+      "--setenv=TMPDIR=/var/tmp/leo-adaptive-arrival-boj14my4/raw/DS26-0197/fifth",
+      "--setenv=PYTHONPATH=/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src:/home/mouse9911/gits/leo-tracker-reduxredux",
+      "--setenv=OPENBLAS_NUM_THREADS=1",
+      "--setenv=OMP_NUM_THREADS=1",
+      "--setenv=MKL_NUM_THREADS=1",
+      "--setenv=NUMEXPR_NUM_THREADS=1",
+      "--setenv=BLIS_NUM_THREADS=1",
+      "taskset",
+      "-c",
+      "16",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "-B",
+      "-m",
+      "tools.pipeline_eval.qualification.adaptive_arrival",
+      "worker",
+      "/var/tmp/leo-adaptive-arrival-boj14my4/raw/DS26-0197/fifth"
+    ],
+    "log_inode": [
+      64512,
+      799979
+    ],
+    "plan_sha256": "39caa0ba62e94aaf146b2bd90498ca91ade4864a7c9651a6b5c5f6d9c46aa8c3",
+    "reserved_monotonic_usec": 5795939618448,
+    "unit": "leo-iq-bench-e6adddbc9a7d.service"
+  },
+  "service": {
+    "binding": {
+      "attempt": "/var/tmp/leo-adaptive-arrival-boj14my4/raw/DS26-0197/fifth",
+      "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e6adddbc9a7d.service",
+      "cgroup_state": "removed",
+      "invocation_id": "0caf95ef2ed44688b10e6635e1e60393",
+      "plan_sha256": "39caa0ba62e94aaf146b2bd90498ca91ade4864a7c9651a6b5c5f6d9c46aa8c3"
+    },
+    "exit_code": 0,
+    "log_sha256": "f93672f14c4a6d301c81ee573e3822e80d2b2a6c5f5e4deee464ef4fd0741736",
+    "monotonic": {
+      "source": "systemd-journal",
+      "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=345fb1d;b=192fd5d5cd924abdb6d41ebae795ef83;m=54578ec99d0;t=660a5b688822c;x=b1dead20e71e032a",
+      "start_event_usec": 5795939654096,
+      "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=345fc29;b=192fd5d5cd924abdb6d41ebae795ef83;m=5458b242a74;t=660a5c8c012d0;x=e9a8ecbb38025185",
+      "terminal_event_usec": 5796245285492,
+      "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+    },
+    "reason": null,
+    "service_active_s": null,
+    "service_wall_s": 305.631396,
+    "supervisor_s": 305.6972622545436,
+    "systemd": {
+      "ActiveState": "inactive",
+      "CPUUsageNSec": "254256502000",
+      "ControlGroup": "",
+      "ControlPID": "0",
+      "Id": "leo-iq-bench-e6adddbc9a7d.service",
+      "LoadState": "not-found",
+      "MainPID": "0",
+      "MemoryPeak": "536870912",
+      "MemorySwapPeak": "0",
+      "Result": "success",
+      "SubState": "dead"
+    },
+    "unit": "leo-iq-bench-e6adddbc9a7d"
+  },
+  "worker": {
+    "compressed_bytes": 8165273883,
+    "compressed_chunks": 106,
+    "end": {
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e6adddbc9a7d.service",
+      "cpu.stat.usage_usec": 253564991,
+      "cpus": [
+        16
+      ],
+      "memory.current": 459964416,
+      "memory.events.max": 2899,
+      "memory.events.oom": 0,
+      "memory.events.oom_kill": 0,
+      "memory.max": 536870912,
+      "memory.peak": 536870912,
+      "memory.stat.anon": 177528832,
+      "memory.stat.file": 280854528,
+      "memory.stat.kernel": 1576960,
+      "memory.swap.current": 0,
+      "memory.swap.max": 0,
+      "monotonic_s": 5796244.585737028,
+      "nice": 10,
+      "pid": 1979816,
+      "rss_peak_kib": 223264
+    },
+    "output_sha256": "9602e2182b39749b61d5ba26dd92eade7727731fc29667431e0dbafbcae12560",
+    "raw_recording_sha256": "sha256:01988fd62c7978a98de89e7d8bdb5a0ca75fad59e2dcab42e01005c3e7b00618",
+    "start": {
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e6adddbc9a7d.service",
+      "cpu.stat.usage_usec": 1426924,
+      "cpus": [
+        16
+      ],
+      "memory.current": 88010752,
+      "memory.events.max": 0,
+      "memory.events.oom": 0,
+      "memory.events.oom_kill": 0,
+      "memory.max": 536870912,
+      "memory.peak": 88010752,
+      "memory.stat.anon": 84422656,
+      "memory.stat.file": 2940928,
+      "memory.stat.kernel": 614400,
+      "memory.swap.current": 0,
+      "memory.swap.max": 0,
+      "monotonic_s": 5795943.494153898,
+      "nice": 10,
+      "pid": 1979816,
+      "rss_peak_kib": 110480
+    }
+  }
+}

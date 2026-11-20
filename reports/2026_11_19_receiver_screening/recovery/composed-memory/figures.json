@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_composed_memory",
+      "method": "v5_composed_memory",
+      "scope": "roof",
+      "title": "Compact v5 at 512 MiB",
+      "caption": "Both composed attempts and the tiled-salvage control use the same ordinary factors. The capped worker was killed during discovery. The four original v5 choices show capture-era results.",
+      "cases": ["DS29-0082"],
+      "seal": "prediction-lock.json",
+      "provenance": ["memory-cap.json", "comparison.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Composed, unrestricted", "file": "uncapped-positions.jsonl.gz", "value": "v5_composed_memory", "native_authority": "ordinary", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Archived tiled-salvage control", "file": "control-positions.jsonl.gz", "value": "v5_tiled_salvage", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "tile"]},
+        {"key": "all_visits", "label": "512 MiB cap (OOM)", "file": "capped-positions.jsonl.gz", "value": "v5_composed_memory", "native_authority": "ordinary", "where": {"mode": "memory-cap"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

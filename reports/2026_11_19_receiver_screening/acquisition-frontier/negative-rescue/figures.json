@@ -1,0 +1,65 @@
+{
+  "charts": [
+    {
+      "caption": "Both complete detector passes used the same saved IQ. The rescue keeps every ordinary positive packet and adopts differential additions. The same installed solver fits both original roof recordings.",
+      "cases": "sealed",
+      "id": "whole-iq-negative-rescue",
+      "method": "negative_rescue",
+      "provenance": [
+        "prediction-lock.json",
+        "probe-audit.json",
+        "online-work.csv",
+        "graph-support.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Negative-only rescue",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "negative_rescue"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "negative_rescue_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Unconditional differential",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "stock_native_sha256",
+            "differential_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "negative_rescue_unconditional"
+        }
+      ],
+      "title": "Keep stock admissions and rescue only negative probes"
+    }
+  ],
+  "version": 1
+}

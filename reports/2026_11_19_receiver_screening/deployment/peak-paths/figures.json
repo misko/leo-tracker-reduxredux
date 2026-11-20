@@ -1,0 +1,143 @@
+{
+  "charts": [
+    {
+      "caption": "Complete recorded GLRT candidates and one causal TLE with one tile. The folded comparator has one shared calibration estimate.",
+      "cases": [
+        "DS26-0197",
+        "DS29-0316"
+      ],
+      "id": "peak_paths-diagnostic",
+      "method": "peak_paths",
+      "provenance": [
+        "blind-plan.json",
+        "elapsed-plan.json",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Temporal paths \u00b7 forced",
+          "key": "one",
+          "label": "Temporal paths \u00b7 published",
+          "value": "peak_paths",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        },
+        {
+          "file": "folded-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Folded Doppler \u00b7 published",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "folded_doppler",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        }
+      ],
+      "title": "Ordered GLRT peak paths on diagnosed captures"
+    },
+    {
+      "caption": "Complete recorded GLRT candidates and one causal TLE with one tile. The folded comparator has one shared calibration estimate.",
+      "cases": [
+        "DS26-0144",
+        "DS26-0162",
+        "DS26-0078",
+        "DS29-0127",
+        "DS29-0519",
+        "DS29-0357"
+      ],
+      "id": "peak_paths-confirmation",
+      "method": "peak_paths",
+      "provenance": [
+        "blind-plan.json",
+        "elapsed-plan.json",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Temporal paths \u00b7 forced",
+          "key": "one",
+          "label": "Temporal paths \u00b7 published",
+          "value": "peak_paths",
+          "where": {
+            "cohort": "confirmation"
+          }
+        },
+        {
+          "file": "folded-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Folded Doppler \u00b7 published",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "folded_doppler",
+          "where": {
+            "cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Ordered GLRT peak paths on reserve captures"
+    },
+    {
+      "caption": "Complete recorded GLRT candidates and one causal TLE with one tile. The folded comparator has one shared calibration estimate.",
+      "cases": [
+        "DS26-0209-omitted",
+        "DS29-0604-omitted"
+      ],
+      "id": "peak_paths-omitted",
+      "method": "peak_paths",
+      "provenance": [
+        "blind-plan.json",
+        "elapsed-plan.json",
+        "prediction-lock.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Temporal paths \u00b7 forced",
+          "key": "candidate",
+          "label": "Temporal paths \u00b7 published",
+          "value": "peak_paths",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "folded-positions.jsonl.gz",
+          "forced_label": "Folded Doppler \u00b7 forced",
+          "key": "stock",
+          "label": "Folded Doppler \u00b7 published",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "folded_doppler",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Ordered GLRT peak paths on omitted offers"
+    }
+  ],
+  "version": 1
+}

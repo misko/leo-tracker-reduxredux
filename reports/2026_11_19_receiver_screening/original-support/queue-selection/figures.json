@@ -1,0 +1,143 @@
+{
+  "charts": [
+    {
+      "caption": "Measured detector CPU and original arrival clocks set admissions. The compact solver ran on the retained measured probes.",
+      "cases": "sealed",
+      "id": "original-queue-1",
+      "method": "original_queue_oldest_rf-1",
+      "provenance": [
+        "scores.csv",
+        "timing.csv",
+        "prediction-lock.json",
+        "forecast-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full original waveform measurement",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_combined_complete_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Least recently started RF",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_queue_oldest_rf-1"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "First waiting visit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_queue_fifo-1"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Newest waiting visit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_queue_latest-1"
+        }
+      ],
+      "title": "Position from original GLRT admissions modeled on one worker"
+    },
+    {
+      "caption": "Measured detector CPU and original arrival clocks set admissions. The compact solver ran on the retained measured probes.",
+      "cases": "sealed",
+      "id": "original-queue-4",
+      "method": "original_queue_oldest_rf-4",
+      "provenance": [
+        "scores.csv",
+        "timing.csv",
+        "prediction-lock.json",
+        "forecast-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full original waveform measurement",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_combined_complete_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Least recently started RF",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_queue_oldest_rf-4"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "First waiting visit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_queue_fifo-4"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Newest waiting visit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_queue_latest-4"
+        }
+      ],
+      "title": "Position from original GLRT admissions modeled on four workers"
+    }
+  ],
+  "version": 2
+}

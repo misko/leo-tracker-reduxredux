@@ -1,0 +1,143 @@
+{
+  "charts": [
+    {
+      "caption": "Paired native factors, supplied tiles and causal orbital history. Only complete cavity decisions supply positions. Deadlines remain distinct from withheld fixes.",
+      "cases": "sealed",
+      "id": "compact-recovery-budget-fresh",
+      "method": "v5_secant_transfer_budget",
+      "provenance": [
+        "prediction-lock.json",
+        "policy-lock.json"
+      ],
+      "queries": "compact-recovery-budget-fresh-queries.json",
+      "scope": "transfer",
+      "seal": "compact-recovery-budget-fresh-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Majority + 55 s recovery cap",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_budget",
+          "where": {
+            "study": "fresh"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same-run compact secant",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_stock",
+          "where": {
+            "study": "fresh"
+          }
+        }
+      ],
+      "title": "Compact recovery budget at one new simulated site"
+    },
+    {
+      "caption": "Paired native factors, supplied tiles and causal orbital history. Only complete cavity decisions supply positions. Deadlines remain distinct from withheld fixes.",
+      "cases": "sealed",
+      "id": "compact-recovery-budget-development",
+      "method": "v5_secant_transfer_budget",
+      "provenance": [
+        "prediction-lock.json",
+        "policy-lock.json"
+      ],
+      "queries": "compact-recovery-budget-development-queries.json",
+      "scope": "transfer",
+      "seal": "compact-recovery-budget-development-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Majority + 55 s recovery cap",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_budget",
+          "where": {
+            "study": "development"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier compact secant",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_stock",
+          "where": {
+            "study": "development"
+          }
+        }
+      ],
+      "title": "Compact recovery budget on two earlier simulated sites"
+    },
+    {
+      "caption": "Paired native factors, supplied tiles and causal orbital history. Only complete cavity decisions supply positions. Deadlines remain distinct from withheld fixes.",
+      "cases": "sealed",
+      "id": "compact-recovery-budget-measured",
+      "method": "v5_secant_transfer_budget",
+      "provenance": [
+        "prediction-lock.json",
+        "policy-lock.json"
+      ],
+      "queries": "compact-recovery-budget-measured-queries.json",
+      "scope": "transfer",
+      "seal": "compact-recovery-budget-measured-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Majority + 55 s recovery cap",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_budget",
+          "where": {
+            "study": "measured"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier compact secant",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_stock",
+          "where": {
+            "study": "measured"
+          }
+        }
+      ],
+      "title": "Compact recovery budget on the shifted authentic roof tile"
+    }
+  ],
+  "version": 1
+}

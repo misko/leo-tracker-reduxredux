@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "tile_region_support-fresh",
+      "method": "tile_region_support",
+      "scope": "transfer",
+      "title": "Local Doppler region support at two new sites",
+      "caption": "Both sites use the same native packet and authenticated causal TLE history across containing, near-edge containing and omitted offers. The near-edge truth is 1.5 km from the tile face. A withheld or timed-out worker contributes no position.",
+      "cases": "sealed",
+      "seal": "fresh-figure-lock.json",
+      "queries": "fresh-queries.json",
+      "condition_labels": {"present": "Containing tile", "edge": "Containing tile near edge", "missing": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Local region support · published", "file": "fresh-positions.jsonl.gz", "value": "tile_region_support"}
+      ]
+    },
+    {
+      "id": "tile_region_support-replay",
+      "method": "tile_region_support",
+      "scope": "transfer",
+      "title": "Local region support on known hard offers",
+      "caption": "Two exact replays pair the new gate with the earlier halo-missed containing offer and held-coverage false omitted publication. These are development controls.",
+      "cases": "sealed",
+      "seal": "replay-figure-lock.json",
+      "queries": "replay-queries.json",
+      "condition_labels": {"present": "Containing tile", "missing": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Local region support · published", "file": "replay-positions.jsonl.gz", "value": "tile_region_support"},
+        {"key": "stock", "label": "Previous region gate", "file": "replay-stock.jsonl.gz", "value": "prior_region_gate", "match": ["input_sha256", "document_sha256", "history_sha256"]}
+      ]
+    }
+  ]
+}

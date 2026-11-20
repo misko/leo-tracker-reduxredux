@@ -1,0 +1,42 @@
+{
+  "charts": [
+    {
+      "caption": "Signed original-schedule replay versus archived compact fit and all four original v5 decisions. Same survey, causal catalogue and 25 km tile.",
+      "cases": [
+        "DS26-0020"
+      ],
+      "id": "portable-field-ds26-0020",
+      "method": "portable_field",
+      "provenance": [
+        "prediction-lock.json",
+        "original-v5-receipts.json"
+      ],
+      "scope": "roof",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Portable live",
+          "native_field": "archived_native_sha256",
+          "value": "portable_field"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived compact",
+          "match": [
+            "archived_native_sha256",
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "archived_native_sha256",
+          "value": "archived_compact"
+        }
+      ],
+      "title": "Portable acquisition and verifier on DS26-0020"
+    }
+  ],
+  "version": 2
+}

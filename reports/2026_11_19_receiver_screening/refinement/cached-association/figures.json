@@ -1,0 +1,101 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh paired native Graph runs with identical observations and causal orbits.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082",
+        "DS26-0187",
+        "DS26-0197",
+        "DS29-0519",
+        "DS26-0231",
+        "DS26-0223",
+        "DS29-0316"
+      ],
+      "id": "cached_association-roof",
+      "method": "cached_association",
+      "provenance": [
+        "summary.json",
+        "source-lock.json",
+        "plan.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Cached joint association",
+          "value": "cached_association",
+          "where": {
+            "cohort": "roof"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original joint association",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "roof"
+          }
+        }
+      ],
+      "title": "Cached joint association on eight roof recordings"
+    },
+    {
+      "caption": "Fresh paired native Graph runs with identical observations and causal orbits.",
+      "cases": [
+        "DS26-0036-r0",
+        "DS29-0357-omitted"
+      ],
+      "condition_labels": {
+        "omitted": "Correct tile omitted"
+      },
+      "id": "cached_association-omitted",
+      "method": "cached_association",
+      "provenance": [
+        "summary.json",
+        "source-lock.json",
+        "plan.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Cached joint association",
+          "value": "cached_association",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original joint association",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Cached joint association with the correct tile omitted"
+    }
+  ],
+  "version": 1
+}

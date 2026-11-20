@@ -1,0 +1,69 @@
+{
+  "charts": [
+    {
+      "caption": "48 boards on one measured beacon instrument. The seeded lattice and prior-only center share a coarse Illinois anchor. Fitted c is unidentifiable.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing offers",
+        "omitted": "Omitted by 0.75\u20133 km"
+      },
+      "id": "asymmetric-measured-site-offers",
+      "method": "asymmetric_held_gain",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "geometry.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Held time gain \u00b7 forced",
+          "key": "candidate",
+          "label": "Held time gain",
+          "value": "asymmetric_held_gain"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Old held gate \u00b7 forced",
+          "key": "stock",
+          "label": "Old held gate",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "asymmetric_old_gate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Interior only \u00b7 forced",
+          "key": "one",
+          "label": "Interior only",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "asymmetric_interior"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Prior-only center \u00b7 forced",
+          "key": "four",
+          "label": "Prior-only center",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "asymmetric_prior"
+        }
+      ],
+      "title": "Asymmetric offers at eight measured sites"
+    }
+  ],
+  "version": 2
+}

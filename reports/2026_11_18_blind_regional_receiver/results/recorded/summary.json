@@ -1,0 +1,3221 @@
+{
+  "schema_version": 1,
+  "query_count": 16,
+  "provenance": {
+    "engine_sha256": "6b1ca761530d6fe68c803f51487c3403b04993c7b6a1f8a1cc66f367147fa970",
+    "predictions_sha256": "268340ea60feed72c493bb6a1a019998981d48eba89c523ba34ca3bc30471878",
+    "truth_sha256": "767f14e32ecf68f73f55db86c84beed7c6d0f41f0e22ab48823d181e8e73202d",
+    "public_manifest_sha256": "8a05013a85604013558542b4310f10195415112e4f11d21b7f0dfd7c97e02a16",
+    "public_scoring_input_sha256": "664e4ca4565c79fa4c0aeac97833e53028967b5888fc3a04584c005986c8f178",
+    "scorer_sha256": "a6dae1aaa595aa076e8c8c99d52d7e525b24db8a2d97fb8654443a14904e67a7"
+  },
+  "overall": {
+    "published_region_gate_violations": 0,
+    "by_policy": {
+      "receiver": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 5,
+            "withheld": 3
+          },
+          "publications": {
+            "count": 5,
+            "denominator": 8,
+            "rate": 0.625
+          },
+          "published_error_km": {
+            "n": 5,
+            "median": 4.075790896747164,
+            "p90": 5.698449099541063,
+            "worst": 6.560038822490214
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 0,
+            "denominator": 5,
+            "rate": 0.0
+          },
+          "correct_region_all_attempts": {
+            "count": 5,
+            "denominator": 8,
+            "rate": 0.625
+          },
+          "correct_region_given_publication": {
+            "count": 5,
+            "denominator": 5,
+            "rate": 1.0
+          },
+          "position_within_5km_all_attempts": {
+            "count": 4,
+            "denominator": 8,
+            "rate": 0.5
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 4,
+            "denominator": 8,
+            "rate": 0.5
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "withheld": 8
+          },
+          "publications": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "published_error_km": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "rejections": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "false_publications": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          }
+        }
+      },
+      "region_only": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 8.38874337561105,
+            "p90": 10.634756890642972,
+            "worst": 12.688472143866933
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          },
+          "correct_region_all_attempts": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "correct_region_given_publication": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "position_within_5km_all_attempts": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 2,
+            "withheld": 6
+          },
+          "publications": {
+            "count": 2,
+            "denominator": 8,
+            "rate": 0.25
+          },
+          "published_error_km": {
+            "n": 2,
+            "median": 28.75546355595083,
+            "p90": 30.629394142778743,
+            "worst": 31.09787678948572
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 2,
+            "denominator": 2,
+            "rate": 1.0
+          },
+          "rejections": {
+            "count": 6,
+            "denominator": 8,
+            "rate": 0.75
+          },
+          "false_publications": {
+            "count": 2,
+            "denominator": 8,
+            "rate": 0.25
+          }
+        }
+      },
+      "forced_rf": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 4.240927705932249,
+            "p90": 6.5853784027257625,
+            "worst": 6.644504089942042
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "correct_region_all_attempts": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "correct_region_given_publication": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "position_within_5km_all_attempts": {
+            "count": 5,
+            "denominator": 8,
+            "rate": 0.625
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 5,
+            "denominator": 8,
+            "rate": 0.625
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 270.1014353987086,
+            "p90": 648.6157794326894,
+            "worst": 662.1870650777203
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 7,
+            "denominator": 8,
+            "rate": 0.875
+          },
+          "rejections": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "false_publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          }
+        }
+      },
+      "forced_region_center": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 8.38874337561105,
+            "p90": 10.634756890642972,
+            "worst": 12.688472143866933
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          },
+          "correct_region_all_attempts": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "correct_region_given_publication": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "position_within_5km_all_attempts": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 278.9435588932671,
+            "p90": 640.3480030068213,
+            "worst": 659.3671290127119
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "rejections": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "false_publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          }
+        }
+      },
+      "prior_first": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 54.44829848657692,
+            "p90": 548.3581281223578,
+            "worst": 754.4333860178084
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "correct_region_all_attempts": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          },
+          "correct_region_given_publication": {
+            "count": 1,
+            "denominator": 8,
+            "rate": 0.125
+          },
+          "position_within_5km_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 354.59756167911087,
+            "p90": 616.4215121781244,
+            "worst": 743.710436943445
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "rejections": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "false_publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          }
+        }
+      },
+      "prior_medoid": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 11.22153267727839,
+            "p90": 53.65415041123206,
+            "worst": 55.19495766969792
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 4,
+            "denominator": 8,
+            "rate": 0.5
+          },
+          "correct_region_all_attempts": {
+            "count": 5,
+            "denominator": 8,
+            "rate": 0.625
+          },
+          "correct_region_given_publication": {
+            "count": 5,
+            "denominator": 8,
+            "rate": 0.625
+          },
+          "position_within_5km_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "fix": 8
+          },
+          "publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "published_error_km": {
+            "n": 8,
+            "median": 166.39482203178562,
+            "p90": 361.28367515897014,
+            "worst": 428.4112479810133
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "rejections": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "false_publications": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          }
+        }
+      },
+      "always_withhold": {
+        "present": {
+          "attempts": 8,
+          "status_counts": {
+            "withheld": 8
+          },
+          "publications": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "published_error_km": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "correct_region_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "correct_region_given_publication": {
+            "count": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "position_within_5km_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "joint_within_5km_all_attempts": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          }
+        },
+        "missing": {
+          "attempts": 8,
+          "status_counts": {
+            "withheld": 8
+          },
+          "publications": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          },
+          "published_error_km": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null
+          },
+          "published_without_coordinate": 0,
+          "published_geometry_violations": 0,
+          "published_error_at_least_10km": {
+            "count": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "rejections": {
+            "count": 8,
+            "denominator": 8,
+            "rate": 1.0
+          },
+          "false_publications": {
+            "count": 0,
+            "denominator": 8,
+            "rate": 0.0
+          }
+        }
+      }
+    },
+    "same_published_region_center_comparison_present": {
+      "exact_error_km": {
+        "n": 5,
+        "median": 4.075790896747164,
+        "p90": 5.698449099541063,
+        "worst": 6.560038822490214
+      },
+      "center_error_km": {
+        "n": 5,
+        "median": 7.611548509580915,
+        "p90": 9.317507273138988,
+        "worst": 9.754593210689846
+      },
+      "exact_minus_center_error_km": {
+        "n": 5,
+        "median": -4.09484605922013,
+        "p90": 0.3416617195556211,
+        "worst": 2.7064255289017547
+      },
+      "exact_closer": 4
+    }
+  },
+  "pairs": {
+    "pairs": 8,
+    "matched_pairs": 8,
+    "incomplete_pairs": 0,
+    "mismatched_complete_pairs": 0,
+    "present_fix_missing_fix": 0,
+    "present_fix_missing_withheld": 5,
+    "present_withheld_missing_fix": 0,
+    "present_withheld_missing_withheld": 3,
+    "correct_region_and_reject": 5,
+    "joint_within_5km_and_reject": 4,
+    "details": [
+      {
+        "pair": "506ce2478269c1adeb1b1d6774382593",
+        "present_id": "79c70b008fa53f59e7966ceddac45a4f",
+        "missing_id": "a75850f31cc031e6fca0fab32cb84504",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "fix",
+        "present_correct_region": true,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "66554690c26ce8a42a7b6d52b0cacac7",
+        "present_id": "267df7a2df16dbdba6dc77aa89dd8cfc",
+        "missing_id": "ce86a2fce5b321aecc215dfb67042094",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "fix",
+        "present_correct_region": true,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "67237152f58a10efa4ca114efbea08ec",
+        "present_id": "3d8e04c2558a7e7e4611a69ef9a74553",
+        "missing_id": "8eac3cdd5224644f2c99af378f182694",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "fix",
+        "present_correct_region": true,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "6c8f2274af203d9b4e8ceb5f0e29e4a1",
+        "present_id": "fe569d790afd03ceb19c68f0b63ef211",
+        "missing_id": "5ef5a3952fe49b857695d9f63d085ed0",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "withheld",
+        "present_correct_region": false,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "b000bd53df43913a2c42e0698fc1d3d3",
+        "present_id": "88f9a9722925ced68957ddb261ffaeb3",
+        "missing_id": "6e25d35a7a8a8c239423cc501830375b",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "fix",
+        "present_correct_region": true,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "e26fc08f8d607ae6977320c2ffe2f337",
+        "present_id": "18f88b6cbb8cb431196ba3004717d9ca",
+        "missing_id": "86046e4d1891a089b3df6c82e6879d98",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "withheld",
+        "present_correct_region": false,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "f04bc0c3b55a5cad6cc42d4d601d7582",
+        "present_id": "57035950bf8e55f72a9abdb88a0a970d",
+        "missing_id": "b9f4b63faba399094a9373971fe78e6f",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "withheld",
+        "present_correct_region": false,
+        "missing_status": "withheld"
+      },
+      {
+        "pair": "faed1764d15a8c376e5b9ab71fa345d9",
+        "present_id": "750094261478aa077633a1bdc5d54278",
+        "missing_id": "707b8121bb30276e1198a559bc78a8c4",
+        "matched": true,
+        "match_checks": {
+          "observations_sha256": true,
+          "catalog_sha256": true,
+          "source": true,
+          "site_group": true,
+          "truth_point": true
+        },
+        "present_status": "fix",
+        "present_correct_region": true,
+        "missing_status": "withheld"
+      }
+    ]
+  },
+  "by_site_group": {
+    "groups": 1,
+    "groups_without_present_publication": 0,
+    "descriptive_distribution_of_site_medians_km": {
+      "n": 1,
+      "median": 4.075790896747164,
+      "p90": 4.075790896747164,
+      "worst": 4.075790896747164
+    },
+    "details": [
+      {
+        "site_group": "known-ds26-ds29-installation",
+        "published_region_gate_violations": 0,
+        "by_policy": {
+          "receiver": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 5,
+                "withheld": 3
+              },
+              "publications": {
+                "count": 5,
+                "denominator": 8,
+                "rate": 0.625
+              },
+              "published_error_km": {
+                "n": 5,
+                "median": 4.075790896747164,
+                "p90": 5.698449099541063,
+                "worst": 6.560038822490214
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 0,
+                "denominator": 5,
+                "rate": 0.0
+              },
+              "correct_region_all_attempts": {
+                "count": 5,
+                "denominator": 8,
+                "rate": 0.625
+              },
+              "correct_region_given_publication": {
+                "count": 5,
+                "denominator": 5,
+                "rate": 1.0
+              },
+              "position_within_5km_all_attempts": {
+                "count": 4,
+                "denominator": 8,
+                "rate": 0.5
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 4,
+                "denominator": 8,
+                "rate": 0.5
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "withheld": 8
+              },
+              "publications": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "published_error_km": {
+                "n": 0,
+                "median": null,
+                "p90": null,
+                "worst": null
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 0,
+                "denominator": 0,
+                "rate": null
+              },
+              "rejections": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "false_publications": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              }
+            }
+          },
+          "region_only": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 8.38874337561105,
+                "p90": 10.634756890642972,
+                "worst": 12.688472143866933
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              },
+              "correct_region_all_attempts": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "correct_region_given_publication": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "position_within_5km_all_attempts": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 2,
+                "withheld": 6
+              },
+              "publications": {
+                "count": 2,
+                "denominator": 8,
+                "rate": 0.25
+              },
+              "published_error_km": {
+                "n": 2,
+                "median": 28.75546355595083,
+                "p90": 30.629394142778743,
+                "worst": 31.09787678948572
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 2,
+                "denominator": 2,
+                "rate": 1.0
+              },
+              "rejections": {
+                "count": 6,
+                "denominator": 8,
+                "rate": 0.75
+              },
+              "false_publications": {
+                "count": 2,
+                "denominator": 8,
+                "rate": 0.25
+              }
+            }
+          },
+          "forced_rf": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 4.240927705932249,
+                "p90": 6.5853784027257625,
+                "worst": 6.644504089942042
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "correct_region_all_attempts": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "correct_region_given_publication": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "position_within_5km_all_attempts": {
+                "count": 5,
+                "denominator": 8,
+                "rate": 0.625
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 5,
+                "denominator": 8,
+                "rate": 0.625
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 270.1014353987086,
+                "p90": 648.6157794326894,
+                "worst": 662.1870650777203
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 7,
+                "denominator": 8,
+                "rate": 0.875
+              },
+              "rejections": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "false_publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              }
+            }
+          },
+          "forced_region_center": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 8.38874337561105,
+                "p90": 10.634756890642972,
+                "worst": 12.688472143866933
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              },
+              "correct_region_all_attempts": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "correct_region_given_publication": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "position_within_5km_all_attempts": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 278.9435588932671,
+                "p90": 640.3480030068213,
+                "worst": 659.3671290127119
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "rejections": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "false_publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              }
+            }
+          },
+          "prior_first": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 54.44829848657692,
+                "p90": 548.3581281223578,
+                "worst": 754.4333860178084
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "correct_region_all_attempts": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              },
+              "correct_region_given_publication": {
+                "count": 1,
+                "denominator": 8,
+                "rate": 0.125
+              },
+              "position_within_5km_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 354.59756167911087,
+                "p90": 616.4215121781244,
+                "worst": 743.710436943445
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "rejections": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "false_publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              }
+            }
+          },
+          "prior_medoid": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 11.22153267727839,
+                "p90": 53.65415041123206,
+                "worst": 55.19495766969792
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 4,
+                "denominator": 8,
+                "rate": 0.5
+              },
+              "correct_region_all_attempts": {
+                "count": 5,
+                "denominator": 8,
+                "rate": 0.625
+              },
+              "correct_region_given_publication": {
+                "count": 5,
+                "denominator": 8,
+                "rate": 0.625
+              },
+              "position_within_5km_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "fix": 8
+              },
+              "publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "published_error_km": {
+                "n": 8,
+                "median": 166.39482203178562,
+                "p90": 361.28367515897014,
+                "worst": 428.4112479810133
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "rejections": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "false_publications": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              }
+            }
+          },
+          "always_withhold": {
+            "present": {
+              "attempts": 8,
+              "status_counts": {
+                "withheld": 8
+              },
+              "publications": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "published_error_km": {
+                "n": 0,
+                "median": null,
+                "p90": null,
+                "worst": null
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 0,
+                "denominator": 0,
+                "rate": null
+              },
+              "correct_region_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "correct_region_given_publication": {
+                "count": 0,
+                "denominator": 0,
+                "rate": null
+              },
+              "position_within_5km_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "joint_within_5km_all_attempts": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              }
+            },
+            "missing": {
+              "attempts": 8,
+              "status_counts": {
+                "withheld": 8
+              },
+              "publications": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              },
+              "published_error_km": {
+                "n": 0,
+                "median": null,
+                "p90": null,
+                "worst": null
+              },
+              "published_without_coordinate": 0,
+              "published_geometry_violations": 0,
+              "published_error_at_least_10km": {
+                "count": 0,
+                "denominator": 0,
+                "rate": null
+              },
+              "rejections": {
+                "count": 8,
+                "denominator": 8,
+                "rate": 1.0
+              },
+              "false_publications": {
+                "count": 0,
+                "denominator": 8,
+                "rate": 0.0
+              }
+            }
+          }
+        },
+        "same_published_region_center_comparison_present": {
+          "exact_error_km": {
+            "n": 5,
+            "median": 4.075790896747164,
+            "p90": 5.698449099541063,
+            "worst": 6.560038822490214
+          },
+          "center_error_km": {
+            "n": 5,
+            "median": 7.611548509580915,
+            "p90": 9.317507273138988,
+            "worst": 9.754593210689846
+          },
+          "exact_minus_center_error_km": {
+            "n": 5,
+            "median": -4.09484605922013,
+            "p90": 0.3416617195556211,
+            "worst": 2.7064255289017547
+          },
+          "exact_closer": 4
+        },
+        "pairs": {
+          "pairs": 8,
+          "matched_pairs": 8,
+          "incomplete_pairs": 0,
+          "mismatched_complete_pairs": 0,
+          "present_fix_missing_fix": 0,
+          "present_fix_missing_withheld": 5,
+          "present_withheld_missing_fix": 0,
+          "present_withheld_missing_withheld": 3,
+          "correct_region_and_reject": 5,
+          "joint_within_5km_and_reject": 4
+        }
+      }
+    ]
+  },
+  "by_source": {
+    "known_site_control": {
+      "published_region_gate_violations": 0,
+      "by_policy": {
+        "receiver": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 5,
+              "withheld": 3
+            },
+            "publications": {
+              "count": 5,
+              "denominator": 8,
+              "rate": 0.625
+            },
+            "published_error_km": {
+              "n": 5,
+              "median": 4.075790896747164,
+              "p90": 5.698449099541063,
+              "worst": 6.560038822490214
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 0,
+              "denominator": 5,
+              "rate": 0.0
+            },
+            "correct_region_all_attempts": {
+              "count": 5,
+              "denominator": 8,
+              "rate": 0.625
+            },
+            "correct_region_given_publication": {
+              "count": 5,
+              "denominator": 5,
+              "rate": 1.0
+            },
+            "position_within_5km_all_attempts": {
+              "count": 4,
+              "denominator": 8,
+              "rate": 0.5
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 4,
+              "denominator": 8,
+              "rate": 0.5
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "withheld": 8
+            },
+            "publications": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "published_error_km": {
+              "n": 0,
+              "median": null,
+              "p90": null,
+              "worst": null
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 0,
+              "denominator": 0,
+              "rate": null
+            },
+            "rejections": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "false_publications": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            }
+          }
+        },
+        "region_only": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 8.38874337561105,
+              "p90": 10.634756890642972,
+              "worst": 12.688472143866933
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            },
+            "correct_region_all_attempts": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "correct_region_given_publication": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "position_within_5km_all_attempts": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 2,
+              "withheld": 6
+            },
+            "publications": {
+              "count": 2,
+              "denominator": 8,
+              "rate": 0.25
+            },
+            "published_error_km": {
+              "n": 2,
+              "median": 28.75546355595083,
+              "p90": 30.629394142778743,
+              "worst": 31.09787678948572
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 2,
+              "denominator": 2,
+              "rate": 1.0
+            },
+            "rejections": {
+              "count": 6,
+              "denominator": 8,
+              "rate": 0.75
+            },
+            "false_publications": {
+              "count": 2,
+              "denominator": 8,
+              "rate": 0.25
+            }
+          }
+        },
+        "forced_rf": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 4.240927705932249,
+              "p90": 6.5853784027257625,
+              "worst": 6.644504089942042
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "correct_region_all_attempts": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "correct_region_given_publication": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "position_within_5km_all_attempts": {
+              "count": 5,
+              "denominator": 8,
+              "rate": 0.625
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 5,
+              "denominator": 8,
+              "rate": 0.625
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 270.1014353987086,
+              "p90": 648.6157794326894,
+              "worst": 662.1870650777203
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 7,
+              "denominator": 8,
+              "rate": 0.875
+            },
+            "rejections": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "false_publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            }
+          }
+        },
+        "forced_region_center": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 8.38874337561105,
+              "p90": 10.634756890642972,
+              "worst": 12.688472143866933
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            },
+            "correct_region_all_attempts": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "correct_region_given_publication": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "position_within_5km_all_attempts": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 278.9435588932671,
+              "p90": 640.3480030068213,
+              "worst": 659.3671290127119
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "rejections": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "false_publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            }
+          }
+        },
+        "prior_first": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 54.44829848657692,
+              "p90": 548.3581281223578,
+              "worst": 754.4333860178084
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "correct_region_all_attempts": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            },
+            "correct_region_given_publication": {
+              "count": 1,
+              "denominator": 8,
+              "rate": 0.125
+            },
+            "position_within_5km_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 354.59756167911087,
+              "p90": 616.4215121781244,
+              "worst": 743.710436943445
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "rejections": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "false_publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            }
+          }
+        },
+        "prior_medoid": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 11.22153267727839,
+              "p90": 53.65415041123206,
+              "worst": 55.19495766969792
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 4,
+              "denominator": 8,
+              "rate": 0.5
+            },
+            "correct_region_all_attempts": {
+              "count": 5,
+              "denominator": 8,
+              "rate": 0.625
+            },
+            "correct_region_given_publication": {
+              "count": 5,
+              "denominator": 8,
+              "rate": 0.625
+            },
+            "position_within_5km_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "fix": 8
+            },
+            "publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "published_error_km": {
+              "n": 8,
+              "median": 166.39482203178562,
+              "p90": 361.28367515897014,
+              "worst": 428.4112479810133
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "rejections": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "false_publications": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            }
+          }
+        },
+        "always_withhold": {
+          "present": {
+            "attempts": 8,
+            "status_counts": {
+              "withheld": 8
+            },
+            "publications": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "published_error_km": {
+              "n": 0,
+              "median": null,
+              "p90": null,
+              "worst": null
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 0,
+              "denominator": 0,
+              "rate": null
+            },
+            "correct_region_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "correct_region_given_publication": {
+              "count": 0,
+              "denominator": 0,
+              "rate": null
+            },
+            "position_within_5km_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "joint_within_5km_all_attempts": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            }
+          },
+          "missing": {
+            "attempts": 8,
+            "status_counts": {
+              "withheld": 8
+            },
+            "publications": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            },
+            "published_error_km": {
+              "n": 0,
+              "median": null,
+              "p90": null,
+              "worst": null
+            },
+            "published_without_coordinate": 0,
+            "published_geometry_violations": 0,
+            "published_error_at_least_10km": {
+              "count": 0,
+              "denominator": 0,
+              "rate": null
+            },
+            "rejections": {
+              "count": 8,
+              "denominator": 8,
+              "rate": 1.0
+            },
+            "false_publications": {
+              "count": 0,
+              "denominator": 8,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "same_published_region_center_comparison_present": {
+        "exact_error_km": {
+          "n": 5,
+          "median": 4.075790896747164,
+          "p90": 5.698449099541063,
+          "worst": 6.560038822490214
+        },
+        "center_error_km": {
+          "n": 5,
+          "median": 7.611548509580915,
+          "p90": 9.317507273138988,
+          "worst": 9.754593210689846
+        },
+        "exact_minus_center_error_km": {
+          "n": 5,
+          "median": -4.09484605922013,
+          "p90": 0.3416617195556211,
+          "worst": 2.7064255289017547
+        },
+        "exact_closer": 4
+      },
+      "pairs": {
+        "pairs": 8,
+        "matched_pairs": 8,
+        "incomplete_pairs": 0,
+        "mismatched_complete_pairs": 0,
+        "present_fix_missing_fix": 0,
+        "present_fix_missing_withheld": 5,
+        "present_withheld_missing_fix": 0,
+        "present_withheld_missing_withheld": 3,
+        "correct_region_and_reject": 5,
+        "joint_within_5km_and_reject": 4
+      },
+      "by_site_group": {
+        "groups": 1,
+        "groups_without_present_publication": 0,
+        "descriptive_distribution_of_site_medians_km": {
+          "n": 1,
+          "median": 4.075790896747164,
+          "p90": 4.075790896747164,
+          "worst": 4.075790896747164
+        },
+        "details": [
+          {
+            "site_group": "known-ds26-ds29-installation",
+            "published_region_gate_violations": 0,
+            "by_policy": {
+              "receiver": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 5,
+                    "withheld": 3
+                  },
+                  "publications": {
+                    "count": 5,
+                    "denominator": 8,
+                    "rate": 0.625
+                  },
+                  "published_error_km": {
+                    "n": 5,
+                    "median": 4.075790896747164,
+                    "p90": 5.698449099541063,
+                    "worst": 6.560038822490214
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 0,
+                    "denominator": 5,
+                    "rate": 0.0
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 5,
+                    "denominator": 8,
+                    "rate": 0.625
+                  },
+                  "correct_region_given_publication": {
+                    "count": 5,
+                    "denominator": 5,
+                    "rate": 1.0
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 4,
+                    "denominator": 8,
+                    "rate": 0.5
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 4,
+                    "denominator": 8,
+                    "rate": 0.5
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "withheld": 8
+                  },
+                  "publications": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "published_error_km": {
+                    "n": 0,
+                    "median": null,
+                    "p90": null,
+                    "worst": null
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 0,
+                    "denominator": 0,
+                    "rate": null
+                  },
+                  "rejections": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "false_publications": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  }
+                }
+              },
+              "region_only": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 8.38874337561105,
+                    "p90": 10.634756890642972,
+                    "worst": 12.688472143866933
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "correct_region_given_publication": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 2,
+                    "withheld": 6
+                  },
+                  "publications": {
+                    "count": 2,
+                    "denominator": 8,
+                    "rate": 0.25
+                  },
+                  "published_error_km": {
+                    "n": 2,
+                    "median": 28.75546355595083,
+                    "p90": 30.629394142778743,
+                    "worst": 31.09787678948572
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 2,
+                    "denominator": 2,
+                    "rate": 1.0
+                  },
+                  "rejections": {
+                    "count": 6,
+                    "denominator": 8,
+                    "rate": 0.75
+                  },
+                  "false_publications": {
+                    "count": 2,
+                    "denominator": 8,
+                    "rate": 0.25
+                  }
+                }
+              },
+              "forced_rf": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 4.240927705932249,
+                    "p90": 6.5853784027257625,
+                    "worst": 6.644504089942042
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "correct_region_given_publication": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 5,
+                    "denominator": 8,
+                    "rate": 0.625
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 5,
+                    "denominator": 8,
+                    "rate": 0.625
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 270.1014353987086,
+                    "p90": 648.6157794326894,
+                    "worst": 662.1870650777203
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 7,
+                    "denominator": 8,
+                    "rate": 0.875
+                  },
+                  "rejections": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "false_publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  }
+                }
+              },
+              "forced_region_center": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 8.38874337561105,
+                    "p90": 10.634756890642972,
+                    "worst": 12.688472143866933
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "correct_region_given_publication": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 278.9435588932671,
+                    "p90": 640.3480030068213,
+                    "worst": 659.3671290127119
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "rejections": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "false_publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  }
+                }
+              },
+              "prior_first": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 54.44829848657692,
+                    "p90": 548.3581281223578,
+                    "worst": 754.4333860178084
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  },
+                  "correct_region_given_publication": {
+                    "count": 1,
+                    "denominator": 8,
+                    "rate": 0.125
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 354.59756167911087,
+                    "p90": 616.4215121781244,
+                    "worst": 743.710436943445
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "rejections": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "false_publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  }
+                }
+              },
+              "prior_medoid": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 11.22153267727839,
+                    "p90": 53.65415041123206,
+                    "worst": 55.19495766969792
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 4,
+                    "denominator": 8,
+                    "rate": 0.5
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 5,
+                    "denominator": 8,
+                    "rate": 0.625
+                  },
+                  "correct_region_given_publication": {
+                    "count": 5,
+                    "denominator": 8,
+                    "rate": 0.625
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "fix": 8
+                  },
+                  "publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "published_error_km": {
+                    "n": 8,
+                    "median": 166.39482203178562,
+                    "p90": 361.28367515897014,
+                    "worst": 428.4112479810133
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "rejections": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "false_publications": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  }
+                }
+              },
+              "always_withhold": {
+                "present": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "withheld": 8
+                  },
+                  "publications": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "published_error_km": {
+                    "n": 0,
+                    "median": null,
+                    "p90": null,
+                    "worst": null
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 0,
+                    "denominator": 0,
+                    "rate": null
+                  },
+                  "correct_region_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "correct_region_given_publication": {
+                    "count": 0,
+                    "denominator": 0,
+                    "rate": null
+                  },
+                  "position_within_5km_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "joint_within_5km_all_attempts": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  }
+                },
+                "missing": {
+                  "attempts": 8,
+                  "status_counts": {
+                    "withheld": 8
+                  },
+                  "publications": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  },
+                  "published_error_km": {
+                    "n": 0,
+                    "median": null,
+                    "p90": null,
+                    "worst": null
+                  },
+                  "published_without_coordinate": 0,
+                  "published_geometry_violations": 0,
+                  "published_error_at_least_10km": {
+                    "count": 0,
+                    "denominator": 0,
+                    "rate": null
+                  },
+                  "rejections": {
+                    "count": 8,
+                    "denominator": 8,
+                    "rate": 1.0
+                  },
+                  "false_publications": {
+                    "count": 0,
+                    "denominator": 8,
+                    "rate": 0.0
+                  }
+                }
+              }
+            },
+            "same_published_region_center_comparison_present": {
+              "exact_error_km": {
+                "n": 5,
+                "median": 4.075790896747164,
+                "p90": 5.698449099541063,
+                "worst": 6.560038822490214
+              },
+              "center_error_km": {
+                "n": 5,
+                "median": 7.611548509580915,
+                "p90": 9.317507273138988,
+                "worst": 9.754593210689846
+              },
+              "exact_minus_center_error_km": {
+                "n": 5,
+                "median": -4.09484605922013,
+                "p90": 0.3416617195556211,
+                "worst": 2.7064255289017547
+              },
+              "exact_closer": 4
+            },
+            "pairs": {
+              "pairs": 8,
+              "matched_pairs": 8,
+              "incomplete_pairs": 0,
+              "mismatched_complete_pairs": 0,
+              "present_fix_missing_fix": 0,
+              "present_fix_missing_withheld": 5,
+              "present_withheld_missing_fix": 0,
+              "present_withheld_missing_withheld": 3,
+              "correct_region_and_reject": 5,
+              "joint_within_5km_and_reject": 4
+            }
+          }
+        ]
+      },
+      "resources": {
+        "receiver_wall_s": {
+          "n": 16,
+          "median": 11.39883307274431,
+          "p90": 15.043200703337789,
+          "worst": 18.025391061790287
+        },
+        "stage_seconds": {
+          "early_nomination": {
+            "n": 16,
+            "median": 0.6189320329576731,
+            "p90": 0.7516147256828845,
+            "worst": 0.7903771344572306
+          },
+          "held_scoring": {
+            "n": 16,
+            "median": 0.48103402787819505,
+            "p90": 0.6689881538040936,
+            "worst": 1.0938265100121498
+          },
+          "input": {
+            "n": 16,
+            "median": 0.0012948382645845413,
+            "p90": 0.0017102351412177086,
+            "worst": 0.002348877489566803
+          },
+          "pooled_fit": {
+            "n": 16,
+            "median": 0.1675926363095641,
+            "p90": 0.20474949711933732,
+            "worst": 0.2514623971655965
+          },
+          "position_check": {
+            "n": 10,
+            "median": 0.1519308378919959,
+            "p90": 0.17873542020097374,
+            "worst": 0.193932699970901
+          },
+          "sky": {
+            "n": 16,
+            "median": 0.2091454779729247,
+            "p90": 0.32194066466763616,
+            "worst": 0.4060331638902426
+          },
+          "tiles": {
+            "n": 16,
+            "median": 0.12132967403158545,
+            "p90": 0.12466826615855098,
+            "worst": 0.15887136943638325
+          },
+          "time_shift_controls": {
+            "n": 16,
+            "median": 9.800027277320623,
+            "p90": 12.97891341522336,
+            "worst": 15.60066272970289
+          }
+        },
+        "work": {
+          "grid_fits": {
+            "n": 16,
+            "median": 6.0,
+            "p90": 6.0,
+            "worst": 6.0
+          },
+          "null_schedules": {
+            "n": 16,
+            "median": 19.0,
+            "p90": 19.0,
+            "worst": 19.0
+          },
+          "point_scores": {
+            "n": 16,
+            "median": 80.0,
+            "p90": 80.0,
+            "worst": 80.0
+          },
+          "tiles": {
+            "n": 16,
+            "median": 4.0,
+            "p90": 4.0,
+            "worst": 4.0
+          }
+        }
+      }
+    }
+  },
+  "missing_by_difficulty": {
+    "near": {
+      "receiver": {
+        "attempts": 4,
+        "status_counts": {
+          "withheld": 4
+        },
+        "publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "published_error_km": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "rejections": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "false_publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        }
+      },
+      "region_only": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 2,
+          "withheld": 2
+        },
+        "publications": {
+          "count": 2,
+          "denominator": 4,
+          "rate": 0.5
+        },
+        "published_error_km": {
+          "n": 2,
+          "median": 28.75546355595083,
+          "p90": 30.629394142778743,
+          "worst": 31.09787678948572
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 2,
+          "denominator": 2,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 2,
+          "denominator": 4,
+          "rate": 0.5
+        },
+        "false_publications": {
+          "count": 2,
+          "denominator": 4,
+          "rate": 0.5
+        }
+      },
+      "forced_rf": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 14.501093248004555,
+          "p90": 23.616814394514655,
+          "worst": 26.846318669723587
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 3,
+          "denominator": 4,
+          "rate": 0.75
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "forced_region_center": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 30.05035501538184,
+          "p90": 39.34439276218928,
+          "worst": 42.878613893347946
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "prior_first": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 180.80950955644985,
+          "p90": 372.7499021319657,
+          "worst": 399.97841281124795
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "prior_medoid": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 36.19196075427965,
+          "p90": 57.81514155993609,
+          "worst": 64.21651055990243
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "always_withhold": {
+        "attempts": 4,
+        "status_counts": {
+          "withheld": 4
+        },
+        "publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "published_error_km": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "rejections": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "false_publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        }
+      }
+    },
+    "remote": {
+      "receiver": {
+        "attempts": 4,
+        "status_counts": {
+          "withheld": 4
+        },
+        "publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "published_error_km": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "rejections": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "false_publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        }
+      },
+      "region_only": {
+        "attempts": 4,
+        "status_counts": {
+          "withheld": 4
+        },
+        "publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "published_error_km": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "rejections": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "false_publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        }
+      },
+      "forced_rf": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 599.8825007108219,
+          "p90": 656.3707998012785,
+          "worst": 662.1870650777203
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "forced_region_center": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 586.4541393191715,
+          "p90": 651.2160750101874,
+          "worst": 659.3671290127119
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "prior_first": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 537.8228901956729,
+          "p90": 689.1580406154504,
+          "worst": 743.710436943445
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "prior_medoid": {
+        "attempts": 4,
+        "status_counts": {
+          "fix": 4
+        },
+        "publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "published_error_km": {
+          "n": 4,
+          "median": 329.1056182352342,
+          "p90": 399.64228820013767,
+          "worst": 428.4112479810133
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "rejections": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_publications": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        }
+      },
+      "always_withhold": {
+        "attempts": 4,
+        "status_counts": {
+          "withheld": 4
+        },
+        "publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "published_error_km": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null
+        },
+        "published_without_coordinate": 0,
+        "published_geometry_violations": 0,
+        "published_error_at_least_10km": {
+          "count": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "rejections": {
+          "count": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "false_publications": {
+          "count": 0,
+          "denominator": 4,
+          "rate": 0.0
+        }
+      }
+    }
+  },
+  "resources": {
+    "receiver_wall_s": {
+      "n": 16,
+      "median": 11.39883307274431,
+      "p90": 15.043200703337789,
+      "worst": 18.025391061790287
+    },
+    "stage_seconds": {
+      "early_nomination": {
+        "n": 16,
+        "median": 0.6189320329576731,
+        "p90": 0.7516147256828845,
+        "worst": 0.7903771344572306
+      },
+      "held_scoring": {
+        "n": 16,
+        "median": 0.48103402787819505,
+        "p90": 0.6689881538040936,
+        "worst": 1.0938265100121498
+      },
+      "input": {
+        "n": 16,
+        "median": 0.0012948382645845413,
+        "p90": 0.0017102351412177086,
+        "worst": 0.002348877489566803
+      },
+      "pooled_fit": {
+        "n": 16,
+        "median": 0.1675926363095641,
+        "p90": 0.20474949711933732,
+        "worst": 0.2514623971655965
+      },
+      "position_check": {
+        "n": 10,
+        "median": 0.1519308378919959,
+        "p90": 0.17873542020097374,
+        "worst": 0.193932699970901
+      },
+      "sky": {
+        "n": 16,
+        "median": 0.2091454779729247,
+        "p90": 0.32194066466763616,
+        "worst": 0.4060331638902426
+      },
+      "tiles": {
+        "n": 16,
+        "median": 0.12132967403158545,
+        "p90": 0.12466826615855098,
+        "worst": 0.15887136943638325
+      },
+      "time_shift_controls": {
+        "n": 16,
+        "median": 9.800027277320623,
+        "p90": 12.97891341522336,
+        "worst": 15.60066272970289
+      }
+    },
+    "work": {
+      "grid_fits": {
+        "n": 16,
+        "median": 6.0,
+        "p90": 6.0,
+        "worst": 6.0
+      },
+      "null_schedules": {
+        "n": 16,
+        "median": 19.0,
+        "p90": 19.0,
+        "worst": 19.0
+      },
+      "point_scores": {
+        "n": 16,
+        "median": 80.0,
+        "p90": 80.0,
+        "worst": 80.0
+      },
+      "tiles": {
+        "n": 16,
+        "median": 4.0,
+        "p90": 4.0,
+        "worst": 4.0
+      }
+    }
+  }
+}

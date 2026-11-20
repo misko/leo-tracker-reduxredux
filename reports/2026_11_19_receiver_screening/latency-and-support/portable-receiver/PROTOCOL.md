@@ -1,0 +1,7 @@
+# Relocate the saved-recording receiver
+
+Use DS26-0197 as a deployment parity fixture. The earlier whole-center-union stock leg supplies the sealed bitwise native and compact phase-release comparison. Supply its original sample segments, track configuration, causal TLE snapshots, search tile and screen center through explicit digest-bound local assets. Authenticate the entire capture and compare every saved native observation, including invalid support and delivery clocks. Preserve both calibration arms. Seal the new output before opening the original four truth-scored references.
+
+Build from the exact published stock-wide binary, portable project scanner and reader modules and the qualified compact phase-release install. Relocate the built application before invoking it from a different working directory. Use an external Python environment with the project's required libraries, and hide the source checkout from the actual receiver. The position native manifest may rebind its local source, wrapper, binary and identical SciPy provider paths. Its numerical code, binaries, flags and digest checks remain unchanged.
+
+Perform one complete replay on CPUs 10 and 11, nice 10, with a 512 MiB no-swap service and a 450-second hard bound. Saved chunks are read and verified without modifying them. Archive the replay manifest, foreground timing, cgroup evidence, byte parity and application size. Report the CPU and software dependencies separately from the application bundle. The comparison evaluates entry-point parity only.

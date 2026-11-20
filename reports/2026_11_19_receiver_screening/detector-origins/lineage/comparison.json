@@ -1,0 +1,566 @@
+{
+  "DS26-0036": {
+    "admitted": 6,
+    "capture": {
+      "archive": "/srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs/DS26-0036/native.json",
+      "archive_sha256": "c49d1ca9a3eae0ebae1ba20f976a26931d2fbf72f3093f03c21ffc582da68f7d",
+      "calls": 18,
+      "comparison": {
+        "candidate_count": [
+          61,
+          61
+        ],
+        "differing_fields": {},
+        "exact": 12,
+        "probes": 12
+      },
+      "cpu_median_ms": 2054.5147015,
+      "wall_median_ms": 2622.9965535
+    },
+    "cross_detector": {
+      "candidate_count": [
+        61,
+        57
+      ],
+      "differing_fields": {
+        "candidate_count": 8,
+        "candidate_rank": 24,
+        "fractional_control_score": 53,
+        "fractional_epoch_offset_samples": 53,
+        "fractional_exact_score": 53,
+        "fractional_margin": 53,
+        "fractional_tracking_cfo_hz": 53,
+        "integer_epoch_sample": 45,
+        "passed_fractional_margin_gate": 13
+      },
+      "exact": 0,
+      "probes": 12
+    },
+    "excluded": 0,
+    "only_cfo_domain_changed": {
+      "against_ordinary": {
+        "candidate_count": [
+          11,
+          9
+        ],
+        "differing_fields": {
+          "candidate_count": 1,
+          "candidate_rank": 1,
+          "fractional_control_score": 9,
+          "fractional_epoch_offset_samples": 9,
+          "fractional_exact_score": 9,
+          "fractional_margin": 9,
+          "fractional_tracking_cfo_hz": 9,
+          "integer_epoch_sample": 7,
+          "passed_fractional_margin_gate": 4
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "changed_from_capture": {
+        "candidate_count": [
+          11,
+          13
+        ],
+        "differing_fields": {
+          "candidate_count": 1,
+          "fractional_control_score": 7,
+          "fractional_epoch_offset_samples": 7,
+          "fractional_exact_score": 7,
+          "fractional_margin": 7,
+          "fractional_tracking_cfo_hz": 7,
+          "integer_epoch_sample": 7
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "visit": 1
+    },
+    "ordinary": {
+      "archive": "/srv/bulk/leo-dev/receiver-screening-20261119/whole-cavity/DS26-0036/native.json",
+      "archive_sha256": "41b74326231d17abcc1ed6e8cfd37574a2f5752c366bc1e8b959c39c1ec5f94e",
+      "calls": 18,
+      "comparison": {
+        "candidate_count": [
+          57,
+          57
+        ],
+        "differing_fields": {},
+        "exact": 12,
+        "probes": 12
+      },
+      "cpu_median_ms": 16.792112,
+      "wall_median_ms": 16.7929875
+    },
+    "provenance": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:8ac4a2b2e24de8ae2cccd592cb55e8d86226dd9e6c0f5046b8957a5880c4d76b",
+        "release": "fast-1f3a91c6a882b6e7eac8827fbb95f215",
+        "root": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "run_id": "fast-3cde7bbf1ca4b300a6d596052daf82f8"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/deployment-manifest.json": "f2ad5e23e25dff4efbfa117448b76749f36635c78b97b70300e96c98301d1934",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "replay_sha256": "8efe68cadc163dcad6d891bbd01f4b6b9947cf6d6eb00f7563cd9fcf9f7d6d9a"
+  },
+  "DS26-0237": {
+    "admitted": 6,
+    "capture": {
+      "archive": "/srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs/DS26-0237/native.json",
+      "archive_sha256": "854ff1f1a97e3f40b7a904d0a5fe3298070dfb8faaf3d42fc91443060feed2e7",
+      "calls": 18,
+      "comparison": {
+        "candidate_count": [
+          51,
+          51
+        ],
+        "differing_fields": {},
+        "exact": 12,
+        "probes": 12
+      },
+      "cpu_median_ms": 1429.7666205,
+      "wall_median_ms": 1444.735766
+    },
+    "cross_detector": {
+      "candidate_count": [
+        51,
+        42
+      ],
+      "differing_fields": {
+        "candidate_count": 12,
+        "candidate_rank": 18,
+        "fractional_control_score": 31,
+        "fractional_epoch_offset_samples": 31,
+        "fractional_exact_score": 31,
+        "fractional_margin": 31,
+        "fractional_tracking_cfo_hz": 31,
+        "integer_epoch_sample": 23,
+        "passed_fractional_margin_gate": 3
+      },
+      "exact": 0,
+      "probes": 12
+    },
+    "excluded": 0,
+    "only_cfo_domain_changed": {
+      "against_ordinary": {
+        "candidate_count": [
+          8,
+          2
+        ],
+        "differing_fields": {
+          "candidate_count": 2,
+          "candidate_rank": 2,
+          "fractional_control_score": 2,
+          "fractional_epoch_offset_samples": 2,
+          "fractional_exact_score": 2,
+          "fractional_margin": 2,
+          "fractional_tracking_cfo_hz": 2,
+          "integer_epoch_sample": 2
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "changed_from_capture": {
+        "candidate_count": [
+          8,
+          8
+        ],
+        "differing_fields": {
+          "candidate_rank": 4,
+          "fractional_control_score": 4,
+          "fractional_epoch_offset_samples": 4,
+          "fractional_exact_score": 4,
+          "fractional_margin": 4,
+          "fractional_tracking_cfo_hz": 4,
+          "integer_epoch_sample": 4
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "visit": 1
+    },
+    "ordinary": {
+      "archive": "/tmp/leo-complete-frontend-20261119/ordinary/DS26-0237/native.json",
+      "archive_sha256": "1f0d809ec43780369011b81a17be83b1ebab3c0346c90ce24e80b534c1383ffd",
+      "calls": 18,
+      "comparison": {
+        "candidate_count": [
+          42,
+          42
+        ],
+        "differing_fields": {},
+        "exact": 12,
+        "probes": 12
+      },
+      "cpu_median_ms": 14.7321955,
+      "wall_median_ms": 14.7307835
+    },
+    "provenance": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:23f22f794f4b34f2feeb49b49405dc0c27b5fde70dce72cd0e001990b2148b50",
+        "release": "fast-1f3a91c6a882b6e7eac8827fbb95f215",
+        "root": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "run_id": "fast-6e72192d3fc05b95683b97ad69eef1b4"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/deployment-manifest.json": "f2ad5e23e25dff4efbfa117448b76749f36635c78b97b70300e96c98301d1934",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "replay_sha256": "4e231061ad9908138ad717ddfcfc32eb9b0779a174eab70a753733a5c990538f"
+  },
+  "DS29-0082": {
+    "admitted": 1,
+    "capture": {
+      "archive": "/srv/bulk/leo-dev/ds29-20261113/snapshot/inputs/DS29-0082/native.json",
+      "archive_sha256": "fe2b362bb0c6324db2084e7ea926393bed38acced14d48dafdf6221376d2ad40",
+      "calls": 3,
+      "comparison": {
+        "candidate_count": [
+          11,
+          11
+        ],
+        "differing_fields": {},
+        "exact": 2,
+        "probes": 2
+      },
+      "cpu_median_ms": 1488.10426,
+      "wall_median_ms": 1505.618374
+    },
+    "cross_detector": {
+      "candidate_count": [
+        11,
+        10
+      ],
+      "differing_fields": {
+        "candidate_count": 2,
+        "candidate_rank": 9,
+        "fractional_control_score": 9,
+        "fractional_epoch_offset_samples": 9,
+        "fractional_exact_score": 9,
+        "fractional_margin": 9,
+        "fractional_tracking_cfo_hz": 9,
+        "integer_epoch_sample": 9
+      },
+      "exact": 0,
+      "probes": 2
+    },
+    "excluded": 5,
+    "only_cfo_domain_changed": {
+      "against_ordinary": {
+        "candidate_count": [
+          13,
+          10
+        ],
+        "differing_fields": {
+          "candidate_count": 2,
+          "candidate_rank": 10,
+          "fractional_control_score": 10,
+          "fractional_epoch_offset_samples": 10,
+          "fractional_exact_score": 10,
+          "fractional_margin": 10,
+          "fractional_tracking_cfo_hz": 10,
+          "integer_epoch_sample": 10
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "changed_from_capture": {
+        "candidate_count": [
+          13,
+          11
+        ],
+        "differing_fields": {
+          "candidate_count": 1,
+          "candidate_rank": 6,
+          "fractional_control_score": 8,
+          "fractional_epoch_offset_samples": 8,
+          "fractional_exact_score": 8,
+          "fractional_margin": 8,
+          "fractional_tracking_cfo_hz": 8,
+          "integer_epoch_sample": 8
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "visit": 6657
+    },
+    "ordinary": {
+      "archive": "/srv/bulk/leo-dev/receiver-screening-20261119/whole-pair/DS29-0082/native.json",
+      "archive_sha256": "9b66406e24a94f2cf11adfe858289dbd45696d4e1244d5374b5679d32e8bec49",
+      "calls": 3,
+      "comparison": {
+        "candidate_count": [
+          10,
+          10
+        ],
+        "differing_fields": {},
+        "exact": 2,
+        "probes": 2
+      },
+      "cpu_median_ms": 15.909979,
+      "wall_median_ms": 15.908446
+    },
+    "provenance": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:a7ecaa95694bad7ff72201bd15251d43b393b9a49f523011f940b74ccb016e9c",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:a7ecaa95694bad7ff72201bd15251d43b393b9a49f523011f940b74ccb016e9c",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:954f0fec1dfbd9c86e91272033683abeb9144466fb6810ca53f43c9e40809c6d",
+        "release": "fast-33b3892e0162eac7fd2232898aa9d1ce",
+        "root": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "run_id": "fast-09b6e939479d6bc789f2875b54219319"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-source-parity.json": "29f165a3a3f94d58a81c154189fcfc46d0cdc378a4d063896daae269032920bc",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/release-revision.txt": "f168c737a8b3f8dcec5782510c5301cc0509c4627df6bc7ec6de6579361ab59a"
+      }
+    },
+    "replay_sha256": "a9850cf231b7f85f4983b829bae9c87813f4c4a3f33697cad8f90caf97c383d2"
+  },
+  "DS29-0174": {
+    "admitted": 6,
+    "capture": {
+      "archive": "/srv/bulk/leo-dev/ds29-20261113/snapshot/inputs/DS29-0174/native.json",
+      "archive_sha256": "ff3e85f64f1591a825c014c814370ae1c5498aa7f8f1eaef611de89d84a1e082",
+      "calls": 18,
+      "comparison": {
+        "candidate_count": [
+          58,
+          58
+        ],
+        "differing_fields": {},
+        "exact": 12,
+        "probes": 12
+      },
+      "cpu_median_ms": 594.2296285,
+      "wall_median_ms": 602.6859435
+    },
+    "cross_detector": {
+      "candidate_count": [
+        58,
+        68
+      ],
+      "differing_fields": {
+        "candidate_count": 12,
+        "candidate_rank": 18,
+        "fractional_control_score": 51,
+        "fractional_epoch_offset_samples": 51,
+        "fractional_exact_score": 51,
+        "fractional_margin": 51,
+        "fractional_tracking_cfo_hz": 51,
+        "integer_epoch_sample": 30,
+        "passed_fractional_margin_gate": 5
+      },
+      "exact": 0,
+      "probes": 12
+    },
+    "excluded": 0,
+    "only_cfo_domain_changed": {
+      "against_ordinary": {
+        "candidate_count": [
+          11,
+          15
+        ],
+        "differing_fields": {
+          "candidate_count": 2,
+          "candidate_rank": 2,
+          "fractional_control_score": 11,
+          "fractional_epoch_offset_samples": 11,
+          "fractional_exact_score": 11,
+          "fractional_margin": 11,
+          "fractional_tracking_cfo_hz": 11,
+          "integer_epoch_sample": 4,
+          "passed_fractional_margin_gate": 1
+        },
+        "exact": 0,
+        "probes": 2
+      },
+      "changed_from_capture": {
+        "candidate_count": [
+          11,
+          11
+        ],
+        "differing_fields": {
+          "candidate_rank": 2,
+          "fractional_control_score": 2,
+          "fractional_epoch_offset_samples": 2,
+          "fractional_exact_score": 2,
+          "fractional_margin": 2,
+          "fractional_tracking_cfo_hz": 2,
+          "integer_epoch_sample": 2,
+          "passed_fractional_margin_gate": 2
+        },
+        "exact": 1,
+        "probes": 2
+      },
+      "visit": 1
+    },
+    "ordinary": {
+      "archive": "/tmp/leo-complete-frontend-20261119/ordinary/DS29-0174/native.json",
+      "archive_sha256": "48342c39d5f19ec08feb09e394cd55c58332f0e5e611675264d9fbd767ebc250",
+      "calls": 18,
+      "comparison": {
+        "candidate_count": [
+          68,
+          68
+        ],
+        "differing_fields": {},
+        "exact": 12,
+        "probes": 12
+      },
+      "cpu_median_ms": 16.248524500000002,
+      "wall_median_ms": 16.2459545
+    },
+    "provenance": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:c086c53550f09f857b4c4ab951f7f0e96dea98081364f713374b60e57bd5553c",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:c086c53550f09f857b4c4ab951f7f0e96dea98081364f713374b60e57bd5553c",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:005dbbd105717d54919ec67f35e83bede32199d03a18f29b0cf3e311e5e6e0d1",
+        "release": "fast-a9ce664313cc56759cdffefe4750f833",
+        "root": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "run_id": "fast-a3cb68d8132ac430a1eb700384503ca0"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/runtime-manifest.json": "e05bfc29c8987c83623ac8f310a68b45a27de355ae1020ece7de066f5eb728d2",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.c": "7dd6ad1300dca46e986178ea755cd896819b9bae148072617c32cc80ce8458bf",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "77f0719b9c1658c042c53408b7941dedd9126fbfa738bade7113bc060eadd865",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/acquisition.py": "6a1e88345d2d64f6d6e11f1d586753b74bcc0ef5a6f6816e42880eb8bc6e7a23",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "replay_sha256": "4e6ff000c9236b3ad1e474457a49f0a7be0c0258df163f662b1e4583aaf7fd42"
+  }
+}

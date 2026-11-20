@@ -1,0 +1,26 @@
+# Recentered verification of native smooth-oscillator fixes
+
+On ten new roof recordings, the 50 km verification fit left both false publications in place and removed four valid publications. The original-tile fixes fell from **9/10 to 6/10**, and the near-inside fixes fell from **3/10 to 2/10**. Both methods published **2/20** actual omissions in each calibration arm. Both were on the same recording. On the two separately known false offers, recentering withheld one and retained the other. [Frozen protocol](PROTOCOL.md) · [Prospective score summary](prospective/summary.json) · [Diagnosed stress summary](diagnosed-stress/summary.json)
+
+## Prospective roof outcomes
+
+The ten DS26 recordings were selected by hashed ID and exclude all 16 recordings in the earlier boundary study. The eight authenticated original DS29 recordings were among those exclusions. Each recording had its original square and three 25 km squares with exact truth margins of +1.5, −1.5 and −6 km, measured in the solver's tangent coordinates along one hash-selected face. Each worker processed only one opaque offer. These are separate captures at the same roof site. [Sealed offers and margins](prospective/evaluator.json) · [Per-case scores](prospective/scores.csv)
+
+| Offered square | Single-pass fixes | Verified fixes | `c = 0` verified median / P95 / max error | Fitted `c` verified median / P95 / max error |
+|---|---:|---:|---:|---:|
+| Original | 9/10 | 6/10 | 1.979 / 3.985 / 4.073 km | 1.985 / 3.962 / 4.345 km |
+| Truth 1.5 km inside | 3/10 | 2/10 | 2.129 / 3.877 / 4.071 km | 2.376 / 4.154 / 4.352 km |
+| Truth 1.5 km outside | 1/10 | 1/10 | 8.242 / 8.242 / 8.242 km | 8.293 / 8.293 / 8.293 km |
+| Truth 6 km outside | 1/10 | 1/10 | 8.330 / 8.330 / 8.330 km | 8.314 / 8.314 / 8.314 km |
+
+The recentered receiver ran the expanded fit on 14/40 prospective offers. The shared gate withheld three valid fixes on disagreement and one because the expanded fit withheld on geometry. It kept both false fixes on DS26-0235. Their two expanded fits moved by just 0.055–0.179 km across calibration arms. On the original correct square for that same recording, the fit moved by 2.50–2.56 km, so the verifier withheld even though the initial error was 1.61–1.92 km. The rule preserved the original endpoints, objective and conditional RMS wherever it published. The model's conditional RMS on the 6 km omissions had median 202.29 Hz with `c = 0` and 187.92 Hz with fitted `c`. [First and expanded fit diagnostics](prospective/scores.csv) · [Prospective figure specification](prospective/figures.json)
+
+The diagnosed stress replay reproduced the original false single-pass results for DS26-0070 exactly. Its near omission kept the 14.55 and 14.96 km errors after the expanded fit moved each solution by less than 10 m. Its 6 km omission withheld after the two arms moved by 5.90 and 6.18 km, respectively. The expanded fit's forced errors on that offer were 14.89 and 15.33 km. [Diagnosed stress scores](diagnosed-stress/scores.csv) · [Diagnosed stress figure specification](diagnosed-stress/figures.json)
+
+## Measurement boundary
+
+The two-pass worker ran the unchanged smooth receiver once on the original 25 km square. After a tentative publication, the same Graph and causal TLE entered the same solver on a 50 km square centered at the first `c = 0` fix. The expanded fit had to publish both arms inside the original square and within 1 km of their corresponding tentative fixes. All 42 first fits matched the separate native single-pass jobs bitwise for decisions, both arm outputs and clock-fit diagnostics. This study measures position stability under a second initialization and wider search on the same observations. The earlier region-support qualification used explicit exterior half-box fits with independently profiled held Doppler and a separate covariance criterion. [Earlier region-support protocol](../../factors/region-support/PROTOCOL.md) · [Prospective prediction lock](prospective/prediction-lock.json)
+
+The corrected four-core replay completed all 80 prospective legs in **130.21 s** and four diagnosed legs in **8.40 s**, with no failures or timeouts. On the 14 prospective attempts that invoked the expanded fit, the measured paired CPU overhead at median / P95 / maximum was **2.23 / 2.97 / 2.99 s**. Paired supervisor wall overhead was **2.16 / 3.01 / 3.13 s**. Across all 40 prospective offers, median / P95 wall time was 6.37 / 7.88 s for the single fit and 6.64 / 9.23 s for verification. The verifier's maximum wall time was 11.01 s, with peak RSS of 155,896 KiB and peak virtual address space of 396,452 KiB under the 512 MiB cap. The measured input starts at complete stored GLRT factors. [Per-stage timings](prospective/summary.json) · [Frozen source and input roster](prospective/roster.json)
+
+The initial launch was stopped after 45 s when an expanded-fit Boolean could not be serialized. No geographic labels were opened. The retry used the same requests and decision predicates, with the Boolean converted to its JSON-serializable representation and a reduced 650 s outer cap. [Interrupted technical log](interrupted-technical.log) · [Interrupted source and request roster](interrupted-roster.json)

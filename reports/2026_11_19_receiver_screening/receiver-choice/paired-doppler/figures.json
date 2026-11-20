@@ -1,0 +1,159 @@
+{
+  "charts": [
+    {
+      "caption": "Exact receiver-window differences and matched individual-arc clock control.",
+      "cases": [
+        "DS26-0261",
+        "DS29-0519"
+      ],
+      "id": "paired_doppler-containing",
+      "method": "paired_doppler",
+      "provenance": [
+        "prediction-lock.json",
+        "geometry-lock.json",
+        "terminal-decisions.json"
+      ],
+      "scope": "roof",
+      "seal": "containing-figure-lock.json",
+      "series": [
+        {
+          "file": "containing-positions.jsonl.gz",
+          "forced_label": "Paired Doppler \u00b7 forced",
+          "key": "one",
+          "label": "Paired Doppler",
+          "value": "paired_doppler"
+        },
+        {
+          "file": "containing-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Individual-arc clock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "paired_doppler_shared_clock_control"
+        },
+        {
+          "file": "containing-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "paired_doppler_tile_center"
+        }
+      ],
+      "title": "Simultaneous Doppler pairs on containing roof offers"
+    },
+    {
+      "caption": "Independently displaced tiles with matched clock control.",
+      "cases": [
+        "DS26-0261-paired-omitted",
+        "DS29-0519-paired-omitted"
+      ],
+      "id": "paired_doppler-generated-omitted",
+      "method": "paired_doppler",
+      "provenance": [
+        "prediction-lock.json",
+        "geometry-lock.json",
+        "terminal-decisions.json"
+      ],
+      "queries": "generated-omitted-queries.json",
+      "scope": "transfer",
+      "seal": "generated-omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "generated-omitted-positions.jsonl.gz",
+          "forced_label": "Paired Doppler \u00b7 forced",
+          "key": "candidate",
+          "label": "Paired Doppler",
+          "value": "paired_doppler"
+        },
+        {
+          "file": "generated-omitted-positions.jsonl.gz",
+          "forced_label": "Individual-arc clock \u00b7 forced",
+          "key": "stock",
+          "label": "Individual-arc clock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "paired_doppler_shared_clock_control"
+        },
+        {
+          "file": "generated-omitted-positions.jsonl.gz",
+          "key": "four",
+          "label": "Tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "paired_doppler_tile_center"
+        }
+      ],
+      "title": "Simultaneous Doppler pairs on omitted offers"
+    },
+    {
+      "caption": "Exact receiver-window differences and matched individual-arc clock control.",
+      "cases": [
+        "67f59d17b7ae5f7872896ce04a66d1c9",
+        "0000d0a5cbc2b3f00f7b0a49e0b9750c"
+      ],
+      "id": "paired_doppler-waveform",
+      "method": "paired_doppler",
+      "provenance": [
+        "prediction-lock.json",
+        "geometry-lock.json",
+        "terminal-decisions.json"
+      ],
+      "queries": "waveform-queries.json",
+      "scope": "transfer",
+      "seal": "waveform-figure-lock.json",
+      "series": [
+        {
+          "file": "waveform-positions.jsonl.gz",
+          "forced_label": "Paired Doppler \u00b7 forced",
+          "key": "candidate",
+          "label": "Paired Doppler",
+          "value": "paired_doppler"
+        },
+        {
+          "file": "waveform-positions.jsonl.gz",
+          "forced_label": "Individual-arc clock \u00b7 forced",
+          "key": "stock",
+          "label": "Individual-arc clock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "paired_doppler_shared_clock_control"
+        },
+        {
+          "file": "waveform-positions.jsonl.gz",
+          "key": "four",
+          "label": "Tile centre",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "paired_doppler_tile_center"
+        }
+      ],
+      "title": "Simultaneous Doppler support on the emitted Qin waveform"
+    }
+  ],
+  "version": 2
+}

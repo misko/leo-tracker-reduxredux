@@ -1,0 +1,93 @@
+{
+  "charts": [
+    {
+      "caption": "Full saved I/Q through the same compact position solver. Both GLRT detectors span \u00b1800 kHz with four proposed pilot starts. The candidate fills skipped bins only near each region's strongest coarse response.",
+      "cases": [
+        "DS26-0036",
+        "DS26-0122",
+        "DS26-0162",
+        "DS26-0237",
+        "DS29-0082",
+        "DS29-0174",
+        "DS29-0247",
+        "DS29-0519"
+      ],
+      "id": "wide-cfo-stride-all",
+      "method": "wide-cfo-stride_candidate",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "all-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "11 bins plus local neighbors",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "wide-cfo-stride_candidate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "21 coarse Doppler bins",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "wide-cfo-stride_control"
+        }
+      ],
+      "title": "A smaller Doppler grid on eight complete roof recordings"
+    },
+    {
+      "caption": "Full saved I/Q through the same compact position solver. Both GLRT detectors span \u00b1800 kHz with four proposed pilot starts. The candidate fills skipped bins only near each region's strongest coarse response.",
+      "cases": [
+        "DS26-0162",
+        "DS29-0519"
+      ],
+      "id": "wide-cfo-stride-additional",
+      "method": "wide-cfo-stride_candidate",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "additional-figure-lock.json",
+      "series": [
+        {
+          "file": "additional.jsonl.gz",
+          "key": "one",
+          "label": "11 bins plus local neighbors",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "wide-cfo-stride_candidate"
+        },
+        {
+          "file": "additional.jsonl.gz",
+          "key": "stock",
+          "label": "21 coarse Doppler bins",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "wide-cfo-stride_control"
+        }
+      ],
+      "title": "Doppler grid spacing on two additional complete waveforms"
+    }
+  ],
+  "version": 1
+}

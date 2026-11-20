@@ -1,0 +1,155 @@
+{
+  "charts": [
+    {
+      "caption": "Same selected coordinates and RF estimate, with one terminal paired decision. 0 false regional fixes remain after the guard.",
+      "cases": "sealed",
+      "condition_labels": {
+        "center": "Interior offer",
+        "far-omission": "27.5 km outside",
+        "near-inside": "1.5 km inside",
+        "near-outside": "1.5 km outside"
+      },
+      "id": "boundary-policy-fresh",
+      "method": "compact_tile_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "retrospective-sources.json"
+      ],
+      "queries": "fresh-queries.json",
+      "scope": "transfer",
+      "seal": "fresh-figure-lock.json",
+      "series": [
+        {
+          "file": "fresh-positions.jsonl.gz",
+          "forced_label": "Guarded forced",
+          "key": "candidate",
+          "label": "Paired interior guard",
+          "value": "compact_tile_interior"
+        },
+        {
+          "file": "fresh-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original compact decision",
+          "match": [
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        }
+      ],
+      "title": "Paired 20 m tile-face guard on two new simulated sites"
+    },
+    {
+      "caption": "Same selected coordinates and RF estimate, with one terminal paired decision.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing offer",
+        "omitted": "Near omitted offer"
+      },
+      "id": "boundary-policy-archived-phase-release",
+      "method": "compact_tile_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "retrospective-sources.json"
+      ],
+      "queries": "archived-phase-release-queries.json",
+      "scope": "transfer",
+      "seal": "archived-phase-release-figure-lock.json",
+      "series": [
+        {
+          "file": "archived-phase-release-positions.jsonl.gz",
+          "forced_label": "Guarded forced",
+          "key": "candidate",
+          "label": "Paired interior guard",
+          "value": "compact_tile_interior"
+        },
+        {
+          "file": "archived-phase-release-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original compact decision",
+          "match": [
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        }
+      ],
+      "title": "Phase-release tile-face decisions on four archived sites"
+    },
+    {
+      "caption": "Same selected coordinates and RF estimate, with one terminal paired decision.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing offer",
+        "omitted": "Near omitted offer"
+      },
+      "id": "boundary-policy-archived-compact",
+      "method": "compact_tile_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "retrospective-sources.json"
+      ],
+      "queries": "archived-compact-queries.json",
+      "scope": "transfer",
+      "seal": "archived-compact-figure-lock.json",
+      "series": [
+        {
+          "file": "archived-compact-positions.jsonl.gz",
+          "forced_label": "Guarded forced",
+          "key": "candidate",
+          "label": "Paired interior guard",
+          "value": "compact_tile_interior"
+        },
+        {
+          "file": "archived-compact-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original compact decision",
+          "match": [
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        }
+      ],
+      "title": "Archived base compact tile-face decisions on four simulated sites"
+    },
+    {
+      "caption": "Same selected coordinates and RF estimate, with one terminal paired decision. The shifted containing reattempt timed out.",
+      "cases": "sealed",
+      "condition_labels": {
+        "measured-containing": "Measured roof containing",
+        "measured-shifted-containing": "Measured shifted containing"
+      },
+      "id": "boundary-policy-measured",
+      "method": "compact_tile_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "retrospective-sources.json"
+      ],
+      "queries": "measured-queries.json",
+      "scope": "transfer",
+      "seal": "measured-figure-lock.json",
+      "series": [
+        {
+          "file": "measured-positions.jsonl.gz",
+          "forced_label": "Guarded forced",
+          "key": "candidate",
+          "label": "Paired interior guard",
+          "value": "compact_tile_interior"
+        },
+        {
+          "file": "measured-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original compact decision",
+          "match": [
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        }
+      ],
+      "title": "Tile-face guard on measured compact roof endpoints"
+    }
+  ],
+  "version": 1
+}

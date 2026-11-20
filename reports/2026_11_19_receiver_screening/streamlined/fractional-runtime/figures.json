@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "fractional_runtime",
+      "method": "fractional_runtime",
+      "scope": "roof",
+      "title": "Ordinary GLRT with ordered fractional interpolation",
+      "caption": "Warm authenticated local CI16 replay of the ordinary native detector. Both builds reuse CI16 preparation. This timing stage ended after native candidates and left position unmeasured.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "source-lock.json"],
+      "series": [
+        {"key": "one", "label": "Ordered fractional interpolation · GLRT stage", "file": "stage-results.jsonl.gz", "value": "fractional_runtime", "native_authority": "ordinary", "native_field": "source_ordinary_sha256"},
+        {"key": "stock", "label": "Reusable CI16 parent · GLRT stage", "file": "stage-results.jsonl.gz", "value": "fractional_runtime_stage_parent", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "host_visit_receipt_sha256"]}
+      ]
+    },
+    {
+      "id": "fractional_runtime_position",
+      "method": "fractional_runtime_position",
+      "scope": "roof",
+      "title": "Position after partial ordered fractional GLRT replay",
+      "caption": "Fresh native clock and offset fits combine ordered fractional GLRT factors on eight DS26 and four DS29 visits with the authenticated ordinary factors for all other visits. The measured reusable-preparation parent provides the matched control. Reported and forced estimates use both calibration arms.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "source-lock.json", "position-receipts.json"],
+      "series": [
+        {"key": "one", "label": "Ordered fractional interpolation · partial replay", "file": "positions.jsonl.gz", "value": "fractional_runtime_position", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "forced_label": "Held replay forced diagnostics"},
+        {"key": "stock", "label": "Reusable preparation parent · partial replay", "file": "control-positions.jsonl.gz", "value": "fractional_runtime_prepared_control", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "observation_sha256", "tile"]}
+      ]
+    }
+  ]
+}

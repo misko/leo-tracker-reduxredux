@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Position error by modification</title><style>
+:root {color-scheme:light; font:16px/1.5 'Atkinson Hyperlegible Next','Segoe UI',sans-serif;
+       color:#192c36; background:#fafbf9}
+* {box-sizing:border-box}
+body {margin:0 auto; max-width:1650px; padding:1.5rem clamp(1rem,3vw,3rem)}
+a {color:#075e52; text-underline-offset:.15em}
+a:focus-visible,summary:focus-visible,label:focus-visible
+{outline:3px solid #be761c; outline-offset:3px} h1,h2,h3 {line-height:1.17; text-wrap:balance}
+h1 {margin:0 0 .7rem; font-size:clamp(1.8rem,4vw,3rem)} header p {max-width:80ch}
+.layout {display:grid; grid-template-columns:minmax(13rem,19rem) minmax(0,1fr);
+         gap:2rem; margin-top:1.25rem}
+nav {position:sticky; top:1rem; max-height:92vh; overflow:auto; padding:.5rem 1rem .7rem 0}
+.chart-search {margin-bottom:.8rem}
+.chart-search label {display:block; font-weight:650}
+.chart-search input {width:100%; font:inherit; padding:.3rem .5rem; border:1px solid #72877c;
+  border-radius:.25rem}
+.chart-search output {font-size:.9rem}
+[hidden] {display:none!important}
+nav details {margin-bottom:.65rem} summary {cursor:pointer; font-weight:650}
+nav ul {list-style:none; margin:.3rem 0; padding:0 0 0 .8rem} nav li {margin:.35rem 0}
+main {min-width:0} section {margin-bottom:2.4rem} section>h2 {margin:.45rem 0}
+article {border-top:1px solid #c8d3ce; padding:.6rem 0 1.4rem; scroll-margin-top:1rem}
+article:target {border-top:3px solid #00785f} h3 {margin:.45rem 0; font-size:1.2rem}
+.exports {margin:.5rem 0; font-size:.92rem}
+.sr-only {position:absolute; width:1px; height:1px; padding:0; overflow:hidden;
+  clip-path:inset(50%); white-space:nowrap}
+.exports a {display:inline-block; margin-right:1rem}
+img {display:block; max-width:100%; height:auto; margin-top:.4rem; background:white}
+label {margin-right:1.15rem; cursor:pointer} input {accent-color:#00785f}
+#cal-c0:checked ~ .layout .arm-fitted_c, #cal-fitted_c:checked ~ .layout .arm-c0 {display:none}
+@media(max-width:850px) {.layout {display:block}
+  nav {position:static; max-height:13rem; margin-bottom:1rem}}
+@media print {nav,header,input,label,.exports {display:none}
+  .layout {display:block} article {break-inside:avoid}}
+</style><body><header><h1>Position error by modification</h1><p>One chart for each of the ten pipeline changes. Every chart uses the same 127 DS26 and eight DS29 roof recordings and the four original v5 options. Select an image to see it at full size. The curves include withheld attempts in the denominator. Diamonds mark the median among the positions in each row.</p></header><input type="radio" id="cal-fitted_c" name="calibration" checked><label for="cal-fitted_c">Fitted calibration</label><input type="radio" id="cal-c0" name="calibration"><label for="cal-c0">Zero calibration</label><div class="layout"><nav aria-label="Charts">
+<div class="chart-search" hidden><label for="find-chart">Find a modification</label>
+<input id="find-chart" type="search" autocomplete="off">
+<output for="find-chart" aria-live="polite"></output></div>
+<details open><summary>Ten full-pipeline modifications (10)</summary><ul><li><a href="#original-v5_lean">V5 without evidence rendering</a></li><li><a href="#original-glrt_batch">Batched pilot-bank GLRT</a></li><li><a href="#original-iq_stream">Streamed IQ decoding</a></li><li><a href="#original-glrt_cascade">Early screening in the pilot-bank GLRT</a></li><li><a href="#original-orbit_interp">Reusing orbital states</a></li><li><a href="#original-shape_score">Horizon screening for Doppler scoring</a></li><li><a href="#original-track_reduce">Compressing Doppler tracks</a></li><li><a href="#original-track_link">Causal track linking</a></li><li><a href="#original-iq_position">Position from bounded raw-IQ replay</a></li><li><a href="#original-projected_fit">Fitting position with per-track offsets removed</a></li></ul></details></nav><main><section><h2>Ten full-pipeline modifications</h2><p class="exports"><a href="roof/fitted_c/original-ten.pdf">Fitted calibration PDF</a><a href="roof/fitted_c/original-ten.csv">Fitted calibration data</a><a href="roof/c0/original-ten.pdf">Zero calibration PDF</a><a href="roof/c0/original-ten.csv">Zero calibration data</a></p><article id="original-v5_lean"><h3 class="sr-only">V5 without evidence rendering</h3><p class="sr-only">DS26 extracts coordinates from the archived numerical fits. DS29 reruns the full fit from detector outputs.</p><a class="arm-fitted_c" href="roof/fitted_c/v5_lean.png"><img width="2263" height="1278" loading="eager" decoding="sync" src="roof/fitted_c/v5_lean.png" alt="V5 without evidence rendering · Fitted calibration"></a><a class="arm-c0" href="roof/c0/v5_lean.png"><img width="2263" height="1278" loading="eager" decoding="sync" src="roof/c0/v5_lean.png" alt="V5 without evidence rendering · Zero calibration"></a></article><article id="original-glrt_batch"><h3 class="sr-only">Batched pilot-bank GLRT</h3><p class="sr-only">Batched Python GLRT, tracking and position search on 80 windows per recording.</p><a class="arm-fitted_c" href="roof/fitted_c/glrt_batch.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/glrt_batch.png" alt="Batched pilot-bank GLRT · Fitted calibration"></a><a class="arm-c0" href="roof/c0/glrt_batch.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/glrt_batch.png" alt="Batched pilot-bank GLRT · Zero calibration"></a></article><article id="original-iq_stream"><h3 class="sr-only">Streamed IQ decoding</h3><p class="sr-only">The streamed reader supplies the same 80 windows to the native GLRT, tracker and solver used for bounded raw-IQ replay.</p><a class="arm-fitted_c" href="roof/fitted_c/iq_stream.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/iq_stream.png" alt="Streamed IQ decoding · Fitted calibration"></a><a class="arm-c0" href="roof/c0/iq_stream.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/iq_stream.png" alt="Streamed IQ decoding · Zero calibration"></a></article><article id="original-glrt_cascade"><h3 class="sr-only">Early screening in the pilot-bank GLRT</h3><p class="sr-only">Screened Python GLRT, then tracking and position search on 80 windows per recording.</p><a class="arm-fitted_c" href="roof/fitted_c/glrt_cascade.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/glrt_cascade.png" alt="Early screening in the pilot-bank GLRT · Fitted calibration"></a><a class="arm-c0" href="roof/c0/glrt_cascade.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/glrt_cascade.png" alt="Early screening in the pilot-bank GLRT · Zero calibration"></a></article><article id="original-orbit_interp"><h3 class="sr-only">Reusing orbital states</h3><p class="sr-only">Reuse orbital states across the original single-tile and four-tile searches.</p><a class="arm-fitted_c" href="roof/fitted_c/orbit_interp.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/orbit_interp.png" alt="Reusing orbital states · Fitted calibration"></a><a class="arm-c0" href="roof/c0/orbit_interp.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/orbit_interp.png" alt="Reusing orbital states · Zero calibration"></a></article><article id="original-shape_score"><h3 class="sr-only">Horizon screening for Doppler scoring</h3><p class="sr-only">Screen below-horizon satellites before fitting the measured Doppler tracks.</p><a class="arm-fitted_c" href="roof/fitted_c/shape_score.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/shape_score.png" alt="Horizon screening for Doppler scoring · Fitted calibration"></a><a class="arm-c0" href="roof/c0/shape_score.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/shape_score.png" alt="Horizon screening for Doppler scoring · Zero calibration"></a></article><article id="original-track_reduce"><h3 class="sr-only">Compressing Doppler tracks</h3><p class="sr-only">Compress the measured Doppler tracks before single-tile and four-tile search.</p><a class="arm-fitted_c" href="roof/fitted_c/track_reduce.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/track_reduce.png" alt="Compressing Doppler tracks · Fitted calibration"></a><a class="arm-c0" href="roof/c0/track_reduce.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/track_reduce.png" alt="Compressing Doppler tracks · Zero calibration"></a></article><article id="original-track_link"><h3 class="sr-only">Causal track linking</h3><p class="sr-only">Link native GLRT peaks with a causal tracker, then run the regional solver.</p><a class="arm-fitted_c" href="roof/fitted_c/track_link.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/track_link.png" alt="Causal track linking · Fitted calibration"></a><a class="arm-c0" href="roof/c0/track_link.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/track_link.png" alt="Causal track linking · Zero calibration"></a></article><article id="original-iq_position"><h3 class="sr-only">Position from bounded raw-IQ replay</h3><p class="sr-only">Native GLRT, tracking and position search on 80 IQ windows per recording.</p><a class="arm-fitted_c" href="roof/fitted_c/iq_position.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/iq_position.png" alt="Position from bounded raw-IQ replay · Fitted calibration"></a><a class="arm-c0" href="roof/c0/iq_position.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/iq_position.png" alt="Position from bounded raw-IQ replay · Zero calibration"></a></article><article id="original-projected_fit"><h3 class="sr-only">Fitting position with per-track offsets removed</h3><p class="sr-only">Remove per-track frequency offsets before estimating receiver position.</p><a class="arm-fitted_c" href="roof/fitted_c/projected_fit.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/fitted_c/projected_fit.png" alt="Fitting position with per-track offsets removed · Fitted calibration"></a><a class="arm-c0" href="roof/c0/projected_fit.png"><img width="2263" height="1278" loading="lazy" decoding="async" src="roof/c0/projected_fit.png" alt="Fitting position with per-track offsets removed · Zero calibration"></a></article></section></main></div>
+<script>
+const field = document.getElementById('find-chart');
+const normalize = text => text.toLowerCase().replace(/[_-]+/g, ' ').trim();
+const sections = document.querySelectorAll('main section');
+const groups = Array.from(document.querySelectorAll('nav details'), (details, i) => {
+  const items = Array.from(details.querySelectorAll('li'), item => {
+    const link = item.querySelector('a');
+    const article = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+    return {item, article, text: normalize(article.id + ' ' + article.textContent)};
+  });
+  return {details, items, section: sections[i]};
+});
+let previous;
+field.addEventListener('input', () => {
+  const query = normalize(field.value);
+  const terms = query.split(/\s+/);
+  if (query && !previous) previous = groups.map(group => group.details.open);
+  let count = 0;
+  groups.forEach(({details, items, section}, i) => {
+    let shown = 0;
+    for (const {item, article, text} of items) {
+      const keep = terms.every(term => text.includes(term));
+      item.hidden = article.hidden = !keep;
+      if (keep) shown++;
+    }
+    details.hidden = section.hidden = !shown;
+    if (query) details.open = Boolean(shown);
+    else if (previous) details.open = previous[i];
+    count += shown;
+  });
+  field.nextElementSibling.value = query
+    ? (count ? count + (count === 1 ? ' chart' : ' charts') : 'No matching charts') : '';
+  if (!query) previous = null;
+});
+field.parentElement.hidden = false;
+</script>
+</body></html>

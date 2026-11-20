@@ -1,0 +1,103 @@
+{
+  "charts": [
+    {
+      "caption": "Two full saved-IQ recordings at their recorded delivery cadence. Earlier one-slot and all-valid runs use the same inputs. Position fits use the packets admitted by each queue; original v5 uses capture-era factors.",
+      "cases": "sealed",
+      "id": "buffered-position-stock",
+      "method": "buffered_arrival_stock",
+      "provenance": [
+        "buffered-positions.csv",
+        "original-v5.csv",
+        "stage-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "position-score-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Four waiting slots",
+          "native_field": "paired_capture_sha256",
+          "value": "buffered_arrival_stock"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "One slot \u00b7 historical",
+          "match": [
+            "paired_paced_native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "arrival_queue_control"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "All valid visits \u00b7 historical",
+          "match": [
+            "paired_paced_native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union_stock"
+        }
+      ],
+      "title": "Position after four-slot pacing \u00b7 stock wide"
+    },
+    {
+      "caption": "Two full saved-IQ recordings at their recorded delivery cadence. Earlier one-slot and all-valid runs use the same inputs. Position fits use the packets admitted by each queue; original v5 uses capture-era factors.",
+      "cases": "sealed",
+      "id": "buffered-position-fifth",
+      "method": "buffered_arrival_fifth",
+      "provenance": [
+        "buffered-positions.csv",
+        "original-v5.csv",
+        "stage-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "position-score-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Four waiting slots",
+          "native_field": "paired_capture_sha256",
+          "value": "buffered_arrival_fifth"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "One slot \u00b7 historical",
+          "match": [
+            "paired_paced_native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "arrival_queue_candidate"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "All valid visits \u00b7 historical",
+          "match": [
+            "paired_paced_native_sha256",
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union"
+        }
+      ],
+      "title": "Position after four-slot pacing \u00b7 unconditional fifth center"
+    }
+  ],
+  "version": 1
+}

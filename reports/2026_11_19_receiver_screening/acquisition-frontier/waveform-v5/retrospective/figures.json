@@ -1,0 +1,46 @@
+{
+  "charts": [
+    {
+      "caption": "The receivers used identical complete stock GLRT factors, TrackConfig, causal catalogue and 25 km offer. Each chart shows one calibration arm.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing offer",
+        "omitted": "25 km near-omitted offer"
+      },
+      "id": "waveform-v5-retrospective",
+      "method": "waveform_v5_original",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parent-seals.json",
+        "scores.csv",
+        "calibration.csv",
+        "as-measured-launcher.py.gz"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Original v5 no-repair",
+          "value": "waveform_v5_original"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed compact phase release",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "waveform_site_phase_release"
+        }
+      ],
+      "title": "Original v5 and compact on the same retrospective waveform factors"
+    }
+  ],
+  "version": 1
+}

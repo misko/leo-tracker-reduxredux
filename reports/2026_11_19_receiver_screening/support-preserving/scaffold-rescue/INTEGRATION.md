@@ -1,0 +1,3 @@
+# Per-observation noise lookup
+
+The first four integrations reached the frozen attachment and then exited before position fitting because the installed likelihood requires a per-observation radio-noise lookup entry. Stock rows already have an entry. For each added row, evaluate the stock-fitted margin-to-variance law with its existing 40–600 Hz bounds. If the stock fit uses its constant fallback, extend that value. Copy the stock table, keep every original entry and fitted coefficient, and append only the added observations. The original attachment rule, candidates, input files and fit budget stay fixed. The first source, errors and outcomes are archived under `initial-integration`.

@@ -1,0 +1,132 @@
+{
+  "charts": [
+    {
+      "caption": "Both methods use the same full fit. In a face contact, matched inside and outside continuations are evaluated on the same withheld orbit blocks.",
+      "cases": "sealed",
+      "id": "compact-held-face-fresh",
+      "method": "v5_secant_held_edge",
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json"
+      ],
+      "queries": "compact-held-face-fresh-queries.json",
+      "scope": "transfer",
+      "seal": "compact-held-face-fresh-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Weak \u00b7 forced endpoint",
+          "key": "candidate",
+          "label": "Conditional held-face evidence",
+          "value": "v5_secant_held_edge",
+          "where": {
+            "study": "fresh"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Original face rejection \u00b7 forced",
+          "key": "stock",
+          "label": "Frozen terminal interior rule",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_interior",
+          "where": {
+            "study": "fresh"
+          }
+        }
+      ],
+      "title": "Held Doppler evidence near a compact tile face at two simulated sites"
+    },
+    {
+      "caption": "Both methods use the same full fit. In a face contact, matched inside and outside continuations are evaluated on the same withheld orbit blocks.",
+      "cases": "sealed",
+      "id": "compact-held-face-roof",
+      "method": "v5_secant_held_edge",
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json"
+      ],
+      "queries": "compact-held-face-roof-queries.json",
+      "scope": "transfer",
+      "seal": "compact-held-face-roof-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Weak \u00b7 forced endpoint",
+          "key": "candidate",
+          "label": "Conditional held-face evidence",
+          "value": "v5_secant_held_edge",
+          "where": {
+            "study": "roof"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "forced_label": "Original face rejection \u00b7 forced",
+          "key": "stock",
+          "label": "Frozen terminal interior rule",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_interior",
+          "where": {
+            "study": "roof"
+          }
+        }
+      ],
+      "title": "Held-face wrapper parity on a shifted measured roof tile"
+    },
+    {
+      "caption": "Both workers used identical native factors, causal history and tile.",
+      "cases": "sealed",
+      "id": "compact-held-face-far-stock",
+      "method": "v5_secant_held_edge",
+      "provenance": [
+        "prediction-lock.json",
+        "input-lock.json",
+        "source-lock.json"
+      ],
+      "queries": "far-stock-queries.json",
+      "scope": "transfer",
+      "seal": "far-stock-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Staged compact receiver",
+          "value": "v5_secant_held_edge",
+          "where": {
+            "id": "c0433e834a97d29c15553fb7"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Independent stock compact",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_stock",
+          "where": {
+            "id": "c0433e834a97d29c15553fb7"
+          }
+        }
+      ],
+      "title": "Independent stock compact replay on the fresh far omission"
+    }
+  ],
+  "version": 1
+}

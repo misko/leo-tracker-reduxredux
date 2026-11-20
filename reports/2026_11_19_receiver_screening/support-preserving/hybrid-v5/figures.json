@@ -1,0 +1,55 @@
+{
+  "charts": [
+    {
+      "caption": "One simulated pilot site over archived receiver background, with two 25 km offers. The donor-only waveform carries no injected emitter. An output on either donor-only offer is a false publication with no geographic error to plot.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Hybrid \u00b7 containing offer",
+        "donor-only": "Donor only \u00b7 no injected pilot",
+        "omitted": "Hybrid \u00b7 near-omitted offer"
+      },
+      "id": "hybrid-v5-matched-waveform",
+      "method": "hybrid_interior",
+      "provenance": [
+        "scores.csv",
+        "references.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Original v5 no repair",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "hybrid_original_v5"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Compact phase-release",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "hybrid_phase_release"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "forced_label": "Interior forced fit",
+          "key": "candidate",
+          "label": "Compact 20 m interior",
+          "value": "hybrid_interior"
+        }
+      ],
+      "title": "Original and compact v5 on the same hybrid waveform factors"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,116 @@
+{
+  "charts": [
+    {
+      "caption": "Causal full regional phase bank with shared anonymous-track anchors and a separate downstream holdout.",
+      "cases": [
+        "DS26-0223",
+        "DS29-0316"
+      ],
+      "id": "phase_capture-diagnosis",
+      "method": "phase_capture",
+      "scope": "roof",
+      "seal": "diagnosis-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "one",
+          "label": "Blind phase capture and joint fit",
+          "value": "phase_capture",
+          "where": {
+            "study_cohort": "diagnosis"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived nominal native joint fit",
+          "match": [
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "study_cohort": "diagnosis"
+          }
+        }
+      ],
+      "title": "Blind phase capture on diagnosed arcs"
+    },
+    {
+      "caption": "Causal full regional phase bank with shared anonymous-track anchors and a separate downstream holdout.",
+      "cases": [
+        "DS26-0120",
+        "DS26-0150",
+        "DS29-0604",
+        "DS29-0519"
+      ],
+      "id": "phase_capture-confirmation",
+      "method": "phase_capture",
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "one",
+          "label": "Blind phase capture and joint fit",
+          "value": "phase_capture",
+          "where": {
+            "study_cohort": "confirmation"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived nominal native joint fit",
+          "match": [
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "study_cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Blind phase capture confirmation"
+    },
+    {
+      "caption": "Causal full regional phase bank with shared anonymous-track anchors and a separate downstream holdout.",
+      "cases": [
+        "DS26-0277-omitted",
+        "DS29-0127-omitted"
+      ],
+      "id": "phase_capture-omitted",
+      "method": "phase_capture",
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Blind phase capture and joint fit",
+          "value": "phase_capture",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        },
+        {
+          "file": "chart-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived nominal native joint fit",
+          "match": [
+            "input_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Blind phase capture with the correct tile omitted"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "bridge_cavity_center_profile",
+      "method": "bridge_cavity",
+      "scope": "roof",
+      "title": "Initial centre phase-and-offset seed into compact v5",
+      "caption": "The first direct profile supplied insufficient shared-radio support. The full six-case schedule includes the five withheld pairs and the recorded cavity-mask failure.",
+      "cases": "sealed",
+      "seal": "receipt.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "First phase-and-offset seed", "file": "positions.jsonl.gz", "value": "bridge_cavity"},
+        {"key": "stock", "label": "Compact v5 cavity", "file": "stock-positions.jsonl.gz", "value": "orbit_projector", "match": ["input_sha256", "scientific_request_sha256"]}
+      ]
+    }
+  ]
+}

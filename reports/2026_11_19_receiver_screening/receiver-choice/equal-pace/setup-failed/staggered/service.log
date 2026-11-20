@@ -1,0 +1,30 @@
+Running as unit: leo-iq-bench-fc630e428237.service; invocation ID: 99d2a16eb3a44bebb6836e4fa933c51e
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/equal_pace.py", line 16, in <module>
+    from .exact_wide_iq_results import detector_rows
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/exact_wide_iq_results.py", line 13, in <module>
+    from .. import iq_comparison_results as publication
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/iq_comparison_results.py", line 10, in <module>
+    from .qualification import whole_band_results as observed
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_band_results.py", line 12, in <module>
+    from .full_held_scores import held_references
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/full_held_scores.py", line 11, in <module>
+    from . import full_held_pair as trial
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/full_held_pair.py", line 12, in <module>
+    from . import capture_release, full_held_control, iq_schedule, raw_robust, whole_cavity_scores
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/iq_schedule.py", line 14, in <module>
+    from . import raw_robust, whole_cavity_scores, whole_pair
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/raw_robust.py", line 19, in <module>
+    from . import recording_to_v5, robust_em_trials
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/robust_em_trials.py", line 18, in <module>
+    from ..variants import projected_fit, robust_em
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/robust_em.py", line 7, in <module>
+    from scipy.linalg import cholesky, solve_triangular
+ModuleNotFoundError: No module named 'scipy'
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 2.797s
+             CPU time consumed: 2.600s
+                   Memory peak: 106.5M (swap: 0B)

@@ -1,0 +1,43 @@
+{
+  "charts": [
+    {
+      "caption": "DS29-0082. Both c arms fit the actual emitted factors on the original offer. The four original v5 options use their full capture-era inputs.",
+      "cases": "sealed",
+      "id": "paced-original-quality",
+      "method": "paced_capture_original",
+      "provenance": [
+        "prediction-lock.json",
+        "raw-prediction-lock.json",
+        "source-lock.json",
+        "timing.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Original-quality combined",
+          "native_field": "paired_capture_sha256",
+          "value": "paced_capture_original"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Fast released four",
+          "match": [
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "paced_capture_wide"
+        }
+      ],
+      "title": "Original-quality and fast-four at live recorded pace"
+    }
+  ],
+  "version": 2
+}

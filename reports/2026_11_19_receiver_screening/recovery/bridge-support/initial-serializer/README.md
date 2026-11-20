@@ -1,0 +1,3 @@
+# Initial output failure
+
+The first four reclassification workers reached output serialization and failed on a NumPy scalar in the new track audit. The two prior-bridge controls that passed the source check are preserved. Four other workers had materialized requests and were left unpublished after the original qualifier observed the source change. The requested comparison uses the fresh corrected invocations only. The corrected study restarted the same predeclared schedule from the original 15-minute deadline, with a scalar conversion in the output audit and the same scientific arrays, gates and budgets. [Attempt ledger and hashes](receipt.json) · [Original source](worker-sources.tar.gz)

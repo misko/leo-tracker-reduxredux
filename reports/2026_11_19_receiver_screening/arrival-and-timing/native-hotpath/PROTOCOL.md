@@ -1,0 +1,7 @@
+# Matched native detector hot-path evaluation
+
+The existing center-union release supplies the stock and fifth-center controls. Measure native preparation, the standard three-lag proposal, coarse CFO search, fine FFT, fractional refinement, the independent lag-44 FFTW scout, rank selection and interface overhead separately. Optimize the ordinary proposal's shared CI16 decoding at the same three lags, preserving each packed receiver lane and binary32 recurrence. Keep the same scout scores. An in-process typed entry point couples both native components and can choose the first timing center without ranking candidates that the detector will never examine.
+
+Use DS26-0197 and DS29-0316. For each capture select the first 24 chronological windows of segments 0 and 4 using only the frozen manifest and index. Record media availability and invalid geometry for every prescribed row. Match the exact CI16 bytes, RF edge, templates and candidates across every run. Add authenticated signed-pilot, seeded-noise and zero-IQ controls on both edges. Test the absent-hint ABI against stock.
+
+Pair three retained warm repetitions on each valid visit with deterministic alternating arm order on one fixed core per capture. Time input-ready bytes through typed output and the existing Python decoder, and time diagnostic JSON separately. Count full public parity, strict ordered hint parity, bounded native work and process memory by comparable boundaries. This experiment stops at complete detector rows. All signals are previously saved or deterministic controls.

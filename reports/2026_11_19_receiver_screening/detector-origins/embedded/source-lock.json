@@ -1,0 +1,175 @@
+{
+  "builds": {
+    "arm": {
+      "bytes": 4533080,
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-static",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "/srv/bulk/leo-dev/capture-board.mVVhi5/execution",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_board_folded.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/capture-board.mVVhi5/execution/arm-folded"
+      ],
+      "compiler": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]",
+      "readelf": "ELF Header:\n  Magic:   7f 45 4c 46 01 01 01 03 00 00 00 00 00 00 00 00 \n  Class:                             ELF32\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - GNU\n  ABI Version:                       0\n  Type:                              EXEC (Executable file)\n  Machine:                           ARM\n  Version:                           0x1\n  Entry point address:               0x11395\n  Start of program headers:          52 (bytes into file)\n  Start of section headers:          4531480 (bytes into file)\n  Flags:                             0x5000400, Version5 EABI, hard-float ABI\n  Size of this header:               52 (bytes)\n  Size of program headers:           32 (bytes)\n  Number of program headers:         7\n  Size of section headers:           40 (bytes)\n  Number of section headers:         40\n  Section header string table index: 39\n\nProgram Headers:\n  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align\n  ARM_EXIDX      0x062998 0x00072998 0x00072998 0x006b0 0x006b0 R   0x4\n  LOAD           0x000000 0x00010000 0x00010000 0x6304c 0x6304c R E 0x10000\n  LOAD           0x063ef0 0x00083ef0 0x00083ef0 0x00f60 0x01b08 RW  0x10000\n  NOTE           0x000114 0x00010114 0x00010114 0x00044 0x00044 R   0x4\n  TLS            0x063ef0 0x00083ef0 0x00083ef0 0x00010 0x00028 R   0x4\n  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0x10\n  GNU_RELRO      0x063ef0 0x00083ef0 0x00083ef0 0x00110 0x00110 R   0x1\n\n Section to Segment mapping:\n  Segment Sections...\n   00     .ARM.exidx \n   01     .note.ABI-tag .note.gnu.build-id .rel.dyn .init .iplt .text __libc_freeres_fn __libc_thread_freeres_fn .fini .rodata __libc_subfreeres __libc_IO_vtables __libc_atexit __libc_thread_subfreeres .ARM.extab .ARM.exidx .eh_frame \n   02     .tdata .init_array .fini_array .data.rel.ro .got .data .bss __libc_freeres_ptrs \n   03     .note.ABI-tag .note.gnu.build-id \n   04     .tdata .tbss \n   05     \n   06     .tdata .init_array .fini_array .data.rel.ro .got \nAttribute Section: aeabi\nFile Attributes\n  Tag_CPU_name: \"7-A\"\n  Tag_CPU_arch: v7\n  Tag_CPU_arch_profile: Application\n  Tag_ARM_ISA_use: Yes\n  Tag_THUMB_ISA_use: Thumb-2\n  Tag_FP_arch: VFPv3\n  Tag_Advanced_SIMD_arch: NEONv1\n  Tag_ABI_PCS_wchar_t: 4\n  Tag_ABI_FP_rounding: Needed\n  Tag_ABI_FP_denormal: Needed\n  Tag_ABI_FP_exceptions: Needed\n  Tag_ABI_FP_number_model: IEEE 754\n  Tag_ABI_align_needed: 8-byte\n  Tag_ABI_align_preserved: 8-byte, except leaf SP\n  Tag_ABI_enum_size: int\n  Tag_ABI_VFP_args: VFP registers\n  Tag_CPU_unaligned_access: v6\n  Tag_MPextension_use: Allowed\n  Tag_Virtualization_use: TrustZone\n",
+      "sha256": "7a53b4f8a0c14c1b78557702c72d7cfca16aa628b9d89cbe6c3ae0a0cd09de74"
+    },
+    "host": {
+      "bytes": 847312,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-static",
+        "-I",
+        "/srv/bulk/leo-dev/capture-board.mVVhi5/execution",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_board_folded.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/capture-board.mVVhi5/execution/host-folded"
+      ],
+      "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "readelf": "ELF Header:\n  Magic:   7f 45 4c 46 02 01 01 03 00 00 00 00 00 00 00 00 \n  Class:                             ELF64\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - GNU\n  ABI Version:                       0\n  Type:                              EXEC (Executable file)\n  Machine:                           Advanced Micro Devices X86-64\n  Version:                           0x1\n  Entry point address:               0x402ec0\n  Start of program headers:          64 (bytes into file)\n  Start of section headers:          845520 (bytes into file)\n  Flags:                             0x0\n  Size of this header:               64 (bytes)\n  Size of program headers:           56 (bytes)\n  Number of program headers:         11\n  Size of section headers:           64 (bytes)\n  Number of section headers:         28\n  Section header string table index: 27\n\nProgram Headers:\n  Type           Offset             VirtAddr           PhysAddr\n                 FileSiz            MemSiz              Flags  Align\n  LOAD           0x0000000000000000 0x0000000000400000 0x0000000000400000\n                 0x00000000000004f8 0x00000000000004f8  R      0x1000\n  LOAD           0x0000000000001000 0x0000000000401000 0x0000000000401000\n                 0x000000000008910d 0x000000000008910d  R E    0x1000\n  LOAD           0x000000000008b000 0x000000000048b000 0x000000000048b000\n                 0x0000000000027720 0x0000000000027720  R      0x1000\n  LOAD           0x00000000000b3108 0x00000000004b3108 0x00000000004b3108\n                 0x0000000000005940 0x000000000000b160  RW     0x1000\n  NOTE           0x00000000000002a8 0x00000000004002a8 0x00000000004002a8\n                 0x0000000000000024 0x0000000000000024  R      0x4\n  NOTE           0x00000000000b26d0 0x00000000004b26d0 0x00000000004b26d0\n                 0x0000000000000030 0x0000000000000030  R      0x8\n  NOTE           0x00000000000b2700 0x00000000004b2700 0x00000000004b2700\n                 0x0000000000000020 0x0000000000000020  R      0x4\n  TLS            0x00000000000b3108 0x00000000004b3108 0x00000000004b3108\n                 0x0000000000000038 0x0000000000000050  R      0x8\n  GNU_PROPERTY   0x00000000000b26d0 0x00000000004b26d0 0x00000000004b26d0\n                 0x0000000000000030 0x0000000000000030  R      0x8\n  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000\n                 0x0000000000000000 0x0000000000000000  RW     0x10\n  GNU_RELRO      0x00000000000b3108 0x00000000004b3108 0x00000000004b3108\n                 0x0000000000003ef8 0x0000000000003ef8  R      0x1\n\n Section to Segment mapping:\n  Segment Sections...\n   00     .note.gnu.build-id .rela.plt \n   01     .init .plt .text .fini \n   02     .rodata .stapsdt.base rodata.cst32 .eh_frame .gcc_except_table .note.gnu.property .note.ABI-tag \n   03     .tdata .init_array .fini_array .data.rel.ro .got .got.plt .data .bss \n   04     .note.gnu.build-id \n   05     .note.gnu.property \n   06     .note.ABI-tag \n   07     .tdata .tbss \n   08     .note.gnu.property \n   09     \n   10     .tdata .init_array .fini_array .data.rel.ro .got \n",
+      "sha256": "b32d645b0ba915c966298e6bd815e4e92ad888b6c7b499372b73dc76dfaae3b0"
+    }
+  },
+  "fixture": {
+    "arrays": {
+      "frame_offsets": {
+        "dtype": "<i8",
+        "path": "frame_offsets.bin",
+        "sha256": "e6604ea63e6fc98a14049e2d97d6b8e0b2f1710385fb2225a27dce08f24013a9",
+        "shape": [
+          15
+        ]
+      },
+      "frequencies": {
+        "dtype": "<f8",
+        "path": "frequencies.bin",
+        "sha256": "610bfcda9cfca3b716933d7828b64e9bbba4aa79728adc91b55c0e30766dbcc7",
+        "shape": [
+          21
+        ]
+      },
+      "prefix": {
+        "dtype": "<f8",
+        "path": "prefix.bin",
+        "sha256": "398ee43ce7a7a556987054ab21bbd9101de860b1afd6bb3fd4e6a733e63004a2",
+        "shape": [
+          200001
+        ]
+      },
+      "samples": {
+        "dtype": "<c16",
+        "path": "samples.bin",
+        "sha256": "c2555f66e0f5ab4580216b9c297f1739662ae1b8e4f1fff228f8f22ea960a8df",
+        "shape": [
+          200000
+        ]
+      },
+      "scores": {
+        "dtype": "<f8",
+        "path": "scores.bin",
+        "sha256": "9e64d7ed96c5b7ce86fc7f78857ea00cd3efd4a376ad2af899b3ab1e4281d937",
+        "shape": [
+          21,
+          13333
+        ]
+      },
+      "starts": {
+        "dtype": "<i8",
+        "path": "starts.bin",
+        "sha256": "aa6b9e1db5ecd78b2d8c0904a000bc7693e415fe9bae8ce1c9b106134eae338d",
+        "shape": [
+          12
+        ]
+      },
+      "stops": {
+        "dtype": "<i8",
+        "path": "stops.bin",
+        "sha256": "7986b538d1a5055c4bfd45aa8ce70bf41b54d24eddd6a889572126c55b68d064",
+        "shape": [
+          12
+        ]
+      },
+      "template": {
+        "dtype": "<c16",
+        "path": "template.bin",
+        "sha256": "19b81fba293a06cc813dcdb394f98ce4cfc2737818a595989d1f0c445bc33d2f",
+        "shape": [
+          13333
+        ]
+      }
+    },
+    "backend": "avx2_fma",
+    "capture_positives": [
+      4,
+      0
+    ],
+    "entry": "folded_anchor_score_grid",
+    "epoch_count": 13333,
+    "iq_sha256": "sha256:cf8d9de48fc5468bcaa5bc7948400714559d795b6030b18482a2fc4d6a5595fb",
+    "producer": {
+      "code_sha256": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+      "configuration": {
+        "execution": {
+          "maximum_windows_per_job": 64
+        },
+        "implementation_digest": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+        "stages": {
+          "fast-scan": {
+            "gate": "either_receiver",
+            "margin_gate": 0.025,
+            "mode": "ungated",
+            "predictor": "disabled-unqualified-at-native-rate",
+            "sample_rate_hz": 10000000,
+            "schema_version": 2,
+            "strong_margin": 0.1,
+            "threshold": 0.013219531315217865,
+            "window_samples": 200000
+          }
+        }
+      },
+      "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+      "input_manifest_sha256": "sha256:8ac4a2b2e24de8ae2cccd592cb55e8d86226dd9e6c0f5046b8957a5880c4d76b",
+      "release": "fast-1f3a91c6a882b6e7eac8827fbb95f215",
+      "root": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+      "run_id": "fast-3cde7bbf1ca4b300a6d596052daf82f8"
+    },
+    "receiver": 0,
+    "recording": "DS26-0036",
+    "sample_rate_hz": 10000000.0,
+    "segment": 0,
+    "segment_sha256": "73d4a1863312144137a88f3b66bda857277b4a307fbd7d951efcd2cd026ef465",
+    "sequence": 1,
+    "source_files": {
+      "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+      "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+      "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+      "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6"
+    },
+    "visit": 1
+  },
+  "fixture_manifest_sha256": "14e31dc8a626420240e062496e9ecc1753113f20bdb49242462b473e25cee1f3",
+  "packed_input_bytes": 5013700,
+  "packed_input_sha256": "294eac42047a9f9fbaeb8b7ba26202bb137496603527ab0b7954e71af209636a",
+  "packed_input_tag": "b0dfa1cd555802a5",
+  "qemu": "qemu-arm version 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2)",
+  "sources": {
+    "PROTOCOL.md": "44a4ce38770e17e6bbbb25d874cad9abaa79b5a2adfa3c5af012e7d09127fe16",
+    "_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+    "capture_board_folded.c": "a6617ecef4f0272fe7252fcaf8ccc2d6eff9994164960527d500d9a2962ad336",
+    "capture_board_folded.py": "70c2970925fc8c6521990a1e6540cb26a22685e3bccd7755e354b2c081cb1c89"
+  }
+}

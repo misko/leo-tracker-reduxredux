@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_sparse_discovery",
+      "method": "v5_sparse_discovery",
+      "scope": "roof",
+      "title": "Sparse early v5 discovery",
+      "caption": "The three measured workers use identical ordinary native factors. The 512 MiB attempt finished ranked discovery and was killed in family confidence. The four original v5 choices use capture-era factors.",
+      "cases": ["DS29-0082"],
+      "seal": "prediction-lock.json",
+      "provenance": ["memory-cap.json", "comparison.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Sparse discovery", "file": "uncapped-positions.jsonl.gz", "value": "v5_sparse_discovery", "native_authority": "ordinary", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Archived composed control", "file": "control-positions.jsonl.gz", "value": "v5_composed_memory", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "tile"]},
+        {"key": "all_visits", "label": "512 MiB, no swap", "file": "capped-positions.jsonl.gz", "value": "v5_sparse_discovery", "native_authority": "ordinary", "where": {"mode": "memory-cap"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

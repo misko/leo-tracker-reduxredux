@@ -1,0 +1,3 @@
+# One-cycle hardware holdover
+
+The preregistered 120 ms test had no eligible forecasts. The preceding wide probe counters showed that the smallest same-lane revisit in the eight recordings was 352.6 ms, and each recording's median lay from 354.3 to 354.6 ms. These are timing-only observations. Extend the fixed interval from 120 to 400 ms, the next 50 ms boundary above the ordinary revisit, to admit a single observed channel cycle while rejecting missing cycles. Keep the estimator, drift/CFO gates, lane definition and controls unchanged. Seal new predictions before joining either capture-era timing labels or current-waveform scores.

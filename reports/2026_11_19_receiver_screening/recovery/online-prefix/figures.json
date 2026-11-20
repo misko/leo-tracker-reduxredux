@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_clock_prefixes",
+      "method": "native-clock-stable-stop",
+      "scope": "transfer",
+      "title": "Native smooth-clock position by acquisition cutoff",
+      "caption": "Eight authentic recordings are replayed with independent causal sample-counter prefixes and unchanged capture-start TLEs. Two recordings also replay exact omitted offers. Forced points show fit diagnostics.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {"matched": "Matched archive offer", "omitted": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "120 s checkpoint", "file": "positions.jsonl.gz", "value": "native-clock-120"},
+        {"key": "stock", "label": "180 s checkpoint", "file": "positions.jsonl.gz", "value": "native-clock-180", "match": ["native_sha256", "catalog_sha256", "track_config_sha256"]},
+        {"key": "one", "label": "240 s checkpoint", "file": "positions.jsonl.gz", "value": "native-clock-240", "match": ["native_sha256", "catalog_sha256", "track_config_sha256"]},
+        {"key": "four", "label": "300 s checkpoint", "file": "positions.jsonl.gz", "value": "native-clock-300", "match": ["native_sha256", "catalog_sha256", "track_config_sha256"]}
+      ]
+    },
+    {
+      "id": "native_clock_stable_stop",
+      "method": "native-clock-stable-stop",
+      "scope": "transfer",
+      "title": "Stable online stop and complete native acquisition",
+      "caption": "The stop rule takes the second agreeing published prefix once shared orbital support has new measurements. At the 300-second deadline the ordinary position gate applies. The terminal control includes every scheduled visit.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {"matched": "Matched archive offer", "omitted": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Stable stop policy", "file": "positions.jsonl.gz", "value": "native-clock-stable-stop"},
+        {"key": "stock", "label": "Original native terminal", "file": "positions.jsonl.gz", "value": "native-clock-terminal", "match": ["native_sha256", "catalog_sha256", "track_config_sha256"]}
+      ]
+    },
+    {
+      "id": "native_clock_120_roof",
+      "method": "native-clock-120",
+      "scope": "roof",
+      "title": "120 seconds of native data against the four v5 controls",
+      "caption": "The smooth-clock receiver independently rebuilds each 120-second native prefix. The four v5 controls use their full archived fixture support. Missing coordinates remain in the roster.",
+      "cases": "sealed",
+      "seal": "roof-checkpoint-lock.json",
+      "series": [{"key": "one", "label": "Native smooth clock · 120 s", "file": "roof-checkpoints.jsonl.gz", "value": "native-clock-120"}]
+    },
+    {
+      "id": "native_clock_180_roof",
+      "method": "native-clock-180",
+      "scope": "roof",
+      "title": "180 seconds of native data against the four v5 controls",
+      "caption": "The smooth-clock receiver independently rebuilds each 180-second native prefix. The four v5 controls use their full archived fixture support. Missing coordinates remain in the roster.",
+      "cases": "sealed",
+      "seal": "roof-checkpoint-lock.json",
+      "series": [{"key": "one", "label": "Native smooth clock · 180 s", "file": "roof-checkpoints.jsonl.gz", "value": "native-clock-180"}]
+    },
+    {
+      "id": "native_clock_240_roof",
+      "method": "native-clock-240",
+      "scope": "roof",
+      "title": "240 seconds of native data against the four v5 controls",
+      "caption": "The smooth-clock receiver independently rebuilds each 240-second native prefix. The four v5 controls use their full archived fixture support. Missing coordinates remain in the roster.",
+      "cases": "sealed",
+      "seal": "roof-checkpoint-lock.json",
+      "series": [{"key": "one", "label": "Native smooth clock · 240 s", "file": "roof-checkpoints.jsonl.gz", "value": "native-clock-240"}]
+    },
+    {
+      "id": "native_clock_300_roof",
+      "method": "native-clock-300",
+      "scope": "roof",
+      "title": "300 seconds of native data against the four v5 controls",
+      "caption": "The smooth-clock receiver uses the strict native 300-second sample-counter cutoff. The four v5 controls use their full archived fixture support. Missing coordinates remain in the roster.",
+      "cases": "sealed",
+      "seal": "roof-checkpoint-lock.json",
+      "series": [{"key": "one", "label": "Native smooth clock · 300 s", "file": "roof-checkpoints.jsonl.gz", "value": "native-clock-300"}]
+    }
+  ]
+}

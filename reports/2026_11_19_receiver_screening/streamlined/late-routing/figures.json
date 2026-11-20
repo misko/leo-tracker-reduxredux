@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "Archived original v5 checkpoints only. Curvature computed before late screening selects the saved full-late or cavity position. Fresh receiver measurements are separate.",
+      "cases": "roof135",
+      "id": "late-curvature-roof135",
+      "method": "late_curvature_archive",
+      "provenance": [
+        "archive-scores.csv",
+        "archive-summary.json",
+        "archive-predecision-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "late-curvature-roof135-figure-lock.json",
+      "series": [
+        {
+          "file": "late-curvature-roof135-positions.jsonl.gz",
+          "key": "one",
+          "label": "Curvature routing",
+          "value": "late_curvature_archive"
+        },
+        {
+          "file": "late-curvature-roof135-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched control",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "late_curvature_cavity"
+        }
+      ],
+      "title": "Held Doppler curvature and late v5 recovery on 135 recordings"
+    },
+    {
+      "caption": "Two diagnostic and two hash-drawn confirmation cases with same-request controls. Fresh confirmation controls and sealed aligned diagnostic controls use both calibration arms on the original roof tile. Any supplemental bypass check is identified separately in the measurement receipts.",
+      "cases": "sealed",
+      "id": "late-curvature-live",
+      "method": "v5_late_curvature",
+      "provenance": [
+        "live-scores.csv",
+        "live-summary.json",
+        "live-worker-lock.json",
+        "run-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "late-curvature-live-figure-lock.json",
+      "series": [
+        {
+          "file": "late-curvature-live-positions.jsonl.gz",
+          "key": "one",
+          "label": "Curvature routing",
+          "value": "v5_late_curvature"
+        },
+        {
+          "file": "late-curvature-live-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched control",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "input_sha256",
+            "scientific_request_sha256"
+          ],
+          "value": "v5_armijo_aligned_finish"
+        }
+      ],
+      "title": "Fresh stored-native receivers with held Doppler curvature routing"
+    }
+  ],
+  "version": 1
+}

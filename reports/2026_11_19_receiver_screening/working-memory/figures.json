@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_discovery_memory-ordinary",
+      "method": "v5_discovery_memory",
+      "scope": "roof",
+      "title": "Discovery memory reuse on ordinary detector factors",
+      "caption": "Reuse an identical association result within one discovery call. These two fresh, same-core fit pairs start from the earlier authenticated ordinary GLRT factors.",
+      "cases": "smoke-two",
+      "seal": "ordinary-figure-lock.json",
+      "series": [
+        {"key": "one", "label": "Reused association result", "file": "candidate-positions.jsonl.gz", "value": "v5_discovery_memory", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Compact secant stock", "file": "stock-positions.jsonl.gz", "value": "v5_secant_fit", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "case_key", "tile"]}
+      ]
+    },
+    {
+      "id": "v5_discovery_memory-capture-era",
+      "method": "v5_discovery_memory",
+      "scope": "roof",
+      "title": "Discovery memory on capture-era input",
+      "caption": "One further same-core pair uses the original capture-era GLRT factors from DS29-0082. That recording has a separate ordinary-native comparison.",
+      "cases": ["DS29-0082"],
+      "seal": "capture-era-figure-lock.json",
+      "series": [
+        {"key": "one", "label": "Reused association result", "file": "candidate-positions.jsonl.gz", "value": "v5_discovery_memory", "where": {"detector": "capture-era", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Compact secant stock", "file": "stock-positions.jsonl.gz", "value": "v5_secant_fit", "where": {"detector": "capture-era", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "case_key", "tile"]}
+      ]
+    }
+  ]
+}

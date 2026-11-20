@@ -1,0 +1,24 @@
+# A causal timing hint in the four-center wide GLRT
+
+The opt-in hint reached the full fractional GLRT on all 24 receiver lanes assigned a causal center. It replaced the fourth scout center and kept all 12 sampled epochs per lane. The same-budget sham also replaced the fourth center on those 24 lanes. Neither the capture-era archive nor any live arm had a gated positive on the 16 selected genuine visits, so the panel measures the intervention on quiet IQ and supplies no denominator for pilot recovery. [Fractional margin figure](hinted-glrt.pdf) · [Lane data](hinted-glrt.csv)
+
+| Held rooftop recording | Genuine two-receiver visits | Causal replacements / all lanes | Original wide / causal / sham complete candidates | Capture-era positives | Wide / causal / sham positives |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| DS26-0237, lower | 8 | 10 / 16 | 67 / 75 / 71 | 0 | 0 / 0 / 0 |
+| DS29-0174, upper | 8 | 14 / 16 | 63 / 61 / 58 | 0 | 0 / 0 / 0 |
+
+The full fractional score and CFO outputs were evaluated under the original margin gate of 0.025. The strongest genuine candidates were 0.01255 stock, 0.01233 causal and 0.01415 sham. The null excludes neither missed-signal recovery nor missed-signal harm on a positive panel. The complete-recording track-timing study conditioned on established tracks. Here the causal proposer consumed only already-committed wide detections, and the tested detector fed no results back into that proposer. [Proposer evidence](../causal-track-scout/) · [Earlier track-timing protocol](../track-timing/PROTOCOL.md) · [Endpoint summary](summary.json)
+
+## Roster and controls
+
+Selection used the first eight policy-eligible raw windows per recording with a sealed proposal matching visit, receiver, channel and sample counter. An index-only pass fixed the hints and sham offsets before either raw worker decoded IQ. Twelve proposed lower-edge visits and eleven proposed upper-edge visits exceeded the fixed 48 MiB per-window raw chunk-prefix cap and were retained as exclusions. The chosen rows all came from segment zero. All 16 selected visits decoded and replayed. The full captures, controls, and input plan were sealed before opening capture-era candidates for scoring. [Protocol](PROTOCOL.md) · [Input lock](input-lock.json) · [Pre-score worker lock](worker-lock.json)
+
+Two labeled synthetic controls planted epoch 735 at +688.125 kHz on the lower template and −688.125 kHz on the upper template. Both receivers recovered the correct signed signal in every arm. The known hint was within the existing scout neighborhood on each lane, so the overlap guard kept that scout. Far-away sham hints exercised a replacement while preserving the planted match. Two matched noise controls exercised actual replacements on both lanes with zero emitted positives. These controls test the API and guard behavior. Their known epochs are excluded from the causal statistics. [Signed and noise control rows](controls.json.gz)
+
+## Native intervention
+
+The optional `leo_native_glrt_analyze_hinted_v1` entry has the same CI16, context, and result ABI as the ordinary 20 ms wide fractional call, plus a one-shot signed 32-bit epoch per receiver and an optional-API trace. The value `-1` represents absence at the C boundary. After ordinary scouting, the hint replaces slot four only when the scout has four centers and the proposed center is more than two circular samples from every scout center. The original interpolation, ±800 kHz search, candidate ranking, and downstream exact/control GLRT all execute. The original entry and exported symbols retain their behavior. With two absent hints, every public payload matched the original release byte for byte on all held rows, apart from timing fields. [Native build receipt](build-lock.json)
+
+Median native detector CPU, in stock/causal/sham order, was 23.08 / 23.30 / 22.35 ms on DS26-0237 and 24.11 / 23.78 / 23.63 ms on DS29-0174, using three interleaved repetitions per window on host CPUs 10 and 11. The scout still runs on every visit and the native detector still searches the same number of epochs. The timings provide no evidence for a meaningful speedup. No physical board or geographic measurement was performed. [Timing and complete lower-edge trace](DS26-0237.json.gz) · [Complete upper-edge trace](DS29-0174.json.gz)
+
+Build the optional library with `python -m tools.pipeline_eval.qualification.hinted_glrt_build <new-local-work>`. Given a fractional `NativeShortWindow` context backed by that library, the Python adapter is `HintedCall(context)(samples, (epoch_rx0_or_None, epoch_rx1_or_None), timings=True)`. Standard `NativeShortWindow.analyze` remains available. The qualification module `tools.pipeline_eval.qualification.hinted_glrt_trial` accepts `freeze`, either recording ID, `controls` and `score` against the same workspace. Keep the source and pre-score worker digest witnesses with any re-export. [Published artifact lock](result-lock.json)

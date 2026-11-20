@@ -1,0 +1,3629 @@
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/field-control/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/field-control/PROTOCOL.md
+new file mode 100644
+index 000000000..4b0453195
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/field-control/PROTOCOL.md
+@@ -0,0 +1,9 @@
++# Matched portable receiver control on DS26-0162
++
++Test passive self-location from the complete signed recording DS26-0162, selected by the experiment roster in advance. The signed manifests identify its pilot edge as upper. Run the ordinary portable command at revision `18cb0f7c8` and the compact-kernel option through the public command. Use the original 10 MHz dual CI16 recording, physical capture validator, acquisition schedule, track configuration, frozen position offer and causally selected TLEs. Earlier nested-anchor and portable studies provide context. Publish only fresh position results from the scheduled raw runs. An independent compact fit from the archived original-schedule measured GLRT factors serves as the position and factor control.
++
++Use the same one-worker-per-core assignment on CPUs 0–7, with 600 seconds per raw worker and 180 seconds for the two-arm position service. The ordinary command runs first. Record per-worker and whole-command wall and CPU, acquisition and verification CPU, per-visit wall and CPU quantiles, signed timeline, valid and excluded visits, and charged memory. Account for authenticated closed chunks even when a worker reaches a deadline. Capture serving load and affinity. The full runs occur at different times on a shared host. Treat any alternated matched-chunk timing as a separate diagnostic.
++
++Require terminal records for ordinary portable, compact kernels, archived compact and all four original v5 roles. Verify signed visits, exclusions, clocks, selected causal snapshot, ordered probe keys and gates. Compare candidate counts, positional ranks, each candidate field, and circular CFO using the prior archived physical match tolerance at 0.5 sample and 250 Hz. Audit the earliest changed probe and the first macroscopic support, rank or gate difference when present. Seal predictions and bindings before opening survey labels.
++
++Both calibration arms share measured factors, causal TLEs, priors and search budgets within each receiver. Score geographic error in kilometres and report CFO residual RMS in hertz and available objectives separately. Evaluate each arm against all v5 roles at 5% and 10% relative degradation. Both arms must publish to meet a paired target. Preserve unavailable outcomes, including timeouts, without replacing them with archived or forced endpoints. Use the prior release's position figure schema v2 and stage schema v1, with all plotted points and aggregates in the CSVs.
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/geometry-work/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/geometry-work/PROTOCOL.md
+new file mode 100644
+index 000000000..4e929fc4a
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/geometry-work/PROTOCOL.md
+@@ -0,0 +1,7 @@
++# Collapse repeated orbit interpolation in compact v5
++
++The installed compact lifetime receiver projects a center orbit state and two neighboring phase states for every satellite and observation. The candidate computes the center as before. If the two neighbors use the same knot pair, it computes their centered difference from the mean rotation and the change in rotation. If the neighbors straddle a knot, it computes both neighboring states with the installed arithmetic. The mechanism does not retain projections across calls. The installed preparation, fits and joint publication run in their ordinary order with both calibration arms. The experiment starts at recorded native GLRT and excludes IQ decoding and detection.
++
++Select one original DS26 offer and one original DS29 offer by sorting eligible first-segment manifest digests with the `compact-secant-20261120` salt. Eligibility requires complete authenticated capture-era native factors, track configuration, and causal element snapshots. Exclude the earlier checksum and track-preparation panels and the DS26-0102 near-omission control. Include that existing shifted control as a third offer with the same center and publication gate as its sealed earlier run. Freeze all case bindings and package and candidate digests before launching any positions. Open geographic references only after sealing terminal predictions and resource receipts. Show the four original v5 reference roles where the offer and archived inputs match.
++
++Run each pair on the same pinned CPU, in counterbalanced order across CPUs 14 and 15, with one numerical thread, 512 MiB memory, zero swap, and a 180-second service limit. Include candidate compilation, causal preparation, inference, and output in service clocks. Count original projection calls and cells, same-interval cells, and projection CPU. Retain every terminal outcome. A candidate passes numerical parity when paired decisions match, endpoints shift at most 20 m, conditional RF RMS changes by at most 0.01 Hz and frequency objectives change by at most 0.1 when present. The projector tests require identical Doppler and elevation and a 1e-6 Hz/s absolute secant tolerance on supported GNSS-like state magnitudes. Require at least 5% median paired full-service CPU reduction for a material improvement and report the paired wall and memory independently. A timeout or publication change fails parity in that pair. Report position error and RF effects for zero and fitted calibration separately.
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/PROTOCOL.md
+new file mode 100644
+index 000000000..14abea7d8
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/PROTOCOL.md
+@@ -0,0 +1,33 @@
++# Independent waveform transfer
++
++The receiver needs a passive Starlink observation from a distinct installation to validate raw IQ through position. A location test requires survey held outside the receiver, sample-index to UTC mapping and clock uncertainty, signed RF tuning, multiple resolvable satellite tracks at times with useful geometry, and a catalogue with capture-time availability. The public Liu et al. release provides one contiguous baseband excerpt after coarse carrier synchronization. It supplies none of the site, clock-origin, absolute RF, or multi-pass evidence required for position. This protocol tests only the original Qin receiver’s transfer to that waveform. [Capture paper](https://arxiv.org/html/2610.29387v2#S2) · [Publisher release](https://github.com/misaka666/Starlink-Downlink-Analysis/releases/tag/v1.0.0)
++
++## Acquisition and separation
++
++Select GitHub release v1.0.0, asset 690748124. Request bytes 0–124,999,999 once from the public 311,026,556-byte CSV. Require a matching partial-response range and the same asset size. Hash those bytes without reading past the range. Analyze exactly the first 3,600,000 I/Q pairs, or 7.5 ms at the author’s stated 480 MS/s, starting at sample zero. Fail if the range is too short. Fetch and replay are separate commands. Save source samples outside the repository. No per-range digest or standalone sample license is supplied by the author. Keep metadata and derived evidence in the repository.
++
++Use two disjoint 3.75 ms looks, labeled discovery and held. Tune the two deployed pilot centers at −115.3125 and +115.3125 MHz relative to the exported baseband center. Their nominal eight-tone bank centers are both offset another −117.1875 kHz from those tunings. Use a 1,537-tap FIR with a 4 MHz cutoff, Kaiser 8.6 and 48× decimation. Process each time look in isolation so FIR support cannot cross the split. Quantize I/Q to CI16 using a fixed 4096-counts-per-RMS scale, shared across the controls generated within each look from its target edge. The original single-receiver wide `NativeShortWindow` requires 20 ms. Place measured or control data at its start and zero-fill the remaining 16.25 ms. Report the 18.75% actual dwell support. Keep the unchanged ±800 kHz acquisition, native candidate budget, fractional output and 0.025 margin gate. Select the highest complete fractional margin per call. Neither PSS, author frame indexes nor held native outputs enter the discovery prediction.
++
++For each look and each edge pass the following seven matched inputs through the native ABI. Use a fixed seed 41821 for independent phase and symbol shuffles. Preserve detector settings across all calls.
++
++| Input | Acquisition template | Purpose |
++| --- | --- | --- |
++| Measured target edge | Exact Qin | Main transfer |
++| Same target edge plus +171.875 kHz | Exact Qin | CFO equivariance with measured content |
++| Same target edge | Opposite edge Qin | Physical subcarrier/code specificity |
++| Same target edge | Qin with 300 active symbols permuted as blocks | Code order |
++| Same target edge with phase randomization | Exact Qin | Power-spectrum matched null |
++| Edge mixer moved 10 MHz toward center | Exact Qin | Same recording, within-channel RF control |
++| Independent synthetic full-rate target edge | Exact Qin | Known noninteger epoch and CFO |
++
++Put three synthetic frames at discovery epoch 0.18735 ms or held epoch 0.33172 ms, separated by 1/750 s. Use +137.125 kHz on the lower and −179.375 kHz on the upper edge relative to the deployed mixer. Both synthetic and measured inputs traverse the same 480 MS/s rate conversion and quantizer. Compare phase modulo the frame period, with 10 samples tolerance at 10 MS/s. Compare synthetic CFO and the known measured digital shift modulo the 1/4.4 µs symbol alias, with 1 kHz tolerance. Use the planted sample indices only for offline scoring.
++
++## Held tests
++
++Freeze the discovery winner’s phase and resolve its CFO to the strongest of the seven branches within ±800 kHz spaced by the symbol alias, using discovery IQ and the selected phase only. Use the earliest full discovery frame and all full held frames at the predicted nominal epochs. Carry the selected branch into the held score without fitting phase, frequency or clock on the held look. On those same held frames compare exact predicted coherent power with a fixed +1,387-sample epoch sham, +12,345 Hz CFO sham, opposite template and permuted template. Score the normalized squared complex matched filter on each complete range. Retain every measured point. A held panel supports transfer if its exact energy exceeds each matched sham by ≥4× in the median. Account for a missing discovery winner or a discovery gate failure instead of fitting a held substitute. Gate every phase/CFO claim using the chosen native output.
++
++Seal the native outputs and discovery predictions before estimating relative timing by a separate known full-band Humphreys PSS correlation, using the published sequence and a fixed squared-coherence threshold of 0.12. Withhold PSS timing from the native detector. Align measured windows using the first accepted PSS peak per look and retain every accepted peak to show frame spacing. This gives another waveform time mark with the same sample clock. Its absolute UTC and independent RF CFO remain unknown. [PSS sequence](https://arxiv.org/html/2210.11578#S6)
++
++The run uses at most CPUs 16 and 17, one numerical thread, and a seven-minute timeout. Record process CPU, wall, native counters, source, configuration and prediction hashes. Report denominators as one continuous exposure, two disjoint looks and two frequency lanes per look. No track, position, learned `c`, or accuracy measurement arises from this sample. Only a stage figure is eligible.
++
++Complete checks in order. Verify the source range and sample shape. Run hermetic converter, PSS and control checks. Seal native predictions. Compute PSS and held diagnostics. Verify the plotted and tabulated evidence against the seals. Reuse the installed stock detector through its single-receiver ABI. The transfer harness owns only the waveform cases, controls and evidence.
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/protocol-lock.json b/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/protocol-lock.json
+new file mode 100644
+index 000000000..f1977bf72
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/protocol-lock.json
+@@ -0,0 +1,10 @@
++{
++  "first_source_samples": 3600000,
++  "http_bytes": [
++    0,
++    124999999
++  ],
++  "protocol_sha256": "b800afdde6787f6cb1703a71d1df3262741f53eb4eb7ad8aec877d4fed824dc1",
++  "publish_raw": false,
++  "utc": "2026-11-20T02:23:20.852435+00:00"
++}
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/source.json b/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/source.json
+new file mode 100644
+index 000000000..cd2b90a1c
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/independent-iq/source.json
+@@ -0,0 +1,16 @@
++{
++  "Content-Length": "125000000",
++  "Content-Range": "bytes 0-124999999/311026556",
++  "ETag": "\"0x8DF3634963AA1CD\"",
++  "Last-Modified": "Fri, 30 Oct 2026 03:19:19 GMT",
++  "fetched_utc": "2026-11-20T02:23:24.461814+00:00",
++  "full_asset_bytes": 311026556,
++  "full_asset_sha256": "797e13e5788f1a54269cc77a8232e259b61933e4bef4d89cd08854c80649f115",
++  "github_asset_id": 690748124,
++  "github_asset_url": "https://github.com/misaka666/Starlink-Downlink-Analysis/releases/download/v1.0.0/Starlink_Downlink_IQ.csv",
++  "license": "No standalone dataset license found in release",
++  "metadata_url": "https://api.github.com/repos/misaka666/Starlink-Downlink-Analysis/releases/tags/v1.0.0",
++  "published_at": "2026-10-30T03:03:39Z",
++  "range_sha256": "667f77f41c143a2a4d73b4dd5d2256e2e5514b85370124e3547d032623ea8765",
++  "received_bytes": 125000000
++}
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/joint-clock/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/joint-clock/PROTOCOL.md
+new file mode 100644
+index 000000000..4b3328d13
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/joint-clock/PROTOCOL.md
+@@ -0,0 +1,11 @@
++# Shared receiver clock and Doppler alias qualification
++
++Estimate passive receiver location from stored GLRT winners and a causal TLE catalogue within the originally supplied 25 km tile. Measure the complete route from authenticated GLRT and capture configuration to both calibration fits. The numerical worker receives no reference endpoint, receiver truth, V5 observation, or fitted orbit. Start each location fit at the supplied tile centre, with WGS84 sea-level altitude.
++
++The original joint worker searches candidate pairs and shares a per-orbit timing displacement. Track quadrature changes the cost of its shortlist only. Trackless differences discard absolute levels and showed weak geographic evidence. The original marginal-offset fit applies one Gaussian level prior to every track. The original shared-clock fit adds 22 shared Gaussian time columns to the original assignments. This experiment tests a smaller receiver clock with a conditional absolute-Doppler constraint. It uses one anonymous nomination for both test and control and analytically profiles each track constant. An absolute Doppler constraint enters when two disjoint time halves agree on a single 227,272.727 Hz alias and their estimated residual levels are consistent. Offsets on the remaining tracks are free. Each physical receiver shares a fractional-frequency trend across its tunings with separate group intercepts. Each nominated orbit shares one timing displacement. Keep all aliases, orbit assignments, points, and budgets fixed for the paired c fits.
++
++Select the first two digest-ranked recordings per dataset for development and the next three per dataset for the held panel. Rank by SHA-256 of the literal `direct-clock-20261120-v1:` followed by the native archive digest. Eligibility requires a frozen positive anonymous track census and the original catalogue and tile binding. Development can inspect clock, residual and support diagnostics. It cannot inspect geographic errors. Freeze thresholds and source hashes before launching held work. An extra query for the first held DS26 recording moves the tile 50 km east of the original centre, using the same dimensions, capture and catalogue. Confirm the omission after the prediction seal. Repeat the held ordinary offers with each orbital timestamp shifted 73 s, keeping measured time, sample order, offered tile, and causal element selection fixed. Report withheld, timed out, forced, and published endpoints separately.
++
++Compare the constrained method to free track constants with identical nomination and to the original native joint worker. The free constants absorb the fixed-RF calibration exactly. Run the numerical fit in both calibration configurations and mark the coefficient unidentifiable. Hold out synchronized whole-track time blocks and predict the second half of each test track after using its first half to resolve the discrete ambiguity. Report the held frequency residual and the conditional fit separately from location accuracy. Authenticate the four original V5 variants for each ordinary capture and tile.
++
++Run one numerical thread on CPU 12 or 13 with 512 MiB virtual-memory limit and a 90 s timeout per attempt. Alternate pair order on each core. Touch only capture data already on disk. Record CPU and wall time for archive reading, Graph, orbit setup, candidate screening, nomination, and the final numerical fits, plus projection, candidate, and fit counts. The geographic criterion is full V5 publication coverage and a median and P95 within 10% of every available original V5 role for both c configurations. The paired cost criterion is lower measured process CPU than the freshly rerun native joint receiver, with unchanged input support before fitting. Time IQ processing separately from this experiment.
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/kernel/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/kernel/PROTOCOL.md
+new file mode 100644
+index 000000000..5081d3179
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/kernel/PROTOCOL.md
+@@ -0,0 +1,7 @@
++# Combined C kernel qualification
++
++The experiment tests whether the shared Qin phase-pair bank and compact CI16 verifier reduce resident stereo detector CPU and workspace while preserving the field output. It uses the existing field ABI and saved complex int16 samples. The control is the portable field shared library compiled from the as-run source closure before changes. The candidate is the direct build with the same optimization flags and host architecture.
++
++The held panel is the prior verifier-memory panel from the signed original-schedule verifier-integration receipt. It has four visits per producer from DS26-0237, DS29-0082 and DS29-0519. They span both edges and include rejected, dilute, equivalent and stereo-positive cases. Compare all groups and ranks, including the superseded primary group when a peer retry runs. Require exact lane, anchor, count, candidate epoch and seed identity, tie/gate flags and null state. For physical values use absolute bounds of 1 Hz for CFO, 2 × 10⁻⁹ sample for fractional offsets and 10⁻⁵ for scores, with actual maxima recorded. The prior field tolerances bound coarse float32 drift. The two kernels must also reproduce zero IQ and invalid field ABI behavior. Retained-seed sentinels from the earlier qualification cover closer ties and the fractional gate boundary when applicable.
++
++Pin two fresh, sequential native processes to CPU 8 or 9 in each of six interleaved pairs, balancing arm order on each CPU. Hold compiler, Python, input bytes, edge, CFO bounds and process structure constant. Stage inputs on the local bulk volume before timing, with scratch on the same volume. Time the resident detector calls and record full process CPU and elapsed time, kernel stage clocks, native high-water RSS, workspace bytes, shared-library sections, and input/output counts. Report medians and paired spread. Use the prior profiling results to contextualize the measured stage clocks. Interpret improvement only when paired reductions exceed variability and all inventory/numerical gates pass. Stage results alone establish neither location accuracy nor embedded throughput.
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/public-route/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/public-route/PROTOCOL.md
+new file mode 100644
+index 000000000..64cce3228
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/public-route/PROTOCOL.md
+@@ -0,0 +1,9 @@
++# Public replay command verification
++
++Exercise the default `tools.pipeline_eval.portable_receiver` public command with a SHA-256 authenticated DS29-0082 locator. Use the same first signed chunk as the promoted command's previous locator smoke. DS29-0082 is a saved upper-edge dual CI16 recording. The locator contains the signed recording manifests, no-repair request, search region, session and run identities. The request supplies the causal catalogue and receiver configuration. The locator has no archived factor entry. Keep truth unavailable to prediction and leave the archive read-only.
++
++Use `--smoke --cpus 18 --raw-limit 600 --position-limit 180`. Pin the command supervisor to CPU 18 and set its scratch beneath `/srv/bulk/leo-dev/direct-receiver-20261120/public-route`. Use the usual single-core service with a 512 MiB charge limit and zero swap. Take one throughput observation on the shared host. No speed ranking follows from this smoke.
++
++Require exactly one authenticated complete chunk, identical scheduled and completed visit counts, a successful service receipt with a matching CPU and source lock, and no native or position handoff. Compare detector coverage and group count to the existing sealed locator smoke. Compare historical and current numeric identity when the build warrants that claim. Preserve the whole-command clock, worker CPU and memory, per-visit detector time, signed chunk identity, source lock and compact terminal evidence. Seal the input before executing and keep the run seal and source hashes.
++
++Exercise both public flags, sha rejection, timeout before position, detached-module reconciliation, and archive-interpreter imports with hermetic tests. Attribute scientific performance of compact kernels to their own sealed field comparison. Position endpoints, geographic error and the `c` ablation are outside the one-chunk smoke boundary.
+diff --git a/reports/2026_11_19_receiver_screening/direct-receiver/stream-fold/PROTOCOL.md b/reports/2026_11_19_receiver_screening/direct-receiver/stream-fold/PROTOCOL.md
+new file mode 100644
+index 000000000..9a6ad3700
+--- /dev/null
++++ b/reports/2026_11_19_receiver_screening/direct-receiver/stream-fold/PROTOCOL.md
+@@ -0,0 +1,22 @@
++# Streaming fixed-point Qin coarse acquisition protocol
++
++## Decision and scope
++
++Test whether fixed-point rolling correlation and anchor folding retain coarse acquisition and GLRT decisions and fit the 20 ms dual-radio visit budget. Time the normal standalone C detector from resident CI16 through seed selection, fine search, fractional GLRT and conditional retry. Keep the decoder, production gate and fine verifier fixed. The study produces detector measurements and does not compute receiver positions.
++
++The original deployed-shaped search spans 21 residual CFO hypotheses at 80 kHz spacing through ±800 kHz on each physical lane. Each visit has 200,000 stereo samples at 10 MS/s. Both 12- and 22-anchor masks, 44 taps, exact integer frame origins, and 13,333 epochs remain in the work count. The independent cell oracle directly evaluates known complex pilots over finite 44-sample windows. The incumbent also supplies a full-grid and downstream comparison.
++
++## Inputs and acceptance
++
++Use the existing authenticated `c-coarse-tiles-panel-v2` inputs. Freeze the three recording IDs DS26-0237, DS29-0082, and DS29-0519, each historical and manifest-hash held file, and the prior controls. Resolve their hashes from the published coarse-tiles input evidence before execution. The held visits were selected before this mechanism. Use the three development visits only for implementation checks. Run both anchors on physical held lanes, and preserve the real peer-retry rules in the separate verifier run. No TLE, site coordinates, reference scores, or historical candidate labels enter detection.
++
++Compare ordered seeds, original and refined epochs, support, cell scores, and downstream ordered candidates and fractional gates. Publish every discrepancy and the nearest positive and negative gate distances. Select direct cell probes at deterministic internals, time bounds, CFO bounds, and leading peaks from the incumbent. Include exact synthetic selector ties, masked and truncated captures, zero and time-reversed IQ, and full-width full-scale arithmetic. Use a 5 × 10⁻⁵ absolute score tolerance for the direct cell oracle and require the same peak keys and downstream gates for a parity claim. Avoid changing the fixed-point scale based on held outcomes.
++
++Use CPU 10 and CPU 11 only. Build optimized x86 and Cortex-A9 binaries, run a small Cortex-A9 correctness stream under QEMU, and record its results separately. Alternate baseline and candidate timings on full held CI16. Record CPU and wall clocks, work counters, source and ELF footprint, and a one-sample/cycle hardware schedule with explicit drains and an optional sink stall. Hardware clocks and resources are bounds and extrapolations. A complete software detector exceeding 20 ms, or a chosen hardware schedule exhausting the device's gross resources before fine verification, rules out that implementation for the board. Use local bulk scratch only.
++
++## Execution dependencies
++
++- Authenticate archive inputs and compile the normal entry point before timing.
++- Run real CI16 and hermetic tests from the same instrumented math. Keep them in distinct output directories.
++- Keep report writes local to this stage. The qualification run owns those artifacts once it has completed all comparisons.
++- A single worker owns this tightly coupled kernel, fixture and evidence. Delegation is disabled by the receiver brief.
+diff --git a/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/README.md b/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/README.md
+index 23d1988c4..97774feec 100644
+--- a/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/README.md
++++ b/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/README.md
+@@ -6,24 +6,24 @@ Wrong-region and independent-site results have their own figures. V5 enters only
+ 
+ ## Roof comparisons
+ 
+-**Fitted calibration** · [PDF](fitted_c/modifications.pdf) · [Per-sample CSV](fitted_c/modifications.csv)
+-
+-- [Joint pass Doppler on containing offers](fitted_c/joint_pass-containing.png)
+-
+ **Zero calibration** · [PDF](c0/modifications.pdf) · [Per-sample CSV](c0/modifications.csv)
+ 
+ - [Joint pass Doppler on containing offers](c0/joint_pass-containing.png)
+ 
+-## Wrong regions and new sites
++**Fitted calibration** · [PDF](fitted_c/modifications.pdf) · [Per-sample CSV](fitted_c/modifications.csv)
+ 
+-**Fitted calibration** · [PDF](fitted_c/transfer.pdf) · [Per-sample CSV](fitted_c/transfer.csv)
++- [Joint pass Doppler on containing offers](fitted_c/joint_pass-containing.png)
+ 
+-- [Joint pass Doppler on omitted offers](fitted_c/joint_pass-omitted.png)
+-- [Joint pass Doppler on waveform offers](fitted_c/joint_pass-waveform.png)
+-- [Joint pass Doppler on simulation offers](fitted_c/joint_pass-simulation.png)
++## Wrong regions and new sites
+ 
+ **Zero calibration** · [PDF](c0/transfer.pdf) · [Per-sample CSV](c0/transfer.csv)
+ 
+ - [Joint pass Doppler on omitted offers](c0/joint_pass-omitted.png)
+ - [Joint pass Doppler on waveform offers](c0/joint_pass-waveform.png)
+ - [Joint pass Doppler on simulation offers](c0/joint_pass-simulation.png)
++
++**Fitted calibration** · [PDF](fitted_c/transfer.pdf) · [Per-sample CSV](fitted_c/transfer.csv)
++
++- [Joint pass Doppler on omitted offers](fitted_c/joint_pass-omitted.png)
++- [Joint pass Doppler on waveform offers](fitted_c/joint_pass-waveform.png)
++- [Joint pass Doppler on simulation offers](fitted_c/joint_pass-simulation.png)
+diff --git a/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/manifest.json b/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/manifest.json
+index a6437a1f5..b9d1e7022 100644
+--- a/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/manifest.json
++++ b/reports/2026_11_19_receiver_screening/latency-and-support/joint-pass/charts/manifest.json
+@@ -1 +1 @@
+-[{"arm":"fitted_c","csv":"fitted_c/modifications.csv","datasets":["DS26","DS29"],"id":"joint_pass-containing","image":"fitted_c/joint_pass-containing.png","method":"joint_pass","pdf":"fitted_c/modifications.pdf","scope":"roof","title":"Joint pass Doppler on containing offers"},{"arm":"fitted_c","csv":"fitted_c/transfer.csv","datasets":["omitted"],"id":"joint_pass-omitted","image":"fitted_c/joint_pass-omitted.png","method":"joint_pass","pdf":"fitted_c/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on omitted offers"},{"arm":"fitted_c","csv":"fitted_c/transfer.csv","datasets":["omitted","containing"],"id":"joint_pass-waveform","image":"fitted_c/joint_pass-waveform.png","method":"joint_pass","pdf":"fitted_c/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on waveform offers"},{"arm":"fitted_c","csv":"fitted_c/transfer.csv","datasets":["containing","omitted"],"id":"joint_pass-simulation","image":"fitted_c/joint_pass-simulation.png","method":"joint_pass","pdf":"fitted_c/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on simulation offers"},{"arm":"c0","csv":"c0/modifications.csv","datasets":["DS26","DS29"],"id":"joint_pass-containing","image":"c0/joint_pass-containing.png","method":"joint_pass","pdf":"c0/modifications.pdf","scope":"roof","title":"Joint pass Doppler on containing offers"},{"arm":"c0","csv":"c0/transfer.csv","datasets":["omitted"],"id":"joint_pass-omitted","image":"c0/joint_pass-omitted.png","method":"joint_pass","pdf":"c0/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on omitted offers"},{"arm":"c0","csv":"c0/transfer.csv","datasets":["omitted","containing"],"id":"joint_pass-waveform","image":"c0/joint_pass-waveform.png","method":"joint_pass","pdf":"c0/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on waveform offers"},{"arm":"c0","csv":"c0/transfer.csv","datasets":["containing","omitted"],"id":"joint_pass-simulation","image":"c0/joint_pass-simulation.png","method":"joint_pass","pdf":"c0/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on simulation offers"}]
++[{"arm":"c0","csv":"c0/modifications.csv","datasets":["DS26","DS29"],"id":"joint_pass-containing","image":"c0/joint_pass-containing.png","method":"joint_pass","pdf":"c0/modifications.pdf","scope":"roof","title":"Joint pass Doppler on containing offers"},{"arm":"c0","csv":"c0/transfer.csv","datasets":["omitted"],"id":"joint_pass-omitted","image":"c0/joint_pass-omitted.png","method":"joint_pass","pdf":"c0/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on omitted offers"},{"arm":"c0","csv":"c0/transfer.csv","datasets":["omitted","containing"],"id":"joint_pass-waveform","image":"c0/joint_pass-waveform.png","method":"joint_pass","pdf":"c0/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on waveform offers"},{"arm":"c0","csv":"c0/transfer.csv","datasets":["containing","omitted"],"id":"joint_pass-simulation","image":"c0/joint_pass-simulation.png","method":"joint_pass","pdf":"c0/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on simulation offers"},{"arm":"fitted_c","csv":"fitted_c/modifications.csv","datasets":["DS26","DS29"],"id":"joint_pass-containing","image":"fitted_c/joint_pass-containing.png","method":"joint_pass","pdf":"fitted_c/modifications.pdf","scope":"roof","title":"Joint pass Doppler on containing offers"},{"arm":"fitted_c","csv":"fitted_c/transfer.csv","datasets":["omitted"],"id":"joint_pass-omitted","image":"fitted_c/joint_pass-omitted.png","method":"joint_pass","pdf":"fitted_c/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on omitted offers"},{"arm":"fitted_c","csv":"fitted_c/transfer.csv","datasets":["omitted","containing"],"id":"joint_pass-waveform","image":"fitted_c/joint_pass-waveform.png","method":"joint_pass","pdf":"fitted_c/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on waveform offers"},{"arm":"fitted_c","csv":"fitted_c/transfer.csv","datasets":["containing","omitted"],"id":"joint_pass-simulation","image":"fitted_c/joint_pass-simulation.png","method":"joint_pass","pdf":"fitted_c/transfer.pdf","scope":"transfer","title":"Joint pass Doppler on simulation offers"}]
+diff --git a/tests/pipeline_eval/test_iq_service.py b/tests/pipeline_eval/test_iq_service.py
+index c4f26e319..838767068 100644
+--- a/tests/pipeline_eval/test_iq_service.py
++++ b/tests/pipeline_eval/test_iq_service.py
+@@ -164,7 +164,8 @@ def test_collected_service_uses_its_journal_invocation_and_terminal_log(attempt,
+     assert record["service_wall_s"] == 85 and record["service_active_s"] is None
+ 
+ 
+-def test_launch_retains_single_claim_after_supervisor_wait_timeout(attempt, monkeypatch):
++@pytest.mark.parametrize("worker_module", [None, "tools.pipeline_eval.portable_receiver"])
++def test_launch_retains_single_claim_after_supervisor_wait_timeout(attempt, monkeypatch, worker_module):
+     path, state = attempt
+     (path / "service.log").unlink()
+     command = [
+@@ -184,7 +185,7 @@ def test_launch_retains_single_claim_after_supervisor_wait_timeout(attempt, monk
+         "/usr/bin/python",
+         "-B",
+         "-m",
+-        iq_service.MODULE,
++        worker_module or iq_service.MODULE,
+         "worker",
+         str(path),
+     ]
+@@ -202,14 +203,22 @@ def test_launch_retains_single_claim_after_supervisor_wait_timeout(attempt, monk
+     monkeypatch.setattr(iq_service, "sleep", lambda seconds: None)
+     monkeypatch.setattr(iq_service, "monotonic_ns", lambda: 1_000_000_000)
+     state.update(ActiveState="deactivating", MainPID="42")
++    if worker_module is not None:
++        with pytest.raises(ValueError, match="planned unit, command or limits"):
++            iq_service.run(path, command, UNIT, 378)
++        assert not launches
+     with pytest.raises(iq_service.UnsettledService):
+-        iq_service.run(path, command, UNIT, 378)
++        iq_service.run(path, command, UNIT, 378, worker_module=worker_module)
+     assert json.loads((path / "service-launch.json").read_bytes())["unit"] == UNIT
+     assert not (path / "service.json").exists()
+     with pytest.raises(iq_service.UnsettledService):
+-        iq_service.run(path, command, UNIT, 378)
++        iq_service.run(path, command, UNIT, 378, worker_module=worker_module)
+     assert launches == [command]
+     state.update(ActiveState="failed", MainPID="0")
++    if worker_module is not None:
++        with pytest.raises(ValueError, match="command or limits"):
++            iq_service.reconcile(path)
++        state["ExecStart"] = state["ExecStart"].replace(iq_service.MODULE, worker_module)
+     receipt = iq_service.reconcile(path)
+     assert receipt["exit_code"] is None and receipt["reason"] == "supervisor wait timed out"
+     assert receipt["systemd"]["Result"] == "timeout"
+diff --git a/tests/pipeline_eval/test_portable_command.py b/tests/pipeline_eval/test_portable_command.py
+index d804013e1..b39eba17a 100644
+--- a/tests/pipeline_eval/test_portable_command.py
++++ b/tests/pipeline_eval/test_portable_command.py
+@@ -10,7 +10,8 @@ from tools.pipeline_eval.__main__ import ROOT, save_json
+ from tools.pipeline_eval.qualification import portable_command as study
+ 
+ 
+-def test_input_digest_checked_before_launch(tmp_path, monkeypatch, capsys):
++@pytest.mark.parametrize("compact_kernels", [False, True])
++def test_input_digest_checked_before_launch(tmp_path, monkeypatch, capsys, compact_kernels):
+     source = tmp_path / "locator.json"
+     save_json(source, {"id": "saved"})
+     output = tmp_path / "output"
+@@ -19,8 +20,9 @@ def test_input_digest_checked_before_launch(tmp_path, monkeypatch, capsys):
+         receiver.main(args)
+     assert "--input-sha256" in capsys.readouterr().err
+ 
+-    def prepare(case, out, cpus, raw_limit, position_limit, calibration, smoke):
++    def prepare(case, out, cpus, raw_limit, position_limit, calibration, smoke, **options):
+         assert case == {"id": "saved"}
++        assert options == dict(compact_kernels=compact_kernels)
+         assert (cpus, raw_limit, position_limit, calibration, smoke) == (
+             [0],
+             600,
+@@ -37,7 +39,10 @@ def test_input_digest_checked_before_launch(tmp_path, monkeypatch, capsys):
+ 
+     monkeypatch.setattr(receiver, "prepare", prepare)
+     monkeypatch.setattr(receiver, "run", run)
+-    assert receiver.main(args + ["--input-sha256", receiver._sha(source), "--smoke"]) == 0
++    args += ["--input-sha256", receiver._sha(source), "--smoke"]
++    if compact_kernels:
++        args.append("--compact-kernels")
++    assert receiver.main(args) == 0
+     assert json.loads((output / "summary.json").read_bytes())["status"] == "stage_only"
+     assert json.loads((output / "run-seal.json").read_bytes())["files"] == {
+         "summary.json": receiver._sha(output / "summary.json")
+@@ -56,8 +61,9 @@ def test_raw_timeout_exports_closed_coverage_without_fitting(tmp_path, monkeypat
+         recording=dict(window_count=2),
+     )
+ 
+-    def service(attempt, cpu, limit, stage):
++    def service(attempt, cpu, limit, stage, *, worker_module):
+         assert (attempt, cpu, limit, stage) == (tmp_path / "raw-3", 3, 1, "raw")
++        assert worker_module == receiver.MODULE
+         return dict(exit_code=1, systemd={"Result": "timeout"})
+ 
+     def collect(out, lock):
+@@ -84,6 +90,8 @@ def test_worker_entry_point_can_import_without_supervisor_results():
+     code = """\
+ import sys
+ sys.modules['tools.pipeline_eval.qualification.capture_whole_results'] = None
++sys.modules['scipy'] = None
++sys.modules['tools.pipeline_eval.direct_kernels'] = None
+ from tools.pipeline_eval import portable_receiver
+ assert callable(portable_receiver.worker)
+ """
+diff --git a/tests/pipeline_eval/test_sparse_epoch.py b/tests/pipeline_eval/test_sparse_epoch.py
+index c25e59a78..b6db72835 100644
+--- a/tests/pipeline_eval/test_sparse_epoch.py
++++ b/tests/pipeline_eval/test_sparse_epoch.py
+@@ -27,12 +27,18 @@ def kernels(tmp_path_factory):
+ def test_same_raw_taps_at_sampled_epochs_and_exact_neighbors_for_selected_peaks(kernels, edge):
+     full, sparse = kernels
+     iq = np.random.default_rng(778431).integers(-32768, 32768, (2, RATE // 50))
+-    args = (iq[0] + 1j * iq[1], qin_edge_pilot_frame(RATE, edge), RATE, FREQUENCIES,
+-            (2, 18, 44, 210, 301), EPOCHS)
++    args = (
++        iq[0] + 1j * iq[1],
++        qin_edge_pilot_frame(RATE, edge),
++        RATE,
++        FREQUENCIES,
++        (2, 18, 44, 210, 301),
++        EPOCHS,
++    )
+     direct = np.asarray(full(*args))
+     scores = sparse.score_grid(*args)
+     _, scout = sparse._sparse
+-    np.testing.assert_allclose(scout, direct[:, ::sparse_epoch.STRIDE], atol=1e-7, rtol=0)
++    np.testing.assert_allclose(scout, direct[:, :: sparse_epoch.STRIDE], atol=1e-7, rtol=0)
+     peaks = sparse.retain_peaks(FREQUENCIES, scores, 8, 20, 80_000, EPOCHS)
+     assert len(peaks) == 8
+     assert sparse.receipts[-1]["scout_cells"] == len(FREQUENCIES) * 2223
+@@ -48,12 +54,15 @@ def test_same_raw_taps_at_sampled_epochs_and_exact_neighbors_for_selected_peaks(
+ def test_empty_and_non_adc_input_follow_reference_selection(kernels):
+     full, sparse = kernels
+     geometry = qin_edge_pilot_frame(RATE, "lower"), RATE, FREQUENCIES, (2, 28), EPOCHS
+-    for values, expected_fallback in ((np.zeros(RATE // 50), None),
+-                                      (np.full(RATE // 50, 0.25j), "unsupported_grid")):
++    for values, expected_fallback in (
++        (np.zeros(RATE // 50), None),
++        (np.full(RATE // 50, 0.25j), "unsupported_grid"),
++    ):
+         direct = full(values, *geometry)
+         scores = sparse.score_grid(values, *geometry)
+         assert sparse.retain_peaks(FREQUENCIES, scores, 8, 20, 80_000, EPOCHS) == (
+-            anchor_grid.retained_peaks(FREQUENCIES, direct, 8, 20, 80_000, EPOCHS))
++            anchor_grid.retained_peaks(FREQUENCIES, direct, 8, 20, 80_000, EPOCHS)
++        )
+         assert sparse.receipts[-1]["fallback"] == expected_fallback
+ 
+ 
+@@ -67,9 +76,15 @@ def test_candidate_matching_uses_fractional_epoch_and_raw_cfo():
+ 
+ 
+ def test_candidate_matching_does_not_count_one_trial_candidate_twice():
+-    first = SimpleNamespace(candidate_rank=0, epoch_sample=700, fractional_epoch_offset_samples=0,
+-                            tracking_cfo_hz=48000, fractional_tracking_cfo_hz=48000,
+-                            margin=0.25, fractional_margin=0.25)
++    first = SimpleNamespace(
++        candidate_rank=0,
++        epoch_sample=700,
++        fractional_epoch_offset_samples=0,
++        tracking_cfo_hz=48000,
++        fractional_tracking_cfo_hz=48000,
++        margin=0.25,
++        fractional_margin=0.25,
++    )
+     alternate = SimpleNamespace(**dict(vars(first), candidate_rank=1, fractional_margin=0.35))
+     control = SimpleNamespace(
+         receivers=[SimpleNamespace(receiver_id=0, candidates=[first, alternate])]
+diff --git a/tools/pipeline_eval/direct_kernels.py b/tools/pipeline_eval/direct_kernels.py
+new file mode 100644
+index 000000000..7145e647f
+--- /dev/null
++++ b/tools/pipeline_eval/direct_kernels.py
+@@ -0,0 +1,63 @@
++"""Build the shared Qin and compact CI16 detector for the portable field ABI."""
++
++import hashlib
++import os
++import platform
++import subprocess
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[2]
++VARIANTS = ROOT / "tools/pipeline_eval/variants"
++KERNEL = ROOT / "native/adaptive/detector/kernel/private"
++SOURCES = (
++    VARIANTS / "portable_field.c",
++    VARIANTS / "portable_coarse.c",
++    VARIANTS / "portable_verifier.c",
++    VARIANTS / "portable_fine.c",
++    VARIANTS / "fine_search.c",
++    VARIANTS / "conditioned_cfo_bank.c",
++    VARIANTS / "refine_bank.c",
++    KERNEL / "fft_full.c",
++)
++HEADERS = (
++    *(VARIANTS / name for name in (
++        "portable_coarse.h", "portable_coarse_qin.h", "portable_fine.h", "portable_verifier.h",
++        "c_coarse_tiles.h", "c_fine_memory.h", "c_fine_memory_fft.inc",
++        "c_fine_memory_fractional.inc", "c_fine_memory_held.inc",
++    )),
++    KERNEL / "native_presence/fft.h",
++)
++FLAGS = (
++    "-std=c11", "-O3", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off",
++    "-fopenmp-simd", "-DLEO_PRESENCE_ITERATIVE_FFT=1", "-fno-math-errno",
++    "-DLEO_DIRECT_KERNEL=1", "-shared", "-fPIC",
++)
++HOST_ARCH = {
++    "x86_64": ("-march=x86-64-v3",),
++    "aarch64": ("-march=armv8-a",),
++    "armv7l": ("-mcpu=cortex-a9", "-mfpu=neon", "-mfloat-abi=hard"),
++}
++
++
++def _digest(path):
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++def build(out, *, cc="cc", arch=None):
++    """Compile with the host defaults or explicit compiler and target flags."""
++    out = Path(out).resolve()
++    if arch is None:
++        arch = HOST_ARCH.get(platform.machine(), ())
++    binary = out / "portable-field.so"
++    command = [
++        str(cc), *FLAGS, *arch, "-I", str(KERNEL / "native_presence"),
++        *map(str, SOURCES), "-lm", "-o", str(binary),
++    ]
++    subprocess.run(command, check=True, cwd=out, env=os.environ | {"TMPDIR": str(out)}, timeout=45)
++    binary.chmod(0o444)
++    return dict(
++        command=command,
++        tool=subprocess.check_output([cc, "--version"], text=True).splitlines()[0],
++        binary=dict(path=str(binary), sha256=_digest(binary), bytes=binary.stat().st_size),
++        sources={str(path): _digest(path) for path in (*SOURCES, *HEADERS)},
++    )
+diff --git a/tools/pipeline_eval/iq_service.py b/tools/pipeline_eval/iq_service.py
+index d0f0d190a..1a5a79cbe 100644
+--- a/tools/pipeline_eval/iq_service.py
++++ b/tools/pipeline_eval/iq_service.py
+@@ -172,14 +172,14 @@ def _integer(value):
+     return int(value) if value and value.isdecimal() else None
+ 
+ 
+-def _command_matches(command, attempt, plan):
++def _command_matches(command, attempt, plan, worker_module):
+     cpus = ",".join(map(str, plan["cpus"]))
+     return command.startswith(f"/usr/bin/taskset -c {cpus} ") and command.endswith(
+-        f" -B -m {MODULE} worker {attempt}"
++        f" -B -m {worker_module} worker {attempt}"
+     )
+ 
+ 
+-def _journal_terminal(state, log, unit, boot, invocation, attempt, plan):
++def _journal_terminal(state, log, unit, boot, invocation, attempt, plan, worker_module):
+     rows = _journal(unit, boot, invocation)
+     seen = {}
+     for row in rows:
+@@ -195,7 +195,9 @@ def _journal_terminal(state, log, unit, boot, invocation, attempt, plan):
+         start.get("JOB_TYPE") == "start"
+         and start.get("JOB_RESULT") == "done"
+         and command.startswith(prefix)
+-        and _command_matches(command.removeprefix(prefix).removesuffix("."), attempt, plan)
++        and _command_matches(
++            command.removeprefix(prefix).removesuffix("."), attempt, plan, worker_module
++        )
+     ):
+         raise UnsettledService("journal cannot bind the original unit start to this attempt")
+     invocation_id = start.get("USER_INVOCATION_ID", "")
+@@ -315,6 +317,7 @@ def _reconcile(attempt, log):
+         ):
+             raise ValueError("service log or plan differs from the recorded launch handle")
+     boot = launch["boot_id"] if launch is not None else current_boot
++    worker_module = launch["command"][-3] if launch is not None else MODULE
+     worker_path = attempt / "start.json"
+     worker = _read(worker_path) if worker_path.exists() else None
+     if worker is None and launch is None:
+@@ -344,7 +347,7 @@ def _reconcile(attempt, log):
+         command = (
+             state.get("ExecStart", "").partition("argv[]=")[2].partition(" ; ignore_errors=")[0]
+         )
+-        if not _command_matches(command, attempt, plan) or (
++        if not _command_matches(command, attempt, plan, worker_module) or (
+             (invocation is not None and invocation != state["InvocationID"])
+             or (worker is not None and str(worker["pid"]) != state["ExecMainPID"])
+             or f"TMPDIR={attempt}" not in shlex.split(state["Environment"])
+@@ -365,7 +368,7 @@ def _reconcile(attempt, log):
+         )
+     else:
+         state, invocation, evidence, started, stopped = _journal_terminal(
+-            state, log, unit, boot, invocation, attempt, plan
++            state, log, unit, boot, invocation, attempt, plan, worker_module
+         )
+     if not started or not stopped or stopped < started or not state.get("Result"):
+         raise UnsettledService("systemd lacks terminal monotonic timestamps or result")
+@@ -416,13 +419,14 @@ def _reconcile(attempt, log):
+     return _existing(receipt_path, attempt, plan_sha, log_sha)
+ 
+ 
+-def run(attempt, command, unit, timeout):
++def run(attempt, command, unit, timeout, *, worker_module=None):
+     """Start a new unit once and reconcile its receipt after the bounded wait."""
+     attempt = local_output(attempt)
+     unit = unit if unit.endswith(".service") else unit + ".service"
+     plan_path = attempt / "plan.json"
+     plan, plan_sha = _read(plan_path), _sha(plan_path)
+     worker = command[-9:]
++    worker_module = MODULE if worker_module is None else worker_module
+     unit_options = [arg for arg in command if arg.startswith("--unit=")]
+     if (
+         re.fullmatch(UNIT, unit) is None
+@@ -444,7 +448,7 @@ def run(attempt, command, unit, timeout):
+         or not plan["limit_s"] <= timeout <= plan["limit_s"] + 30
+         or len(worker) != 9
+         or worker[:3] != ["taskset", "-c", ",".join(map(str, plan["cpus"]))]
+-        or command[-5:] != ["-B", "-m", MODULE, "worker", str(attempt)]
++        or command[-5:] != ["-B", "-m", worker_module, "worker", str(attempt)]
+     ):
+         raise ValueError("benchmark launch does not match its planned unit, command or limits")
+     launch_path = attempt / "service-launch.json"
+diff --git a/tools/pipeline_eval/original_receiver.py b/tools/pipeline_eval/original_receiver.py
+index 95c6f7a15..0fb9460f8 100644
+--- a/tools/pipeline_eval/original_receiver.py
++++ b/tools/pipeline_eval/original_receiver.py
+@@ -544,11 +544,12 @@ def shard(work, cpu, source_sha):
+             print(GATE_TRACE + json.dumps(evidence), file=sys.stderr, flush=True)
+ 
+ 
+-def worker(attempt):
++def worker(attempt, *, worker_module=None, label="original receiver"):
+     plan = whole_iq.read(attempt / "plan.json")
+     work, (cpu,) = attempt.parent, plan["cpus"]
+-    lock = whole_iq.read(whole_iq.checked(work / "source-lock.json", plan["source_lock_sha256"]))
+-    save_json(attempt / "start.json", whole_iq.raw.mark("original receiver worker enter"))
++    digest = plan["source_lock_sha256"]
++    lock = whole_iq.read(whole_iq.checked(work / "source-lock.json", digest))
++    save_json(attempt / "start.json", whole_iq.raw.mark(f"{label} worker enter"))
+     if plan["stage"] == "position":
+         if receiver_assets(Path(lock["receiver"])) != lock["receiver_files"]:
+             raise ValueError("compact installation changed after the source seal")
+@@ -569,14 +570,14 @@ def worker(attempt):
+         "env",
+         f"PYTHONPATH={lock['producer']}:{ROOT}",
+         *(f"{k}={v}" for k, v in THREAD_ENV.items()),
+-        lock["python"],
++        str(whole_iq.checked(Path(lock["python"]), lock["python_sha256"])),
+         "-Bu",
+         "-m",
+-        MODULE,
++        MODULE if worker_module is None else worker_module,
+         "shard",
+         str(work),
+         str(cpu),
+-        plan["source_lock_sha256"],
++        digest,
+     ]
+     with (
+         (work / f"cpu-{cpu}.jsonl").open("xb") as data,
+@@ -585,7 +586,8 @@ def worker(attempt):
+         return subprocess.run(command, stdout=data, stderr=log, check=False).returncode
+ 
+ 
+-def service(attempt, cpu, limit, stage, options=None):
++def service(attempt, cpu, limit, stage, options=None, *, worker_module=None):
++    worker_module = MODULE if worker_module is None else worker_module
+     parent = attempt.parent
+     plan = dict(
+         stage=stage,
+@@ -608,12 +610,32 @@ def service(attempt, cpu, limit, stage, options=None):
+             sys.executable,
+             "-B",
+             "-m",
+-            MODULE,
++            worker_module,
+             "worker",
+             str(attempt),
+         ],
+     )
+-    return iq_service.run(attempt, command, unit, timeout=limit + 20)
++    return iq_service.run(attempt, command, unit, timeout=limit + 20, worker_module=worker_module)
++
++
++def raw_services(out, lock, *, worker_module=None):
++    started = monotonic()
++    launch = service if worker_module is None else partial(service, worker_module=worker_module)
++
++    def job(row):
++        cpu = row[0]
++        return cpu, launch(out / f"raw-{cpu}", cpu, lock["raw_limit_s"], "raw")
++
++    with ThreadPoolExecutor(max_workers=len(lock["workers"])) as pool:
++        receipts = dict(pool.map(job, lock["workers"]))
++    wall = monotonic() - started
++    source_sha = _sha(out / "source-lock.json")
++    save_json(out / "launch.json", dict(source_lock_sha256=source_sha))
++    save_json(
++        out / "raw-exits.json",
++        dict(exits={str(cpu): r["exit_code"] for cpu, r in receipts.items()}, wall_s=wall),
++    )
++    return receipts, wall, source_sha
+ 
+ 
+ def collect(work, lock):
+@@ -622,6 +644,20 @@ def collect(work, lock):
+     return capture_whole_results.collect(work, live_validity(lock))
+ 
+ 
++def raw_coverage(shards, workers, lock):
++    from .qualification.capture_whole_results import summary_rows
++
++    rows = summary_rows(shards)
++    return dict(
++        completed_visits=len(rows),
++        recorded_visits=lock["recording"]["window_count"],
++        valid_visits=sum(row["status"] == "processed" for row in rows),
++        invalid_visits=sum(row["status"] == "invalid_capture" for row in rows),
++        grid_calls=sum(row["folded_calls"] for row in rows),
++        workers=workers,
++    )
++
++
+ def bind_short_fft(document, lock):
+     """Include the accelerated detector choices in the native measurement identity."""
+     source, provenance = document["source"], document["provenance"]
+@@ -644,11 +680,14 @@ def bind_short_fft(document, lock):
+     )
+ 
+ 
+-def fit(out, lock, shards):
++def fit(out, lock, shards, *, worker_module=None, detector_scope=None):
+     """Assemble complete verified shards and invoke the compact receiver once."""
+     from .qualification.capture_whole_results import assemble
+ 
+-    document, counts = assemble(lock["case"], lock, shards)
++    source = lock if detector_scope is None else lock | {"libraries": lock["detector"]}
++    document, counts = assemble(lock["case"], source, shards)
++    if detector_scope is not None:
++        document["provenance"]["scope"] = detector_scope
+     if "coarse_search" in lock:
+         bind_short_fft(document, lock)
+     native = out / "native.json"
+@@ -658,14 +697,14 @@ def fit(out, lock, shards):
+     request.parent.mkdir(parents=True, exist_ok=False)
+     native_sha = bind_fresh(lock["case"], native, request)
+     save_json(attempt / "raw.json", dict(native_sha256=native_sha, request_sha256=_sha(request)))
+-    with patch.object(iq_service, "MODULE", MODULE):
+-        receipt = service(
+-            attempt,
+-            lock["cpus"][0],
+-            lock["position_limit_s"],
+-            "position",
+-            dict(receiver=lock["receiver"]),
+-        )
++    launch = service if worker_module is None else partial(service, worker_module=worker_module)
++    receipt = launch(
++        attempt,
++        lock["cpus"][0],
++        lock["position_limit_s"],
++        "position",
++        dict(receiver=lock["receiver"]),
++    )
+     result = dict(
+         stage="position", position_service=receipt, counts=counts, native_sha256=native_sha
+     )
+@@ -695,63 +734,36 @@ def fine_worker_receipt(out, cpu, source_sha):
+ 
+ 
+ def run(out, lock):
+-    from .qualification import capture_whole_results
+-
+-    with patch.object(iq_service, "MODULE", MODULE):
+-        started = monotonic()
+-
+-        def raw_job(row):
+-            cpu = row[0]
+-            return cpu, service(out / f"raw-{cpu}", cpu, lock["raw_limit_s"], "raw")
+-
+-        with ThreadPoolExecutor(max_workers=len(lock["workers"])) as pool:
+-            receipts = dict(pool.map(raw_job, lock["workers"]))
+-        raw_wall = monotonic() - started
+-        source_sha = _sha(out / "source-lock.json")
+-        save_json(out / "launch.json", dict(source_lock_sha256=source_sha))
+-        save_json(
+-            out / "raw-exits.json",
+-            dict(exits={str(c): r["exit_code"] for c, r in receipts.items()}, wall_s=raw_wall),
+-        )
+-        result = dict(
+-            id=lock["id"],
+-            mode="smoke" if lock["smoke"] else "full",
+-            peak_selector=lock.get("peak_selector", {"backend": "installed"}),
+-            raw_wall_s=raw_wall,
+-            raw_services=receipts,
+-        )
+-        if "coarse_search" in lock:
+-            result["coarse_search"] = lock["coarse_search"]
+-        failed = [receipt for receipt in receipts.values() if not iq_service.succeeded(receipt)]
+-        fine = lock.get("fine_search")
+-        if fine is not None:
+-            workers = {cpu: fine_worker_receipt(out, cpu, source_sha) for cpu in receipts}
+-            result["fine_search"] = fine | {"workers": workers}
+-            if not failed and any(row is None or not row["compatible"] for row in workers.values()):
+-                raise ValueError(
+-                    "finished raw workers must attest to compatible pruned fine search"
+-                )
+-        stop = lock.get("fractional_stop")
+-        if stop is not None:
+-            gate = {cpu: raw_option_receipt(out, cpu, source_sha, GATE_TRACE) for cpu in receipts}
+-            result["fractional_stop"] = stop | {"workers": gate}
+-            if not failed and any(row is None for row in gate.values()):
+-                raise ValueError("finished raw workers must attest to the fractional stop policy")
+-        if failed:
+-            return dict(result, status=failure_status(failed), stage="raw")
+-        shards, workers, _ = collect(out, lock)
+-        rows = capture_whole_results.summary_rows(shards)
+-        result.update(
+-            completed_visits=len(rows),
+-            recorded_visits=lock["recording"]["window_count"],
+-            valid_visits=sum(row["status"] == "processed" for row in rows),
+-            invalid_visits=sum(row["status"] == "invalid_capture" for row in rows),
+-            grid_calls=sum(row["folded_calls"] for row in rows),
+-            workers=workers,
+-        )
+-        if lock["smoke"]:
+-            return dict(result, status="stage_only", stage="raw")
+-        return result | fit(out, lock, shards)
++    receipts, raw_wall, source_sha = raw_services(out, lock)
++    result = dict(
++        id=lock["id"],
++        mode="smoke" if lock["smoke"] else "full",
++        peak_selector=lock.get("peak_selector", {"backend": "installed"}),
++        raw_wall_s=raw_wall,
++        raw_services=receipts,
++    )
++    if "coarse_search" in lock:
++        result["coarse_search"] = lock["coarse_search"]
++    failed = [receipt for receipt in receipts.values() if not iq_service.succeeded(receipt)]
++    fine = lock.get("fine_search")
++    if fine is not None:
++        workers = {cpu: fine_worker_receipt(out, cpu, source_sha) for cpu in receipts}
++        result["fine_search"] = fine | {"workers": workers}
++        if not failed and any(row is None or not row["compatible"] for row in workers.values()):
++            raise ValueError("finished raw workers must attest to compatible pruned fine search")
++    stop = lock.get("fractional_stop")
++    if stop is not None:
++        gate = {cpu: raw_option_receipt(out, cpu, source_sha, GATE_TRACE) for cpu in receipts}
++        result["fractional_stop"] = stop | {"workers": gate}
++        if not failed and any(row is None for row in gate.values()):
++            raise ValueError("finished raw workers must attest to the fractional stop policy")
++    if failed:
++        return dict(result, status=failure_status(failed), stage="raw")
++    shards, workers, _ = collect(out, lock)
++    result.update(raw_coverage(shards, workers, lock))
++    if lock["smoke"]:
++        return dict(result, status="stage_only", stage="raw")
++    return result | fit(out, lock, shards)
+ 
+ 
+ def failure_status(receipts):
+diff --git a/tools/pipeline_eval/portable_receiver.py b/tools/pipeline_eval/portable_receiver.py
+index 3ce09687f..458f15f8a 100644
+--- a/tools/pipeline_eval/portable_receiver.py
++++ b/tools/pipeline_eval/portable_receiver.py
+@@ -3,16 +3,13 @@
+ import argparse
+ import json
+ import os
+-import subprocess
+ import sys
+-from concurrent.futures import ThreadPoolExecutor
+ from pathlib import Path
+ from time import monotonic
+-from unittest.mock import patch
+ 
+ from . import iq_service, whole_iq
+ from . import original_receiver as original
+-from .__main__ import ROOT, THREAD_ENV, local_output, save_json
++from .__main__ import ROOT, local_output, save_json
+ from .qualification import capture_release, capture_whole, portable_field_run
+ from .qualification.full_v5_check import _sha
+ from .variants import portable_field
+@@ -20,7 +17,7 @@ from .variants import portable_field
+ MODULE = "tools.pipeline_eval.portable_receiver"
+ 
+ 
+-def prepare(case, out, cpus, raw_limit, position_limit, receiver, smoke):
++def prepare(case, out, cpus, raw_limit, position_limit, receiver, smoke, *, compact_kernels=False):
+     from .qualification import capture_whole_results
+ 
+     if not cpus or len(set(cpus)) != len(cpus) or not set(cpus) <= os.sched_getaffinity(0):
+@@ -40,7 +37,14 @@ def prepare(case, out, cpus, raw_limit, position_limit, receiver, smoke):
+         raise ValueError("choose at most one CPU per scheduled chunk, and one for --smoke")
+     workers = capture_whole.partition(chunks, frozenset(), cpus)
+     out.mkdir(mode=0o755, parents=True, exist_ok=False)
+-    build = portable_field_run.build(out)
++    builder = portable_field_run
++    backend = "portable-c-original-schedule"
++    if compact_kernels:
++        from . import direct_kernels
++
++        builder = direct_kernels
++        backend = "portable-c-compact-kernels"
++    build = builder.build(out)
+     sources = {
+         str(Path(module.__file__)): _sha(Path(module.__file__))
+         for module in (
+@@ -54,10 +58,11 @@ def prepare(case, out, cpus, raw_limit, position_limit, receiver, smoke):
+             capture_whole_results,
+             portable_field_run,
+             portable_field,
++            builder,
+         )
+     }
+     detector = dict(
+-        backend="portable-c-original-schedule",
++        backend=backend,
+         binary_sha256=build["binary"]["sha256"],
+         numeric_sources={
+             Path(path).relative_to(ROOT).as_posix(): digest
+@@ -92,96 +97,36 @@ def prepare(case, out, cpus, raw_limit, position_limit, receiver, smoke):
+ 
+ 
+ def worker(attempt):
+-    plan = whole_iq.read(attempt / "plan.json")
+-    work, (cpu,) = attempt.parent, plan["cpus"]
+-    digest = plan["source_lock_sha256"]
+-    lock = whole_iq.read(whole_iq.checked(work / "source-lock.json", digest))
+-    save_json(attempt / "start.json", whole_iq.raw.mark("portable receiver worker enter"))
+-    if plan["stage"] == "position":
+-        if original.receiver_assets(Path(lock["receiver"])) != lock["receiver_files"]:
+-            raise ValueError("compact installation changed after the source seal")
+-        whole_iq.position(attempt)
+-        return 0
+-    command = [
+-        "sudo",
+-        "-n",
+-        "-u",
+-        "leo",
+-        "--",
+-        "env",
+-        f"PYTHONPATH={lock['producer']}:{ROOT}",
+-        *(f"{key}={value}" for key, value in THREAD_ENV.items()),
+-        str(whole_iq.checked(Path(lock["python"]), lock["python_sha256"])),
+-        "-Bu",
+-        "-m",
+-        MODULE,
+-        "shard",
+-        str(work),
+-        str(cpu),
+-        digest,
+-    ]
+-    with (
+-        (work / f"cpu-{cpu}.jsonl").open("xb") as data,
+-        (work / f"cpu-{cpu}.log").open("xb") as log,
+-    ):
+-        return subprocess.run(command, stdout=data, stderr=log, check=False).returncode
++    return original.worker(attempt, worker_module=MODULE, label="portable receiver")
+ 
+ 
+ def run(out, lock):
+-    from .qualification import capture_whole_results
+-
+-    assemble = capture_whole_results.assemble
+-
+-    def portable_assembly(case, source, shards):
+-        document, counts = assemble(case, source | {"libraries": source["detector"]}, shards)
+-        document["provenance"]["scope"] = (
+-            "fresh portable C original acquisition and GLRT from signed CI16"
+-        )
+-        return document, counts
+-
+-    def raw_job(row):
+-        cpu = row[0]
+-        receipt = original.service(out / f"raw-{cpu}", cpu, lock["raw_limit_s"], "raw")
++    receipts, raw_wall, _ = original.raw_services(out, lock, worker_module=MODULE)
++    failed = []
++    for cpu, receipt in receipts.items():
+         if not iq_service.succeeded(receipt):
++            failed.append(receipt)
+             for suffix in ("jsonl", "log"):
+                 path = out / f"cpu-{cpu}.{suffix}"
+                 if not path.exists():
+                     path.touch(exist_ok=False)
+-        return cpu, receipt
+-
+-    with patch.object(original, "MODULE", MODULE), patch.object(iq_service, "MODULE", MODULE):
+-        started = monotonic()
+-        with ThreadPoolExecutor(max_workers=len(lock["workers"])) as pool:
+-            receipts = dict(pool.map(raw_job, lock["workers"]))
+-        raw_wall = monotonic() - started
+-        save_json(out / "launch.json", dict(source_lock_sha256=_sha(out / "source-lock.json")))
+-        save_json(
+-            out / "raw-exits.json",
+-            dict(exits={str(cpu): r["exit_code"] for cpu, r in receipts.items()}, wall_s=raw_wall),
+-        )
+-        shards, workers, _ = original.collect(out, lock)
+-        samples = capture_whole_results.summary_rows(shards)
+-        summary = dict(
+-            id=lock["id"],
+-            mode="smoke" if lock["smoke"] else "full",
+-            raw_wall_s=raw_wall,
+-            raw_services=receipts,
+-            workers=workers,
+-            completed_visits=len(samples),
+-            scheduled_visits=sum(row[1] for row in lock["workers"]),
+-            recorded_visits=lock["recording"]["window_count"],
+-            completed_chunks=len(shards),
+-            valid_visits=sum(row["status"] == "processed" for row in samples),
+-            invalid_visits=sum(row["status"] == "invalid_capture" for row in samples),
+-            grid_calls=sum(row["folded_calls"] for row in samples),
+-        )
+-        failed = [receipt for receipt in receipts.values() if not iq_service.succeeded(receipt)]
+-        if failed:
+-            return summary | dict(stage="raw", status=original.failure_status(failed))
+-        if lock["smoke"]:
+-            return summary | dict(stage="raw", status="stage_only")
+-        with patch.object(capture_whole_results, "assemble", portable_assembly):
+-            return summary | original.fit(out, lock, shards)
++    shards, workers, _ = original.collect(out, lock)
++    summary = original.raw_coverage(shards, workers, lock) | dict(
++        id=lock["id"],
++        mode="smoke" if lock["smoke"] else "full",
++        raw_wall_s=raw_wall,
++        raw_services=receipts,
++        scheduled_visits=sum(row[1] for row in lock["workers"]),
++        completed_chunks=len(shards),
++    )
++    if failed:
++        return summary | dict(stage="raw", status=original.failure_status(failed))
++    if lock["smoke"]:
++        return summary | dict(stage="raw", status="stage_only")
++    scope = "fresh portable C original acquisition and GLRT from signed CI16"
++    if lock["detector"]["backend"] == "portable-c-compact-kernels":
++        scope = "fresh portable C compact acquisition and GLRT from signed CI16"
++    return summary | original.fit(out, lock, shards, worker_module=MODULE, detector_scope=scope)
+ 
+ 
+ def main(argv=None):
+@@ -203,6 +148,9 @@ def main(argv=None):
+     parser.add_argument("--position-limit", type=int, default=180, metavar="SECONDS")
+     parser.add_argument("--receiver", type=local_output, default=original.CALIBRATION)
+     parser.add_argument("--smoke", action="store_true", help="replay one complete signed chunk")
++    parser.add_argument(
++        "--compact-kernels", action="store_true", help="build and use the compact C detector"
++    )
+     args = parser.parse_args(argv)
+     if not (1 <= args.raw_limit <= 600 and 1 <= args.position_limit <= 600):
+         parser.error("each service limit must be 1 through 600 seconds")
+@@ -216,6 +164,7 @@ def main(argv=None):
+             args.position_limit,
+             args.receiver,
+             args.smoke,
++            compact_kernels=args.compact_kernels,
+         )
+     except (ValueError, OSError) as error:
+         parser.error(str(error))
+diff --git a/tools/pipeline_eval/qualification/direct_clock_trial.py b/tools/pipeline_eval/qualification/direct_clock_trial.py
+new file mode 100644
+index 000000000..c35e06990
+--- /dev/null
++++ b/tools/pipeline_eval/qualification/direct_clock_trial.py
+@@ -0,0 +1,173 @@
++"""Freeze and replay disjoint development and held stored-GLRT cohorts."""
++
++import argparse
++import gzip
++import json
++import os
++import subprocess
++import sys
++from concurrent.futures import ThreadPoolExecutor
++from hashlib import sha256
++from pathlib import Path
++from time import perf_counter
++
++import numpy as np
++
++from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km
++
++from ..__main__ import ROOT, encoded, local_output, save_json, write
++from ..scoring import ARMS, validate_result
++from ..variants.projected_fit import Region
++from . import track_quadrature_trial as prior
++from .fresh_scenes import _read, _sha
++
++REPORT = ROOT / "reports/2026_11_19_receiver_screening/direct-receiver/joint-clock"
++SEED = "direct-clock-20261120-v1:"
++CPUS = (12, 13)
++CAP_S = 90
++METHODS = ("split_lattice", "free_offset", "native_joint", "shifted_orbit")
++POSITIONS = "positions.jsonl.gz"
++WORKER = "tools.pipeline_eval.qualification.direct_clock_worker"
++
++
++def source_files():
++    paths = [
++        Path(__file__),
++        ROOT / "tools/pipeline_eval/qualification/direct_clock_worker.py",
++        ROOT / "tools/pipeline_eval/variants/direct_clock.py",
++        REPORT / "PROTOCOL.md",
++    ]
++    return prior.source_files() | {str(p.relative_to(ROOT)): _sha(p) for p in paths}
++
++
++def east_offer(offer):
++    center = tuple(offer["center"])
++    origin = geodetic_to_ecef_km(*center, 0.0)
++    frame = ecef_to_enu_matrix(*center)
++    region = Region("source", center, origin, frame)
++    far = region.site(np.array((50.0, 0.0)))[1]
++    return dict(offer, id="east-50-km", center=far)
++
++
++def jobs_for(cohort, inputs, counts):
++    ids = []
++    for dataset in ("DS26", "DS29"):
++        ranked = sorted(
++            (i for i in counts if i.startswith(dataset + "-")),
++            key=lambda i: sha256((SEED + inputs[i]["native"]["sha256"]).encode()).digest(),
++        )
++        ids.extend(ranked[:2] if cohort == "development" else ranked[2:5])
++    methods = METHODS[:2] if cohort == "development" else METHODS
++    jobs = [
++        dict(
++            id=ident, recording=ident, offer_type="ordinary",
++            packet=prior.packet(inputs[ident]),
++            cpu=CPUS[i % 2], order=methods[i % len(methods):] + methods[:i % len(methods)],
++            **counts[ident],
++        )
++        for i, ident in enumerate(ids)
++    ]
++    if cohort == "held":
++        base = jobs[0]
++        packet = dict(base["packet"], offer=east_offer(base["packet"]["offer"]))
++        jobs.append(dict(
++            base, id=base["id"] + "-east-50-km", offer_type="omitted",
++            packet=packet, order=("native_joint", "free_offset", "split_lattice"),
++        ))
++    return jobs
++
++
++def freeze(work, cohort):
++    work.mkdir(parents=True, exist_ok=False)
++    inputs = prior.frozen_inputs()
++    counts = prior.inventory(inputs)
++    save_json(
++        work / "source-lock.json",
++        dict(
++            cohort=cohort, seed=SEED, source=source_files(),
++            jobs=jobs_for(cohort, inputs, counts), census_size=len(counts),
++            timeout_s=CAP_S, address_space_mib=512, numerical_threads=1,
++        ),
++    )
++
++
++def attempt(job, method):
++    request = job["packet"]
++    started = perf_counter()
++    try:
++        process = subprocess.run(
++            ("taskset", "-c", str(job["cpu"]), sys.executable, "-m", WORKER),
++            cwd=ROOT, input=encoded(dict(request, method=method)),
++            capture_output=True, check=True, timeout=CAP_S, env=os.environ | prior.ENV,
++        )
++        out = json.loads(process.stdout)
++        if out["observation_sha256"] != job["observation_sha256"]:
++            raise ValueError("authenticated stored GLRT reconstructed a different track projection")
++    except (OSError, subprocess.SubprocessError, ValueError) as err:
++        reason = (getattr(err, "stderr", None) or b"").decode(errors="replace")[-1800:] or str(err)
++        out = dict(result=dict(
++            status="timed_out" if isinstance(err, subprocess.TimeoutExpired) else "failed",
++            reason=reason,
++            boundary="Stored GLRT to split-confirmed Doppler positioning",
++            metrics={},
++            arms={arm: dict(latlon=None) for arm in ARMS},
++        ))
++    validate_result(out["result"])
++    out.update(
++        id=job["id"], recording=job["recording"], offer_type=job["offer_type"], method=method,
++        cpu=job["cpu"], tile=request["offer"], input_sha256=sha256(encoded(request)).hexdigest(),
++        native_sha256=request["native"]["sha256"], catalog_sha256=request["catalogue"]["sha256"],
++        worker_wall_s=perf_counter() - started,
++    )
++    print(job["id"], method, out["result"]["status"], round(out["worker_wall_s"], 3), flush=True)
++    return out
++
++
++def predict(work, output):
++    manifest = work / "source-lock.json"
++    lock = _read(manifest)
++    if lock["source"] != source_files() or not set(CPUS) <= os.sched_getaffinity(0):
++        raise ValueError("locked source or designated CPUs unavailable")
++    journal = work / "predictions"
++    journal.mkdir()
++    output.mkdir(parents=True, exist_ok=True)
++    if (output / "prediction-lock.json").exists():
++        raise FileExistsError("predictions already sealed")
++
++    def lane(cpu):
++        for job in lock["jobs"]:
++            if job["cpu"] == cpu:
++                for method in job["order"]:
++                    save_json(journal / f"{job['id']}-{method}.json", attempt(job, method))
++
++    with ThreadPoolExecutor(len(CPUS)) as pool:
++        list(pool.map(lane, CPUS))
++    if lock["source"] != source_files():
++        raise ValueError("locked source changed during prediction")
++    rows = [
++        _read(journal / f"{job['id']}-{method}.json")
++        for job in lock["jobs"] for method in job["order"]
++    ]
++    write(output / POSITIONS, gzip.compress(b"".join(encoded(row) + b"\n" for row in rows), mtime=0))
++    write(output / manifest.name, manifest.read_bytes())
++    save_json(output / "prediction-lock.json", dict(
++        cases=[job["id"] for job in lock["jobs"]],
++        files={name: _sha(output / name) for name in (POSITIONS, manifest.name)},
++    ))
++
++
++def main():
++    cli = argparse.ArgumentParser(description=__doc__)
++    cli.add_argument("action", choices=("lock", "predict"))
++    cli.add_argument("work", type=local_output)
++    cli.add_argument("--output", type=local_output, default=REPORT)
++    cli.add_argument("--cohort", choices=("development", "held"), default="held")
++    args = cli.parse_args()
++    if args.action == "lock":
++        freeze(args.work, args.cohort)
++    else:
++        predict(args.work, args.output)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/pipeline_eval/qualification/direct_clock_worker.py b/tools/pipeline_eval/qualification/direct_clock_worker.py
+new file mode 100644
+index 000000000..f1245b209
+--- /dev/null
++++ b/tools/pipeline_eval/qualification/direct_clock_worker.py
+@@ -0,0 +1,34 @@
++"""Read authenticated GLRT files through the normal bounded native worker."""
++
++import json
++import sys
++from resource import RLIMIT_AS, setrlimit
++from unittest.mock import patch
++
++from ..variants import native_lean as native
++
++
++def main():
++    started = native._now()
++    limit = native.AS_LIMIT_MIB * 1024**2
++    setrlimit(RLIMIT_AS, (limit, limit))
++    request = json.load(sys.stdin)
++    imported = native._now()
++    from ..variants import direct_clock, robust_orbit_fit
++
++    elapsed = native._elapsed(imported)
++    method = request.pop("method")
++
++    def infer(document, offer, catalogue):
++        return direct_clock.infer(document, offer, catalogue, method)
++
++    with patch.object(robust_orbit_fit, "infer", infer):
++        report = native.worker(request)
++    report["result"]["boundary"] = direct_clock.BOUNDARY
++    report["stages"]["backend_import"] = elapsed
++    report["worker"] = native._elapsed(started)
++    json.dump(report, sys.stdout, sort_keys=True, allow_nan=False)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/pipeline_eval/qualification/direct_external_iq.py b/tools/pipeline_eval/qualification/direct_external_iq.py
+new file mode 100644
+index 000000000..77dc5fec2
+--- /dev/null
++++ b/tools/pipeline_eval/qualification/direct_external_iq.py
+@@ -0,0 +1,421 @@
++"""Replay one authenticated public full-channel waveform through native Qin acquisition."""
++
++from __future__ import annotations
++
++import argparse
++import gzip
++import json
++import os
++import sys
++from collections import Counter
++from contextlib import ExitStack
++from dataclasses import dataclass
++from hashlib import file_digest, sha256
++from pathlib import Path
++from time import perf_counter, process_time
++
++import numpy as np
++import scipy
++from scipy.fft import fft, ifft
++from scipy.signal import fftconvolve, find_peaks, firwin, resample_poly
++
++from leo.analysis.starlink import native_short_window as native
++from leo.analysis.starlink import templates
++
++SOURCE_RATE = 480_000_000
++RATE = 10_000_000
++PERIOD = RATE / 750
++ALIAS = 1 / 4.4e-6
++DECIMATE = SOURCE_RATE // RATE
++LOOK = 37_500
++DWELL = RATE // 50
++CENTERS = {"lower": -115_312_500, "upper": 115_312_500}
++OPPOSITE = {"lower": "upper", "upper": "lower"}
++PLANT_CFO = {"lower": 137_125, "upper": -179_375}
++DIGITAL_SHIFT = 171_875
++MARGIN_GATE = 0.025
++PHASE_GATE = 10
++CFO_GATE = 1000
++PSS_GATE = 0.12
++HELD_RATIO = 4.0
++SEED = 41821
++LIBRARY = Path("/srv/bulk/leo-dev/20261119-wide-regional/wide/libleo-adaptive-detector.so")
++LIBRARY_SHA = "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66"
++LOOKS = ("discovery", "held")
++MODES = ("measured", "cfo_shift", "wrong_edge", "permuted", "phase_null", "interior", "plant")
++
++
++@dataclass(frozen=True)
++class Endpoint:
++    phase_samples: float
++    tracked_hz: float
++    margin: float
++
++
++def digest(path: Path) -> str:
++    with path.open("rb") as stream:
++        return file_digest(stream, "sha256").hexdigest()
++
++
++def write_json(path: Path, value) -> None:
++    with path.open("x") as stream:
++        stream.write(json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n")
++
++
++def validate_seal(directory: Path, seal: dict[str, str]) -> None:
++    for name, expected in seal.items():
++        if digest(directory / name) != expected:
++            raise ValueError(f"changed sealed file: {name}")
++
++
++def load_iq(path: Path, count: int, expected_digest: str) -> np.ndarray:
++    if digest(path) != expected_digest:
++        raise ValueError("unexpected range digest")
++    with path.open("rb") as stream:
++        if stream.readline().rstrip(b"\r\n") != b"I_data,Q_data":
++            raise ValueError("expected primary I_data,Q_data CSV layout")
++        raw = np.loadtxt(stream, delimiter=",", dtype=np.float32, max_rows=count)
++    if raw.shape != (count, 2) or not np.isfinite(raw).all():
++        raise ValueError("missing or nonfinite source IQ pairs")
++    return np.ascontiguousarray(raw).view(np.complex64).ravel()
++
++
++def taps() -> np.ndarray:
++    return firwin(1537, 4e6, fs=SOURCE_RATE, window=("kaiser", 8.6)).astype(np.float32)
++
++
++def mix(iq: np.ndarray, frequency_hz: float, rate: int) -> np.ndarray:
++    return iq * np.exp((2j * np.pi * frequency_hz / rate) * np.arange(len(iq))).astype(np.complex64)
++
++
++def edge_lane(iq: np.ndarray, mixer_hz: float, filter_taps: np.ndarray) -> np.ndarray:
++    if len(iq) % DECIMATE or abs(mixer_hz) + RATE / 2 >= SOURCE_RATE / 2:
++        raise ValueError("unaligned input or incomplete lane span")
++    return resample_poly(mix(iq, -mixer_hz, SOURCE_RATE), 1, DECIMATE, window=filter_taps)
++
++
++def quantize(iq: np.ndarray, gain: float) -> tuple[np.ndarray, int]:
++    components = np.ascontiguousarray(iq, dtype="<c8").view("<f4").reshape(-1, 2)
++    rounded = np.rint(components * gain)
++    clipped = int(np.count_nonzero((rounded < -32768) | (rounded > 32767)))
++    ci16 = np.zeros((DWELL, 1, 2), dtype="<i2")
++    ci16[: len(iq), 0] = np.clip(rounded, -32768, 32767).astype("<i2")
++    return ci16, clipped
++
++
++def template_bank(edge: str) -> dict[str, tuple[np.ndarray, np.ndarray]]:
++    exact = templates.qin_edge_pilot_frame(RATE, edge).astype("<c16")
++    rolled = templates.qin_edge_pilot_frame(
++        RATE, edge, symbol_roll=templates.CONTROL_SYMBOL_ROLL
++    ).astype("<c16")
++    rng = np.random.default_rng(SEED)
++    active = exact[88:13288].reshape(300, 44)
++    shuffled = np.tile(exact, (2, 1))
++    for candidate in shuffled:
++        candidate[88:13288] = active[rng.permutation(len(active))].ravel()
++    return {"exact": (exact, rolled), "permuted": tuple(shuffled)}
++
++
++def plant_phase_s(look: str) -> float:
++    return {"discovery": 0.00018735, "held": 0.00033172}[look]
++
++
++def plant(look: str, edge: str, rng: np.random.Generator) -> np.ndarray:
++    count = LOOK * DECIMATE
++    components = rng.standard_normal((count, 2), dtype=np.float32) * 0.3
++    data = np.ascontiguousarray(components).view(np.complex64).ravel()
++    waveform = templates.qin_edge_pilot_frame(SOURCE_RATE, edge)
++    burst = mix(waveform, CENTERS[edge] + PLANT_CFO[edge], SOURCE_RATE)
++    for tick in range(3):
++        start = round((plant_phase_s(look) + tick / 750) * SOURCE_RATE)
++        span = min(len(burst), count - start)
++        data[start : start + span] += burst[:span] * np.exp(2j * np.pi * rng.random())
++    return data
++
++
++def phase_null(iq: np.ndarray, rng: np.random.Generator) -> np.ndarray:
++    return ifft(np.abs(fft(iq)) * np.exp(2j * np.pi * rng.random(len(iq)))).astype(np.complex64)
++
++
++def circular(delta: float, period: float) -> float:
++    return (delta + period / 2) % period - period / 2
++
++
++def choose_endpoint(result: dict) -> Endpoint | None:
++    valid = [
++        c for c in result["rows"][0]["candidates"] if c["fractional_epoch"]["status"] == "complete"
++    ]
++    if not valid:
++        return None
++    winner = max(valid, key=lambda c: c["fractional_epoch"]["margin"])
++    detail = winner["fractional_epoch"]
++    return Endpoint(
++        winner["epoch"] + detail["offset_samples"], detail["tracking_cfo_hz"], detail["margin"]
++    )
++
++
++def score_frame(iq: np.ndarray, template: np.ndarray, epoch: float, cfo_hz: float) -> float:
++    data_slots = np.arange(88, 13288)
++    base = int(np.floor(epoch))
++    fraction = epoch - base
++    first, last = base + data_slots[0], base + data_slots[-1] + 2
++    if first < 0 or last > len(iq):
++        raise ValueError("complete scoring interval required")
++    z = (1 - fraction) * iq[first : last - 1] + fraction * iq[first + 1 : last]
++    code = template[88:13288]
++    denom = float(np.vdot(code, code).real * np.vdot(z, z).real)
++    return float(abs(np.vdot(mix(code, cfo_hz, RATE), z)) ** 2 / denom) if denom else 0.0
++
++
++def discovery_offer(iq: np.ndarray, exact: np.ndarray, endpoint: Endpoint | None) -> dict:
++    if endpoint is None or endpoint.margin < MARGIN_GATE:
++        return {"status": "native_gate_failed"}
++    phase = endpoint.phase_samples % PERIOD
++    canonical = circular(endpoint.tracked_hz, ALIAS)
++    branches = [
++        {"cfo_hz": f, "coherence": score_frame(iq, exact, phase, f)}
++        for f in (canonical + k * ALIAS for k in range(-3, 4))
++    ]
++    selected = max(branches, key=lambda branch: branch["coherence"])
++    return {
++        "status": "offered",
++        "phase_samples": phase,
++        "cfo_hz": selected["cfo_hz"],
++        "branches": branches,
++    }
++
++
++def published_pss() -> np.ndarray:
++    bits = int("C1B5D191024D3DC3F8EC52FAA16F3958", 16)
++    increments = np.array([2 * ((bits >> i) & 1) - 1 for i in range(128)])
++    k = np.arange(-32, 1024)
++    phase = (k < 128) - 0.25 - np.cumsum(increments)[k % 128] / 2
++    native_rate = np.exp(np.pi * 1j * phase).astype(np.complex64)
++    return resample_poly(native_rate, 2, 1)
++
++
++def pss_markers(iq: np.ndarray) -> list[dict]:
++    pss = published_pss()
++    numerator = np.abs(fftconvolve(iq, pss[::-1].conj(), mode="valid")) ** 2
++    cumulative = np.r_[0.0, np.cumsum(np.abs(iq) ** 2, dtype=np.float64)]
++    energy = cumulative[len(pss) :] - cumulative[: -len(pss)]
++    denominator = energy * float(np.vdot(pss, pss).real)
++    coherence = np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator > 0)
++    peaks, _ = find_peaks(coherence, height=PSS_GATE, distance=int(SOURCE_RATE / 750 / 2))
++    return [{"index": int(ind), "coherence": float(coherence[ind])} for ind in peaks]
++
++
++def bound_source(source: Path, directory: Path) -> tuple[np.ndarray, dict]:
++    metadata = json.loads((directory / "source.json").read_text())
++    protocol = json.loads((directory / "protocol-lock.json").read_text())
++    if digest(directory / "PROTOCOL.md") != protocol["protocol_sha256"]:
++        raise ValueError("changed frozen protocol")
++    if source.stat().st_size != metadata["received_bytes"] or metadata["received_bytes"] != 125e6:
++        raise ValueError("unexpected source range size")
++    count = 2 * LOOK * DECIMATE
++    if count != protocol["first_source_samples"]:
++        raise ValueError("changed frozen source sample budget")
++    iq = load_iq(source, count, metadata["range_sha256"])
++    return iq, metadata
++
++
++def predict(source: Path, out: Path, library: Path) -> None:
++    if (out / "prediction-lock.json").exists():
++        raise FileExistsError("use a fresh prediction directory")
++    if digest(library) != LIBRARY_SHA:
++        raise ValueError("expected the qualified stock wide detector")
++    iq, _ = bound_source(source, out)
++    prepared = {edge: template_bank(edge) for edge in CENTERS}
++    filter_taps = taps()
++    config = {
++        "inputs": {name: digest(out / name) for name in ("PROTOCOL.md", "source.json", "protocol-lock.json")},
++        "harness_sha256": digest(Path(__file__)),
++        "native_python_sha256": digest(Path(native.__file__)),
++        "template_python_sha256": digest(Path(templates.__file__)),
++        "native_library_sha256": LIBRARY_SHA,
++        "input_iq_sha256": sha256(iq.tobytes()).hexdigest(),
++        "templates_sha256": {
++            edge: {name: [sha256(x.tobytes()).hexdigest() for x in pair] for name, pair in bank.items()}
++            for edge, bank in prepared.items()
++        },
++        "fir_sha256": sha256(filter_taps.tobytes()).hexdigest(),
++        "python": sys.version.split()[0],
++        "numpy": np.__version__,
++        "scipy": scipy.__version__,
++        "affinity": sorted(os.sched_getaffinity(0)),
++        "native_support_samples": DWELL,
++        "measured_support_samples": LOOK,
++        "looks": list(LOOKS),
++        "modes": list(MODES),
++    }
++    write_json(out / "input-lock.json", config)
++    results, offers, transforms = [], {}, []
++    with ExitStack() as stack:
++        detectors = {
++            (edge, mode): stack.enter_context(
++                native.NativeShortWindow(
++                    str(library), *pair, sample_rate_hz=RATE, receiver_count=1, fractional_epoch=True
++                )
++            )
++            for edge, bank in prepared.items()
++            for mode, pair in bank.items()
++        }
++        for index, (look, raw) in enumerate(zip(LOOKS, np.split(iq, 2), strict=True)):
++            for side, (edge, center) in enumerate(CENTERS.items()):
++                rng = np.random.default_rng(SEED + 2 * index + side)
++                wall, cpu = perf_counter(), process_time()
++                main = edge_lane(raw, center, filter_taps)
++                gain = 4096 / float(np.sqrt(np.mean(np.abs(main) ** 2)))
++                signals = {
++                    "measured": (main, edge, "exact"),
++                    "cfo_shift": (mix(main, DIGITAL_SHIFT, RATE), edge, "exact"),
++                    "wrong_edge": (main, OPPOSITE[edge], "exact"),
++                    "permuted": (main, edge, "permuted"),
++                    "phase_null": (phase_null(main, rng), edge, "exact"),
++                    "interior": (edge_lane(raw, center - np.sign(center) * 10e6, filter_taps), edge, "exact"),
++                    "plant": (edge_lane(plant(look, edge, rng), center, filter_taps), edge, "exact"),
++                }
++                transforms.append({"look": look, "edge": edge, "wall_s": perf_counter() - wall, "cpu_s": process_time() - cpu})
++                for mode, (values, code_edge, code_mode) in signals.items():
++                    ci16, clip_count = quantize(values, gain)
++                    wall, cpu = perf_counter(), process_time()
++                    result = detectors[(code_edge, code_mode)].analyze(ci16, include_timings=True)
++                    results.append({
++                        "look": look,
++                        "edge": edge,
++                        "mode": mode,
++                        "gain": gain,
++                        "clipped_components": clip_count,
++                        "iq_sha256": sha256(ci16.tobytes()).hexdigest(),
++                        "wall_s": perf_counter() - wall,
++                        "cpu_s": process_time() - cpu,
++                        "native": result,
++                    })
++                    if look == "discovery" and mode == "measured":
++                        offers[edge] = discovery_offer(main, prepared[edge]["exact"][0], choose_endpoint(result))
++            if look == "discovery":
++                write_json(out / "discovery-offers.json", offers)
++    payload = "".join(json.dumps(row, sort_keys=True, allow_nan=False) + "\n" for row in results)
++    (out / "native.jsonl.gz").write_bytes(gzip.compress(payload.encode(), mtime=0))
++    write_json(out / "transform-timings.json", transforms)
++    names = ("input-lock.json", "discovery-offers.json", "native.jsonl.gz", "transform-timings.json")
++    write_json(out / "prediction-lock.json", {"files": {name: digest(out / name) for name in names}, "calls": len(results)})
++
++
++def matched_holdout(iq: np.ndarray, bank: dict, edge: str, offer: dict) -> list[dict]:
++    if offer["status"] != "offered":
++        return []
++    exact = bank[edge]["exact"][0]
++    frequency = offer["cfo_hz"]
++    phase = (offer["phase_samples"] - LOOK) % PERIOD
++    endpoint_cases = (
++        ("exact", 0, 0, exact),
++        ("time_sham", 1387, 0, exact),
++        ("cfo_sham", 0, 12345, exact),
++        ("wrong_edge", 0, 0, bank[OPPOSITE[edge]]["exact"][0]),
++        ("permuted", 0, 0, bank[edge]["permuted"][0]),
++    )
++    points = []
++    for epoch in np.arange(phase, len(iq), PERIOD):
++        if epoch + 1387 + 13288 + 1 > len(iq):
++            continue
++        for name, lag, shift, template in endpoint_cases:
++            points.append({
++                "edge": edge,
++                "epoch_samples": float(epoch),
++                "mode": name,
++                "coherence": score_frame(iq, template, epoch + lag, frequency + shift),
++            })
++    return points
++
++
++def score(source: Path, out: Path) -> None:
++    if (out / "score-lock.json").exists():
++        raise FileExistsError("use a fresh scoring directory")
++    prediction = json.loads((out / "prediction-lock.json").read_text())
++    validate_seal(out, prediction["files"])
++    inputs = json.loads((out / "input-lock.json").read_text())
++    validate_seal(out, inputs["inputs"])
++    if digest(Path(__file__)) != inputs["harness_sha256"]:
++        raise ValueError("scoring harness has changed since the native prediction seal")
++    iq, _ = bound_source(source, out)
++    if sha256(iq.tobytes()).hexdigest() != inputs["input_iq_sha256"]:
++        raise ValueError("decoded source_samples have changed")
++    offers = json.loads((out / "discovery-offers.json").read_text())
++    rows = [json.loads(line) for line in gzip.decompress((out / "native.jsonl.gz").read_bytes()).splitlines()]
++    if len(rows) != prediction["calls"]:
++        raise ValueError("prediction rows changed")
++    all_cases = {(row["look"], row["edge"], row["mode"]) for row in rows}
++    if all_cases != {(look, edge, mode) for look in LOOKS for edge in CENTERS for mode in MODES}:
++        raise ValueError("native cases are incomplete")
++    endpoints = {key: choose_endpoint(row["native"]) for key, row in zip(
++        [(r["look"], r["edge"], r["mode"]) for r in rows], rows, strict=True
++    )}
++    split = dict(zip(LOOKS, np.split(iq, 2), strict=True))
++    markers = {look: pss_markers(raw) for look, raw in split.items()}
++    packed = []
++    for row in rows:
++        look, edge, mode = row["look"], row["edge"], row["mode"]
++        winner = endpoints[(look, edge, mode)]
++        origin = endpoints[(look, edge, "measured")]
++        plant_truth = round(plant_phase_s(look) * SOURCE_RATE) / DECIMATE
++        guard = {
++            "look": look,
++            "edge": edge,
++            "mode": mode,
++            "native_candidates": row["native"]["rows"][0]["candidate_count"],
++            "native_glrt_calls": row["native"]["rows"][0]["actual_executed_glrt_calls"],
++            "native_main_cpu_ms": row["native"]["detector_cpu_ms"],
++            "wall_s": row["wall_s"],
++            "cpu_s": row["cpu_s"],
++            "clipped_components": row["clipped_components"],
++            "native_margin": winner.margin if winner else None,
++            "phase_samples": winner.phase_samples if winner else None,
++            "tracking_cfo_hz": winner.tracked_hz if winner else None,
++            "gate": bool(winner and winner.margin >= MARGIN_GATE),
++        }
++        if winner is not None:
++            pss_phase = markers[look][0]["index"] / DECIMATE if markers[look] else None
++            target_phase = plant_truth if mode == "plant" else pss_phase
++            if target_phase is not None:
++                guard["phase_error_samples"] = circular(winner.phase_samples - target_phase, PERIOD)
++            if mode == "plant":
++                guard["cfo_error_hz"] = circular(winner.tracked_hz - PLANT_CFO[edge], ALIAS)
++            if mode == "cfo_shift" and origin and origin.margin >= MARGIN_GATE:
++                guard["cfo_error_hz"] = circular(winner.tracked_hz - origin.tracked_hz - DIGITAL_SHIFT, ALIAS)
++        packed.append(guard)
++    bank = {edge: template_bank(edge) for edge in CENTERS}
++    held = []
++    for edge, center in CENTERS.items():
++        lane = edge_lane(split["held"], center, taps())
++        held.extend(matched_holdout(lane, bank, edge, offers[edge]))
++    medians = []
++    for (edge, mode), count in Counter((r["edge"], r["mode"]) for r in held).items():
++        values = [r["coherence"] for r in held if r["edge"] == edge and r["mode"] == mode]
++        medians.append({"edge": edge, "mode": mode, "coherence": float(np.median(values)), "count": count})
++    anticipation = {edge: offers[edge]["status"] for edge in CENTERS}
++    for edge in CENTERS:
++        values = {r["mode"]: r["coherence"] for r in medians if r["edge"] == edge}
++        if values:
++            highest = max(v for name, v in values.items() if name != "exact")
++            anticipation[edge] = "held_gate_passed" if values["exact"] >= HELD_RATIO * highest else "held_gate_failed"
++    result = {"native": packed, "pss": markers, "held": held, "held_medians": medians, "held_gates": anticipation}
++    write_json(out / "scores.json", result)
++    write_json(out / "score-lock.json", {name: digest(out / name) for name in ("prediction-lock.json", "scores.json")})
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("action", choices=["predict", "score"])
++    parser.add_argument("source", type=Path)
++    parser.add_argument("--out", type=Path, required=True)
++    parser.add_argument("--library", type=Path, default=LIBRARY)
++    arguments = parser.parse_args()
++    if arguments.action == "predict":
++        predict(arguments.source, arguments.out, arguments.library)
++    else:
++        score(arguments.source, arguments.out)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/pipeline_eval/qualification/direct_field.py b/tools/pipeline_eval/qualification/direct_field.py
+new file mode 100644
+index 000000000..ea6d22020
+--- /dev/null
++++ b/tools/pipeline_eval/qualification/direct_field.py
+@@ -0,0 +1,323 @@
++"""Seal the two full DS26-0162 portable command outcomes, then score them."""
++
++import argparse
++import gzip
++import json
++from pathlib import Path
++from unittest.mock import patch
++
++from .. import iq_service, original_receiver as receiver, whole_iq
++from ..__main__ import ROOT, local_output, save_json, write
++from ..scoring import ARMS, ROLES, distance_km
++from . import accelerated_command_parity as native_parity
++from . import accelerated_command_results as controls
++from . import capture_release, portable_command, portable_field_parity
++from . import portable_field_scores as checks
++from .armijo_finish_results import pack
++from .full_held_scores import held_references
++from .full_v5_check import BULK, _load_case, _sha
++from .prefix_figures import csv_file
++
++CASE = "DS26-0162"
++CPUS = list(range(8))
++MODES = {"incumbent": "portable-c-original-schedule", "compact": "portable-c-compact-kernels"}
++METHODS = (*MODES, controls.ARCHIVE)
++OUT = portable_command.REPORT_ROOT / "direct-receiver/field-control"
++HISTORICAL = portable_command.REPORT_ROOT / "original-support/scheduled-waveform"
++ARCHIVE_SEAL = "6d69607b2ead5085e039ac89cebbbcb4eb8f487d41190b91f0f15977d1831e82"
++PROTOCOL_SHA = "dc36594a0ac9e717988de9c1ec000b23a108b12251739e3d8e6a0c5d6e3f2571"
++POSITION = "positions.jsonl.gz"
++read = whole_iq.read
++
++
++def archive(case, request):
++    seal = read(whole_iq.checked(HISTORICAL / "prediction-lock.json", ARCHIVE_SEAL))
++    checks.checked_files(HISTORICAL, seal["files"], (POSITION, "source-lock.json"))
++    lock = read(HISTORICAL / "source-lock.json")
++    directory = HISTORICAL / "receipts/full"
++    terminal, plan, raw, result = (
++        read(directory / f"{name}.json") for name in ("terminal", "plan", "raw", "position")
++    )
++    asset = case["native"]
++    native = whole_iq.checked(BULK / asset["path"], asset["sha256"])
++    fitted_request = directory / "recording/request.json"
++    whole_iq.verify_request(
++        read(fitted_request), request, native_path=str(native), native_sha256="sha256:" + asset["sha256"]
++    )
++    with gzip.open(HISTORICAL / POSITION, "rt") as stream:
++        (pred,) = [
++            row
++            for row in map(json.loads, stream)
++            if row["method"] == "original_capture_all_factors_compact"
++        ]
++    if (
++        pred["id"] != CASE
++        or pred["native_sha256"] != asset["sha256"]
++        or pred["original_request_sha256"] != case["request"]["sha256"]
++        or pred["catalog_sha256"] != case["catalog"]["sha256"]
++        or pred["tile"] != case["regions"][0]
++        or pred["result"] != result
++        or raw["request_sha256"] != _sha(fitted_request)
++        or raw["native_sha256"] != "sha256:" + asset["sha256"]
++        or terminal["exit_code"] != 0
++        or terminal["log_sha256"] != _sha(directory / "service.log")
++        or plan["source_lock_sha256"] != seal["files"]["source-lock.json"]
++        or plan["receiver"] != lock["receiver"]
++    ):
++        raise ValueError("archived compact fit does not bind the full signed original factors")
++    return (
++        read(native),
++        pred | {"method": controls.ARCHIVE, "archived_native_sha256": asset["sha256"]},
++        dict(
++            receiver=lock["receiver"],
++            receiver_files=lock["receiver_files"],
++            terminal=terminal,
++            plan=plan,
++            raw=raw,
++            end=read(directory / "end.json"),
++            position_sha256=_sha(directory / "position.json"),
++        ),
++    )
++
++
++def verify_plan(lock, summary, roster, expected, backend):
++    if (
++        lock["case"] != roster["case"]
++        or lock["recording"] != roster["case"]["recording"]
++        or lock["id"] != roster["case"]["id"]
++        or lock["smoke"]
++        or lock["capture"] != roster["capture"]
++        or lock["producer"] != roster["producer"]
++        or lock["workers"] != roster["workers"]
++        or lock["cpus"] != CPUS
++        or (lock["raw_limit_s"], lock["position_limit_s"]) != (600, 180)
++        or lock["receiver"] != expected["receiver"]
++        or lock["receiver_files"] != expected["receiver_files"]
++        or lock["detector"]["backend"] != backend
++        or (summary["id"], summary["mode"]) != (roster["case"]["id"], "full")
++    ):
++        raise ValueError("run differs from the prespecified full receiver protocol")
++
++
++def matched_changes(probes, controls, changes):
++    fresh, reference = ({native_parity.key(p): p for p in rows} for rows in (probes, controls))
++    first, substantive = None, None
++    for row in changes:
++        key = tuple(row["probe"])
++        left, right = fresh[key], reference[key]
++        x, y = (list(r["candidates"]) for r in (left, right))
++        gates = [tuple(c["passed_fractional_margin_gate"] for c in side) for side in (x, y)]
++        decision = (
++            gates[0] != gates[1]
++            or len(row["matched_physical_indices"]) != len(x)
++            or len(x) != len(y)
++            or row["moved_rank_count"] != 0
++            or row["reordered_pairs"] != 0
++            or bool(row["physical_fields"])
++        )
++        audit = dict(change=row, measured=left, reference=right, gate_sequence_changed=gates[0] != gates[1])
++        if first is None:
++            first = audit
++        if decision:
++            substantive = audit
++            break
++    return dict(first_changed=first, first_support_rank_or_gate_change=substantive)
++
++
++def comparison(native, visits, other, reference_visits=()):
++    proof, differences, ambiguous = portable_field_parity.compare(native, visits, other)
++    audit = matched_changes(
++        [p for v in visits for p in v["probes"]], other["source"]["probes"], differences
++    )
++    visits_by_id = [{r["visit"]: r for r in rows} for rows in (visits, reference_visits)]
++    for row in audit.values():
++        if row is not None:
++            visit, lane, *_ = row["change"]["probe"]
++            row["portable_groups_by_side"] = [
++                [g for g in rows.get(visit, {}).get("portable_groups", ()) if g["lane"] == lane]
++                for rows in visits_by_id
++            ]
++    return dict(parity=proof, audit=audit), differences, ambiguous
++
++
++def run_evidence(work, mode, roster, archive_fit, request):
++    paths = {
++        name: work.parent / f"{mode}{suffix}"
++        for name, suffix in (
++            ("time", ".time"), ("exit", ".exit"), ("stdout", ".stdout"), ("stderr", ".stderr"),
++            ("host-before.txt", "-host-before.txt"), ("host-after.txt", "-host-after.txt"),
++            ("argv.txt", "-argv.txt"),
++        )
++    }
++    evidence = dict(paths={key: _sha(path) for key, path in paths.items()})
++    seal = work / "run-seal.json"
++    if not seal.exists():
++        status = int(paths["exit"].read_text())
++        if status == 0:
++            raise ValueError("successful command did not leave a sealed result")
++        result = checks.unavailable("public command failed before producing a terminal seal", "failed")
++        return result, evidence | dict(stage="unsealed", exit_code=status), {}, None, [], []
++    files = read(seal)["files"]
++    checks.checked_files(work, files, checks.RUN_KEYS)
++    lock, summary = (read(work / name) for name in checks.RUN_KEYS)
++    verify_plan(lock, summary, roster, archive_fit, MODES[mode])
++    receiver.configure(work)
++    if receiver.receiver_assets(Path(lock["receiver"])) != lock["receiver_files"]:
++        raise ValueError("compact position receiver differs from its launch")
++    evidence.update(
++        stage=summary["stage"], run_seal_sha256=_sha(seal),
++        command=portable_command.clock(paths["time"], summary["command_wall_s"]),
++        detector=lock["detector"], source_lock_sha256=files["source-lock.json"],
++    )
++    if evidence["command"]["exit_code"] != int(paths["exit"].read_text()):
++        raise ValueError("external and shell terminal receipts disagree")
++    raw, visits, samples = checks.raw_state(work, lock, summary, files)
++    native = None
++    native_sha = summary.get("native_sha256")
++    if native_sha is not None:
++        if not raw["complete"] or files.get("native.json") != native_sha.removeprefix("sha256:"):
++            raise ValueError("native handoff requires a complete authenticated recording")
++        native = read(work / "native.json")
++        if native["provenance"]["detector_sha256"] != receiver.recording.digest(lock["detector"]):
++            raise ValueError("fresh factors do not bind the executed detector")
++    result, fit = checks.position_record(work, lock, summary, files, request, native_sha, raw["complete"])
++    _, attempts = checks.collect_attempts(visits)
++    evidence.update(raw=raw, fit=fit, native_sha256=native_sha, attempts=attempts, summary_status=summary["status"])
++    return result, evidence, paths, native, visits, samples
++
++
++def seal(scratch, output):
++    protocol = whole_iq.checked(output / "PROTOCOL.md", PROTOCOL_SHA)
++    if (output / "prediction-lock.json").exists():
++        raise FileExistsError("the prediction comparison is already sealed")
++    if (scratch / "protocol.sha256").read_text().split()[0] != PROTOCOL_SHA:
++        raise ValueError("run protocol differs from its prelaunch binding")
++    case = _load_case(CASE)
++    capture = capture_release.read_capture(case)
++    producer = capture_release.producer(case, capture)
++    request, causal = checks.causal_authority(case)
++    signed_chunks = receiver.chunks(case)
++    if (capture["edge"], case["recording"]["window_count"], len(signed_chunks)) != ("upper", 6772, 106):
++        raise ValueError("the signed case differs from the prespecified capture")
++    capture["case"] = {key: case[key] for key in ("id", "session_id", "run_id")}
++    roster = dict(case=case, capture=capture, producer=str(producer.root), workers=[
++        [cpu, count, list(map(list, chunks))]
++        for cpu, count, chunks in checks.capture.trial.partition(signed_chunks, frozenset(), CPUS)
++    ])
++    archived, archive_pred, archive_fit = archive(case, request)
++    evidence = dict(cpus=CPUS, causal=causal, archive=archive_fit, signed_case=case,
++                    recorded_delivery_span_s=(archived["delivery_clocks"][-1]["monotonic_ns"]
++                    - archived["delivery_clocks"][0]["monotonic_ns"]) / 1e9)
++    rows, runs, proofs, native_by_mode, visits_by_mode = [], {}, {}, {}, {}
++    paths = [protocol.name]
++    for mode in MODES:
++        work = scratch / mode
++        result, runs[mode], external, native, visits, samples = run_evidence(
++            work, mode, roster, archive_fit, request
++        )
++        rows.append(archive_pred | dict(method=mode, result=result, native_sha256=runs[mode].get("native_sha256")))
++        native_by_mode[mode], visits_by_mode[mode] = native, visits
++        proofs[mode], differences, ambiguous = comparison(native, visits, archived)
++        for label, values in (("differences", differences), ("ambiguous", ambiguous)):
++            name = f"{mode}-archive-{label}.jsonl.gz"
++            pack(output, name, values)
++            paths.append(name)
++        name = f"{mode}-visits.csv"
++        if samples:
++            csv_file(output / name, samples)
++            paths.append(name)
++        for name in (*checks.RUN_KEYS, "run-seal.json"):
++            if (work / name).is_file():
++                external[name] = work / name
++        for name, source in external.items():
++            target = f"{mode}-{name}"
++            write(output / target, source.read_bytes())
++            paths.append(target)
++    if native_by_mode["incumbent"] is not None:
++        proofs["paired"], differences, ambiguous = comparison(
++            native_by_mode["compact"], visits_by_mode["compact"], native_by_mode["incumbent"],
++            visits_by_mode["incumbent"],
++        )
++        for label, values in (("differences", differences), ("ambiguous", ambiguous)):
++            name = f"paired-{label}.jsonl.gz"
++            pack(output, name, values)
++            paths.append(name)
++    rows.append(archive_pred)
++    evidence.update(runs=runs, archive_position_comparison=controls.compare_positions(rows))
++    save_json(output / "evidence.json", evidence)
++    save_json(output / "native-parity.json", proofs)
++    pack(output, POSITION, rows)
++    paths += ["evidence.json", "native-parity.json", POSITION]
++    for name in ("incumbent-preflight.log", "protocol.sha256"):
++        write(output / name, (scratch / name).read_bytes())
++        paths.append(name)
++    save_json(output / "prediction-lock.json", dict(
++        cases=[CASE], files={name: _sha(output / name) for name in paths}, scratch=str(scratch),
++        archive_prediction_sha256=ARCHIVE_SEAL, original_v5_sources=portable_command.v5_sources(case),
++        scoring_sources={str(Path(m.__file__)): _sha(Path(m.__file__)) for m in (
++            checks, controls, native_parity, portable_command, portable_field_parity
++        )} | {str(Path(__file__)): _sha(Path(__file__))},
++    ))
++
++
++def score(output):
++    from . import direct_field_report as report
++
++    prediction = read(output / "prediction-lock.json")
++    checks.checked_files(output, prediction["files"], (POSITION, "evidence.json", "native-parity.json"))
++    if prediction["cases"] != [CASE] or prediction["files"].get("PROTOCOL.md") != PROTOCOL_SHA:
++        raise ValueError("prediction seal differs from its scoped protocol")
++    for group in ("scoring_sources", "original_v5_sources"):
++        for path, digest in prediction[group].items():
++            whole_iq.checked(Path(path), digest)
++    with gzip.open(output / POSITION, "rt") as stream:
++        positions = list(map(json.loads, stream))
++    if [row["method"] for row in positions] != list(METHODS):
++        raise ValueError("prediction seal must retain each scheduled receiver outcome")
++    _, (reference,) = held_references(None, [CASE])
++    case = _load_case(CASE)
++    with patch.object(controls, "V5_ARCHIVE", portable_command.v5_directory(case).parent):
++        v5, receipts = controls.original_v5_scores(case, reference)
++    rows = portable_command.position_scores(positions, reference["truth"]) + v5
++    quality = {}
++    for mode in MODES:
++        quality[mode] = checks.accuracy([
++            row | {"method": checks.PORTABLE if row["method"] == mode else row["method"]}
++            for row in rows if row["method"] in (mode, controls.ARCHIVE, *ROLES)
++        ])
++    for pos in positions:
++        arms = pos["result"]["arms"]
++        for quality_run in quality.values():
++            key = checks.PORTABLE if pos["method"] in MODES else pos["method"]
++            if pos["method"] in MODES and quality_run is not quality[pos["method"]]:
++                continue
++            quality_run["fitted_c_minus_c0"][key]["endpoint_separation_km"] = distance_km(
++                *(arms[arm]["latlon"] for arm in ARMS)
++            )
++    csv_file(output / "scores.csv", rows)
++    save_json(output / "scores.json", quality)
++    save_json(output / "original-v5-receipts.json", receipts)
++    names = report.publish(output, rows, quality)
++    save_json(output / "score-lock.json", dict(cases=[CASE], files=prediction["files"] | {
++        name: _sha(output / name) for name in (
++            "prediction-lock.json", "original-v5-receipts.json", "scores.csv", "scores.json", *names
++        )
++    }))
++    report.generate(output / "charts", evidence=output)
++    save_json(output / "report-seal.json", dict(files={
++        path.relative_to(output).as_posix(): _sha(path)
++        for path in sorted(output.rglob("*")) if path.is_file() and path.name != "report-seal.json"
++    }))
++
++
++if __name__ == "__main__":
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--out", type=local_output, default=OUT)
++    action = parser.add_subparsers(dest="action", required=True)
++    action.add_parser("seal").add_argument("--scratch", type=local_output, required=True)
++    action.add_parser("score")
++    args = parser.parse_args()
++    if args.action == "seal":
++        seal(args.scratch, args.out)
++    else:
++        score(args.out)
+diff --git a/tools/pipeline_eval/qualification/direct_kernel_trial.py b/tools/pipeline_eval/qualification/direct_kernel_trial.py
+new file mode 100644
+index 000000000..4f9ea7331
+--- /dev/null
++++ b/tools/pipeline_eval/qualification/direct_kernel_trial.py
+@@ -0,0 +1,313 @@
++"""Compare the portable field ABI on sealed, resident stereo CI16 inputs."""
++
++import argparse
++import ctypes as ct
++import gzip
++import json
++import math
++import os
++import statistics
++import subprocess
++import sys
++from collections import Counter
++from hashlib import sha256
++from pathlib import Path
++from time import perf_counter_ns, process_time_ns
++from types import SimpleNamespace
++
++from .. import direct_kernels
++from ..variants import portable_field
++
++ROOT = direct_kernels.ROOT
++HELD = ROOT / "reports/2026_11_19_receiver_screening/original-schedule/verifier-integration"
++HELD_SHA = "c20332eac653646adef761d6e9c6d150e623a0e8fad5fc22de7261476fdc1f53"
++PROTOCOL = ROOT / "reports/2026_11_19_receiver_screening/direct-receiver/kernel/PROTOCOL.md"
++CPU = (8, 9)
++EXACT = ("epoch", "coarse_epoch", "seed_index", "flags")
++BOUNDS = {
++    "coarse_cfo": 1.0,
++    "coarse_score": 1e-5,
++    "acquired_cfo": 1.0,
++    "acquisition_score": 1e-5,
++    "integer_exact": 1e-5,
++    "integer_control": 1e-5,
++    "integer_residual": 1.0,
++    "fractional_offset": 2e-9,
++    "fractional_exact": 1e-5,
++    "fractional_control": 1e-5,
++    "fractional_residual": 1.0,
++}
++FLAGS = (
++    "integer_pass", "fractional_pass", "fractional_complete", "fine_guard",
++    "conditioned_tie", "glrt_bin_tie", "gate_guard", "equivalent_tie",
++)
++
++
++def checked(path, expected):
++    data = path.read_bytes()
++    if sha256(data).hexdigest() != expected.removeprefix("sha256:"):
++        raise ValueError(f"Input hash changed for {path}")
++    return data
++
++
++def write(path, obj):
++    path.write_text(json.dumps(obj, indent=2, sort_keys=True, allow_nan=False) + "\n")
++
++
++def freeze(work):
++    manifest = json.loads(checked(HELD / "manifest.json", HELD_SHA))["files"]
++    roster = json.loads(checked(HELD / "input-lock.json", manifest["input-lock.json"]))
++    items = []
++    for case, cfg in roster["cases"].items():
++        name = f"{case}/resident-lock.json"
++        resident = json.loads(checked(HELD / name, manifest[name]))
++        staged = {item["visit"]: item for item in resident["staged"]}
++        for choice in cfg["rows"]:
++            visit = choice["visit"]
++            item = staged[visit]
++            name = f"{case}/capture/{visit}.ci16.gz"
++            raw = gzip.decompress(checked(HELD / name, manifest[name]))
++            if len(raw) != 200_000 * 8 or sha256(raw).hexdigest() != item["iq_sha256"][7:]:
++                raise ValueError(f"Held CI16 bytes changed for {case}/{visit}")
++            dest = f"{case}-{visit}.ci16"
++            (work / dest).write_bytes(raw)
++            items.append(item | dict(
++                case=case, filename=dest, purpose=choice["kind"], producer=cfg["root"],
++            ))
++    lock = dict(protocol_sha256=sha256(PROTOCOL.read_bytes()).hexdigest(), input_sha256=HELD_SHA,
++                trials=items)
++    write(work / "inputs.json", lock)
++    return lock
++
++
++def load_library(path, edge):
++    return portable_field.Detector(path, edge)
++
++
++def groups_for(detector):
++    groups = [
++        dict(
++            lane=group.lane, anchors=group.anchors, count=group.count,
++            candidates=[
++                {
++                    name: getattr(c, name)
++                    if not name.startswith("fractional_") or c.flags & 4 else None
++                    for name in (*EXACT, *BOUNDS)
++                }
++                for c in group.candidates[:group.count]
++            ],
++        )
++        for group in detector.groups[:len(detector.attempts)]
++    ]
++    return groups
++
++
++def worker(work, binary, arm, output):
++    import numpy as np
++
++    start_wall, start_cpu = perf_counter_ns(), process_time_ns()
++    source = json.loads((work / "inputs.json").read_text())
++    rows = []
++    detectors = {}
++    try:
++        for item in source["trials"]:
++            raw = checked(work / item["filename"], item["iq_sha256"])
++            window = SimpleNamespace(
++                target=item["target"], acquisition=item["acquisition"],
++                sample_rate_hz=item["sample_rate_hz"],
++                samples=np.frombuffer(raw, dtype="<i2").reshape(200_000, 2, 2),
++            )
++            edge = item["target"]["edge"]
++            if edge not in detectors:
++                detectors[edge] = load_library(binary, edge)
++            detector = detectors[edge]
++            wall, cpu = perf_counter_ns(), process_time_ns()
++            output_packets = detector(window, (0, 1))
++            elapsed, used = perf_counter_ns() - wall, process_time_ns() - cpu
++            groups = groups_for(detector)
++            center = (
++                item["target"]["rf_center_hz"] - item["target"]["lnb_lo_hz"]
++                - item["acquisition"]["actual_if_center_hz"]
++            )
++            rows.append(dict(
++                case=item["case"], visit=item["visit"], purpose=item["purpose"],
++                iq_sha256=item["iq_sha256"], edge=edge, center_hz=center,
++                width_hz=min(800000, center + detector.minimum + 5e6,
++                             5e6 - center - detector.maximum),
++                wall_ns=elapsed, cpu_ns=used, groups=groups,
++                published=[attempt["published"] for attempt in detector.attempts],
++                lanes=[row.receiver_id for row in output_packets],
++                coarse_cpu_ns=sum(x["coarse_cpu_ns"] for x in detector.attempts),
++                verify_cpu_ns=sum(x["verify_cpu_ns"] for x in detector.attempts),
++                coarse_wall_ns=sum(x["coarse_wall_ns"] for x in detector.attempts),
++                verify_wall_ns=sum(x["verify_wall_ns"] for x in detector.attempts),
++            ))
++        quiet = np.zeros((200_000, 2, 2), dtype="<i2")
++        controls = {}
++        for edge, detector in detectors.items():
++            lib, groups = detector.library, detector.groups
++            controls[edge] = [
++                lib.portable_field_detect(detector.context, quiet.ctypes.data, 0, 800000, groups),
++                [[g.lane, g.anchors, g.count] for g in groups],
++                lib.portable_field_detect(detector.context, None, 0, 800000, groups),
++                lib.portable_field_detect(detector.context, quiet.ctypes.data, math.nan, 800000, groups),
++                lib.portable_field_detect(detector.context, quiet.ctypes.data, 0, 0, groups),
++            ]
++            if controls[edge] != [2, [[0, 12, 0], [1, 12, 0], [0, 0, 0]], -1, -1, -1]:
++                raise ValueError(f"Null or invalid stereo control failed for {edge}")
++        workspace = {edge: detector.workspace_bytes for edge, detector in detectors.items()}
++    finally:
++        for detector in detectors.values():
++            detector.__exit__()
++    peak = next(line for line in Path("/proc/self/status").read_text().splitlines()
++                if line.startswith("VmHWM:"))
++    write(output, dict(
++        arm=arm, cpu=os.sched_getaffinity(0).pop(), rows=rows, controls=controls,
++        abi_group_bytes=ct.sizeof(portable_field.Group), workspace_bytes=workspace,
++        process_cpu_ns=process_time_ns() - start_cpu, elapsed_ns=perf_counter_ns() - start_wall,
++        vm_hwm_kib=int(peak.split()[1]),
++    ))
++
++
++def compare(before, after, *, exact=False):
++    if (before["controls"], before["abi_group_bytes"]) != (
++        after["controls"], after["abi_group_bytes"]
++    ):
++        raise ValueError("Null/invalid controls or field ABI changed")
++    counts, max_abs, by_case = Counter(), Counter(), {}
++    for a, b in zip(before["rows"], after["rows"], strict=True):
++        keys = ("case", "visit", "iq_sha256", "edge", "center_hz", "width_hz", "published", "lanes")
++        if any(a[k] != b[k] for k in keys):
++            raise ValueError(f"Case/visit/publication inventory changed for {a['case']}/{a['visit']}")
++        case = by_case.setdefault(a["case"], Counter())
++        case["visits"] += 1
++        case["peer_retries"] += len(a["groups"]) == 3
++        if a["lanes"] != [0, 1]:
++            raise ValueError("The wrapper changed physical lane order")
++        for x, y in zip(a["groups"], b["groups"], strict=True):
++            if any(x[key] != y[key] for key in ("lane", "anchors", "count")):
++                raise ValueError(f"Lane/anchor/count changed for {a['case']}/{a['visit']}")
++            case["groups"] += 1
++            for rank, (p, q) in enumerate(zip(x["candidates"], y["candidates"], strict=True)):
++                detail = f"{a['case']}/{a['visit']}/lane{x['lane']}/rank{rank}"
++                if any(p[k] != q[k] for k in EXACT):
++                    raise ValueError(f"Candidate epoch/rank/gate/tie changed at {detail}: {p} / {q}")
++                counts["candidates"] += 1
++                counts["different_numeric_records"] += p != q
++                case["candidates"] += 1
++                for bit, label in enumerate(FLAGS):
++                    counts[label] += bool(p["flags"] & (1 << bit))
++                    case[label] += bool(p["flags"] & (1 << bit))
++                counts["unbracketed"] += p["fractional_exact"] is None
++                for field, bound in BOUNDS.items():
++                    if p[field] is None and q[field] is None:
++                        continue
++                    if p[field] is None or q[field] is None:
++                        raise ValueError(f"Candidate null changed at {detail}/{field}")
++                    delta = abs(p[field] - q[field])
++                    if not math.isfinite(delta) or delta > (0 if exact else bound):
++                        raise ValueError(f"Field value changed at {detail}/{field}: {delta}")
++                    max_abs[field] = max(max_abs[field], delta)
++    return dict(total=dict(counts), maxima=dict(max_abs), by_case=by_case)
++
++
++def launch(work, binary, arm, cpu, output, scratch):
++    subprocess.run(
++        ["taskset", "-c", str(cpu), sys.executable, "-m", __spec__.name, str(work),
++         "--worker", str(binary), "--arm", arm, "--child-output", str(output)],
++        env=os.environ | {"TMPDIR": str(scratch), "OPENBLAS_NUM_THREADS": "1",
++                          "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
++        check=True, timeout=60,
++    )
++    return json.loads(output.read_text())
++
++
++def binary_info(path):
++    sections = {}
++    for line in subprocess.check_output(["size", "-A", path], text=True).splitlines():
++        words = line.split()
++        if len(words) == 3 and words[0] in {".text", ".rodata", ".data", ".bss"}:
++            sections[words[0]] = int(words[1])
++    dynamic = subprocess.check_output(["readelf", "-d", path], text=True).splitlines()
++    return dict(
++        sections=sections, dynamic_dependencies=[x.split("[")[1].split("]")[0] for x in dynamic
++                                                 if "(NEEDED)" in x],
++    )
++
++
++def measure(work, stock, repeats, rebuilt=None):
++    scratch = work / "tmp"
++    scratch.mkdir()
++    (work / "direct").mkdir()
++    lock = freeze(work)
++    stock_receipt = json.loads(stock.read_text())
++    stock_binary = Path(stock_receipt["binary"]["path"])
++    checked(stock_binary, stock_receipt["binary"]["sha256"])
++    direct_receipt = direct_kernels.build(work / "direct")
++    direct_binary = Path(direct_receipt["binary"]["path"])
++    if direct_receipt["tool"] != stock_receipt["tool"]:
++        raise ValueError("The frozen control and direct detector require the same compiler")
++    timings, initial = [], {}
++    load_start = Path("/proc/loadavg").read_text().strip()
++    for repeat in range(repeats):
++        pair = {}
++        cpu = CPU[repeat % 2]
++        order = ("stock", "direct") if (repeat // 2 + repeat % 2) % 2 == 0 else ("direct", "stock")
++        for index, arm in enumerate(order):
++            binary = stock_binary if arm == "stock" else direct_binary
++            result = launch(work, binary, arm, cpu, work / f"{repeat}-{arm}.json", scratch)
++            pair[arm] = result
++            if arm in initial:
++                compare(initial[arm], result, exact=True)
++            else:
++                initial[arm] = result
++            clocks = {k: v for k, v in result.items() if k not in {"rows", "controls"}}
++            for field in ("cpu_ns", "wall_ns", "coarse_cpu_ns", "verify_cpu_ns"):
++                clocks[field] = sum(row[field] for row in result["rows"])
++            timings.append(clocks | dict(repeat=repeat, order=index))
++        parity = compare(pair["stock"], pair["direct"])
++        print(f"Pair {repeat + 1}/{repeats}, CPU {cpu}: {parity['total']['candidates']} candidates",
++              flush=True)
++    default_parity = None
++    if rebuilt:
++        result = launch(work, rebuilt, "rebuilt", CPU[0], work / "rebuilt.json", scratch)
++        default_parity = compare(initial["stock"], result, exact=True)
++    paired = {}
++    for field in ("cpu_ns", "wall_ns", "coarse_cpu_ns", "verify_cpu_ns",
++                  "process_cpu_ns", "elapsed_ns", "vm_hwm_kib"):
++        arms = {arm: [row[field] for row in timings if row["arm"] == arm]
++                for arm in ("stock", "direct")}
++        ratio = [b / a for a, b in zip(arms["stock"], arms["direct"], strict=True)]
++        paired[field] = dict(
++            median_ratio=statistics.median(ratio), range_ratio=[min(ratio), max(ratio)],
++            arm_medians={arm: statistics.median(vals) for arm, vals in arms.items()},
++        )
++    return dict(
++        inputs=lock, stock=stock_receipt | binary_info(stock_binary),
++        direct=direct_receipt | binary_info(direct_binary), parity=parity, timings=timings,
++        paired=paired, default_rebuild_parity=default_parity, cpu_roster=CPU,
++        load_start=load_start, load_end=Path("/proc/loadavg").read_text().strip(),
++        programs={str(path.relative_to(ROOT)): sha256(path.read_bytes()).hexdigest()
++                  for path in (Path(__file__), Path(direct_kernels.__file__),
++                               Path(portable_field.__file__), PROTOCOL)},
++    )
++
++
++if __name__ == "__main__":
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("work", type=Path)
++    parser.add_argument("--control", type=Path)
++    parser.add_argument("--rebuilt", type=Path)
++    parser.add_argument("--repeats", type=int, default=6)
++    parser.add_argument("--worker", type=Path)
++    parser.add_argument("--arm")
++    parser.add_argument("--child-output", type=Path)
++    args = parser.parse_args()
++    work = args.work.resolve()
++    if args.worker:
++        worker(work, args.worker, args.arm, args.child_output)
++    else:
++        if args.control is None or args.repeats < 1:
++            parser.error("Provide a frozen control build receipt and one or more pairs")
++        work.mkdir(parents=True)
++        write(work / "qualification.json", measure(work, args.control, args.repeats, args.rebuilt))
+diff --git a/tools/pipeline_eval/variants/conditioned_cfo_bank.c b/tools/pipeline_eval/variants/conditioned_cfo_bank.c
+index f1a500953..58a6cd20a 100644
+--- a/tools/pipeline_eval/variants/conditioned_cfo_bank.c
++++ b/tools/pipeline_eval/variants/conditioned_cfo_bank.c
+@@ -2,9 +2,15 @@
+ 
+ #include <stdint.h>
+ 
++#ifdef LEO_DIRECT_KERNEL
++typedef int16_t IqScalar;
++#else
++typedef double IqScalar;
++#endif
++
+ enum { block_size = 256, terms = 6 };
+ 
+-static void moments(const double *iq, const double *ref, int count,
++static void moments(const IqScalar *iq, const double *ref, int count,
+                     const double *powers, double *out, double *energy)
+ {
+     double power = 0;
+@@ -35,13 +41,13 @@ static void moments(const double *iq, const double *ref, int count,
+ }
+ 
+ void conditioned_moments(
+-    const double *restrict iq, const double *restrict reference,
++    const IqScalar *restrict iq, const double *restrict reference,
+     const int32_t *restrict starts, int frames, int samples, const double *restrict powers,
+     double *restrict out, double *restrict energy)
+ {
+     int blocks = (samples + block_size - 1) / block_size;
+     for (int frame = 0; frame < frames; ++frame) {
+-        const double *row = iq + 2 * starts[frame];
++        const IqScalar *row = iq + 2 * starts[frame];
+         energy[frame] = 0;
+         for (int b = 0; b < blocks; ++b) {
+             int first = b * block_size;
+@@ -53,11 +59,11 @@ void conditioned_moments(
+ }
+ 
+ void conditioned_single(
+-    const double *restrict iq, const double *restrict reference,
++    const IqScalar *restrict iq, const double *restrict reference,
+     const int32_t *restrict starts, int frames, int samples, double *restrict out)
+ {
+     for (int frame = 0; frame < frames; ++frame) {
+-        const double *row = iq + 2 * starts[frame];
++        const IqScalar *row = iq + 2 * starts[frame];
+         double real = 0, imag = 0;
+         #pragma omp simd reduction(+:real, imag)
+         for (int i = 0; i < samples; ++i) {
+diff --git a/tools/pipeline_eval/variants/direct_clock.py b/tools/pipeline_eval/variants/direct_clock.py
+new file mode 100644
+index 000000000..1866808ff
+--- /dev/null
++++ b/tools/pipeline_eval/variants/direct_clock.py
+@@ -0,0 +1,353 @@
++"""Fit anonymous Doppler with a shared fractional clock and a tested alias level."""
++
++from collections import Counter
++from dataclasses import dataclass
++from hashlib import sha256
++from time import perf_counter, process_time
++
++import numpy as np
++from scipy.linalg import cholesky, solve_triangular
++from scipy.optimize import lsq_linear
++
++from . import robust_em as lean
++from . import robust_orbit_fit as exact
++from .track_quadrature import Trial as Screening, wraps_clock
++
++BOUNDARY = "Stored GLRT peaks and causal TLEs through split-confirmed Doppler positioning"
++LEVEL_SD_HZ = 350.0
++HALF_AGREEMENT_HZ = 750.0
++CEILINGS = (36.0, 16.0, 6.25)
++PHASE_CORRECTIONS = 2
++WRONG_TIME_S = 73
++
++
++@dataclass(frozen=True)
++class ArcLevel:
++    row: lean.Assignment
++    level_sd_hz: float
++
++
++def clock_design(track):
++    """Separate lane intercepts from two receiver-wide fractional-frequency trends."""
++    u = track.drift
++    scale = track.rf / 11.5e9
++    design = np.zeros((len(track.t), 11))
++    design[:, track.lane] = 1000.0
++    start = 4 + 3 * (track.lane // 2)
++    design[:, start:start + 3] = 1000 * scale * np.column_stack((u, u**2, u**3))
++    design[:, -1] = 1000 * (track.rf / 1e9 - 11.5)
++    return design
++
++
++def prior_radio(track, state):
++    return state.bias[track.lane] + state.drift[track.lane] * track.drift
++
++
++def stable_level(row, seed):
++    arc, j = row.arc, row.winner
++    raw = arc.residual[j] - arc.xy[j] @ seed.xy - arc.phase[j] * seed.phase[row.orbit]
++    raw -= prior_radio(arc.track, seed)
++    middle = len(raw) // 2
++    levels = np.array((np.median(raw[:middle]), np.median(raw[middle:])))
++    return bool(
++        np.all(np.rint(levels / lean.PERIOD) == row.alias)
++        and np.ptp(levels) <= HALF_AGREEMENT_HZ
++    )
++
++
++def profile(white, level_axis, sd):
++    """Whitened residual after analytically eliminating the track-level nuisance."""
++    norm2 = level_axis @ level_axis
++    attenuation = 0.0 if np.isinf(sd) else 1 / np.sqrt(1 + sd**2 * norm2)
++    return white - (1 - attenuation) * np.multiply.outer(level_axis, level_axis @ white) / norm2
++
++
++def posterior_level(white, level_axis, sd):
++    return float((white @ level_axis) / (level_axis @ level_axis + 1 / sd**2))
++
++
++@dataclass(frozen=True)
++class Estimate:
++    xy: np.ndarray
++    radio: np.ndarray
++    phase_s: np.ndarray
++    radius_km: float
++    score: float
++    rms_hz: float
++    raw_rms_hz: float
++    calibration_gain: float
++
++
++def project(tile, region, item, xy, phase):
++    row = item.row
++    track = row.arc.track
++    return exact.project(tile, row.orbit, track.t, region.site(xy)[0], phase, track.rf)
++
++
++def corrected(rows, tile, region, half, seed, fitted_c, counters):
++    """Solve position and shared clock with all integer decisions held fixed."""
++    orbit_ids = sorted({item.row.orbit for item in rows})
++    radio_columns = 10 + fitted_c
++    first_phase = 2 + radio_columns
++    by_orbit = {orbit: j + first_phase for j, orbit in enumerate(orbit_ids)}
++    width = first_phase + len(orbit_ids)
++    sigma = np.r_[
++        [1000.0] * 2,
++        [lean.PERIOD / np.sqrt(12) / 1000] * 4,
++        [1.5, .2, .2] * 2,
++        [200.0] * fitted_c,
++        [lean.PHASE_SD_S] * len(orbit_ids),
++    ]
++    limit = np.r_[
++        [half] * 2,
++        [lean.PERIOD / 1000] * 4,
++        [6.0, 1.5, 1.5] * 2,
++        [600.0] * fitted_c,
++        [lean.PHASE_BOUND_S] * len(orbit_ids),
++    ]
++    matrices, targets = [], []
++    xy, phases = (seed.xy, seed.phase) if isinstance(seed, lean.State) else (seed.xy, seed.phase_s)
++    tangent = exact._tangent(region, xy)
++    for item in rows:
++        row = item.row
++        track = row.arc.track
++        phase = phases[row.orbit]
++        base, d_site, d_phase = project(tile, region, item, xy, phase)
++        counters["projected_points"] += len(track.t)
++        dx = d_site @ tangent
++        design = np.zeros((len(track.t), width))
++        design[:, :2] = dx
++        design[:, 2:first_phase] = clock_design(track)[:, :radio_columns]
++        design[:, by_orbit[row.orbit]] = d_phase
++        target = track.hz - row.alias * lean.PERIOD - base + dx @ xy + d_phase * phase
++        axis = track.whiten.sum(axis=1)
++        weight = np.sqrt(min(1, 40 / len(target)) / (1 + row.loss / 4))
++        matrices.append(weight * profile(track.whiten @ design, axis, item.level_sd_hz))
++        targets.append(weight * profile(track.whiten @ target, axis, item.level_sd_hz))
++    if not matrices:
++        return None
++    matrix = np.vstack([*matrices, np.diag(1 / sigma)])
++    target = np.r_[np.concatenate(targets), np.zeros(width)]
++    counters["bounded_solves"] += 1
++    fit = lsq_linear(matrix, target, bounds=(-limit, limit), method="bvls", max_iter=30)
++    if not fit.success:
++        return None
++    information = matrix.T @ matrix
++    covariance = np.linalg.inv(information)
++    radius = float(np.sqrt(5.991 * np.linalg.eigvalsh(covariance[:2, :2])[-1]))
++    gain = 0.0
++    if fitted_c:
++        idx = first_phase - 1
++        gain = float(max(0, sigma[idx] ** 2 / covariance[idx, idx] - 1))
++    phase_s = np.zeros(len(tile.positions_km))
++    phase_s[orbit_ids] = fit.x[first_phase:]
++    radio = np.zeros(11)
++    radio[:radio_columns] = fit.x[2:first_phase]
++    radio[-1] = radio[-1] if gain > 1e-8 else 0.0
++    return Estimate(
++        fit.x[:2], radio, phase_s, radius, float(2 * fit.cost), 0, 0, gain,
++    )
++
++
++def locate(rows, tile, region, half, seed, fitted_c, counters):
++    for _ in range(PHASE_CORRECTIONS):
++        proposal = corrected(rows, tile, region, half, seed, fitted_c, counters)
++        if proposal is None:
++            return None
++        seed = proposal
++    squares = raw_squares = points = 0
++    for item in rows:
++        row = item.row
++        track = row.arc.track
++        prediction, _, _ = project(tile, region, item, seed.xy, seed.phase_s[row.orbit])
++        residual = track.hz - prediction - row.alias * lean.PERIOD - clock_design(track) @ seed.radio
++        level = posterior_level(
++            track.whiten @ residual, track.whiten.sum(axis=1), item.level_sd_hz,
++        )
++        raw_squares += residual @ residual
++        squares += (residual - level) @ (residual - level)
++        points += len(residual)
++        counters["projected_points"] += len(residual)
++    return Estimate(
++        seed.xy, seed.radio, seed.phase_s, seed.radius_km, seed.score,
++        float(np.sqrt(squares / points)), float(np.sqrt(raw_squares / points)), seed.calibration_gain,
++    )
++
++
++def nominate(arcs, n_orbits, half, counters):
++    """One common nominal track/alias roster without candidate-pair proposals."""
++    seed = lean.initial(arcs, n_orbits)
++    for ceiling in CEILINGS:
++        rows = [r for r in lean.assign(arcs, seed, update_phase=True) if r.loss <= ceiling]
++        counters["nomination_options"] += sum(len(arc.orbit) for arc in arcs)
++        counters["nomination_solves"] += 1
++        fit = lean.fit(rows, n_orbits, half, "c0")
++        if fit is None:
++            return None
++        seed = fit.state
++    return seed, rows
++
++
++def restrict(arc, subset):
++    """Build a marginal time block with its own covariance."""
++    t = arc.track.t[subset]
++    covariance = lean.CORRELATED_HZ**2 * np.exp(-abs(t[:, None] - t) / lean.CORRELATION_S)
++    covariance.flat[:: len(t) + 1] += lean.WHITE_HZ**2
++    whiten = solve_triangular(cholesky(covariance, lower=True), np.eye(len(t)), lower=True)
++    old = arc.track
++    tr = lean.Track(t, old.hz[subset], old.rf, old.lane, old.curved, old.drift[subset], whiten)
++    return lean.Arc(
++        tr, arc.orbit, arc.residual[:, subset], arc.xy[:, subset], arc.phase[:, subset],
++        arc.shape_loss, arc.phase_seed,
++    )
++
++
++def held_evidence(held, fit, tile, region, counters):
++    raw_squares = post_squares = points = 0
++    scores, good = [], set()
++    for early, late in held:
++        orbit = early.row.orbit
++        segments = []
++        for segment in (early, late):
++            track = segment.row.arc.track
++            base, _, _ = project(tile, region, segment, fit.xy, fit.phase_s[orbit])
++            residual = track.hz - base - segment.row.alias * lean.PERIOD
++            residual -= clock_design(track) @ fit.radio
++            segments.append((track.whiten, residual))
++            counters["projected_points"] += len(residual)
++        w, residual = segments[0]
++        level = posterior_level(w @ residual, w.sum(axis=1), early.level_sd_hz)
++        w, residual = segments[1]
++        error = residual - level
++        white = w @ error
++        loss = float(np.mean(white**2))
++        if loss <= CEILINGS[-1]:
++            good.add(orbit)
++        scores.append(1 / (1 + loss))
++        raw_squares += residual @ residual
++        post_squares += error @ error
++        points += len(error)
++    return dict(
++        held_score=float(np.mean(scores)),
++        held_orbits=len(good),
++        held_rf_rms_hz=float(np.sqrt(post_squares / points)),
++        held_raw_rf_rms_hz=float(np.sqrt(raw_squares / points)),
++        held_points=points,
++    )
++
++
++def train_and_predict(arcs, tile, region, half, method, trial):
++    counters = trial.work
++    n_orbits = len(tile.positions_km)
++    train = [arc for arc in arcs if int(arc.track.t.mean() // 12) % 5 != 2]
++    held = [arc for arc in arcs if int(arc.track.t.mean() // 12) % 5 == 2]
++    if len(train) < 5 or len(held) < 2:
++        return {}, {}, "insufficient_track_blocks"
++    nominal = nominate(train, n_orbits, half, counters)
++    if nominal is None:
++        return {}, {}, "no_training_assignment"
++    seed, training = nominal
++    pooled = [r for r in lean.assign(arcs, seed, update_phase=True) if r.loss <= CEILINGS[-1]]
++    counters["nomination_options"] += sum(len(arc.orbit) for arc in arcs)
++    if not pooled:
++        return {}, {}, "no_pooled_assignment"
++
++    def level(row):
++        return ArcLevel(row, LEVEL_SD_HZ if method != "free_offset" and stable_level(row, seed) else np.inf)
++
++    held_levels = []
++    for arc in held:
++        middle = len(arc.track.t) // 2
++        early, late = (restrict(arc, part) for part in (slice(None, middle), slice(middle, None)))
++        (row,) = lean.assign([early], seed, update_phase=False)
++        counters["nomination_options"] += len(early.orbit)
++        # The second half never chooses another orbit, alias, or nuisance value.
++        sd = LEVEL_SD_HZ if method != "free_offset" else np.inf
++        held_levels.append(
++            (ArcLevel(row, sd), ArcLevel(lean.Assignment(late, row.winner, row.alias, 0, 0), sd))
++        )
++    train_rows, rows = [level(r) for r in training], [level(r) for r in pooled]
++    ownership = [(r.orbit, r.alias, r.arc.track.lane, r.arc.track.t.tolist()) for r in pooled]
++    m = dict(
++        nomination_sha256=sha256(repr(ownership).encode()).hexdigest(),
++        fit_tracks=len(rows), anchored_tracks=sum(np.isfinite(r.level_sd_hz) for r in rows),
++        split_agree_tracks=sum(stable_level(r, seed) for r in pooled),
++        fit_points=sum(len(r.arc.track.t) for r in pooled),
++        anchor_aliases=sum(r.alias != 0 for r in pooled),
++        distinct_orbits=len({r.orbit for r in pooled}),
++        curved_orbits=len({r.orbit for r in pooled if r.arc.track.curved}),
++        separated_orbits=len({r.orbit for r in pooled if r.margin >= .25}),
++    )
++    fits, predictions = {}, {}
++    for arm in lean.ARMS:
++        fitted_c = arm == "fitted_c"
++        trained = trial.timed("fit", locate, train_rows, tile, region, half, seed, fitted_c, counters)
++        full = trial.timed("fit", locate, rows, tile, region, half, seed, fitted_c, counters)
++        if full is None or trained is None:
++            return {}, m, "no_paired_fit"
++        fits[arm] = full
++        predictions[arm] = trial.timed("held", held_evidence, held_levels, trained, tile, region, counters)
++        predictions[arm]["pooled_shift_km"] = float(np.linalg.norm(full.xy - trained.xy))
++    m["held_by_arm"] = predictions
++    reason = None
++    if m["curved_orbits"] < 4 or m["separated_orbits"] < 3 or len({r.arc.track.lane for r in pooled}) < 2:
++        reason = "insufficient_independent_orbit_support"
++    elif any(p["held_orbits"] < 2 or p["held_score"] < .28 for p in predictions.values()):
++        reason = "weak_held_track_support"
++    elif any(f.radius_km > 6 for f in fits.values()) or any(
++        p["pooled_shift_km"] > 4 for p in predictions.values()
++    ):
++        reason = "weak_position_geometry"
++    elif any(np.max(np.abs(f.xy)) >= half - .75 for f in fits.values()):
++        reason = "position_at_tile_boundary"
++    return fits, m, reason
++
++
++def infer(document, offer, catalogue, method):
++    if method == "native_joint":
++        return Screening("all_samples").infer(document, offer, catalogue)
++    if method not in ("split_lattice", "free_offset", "shifted_orbit"):
++        raise ValueError("unknown direct clock method")
++    trial = Screening("uniform_samples")
++    tracks, metrics = trial.timed("validate_pack", lean.observations, document)
++    half = float(offer.get("width_km", 25)) / 2
++    if not np.isfinite(half) or half <= 1:
++        raise ValueError("invalid offered width")
++    center = tuple(offer["center"])
++    fits, reason = {}, "insufficient_track_inventory"
++    if len(tracks) >= 7:
++        if method == "shifted_orbit":
++            document = dict(document, anchor_utc_ns=document["anchor_utc_ns"] + WRONG_TIME_S * 10**9)
++        sky = trial.timed("catalogue_init", exact.grid.prepare_sky, document, catalogue)
++        tile = trial.timed("regional_propagation", exact.grid.make_tile, sky, center)
++        arcs = [arc for track in tracks if (arc := trial.screen(tile, track)) is not None]
++        region = exact.Region(offer["id"], center, tile.ecef_center_km, tile.enu_frame)
++        fits, details, reason = trial.timed(
++            "solve", train_and_predict, arcs, tile, region, half, method, trial
++        )
++        metrics.update(sky.stats, **tile.stats, **details)
++    arms = {a: {"latlon": None, "forced_latlon": None} for a in lean.ARMS}
++    for arm, item in fits.items():
++        point = region.site(item.xy)[1]
++        arms[arm] = dict(
++            latlon=None if reason else point,
++            forced_latlon=point,
++            region_id=None if reason else offer["id"],
++            forced_region_id=offer["id"],
++            rf_rms_hz=item.rms_hz,
++            raw_rf_rms_hz=item.raw_rms_hz,
++            frequency_score=item.score,
++            c_hz_per_ghz=None if arm == "fitted_c" and item.calibration_gain <= 1e-8 else float(1000 * item.radio[-1]),
++            c_identifiable=arm == "c0" or item.calibration_gain > 1e-8,
++            c_data_precision_over_prior=item.calibration_gain,
++            radius_km=item.radius_km,
++            **metrics["held_by_arm"][arm],
++        )
++    metrics.update(stage_wall_s=dict(trial.wall), stage_cpu_s=dict(trial.cpu), work=dict(trial.work))
++    return dict(
++        status="withheld" if reason else "ok",
++        reason=reason,
++        boundary=BOUNDARY,
++        metrics=metrics,
++        arms=arms,
++    )
+diff --git a/tools/pipeline_eval/variants/direct_fold_qin.h b/tools/pipeline_eval/variants/direct_fold_qin.h
+new file mode 100644
+index 000000000..3380ebb3f
+--- /dev/null
++++ b/tools/pipeline_eval/variants/direct_fold_qin.h
+@@ -0,0 +1,191 @@
++/* Included after the original Qin template and selector definitions. */
++enum { fold_phase = 256, fold_quarter = 16384, fold_score_bits = 22 };
++
++typedef struct { int32_t r, i; } FoldComplex;
++
++typedef struct {
++    FoldComplex carrier[fold_phase][tones/2], restore[fold_phase][tones];
++} FoldCarriers;
++
++typedef struct {
++    unsigned next, epoch, frame;
++    FoldComplex seam;
++    uint32_t inv_energy;
++} FoldAnchor;
++
++typedef struct {
++    FoldComplex samples[taps], value[taps][tones], sum[tones];
++    unsigned head;
++} FoldRing;
++
++static int32_t fold_round(int64_t value, unsigned bits) {
++    const int64_t half=INT64_C(1)<<(bits-1);
++    return (int32_t)((value+(value<0 ? -half : half))/(2*half));
++}
++
++static FoldComplex fold_mul(FoldComplex a, FoldComplex b, unsigned bits) {
++    return (FoldComplex){
++        fold_round((int64_t)a.r*b.r-(int64_t)a.i*b.i,bits),
++        fold_round((int64_t)a.r*b.i+(int64_t)a.i*b.r,bits)
++    };
++}
++
++static uint64_t fold_square(int32_t x) { return (uint64_t)((int64_t)x*x); }
++
++static uint64_t fold_sqrt(uint64_t x) {
++    if (!x) return 0;
++    unsigned bits=64u-(unsigned)__builtin_clzll((unsigned long long)x);
++    uint64_t n=UINT64_C(1)<<((bits+1)/2);
++    for (;;) {
++        const uint64_t next=(n+x/n)/2;
++        if (next>=n) return n;
++        n=next;
++    }
++}
++
++static int32_t fold_sine(const uint16_t *rom, unsigned phase) {
++    const unsigned quadrant=(phase>>14)&3, p=phase&(fold_quarter-1);
++    const int32_t value=rom[quadrant&1 ? fold_quarter-p : p];
++    return quadrant<2 ? value : -value;
++}
++
++static void fold_carriers(FoldCarriers *c) {
++    for (unsigned p=0; p<fold_phase; ++p) {
++        for (unsigned j=0; j<tones; ++j) {
++            const int bin=3*(2*(int)j-7);
++            const double phase=tau*((bin*(int)p)%fold_phase)/fold_phase;
++            const double adjusted=phase+tau*tone_hz(j)*prefix_time-tau/8;
++            if (j<tones/2)
++                c->carrier[p][j]=(FoldComplex){(int32_t)llround(32768*cos(phase)),
++                                               (int32_t)llround(32768*sin(phase))};
++            c->restore[p][j]=(FoldComplex){(int32_t)llround(131072*cos(adjusted)/sqrt(8.0)),
++                                          (int32_t)llround(131072*sin(adjusted)/sqrt(8.0))};
++        }
++    }
++}
++
++static void fold_load(PortableCoarse *w, const int16_t *iq, unsigned n, unsigned receiver) {
++    if (!w->fold_nco[fold_quarter])
++        for (unsigned j=0; j<=fold_quarter; ++j)
++            w->fold_nco[j]=(uint16_t)llround(32768*sin(tau*j/(4*fold_quarter)));
++    uint64_t energy=0;
++    for (unsigned k=0; k<n; ++k) {
++        const int16_t *incoming=iq+4*k+2*receiver;
++        energy+=fold_square(incoming[0])+fold_square(incoming[1]);
++        if (k>=taps) {
++            const int16_t *outgoing=incoming-4*taps;
++            energy-=fold_square(outgoing[0])+fold_square(outgoing[1]);
++        }
++        if (k+1>=taps) {
++            const uint64_t root=fold_sqrt(energy<<16);
++            w->fold_norm[k+1-taps]=root ? ((UINT64_C(1)<<40)-1)/root : 0;
++        }
++    }
++}
++
++static FoldComplex fold_push(FoldRing *ring, const FoldComplex sample, const FoldComplex *carrier) {
++    const unsigned p=ring->head;
++    FoldComplex *old=ring->value[p];
++    for (unsigned j=0; j<tones/2; ++j) {
++        const unsigned other=tones-1-j;
++        const int64_t rc=(int64_t)sample.r*carrier[j].r, rs=(int64_t)sample.r*carrier[j].i;
++        const int64_t ic=(int64_t)sample.i*carrier[j].r, is=(int64_t)sample.i*carrier[j].i;
++        const FoldComplex lo={fold_round(rc+is,15),fold_round(ic-rs,15)};
++        const FoldComplex hi={fold_round(rc-is,15),fold_round(ic+rs,15)};
++        ring->sum[j].r+=lo.r-old[j].r;
++        ring->sum[j].i+=lo.i-old[j].i;
++        ring->sum[other].r+=hi.r-old[other].r;
++        ring->sum[other].i+=hi.i-old[other].i;
++        old[j]=lo;
++        old[other]=hi;
++    }
++    ring->samples[p]=sample;
++    ring->head=(p+1)%taps;
++    return ring->samples[ring->head];
++}
++
++static uint32_t fold_pilot(const FoldComplex *tone, const uint8_t *state, FoldAnchor anchor,
++                           FoldComplex first, uint32_t norm) {
++    FoldComplex sum=fold_mul(first,anchor.seam,17);
++    for (unsigned j=0; j<tones; ++j) {
++        const unsigned phase=state[j];
++        const int32_t a=phase&1 ? tone[j].i : tone[j].r;
++        const int32_t b=phase&1 ? tone[j].r : tone[j].i;
++        sum.r+=phase<2 ? a : -a;
++        sum.i+=phase==0 || phase==3 ? b : -b;
++    }
++    const uint64_t magnitude=fold_sqrt(fold_square(sum.r)+fold_square(sum.i));
++    const uint64_t scaled=(magnitude*anchor.inv_energy+(UINT64_C(1)<<23))>>24;
++    const unsigned shift=8+32-fold_score_bits;
++    return (uint32_t)((scaled*norm+(UINT64_C(1)<<(shift-1)))>>shift);
++}
++
++static uint64_t fold_row(const PortableCoarse *w, const PilotAnchors *family, unsigned anchors_count,
++                         const FoldCarriers *tables, const int16_t *iq, unsigned n,
++                         unsigned receiver, double cfo, uint32_t scores[epochs]) {
++    FoldAnchor cursor[PORTABLE_COARSE_RETRY]={0};
++    for (unsigned j=0; j<anchors_count; ++j) {
++        cursor[j].next=family->start[j];
++        cursor[j].seam=(FoldComplex){(int32_t)llround(131072*family->seam_r[j]),
++                                     (int32_t)llround(131072*family->seam_i[j])};
++        cursor[j].inv_energy=(uint32_t)llround(16777216*family->inv_energy[j]);
++    }
++    FoldRing ring={0};
++    uint32_t phase=0;
++    const uint32_t step=(uint32_t)llround(-cfo/rate*4294967296.0);
++    uint64_t updates=0;
++    for (unsigned k=0; k<n; ++k) {
++        const unsigned index=(phase+32768u)>>16;
++        const FoldComplex osc={fold_sine(w->fold_nco,index+fold_quarter),
++                               fold_sine(w->fold_nco,index)};
++        phase+=step;
++        const int16_t *raw=iq+4*k+2*receiver;
++        const FoldComplex mixed=fold_mul((FoldComplex){raw[0],raw[1]},osc,7);
++        const FoldComplex first=fold_push(&ring,mixed,tables->carrier[k%fold_phase]);
++        if (k+1<taps+family->start[0]) continue;
++        const unsigned p=k+1-taps, restore_row=p%fold_phase;
++        const uint32_t norm=w->fold_norm[p];
++        FoldComplex tone[tones];
++        for (unsigned j=0; j<tones; ++j)
++            tone[j]=fold_mul(ring.sum[j],tables->restore[restore_row][j],17);
++        for (unsigned j=0; j<anchors_count; ++j) {
++            FoldAnchor *a=&cursor[j];
++            if (p!=a->next) continue;
++            if (norm) scores[a->epoch]+=fold_pilot(tone,family->states[j],*a,first,norm);
++            ++updates;
++            ++a->next;
++            if (++a->epoch==epochs) {
++                a->epoch=0;
++                a->next=++a->frame<max_frames ? family->start[j]+frame_offset(a->frame) : n;
++            }
++        }
++    }
++    return updates;
++}
++
++static void fold_grid(PortableCoarse *w, const PilotAnchors *family, const int16_t *iq,
++                      unsigned n, unsigned receiver, unsigned count, const double *residual,
++                      double center, unsigned rows) {
++    const unsigned limit=n-taps+1;
++    memset(w->support,0,sizeof(w->support));
++    for (unsigned s=0; s<count; ++s) {
++        for (unsigned f=0; f<max_frames; ++f) {
++            const unsigned origin=family->start[s]+frame_offset(f);
++            if (origin>=limit) break;
++            const unsigned end=limit-origin<epochs ? limit-origin : epochs;
++            for (unsigned e=0; e<end; ++e) ++w->support[e];
++        }
++    }
++    FoldCarriers tables;
++    fold_carriers(&tables);
++    for (unsigned f=0; f<rows; ++f) {
++        uint32_t scores[epochs]={0};
++        w->fold_updates+=fold_row(w,family,count,&tables,iq,n,receiver,center+residual[f],scores);
++        double *row=w->grid+f*epochs;
++        for (unsigned e=0; e<epochs; ++e)
++            row[e]=w->support[e] ? (double)scores[e]/((UINT32_C(1)<<fold_score_bits)*
++                                                     (double)w->support[e]) : 0;
++    }
++}
++
++uint64_t direct_fold_updates(const PortableCoarse *w) { return w->fold_updates; }
+diff --git a/tools/pipeline_eval/variants/direct_geometry.c b/tools/pipeline_eval/variants/direct_geometry.c
+new file mode 100644
+index 000000000..5d586c705
+--- /dev/null
++++ b/tools/pipeline_eval/variants/direct_geometry.c
+@@ -0,0 +1,85 @@
++/* Project an ECEF state and its centered secant from one knot pair where possible. */
++#include <math.h>
++#include <stddef.h>
++#include <stdint.h>
++
++static void rotate(double a, double b, const double *trig, double out[3])
++{
++    out[0] = trig[0] * a - trig[1] * b;
++    out[1] = trig[1] * a + trig[0] * b;
++}
++
++static void project_state(const double *x, size_t start, size_t plus, size_t minus,
++                          double f0, double fp, double fm, const double *trig,
++                          const double *mean, const double *slope, double span,
++                          double out[3], double difference[3])
++{
++    const double *base = x + start;
++    double a = base[0] + f0 * (base[3] - base[0]);
++    double b = base[1] + f0 * (base[4] - base[1]);
++    rotate(a, b, trig, out);
++    out[2] = base[2] + f0 * (base[5] - base[2]);
++    if (plus == minus) {
++        const double *pair = x + plus;
++        double middle = (fp + fm) * 0.5;
++        double change = (fp - fm) / span;
++        double da = pair[3] - pair[0], db = pair[4] - pair[1];
++        double mid_a = pair[0] + middle * da, mid_b = pair[1] + middle * db;
++        rotate(change * da, change * db, mean, difference);
++        difference[0] += slope[0] * mid_a - slope[1] * mid_b;
++        difference[1] += slope[1] * mid_a + slope[0] * mid_b;
++        difference[2] = change * (pair[5] - pair[2]);
++        return;
++    }
++    const double *p = x + plus, *m = x + minus;
++    double upper[3], lower[3];
++    rotate(p[0] + fp * (p[3] - p[0]), p[1] + fp * (p[4] - p[1]), trig + 2, upper);
++    rotate(m[0] + fm * (m[3] - m[0]), m[1] + fm * (m[4] - m[1]), trig + 4, lower);
++    upper[2] = p[2] + fp * (p[5] - p[2]);
++    lower[2] = m[2] + fm * (m[5] - m[2]);
++    for (size_t j = 0; j < 3; ++j) difference[j] = (upper[j] - lower[j]) / span;
++}
++
++int project_orbit_grid(const double *pos, const double *vel, size_t satellites,
++                       size_t knots, size_t samples, size_t phase_rows,
++                       const int64_t *index, const double *fraction, const double *rotation,
++                       double step, const double *observer, const double *up, double rf,
++                       double *frequency, double *elevation_sine, double *derivative)
++{
++    double span = 2 * step;
++    for (size_t s = 0; s < satellites; ++s) {
++        const size_t group = phase_rows == 1 ? 0 : s;
++        const double *trig = rotation + group * 6;
++        const double mean[2] = {(trig[2] + trig[4]) * 0.5, (trig[3] + trig[5]) * 0.5};
++        const double slope[2] = {(trig[2] - trig[4]) / span, (trig[3] - trig[5]) / span};
++        const double *p_row = pos + 3 * s * knots, *v_row = vel + 3 * s * knots;
++        const int64_t *i0 = index + group * 3 * samples;
++        const double *f0 = fraction + group * 3 * samples;
++        for (size_t t = 0; t < samples; ++t) {
++            size_t i = (size_t)i0[t], p = (size_t)i0[t + samples], m = (size_t)i0[t + 2 * samples];
++            if (i >= knots - 1 || p >= knots - 1 || m >= knots - 1) return 2;
++            double xyz[3], v[3], dp[3], dv[3];
++            double fp = f0[t + samples], fm = f0[t + 2 * samples];
++            project_state(p_row, 3*i, 3*p, 3*m, f0[t], fp, fm, trig, mean, slope, span, xyz, dp);
++            project_state(v_row, 3*i, 3*p, 3*m, f0[t], fp, fm, trig, mean, slope, span, v, dv);
++            double squared_range = 0, radial = 0, vertical = 0;
++            double radial_change = 0, squared_range_half_change = 0;
++            for (size_t j = 0; j < 3; ++j) {
++                double delta = xyz[j] - observer[j];
++                squared_range += delta * delta;
++                radial += delta * v[j];
++                vertical += delta * up[j];
++                radial_change += dp[j] * v[j] + delta * dv[j];
++                squared_range_half_change += delta * dp[j];
++            }
++            double range = sqrt(squared_range);
++            if (!(range > 0) || !isfinite(range)) return 1;
++            size_t dest = s*samples + t;
++            frequency[dest] = -rf * (radial / range) / 299792.458;
++            elevation_sine[dest] = vertical / range;
++            derivative[dest] = -rf * (radial_change / range -
++                                      radial * squared_range_half_change / (range*squared_range)) / 299792.458;
++        }
++    }
++    return 0;
++}
+diff --git a/tools/pipeline_eval/variants/direct_region_witness.py b/tools/pipeline_eval/variants/direct_region_witness.py
+new file mode 100644
+index 000000000..f6687f23c
+--- /dev/null
++++ b/tools/pipeline_eval/variants/direct_region_witness.py
+@@ -0,0 +1,298 @@
++"""Cross-predict receiver geography from disjoint measured Doppler arcs."""
++
++from dataclasses import dataclass, replace
++from itertools import product
++from math import dist
++
++import numpy as np
++
++from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km
++
++from ..reference import grid
++
++SCALE_HZ = 500.0
++CAP = 25.0
++LEAD = 0.0025
++SUPPORT_HZ = 750.0
++MIN_ARCS = 2
++MAX_ARCS = 16
++SHORTLIST = 12
++EDGE_KM = 0.75
++C_SHIFT = 100_000.0
++
++
++@dataclass(frozen=True)
++class Arc:
++    time: np.ndarray
++    frequency: np.ndarray
++    rf_hz: float
++    alias_hz: float
++
++    @property
++    def train(self):
++        return np.arange(len(self.time)) % 2 == 0
++
++
++@dataclass(frozen=True)
++class Frame:
++    ecef_center_km: np.ndarray
++    enu_frame: np.ndarray
++
++    @classmethod
++    def at(cls, point):
++        return cls(geodetic_to_ecef_km(*point, 0), ecef_to_enu_matrix(*point))
++
++    def project(self, xyz, up):
++        delta = xyz - self.ecef_center_km
++        vertical = (delta @ self.enu_frame[2]) / (up @ self.enu_frame[2])
++        return (delta - vertical[..., None] * up) @ self.enu_frame[:2].T
++
++
++@dataclass(frozen=True)
++class OrbitArc:
++    arc: Arc
++    train: np.ndarray
++    position: np.ndarray
++    velocity: np.ndarray
++    norad: np.ndarray
++
++    def rms(self, xyz, up):
++        delta = self.position[None] - xyz[:, None, None]
++        ray = delta / np.linalg.norm(delta, axis=-1, keepdims=True)
++        doppler = -self.arc.rf_hz / grid.LIGHT_SPEED_KM_S * np.sum(ray * self.velocity, axis=-1)
++        phase = 2 * np.pi / self.arc.alias_hz
++        residual = phase * (self.arc.frequency - doppler)
++        assignment = residual[..., self.train]
++        level = np.angle(np.mean(np.exp(1j * assignment), axis=-1))
++        residual = ((residual - level[..., None] + np.pi) % (2 * np.pi) - np.pi) / phase
++        visible = np.einsum("ijkl,il->ijk", ray, up) > 0
++        return tuple(
++            np.where(visible[..., mask].all(axis=-1), np.sqrt(np.mean(residual[..., mask] ** 2, axis=-1)), np.inf)
++            for mask in (self.train, ~self.train)
++        )
++
++
++def read_arcs(rows, duration):
++    arcs = []
++    for row in rows:
++        if set(row) != {"time", "frequency", "rf_hz", "alias_hz"}:
++            raise ValueError("an arc may contain only times, frequencies, RF and alias spacing")
++        t, f = np.asarray(row["time"], dtype=float), np.asarray(row["frequency"], dtype=float)
++        rf, alias = float(row["rf_hz"]), float(row["alias_hz"])
++        if (
++            t.ndim != 1 or f.shape != t.shape or not np.isfinite(t).all() or not np.isfinite(f).all()
++            or not np.isfinite([rf, alias]).all() or min(rf, alias) <= 0
++            or (t.size and (t[0] < 0 or t[-1] > duration)) or not np.all(np.diff(t) > 0)
++        ):
++            raise ValueError("invalid measured Doppler arc")
++        if len(t) >= 8 and np.ptp(t) >= 4:
++            arcs.append(Arc(t, f, rf, alias))
++    return sorted(arcs, key=lambda a: (a.time[0], a.time[-1], a.rf_hz, tuple(a.frequency)))
++
++
++def split(arcs):
++    """Use nonoverlapping time windows and purge every arc crossing the cut."""
++    cuts = sorted({a.time[0] for a in arcs} | {a.time[-1] for a in arcs})
++    best, key = ([], []), (0, 0)
++    for a, b in zip(cuts, cuts[1:]):
++        cut = (a + b) / 2
++        left = [arc for arc in arcs if arc.time[-1] < cut]
++        right = [arc for arc in arcs if arc.time[0] > cut]
++        grade = min(len(left), len(right)), len(left) + len(right)
++        if grade > key:
++            best, key = (left, right), grade
++    return tuple(sorted(group, key=lambda a: -np.ptp(a.time))[:MAX_ARCS] for group in best)
++
++
++def prepare(sky, arc, center, starts):
++    seconds = np.arange(sky.positions_km.shape[1]) * grid.COARSE_ORBIT_STEP_S - grid.PHASE_LIMIT_S
++    middle = min(np.searchsorted(seconds, np.median(arc.time)), len(seconds) - 1)
++    delta = sky.positions_km[:, middle] - center.ecef_center_km
++    candidates = (delta @ center.enu_frame[2]) > -0.22 * np.linalg.norm(delta, axis=-1)
++    sats = tuple(s for s, chosen in zip(sky.satellites, candidates, strict=True) if chosen)
++    valid, p, v = grid._valid_states(sats, sky.anchor_utc_ns, arc.time)
++    work = len(sats) * len(arc.time)
++    if not valid:
++        return None, work
++    bank = OrbitArc(arc, arc.train, p, v, np.array([s.satnum for s in valid]))
++    rms, _ = bank.rms(*starts)
++    keep = np.argsort(rms.min(axis=0), kind="stable")[:SHORTLIST]
++    return replace(bank, position=p[keep], velocity=v[keep], norad=bank.norad[keep]), work
++
++
++@dataclass(frozen=True)
++class Score:
++    train: np.ndarray
++    held: np.ndarray
++    norad: np.ndarray
++
++
++def loss(rms):
++    return np.minimum(CAP, (rms / SCALE_HZ) ** 2)
++
++
++def scores(bank, xyz, up):
++    train = np.full((len(xyz), len(bank)), np.inf)
++    held, norad = train.copy(), np.zeros(train.shape, dtype=int)
++    for i, sample in enumerate(bank):
++        if sample is None:
++            continue
++        fitted, checked = sample.rms(xyz, up)
++        selected = np.argmin(fitted, axis=1)
++        rows = np.arange(len(xyz))
++        train[:, i] = fitted[rows, selected]
++        held[:, i] = checked[rows, selected]
++        norad[:, i] = sample.norad[selected]
++    return [Score(a, b, c) for a, b, c in zip(train, held, norad, strict=True)]
++
++
++class Surface:
++    def __init__(self, frame, tiles, radius, bank):
++        self.frame, self.tiles, self.radius, self.bank = frame, tiles, radius, bank
++        self.cache = {}
++
++    def get(self, points):
++        unseen = list(dict.fromkeys(tuple(point) for point in points if tuple(point) not in self.cache))
++        for start in range(0, len(unseen), 24):
++            batch = unseen[start:start + 24]
++            xyz, up, coords = grid._sites(self.frame, np.asarray(batch))
++            margins = self.margins(xyz, up)
++            groups = np.where((margins >= 0).sum(axis=1) == 1, margins.argmax(axis=1), -1)
++            both = [scores(bank, xyz, up) for bank in self.bank]
++            for xy, point, group, a, b in zip(batch, coords, groups, *both, strict=True):
++                self.cache[xy] = (point.tolist(), int(group), (a, b))
++
++    def margins(self, xyz, up):
++        return np.column_stack([grid.HALF_WIDTH_KM - np.abs(tile.project(xyz, up)).max(axis=1) for tile in self.tiles])
++
++    def nominate(self, points, fold, group=None):
++        self.get(points)
++        chosen = [tuple(xy) for xy in points if group is None or self.cache[tuple(xy)][1] == group]
++        return min(chosen, key=lambda xy: loss(self.cache[xy][2][fold].train).mean())
++
++    def refine(self, start, fold, group=None):
++        xy = start
++        for step in (4.0, 1.0, 0.20):
++            neighbors = [tuple(np.asarray(xy) + step * offset) for offset in OFFSETS]
++            allowed = [p for p in neighbors if max(map(abs, p)) <= self.radius]
++            xy = self.nominate([xy, *allowed], fold, group)
++        return xy
++
++
++OFFSETS = np.asarray(list(product(range(-2, 3), repeat=2)))
++
++
++def compare(winner, rival, excluded):
++    a, b = loss(winner.held), loss(rival.held)
++    good = (winner.train <= SUPPORT_HZ) & (winner.held <= SUPPORT_HZ)
++    supported = {int(n) for n in winner.norad[good & (b - a > LEAD)]} - excluded
++    return dict(gain=float(np.mean(b - a)), votes=len(supported))
++
++
++def evaluate(surface, nominees, offer_ids):
++    witnesses = [n["free"] for n in nominees]
++    records = [surface.cache[xy] for xy in witnesses]
++    span = dist(*witnesses)
++    best = [min(range(4), key=lambda k: loss(surface.cache[n[k]][2][1 - i].held).mean())
++            for i, n in enumerate(nominees)]
++    held = [np.mean([loss(surface.cache[n[k]][2][1 - i].held).mean()
++                     for i, n in enumerate(nominees)]) for k in range(4)]
++    order = np.argsort(held, kind="stable")
++    top = int(order[0])
++    forced = min((n[top] for n in nominees),
++                 key=lambda p: sum(loss(s.held).mean() for s in surface.cache[p][2]))
++    result = dict(
++        decision="withheld", reason="split_geography_disagrees", region=None, point=None,
++        forced_region=offer_ids[top] if held[order[1]] - held[top] > 1e-12 else None,
++        forced_point=surface.cache[forced][0], split_span_km=span,
++        best_held_offers=[offer_ids[k] for k in best], held_offer_loss=dict(zip(offer_ids, map(float, held), strict=True)),
++        witness_points=[r[0] for r in records],
++        witness_regions=[offer_ids[r[1]] if r[1] >= 0 else "outside" for r in records],
++    )
++    group = records[0][1]
++    held_scores = [r[2][1 - i] for i, r in enumerate(records)]
++    supported = [set(map(int, s.norad[(s.held <= SUPPORT_HZ) & (s.train <= SUPPORT_HZ)])) for s in held_scores]
++    usable = np.concatenate([s.held[np.isfinite(s.held)] for s in held_scores])
++    result["held_rms_hz"] = float(np.sqrt(np.mean(usable ** 2))) if len(usable) else None
++    result["held_orbits"] = [len(s - supported[1 - i]) for i, s in enumerate(supported)]
++    if records[1][1] != group:
++        return result
++    if any(max(map(abs, xy)) > surface.radius - EDGE_KM for xy in witnesses):
++        return dict(result, reason="terrain_edge")
++    xyz, up, _ = grid._sites(surface.frame, np.asarray(witnesses))
++    margins = surface.margins(xyz, up)
++    clearance = float((-margins.max(axis=1)).min() if group == -1 else margins[:, group].min())
++    result["clearance_km"] = clearance
++    if clearance <= max(EDGE_KM, span / 2):
++        return dict(result, reason="uncertain_region_edge")
++    checks = []
++    for i, n in enumerate(nominees):
++        competitors = [k for k in range(-1, 4) if k != group]
++        checks.append([compare(held_scores[i], surface.cache[n[k]][2][1 - i], supported[1 - i])
++                       for k in competitors])
++    result["held_checks"] = checks
++    if any(c["gain"] <= LEAD or c["votes"] < MIN_ARCS for fold in checks for c in fold):
++        return dict(result, reason="weak_independent_advantage")
++    if group == -1:
++        return dict(result, decision="none", reason="outside_witness_replicates")
++    point = None
++    if span <= EDGE_KM and clearance > 1.0 and min(result["held_orbits"]) >= 3:
++        if result["held_rms_hz"] <= 250:
++            point = grid._sites(surface.frame, np.mean(witnesses, axis=0)[None])[2][0].tolist()
++    return dict(result, decision="region", region=offer_ids[group], reason="inside_witness_replicates", point=point)
++
++
++def solve(observation, catalogue, offers, *, coefficient=0.0, permutation=None):
++    if set(observation) != {"clock", "arcs"} or set(observation["clock"]) != {
++        "anchor_utc_ns", "cutoff_utc_ns", "catalog_timestamp_ns", "duration_s"
++    }:
++        raise ValueError("expected only anonymous arcs and a causal recording clock")
++    if len(offers) != 4 or any(set(o) != {"id", "center"} for o in offers):
++        raise ValueError("expected exactly four opaque offers")
++    if len({o["id"] for o in offers}) != 4 or len({tuple(o["center"]) for o in offers}) != 4:
++        raise ValueError("offer IDs and centers must be unique")
++    offers = sorted(offers, key=lambda o: tuple(o["center"]))
++    centers = np.asarray([o["center"] for o in offers])
++    arcs = read_arcs(observation["arcs"], observation["clock"]["duration_s"])
++    groups = split(arcs)
++    summary = dict(arcs=len(arcs), group_sizes=list(map(len, groups)), sample_count=sum(len(a.time) for a in arcs))
++    if min(map(len, groups)) < MIN_ARCS:
++        return dict(summary, decision="withheld", reason="too_few_disjoint_arcs")
++    sky = grid.prepare_sky(observation["clock"], catalogue)
++    units = np.array([ecef_to_enu_matrix(*p)[2] for p in centers])
++    x, y, z = units.mean(axis=0)
++    frame = Frame.at(np.rad2deg([np.arctan2(z, np.hypot(x, y)), np.arctan2(y, x)]))
++    tiles = [Frame.at(center) for center in centers]
++    centers_xy = frame.project(np.asarray([tile.ecef_center_km for tile in tiles]), units)
++    radius = float(np.max(np.abs(centers_xy)) + 55.0)
++    starts = grid._sites(frame, np.vstack((np.zeros((1, 2)), centers_xy)))[:2]
++    bank, work = [], 0
++    for group in groups:
++        models = []
++        for arc in group:
++            f = arc.frequency + coefficient * (arc.rf_hz / 1e9 - 11.5)
++            if permutation is not None:
++                f = permutation.permutation(f)
++            model, calls = prepare(sky, replace(arc, frequency=f), frame, starts)
++            models.append(model)
++            work += calls
++        bank.append(models)
++    surface = Surface(frame, tiles, radius, bank)
++    atlas = list(product(np.linspace(-radius, radius, 17), repeat=2))
++    for tile in tiles:
++        xy = np.asarray(list(product(np.linspace(-12.499, 12.499, 7), repeat=2)))
++        p, up, _ = grid._sites(tile, xy)
++        atlas.extend(map(tuple, frame.project(p, up)))
++    surface.get(atlas)
++    nominees = []
++    for fold in range(2):
++        local = {}
++        for group in range(-1, 4):
++            local[group] = surface.refine(surface.nominate(atlas, fold, group), fold, group)
++        training_best = min(local.values(), key=lambda xy: loss(surface.cache[xy][2][fold].train).mean())
++        local["free"] = surface.refine(training_best, fold)
++        nominees.append(local)
++    return summary | evaluate(surface, nominees, [o["id"] for o in offers]) | dict(
++        sgp4_exact_states=work, sgp4_coarse_states=sky.stats["coarse_state_evaluations"],
++        sites_evaluated=len(surface.cache), radius_km=radius,
++    )
+diff --git a/tools/pipeline_eval/variants/fine_search.c b/tools/pipeline_eval/variants/fine_search.c
+index f1f091534..8b86c8e64 100644
+--- a/tools/pipeline_eval/variants/fine_search.c
++++ b/tools/pipeline_eval/variants/fine_search.c
+@@ -104,6 +104,9 @@ static inline void radix5(const Complex *in, int width, Complex out[5]) {
+     out[4] = sub(u, p);
+ }
+ 
++#ifdef LEO_DIRECT_KERNEL
++#include "c_fine_memory_fft.inc"
++#else
+ #define PASS(radix, previous, width, butterfly)                              \
+     for (int k=0; k<previous; ++k) {                                         \
+         _Pragma("omp simd")                                                  \
+@@ -153,3 +156,4 @@ void fine_search_transform(const Complex *restrict weighted, const Complex *rest
+         for (int i=0; i<fft_size; ++i) a[i] = (Complex){0, 0};
+     }
+ }
++#endif
+diff --git a/tools/pipeline_eval/variants/portable_coarse.c b/tools/pipeline_eval/variants/portable_coarse.c
+index 8af079ba8..08256a592 100644
+--- a/tools/pipeline_eval/variants/portable_coarse.c
++++ b/tools/pipeline_eval/variants/portable_coarse.c
+@@ -252,6 +252,10 @@ static void roll(const PortableCoarse *w, unsigned base, unsigned size,
+         }
+ }
+ 
++#ifdef LEO_DIRECT_KERNEL
++#define C_COARSE_TILES_PAIR_ONLY
++#include "c_coarse_tiles.h"
++#else
+ static void phase_pairs(float real[tones][tile], float imag[tones][tile], unsigned size,
+                         float pair[4][4][2][tile]) {
+     for (unsigned j=0; j<4; ++j) {
+@@ -316,6 +320,7 @@ static void fold(const PortableCoarse *w, const PilotAnchors *family, unsigned c
+         }
+     }
+ }
++#endif
+ 
+ static void grid(PortableCoarse *w, const PilotAnchors *family, unsigned n, unsigned count,
+                  const double *residual, double center, unsigned rows) {
+@@ -338,7 +343,11 @@ static void grid(PortableCoarse *w, const PilotAnchors *family, unsigned n, unsi
+         for (unsigned p=0; p<limit; p+=tile) {
+             const unsigned size=limit-p<tile ? limit-p : tile;
+             roll(w,p,size,seed,undo,tail,amp,real,imag);
++#ifdef LEO_DIRECT_KERNEL
++            fold_tiles(w,family,count,limit,p,size,row,w->xr,w->xi,real,imag);
++#else
+             fold(w,family,count,limit,p,size,row,real,imag);
++#endif
+         }
+         for (unsigned e=0; e<epochs; ++e)
+             if (w->support[e]) row[e]/=w->support[e];
+diff --git a/tools/pipeline_eval/variants/portable_fine.c b/tools/pipeline_eval/variants/portable_fine.c
+index ddb1b23ab..af1f6cf46 100644
+--- a/tools/pipeline_eval/variants/portable_fine.c
++++ b/tools/pipeline_eval/variants/portable_fine.c
+@@ -14,7 +14,9 @@ void fine_search_transform(
+ static struct { double step_hz, sample_rate_hz; } const geometry = {500.0, 10000000.0};
+ 
+ void portable_fine_prepare(PortableFineWorkspace *workspace) {
++#ifndef LEO_DIRECT_KERNEL
+     memset(workspace->scratch, 0, sizeof(workspace->scratch));
++#endif
+     fine_search_twiddles(workspace->roots);
+     workspace->rotation_base_hz = NAN;
+ }
+@@ -34,7 +36,7 @@ static int supported_grid(unsigned bins, double absolute_hz) {
+ }
+ 
+ int portable_fine_score(
+-    PortableFineWorkspace *workspace, const PortableFineComplex *samples,
++    PortableFineWorkspace *workspace, const PortableFineSample *samples,
+     const PortableFineComplex *frame_template, unsigned epoch, double first_absolute_hz,
+     unsigned bins, double *scores, unsigned *frames
+ ) {
+@@ -70,7 +72,8 @@ int portable_fine_score(
+         double received_power = 0;
+         for (int symbol = fold_stride, j = 0; symbol < fold_stop; symbol += fold_stride) {
+             for (int i = 0; i < PORTABLE_FINE_TAPS; ++i, ++j) {
+-                PortableFineComplex received = samples[start + symbol + i];
++                PortableFineSample raw = samples[start + symbol + i];
++                PortableFineComplex received = {raw.r, raw.i};
+                 PortableFineComplex reference = frame_template[symbol + i];
+                 reference.i = -reference.i;
+                 received_power += power(received);
+diff --git a/tools/pipeline_eval/variants/portable_fine.h b/tools/pipeline_eval/variants/portable_fine.h
+index 8eb4ecb57..8732743de 100644
+--- a/tools/pipeline_eval/variants/portable_fine.h
++++ b/tools/pipeline_eval/variants/portable_fine.h
+@@ -18,9 +18,18 @@ enum {
+ 
+ typedef struct { double r, i; } PortableFineComplex;
+ 
++#ifdef LEO_DIRECT_KERNEL
++#include "c_fine_memory.h"
++typedef CompactIQ PortableFineSample;
++enum { PORTABLE_FINE_SCRATCH = PORTABLE_FINE_FFT + 25 * PORTABLE_FINE_MAX_BINS + 160 * 5 };
++#else
++typedef PortableFineComplex PortableFineSample;
++enum { PORTABLE_FINE_SCRATCH = 2 * PORTABLE_FINE_FFT };
++#endif
++
+ typedef struct {
+     PortableFineComplex roots[PORTABLE_FINE_FFT];
+-    PortableFineComplex scratch[2 * PORTABLE_FINE_FFT];
++    PortableFineComplex scratch[PORTABLE_FINE_SCRATCH];
+     PortableFineComplex folded[PORTABLE_FINE_PILOTS];
+     PortableFineComplex rotation[PORTABLE_FINE_PILOTS];
+     PortableFineComplex selected[PORTABLE_FINE_MAX_BINS];
+@@ -38,7 +47,7 @@ void portable_fine_prepare(PortableFineWorkspace *workspace);
+  * and one capture producer frame template. Return 0 on success; -1 on unsupported input.
+  * Consumers needing a stable peak use the guard from portable_fine_peak before accepting it. */
+ int portable_fine_score(
+-    PortableFineWorkspace *workspace, const PortableFineComplex *samples,
++    PortableFineWorkspace *workspace, const PortableFineSample *samples,
+     const PortableFineComplex *frame_template, unsigned epoch, double first_absolute_hz,
+     unsigned bins, double *scores, unsigned *frames
+ );
+diff --git a/tools/pipeline_eval/variants/portable_verifier.c b/tools/pipeline_eval/variants/portable_verifier.c
+index 088c87e2b..faa59fc90 100644
+--- a/tools/pipeline_eval/variants/portable_verifier.c
++++ b/tools/pipeline_eval/variants/portable_verifier.c
+@@ -22,17 +22,28 @@ static const double gate = 0.025;
+ 
+ /* Match the existing conditioned and GLRT correlation translation-unit interfaces. */
+ typedef struct { double re, im; } GlrtComplex;
+-void conditioned_moments(const double *, const double *, const int32_t *, int, int,
++#ifdef LEO_DIRECT_KERNEL
++typedef int16_t IqScalar;
++typedef CompactIQ GlrtSample;
++#else
++typedef double IqScalar;
++typedef GlrtComplex GlrtSample;
++#endif
++void conditioned_moments(const IqScalar *, const double *, const int32_t *, int, int,
+                          const double *, double *, double *);
+-void conditioned_single(const double *, const double *, const int32_t *, int, int, double *);
+-void correlated_integer(const GlrtComplex *, const int32_t *, int, int, const int32_t *,
++void conditioned_single(const IqScalar *, const double *, const int32_t *, int, int, double *);
++void correlated_integer(const GlrtSample *, const int32_t *, int, int, const int32_t *,
+                         const GlrtComplex *, const GlrtComplex *, const GlrtComplex *,
+                         GlrtComplex *, GlrtComplex *);
+-void correlated_fractional(const GlrtComplex *, const int32_t *, int, const int32_t *,
++void correlated_fractional(const GlrtSample *, const int32_t *, int, const int32_t *,
+                            const double *, const GlrtComplex *, const GlrtComplex *,
+                            const GlrtComplex *, GlrtComplex *, GlrtComplex *);
+ 
+-typedef union { PortableFineComplex fine[samples]; GlrtComplex glrt[samples]; double data[2*samples]; } Iq;
++typedef union {
++    PortableFineSample fine[samples];
++    GlrtSample glrt[samples];
++    IqScalar data[2*samples];
++} Iq;
+ typedef union { PortableFineComplex fine[n]; double data[2*n]; } Rotated;
+ 
+ struct PortableVerifier {
+@@ -44,8 +55,14 @@ struct PortableVerifier {
+     double moments[max_frames][blocks][terms][2];
+     double energy[max_frames];
+     GlrtComplex glrt_exact[aperture], glrt_control[aperture];
++#ifdef LEO_DIRECT_KERNEL
++    GlrtComplex glrt_rotation[aperture], fractional_rotation[aperture];
++    double integer_hz;
++    int32_t indices[aperture], weight_row[aperture];
++#else
+     GlrtComplex glrt_rotation[max_frames * aperture];
+     int32_t indices[max_frames * aperture], weight_row[max_frames * aperture];
++#endif
+     double weights[rounded_weight_rows][16];
+     GlrtComplex correlations[2][max_frames * 64];
+     double complex fft_input[glrt_size];
+@@ -53,6 +70,9 @@ struct PortableVerifier {
+ };
+ 
+ static inline double energy(PortableFineComplex z) { return z.r*z.r + z.i*z.i; }
++static inline double compact_energy(PortableFineSample z) {
++    return energy((PortableFineComplex){z.r, z.i});
++}
+ static inline PortableFineComplex rotate(double theta) {
+     return (PortableFineComplex){cos(theta), sin(theta)};
+ }
+@@ -82,6 +102,9 @@ PortableVerifier *portable_verifier_create(const PortableFineComplex *exact,
+         return NULL;
+     }
+     portable_fine_prepare(&w->fine);
++#ifdef LEO_DIRECT_KERNEL
++    w->integer_hz = NAN;
++#endif
+     for (int k = 0; k < block; ++k) {
+         double x = (k - 127.5) / 127.5, value = x;
+         for (int d = 0; d < terms - 1; ++d, value *= x) w->powers[d * block + k] = value;
+@@ -105,7 +128,7 @@ int portable_verifier_load(PortableVerifier *w, const int16_t *iq, unsigned lane
+     if (!w || !iq || lane > 1) return -1;
+     for (int sample = 0; sample < samples; ++sample) {
+         size_t index = 4 * (size_t)sample + 2 * lane;
+-        w->iq.fine[sample] = (PortableFineComplex){iq[index], iq[index + 1]};
++        w->iq.fine[sample] = (PortableFineSample){iq[index], iq[index + 1]};
+     }
+     return 0;
+ }
+@@ -239,7 +262,7 @@ static double pilots(PortableVerifier *w, unsigned epoch, double cfo,
+         if (start + limit > samples) break;
+         double re = 0;
+         for (int k = begin; k < limit; k += stride) for (int j = k; j < k+taps; ++j)
+-            re += energy(w->iq.fine[start+j]);
++            re += compact_energy(w->iq.fine[start+j]);
+         starts[frames] = start;
+         d[frames++] = sqrt(te*re);
+     }
+@@ -248,6 +271,10 @@ static double pilots(PortableVerifier *w, unsigned epoch, double cfo,
+     return frames ? sum / frames : 0;
+ }
+ 
++#ifdef LEO_DIRECT_KERNEL
++#include "c_fine_memory_held.inc"
++#endif
++
+ static int equivalent(const PortableVerifierResult *a, const PortableVerifierResult *b,
+                       const PortableVerifierSeed *seeds) {
+     return seeds[a->seed_index].epoch == seeds[b->seed_index].epoch &&
+@@ -296,8 +323,12 @@ int portable_verifier_acquire(PortableVerifier *w, const PortableVerifierSeed *s
+         if (!out[i].conditioned_bins) return -1;
+         condition(w, seed->epoch, center, conditioned, &out[i]);
+         out[i].acquire = pilots(w, seed->epoch, out[i].acquired_hz, w->exact, 2);
++#ifdef LEO_DIRECT_KERNEL
++        held_pilots(w, seed->epoch, out[i].acquired_hz, &out[i].verify, &out[i].verify_control);
++#else
+         out[i].verify = pilots(w, seed->epoch, out[i].acquired_hz, w->exact, 3);
+         out[i].verify_control = pilots(w, seed->epoch, out[i].acquired_hz, w->control, 3);
++#endif
+     }
+     for (unsigned i = 1; i < count; ++i) for (unsigned j = 0; j < i; ++j) {
+         if (equivalent(&out[i], &out[j], seeds)) {
+@@ -356,6 +387,10 @@ static double glrt_spectrum(PortableVerifier *w, const GlrtComplex *values, int
+     return best / ceiling;
+ }
+ 
++#ifdef LEO_DIRECT_KERNEL
++#include "c_fine_memory_fractional.inc"
++#endif
++
+ static int glrt(PortableVerifier *w, unsigned ep, double cfo, double offset,
+                 double *exact, double *control, double *residual, unsigned *flags) {
+     int integer = fabs(offset - nearbyint(offset)) <= 1e-12;
+@@ -378,13 +413,23 @@ static int glrt(PortableVerifier *w, unsigned ep, double cfo, double offset,
+     if (!frames) { *exact = *control = *residual = 0; return 0; }
+     if (integer) {
+         for (int f = 0; f < frames; ++f) starts[f] += first + (int)nearbyint(offset);
++#ifdef LEO_DIRECT_KERNEL
++        if (w->integer_hz != cfo) {
++#endif
+         for (int k = 0; k < aperture; ++k) {
+             PortableFineComplex z = rotate(-tau*cfo*(first+k)/rate);
+             w->glrt_rotation[k] = (GlrtComplex){z.r,z.i};
+         }
++#ifdef LEO_DIRECT_KERNEL
++            w->integer_hz = cfo;
++        }
++#endif
+         const int32_t zero = 0;
+         correlated_integer(w->iq.glrt, starts, 1, frames, &zero, w->glrt_rotation,
+                            w->glrt_exact, w->glrt_control, w->correlations[0], w->correlations[1]);
++#ifdef LEO_DIRECT_KERNEL
++    } else if (fractional_correlations(w, frames, starts, cfo, offset)) return -1;
++#else
+     } else {
+         double old_fraction = NAN;
+         int row = -1;
+@@ -414,6 +459,7 @@ static int glrt(PortableVerifier *w, unsigned ep, double cfo, double offset,
+                               w->glrt_rotation, w->glrt_exact, w->glrt_control,
+                               w->correlations[0], w->correlations[1]);
+     }
++#endif
+     int best, unused;
+     *exact = glrt_spectrum(w, w->correlations[0], frames, &best, flags);
+     *control = glrt_spectrum(w, w->correlations[1], frames, &unused, flags);
+diff --git a/tools/pipeline_eval/variants/refine_bank.c b/tools/pipeline_eval/variants/refine_bank.c
+index 63709f380..f630ff2b6 100644
+--- a/tools/pipeline_eval/variants/refine_bank.c
++++ b/tools/pipeline_eval/variants/refine_bank.c
+@@ -6,6 +6,15 @@ enum { symbols = 64, taps = 44, aperture = symbols * taps, lanczos_taps = 16, la
+ 
+ typedef struct { double re, im; } complex64x2;
+ 
++#ifdef LEO_DIRECT_KERNEL
++#include "c_fine_memory.h"
++typedef CompactIQ IqSample;
++static inline complex64x2 expand(IqSample s) { return (complex64x2){s.r, s.i}; }
++#else
++typedef complex64x2 IqSample;
++static inline complex64x2 expand(IqSample s) { return s; }
++#endif
++
+ static inline complex64x2 add(complex64x2 a, complex64x2 b)
+ {
+     return (complex64x2) {a.re + b.re, a.im + b.im};
+@@ -22,15 +31,17 @@ static inline complex64x2 pairwise_sum(const complex64x2 *lane)
+     return add(add(lane[0], lane[1]), add(lane[2], lane[3]));
+ }
+ 
+-static inline complex64x2 interpolate(const complex64x2 *values, const double *weights)
++static inline complex64x2 interpolate(const IqSample *values, const double *weights)
+ {
+     complex64x2 lane[lanes];
+-    for (int t = 0; t < lanes; ++t)
+-        lane[t] = (complex64x2) {values[t].re * weights[t], values[t].im * weights[t]};
++    for (int t = 0; t < lanes; ++t) {
++        complex64x2 sample = expand(values[t]);
++        lane[t] = (complex64x2) {sample.re * weights[t], sample.im * weights[t]};
++    }
+     for (int t = lanes; t < lanczos_taps; t += lanes)
+         for (int k = 0; k < lanes; ++k) {
+             double w = weights[t + k];
+-            complex64x2 sample = values[t + k];
++            complex64x2 sample = expand(values[t + k]);
+             lane[k].re += sample.re * w;
+             lane[k].im += sample.im * w;
+         }
+@@ -49,7 +60,7 @@ static inline void accumulate(
+ }
+ 
+ void correlated_integer(
+-    const complex64x2 *restrict iq, const int32_t *restrict starts, int candidates, int frames,
++    const IqSample *restrict iq, const int32_t *restrict starts, int candidates, int frames,
+     const int32_t *restrict rotation_row, const complex64x2 *restrict rotation,
+     const complex64x2 *restrict exact, const complex64x2 *restrict control,
+     complex64x2 *restrict exact_out, complex64x2 *restrict control_out)
+@@ -59,12 +70,12 @@ void correlated_integer(
+         for (int f = 0; f < frames; ++f) {
+             int index = c * frames + f;
+             if (starts[index] < 0) continue;
+-            const complex64x2 *received = iq + starts[index];
++            const IqSample *received = iq + starts[index];
+             for (int s = 0; s < symbols; ++s) {
+                 complex64x2 exact_lanes[lanes], control_lanes[lanes];
+                 int offset = s * taps;
+                 for (int t = 0; t < taps; ++t) {
+-                    complex64x2 corrected = mul(received[offset + t], phase[offset + t]);
++                    complex64x2 corrected = mul(expand(received[offset + t]), phase[offset + t]);
+                     accumulate(corrected, exact + offset, control + offset, t,
+                                exact_lanes, control_lanes);
+                 }
+@@ -76,7 +87,7 @@ void correlated_integer(
+ }
+ 
+ void correlated_fractional(
+-    const complex64x2 *restrict iq, const int32_t *restrict starts, int frames,
++    const IqSample *restrict iq, const int32_t *restrict starts, int frames,
+     const int32_t *restrict weight_row, const double *restrict weights,
+     const complex64x2 *restrict rotation,
+     const complex64x2 *restrict exact, const complex64x2 *restrict control,

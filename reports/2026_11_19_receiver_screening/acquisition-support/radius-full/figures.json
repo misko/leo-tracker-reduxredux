@@ -1,0 +1,46 @@
+{
+  "charts": [
+    {
+      "caption": "Two complete recorded waveforms. Both detectors use four start-time proposals, the wide frequency search and the same position solver. This changes the local sample search radius.",
+      "cases": [
+        "DS26-0014",
+        "DS29-0127"
+      ],
+      "id": "scout-radius-all",
+      "method": "scout-radius_candidate",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "all-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Radius of two samples",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-radius_candidate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Radius of one sample",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-radius_control"
+        }
+      ],
+      "title": "Search one or two samples around each proposed pilot start"
+    }
+  ],
+  "version": 1
+}

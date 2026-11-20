@@ -1,0 +1,137 @@
+{
+  "charts": [
+    {
+      "caption": "One blinded simulated location. Every dual visit receives the same planted emission. Both backgrounds share RMS and region offers. Publishing in the omitted region is a false fix.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "hybrid-site-recorded-background",
+      "method": "hybrid_site_compact",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Recorded background",
+          "match": [],
+          "value": "hybrid_site_compact",
+          "where": {
+            "variant": "hybrid"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched Gaussian",
+          "match": [
+            "document_sha256"
+          ],
+          "value": "hybrid_site_compact",
+          "where": {
+            "variant": "gaussian"
+          }
+        }
+      ],
+      "title": "Same Qin emission over recorded or Gaussian backgrounds"
+    },
+    {
+      "caption": "Both installed profiles share the same native detections and 25 km regions. Forced fits are diagnostic coordinates retained after withdrawal.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "hybrid-site-hybrid-interior",
+      "method": "hybrid_site_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Interior forced fit",
+          "key": "candidate",
+          "label": "20 m interior",
+          "match": [],
+          "value": "hybrid_site_interior",
+          "where": {
+            "variant": "hybrid"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Phase release",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "hybrid_site_compact",
+          "where": {
+            "variant": "hybrid"
+          }
+        }
+      ],
+      "title": "Prospective 20 m policy on recorded background IQ"
+    },
+    {
+      "caption": "Both installed profiles share the same native detections and 25 km regions. Forced fits are diagnostic coordinates retained after withdrawal.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing",
+        "omitted": "25 km near omitted"
+      },
+      "id": "hybrid-site-gaussian-interior",
+      "method": "hybrid_site_interior",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Interior forced fit",
+          "key": "candidate",
+          "label": "20 m interior",
+          "match": [],
+          "value": "hybrid_site_interior",
+          "where": {
+            "variant": "gaussian"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Phase release",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "hybrid_site_compact",
+          "where": {
+            "variant": "gaussian"
+          }
+        }
+      ],
+      "title": "Prospective 20 m policy on matched gaussian IQ"
+    }
+  ],
+  "version": 1
+}

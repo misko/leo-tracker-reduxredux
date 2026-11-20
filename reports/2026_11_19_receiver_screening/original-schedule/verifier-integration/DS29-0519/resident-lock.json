@@ -1,0 +1,279 @@
+{
+  "input_lock_sha256": "44a0ae9f4f2975bc6dedb495bb7f00383214540aaeedbd8230bde345b9698aee",
+  "lineage": {
+    "architecture": "x86_64",
+    "capture": {
+      "code_sha256": "sha256:c086c53550f09f857b4c4ab951f7f0e96dea98081364f713374b60e57bd5553c",
+      "configuration": {
+        "execution": {
+          "maximum_windows_per_job": 64
+        },
+        "implementation_digest": "sha256:c086c53550f09f857b4c4ab951f7f0e96dea98081364f713374b60e57bd5553c",
+        "stages": {
+          "fast-scan": {
+            "gate": "either_receiver",
+            "margin_gate": 0.025,
+            "mode": "ungated",
+            "predictor": "disabled-unqualified-at-native-rate",
+            "sample_rate_hz": 10000000,
+            "schema_version": 2,
+            "strong_margin": 0.1,
+            "threshold": 0.013219531315217865,
+            "window_samples": 200000
+          }
+        }
+      },
+      "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+      "input_manifest_sha256": "sha256:2657427dbfc138d9721fb816e1f633d5e7b04c31857a9df73533631c92f14762",
+      "release": "fast-a9ce664313cc56759cdffefe4750f833",
+      "root": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+      "run_id": "fast-c202077f64a77933fe6ed1689b84fa49"
+    },
+    "capture_coarse_backend": "avx2_fma",
+    "numpy": "2.5.2",
+    "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+    "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+    "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+    "python_version": "3.12.14",
+    "sources": {
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/runtime-manifest.json": "e05bfc29c8987c83623ac8f310a68b45a27de355ae1020ece7de066f5eb728d2",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.c": "7dd6ad1300dca46e986178ea755cd896819b9bae148072617c32cc80ce8458bf",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "77f0719b9c1658c042c53408b7941dedd9126fbfa738bade7113bc060eadd865",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/acquisition.py": "6a1e88345d2d64f6d6e11f1d586753b74bcc0ef5a6f6816e42880eb8bc6e7a23",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+      "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+    }
+  },
+  "staged": [
+    {
+      "acquisition": {
+        "actual_if_center_hz": 1359687500,
+        "complete": true,
+        "contiguous_with_previous": false,
+        "counter_authority": "hardware",
+        "device_session": 3924353581428820616,
+        "discarded_samples": 226825,
+        "generation": 4549834881532190949,
+        "global_visit": 925,
+        "guard_ms": 0.0,
+        "host_final_sample_monotonic_ns": 5078374768901430,
+        "host_request_monotonic_ns": [
+          0,
+          0
+        ],
+        "host_request_utc_ns": [
+          0,
+          0
+        ],
+        "listen_ms": 20.0,
+        "policy_id": "ordered-continuous-20ms-v1",
+        "quality_flags": [],
+        "recall_skipped": false,
+        "requested_if_center_hz": 1359687500,
+        "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":32,\"flags\":3,\"frequency_hz\":1359687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":4549834881532190949,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":5078374764797595,\"realtime_ns\":1794397143644504696},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":5,\"profile_crc32\":3463451485,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":28626525249969,\"session\":3924353581428820616,\"source_rate_hz\":10000000,\"target\":5,\"transition_after\":28626525290355,\"transition_before\":28626525263530,\"valid_end\":28626525690355,\"valid_start\":28626525490355,\"visit\":925}",
+        "sample_count": 200000,
+        "sample_end": 28626525690355,
+        "sample_rate_hz": 10000000,
+        "sample_start": 28626525490355,
+        "sample_start_utc_ns": null,
+        "sweep": 115,
+        "target_index": 5,
+        "tune_ms": 2.6825,
+        "validity_authority": "provider_attested",
+        "validity_includes_guard": true
+      },
+      "filename": "925.ci16",
+      "iq_sha256": "sha256:dd268cf75a98b7ad3ee8db8b8dfc15035afdf14ab554f1b8ba67fdb8b2747b3f",
+      "manifest_sha256": "c42cc41fdc049dfd82edeb9503f331f68ca3c21a4e7d8fe10ea06ca33b1e33b7",
+      "sample_rate_hz": 10000000,
+      "segment": 1,
+      "sequence": 413,
+      "target": {
+        "band": null,
+        "channel": 6,
+        "edge": "lower",
+        "if_center_hz": 1359687500,
+        "lnb_lo_hz": 10600000000,
+        "polarization": null,
+        "profile_id": null,
+        "rf_center_hz": 11959687500,
+        "rf_mapping_authority": "hypothesis",
+        "target_id": "ch6-lower-lo10600000000"
+      },
+      "visit": 925
+    },
+    {
+      "acquisition": {
+        "actual_if_center_hz": 1859687500,
+        "complete": true,
+        "contiguous_with_previous": false,
+        "counter_authority": "hardware",
+        "device_session": 3924353581428820616,
+        "discarded_samples": 226768,
+        "generation": 4549834881532190949,
+        "global_visit": 5863,
+        "guard_ms": 0.0,
+        "host_final_sample_monotonic_ns": 5078593580060591,
+        "host_request_monotonic_ns": [
+          0,
+          0
+        ],
+        "host_request_utc_ns": [
+          0,
+          0
+        ],
+        "listen_ms": 20.0,
+        "policy_id": "ordered-continuous-20ms-v1",
+        "quality_flags": [],
+        "recall_skipped": false,
+        "requested_if_center_hz": 1859687500,
+        "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":128,\"flags\":3,\"frequency_hz\":1859687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":4549834881532190949,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":5078593575590592,\"realtime_ns\":1794397362455297912},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":7,\"profile_crc32\":188867609,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":28628713342876,\"session\":3924353581428820616,\"source_rate_hz\":10000000,\"target\":7,\"transition_after\":28628713383234,\"transition_before\":28628713356466,\"valid_end\":28628713783234,\"valid_start\":28628713583234,\"visit\":5863}",
+        "sample_count": 200000,
+        "sample_end": 28628713783234,
+        "sample_rate_hz": 10000000,
+        "sample_start": 28628713583234,
+        "sample_start_utc_ns": null,
+        "sweep": 732,
+        "target_index": 7,
+        "tune_ms": 2.6768,
+        "validity_authority": "provider_attested",
+        "validity_includes_guard": true
+      },
+      "filename": "5863.ci16",
+      "iq_sha256": "sha256:d1d89752c6bc9707be6d6abb71fd9734e2b863c1e5de79db8f5de32f51a1fde3",
+      "manifest_sha256": "5f85ed3baa1b5214a83eb28bf4a7ad38c8dbffe2d9d649533f3bfbf29eb3595d",
+      "sample_rate_hz": 10000000,
+      "segment": 11,
+      "sequence": 231,
+      "target": {
+        "band": null,
+        "channel": 8,
+        "edge": "lower",
+        "if_center_hz": 1859687500,
+        "lnb_lo_hz": 10600000000,
+        "polarization": null,
+        "profile_id": null,
+        "rf_center_hz": 12459687500,
+        "rf_mapping_authority": "hypothesis",
+        "target_id": "ch8-lower-lo10600000000"
+      },
+      "visit": 5863
+    },
+    {
+      "acquisition": {
+        "actual_if_center_hz": 959687500,
+        "complete": true,
+        "contiguous_with_previous": false,
+        "counter_authority": "hardware",
+        "device_session": 3924353581428820616,
+        "discarded_samples": 225872,
+        "generation": 4549834881532190949,
+        "global_visit": 6504,
+        "guard_ms": 0.0,
+        "host_final_sample_monotonic_ns": 5078621981109639,
+        "host_request_monotonic_ns": [
+          0,
+          0
+        ],
+        "host_request_utc_ns": [
+          0,
+          0
+        ],
+        "listen_ms": 20.0,
+        "policy_id": "ordered-continuous-20ms-v1",
+        "quality_flags": [],
+        "recall_skipped": false,
+        "requested_if_center_hz": 959687500,
+        "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":1,\"flags\":3,\"frequency_hz\":959687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":4549834881532190949,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":5078621976965452,\"realtime_ns\":1794397390856672597},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":0,\"profile_crc32\":565893007,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":28628997399994,\"session\":3924353581428820616,\"source_rate_hz\":10000000,\"target\":0,\"transition_after\":28628997439834,\"transition_before\":28628997413962,\"valid_end\":28628997839834,\"valid_start\":28628997639834,\"visit\":6504}",
+        "sample_count": 200000,
+        "sample_end": 28628997839834,
+        "sample_rate_hz": 10000000,
+        "sample_start": 28628997639834,
+        "sample_start_utc_ns": null,
+        "sweep": 813,
+        "target_index": 0,
+        "tune_ms": 2.5872,
+        "validity_authority": "provider_attested",
+        "validity_includes_guard": true
+      },
+      "filename": "6504.ci16",
+      "iq_sha256": "sha256:d7c2a860d2615b3738547dedc2bbfd890f73171699cea1423b245cc8243c471e",
+      "manifest_sha256": "c0a4d3f643ad4301e7d1489b588827c2e661c0d1ddffc061b78e6c123d46632d",
+      "sample_rate_hz": 10000000,
+      "segment": 12,
+      "sequence": 360,
+      "target": {
+        "band": null,
+        "channel": 1,
+        "edge": "lower",
+        "if_center_hz": 959687500,
+        "lnb_lo_hz": 9750000000,
+        "polarization": null,
+        "profile_id": null,
+        "rf_center_hz": 10709687500,
+        "rf_mapping_authority": "hypothesis",
+        "target_id": "ch1-lower-lo9750000000"
+      },
+      "visit": 6504
+    },
+    {
+      "acquisition": {
+        "actual_if_center_hz": 1109687500,
+        "complete": true,
+        "contiguous_with_previous": false,
+        "counter_authority": "hardware",
+        "device_session": 3924353581428820616,
+        "discarded_samples": 226065,
+        "generation": 4549834881532190949,
+        "global_visit": 5892,
+        "guard_ms": 0.0,
+        "host_final_sample_monotonic_ns": 5078594858630241,
+        "host_request_monotonic_ns": [
+          0,
+          0
+        ],
+        "host_request_utc_ns": [
+          0,
+          0
+        ],
+        "listen_ms": 20.0,
+        "policy_id": "ordered-continuous-20ms-v1",
+        "quality_flags": [],
+        "recall_skipped": false,
+        "requested_if_center_hz": 1109687500,
+        "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":16,\"flags\":3,\"frequency_hz\":1109687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":4549834881532190949,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":5078594854603245,\"realtime_ns\":1794397363734310653},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":4,\"profile_crc32\":621214654,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":28628726181213,\"session\":3924353581428820616,\"source_rate_hz\":10000000,\"target\":4,\"transition_after\":28628726221339,\"transition_before\":28628726195274,\"valid_end\":28628726621339,\"valid_start\":28628726421339,\"visit\":5892}",
+        "sample_count": 200000,
+        "sample_end": 28628726621339,
+        "sample_rate_hz": 10000000,
+        "sample_start": 28628726421339,
+        "sample_start_utc_ns": null,
+        "sweep": 736,
+        "target_index": 4,
+        "tune_ms": 2.6065,
+        "validity_authority": "provider_attested",
+        "validity_includes_guard": true
+      },
+      "filename": "5892.ci16",
+      "iq_sha256": "sha256:f052f246f2b0789236ff7d42ce7150b3cec27da44a890955acd3c28a72513e84",
+      "manifest_sha256": "5f85ed3baa1b5214a83eb28bf4a7ad38c8dbffe2d9d649533f3bfbf29eb3595d",
+      "sample_rate_hz": 10000000,
+      "segment": 11,
+      "sequence": 260,
+      "target": {
+        "band": null,
+        "channel": 5,
+        "edge": "lower",
+        "if_center_hz": 1109687500,
+        "lnb_lo_hz": 10600000000,
+        "polarization": null,
+        "profile_id": null,
+        "rf_center_hz": 11709687500,
+        "rf_mapping_authority": "hypothesis",
+        "target_id": "ch5-lower-lo10600000000"
+      },
+      "visit": 5892
+    }
+  ]
+}

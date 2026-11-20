@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "history_stream_prep",
+      "method": "history_stream_prep",
+      "scope": "roof",
+      "title": "Final-use TLE cache release in compact v5",
+      "caption": "Same-core complete-finish pairs use the same authenticated ordinary factor files and bounded regional sky. The candidate releases consumed snapshots during the final history pass.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Bounded sky and final-use cache release", "file": "history-positions.jsonl.gz", "value": "history_stream_prep", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Bounded sky only", "file": "control-positions.jsonl.gz", "value": "prep_stream_sky", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "charts": [
+    {
+      "caption": "One reserve recording through the public raw-IQ receiver under 512 MiB and zero swap. The two narrow runs use the same detector. Original v5 uses capture-era factors.",
+      "cases": [
+        "DS29-0247"
+      ],
+      "id": "whole-pressure",
+      "method": "constrained_lifetime_narrow_full_iq",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Narrow GLRT \u00b7 release fit buffers",
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "constrained_lifetime_narrow_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original narrow GLRT",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "ordinary_narrow_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Wide GLRT \u00b7 \u00b1800 kHz",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "regional_wide_full_iq"
+        }
+      ],
+      "title": "Full recorded-IQ replay after releasing constrained-fit buffers"
+    }
+  ],
+  "version": 1
+}

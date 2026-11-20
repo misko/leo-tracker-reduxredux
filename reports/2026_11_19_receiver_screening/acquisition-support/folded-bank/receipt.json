@@ -1,0 +1,1342 @@
+{
+  "cases": {
+    "captured": {
+      "median_stage_cpu_ns": {
+        "arm": {
+          "bank": {
+            "folded_grid_body": 6605489544,
+            "input_and_validation": 13068469
+          },
+          "direct": {
+            "folded_grid_body": 27300456311,
+            "input_and_validation": 12733082
+          }
+        },
+        "host": {
+          "bank": {
+            "folded_grid_body": 143522682,
+            "input_and_validation": 6452732
+          },
+          "direct": {
+            "folded_grid_body": 658318029,
+            "input_and_validation": 6085424
+          }
+        }
+      },
+      "parity": {
+        "arm-bank": {
+          "cells": 279993,
+          "max_absolute_score_delta": 3.0531133177191805e-16,
+          "retained": [
+            [
+              0.20625202622678798,
+              1007.0,
+              -80000.0
+            ],
+            [
+              0.19369810889034308,
+              1007.0,
+              -160000.0
+            ],
+            [
+              0.18723694308091404,
+              1006.0,
+              0.0
+            ],
+            [
+              0.17895118475618238,
+              2088.0,
+              -160000.0
+            ],
+            [
+              0.1785637958794091,
+              12147.0,
+              -160000.0
+            ],
+            [
+              0.17511221797031498,
+              11195.0,
+              80000.0
+            ],
+            [
+              0.17484484935106168,
+              698.0,
+              560000.0
+            ],
+            [
+              0.1733645216254677,
+              11735.0,
+              400000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "arm-direct": {
+          "cells": 279993,
+          "max_absolute_score_delta": 5.551115123125783e-17,
+          "retained": [
+            [
+              0.20625202622678798,
+              1007.0,
+              -80000.0
+            ],
+            [
+              0.1936981088903432,
+              1007.0,
+              -160000.0
+            ],
+            [
+              0.18723694308091401,
+              1006.0,
+              0.0
+            ],
+            [
+              0.1789511847561824,
+              2088.0,
+              -160000.0
+            ],
+            [
+              0.17856379587940902,
+              12147.0,
+              -160000.0
+            ],
+            [
+              0.175112217970315,
+              11195.0,
+              80000.0
+            ],
+            [
+              0.1748448493510617,
+              698.0,
+              560000.0
+            ],
+            [
+              0.17336452162546764,
+              11735.0,
+              400000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "capture-avx2-vs-host-direct": {
+          "cells": 279993,
+          "max_absolute_score_delta": 1.1102230246251565e-16,
+          "retained": [
+            [
+              0.20625202622678798,
+              1007.0,
+              -80000.0
+            ],
+            [
+              0.1936981088903432,
+              1007.0,
+              -160000.0
+            ],
+            [
+              0.18723694308091401,
+              1006.0,
+              0.0
+            ],
+            [
+              0.1789511847561824,
+              2088.0,
+              -160000.0
+            ],
+            [
+              0.17856379587940902,
+              12147.0,
+              -160000.0
+            ],
+            [
+              0.175112217970315,
+              11195.0,
+              80000.0
+            ],
+            [
+              0.1748448493510617,
+              698.0,
+              560000.0
+            ],
+            [
+              0.17336452162546764,
+              11735.0,
+              400000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "host-bank": {
+          "cells": 279993,
+          "max_absolute_score_delta": 3.0531133177191805e-16,
+          "retained": [
+            [
+              0.20625202622678795,
+              1007.0,
+              -80000.0
+            ],
+            [
+              0.1936981088903431,
+              1007.0,
+              -160000.0
+            ],
+            [
+              0.18723694308091404,
+              1006.0,
+              0.0
+            ],
+            [
+              0.17895118475618238,
+              2088.0,
+              -160000.0
+            ],
+            [
+              0.17856379587940907,
+              12147.0,
+              -160000.0
+            ],
+            [
+              0.17511221797031504,
+              11195.0,
+              80000.0
+            ],
+            [
+              0.17484484935106168,
+              698.0,
+              560000.0
+            ],
+            [
+              0.1733645216254677,
+              11735.0,
+              400000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        }
+      },
+      "timings": {
+        "arm": {
+          "bank": [
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 195212,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 6605489544,
+                    "wall_ns": 6691726882
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 13068469,
+                    "wall_ns": 16925133
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 13091382,
+                    "wall_ns": 16740914
+                  },
+                  "score_output": {
+                    "cpu_ns": 742825,
+                    "wall_ns": 1663938
+                  },
+                  "workspace": {
+                    "cpu_ns": 433306,
+                    "wall_ns": 1416948
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 6632825526,
+                    "wall_ns": 6728473815
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "9647c1a103b707e9c5a2aca275897f206164dca269ba7f59784b77b952a15be7"
+            }
+          ],
+          "direct": [
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193100,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 27300456311,
+                    "wall_ns": 27812467562
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 12733082,
+                    "wall_ns": 17815624
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 10967012,
+                    "wall_ns": 13704117
+                  },
+                  "score_output": {
+                    "cpu_ns": 1454387,
+                    "wall_ns": 2010179
+                  },
+                  "workspace": {
+                    "cpu_ns": 430847,
+                    "wall_ns": 778658
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 27326041639,
+                    "wall_ns": 27846776140
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "497b3990e4354cbb260395113fe89f940240664c05db7e02fd1b0ec9a0e59ada"
+            }
+          ]
+        },
+        "host": {
+          "bank": [
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193044,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 143522682,
+                    "wall_ns": 147941366
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6452732,
+                    "wall_ns": 7368664
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 740026,
+                    "wall_ns": 816290
+                  },
+                  "score_output": {
+                    "cpu_ns": 159512,
+                    "wall_ns": 544879
+                  },
+                  "workspace": {
+                    "cpu_ns": 40373,
+                    "wall_ns": 41633
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 150915325,
+                    "wall_ns": 156712832
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "008914bb6d5a7c6489951cbaca5dace2b0a936c708bfd1c8379b7293a7cbc1a6"
+            },
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193044,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 143716544,
+                    "wall_ns": 144653529
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6740982,
+                    "wall_ns": 7676778
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 846082,
+                    "wall_ns": 954027
+                  },
+                  "score_output": {
+                    "cpu_ns": 130894,
+                    "wall_ns": 443260
+                  },
+                  "workspace": {
+                    "cpu_ns": 34969,
+                    "wall_ns": 36176
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 151469471,
+                    "wall_ns": 153763770
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "008914bb6d5a7c6489951cbaca5dace2b0a936c708bfd1c8379b7293a7cbc1a6"
+            },
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193100,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 141176981,
+                    "wall_ns": 153475845
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 5898508,
+                    "wall_ns": 19453664
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 741634,
+                    "wall_ns": 741458
+                  },
+                  "score_output": {
+                    "cpu_ns": 143896,
+                    "wall_ns": 472866
+                  },
+                  "workspace": {
+                    "cpu_ns": 46496,
+                    "wall_ns": 48010
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 148007515,
+                    "wall_ns": 174191843
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "008914bb6d5a7c6489951cbaca5dace2b0a936c708bfd1c8379b7293a7cbc1a6"
+            }
+          ],
+          "direct": [
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193044,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 658318029,
+                    "wall_ns": 684461266
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6435182,
+                    "wall_ns": 7136379
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 1168920,
+                    "wall_ns": 1216723
+                  },
+                  "score_output": {
+                    "cpu_ns": 283925,
+                    "wall_ns": 647724
+                  },
+                  "workspace": {
+                    "cpu_ns": 34306,
+                    "wall_ns": 35300
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 666240362,
+                    "wall_ns": 693497392
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "639cb280a0609203a9b66a5ebc1d46b678db883d7fbbebc0758d56565e3916a1"
+            },
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193044,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 662490843,
+                    "wall_ns": 672106831
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6085424,
+                    "wall_ns": 6623719
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 732079,
+                    "wall_ns": 833676
+                  },
+                  "score_output": {
+                    "cpu_ns": 266766,
+                    "wall_ns": 618799
+                  },
+                  "workspace": {
+                    "cpu_ns": 718857,
+                    "wall_ns": 787381
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 670293969,
+                    "wall_ns": 680970406
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "639cb280a0609203a9b66a5ebc1d46b678db883d7fbbebc0758d56565e3916a1"
+            },
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b0dfa1cd555802a5",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 193100,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 648057707,
+                    "wall_ns": 671345872
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 5673296,
+                    "wall_ns": 5673905
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 700978,
+                    "wall_ns": 700869
+                  },
+                  "score_output": {
+                    "cpu_ns": 414013,
+                    "wall_ns": 1923901
+                  },
+                  "workspace": {
+                    "cpu_ns": 27771,
+                    "wall_ns": 27955
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 654873765,
+                    "wall_ns": 679672502
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "639cb280a0609203a9b66a5ebc1d46b678db883d7fbbebc0758d56565e3916a1"
+            }
+          ]
+        }
+      }
+    },
+    "noise": {
+      "median_stage_cpu_ns": {
+        "arm": {
+          "bank": {
+            "folded_grid_body": 6514094086,
+            "input_and_validation": 11987422
+          },
+          "direct": {
+            "folded_grid_body": 29692039317,
+            "input_and_validation": 12085294
+          }
+        },
+        "host": {
+          "bank": {
+            "folded_grid_body": 140148648,
+            "input_and_validation": 6024419
+          },
+          "direct": {
+            "folded_grid_body": 646440755,
+            "input_and_validation": 6505880
+          }
+        }
+      },
+      "parity": {
+        "arm-bank": {
+          "cells": 279993,
+          "max_absolute_score_delta": 3.0531133177191805e-16,
+          "retained": [
+            [
+              0.15866353161380933,
+              3505.0,
+              -240000.0
+            ],
+            [
+              0.15687153307884846,
+              4295.0,
+              160000.0
+            ],
+            [
+              0.15589967748009598,
+              1648.0,
+              -400000.0
+            ],
+            [
+              0.1558120272508919,
+              3155.0,
+              480000.0
+            ],
+            [
+              0.1556883692321354,
+              2114.0,
+              -80000.0
+            ],
+            [
+              0.15565952044475398,
+              3155.0,
+              400000.0
+            ],
+            [
+              0.15510778392058783,
+              7440.0,
+              -240000.0
+            ],
+            [
+              0.15474351967811067,
+              13227.0,
+              480000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "arm-direct": {
+          "cells": 279993,
+          "max_absolute_score_delta": 5.551115123125783e-17,
+          "retained": [
+            [
+              0.15866353161380928,
+              3505.0,
+              -240000.0
+            ],
+            [
+              0.15687153307884838,
+              4295.0,
+              160000.0
+            ],
+            [
+              0.15589967748009598,
+              1648.0,
+              -400000.0
+            ],
+            [
+              0.15581202725089194,
+              3155.0,
+              480000.0
+            ],
+            [
+              0.1556883692321354,
+              2114.0,
+              -80000.0
+            ],
+            [
+              0.1556595204447539,
+              3155.0,
+              400000.0
+            ],
+            [
+              0.15510778392058788,
+              7440.0,
+              -240000.0
+            ],
+            [
+              0.15474351967811054,
+              13227.0,
+              480000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "host-bank": {
+          "cells": 279993,
+          "max_absolute_score_delta": 3.0531133177191805e-16,
+          "retained": [
+            [
+              0.15866353161380933,
+              3505.0,
+              -240000.0
+            ],
+            [
+              0.15687153307884846,
+              4295.0,
+              160000.0
+            ],
+            [
+              0.15589967748009595,
+              1648.0,
+              -400000.0
+            ],
+            [
+              0.15581202725089188,
+              3155.0,
+              480000.0
+            ],
+            [
+              0.1556883692321354,
+              2114.0,
+              -80000.0
+            ],
+            [
+              0.15565952044475398,
+              3155.0,
+              400000.0
+            ],
+            [
+              0.15510778392058786,
+              7440.0,
+              -240000.0
+            ],
+            [
+              0.15474351967811067,
+              13227.0,
+              480000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        }
+      },
+      "timings": {
+        "arm": {
+          "bank": [
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "d0e598a6571b9b81",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 6514094086,
+                    "wall_ns": 6597808058
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 11987422,
+                    "wall_ns": 12004190
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 13039346,
+                    "wall_ns": 13039471
+                  },
+                  "score_output": {
+                    "cpu_ns": 644209,
+                    "wall_ns": 999463
+                  },
+                  "workspace": {
+                    "cpu_ns": 325003,
+                    "wall_ns": 326637
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 6540090066,
+                    "wall_ns": 6624177819
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "5cb09233c48d8c1bb659a5e3247888cee126b65da4b5dcb8cfb386958d49ff31"
+            }
+          ],
+          "direct": [
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "d0e598a6571b9b81",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 29692039317,
+                    "wall_ns": 29801081471
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 12085294,
+                    "wall_ns": 12103840
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 10892185,
+                    "wall_ns": 10942445
+                  },
+                  "score_output": {
+                    "cpu_ns": 878791,
+                    "wall_ns": 1235131
+                  },
+                  "workspace": {
+                    "cpu_ns": 361159,
+                    "wall_ns": 362502
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 29716256746,
+                    "wall_ns": 29825725389
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "de0d166c1e92a923800c2e7d8278c30dbc01ffa38c1483ca62628429df73d855"
+            }
+          ]
+        },
+        "host": {
+          "bank": [
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "d0e598a6571b9b81",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 140148648,
+                    "wall_ns": 140698254
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6024419,
+                    "wall_ns": 6101326
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 786183,
+                    "wall_ns": 794664
+                  },
+                  "score_output": {
+                    "cpu_ns": 133776,
+                    "wall_ns": 464991
+                  },
+                  "workspace": {
+                    "cpu_ns": 36989,
+                    "wall_ns": 37657
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 147130015,
+                    "wall_ns": 148096892
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "6866071dedaa76978f1affea14b8f6303ff3f7330fb4744d1a6402b757154295"
+            }
+          ],
+          "direct": [
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "d0e598a6571b9b81",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 646440755,
+                    "wall_ns": 646454312
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6505880,
+                    "wall_ns": 7358120
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 1012209,
+                    "wall_ns": 1012050
+                  },
+                  "score_output": {
+                    "cpu_ns": 310607,
+                    "wall_ns": 695214
+                  },
+                  "workspace": {
+                    "cpu_ns": 40944,
+                    "wall_ns": 41676
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 654310395,
+                    "wall_ns": 655561372
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "55251c165c4b5fdaaa1241bb1af322417fe9278fdfa15a33aed8a2a6227f75f2"
+            }
+          ]
+        }
+      }
+    },
+    "weak-pair": {
+      "median_stage_cpu_ns": {
+        "arm": {
+          "bank": {
+            "folded_grid_body": 6570533896,
+            "input_and_validation": 12644190
+          },
+          "direct": {
+            "folded_grid_body": 27251335178,
+            "input_and_validation": 11985890
+          }
+        },
+        "host": {
+          "bank": {
+            "folded_grid_body": 145589854,
+            "input_and_validation": 6111868
+          },
+          "direct": {
+            "folded_grid_body": 654305812,
+            "input_and_validation": 7460745
+          }
+        }
+      },
+      "parity": {
+        "arm-bank": {
+          "cells": 279993,
+          "max_absolute_score_delta": 3.3306690738754696e-16,
+          "retained": [
+            [
+              0.2044656130604174,
+              2314.0,
+              0.0
+            ],
+            [
+              0.20301216259240518,
+              2115.0,
+              -160000.0
+            ],
+            [
+              0.202938964533895,
+              2871.0,
+              -160000.0
+            ],
+            [
+              0.20292466985744362,
+              5846.0,
+              400000.0
+            ],
+            [
+              0.20281551776273132,
+              717.0,
+              -240000.0
+            ],
+            [
+              0.20179181436440513,
+              899.0,
+              0.0
+            ],
+            [
+              0.20164151047394704,
+              104.0,
+              -240000.0
+            ],
+            [
+              0.20136668906231545,
+              2429.0,
+              -320000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "arm-direct": {
+          "cells": 279993,
+          "max_absolute_score_delta": 5.551115123125783e-17,
+          "retained": [
+            [
+              0.2044656130604172,
+              2314.0,
+              0.0
+            ],
+            [
+              0.20301216259240515,
+              2115.0,
+              -160000.0
+            ],
+            [
+              0.20293896453389504,
+              2871.0,
+              -160000.0
+            ],
+            [
+              0.20292466985744348,
+              5846.0,
+              400000.0
+            ],
+            [
+              0.20281551776273132,
+              717.0,
+              -240000.0
+            ],
+            [
+              0.20179181436440494,
+              899.0,
+              0.0
+            ],
+            [
+              0.20164151047394696,
+              104.0,
+              -240000.0
+            ],
+            [
+              0.2013666890623154,
+              2429.0,
+              -320000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        },
+        "host-bank": {
+          "cells": 279993,
+          "max_absolute_score_delta": 3.3306690738754696e-16,
+          "retained": [
+            [
+              0.2044656130604174,
+              2314.0,
+              0.0
+            ],
+            [
+              0.20301216259240518,
+              2115.0,
+              -160000.0
+            ],
+            [
+              0.202938964533895,
+              2871.0,
+              -160000.0
+            ],
+            [
+              0.20292466985744356,
+              5846.0,
+              400000.0
+            ],
+            [
+              0.20281551776273135,
+              717.0,
+              -240000.0
+            ],
+            [
+              0.2017918143644051,
+              899.0,
+              0.0
+            ],
+            [
+              0.20164151047394702,
+              104.0,
+              -240000.0
+            ],
+            [
+              0.2013666890623154,
+              2429.0,
+              -320000.0
+            ]
+          ],
+          "retained_epoch_cfo_exact": true,
+          "values_compared": 279993
+        }
+      },
+      "timings": {
+        "arm": {
+          "bank": [
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b83cce8ca952a1c6",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 6570533896,
+                    "wall_ns": 6575000203
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 12644190,
+                    "wall_ns": 12665254
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 13655390,
+                    "wall_ns": 13654835
+                  },
+                  "score_output": {
+                    "cpu_ns": 641611,
+                    "wall_ns": 1000175
+                  },
+                  "workspace": {
+                    "cpu_ns": 598502,
+                    "wall_ns": 599984
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 6598073589,
+                    "wall_ns": 6602920451
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "f00ecf1a26d307affe7de573ac70c1e44a97fa313efa5e69a27388e5207aff45"
+            }
+          ],
+          "direct": [
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b83cce8ca952a1c6",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 27251335178,
+                    "wall_ns": 27496643365
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 11985890,
+                    "wall_ns": 14009522
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 10892055,
+                    "wall_ns": 11323195
+                  },
+                  "score_output": {
+                    "cpu_ns": 1215594,
+                    "wall_ns": 1700095
+                  },
+                  "workspace": {
+                    "cpu_ns": 383298,
+                    "wall_ns": 385288
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 27275812015,
+                    "wall_ns": 27524061465
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "970d9a7d3d43a10df726a881d7c6fea31628a85fd60468d47e2294c5527c4874"
+            }
+          ]
+        },
+        "host": {
+          "bank": [
+            {
+              "bank": {
+                "fft_buffers_bytes": 2088960,
+                "fft_length": 512,
+                "filter_ffts": 252,
+                "input_ffts": 427,
+                "inverse_ffts": 104286
+              },
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b83cce8ca952a1c6",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 145589854,
+                    "wall_ns": 150855763
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 6111868,
+                    "wall_ns": 6785967
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 845281,
+                    "wall_ns": 918125
+                  },
+                  "score_output": {
+                    "cpu_ns": 138316,
+                    "wall_ns": 496587
+                  },
+                  "workspace": {
+                    "cpu_ns": 41553,
+                    "wall_ns": 42413
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 152726872,
+                    "wall_ns": 159098855
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "170997472e44cf7216535de1842973237f3da95c70b32dfc9d1e6f0362efb946"
+            }
+          ],
+          "direct": [
+            {
+              "bank": null,
+              "clock": {
+                "cells": 279993,
+                "complex_accumulation_steps": 2146326336,
+                "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+                "cpu_resolution_ns": 1,
+                "fixture_tag": "b83cce8ca952a1c6",
+                "heap_bytes": 9562000,
+                "process_maxrss_kib": 207052,
+                "stages": {
+                  "folded_grid_body": {
+                    "cpu_ns": 654305812,
+                    "wall_ns": 668123955
+                  },
+                  "input_and_validation": {
+                    "cpu_ns": 7460745,
+                    "wall_ns": 97475420
+                  },
+                  "magnitude_preparation": {
+                    "cpu_ns": 1616893,
+                    "wall_ns": 1804094
+                  },
+                  "score_output": {
+                    "cpu_ns": 398509,
+                    "wall_ns": 815288
+                  },
+                  "workspace": {
+                    "cpu_ns": 40354,
+                    "wall_ns": 41402
+                  }
+                },
+                "total": {
+                  "observed": {
+                    "cpu_ns": 663822313,
+                    "wall_ns": 768260159
+                  }
+                },
+                "wall_clock": "CLOCK_MONOTONIC",
+                "wall_resolution_ns": 1
+              },
+              "score_sha256": "3d466a265851fc0ecb24b0547242d016db9b753a3a8d6c74907b0956c10bbbde"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "distribution_sha256": "d8c7bd567aa30900e4d3e13b8d0fad20df11053e9f43be93b279257689b5b9c1",
+  "source_lock_sha256": "fc4059993acdac736e11629d2866404681011f37707b194297176f5a40dfb4dd"
+}

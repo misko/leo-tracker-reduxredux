@@ -1,0 +1,48 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh direct entry versus the exact earlier post-filter decision on the same archived native factors, causal TLEs and offered tile.",
+      "cases": "sealed",
+      "condition_labels": {
+        "near-inside": "Containing offer",
+        "near-outside": "Near omission"
+      },
+      "id": "installed-interior",
+      "method": "installed_interior",
+      "provenance": [
+        "compatibility.json",
+        "resources.json",
+        "parity.json",
+        "scores.csv"
+      ],
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Installed forced endpoint",
+          "key": "candidate",
+          "label": "Installed interior",
+          "value": "installed_interior"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Earlier forced endpoint",
+          "key": "stock",
+          "label": "Earlier stdin filter",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "request_sha256"
+          ],
+          "value": "phase_release_guard_20m"
+        }
+      ],
+      "title": "Installed 20 m interior profile on two recorded offers"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,427 @@
+--- a/leo/analysis/localization_v3/discovery.py
++++ b/leo/analysis/localization_v3/discovery.py
+@@ -10,7 +10,6 @@
+ from leo.analysis.localization_v3.discovery_likelihood import DiscoveryPosition
+ from leo.analysis.localization_v3.families import nomination_rows, numpy_state
+ from leo.analysis.localization_v3.scan import group
+-from leo.analysis.research.phase_linear_geometry import phase_linear_frequency
+ from leo.analysis.research.retained_track_likelihood import PERIOD
+ from leo.analysis.research.shared_orbit_phase_fit import (
+     augment_phase_statistics,
+@@ -254,7 +253,7 @@
+ def explore(scan, state, anchor, method, topk=4, maximum=64, *, compact_update=False):
+     if compact_update:
+         raise ValueError("Discovery uses the joint radio-prior fitter, not a compact update")
+-    base = phase_linear_frequency(scan.geometry, *scan.search_region.latlon(anchor))
++    base = scan.phase_frequency(scan.geometry, *scan.search_region.latlon(anchor))
+     groups = scan.groups
+     if method == "receiver_smooth":
+         groups = []
+@@ -365,7 +364,7 @@
+ def fresh_discovery(scan, sigma, *, budget=8, seed_policy="legacy"):
+     if seed_policy not in ("legacy", "anchor-round-robin-v1"):
+         raise ValueError("Unknown discovery seed policy")
+-    base = phase_linear_frequency(scan.geometry, *scan.search_region.center)
++    base = scan.phase_frequency(scan.geometry, *scan.search_region.center)
+     stats = statistics(
+         scan.groups,
+         dict(time_s=scan.times, doppler_0=base[0], elevation_deg=base[1]),
+--- a/leo/analysis/localization_v3/family_weighting.py
++++ b/leo/analysis/localization_v3/family_weighting.py
+@@ -4,7 +4,6 @@
+ 
+ from leo.analysis.localization_v3.history_position import problem
+ from tools.pipeline_eval.variants.v5_direct_lifetime import phase_widths, projection_columns
+-from leo.analysis.research.phase_linear_geometry import phase_linear_frequency
+ from leo.analysis.research.retained_track_likelihood import PERIOD
+ 
+ 
+@@ -103,7 +102,7 @@
+     ]
+     for anchor in anchors:
+         with projection_columns():
+-            f, e, d = phase_linear_frequency(scan.geometry, *scan.search_region.latlon(anchor))
++            f, e, d = scan.phase_frequency(scan.geometry, *scan.search_region.latlon(anchor))
+         row_weights = []
+         for row, i, sl in zip(p.rows, p.members, p.slices, strict=True):
+             tr, ix = scan.tracks[i], scan.index[i]
+--- a/leo/analysis/localization_v3/position.py
++++ b/leo/analysis/localization_v3/position.py
+@@ -7,7 +7,7 @@
+ import numpy as np
+ 
+ from leo.analysis.localization_v3.marginal import JointMarginal
+-from leo.analysis.research.continuous_curve_fit import bounded_gauss_newton
++from tools.pipeline_eval.variants.compact_cavity_optimizer import bounded_secant
+ 
+ 
+ class NormalPosition(JointMarginal):
+@@ -65,7 +65,7 @@
+         return np.r_[result['residual'], np.maximum(0, -result['elevation'][self.keep]) / 2]
+ 
+ def fit(problem, start=(0.0, 0.0), iterations=48):
+-    result = bounded_gauss_newton(problem.residual, start, problem.lower, problem.upper,
++    result = bounded_secant(problem.residual, start, problem.lower, problem.upper,
+                                  iterations=iterations)
+     calculated = problem.calculate(result['parameters'])
+     return dict(result, residual_rms_hz=float(np.sqrt(np.mean(
+--- a/leo/analysis/localization_v3/scan.py
++++ b/leo/analysis/localization_v3/scan.py
+@@ -12,10 +12,7 @@
+ from leo.analysis.localization_v3.hierarchical import hierarchical_bound
+ from leo.analysis.localization_v3.orbits import ecef_states
+ from leo.analysis.localization_v3.tracks import active_curvature
+-from leo.analysis.research.phase_linear_geometry import (
+-    phase_linear_frequency,
+-    prepare_phase_geometry,
+-)
++from tools.pipeline_eval.variants.orbit_projector import prepare as prepare_phase_geometry
+ from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_screen
+ from leo.analysis.research.retained_track_likelihood import (
+     profile,
+@@ -23,7 +20,7 @@
+     whitening,
+ )
+ from leo.sky.propagation import ElementSetCatalogue
+-from tools.pipeline_eval.variants.v5_direct_lifetime import columns_active
++from tools.pipeline_eval.variants.v5_direct_lifetime import columns_active, project
+ from tools.pipeline_eval.variants.direct_lifetime_kernels import retain_diagnostics
+ 
+ 
+@@ -66,9 +63,10 @@
+ class ScanLikelihood:
+     def __init__(self, tracks, bank, elements, *, origin_utc_ns, regional_center, noise,
+                  search_region=None, previous_tle=None, previous_tle_sha256=None,
+-                 noise_sha256=None, previous_sources=None, bound=None):
++                 noise_sha256=None, previous_sources=None, bound=None, evaluate):
+         if not tracks:
+             raise ValueError("Nonempty prepared tracks required")
++        self._evaluate = evaluate
+         self.origin_utc_ns = origin_utc_ns
+         self.bound = hierarchical_bound if bound is None else bound
+         self.search_region = search_region
+@@ -101,6 +99,9 @@
+     def latlon(self, xy):
+         return self.center[0] + xy[1] / 111.0, self.center[1] + xy[0] / self.scale
+ 
++    def phase_frequency(self, geometry, *coordinates):
++        return project(self._evaluate, geometry, coordinates, {})
++
+     def shifted(self, base, phases, point, extra=None):
+         f, e, h = (x.copy() for x in base)
+         active = np.flatnonzero(abs(phases) > 1e-9)
+@@ -119,7 +120,7 @@
+                         sky["position_km"][k] += np.einsum("k,ktd->td", extra[j], dp)
+                         sky["velocity_km_s"][k] += np.einsum("k,ktd->td", extra[j], dv)
+             geometry = prepare_phase_geometry(sky, self.times, phases[active])
+-            f[active], e[active], h[active] = phase_linear_frequency(geometry, *self.latlon(point))
++            f[active], e[active], h[active] = self.phase_frequency(geometry, *self.latlon(point))
+         return f, e, h
+ 
+     def element_basis(self, j):
+--- a/leo/analysis/localization_v4/backend.py
++++ b/leo/analysis/localization_v4/backend.py
+@@ -1,14 +1,10 @@
+ """Prebuilt native artifact binding and process-owned activation receipts."""
+ 
+-import atexit
+ import json
+-import os
+ import re
+-from multiprocessing.util import Finalize
+ from pathlib import Path
+ 
+ from leo.analysis.localization_v4 import native_bound
+-from leo.contracts.digests import canonical_digest
+ 
+ ALGORITHM = "algo07v4-native-v1"
+ 
+@@ -99,47 +95,3 @@
+     if check_provider and native_bound.provider()[2] != provider:
+         raise ValueError("Loaded SciPy provider differs from native build")
+     return manifest
+-
+-
+-class ProcessBound:
+-    """Each PID initializes its own native layouts and reports only its calls."""
+-
+-    def __init__(self, manifest, receipts):
+-        self.manifest = validate_manifest(read_manifest(manifest), check_provider=True)
+-        self.receipts = _local(receipts)
+-        self.receipts.mkdir(parents=True, exist_ok=False)
+-        self.pid = None
+-        self.backend = None
+-
+-    def __call__(self, *args, **kwargs):
+-        pid = os.getpid()
+-        if self.pid != pid:
+-            validate_manifest(self.manifest, check_provider=True)
+-            self.backend = native_bound.NativeBound(self.manifest["binary"])
+-            self.pid = pid
+-            atexit.register(self.flush)
+-            self.finalizer = Finalize(None, self.flush, exitpriority=10)
+-        return self.backend(*args, **kwargs)
+-
+-    def flush(self):
+-        if self.pid != os.getpid() or self.backend is None:
+-            return
+-        receipt = dict(
+-            pid=self.pid,
+-            algorithm=ALGORITHM,
+-            backend_manifest_sha256=canonical_digest(self.manifest),
+-            provider=self.backend.provider_info,
+-            counts=dict(self.backend.counts),
+-        )
+-        path = self.receipts / (str(self.pid) + ".json")
+-        temporary = path.with_suffix(".partial")
+-        temporary.write_text(json.dumps(receipt, sort_keys=True, allow_nan=False) + "\n")
+-        temporary.replace(path)
+-
+-    def provenance(self):
+-        self.flush()
+-        receipts = [json.loads(p.read_bytes()) for p in sorted(self.receipts.glob("*.json"))]
+-        binding = canonical_digest(self.manifest)
+-        if any(r["backend_manifest_sha256"] != binding for r in receipts):
+-            raise ValueError("Activation receipts belong to another backend")
+-        return dict(manifest=self.manifest, manifest_sha256=binding, receipts=receipts)
+--- a/leo/analysis/research/continuous_curve_fit.py
++++ b/leo/analysis/research/continuous_curve_fit.py
+@@ -97,60 +97,3 @@
+     energy = float(z @ z) / effective_points
+     scale = np.sqrt(np.log1p(energy) / energy) if energy > 1e-12 else 1.0
+     return scale * z
+-
+-
+-def bounded_gauss_newton(residual, initial, lower, upper, *, iterations=24, step=1e-3):
+-    """Damped finite-difference least squares with explicit bounded iterates.
+-
+-    Parameters must be scaled by the caller. The reported history records
+-    accepted iterates, including their objective, never a GPS accuracy test.
+-    """
+-    x, lo, hi = (np.asarray(a, float) for a in (initial, lower, upper))
+-    if x.ndim != 1 or lo.shape != x.shape or hi.shape != x.shape:
+-        raise ValueError("matching one-dimensional parameter bounds required")
+-    if np.any(lo >= hi) or step <= 0 or iterations < 1:
+-        raise ValueError("ordered bounds and positive numerical budgets required")
+-    x = np.clip(x, lo, hi)
+-    r = residual(x)
+-    score, damping, evaluations = float(r @ r), 1e-2, 1
+-    history = [dict(parameters=x.copy(), score=score)]
+-    stopped = "iteration_budget"
+-    for _ in range(iterations):
+-        columns = []
+-        for k in range(len(x)):
+-            a, b = x.copy(), x.copy()
+-            a[k], b[k] = max(lo[k], x[k] - step), min(hi[k], x[k] + step)
+-            columns.append((residual(b) - residual(a)) / (b[k] - a[k]))
+-            evaluations += 2
+-        jacobian = np.array(columns).T
+-        normal, gradient = jacobian.T @ jacobian, jacobian.T @ r
+-        diagonal = np.maximum(np.diag(normal), 1e-6)
+-        accepted = False
+-        for _trial in range(9):
+-            delta = np.linalg.solve(normal + damping * np.diag(diagonal), -gradient)
+-            proposal = np.clip(x + delta, lo, hi)
+-            rr = residual(proposal)
+-            evaluations += 1
+-            candidate = float(rr @ rr)
+-            if candidate < score - 1e-9:
+-                improvement = score - candidate
+-                x, r, score = proposal, rr, candidate
+-                history.append(dict(parameters=x.copy(), score=score))
+-                damping = max(1e-7, damping / 3)
+-                accepted = True
+-                if np.linalg.norm(delta[:2]) < 1e-4 and improvement < 1e-5:
+-                    stopped = "small_step_and_improvement"
+-                break
+-            damping *= 5
+-        if not accepted:
+-            stopped = "no_accepted_damped_step"
+-            break
+-        if stopped == "small_step_and_improvement":
+-            break
+-    return dict(
+-        parameters=x,
+-        score=score,
+-        history=history,
+-        evaluations=evaluations,
+-        stopped=stopped,
+-    )
+--- a/tools/__init__.py
++++ b/tools/__init__.py
+@@ -1,2 +1,2 @@
+ """Private receiver modules."""
+-PROFILE = 'phase-release'
++PROFILE = "compact-cut"
+--- a/tools/pipeline_eval/variants/v5_core.py
++++ b/tools/pipeline_eval/variants/v5_core.py
+@@ -69,7 +69,7 @@
+         ranked = ranked_initial_nodes(scan)[:3]
+     return fit_initial_nodes(scan, ranked)
+ 
+-def scan_context(prepared, region, noise_digest, bound, previous):
++def scan_context(prepared, region, noise_digest, bound, previous, evaluate):
+     from leo.analysis.localization_v3.scan import ScanLikelihood
+ 
+     sky = prepared["sky"]
+@@ -84,6 +84,7 @@
+         noise_sha256=noise_digest,
+         search_region=region,
+         bound=bound,
++        evaluate=evaluate,
+         previous_tle=sky[previous + "_tle"],
+         previous_tle_sha256=receipt["catalogue_sha256"],
+         previous_sources=receipt.get("sources"),
+--- a/tools/pipeline_eval/variants/v5_direct_cavity.py
++++ b/tools/pipeline_eval/variants/v5_direct_cavity.py
+@@ -1,22 +1,17 @@
+ """Direct stored-native compact v5 inference through the paired cavity decision."""
+ 
+-import argparse
+ import hashlib
+ import json
+-from contextlib import contextmanager
+ from pathlib import Path
+-from threading import Lock
+ from time import perf_counter
+ 
+ from tools.pipeline_eval.variants import orbit_projector, v5_core
+-from tools.pipeline_eval.variants.v5_direct_lifetime import project, reclaim
++from tools.pipeline_eval.variants.v5_direct_lifetime import reclaim
+ from tools.pipeline_eval.variants.direct_lifetime_kernels import read_native
+-from tools.pipeline_eval.variants.compact_cavity_optimizer import bounded_secant
+ 
+ METHOD = "v5_direct_lifetime"
+ BOUNDARY = "Stored native GLRT and causal TLEs through the compact v5 cavity decision"
+ ARMS = ("c0", "fitted_c")
+-_numerical_lock = Lock()
+ 
+ 
+ def verified_json(path, expected):
+@@ -24,43 +19,6 @@
+     if hashlib.sha256(raw).hexdigest() != expected.removeprefix("sha256:"):
+         raise ValueError("input content differs from its declared SHA-256")
+     return json.loads(raw)
+-
+-
+-@contextmanager
+-def numerical_bindings(projector):
+-    """Bind the two numerical ports absent from the frozen science API."""
+-    from leo.analysis.localization_v3 import (
+-        conservative_recovery,
+-        discovery,
+-        family_weighting,
+-        position,
+-        scan,
+-    )
+-
+-    from leo.analysis.research.phase_linear_geometry import phase_linear_frequency
+-
+-    def evaluate(grid, *args, **kwargs):
+-        if isinstance(grid, orbit_projector.Stencil):
+-            return project(projector.evaluate, grid, args, kwargs)
+-        return phase_linear_frequency(grid, *args, **kwargs)
+-
+-    routes = (
+-        (scan, "prepare_phase_geometry", orbit_projector.prepare),
+-        (position, "bounded_gauss_newton", bounded_secant),
+-        *(
+-            (m, "phase_linear_frequency", evaluate)
+-            for m in (scan, discovery, family_weighting, conservative_recovery)
+-        ),
+-    )
+-    with _numerical_lock:
+-        previous = [(m, key, getattr(m, key)) for m, key, _ in routes]
+-        try:
+-            for place, key, value in routes:
+-                setattr(place, key, value)
+-            yield
+-        finally:
+-            for place, key, value in previous:
+-                setattr(place, key, value)
+ 
+ 
+ def nominal_families(context, nominate):
+@@ -83,7 +41,7 @@
+     return hashlib.sha256((json.dumps(value, sort_keys=True) + "\n").encode()).hexdigest()
+ 
+ 
+-def infer(prepared, region, bound, stages):
++def infer(prepared, region, bound, stages, projector):
+     from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
+     from leo.analysis.localization_v3.family_cavity import cavity_policy, nominate_families
+     from leo.analysis.localization_v3.history_policy import history_policy
+@@ -103,13 +61,13 @@
+     observations = prepared["tracks"]["observations"]
+     started = perf_counter()
+     noise = digest(prepared["noise"])
+-    first = v5_core.scan_context(prepared, region, noise, bound, "previous")
++    first = v5_core.scan_context(prepared, region, noise, bound, "previous", projector.evaluate)
+     initial, branches = v5_core.initial_selection(first)
+     del first
+     stages["initial"] = perf_counter() - started
+ 
+     started = perf_counter()
+-    scan = v5_core.scan_context(prepared, region, noise, bound, "genuine_previous")
++    scan = v5_core.scan_context(prepared, region, noise, bound, "genuine_previous", projector.evaluate)
+     conservative = conservative_recovery(scan, initial, observations)
+     stages["conservative"] = perf_counter() - started
+     if conservative["status"] != "complete":
+@@ -190,8 +148,9 @@
+         )
+     )
+     projector = orbit_projector.Projector(library)
+-    with numerical_bindings(projector):
+-        result = infer(prepared, region, bound, {"native_preparation": perf_counter() - start})
++    result = infer(
++        prepared, region, bound, {"native_preparation": perf_counter() - start}, projector
++    )
+     result["metrics"]["compact_projections"] = projector.calls
+     return result
+ 
+@@ -232,27 +191,3 @@
+         library=library,
+         bound=NativeBound(manifest["binary"]),
+     )
+-
+-
+-def main():
+-    parser = argparse.ArgumentParser(description=__doc__)
+-    for flag in (
+-        "native",
+-        "native-sha256",
+-        "track-config",
+-        "config-sha256",
+-        "session",
+-        "archive",
+-        "native-backend",
+-        "library",
+-    ):
+-        parser.add_argument(f"--{flag}", required=True)
+-    parser.add_argument("--tile", type=float, nargs=2, required=True)
+-    parser.add_argument("--screen-center", type=float, nargs=2, required=True)
+-    parser.add_argument("--width-km", type=float, default=25)
+-    args = vars(parser.parse_args())
+-    print(json.dumps(run(**args), allow_nan=False))
+-
+-
+-if __name__ == "__main__":
+-    main()
+--- a/tools/pipeline_eval/variants/v5_direct_lifetime.py
++++ b/tools/pipeline_eval/variants/v5_direct_lifetime.py
+@@ -74,15 +74,3 @@
+ def reclaim():
+     gc.collect()
+     arena_trim()(0)
+-
+-
+-def main():
+-    from . import v5_direct_cavity
+-
+-    if v5_direct_cavity.METHOD != METHOD:
+-        raise RuntimeError("Use the source-bound direct lifetime release bundle")
+-    v5_direct_cavity.main()
+-
+-
+-if __name__ == "__main__":
+-    main()

@@ -1,0 +1,32 @@
+{
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-capture-position-ds29-0082-3a402b6f",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=180s",
+    "taskset",
+    "-c",
+    "12",
+    "env",
+    "TMPDIR=/var/tmp/leo-scan-accounting-20261120-A/DS29-0082-position",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.whole_iq",
+    "position",
+    "/var/tmp/leo-scan-accounting-20261120-A/DS29-0082-position"
+  ],
+  "exit_code": 0,
+  "log_sha256": "525d9e25ef6631bf2b4c6eacfe5472fbe1fa4c8655253c4e1f7c1d2b2be644de",
+  "wall_s": 38.371297884732485
+}

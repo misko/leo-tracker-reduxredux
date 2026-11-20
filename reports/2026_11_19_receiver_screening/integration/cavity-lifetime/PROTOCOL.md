@@ -1,0 +1,5 @@
+# Compact phase-problem lifetimes
+
+Use the same four authenticated roof captures and CPU assignments as bounded-cavity. Run the complete five-refresh compact secant workflow through the paired cavity gate under a 512 MiB cgroup with zero swap, one pinned nice-10 worker and 195 seconds per call. Existing no-swap capped and uncapped controls retain their ordinary denominators. Keep both c arms on the same inputs, hypotheses, gates and bounds.
+
+Primary mode releases the signed label-only seed before the signed refits, detaches memoized likelihood instances after each completed event fit round, and releases the nomination-only context before cavity restoration. At signed and cavity boundaries run cycle collection and glibc arena trimming and separately measure each change in kernel memory. A secondary GC-and-trim-only diagnostic, if the wall budget allows, repeats the three previous OOM cases with the original object lifetimes. Every result remains in scope, including timeouts and kernel kills. Read geographic labels only after sealed predictions.

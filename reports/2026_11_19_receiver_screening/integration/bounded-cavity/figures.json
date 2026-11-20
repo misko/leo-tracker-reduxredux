@@ -1,0 +1,65 @@
+{
+  "charts": [
+    {
+      "caption": "Both capped workers used zero swap. The four recordings ran on their original host cores. Linux memory kills count in the denominator.",
+      "cases": [
+        "DS26-0026",
+        "DS26-0146",
+        "DS29-0174",
+        "DS29-0316"
+      ],
+      "id": "v5_bounded_cavity-roof4",
+      "method": "v5_bounded_cavity",
+      "provenance": [
+        "prediction-lock.json",
+        "plan.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "capped.jsonl.gz",
+          "key": "one",
+          "label": "Cavity at 512 MiB",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "resolved_request_sha256"
+          ],
+          "value": "v5_bounded_cavity"
+        },
+        {
+          "file": "stock.jsonl.gz",
+          "key": "stock",
+          "label": "Unrestricted compact cavity",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "resolved_request_sha256"
+          ],
+          "value": "v5_secant_fit"
+        },
+        {
+          "file": "all_visits.jsonl.gz",
+          "key": "all_visits",
+          "label": "Final recovery at 512 MiB",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "resolved_request_sha256"
+          ],
+          "value": "v5_recovery_reads"
+        }
+      ],
+      "title": "The compact cavity decision under 512 MiB"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,73 @@
+{
+  "charts": [
+    {
+      "caption": "Same stored factors and both calibrations. Direct lifetime ran in 512 MiB with zero swap. Controls preserve their original resource scopes.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "direct-lifetime-cavity-cap",
+      "method": "v5_direct_lifetime",
+      "provenance": [
+        "scores.csv",
+        "resources.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Direct lifetime",
+          "native_authority": "ordinary",
+          "value": "v5_direct_lifetime"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Uncapped direct",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_direct_cavity"
+        },
+        {
+          "file": "lifetime-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Prior lifetime",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "whole_cavity"
+        },
+        {
+          "file": "secant-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Uncapped secant",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_secant_fit"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Standalone compact cavity under 512 MiB"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,45 @@
+{
+  "charts": [
+    {
+      "caption": "Separate bounded candidate attempt after the primary reserve timeout. The original paired schedule remains in the development chart.",
+      "cases": [
+        "DS29-0247"
+      ],
+      "id": "ranked-fit-cavity-reserve-confirmation",
+      "method": "v5_ranked_fit",
+      "provenance": [
+        "comparison.json",
+        "confirmation-lock.json",
+        "service.log"
+      ],
+      "scope": "roof",
+      "seal": "receipt.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "One bounded confirmation",
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "v5_ranked_fit"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Previously measured same-input stock",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "v5_ranked_fit_stock"
+        }
+      ],
+      "title": "Ranked cavity \u00b7 independent 185-second reserve confirmation"
+    }
+  ],
+  "version": 1
+}

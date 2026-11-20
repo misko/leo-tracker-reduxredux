@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "native_halo_orbit_consensus-archived-roof",
+      "method": "native_halo_orbit_consensus",
+      "scope": "transfer",
+      "title": "Orbit-split halo on two known roof errors",
+      "caption": "Independent assigned-orbit halves within an offer-centered halo.",
+      "cases": [
+        "dba84955072d859bf006",
+        "72aaa1db3143b2f3dc96"
+      ],
+      "queries": "figure-queries.json",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Orbit-split halo veto",
+          "file": "native_halo_orbit_consensus.jsonl.gz",
+          "value": "native_halo_orbit_consensus",
+          "forced_label": "Halo \u00b7 forced"
+        },
+        {
+          "key": "stock",
+          "label": "Native smooth",
+          "file": "native_joint_clock_model.jsonl.gz",
+          "value": "native_joint_clock_model",
+          "forced_label": "Smooth \u00b7 forced",
+          "match": [
+            "input_sha256",
+            "tile"
+          ]
+        }
+      ],
+      "condition_labels": {
+        "near-outside": "Near omission"
+      }
+    }
+  ]
+}

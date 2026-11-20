@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_orbit_domain",
+      "method": "v5_orbit_domain",
+      "scope": "roof",
+      "title": "Causal orbit support at the initial search corners",
+      "caption": "Four known interpolation failures and four controls. Three cases published after causal SGP4 support was added. DS26-0181 withheld later. The four control outputs were identical.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["diagnostic-traces.jsonl.gz"],
+      "series": [
+        {"key": "one", "label": "Causal initial-corner support", "file": "positions.jsonl.gz", "value": "v5_orbit_domain", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Unchanged compact secant", "file": "compact-positions.jsonl.gz", "value": "v5_secant_fit", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "frozen_request_sha256"]}
+      ]
+    }
+  ]
+}

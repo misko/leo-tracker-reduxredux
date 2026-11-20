@@ -1,0 +1,20 @@
+{
+  "charts": [
+    {
+      "id": "winner-stream-full-wide",
+      "method": "winner_stream",
+      "title": "Compact winning-probe handoff · full wide factors",
+      "scope": "roof",
+      "cases": ["DS26-0036", "DS29-0082", "DS29-0247"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["scores.csv", "resources.csv", "parity.json", "producer-receipts.json"],
+      "caption": "Fresh standalone phase-release pairs use the same authenticated full wide detector output and offer. DS29-0247 is the reserve. The existing archived v5 curves use capture-era detector inputs. Enforced 512 MiB charge and zero swap for each plotted worker.",
+      "series": [
+        {"key": "one", "label": "Private winner stream", "file": "positions.jsonl.gz", "value": "winner_stream", "native_authority": "frozen", "native_field": "original_native_sha256"},
+        {"key": "stock", "label": "Original native handoff", "file": "positions.jsonl.gz", "value": "phase_release_stock", "native_authority": "frozen", "native_field": "original_native_sha256", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile", "mode"]}
+      ]
+    }
+  ],
+  "version": 1
+}

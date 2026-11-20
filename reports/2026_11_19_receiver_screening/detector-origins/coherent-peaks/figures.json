@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "coherent-peak-continuation",
+      "method": "coherent_peak",
+      "scope": "roof",
+      "title": "Causal three-visit peak continuation in the 78-source receiver",
+      "caption": "Six complete ordinary-factor replays from one physical roof compare an ordinary-only peak filter with the same strict ordinary standalone path and the original capture-era v5 publication. DS26-0122 and DS29-0247 are held out for this rule. Causal TLE history and the containing offer are paired.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["factor-counts.json", "requests.json", "causal-history.json", "source-lock.json"],
+      "series": [
+        {"key": "one", "label": "Causal three-visit continuation", "file": "predictions.jsonl.gz", "value": "coherent_peak", "native_authority": "ordinary", "native_field": "origin_native_sha256", "forced_label": "Three-visit forced diagnostic"},
+        {"key": "stock", "label": "Strict ordinary 78-source receiver", "file": "predictions.jsonl.gz", "value": "strict_ordinary", "native_authority": "ordinary", "native_field": "origin_native_sha256", "match": ["tile", "catalog_sha256", "history_sha256", "track_config_sha256", "origin_native_sha256", "request_sha256"]}
+      ]
+    }
+  ]
+}

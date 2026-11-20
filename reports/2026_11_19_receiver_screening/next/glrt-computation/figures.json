@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "glrt_center_cell",
+      "method": "glrt_center_cell",
+      "scope": "roof",
+      "title": "Ordinary GLRT reusing the fractional-epoch center score",
+      "caption": "Warm saved CI16 detector timing on a hash-held six-visit panel. The parent already includes reusable CI16 preparation and ordered fractional interpolation. This timing stage ends at native GLRT candidates and leaves position unmeasured.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "source-holdout-lock.json"],
+      "series": [
+        {"key": "one", "label": "Center score reuse · GLRT stage", "file": "stage-results.jsonl.gz", "value": "glrt_center_cell", "native_authority": "ordinary", "native_field": "source_ordinary_sha256"},
+        {"key": "stock", "label": "Prepared and ordered fractional parent · GLRT stage", "file": "stage-results.jsonl.gz", "value": "glrt_center_cell_stage_parent", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "visit_receipt_sha256"]}
+      ]
+    },
+    {
+      "id": "glrt_center_cell_position",
+      "method": "glrt_center_cell_position",
+      "scope": "roof",
+      "title": "Position after partial center-score GLRT replay",
+      "caption": "Fresh clock and offset fits replace eight DS26 and four DS29 raw visits and use the original authenticated ordinary factors for both recordings' remaining visits. Both calibration arms share identical causal inputs and the same offered region.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "position-receipts.json", "source-holdout-lock.json"],
+      "series": [
+        {"key": "one", "label": "Center score reuse · partial replay", "file": "positions.jsonl.gz", "value": "glrt_center_cell_position", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "forced_label": "Partial replay forced diagnostics"},
+        {"key": "stock", "label": "Ordered fractional parent · partial replay", "file": "control-positions.jsonl.gz", "value": "glrt_center_cell_fractional_parent", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "observation_sha256", "tile"]}
+      ]
+    }
+  ]
+}

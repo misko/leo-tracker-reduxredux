@@ -1,0 +1,32 @@
+{
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-capture-position-archive-161db204",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=180s",
+    "taskset",
+    "-c",
+    "1",
+    "env",
+    "TMPDIR=/var/tmp/leo-fft-waveform-ds29-0519-20261120/archive",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.whole_iq",
+    "position",
+    "/var/tmp/leo-fft-waveform-ds29-0519-20261120/archive"
+  ],
+  "exit_code": 0,
+  "log_sha256": "0b64a4deaae6ce741c138060684ac7fe4820527dbbc8ab27ecc40598d7d548dc",
+  "wall_s": 46.63277691509575
+}

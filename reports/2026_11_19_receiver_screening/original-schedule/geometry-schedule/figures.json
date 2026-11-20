@@ -1,0 +1,77 @@
+{
+  "charts": [
+    {
+      "caption": "Six measured recordings with matched physical RF/token windows. Held compact factors come from the scheduled archived original visits.",
+      "cases": "sealed",
+      "id": "geometry-schedule-held",
+      "method": "geometry_schedule_geometry",
+      "provenance": [
+        "prediction-lock.json",
+        "summary.csv",
+        "fit-resources.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "one",
+          "label": "Geographic information",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "geometry_schedule_geometry"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "stock",
+          "label": "Matched hash",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "geometry_schedule_hash"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Full fast",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "geometry_schedule_fast"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Full original",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "geometry_schedule_original"
+        }
+      ],
+      "title": "Spend original detector calls on forecast geographic information"
+    }
+  ],
+  "version": 2
+}

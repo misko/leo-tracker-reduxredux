@@ -1,0 +1,7 @@
+# DS26-0020 detector source footprint
+
+Use the first recorded visit in each of three categories from the sealed public accelerated reference. These are visit 0, with both primaries passing; visit 2, with a one-sided partner retry; and visit 4, with neither primary passing. All are within signed chunk 0 of segment 0. Freeze the captured CI16 digests before tracing. Verify the signed chunk and project both arms through the original native factor boundary.
+
+Compare uninstrumented release binaries under Python line tracing. Separately compile the pinned C source with GCC coverage, repeat the same visits and compare factor outputs with the uninstrumented release. Report the union of unique source lines and code objects reached across these visits. Count Python at line-event granularity and C at gcov executable-line granularity. Include the project headers that are part of the C closure. Include external dependency names and versions separately from project-owned source. Exclude tool orchestration, fit and reporting code from the detector count. Attribute signed decoding, validity, ABI marshalling and public projection separately from numerical and schedule code.
+
+Require exact probe metadata, ranks, published count and gate bits across the subset. Numeric tolerances fixed before tracing are `2e-9` samples, `1e-6` Hz and `5e-12` for fractional exact, control and margin. Use existing uninstrumented full-run timings and resource receipts. Timing of tracing and coverage runs does not enter the performance comparison.

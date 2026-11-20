@@ -1,0 +1,17 @@
+Running as unit: leo-iq-bench-da6235306386.service
+stage: arrival replay initialize
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/arrival_queue.py", line 519, in <module>
+    main()
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/arrival_queue.py", line 515, in main
+    execute(args.attempt)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/arrival_queue.py", line 364, in execute
+    raise RuntimeError(f"IQ prefetch did not start {failures}")
+RuntimeError: IQ prefetch did not start [PermissionError(13, 'Permission denied')]
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 2.286s
+             CPU time consumed: 2.262s
+                   Memory peak: 137.3M (swap: 0B)

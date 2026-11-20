@@ -1,0 +1,9 @@
+# Same-visit reuse of the two common coarse pilot anchors
+
+Compare the original prepared row-wise FFT detector with cached shared anchor magnitudes. Use the original 12-anchor and 22-anchor order, 21 CFO lanes, 44 pilot taps, normalized accumulation order, coarse selector and both following detector paths. A retry remains conditional on one physical receiver passing the installed fractional gate while the other fails it.
+
+Capture the shared magnitudes for the first physical receiver. Keep them only if that receiver fails the primary fractional gate. If the first receiver passes, capture for the second instead. Scope reuse to the same receiver, probe, pilot edge, rate, CFO lattice, epoch count, template bytes and IQ bytes. Keep the original retry frame and epoch admission for every shared magnitude. Compare the complete dense coarse grids byte for byte and retain the original ordered public payloads, including rejected candidates. Measure normal no-retry calls with the same cache policy.
+
+Use DS26-0237 visits 53 and 43, DS29-0082 visits 13 and 43, and DS29-0519 visits 155 and 43. Each recording has one known natural retry and one visit with no retry. The roster covers lane 0 and lane 1 retries, both pilot edges and the three capture implementations. Authenticate original probe rows and sample counters before comparison. Each physical visit receives five counterbalanced prepared/reuse pairs on one pinned CPU, with one numerical thread. Empty and signed-pilot controls run separately on one parent from each edge. A nonzero tied-carrier component fixture exercises exact row values and a crossed-lane lookup.
+
+Record process CPU, wall time, native coarse time, saved transforms, lookup time, cache allocation bound and complete detector output. Continue to a whole-recording trial only if the prepared comparator is matched and the reuse offsets work on the no-retry path. This study ends at the detector stage.

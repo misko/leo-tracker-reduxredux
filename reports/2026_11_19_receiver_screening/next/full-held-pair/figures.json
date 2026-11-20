@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "full_held_pair",
+      "method": "whole_fractional",
+      "scope": "roof",
+      "title": "Held complete ordinary IQ replays",
+      "caption": "The two held recordings were selected by hash. Whole-IQ and ordinary factor-only positions coincide. Original v5 choices use capture-era factors.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["stages.json.gz", "comparison.json", "cohort.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Optimized whole IQ", "file": "positions.jsonl.gz", "value": "whole_fractional", "native_authority": "ordinary", "native_field": "origin_native_sha256", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Ordinary factor control", "file": "control-positions.jsonl.gz", "value": "held_stock_factor_cavity", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["tile"]}
+      ]
+    }
+  ]
+}

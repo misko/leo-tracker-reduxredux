@@ -39,6 +39,10 @@ ELEMENT_LINE_LENGTH = 69
 _UNIX_EPOCH_JULIAN_DAY = 2440587.5
 _NS_PER_DAY = 86_400_000_000_000
 _CHECKSUM_COLUMN = 68
+_CHECKSUM_WEIGHTS = bytes(
+    byte - ord("0") if ord("0") <= byte <= ord("9") else int(byte == ord("-"))
+    for byte in range(256)
+)
 
 
 class ElementSetError(ValueError):
@@ -48,18 +52,13 @@ class ElementSetError(ValueError):
 def element_line_checksum(line: str) -> int:
     """Return the mod-10 checksum of an element line's first 68 columns.
 
-    Digits contribute their value and minus signs contribute one; every other
-    character contributes nothing.  This is the convention the published
-    two-line format uses.
+    Digits contribute their value and minus signs contribute one.
     """
 
-    return (
-        sum(
-            int(char) if char.isdigit() else 1 if char == "-" else 0
-            for char in line[:_CHECKSUM_COLUMN]
-        )
-        % 10
-    )
+    prefix = line[:_CHECKSUM_COLUMN]
+    if type(prefix) is str and prefix.isascii():
+        return sum(prefix.encode("ascii").translate(_CHECKSUM_WEIGHTS)) % 10
+    return sum(int(char) if char.isdigit() else int(char == "-") for char in prefix) % 10
 
 
 def _validate_element_line(line: str, expected_prefix: str, position: int) -> None:

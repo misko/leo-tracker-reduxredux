@@ -1,0 +1,229 @@
+"""Qualify a single conditioned-bank replacement on fixed capture-era visits."""
+
+import argparse
+import gzip
+import json
+import os
+import tracemalloc
+from contextlib import ExitStack
+from dataclasses import replace
+from pathlib import Path
+from statistics import median
+from tempfile import TemporaryDirectory
+from time import perf_counter, process_time
+from unittest.mock import patch
+
+import numpy as np
+
+from ..__main__ import THREAD_ENV, encoded, write
+from ..variants import anchor_grid, conditioned_cfo_bank, pilot_kernel, refine_bank, spectral_grid
+from .full_v5_check import PRODUCERS, _bind_producer, _from_production, _load_case, _probe, _sha
+from .pilot_kernel_eval import _digest, _windows
+from .refine_bank_eval import compare_candidates
+from .spectral_grid_eval import _positives, _synthetic
+from .spectral_position import STAGE_ONLY
+
+METHOD = "conditioned_cfo_bank"
+MODES = ("control", METHOD)
+SCHEDULE = {"development": (2, (0, 1, 3, 6)), "holdout": (12, (0, 1, 3, 6)),
+            "extension": (13, (0, 2, 5, 7)), "blind": (13, (9, 11, 13, 16))}
+CASE_CPUS = dict(zip(PRODUCERS, (14, 15), strict=True))
+REPEATS = 3
+
+
+def _test_signal(window, signals, seed):
+    from leo.analysis.starlink.templates import qin_edge_pilot_frame
+
+    rate = window.sample_rate_hz
+    ref = qin_edge_pilot_frame(rate, window.target["edge"])
+    center = window.target["rf_center_hz"] - window.target["lnb_lo_hz"] - (
+        window.acquisition["actual_if_center_hz"]
+    )
+    samples = len(window.samples)
+    combined = np.zeros(samples, dtype=complex)
+    for epoch, residual, amplitude in signals:
+        component = np.zeros_like(combined)
+        for f in range(15):
+            start = round(f * (rate / 750)) + epoch
+            count = min(len(ref), samples - start)
+            component[start:start + count] = ref[:count]
+        rotation = np.exp(2j * np.pi * (center + residual) * np.arange(samples) / rate)
+        combined += amplitude * component * rotation
+    rng = np.random.default_rng(seed)
+    iq = np.stack((combined.real, combined.imag), axis=-1)[:, None, :]
+    noisy = np.rint(iq + rng.normal(0, 500, window.samples.shape))
+    iq = np.clip(noisy, -32768, 32767).astype("<i2")
+    return replace(window, samples=iq, iq_sha256=_digest(iq.tobytes()))
+
+
+def _timed(window, call, row_index, repeats):
+    results, timings = {}, {mode: [] for mode in MODES}
+    stable = True
+    for repeat in range(repeats):
+        order = MODES if (row_index + repeat) % 2 == 0 else MODES[::-1]
+        for mode in order:
+            output, timing = call(window, mode)
+            first = results.setdefault(mode, output)
+            stable &= first == output
+            timings[mode].append(timing)
+    control, trial = (results[m] for m in MODES)
+    probes = {m: [_probe(window, r.receiver_id, map(_from_production, r.candidates))
+                  for r in result.receivers] for m, result in results.items()}
+    payload = {m: _digest(encoded(result.model_dump(mode="json")))
+               for m, result in results.items()}
+    return dict(
+        sequence=window.sequence, visit=trial.visit, iq_sha256=window.iq_sha256,
+        sample_start=trial.sample_start, sample_end=trial.sample_end,
+        policy_status=trial.status, reason=trial.reason, stable=stable,
+        equal_status=(trial.status, trial.reason) == (control.status, control.reason),
+        production=probes["control"], native=probes[METHOD],
+        comparison=compare_candidates(control, trial), payload_sha256=payload, timings=timings,
+        positive_winners={m: _positives(result) for m, result in results.items()},
+    )
+
+
+def summarize(rows):
+    valid = [r for r in rows if r["policy_status"] == "processed"]
+    timing = {}
+    for name in MODES:
+        data = [r["timings"][name] for r in valid]
+        keys = ("full_cpu_s", "full_wall_s", "conditioned_cpu_s")
+        timing[name] = dict(
+            totals={k: sum(x[k] for pairs in data for x in pairs) for k in keys},
+            medians={k: median(median(x[k] for x in pairs) for pairs in data) if data else None
+                     for k in keys},
+        )
+    return dict(
+        scheduled=len(rows), valid=len(valid), timing=timing,
+        exact=all(r["stable"] and r["comparison"]["exact_payload"] for r in rows),
+        original=all(r["matches_original_payload"] for r in rows),
+    )
+
+
+def replay(case_id, split, workspace):
+    from leo.analysis.starlink import acquisition, fast_scan_scores
+    from leo.contracts.fast_scan_native import FastScanPolicyV2
+    from leo.scanner import fast_scan_detector
+    from leo.scanner.fast_scan_analysis import analyze_window
+
+    case, policy = _load_case(case_id), FastScanPolicyV2()
+    producer = _bind_producer(case, PRODUCERS[case_id], policy)
+    segment, sequences = SCHEDULE[split]
+    original_sha, previous = None, None
+    if split in ("development", "holdout"):
+        path = STAGE_ONLY / f"{case_id}-{split}.json.gz"
+        previous = json.loads(gzip.decompress(path.read_bytes()))
+        if (previous["case"], previous["producer"], previous["segment"]) != (
+            case_id, producer, segment,
+        ):
+            raise ValueError("Original stage receipt differs from the frozen case")
+        original_sha = _sha(path)
+    paths = {m: workspace / (m + ".so") for m in ("tiled", "spectral", "refine", "conditioned")}
+    pilot_kernel.compile_filter(paths["tiled"])
+    spectral_grid.compile_filter(paths["spectral"])
+    refine_bank.compile_bank(paths["refine"])
+    conditioned_cfo_bank.compile_bank(paths["conditioned"])
+    coarse = spectral_grid.SpectralGrid(paths["spectral"], anchor_grid.native_grid(paths["tiled"]))
+    final = refine_bank.RefinementBank(paths["refine"], fast_scan_scores)
+    conditioner = conditioned_cfo_bank.ConditionedBank(paths["conditioned"], acquisition)
+    if not final.compatible:
+        raise ValueError("The locked fused GLRT runtime changed")
+    sampler = anchor_grid.fractional_sampler(fast_scan_scores.fractional_take)
+    guarded = conditioner.guarded_acquisition(fast_scan_detector.acquire_symbolwise)
+
+    def call(window, mode, *, audit=False):
+        final.reset()
+        conditioner.reset(audit=audit)
+        elapsed = 0.0
+        scorer = conditioner.score if mode == METHOD else conditioner.original
+
+        def timed_score(*args):
+            nonlocal elapsed
+            start = process_time()
+            scores = scorer(*args)
+            elapsed += process_time() - start
+            return scores
+
+        bindings = (
+            (acquisition, "_folded_anchor_score_grid", coarse.score_grid),
+            (acquisition, "_retain_score_map_peaks", coarse.retain_peaks),
+            (acquisition, "_conditioned_frame_scores", timed_score),
+            (fast_scan_detector, "conditioned_glrt64_scores", final.integer),
+            (fast_scan_scores, "conditioned_glrt64_scores", final.integer),
+            (fast_scan_scores, "conditioned_glrt64_score", final.fractional),
+            (fast_scan_scores, "fractional_take", sampler),
+        )
+        with ExitStack() as contexts:
+            for mod, name, new in bindings:
+                contexts.enter_context(patch.object(mod, name, new))
+            if mode == METHOD:
+                binding = patch.object(fast_scan_detector, "acquire_symbolwise", guarded)
+                contexts.enter_context(binding)
+            wall, cpu = perf_counter(), process_time()
+            output = analyze_window(window, window.receiver_ids, None, policy)
+            return output, dict(
+                full_cpu_s=process_time() - cpu, full_wall_s=perf_counter() - wall,
+                conditioned_cpu_s=elapsed, conditioned_grids=conditioner.receipts,
+                equivalent_ties=conditioner.equivalent_ties,
+            )
+
+    windows = _windows(case, segment, sequences)
+    rows = []
+    for index, window in enumerate(windows):
+        row = _timed(window, call, index, REPEATS)
+        if previous is None:
+            original = analyze_window(window, window.receiver_ids, None, policy)
+            expected = _digest(encoded(original.model_dump(mode="json")))
+        else:
+            prior_row = previous["rows"][index]
+            if any(row[k] != prior_row[k] for k in ("visit", "iq_sha256", "sequence")):
+                raise ValueError("Selected archive visit differs from the established roster")
+            expected = prior_row["payload_sha256"]["installed"]
+        row["matches_original_payload"] = all(v == expected for v in row["payload_sha256"].values())
+        rows.append(row)
+        print(case_id, split, row["visit"], row["policy_status"], row["comparison"], flush=True)
+    valid = (w for w, r in zip(windows, rows, strict=True) if r["policy_status"] == "processed")
+    first = next(valid, None)
+    dense, memory, controls = None, {}, {}
+    if first is not None:
+        _, evidence = call(first, METHOD, audit=True)
+        dense = dict(visit=first.acquisition["global_visit"], rows=evidence["conditioned_grids"])
+    if first is not None and split == "development":
+        for mode in MODES:
+            tracemalloc.start()
+            call(first, mode)
+            memory[mode] = tracemalloc.get_traced_memory()[1]
+            tracemalloc.stop()
+        planted = _synthetic(first)
+        signals = {"faint": ((731, 48_000, 128),),
+                   "adjacent": ((731, 47_950, 3500), (928, 48_050, 3500))}
+        for name, components in signals.items():
+            planted[name] = (_test_signal(first, components, 830819), {"signals": components})
+        for name, (window, truth) in planted.items():
+            controls[name] = dict(_timed(window, call, 0, 1), truth=truth)
+    sources = (Path(__file__), Path(conditioned_cfo_bank.__file__), conditioned_cfo_bank.SOURCE)
+    return dict(
+        case=case_id, split=split, segment=segment, producer=producer, rows=rows,
+        summary=summarize(rows), dense_audit=dense, traced_peak_bytes=memory, controls=controls,
+        source_sha256={p.name: _sha(p) for p in sources},
+        library_sha256={m: _sha(p) for m, p in paths.items()}, archive_receipt_sha256=original_sha,
+        cpus=sorted(os.sched_getaffinity(0)), numpy=np.__version__,
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--case", choices=PRODUCERS, required=True)
+    parser.add_argument("--split", choices=SCHEDULE, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    pinned = os.sched_getaffinity(0) == {CASE_CPUS[args.case]}
+    if not pinned or any(os.environ.get(k) != "1" for k in THREAD_ENV):
+        parser.error("pin the designated CPU and use one numerical thread")
+    with TemporaryDirectory(prefix="conditioned-cfo-bank-") as work:
+        output = replay(args.case, args.split, Path(work))
+    write(args.out, gzip.compress(encoded(output) + b"\n", mtime=0))
+
+
+if __name__ == "__main__":
+    main()

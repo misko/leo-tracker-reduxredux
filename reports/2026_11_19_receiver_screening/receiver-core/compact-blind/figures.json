@@ -1,0 +1,143 @@
+{
+  "charts": [
+    {
+      "caption": "Physically generated wideband GLRT candidates on the same four locations. Both installed releases receive the same single 25 km offer and causal TLE. An omitted-region publication counts as a false fix.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing offer",
+        "omitted": "Near omitted offer"
+      },
+      "id": "compact-blind-phase-release",
+      "method": "phase-release",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "input-lock.json",
+        "scores.csv",
+        "score-lock.json",
+        "unchanged-v5-preflight.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Phase release",
+          "match": [
+            "native_sha256",
+            "catalogue_sha256",
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Base compact",
+          "match": [
+            "native_sha256",
+            "catalogue_sha256",
+            "input_sha256"
+          ],
+          "value": "compact"
+        }
+      ],
+      "title": "Phase release on four new simulated receiver sites"
+    },
+    {
+      "caption": "Physically generated wideband GLRT candidates on the same four locations. Both installed releases receive the same single 25 km offer and causal TLE. An omitted-region publication counts as a false fix.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing offer",
+        "omitted": "Near omitted offer"
+      },
+      "id": "compact-blind-compact",
+      "method": "compact",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "input-lock.json",
+        "scores.csv",
+        "score-lock.json",
+        "unchanged-v5-preflight.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Base compact",
+          "match": [
+            "native_sha256",
+            "catalogue_sha256",
+            "input_sha256"
+          ],
+          "value": "compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Phase release",
+          "match": [
+            "native_sha256",
+            "catalogue_sha256",
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        }
+      ],
+      "title": "Base compact on four new simulated receiver sites"
+    },
+    {
+      "caption": "One simulated session with matched native inputs and 25 km offers. The original numerical engine uses a qualified off-roof harness. The original omitted offer timed out at 240 s. Phase release issued a false regional fix.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "25 km containing offer",
+        "omitted": "Near omitted offer"
+      },
+      "id": "compact-blind-original-numerical-reference",
+      "method": "v5_original_regional_reference",
+      "provenance": [
+        "prediction-lock.json",
+        "source-lock.json",
+        "input-lock.json",
+        "scores.csv",
+        "score-lock.json",
+        "unchanged-v5-preflight.json"
+      ],
+      "queries": "reference-queries.json",
+      "scope": "transfer",
+      "seal": "reference-figure-lock.json",
+      "series": [
+        {
+          "file": "reference-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Original numerical reference",
+          "match": [
+            "native_sha256",
+            "catalogue_sha256",
+            "input_sha256"
+          ],
+          "value": "v5_original_regional_reference"
+        },
+        {
+          "file": "reference-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed phase release",
+          "match": [
+            "native_sha256",
+            "catalogue_sha256",
+            "input_sha256"
+          ],
+          "value": "phase-release"
+        }
+      ],
+      "title": "Original v5 numerical reference on two new-location offers"
+    }
+  ],
+  "version": 1
+}

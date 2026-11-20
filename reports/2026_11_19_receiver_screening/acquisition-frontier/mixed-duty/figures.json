@@ -1,0 +1,117 @@
+{
+  "charts": [
+    {
+      "caption": "Before detection, one credit per 1,024 valid visits routes the aligned stereo packet. Each fit covers the whole acquisition. Two recordings are new to this route. Costs use separate measured IQ clocks.",
+      "cases": "sealed",
+      "id": "mixed-duty-rotating",
+      "method": "mixed_duty_rotating",
+      "provenance": [
+        "prediction-lock.json",
+        "treatment-audit.json",
+        "time-model.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Low-duty rotating RF route",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "mixed_duty_rotating"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "mixed_duty_stock_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Low-duty fixed-phase route",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "mixed_duty_fixed_phase"
+        }
+      ],
+      "title": "Low-duty rotating RF route for complete recorded GLRT"
+    },
+    {
+      "caption": "Before detection, one credit per 1,024 valid visits routes the aligned stereo packet. Each fit covers the whole acquisition. Two recordings are new to this route. Costs use separate measured IQ clocks.",
+      "cases": "sealed",
+      "id": "mixed-duty-fixed-phase",
+      "method": "mixed_duty_fixed_phase",
+      "provenance": [
+        "prediction-lock.json",
+        "treatment-audit.json",
+        "time-model.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Low-duty fixed-phase route",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "mixed_duty_fixed_phase"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete stock wide",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "mixed_duty_stock_wide"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Low-duty rotating RF route",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "parent_wide_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "mixed_duty_rotating"
+        }
+      ],
+      "title": "Low-duty fixed-phase route for complete recorded GLRT"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,317 @@
+{
+  "after_import_snapshot_utc": "2026-11-18T22:33:35Z",
+  "before_import_snapshot_utc": "2026-11-18T22:32:57Z",
+  "historical_reference_comparison": {
+    "byte_and_ast_identical_waveform_statements": 17,
+    "byte_identical_modules": [
+      "grid.py",
+      "native_archive.py",
+      "receiver.py",
+      "tracker.py"
+    ],
+    "evaluated_constants": "exactly equal",
+    "waveform_outputs": "exact equality excluding coarse_wall_ms and total_wall_ms on planted pilot, gated planted pilot, and noise"
+  },
+  "host_glrt_library": {
+    "path": "/tmp/leo-pipeline-native.sfewXn/output/libleo-adaptive-detector.so",
+    "sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768"
+  },
+  "iq_position_import_boundary": {
+    "after_variant_sha256": "64c1a80090b673e9a0f4f45c08935985548fed4e8dee14ecc9132808bae94883",
+    "before_variant_sha256": "7fad4ed17d68e3acac1d8209f824a89a2df44132cf467cfa79a1df192b5c2a27",
+    "catalog_sha256": "aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86",
+    "observation_artifact": "/srv/bulk/leo-dev/pipeline-eval-20261118/iq-position-corrected-denser-dh96rkk4/iq-replay.json",
+    "observation_artifact_sha256": "6612b6feb6d862c465832134d8be0bba607ba3c3ca09fed43cacbd934b8668c3",
+    "omitted_diagnostics_fields": [
+      "stage_seconds",
+      "wall_s"
+    ],
+    "raw_derived_tracks": 44,
+    "regional_receiver_byte_identical": true,
+    "result_reason": "inconsistent_position",
+    "result_sha256": "322a781496b8412a0e1e75e441dbdf9df6595d9bb0591f0ea826feee02fd4918",
+    "result_status": "withheld",
+    "validated_case": "DS26-0112"
+  },
+  "isolated_checkout": {
+    "copied_evaluation_source": [
+      "tools/pipeline_eval",
+      "tests/pipeline_eval"
+    ],
+    "evaluator_test_command": "python -B -m pytest -q tests/pipeline_eval",
+    "evaluator_tests_passed": 72,
+    "python_dependencies": "same environment, with isolated src on PYTHONPATH",
+    "report_tree_present": false,
+    "root": "/tmp/leo-portable-checkout.YKCyim",
+    "smoke_without_external_inputs": {
+      "glrt_batch": {
+        "DS26-0036": "recording path or frozen manifest digest is missing",
+        "DS29-0082": "recording path or frozen manifest digest is missing"
+      },
+      "glrt_cascade": {
+        "DS26-0036": "recording path or frozen manifest digest is missing",
+        "DS29-0082": "recording path or frozen manifest digest is missing"
+      },
+      "iq_position": {
+        "DS26-0036": "causal orbit catalogue absent",
+        "DS29-0082": "causal orbit catalogue absent"
+      },
+      "iq_stream": {
+        "DS26-0036": "recording path or frozen manifest digest is missing",
+        "DS29-0082": "recording path or frozen manifest digest is missing"
+      },
+      "orbit_interp": {
+        "DS26-0036": "missing portable observation or causal catalog",
+        "DS29-0082": "missing portable observation or causal catalog"
+      },
+      "projected_fit": {
+        "DS26-0036": "portable observation and causal catalogue are required",
+        "DS29-0082": "portable observation and causal catalogue are required"
+      },
+      "shape_score": {
+        "DS26-0036": "missing_observation_or_catalog",
+        "DS29-0082": "missing_observation_or_catalog"
+      },
+      "track_link": {
+        "DS26-0036": "native detector factors and a causal TLE catalogue are required",
+        "DS29-0082": "native detector factors and a causal TLE catalogue are required"
+      },
+      "track_reduce": {
+        "DS26-0036": "missing_observation_or_catalog",
+        "DS29-0082": "missing_observation_or_catalog"
+      },
+      "v5_lean": {
+        "DS26-0036": "Native detector input is unavailable",
+        "DS29-0082": "Native detector input is unavailable"
+      }
+    },
+    "tracked_commit": "ab366048ee4c57809dea5db094435e326d7d6eb3",
+    "tracked_only_directories": [
+      "src",
+      "native/adaptive/detector"
+    ],
+    "tracked_other_inputs": [
+      "pyproject.toml",
+      "tests/__init__.py",
+      "tests/conftest.py"
+    ]
+  },
+  "matched_public_smoke": {
+    "before_after_ignored_common_fields": [
+      "call_s",
+      "worker_wall_s",
+      "implementation_sha256"
+    ],
+    "case": "DS26-0036",
+    "options": [
+      "--panel",
+      "smoke",
+      "--case",
+      "DS26-0036",
+      "--jobs",
+      "1",
+      "--pin",
+      "--timeout",
+      "80"
+    ],
+    "variants": {
+      "glrt_batch": {
+        "after_predictions": "/tmp/leo-portable-oracles.x0MZiu/after/smoke/glrt_batch/subset-a01ea3517c68/runs/20261118T223335-7b7dlh34/predictions.jsonl",
+        "after_predictions_sha256": "7171339f893a74ee51a3c2be559199a91845a14f88d617a9391aa1dd66a2247d",
+        "after_variant_sha256": "e81c01a7e8228fdaef7e154f0d718e4dcf7cee30bc5922c5adbad2ab55ebd484",
+        "before_predictions": "/tmp/leo-portable-oracles.x0MZiu/before/smoke/glrt_batch/subset-a01ea3517c68/runs/20261118T223029-gl1lpxsi/predictions.jsonl",
+        "before_predictions_sha256": "9e1ef1bbe205dac89678c950887a500999ae45913719cee8b274ff07670afd61",
+        "before_variant_sha256": "5a01b048a7c9f9ba8d4912f8f97643758791e09bc8823e4abe30dee98c738927",
+        "historical_waveform_sha256": "d84ff9edbe0a7826267c1e945a75411e5c06ad40439c80d476ad919a3474e261",
+        "identical_numerical_record_sha256": "9347494686e392e7679b8ad547d9000b14118bd0a87a310172e030b4c4f22aa6",
+        "ignored_timing_metrics": [
+          "candidate_s",
+          "candidate_s_repeats",
+          "control_s",
+          "control_s_repeats"
+        ],
+        "input_sha256": "6fda01ceed3721cf579e425061ac0879ce1fdcfe5bf52c7b446f2b4441f1b682",
+        "isolated_checkout_prediction": "/tmp/leo-portable-checkout.YKCyim/public-run/smoke/glrt_batch/subset-a01ea3517c68/runs/20261118T223501-spl44oj6/predictions.jsonl",
+        "isolated_checkout_sha256": "848a6be18b44b8e9c7d259619818bada997d9bea31b4954aeaf53ed9048007d5",
+        "packaged_waveform_sha256": "d50750cee40dbf6f905c55da3c6aca057746110bb91dc22ae18870da81cd0193",
+        "reason": null,
+        "status": "ok"
+      },
+      "orbit_interp": {
+        "after_predictions": "/tmp/leo-portable-oracles.x0MZiu/after/smoke/orbit_interp/subset-a01ea3517c68/runs/20261118T223335-x4q4odfv/predictions.jsonl",
+        "after_predictions_sha256": "4e7eb38619447419266f3d8801ca8b0ca3ed9bc29e63c245ca63244143535e56",
+        "after_variant_sha256": "c0430c291c937699b44e72bea6f22484da454ca7afa4392336574f64c1bb6662",
+        "before_predictions": "/tmp/leo-portable-oracles.x0MZiu/before/smoke/orbit_interp/subset-a01ea3517c68/runs/20261118T223029-zjc4cuqp/predictions.jsonl",
+        "before_predictions_sha256": "33434c9fc14f71e21266ac29df0604bd34f1c6cfffb8f0fe3daa191dacbefe00",
+        "before_variant_sha256": "044104a2f97d42cd5cb889cd303e74d9d3b451bdd543b83a15e90c160a11f31c",
+        "identical_numerical_record_sha256": "9b7449ed3c1ae18c4103a35f8bd16b4a2f0c6b66d5fc447b64f072314c71b2e9",
+        "ignored_timing_metrics": [
+          "candidate_s",
+          "candidate_tiles_s",
+          "candidate_time_shift_s",
+          "control_s",
+          "control_tiles_s",
+          "control_time_shift_s"
+        ],
+        "input_sha256": "6fda01ceed3721cf579e425061ac0879ce1fdcfe5bf52c7b446f2b4441f1b682",
+        "reason": "inconsistent_position",
+        "status": "withheld"
+      },
+      "shape_score": {
+        "after_predictions": "/tmp/leo-portable-oracles.x0MZiu/after/smoke/shape_score/subset-a01ea3517c68/runs/20261118T223335-b8_s8jpc/predictions.jsonl",
+        "after_predictions_sha256": "e00839bf1bcf0169c8cb6b9ef981f586e110bd7dd0743746eaba8904a336b7da",
+        "after_variant_sha256": "4048ae80beff5b162cd1cf1bdb3e14b46c0167664eeac513e9cf813ab23c662e",
+        "before_predictions": "/tmp/leo-portable-oracles.x0MZiu/before/smoke/shape_score/subset-a01ea3517c68/runs/20261118T223029-jjw3ce76/predictions.jsonl",
+        "before_predictions_sha256": "5345ca0db1a28b9908cafe8f21223ba963bb0c11f50a9eb4cf3f2ff7c1fe5b15",
+        "before_variant_sha256": "713c96c4bd144f8d91522b2327c40cef2f515ae79f7882cd7bf7f38c88263bb9",
+        "identical_numerical_record_sha256": "ed4b553c497191bbb0704f64d98584f76d8688e1bec98f95acb48cd7f146210b",
+        "ignored_timing_metrics": [
+          "candidate_s",
+          "candidate_time_shift_s",
+          "control_s",
+          "control_time_shift_s"
+        ],
+        "input_sha256": "6fda01ceed3721cf579e425061ac0879ce1fdcfe5bf52c7b446f2b4441f1b682",
+        "reason": "inconsistent_position",
+        "status": "withheld"
+      },
+      "track_link": {
+        "after_predictions": "/tmp/leo-portable-oracles.x0MZiu/after/smoke/track_link/subset-a01ea3517c68/runs/20261118T223335-ml8ykjek/predictions.jsonl",
+        "after_predictions_sha256": "87a7cbb6a4ac84fe6801af63f737e14f355ab862b60de2fb9ee2844eaf19b76d",
+        "after_variant_sha256": "0daab6a23f045cdeaa8c5f0f1c6584772ef82b9c808f7b7f95b5d58f87d75f58",
+        "before_predictions": "/tmp/leo-portable-oracles.x0MZiu/before/smoke/track_link/subset-a01ea3517c68/runs/20261118T223029-sjxk02s3/predictions.jsonl",
+        "before_predictions_sha256": "7263ca22eee4d20cbbd3df358eaaba886858730d9d665a5bd2cf1717f9fcf127",
+        "before_variant_sha256": "e6a4689ac732a90f760dfe5e6755c2db2283237609e8fa722de29a7f7712506b",
+        "identical_numerical_record_sha256": "ff8d3d0e2b17fe7cf2421bae198757b98cf99537f234fd4596b286ebdce973e0",
+        "ignored_timing_metrics": [
+          "candidate_position_s",
+          "candidate_s",
+          "control_position_s",
+          "control_s"
+        ],
+        "input_sha256": "6fda01ceed3721cf579e425061ac0879ce1fdcfe5bf52c7b446f2b4441f1b682",
+        "reason": "inconsistent_position",
+        "status": "withheld"
+      },
+      "track_reduce": {
+        "after_predictions": "/tmp/leo-portable-oracles.x0MZiu/after/smoke/track_reduce/subset-a01ea3517c68/runs/20261118T223335-iosap5a5/predictions.jsonl",
+        "after_predictions_sha256": "4e2ba6f3092da74dc8836b22dca63e4214e7a1cc88be01b2568feaa76faf2e43",
+        "after_variant_sha256": "11844a132dbba766908cf9d4d44a0333b0f86e93b97f3a5a4b13856cb61238bc",
+        "before_predictions": "/tmp/leo-portable-oracles.x0MZiu/before/smoke/track_reduce/subset-a01ea3517c68/runs/20261118T223029-i64_h59a/predictions.jsonl",
+        "before_predictions_sha256": "c2f060f4890ce0d341183c3a9c9f20aa917423831c9d533a55e9e888c382c0ce",
+        "before_variant_sha256": "7637a0c8bc878f74829a200f87de98d74ae0091f436d7e12c4f648aec8505a53",
+        "identical_numerical_record_sha256": "2a14a6c72d95dfd887d85c64cfeb333b7ee0222f2cb87919add59effa32844c9",
+        "ignored_timing_metrics": [
+          "candidate_cpu_s",
+          "candidate_early_nomination_s",
+          "candidate_held_scoring_s",
+          "candidate_input_s",
+          "candidate_pooled_fit_s",
+          "candidate_position_check_s",
+          "candidate_s",
+          "candidate_sky_s",
+          "candidate_tiles_s",
+          "candidate_time_shift_controls_s",
+          "control_cpu_s",
+          "control_early_nomination_s",
+          "control_held_scoring_s",
+          "control_input_s",
+          "control_pooled_fit_s",
+          "control_position_check_s",
+          "control_s",
+          "control_sky_s",
+          "control_tiles_s",
+          "control_time_shift_controls_s",
+          "reduction_s"
+        ],
+        "input_sha256": "6fda01ceed3721cf579e425061ac0879ce1fdcfe5bf52c7b446f2b4441f1b682",
+        "isolated_checkout_prediction": "/tmp/leo-portable-checkout.YKCyim/public-run/smoke/track_reduce/subset-a01ea3517c68/runs/20261118T223501-aa6cdlqf/predictions.jsonl",
+        "isolated_checkout_sha256": "b871eca553823ab5d129d987ace8b8026fa4f62216b8d08b4a531e31cc2430f0",
+        "reason": "inconsistent_position",
+        "status": "withheld"
+      }
+    },
+    "waveform_artifact_ignored_fields": [
+      "coarse_wall_ms",
+      "total_wall_ms",
+      "waveform_control_sha256"
+    ]
+  },
+  "pins_sha256": "879a888f86c30834df22065c0cfdb118e2020dd91b8a74dffd729106cde9a252",
+  "references": {
+    "grid.py": {
+      "sha256": "b87260412b312dd82e1124817eef199aedcdbab1ffcd923ca1694bfaa40c377d",
+      "sources": [
+        {
+          "path": "reports/2026_11_18_blind_regional_receiver/engine/grid.py",
+          "sha256": "b87260412b312dd82e1124817eef199aedcdbab1ffcd923ca1694bfaa40c377d"
+        }
+      ]
+    },
+    "native_archive.py": {
+      "sha256": "3d8c2ee484aa454cc5f0dbce253757d3e479febc4784efe5bd7e1a609c471415",
+      "sources": [
+        {
+          "path": "reports/2026_11_18_embedded_prototypes/01_stream/native_archive.py",
+          "sha256": "3d8c2ee484aa454cc5f0dbce253757d3e479febc4784efe5bd7e1a609c471415"
+        }
+      ]
+    },
+    "receiver.py": {
+      "sha256": "49b7f682edba1d9bcbf050edd7b2bfcf1b8562b6aa03a3e639fd791ae6e8de9b",
+      "sources": [
+        {
+          "path": "reports/2026_11_18_blind_regional_receiver/engine/receiver.py",
+          "sha256": "49b7f682edba1d9bcbf050edd7b2bfcf1b8562b6aa03a3e639fd791ae6e8de9b"
+        }
+      ]
+    },
+    "tracker.py": {
+      "sha256": "dfd781fe07175c905631e4f68ce129a3ca9e394244950476f0d2af39c9bc9291",
+      "sources": [
+        {
+          "path": "reports/2026_11_18_embedded_prototypes/01_stream/tracker.py",
+          "sha256": "dfd781fe07175c905631e4f68ce129a3ca9e394244950476f0d2af39c9bc9291"
+        }
+      ]
+    },
+    "waveform.py": {
+      "sha256": "d50750cee40dbf6f905c55da3c6aca057746110bb91dc22ae18870da81cd0193",
+      "sources": [
+        {
+          "path": "reports/2026_11_18_embedded_prototypes/02_pilots/run.py",
+          "sha256": "007dd939fb45296f746e436fc2b0b50613c487de1aa714f68e4a8349cd77ecae",
+          "statements_sha256": "00babfe54d96f7db59ffca87a27e924adf6a58208bbd48f2fa9f9458690bdb5f",
+          "symbols": [
+            "FREQUENCY_PERIOD",
+            "PHASE_PERIOD_US",
+            "wrap"
+          ]
+        },
+        {
+          "path": "reports/2026_11_18_embedded_prototypes/02_pilots/iq_check.py",
+          "sha256": "d84ff9edbe0a7826267c1e945a75411e5c06ad40439c80d476ad919a3474e261",
+          "statements_sha256": "79b3a32c3f758aba6c00b23c6f9b806c1d986009dd20e02b1b177bcdca314234",
+          "symbols": [
+            "RATE",
+            "FRAME_SAMPLES",
+            "PROBE_SAMPLES",
+            "FFT_SIZE",
+            "PROPOSALS",
+            "REFINE_SAMPLES",
+            "MARGIN",
+            "TAPS",
+            "ALIASES",
+            "ALIAS_ROTATION",
+            "BINS_HZ",
+            "source_phase",
+            "phase_at",
+            "PilotBank"
+          ]
+        }
+      ]
+    }
+  },
+  "schema": 1,
+  "switch_utc": "2026-11-18T22:33:17Z"
+}

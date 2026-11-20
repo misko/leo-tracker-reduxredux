@@ -1,0 +1,71 @@
+{
+  "charts": [
+    {
+      "caption": "Same simulated GLRT factors and offered tiles. Compact secant also uses the authenticated preceding TLE history. Deadlines are shown separately from withheld fixes.",
+      "cases": "sealed",
+      "id": "compact-secant-paired-transfer",
+      "method": "v5_secant_transfer",
+      "provenance": [
+        "prediction-lock.json",
+        "requests.json",
+        "source-lock.json",
+        "predictions.jsonl.gz"
+      ],
+      "queries": "compact-secant-paired-transfer-queries.json",
+      "scope": "transfer",
+      "seal": "compact-secant-paired-transfer-lock.json",
+      "series": [
+        {
+          "file": "figure-compact-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Compact secant",
+          "value": "v5_secant_transfer",
+          "where": {
+            "authentic": false
+          }
+        },
+        {
+          "file": "matched-clock-control.jsonl.gz",
+          "forced_label": "Native clock + offset, OU \u00b7 forced",
+          "key": "stock",
+          "label": "Native clock + offset, OU",
+          "match": [
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "native_clock_offset_ou"
+        }
+      ],
+      "title": "Compact secant on two simulated sites with arbitrary offers"
+    },
+    {
+      "caption": "Original measured observations and causal history. The requested tile is 7 km east of the original offered center.",
+      "cases": "sealed",
+      "id": "compact-secant-measured-shift",
+      "method": "v5_secant_transfer",
+      "provenance": [
+        "prediction-lock.json",
+        "requests.json",
+        "source-lock.json",
+        "predictions.jsonl.gz",
+        "measured-replay-receipt.json"
+      ],
+      "queries": "compact-secant-measured-shift-queries.json",
+      "scope": "transfer",
+      "seal": "compact-secant-measured-shift-lock.json",
+      "series": [
+        {
+          "file": "figure-compact-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Compact secant",
+          "value": "v5_secant_transfer",
+          "where": {
+            "authentic": true
+          }
+        }
+      ],
+      "title": "Compact secant on a measured roof with an east-shifted tile"
+    }
+  ],
+  "version": 1
+}

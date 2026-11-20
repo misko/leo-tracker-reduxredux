@@ -1,0 +1,82 @@
+{
+  "charts": [
+    {
+      "caption": "Sites ranked by training event times and checked on separate held events.",
+      "cases": [
+        "DS26-0122",
+        "DS29-0247"
+      ],
+      "id": "doppler_inflection-diagnostic",
+      "method": "doppler_inflection",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "diagnostic-positions.jsonl.gz",
+          "forced_label": "Steepest-descent time \u00b7 forced",
+          "key": "one",
+          "label": "Steepest-descent time \u00b7 published",
+          "value": "doppler_inflection"
+        },
+        {
+          "file": "diagnostic-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Tile centre prior",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "inflection_tile_center"
+        }
+      ],
+      "title": "Doppler inflection positioning on diagnostic offers"
+    },
+    {
+      "caption": "Sites ranked by training event times and checked on separate held events.",
+      "cases": [
+        "DS26-0070-omitted",
+        "DS29-0316-omitted"
+      ],
+      "id": "doppler_inflection-omitted",
+      "method": "doppler_inflection",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "omitted-positions.jsonl.gz",
+          "forced_label": "Steepest-descent time \u00b7 forced",
+          "key": "candidate",
+          "label": "Steepest-descent time \u00b7 published",
+          "value": "doppler_inflection"
+        },
+        {
+          "file": "omitted-positions.jsonl.gz",
+          "key": "four",
+          "label": "Tile centre prior",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "inflection_tile_center"
+        }
+      ],
+      "title": "Doppler inflection positioning on omitted offers"
+    }
+  ],
+  "version": 1
+}

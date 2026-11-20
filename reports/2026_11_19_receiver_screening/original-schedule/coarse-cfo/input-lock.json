@@ -1,0 +1,100 @@
+{
+  "cases": {
+    "DS26-0237": 2,
+    "DS29-0082": 3,
+    "DS29-0519": 2
+  },
+  "libraries": {
+    "11": {
+      "build": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "/srv/bulk/leo-dev/coarse-cfo-20261120-v1/frozen-11/capture_fft.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/coarse_cfo_repair.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/coarse-cfo-20261120-v1/frozen-11/coarse_cfo.so"
+      ],
+      "path": "/srv/bulk/leo-dev/coarse-cfo-20261120-v1/frozen-11/coarse_cfo.so",
+      "sha256": "60b001335e416abcc2ee830a85651642e81afc0d9571feb6f8765d4719c7c9e2"
+    },
+    "6": {
+      "build": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "/srv/bulk/leo-dev/coarse-cfo-20261120-v1/frozen-6/capture_fft.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/coarse_cfo_repair.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/coarse-cfo-20261120-v1/frozen-6/coarse_cfo.so"
+      ],
+      "path": "/srv/bulk/leo-dev/coarse-cfo-20261120-v1/frozen-6/coarse_cfo.so",
+      "sha256": "b7541a1f51cfbca4257ab6bffc16ed2b4bab17ccb582ffff36031061681afd3e"
+    },
+    "full256": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/capture_fft.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so"
+      ],
+      "generated": {
+        "capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+        "fftw.wisdom": "5343fa0b1de9d15f793906b4818402748ac4edf7cc1cd0c75fd81a21e914d7d9",
+        "folded_bank.c": "e524399aef9a1a1d8aa9b46219971dbb185355ac90095bcadf49e326d2e85763",
+        "original_kernel_cache.h": "e4d597458bca8e6fb4ff9fc3a057dba9fbcaedca9e7a49240c842f2d3beb1eac"
+      },
+      "path": "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so",
+      "planning_cpu_ns": 42124652,
+      "sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286"
+    },
+    "full512": {
+      "path": "/srv/bulk/leo-dev/fft-length-20261120-v1/length-512/prepared_512.so",
+      "sha256": "26d1e10bb0cf0f15d58d922c46a2b50e38124d54a7efdccfcb8e2ba46783de02"
+    }
+  },
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/original-schedule/coarse-cfo/PROTOCOL.md": "6728e41381f75b97fdbbbc36bf3995608b65e4e970dbc3f265034aba2250db76",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/coarse_cfo_eval.py": "f2fd1a811f4308e634459cbca12655b18f3b802a9922a86d21fe211351bcbc64",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/coarse_cfo.py": "b05799dac7a3f5871c0ea5d5d99f6a86da03c6a31b63dc7cdd85f247587263b6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/coarse_cfo_fold.h": "a7a20bc8c26d75848ee325bc88c15ef354572cc5add6d0e3e483f9d925ac0ae2",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/coarse_cfo_repair.c": "347edfa457ce6f82bdf6042d0a176c8315104ac55dcc686cfa3f2301bf46fa69",
+    "/srv/bulk/leo-dev/fft-length-20261120-v1/held-lock.json": "90bdf40354d7927c9e5c4181256b98bb0d75167aaef60fdd93f7e2a1c40ab6ce",
+    "/srv/bulk/leo-dev/fft-length-20261120-v1/input-lock.json": "bb97d7701eb3d7d95274c5748b77a816c0075852da2e866c011a6ca35ad4f2a9"
+  }
+}

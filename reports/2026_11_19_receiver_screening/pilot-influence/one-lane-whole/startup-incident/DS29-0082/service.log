@@ -1,0 +1,25 @@
+Running as unit: leo-iq-bench-ab48c4cc3d64.service; invocation ID: eb854ded2a3140e082d2b267b06e5d24
+stage: full recorded IQ enter
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/one_lane_whole.py", line 193, in <module>
+    worker(local_output(args.value))
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/one_lane_whole.py", line 169, in worker
+    whole_iq.worker(attempt)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py", line 163, in worker
+    recording.run_recording(
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/recording_to_v5.py", line 565, in run_recording
+    return (fit if finish is None else finish)(output, case_id, deadline_s, detector)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py", line 145, in finish
+    summary = complete_raw(out, case, cpus, plan["detector_sha256"])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/whole_iq.py", line 82, in complete_raw
+    raise ValueError("the two raw lanes must both complete on their assigned cores")
+ValueError: the two raw lanes must both complete on their assigned cores
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 7.651s
+             CPU time consumed: 6.974s
+                   Memory peak: 341.7M (swap: 0B)

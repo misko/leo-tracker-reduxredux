@@ -1,0 +1,149 @@
+{
+  "charts": [
+    {
+      "caption": "Complete matched factors and scheduled compact fits on the fixed holdout. The truth oracle uses scored geography only as a ceiling.",
+      "cases": "sealed",
+      "id": "cascade-audit-held",
+      "method": "cascade_audit",
+      "provenance": [
+        "route-lock.json",
+        "endpoint-lock.json",
+        "summary.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Frozen audit rule",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cascade_audit"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Always fast",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fast"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Always original",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Rate-matched random",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "random"
+        }
+      ],
+      "title": "Sparse original-detector audit on 20 held recordings"
+    },
+    {
+      "caption": "Complete matched factors and scheduled compact fits on the fixed holdout. The truth oracle uses scored geography only as a ceiling.",
+      "cases": "sealed",
+      "id": "cascade-audit-ceiling",
+      "method": "cascade_audit",
+      "provenance": [
+        "route-lock.json",
+        "endpoint-lock.json",
+        "summary.csv"
+      ],
+      "roof_references": {
+        "authority": "fresh-roof.json",
+        "predictions": "fresh-v5.jsonl.gz"
+      },
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Frozen audit rule",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "cascade_audit"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Always fast",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "fast"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Always original",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Truth oracle ceiling",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "oracle"
+        }
+      ],
+      "title": "Sparse detector audit against a geographic hindsight ceiling"
+    }
+  ],
+  "version": 2
+}

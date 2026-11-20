@@ -1,0 +1,61 @@
+Tiny coordinate network
+
+A 51→32→2 tanh network returns east and north displacement in the fixed 25 km
+search box at scan close. It consumes 49 normalized Doppler shape scores plus
+the peak and contrast of the score field. For up to 40 curved tracks it samples
+12 points, tests visible causal TLE predictions and retains the 12 lowest
+center-position shape costs. Each candidate cost profiles a local satellite
+phase offset with a 2 s Gaussian penalty. The grid score averages bounded
+shape votes across tracks. The grid peak is a same-input, no-network control.
+Reported hertz are in-sample demeaned RMS after satellite and phase selection.
+
+Training uses 288 synthetic examples from six early DS26 TLE snapshots.
+Validation uses 144 from three subsequent snapshots. Both sets precede the
+real eight-scan panel and have disjoint TLE content hashes from one another
+and from the panel. Each example places the receiver in a jittered geographic
+cell, simulates exact Doppler using SGP4 and adds clock/RF offsets, receiver
+drift, satellite phase errors, smooth and white noise, and distractors.
+Early graph tracks provide times and RF channel schedules. Training uses
+simulated positions and Doppler. The real scans use the anonymous archived
+graph tracks and causal TLEs named by the shared protocol. The DS26 campaign
+reference was read only after all network predictions and RF diagnostics.
+
+The stationary RF calibration term is constant within each archived track.
+Demeaning removes it before satellite nomination, so both reported arms are
+the same estimator. Adding ±200 kHz/GHz and relifting the alias branch
+changed no predicted coordinates across eight scans. The maximum feature
+difference was 9.4e-15 and the largest frequency RMS difference was 1.1e-12 Hz.
+This checks fixed-track features. The upstream graph was already assembled.
+
+Displaced synthetic validation gave 2.86 km median and 6.15 km P95 for the
+network, 2.20 and 4.27 km for the grid peak, 10.13 and 14.87 km for the no-radio
+search center, and 14.40 and 23.05 km when permuting maps across epochs.
+The real panel gave 3.25 and 9.50 km for the network and 5.68 and 11.69 km for
+the grid peak. All eight real scans share the campaign site. Permuting the
+scan-to-map pairing preserved aggregate real errors. A constant output fit
+from the same campaign reference predicted all eight labels exactly without
+radio. That control intentionally reuses the test geography.
+
+The frozen model has 1,730 float32 parameters (6,920 bytes) and 1,696 MACs.
+One host pass averaged about 3.5 µs in a 1,000-call warm loop. Per-scan wall
+time included graph read/parse, causal catalogue read, SGP4, nomination, map
+generation, network and RF diagnostics, with one BLAS thread. The median was
+0.181 s and included 0.158 s for TLE/SGP4 and 0.015 s for nominations/map.
+The timing starts from archived graphs. It excludes acquisition, detector,
+graph construction, sensitivity checks, and offline training. The optimizer
+returned finite weights at the prespecified 160-iteration budget.
+
+The network recovered information in simulation, where the grid peak gave
+smaller held-out errors. The eight real scans cover one receiver site.
+Different-site field validation and target-device timing remain unmeasured.
+
+From the repository root run
+
+    export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1
+    export PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src
+    .venv/bin/python reports/2026_11_18_embedded_prototypes/10_network/network.py --check
+    .venv/bin/python reports/2026_11_18_embedded_prototypes/10_network/network.py
+
+The first command checks profiled shape cost against explicit least squares
+and verifies agreement between single and batched network inference. The
+second writes result.json and the packed float32 weights.npy.

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_phase_cache_confirm",
+      "method": "v5_phase_cache",
+      "scope": "roof",
+      "title": "Exact native normal-solve reuse in capped compact v5",
+      "caption": "The two fresh workers use the same causal roof inputs, 512 MiB cap, five-refresh fit and original paired gates. The cache reuses one bit-identical numerical call. The profile recording is outside confirmation.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "provenance": ["plan.json", "prediction-lock.json", "scores.json"],
+      "series": [
+        {"key": "one", "label": "One cached native solve", "file": "positions.jsonl.gz", "value": "v5_phase_cache"},
+        {"key": "stock", "label": "Fresh capped lifetime receiver", "file": "positions.jsonl.gz", "value": "v5_cavity_lifetime", "match": ["input_sha256", "native_sha256", "catalog_sha256", "resolved_request_sha256", "tile"]},
+        {"key": "one_native_factors", "label": "Sealed unrestricted compact", "file": "positions.jsonl.gz", "value": "v5_secant_fit", "match": ["input_sha256", "native_sha256", "catalog_sha256", "resolved_request_sha256", "tile"]}
+      ]
+    }
+  ]
+}

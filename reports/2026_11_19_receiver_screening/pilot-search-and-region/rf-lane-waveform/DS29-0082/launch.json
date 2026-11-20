@@ -1,0 +1,64 @@
+{
+  "cpus": {
+    "original": 7,
+    "publisher": 21,
+    "wide": 6
+  },
+  "memory_max": 536870912,
+  "memory_swap_max": 0,
+  "original_libraries": {
+    "batched32": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_batched_fft.so",
+      "sha256": "5c7f96f8219d29a776660c4b0de5deafadaf4983774432e5868e1817423144ec"
+    },
+    "cfo": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/conditioned.so",
+      "sha256": "378219a59d7b9b13f7548d9d056917853aad369c720ded4b1d07c32d661bfa1e"
+    },
+    "fused": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/fused.so",
+      "sha256": "dc34f7196391931e27105425217bfcac3a47833571cb36fe8260686a9ce1ffb0"
+    },
+    "prepared": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/original-kernel-v1/original_kernel.so",
+      "sha256": "26d1e10bb0cf0f15d58d922c46a2b50e38124d54a7efdccfcb8e2ba46783de02"
+    }
+  },
+  "peak_selector": {
+    "backend": "row-wise",
+    "producer_sha256": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+    "producer_source": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/acquisition.py",
+    "qualification_sha256": "c8bfb6ef30c385a85f7129ed18bc9565cfa02021be0c1174dcb1d2ee0fb5c52e",
+    "sha256": "a4198d5e47fdf337b1ee8605c715d9da24672cffddf3774b1a8265d5ad929527",
+    "source": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/prepared_hotpath_peaks.py",
+    "version": "row-wise-v1"
+  },
+  "routing": {
+    "experiment_seed": "sha256:954f0fec1dfbd9c86e91272033683abeb9144466fb6810ca53f43c9e40809c6d",
+    "policy": "whole-rf-v1",
+    "rf_centers_hz": [
+      10940312500,
+      11190312500,
+      11440312500,
+      11690312500,
+      11940312500,
+      12190312500,
+      12440312500,
+      12690312500
+    ],
+    "selected_rf_hz": 12690312500,
+    "selector_source_sha256": "b97c967cdcbe12b7a001368949f8335bc6b2709c5fde13c0baf41a2db7c6e5b2"
+  },
+  "scope": "exclusive physical RF routing",
+  "time_limit_s": 350,
+  "units": {
+    "original": "leo-rfw-261119-ds29-0082-original.service",
+    "publisher": "leo-rfw-261119-ds29-0082-publisher.service",
+    "wide": "leo-rfw-261119-ds29-0082-wide.service"
+  },
+  "waiting_slots": 1,
+  "wide_library": {
+    "path": "/var/tmp/leo-on-hit-waveforms-20261119/libraries/DS29-0174/wide-stock.so",
+    "sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66"
+  }
+}

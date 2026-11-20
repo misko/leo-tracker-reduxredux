@@ -1,0 +1,141 @@
+{
+  "charts": [
+    {
+      "caption": "DS26-0162 kept the original region, causal catalogue and search budget. All included policy inputs are complete native factor streams.",
+      "cases": "sealed",
+      "id": "retry-policy-holdout-causal",
+      "method": "holdout_two_failures_800ms",
+      "provenance": [
+        "retry-counts.csv",
+        "resources.json",
+        "policy-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "0.8 seconds after two failures",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_two_failures_800ms"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full conditional",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_full"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Two seconds after a failed retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_miss_2s"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Primary only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_primary12"
+        }
+      ],
+      "title": "Position under causal retry policies"
+    },
+    {
+      "caption": "DS26-0162 kept the original region, causal catalogue and search budget. All included policy inputs are complete native factor streams.",
+      "cases": "sealed",
+      "id": "retry-policy-holdout-matched",
+      "method": "holdout_two_failures_800ms",
+      "provenance": [
+        "retry-counts.csv",
+        "resources.json",
+        "policy-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "0.8 seconds after two failures",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_two_failures_800ms"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full conditional",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_full"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Physical-key count-matched hash",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_two_failures_hash"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Two seconds after a failed retry",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "holdout_miss_2s"
+        }
+      ],
+      "title": "Position against the physical-key hash control"
+    }
+  ],
+  "version": 2
+}

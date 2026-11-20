@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "portable_gate_halo-historical",
+      "method": "portable_gate_halo",
+      "scope": "transfer",
+      "title": "Portable halo gate · historical queries",
+      "caption": "The gate compares held Doppler against surrounding hypotheses on the earlier input packets. Both wrong offers are withheld. One correct offer is withheld and one reaches the deadline.",
+      "cases": "sealed",
+      "seal": "historical-figure-lock.json",
+      "queries": "historical-figure-queries.json",
+      "condition_labels": {"present": "Correct tile supplied", "missing": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Halo gate · published", "file": "historical-positions.jsonl.gz", "value": "portable_gate_halo"},
+        {"key": "stock", "label": "Portable v5 · published", "file": "historical-stock-positions.jsonl.gz", "value": "portable_v5", "match": ["history_sha256", "document_sha256", "input_sha256"]}
+      ]
+    },
+    {
+      "id": "portable_gate_halo-fresh",
+      "method": "portable_gate_halo",
+      "scope": "transfer",
+      "title": "Portable halo gate · one new simulated site",
+      "caption": "One fresh simulated site receives a containing offer and an omitted offer. The gate withholds all three queries, including the shuffled candidate control.",
+      "cases": "sealed",
+      "seal": "fresh-figure-lock.json",
+      "queries": "fresh-figure-queries.json",
+      "condition_labels": {"present": "Correct tile supplied", "missing": "Correct region omitted", "shuffle": "Shuffled candidates · no geographic truth"},
+      "series": [
+        {"key": "candidate", "label": "Halo gate · published", "file": "fresh-positions.jsonl.gz", "value": "portable_gate_halo"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "charts": [
+    {
+      "caption": "Eight existing sites, 48 new boards. Both hypotheses use the same anonymous traces and drift model. Fitted c is unidentifiable at one RF.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "near": "Near omission \u00b7 0.75\u20133 km",
+        "wide": "Wide omission \u00b7 12.5\u201322 km"
+      },
+      "id": "field-outside-option-publication",
+      "method": "outside_option_field",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "hypotheses.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Outside gate \u00b7 forced",
+          "key": "candidate",
+          "label": "Outside gate",
+          "value": "outside_option_field"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Old full gate \u00b7 forced",
+          "key": "stock",
+          "label": "Old full gate",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "outside_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Interior only \u00b7 forced",
+          "key": "one",
+          "label": "Interior only",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "outside_interior"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Prior-only center \u00b7 forced",
+          "key": "four",
+          "label": "Prior-only center",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "outside_prior"
+        }
+      ],
+      "title": "Publishing measured beacon positions against an explicit outside option"
+    },
+    {
+      "caption": "Forced coordinates compare the training winner across both regions, the exterior-only fit and the offered inside fit. Fitted c is unavailable.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "near": "Near omission \u00b7 0.75\u20133 km",
+        "wide": "Wide omission \u00b7 12.5\u201322 km"
+      },
+      "id": "field-outside-option-forced",
+      "method": "outside_unconstrained",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "hypotheses.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Unrestricted \u00b7 forced",
+          "key": "candidate",
+          "label": "Unrestricted",
+          "value": "outside_unconstrained"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Exterior \u00b7 forced",
+          "key": "stock",
+          "label": "Exterior",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "outside_only"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Offered inside \u00b7 forced",
+          "key": "one",
+          "label": "Offered inside",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "outside_option_field"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Prior-only center \u00b7 forced",
+          "key": "four",
+          "label": "Prior-only center",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "outside_prior"
+        }
+      ],
+      "title": "Forced positions from inside and exterior beacon hypotheses"
+    }
+  ],
+  "version": 2
+}

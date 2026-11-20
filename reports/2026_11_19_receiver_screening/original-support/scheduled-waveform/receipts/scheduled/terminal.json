@@ -1,0 +1,32 @@
+{
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-capture-position-scheduled-5773f748",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=180s",
+    "taskset",
+    "-c",
+    "2",
+    "env",
+    "TMPDIR=/var/tmp/leo-scheduled-capture-waveform-20261119/scheduled",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.whole_iq",
+    "position",
+    "/var/tmp/leo-scheduled-capture-waveform-20261119/scheduled"
+  ],
+  "exit_code": 0,
+  "log_sha256": "20abc49aad4fd4a0aa75edaa442b8e6cf08f3c67d6c5b0c4bf2c3fabaac62f41",
+  "wall_s": 36.348089954815805
+}

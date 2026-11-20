@@ -1,0 +1,43 @@
+{
+  "cases": [
+    "DS26-0036",
+    "DS29-0082"
+  ],
+  "comparisons": [
+    {
+      "id": "DS26-0036",
+      "input_sha256": "57453501b7914467d8feb94333dc73d40d002639f520909df15b44faeea9e5a9",
+      "parity": {
+        "compared": true,
+        "exact": true,
+        "same_propagation_audit": true
+      }
+    },
+    {
+      "id": "DS29-0082",
+      "input_sha256": "9a1430659dccf7bb304a8cdf75f9096824a8e8af9934169c74816d5fa03897bb",
+      "parity": {
+        "compared": true,
+        "exact": true,
+        "same_propagation_audit": true
+      }
+    }
+  ],
+  "files": {
+    "positions.jsonl.gz": "c983680d22bb08ac8933b5107713fdf5c4dbe023fc11b86ae8985aaec09445f7",
+    "stock-positions.jsonl.gz": "cfbb786c92014a665df492d57899e9bcf9482f669f4c3140d85f57af0d12c348"
+  },
+  "runs": {
+    "candidate": {
+      "method": "v5_recovery_bank_reuse",
+      "position_sha256": "c983680d22bb08ac8933b5107713fdf5c4dbe023fc11b86ae8985aaec09445f7",
+      "positions": "positions.jsonl.gz"
+    },
+    "control": {
+      "method": "compact_finish",
+      "position_sha256": "cfbb786c92014a665df492d57899e9bcf9482f669f4c3140d85f57af0d12c348",
+      "positions": "stock-positions.jsonl.gz"
+    }
+  },
+  "source_lock_sha256": "058844f3e450ab08970f1cd684d44662394fb224e3a80b72285a294c8c4094dc"
+}

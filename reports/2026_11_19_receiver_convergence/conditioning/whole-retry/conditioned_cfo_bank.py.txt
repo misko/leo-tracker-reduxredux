@@ -1,0 +1,163 @@
+"""Compress narrow conditioned-CFO phase banks by centered block moments."""
+
+import ctypes
+import math
+import subprocess
+from pathlib import Path
+
+import numpy as np
+
+from .refine_bank import EPOCHS, FRAME_BASE, RATE, SAMPLES
+
+SOURCE = Path(__file__).with_suffix(".c")
+FLAGS = ("-std=c11", "-O3", "-march=native", "-fopenmp-simd", "-shared", "-fPIC")
+BLOCK = 256
+HALF = (BLOCK - 1) / 2
+DEGREE = 5
+POWERS = ((np.arange(BLOCK) - HALF) / HALF) ** np.arange(1, DEGREE + 1)[:, None]
+FACTORIAL = np.asarray([math.factorial(i) for i in range(DEGREE + 1)])
+LOCAL = np.arange(EPOCHS, dtype=float)
+CENTERS = np.arange(math.ceil(EPOCHS / BLOCK)) * BLOCK + HALF
+UNIT = np.finfo(float).eps / 2
+
+
+def compile_bank(library):
+    subprocess.run(["cc", *FLAGS, str(SOURCE), "-o", str(library)], check=True)
+
+
+def normalized(correlations, denominator):
+    scores = np.divide(
+        np.abs(correlations), denominator[None, :],
+        out=np.zeros_like(correlations.real), where=denominator[None, :] > 0,
+    )
+    return np.mean(scores, axis=1)
+
+
+def error_bound(frequency_radius, maximum_frequency):
+    """Bound normalized Taylor truncation plus finite FP64 phase and sum error."""
+    phase = 2 * math.pi * frequency_radius * HALF / RATE
+    remainder = phase ** (DEGREE + 1) / math.factorial(DEGREE + 1)
+    absolute_phase = 2 * math.pi * maximum_frequency * EPOCHS / RATE
+    rounding = UNIT * (64 * EPOCHS + 128 * (1 + absolute_phase))
+    return remainder + rounding
+
+
+def unique_winner(scores, error):
+    """Certify one historical argmax when score intervals do not overlap."""
+    winner = int(np.argmax(scores))
+    competitors = np.arange(len(scores)) != winner
+    return winner if scores[winner] > np.max(scores[competitors]) + 2 * error else None
+
+
+class ConditionedBank:
+    def __init__(self, library, producer):
+        dll = ctypes.CDLL(str(Path(library).resolve()))
+        self._moments = dll.conditioned_moments
+        self._single = dll.conditioned_single
+        real = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+        complex_vector = np.ctypeslib.ndpointer(dtype=np.complex128, flags="C_CONTIGUOUS")
+        integer_vector = np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS")
+        index = ctypes.c_int
+        span = [complex_vector, complex_vector, integer_vector, index, index]
+        self._moments.argtypes = [*span, real, complex_vector, real]
+        self._moments.restype = None
+        self._single.argtypes = [*span, complex_vector]
+        self._single.restype = None
+        self.original = producer._conditioned_frame_scores
+        self.constant_grid = producer._constant_grid_step
+        self.reset()
+
+    def reset(self, *, audit=False):
+        self.receipts = []
+        self._direct_only = False
+        self.audit = audit
+
+    def guarded_acquisition(self, original):
+        """Re-run the producer if its final comparator needs exact conditioned scores."""
+        def run(*args, **kwargs):
+            start = len(self.receipts)
+            result = original(*args, **kwargs)
+            keys = [(item.verify_minus_control_margin, item.verify_score)
+                    for item in result.candidates]
+            if len(keys) == len(set(keys)) or not any(
+                r["fallback"] is None for r in self.receipts[start:]
+            ):
+                return result
+            try:
+                self._direct_only = True
+                return original(*args, **kwargs)
+            finally:
+                self._direct_only = False
+        return run
+
+    def score(self, values, template, rate, epoch, frequencies):
+        def fallback(reason):
+            self.receipts.append(dict(fallback=reason, cfo_cells=len(frequencies)))
+            return self.original(values, template, rate, epoch, frequencies)
+
+        if self._direct_only:
+            return fallback("acquisition_rank_tie")
+        if not (
+            rate == RATE and values.shape == (SAMPLES,) and template.shape == (EPOCHS,)
+            and values.dtype == template.dtype == np.complex128 and 0 <= epoch < EPOCHS
+            and values.flags.c_contiguous and type(epoch) is int
+            and 2 <= len(frequencies) <= 42 and np.isfinite(frequencies).all()
+        ):
+            return fallback("unsupported_geometry")
+        cfo = np.asarray(frequencies)
+        radius = float((cfo.max() - cfo.min()) / 2)
+        maximum = float(np.max(np.abs(cfo)))
+        if radius > 2_010.0 or maximum > RATE / 2:
+            return fallback("unsupported_frequency_range")
+        center = (cfo.max() + cfo.min()) / 2
+        starts = FRAME_BASE + epoch
+        starts = starts[starts + EPOCHS <= len(values)].astype(np.int32)
+        template_energy = float(np.vdot(template, template).real)
+        reference = template.conj()
+        base = reference * np.exp(-2j * np.pi * center * LOCAL / RATE)
+        moments = np.empty((len(starts), len(CENTERS) * (DEGREE + 1)), dtype=np.complex128)
+        energy = np.empty(len(starts))
+        self._moments(values, base, starts, len(starts), EPOCHS, POWERS, moments, energy)
+        denominator = np.sqrt(template_energy * energy)
+        if not np.isfinite(denominator).all() or np.any(denominator < 1e-200):
+            return fallback("zero_or_unsupported_energy")
+        delta = (-2j * np.pi / RATE) * (cfo - center)
+        series = (delta[:, None] * HALF) ** np.arange(DEGREE + 1) / FACTORIAL
+        outer = np.exp(delta[:, None] * CENTERS)
+        phase = (outer[:, :, None] * series[:, None, :]).reshape(len(cfo), -1)
+        proposal = normalized(phase @ moments.T, denominator)
+        if not np.isfinite(proposal).all():
+            return fallback("nonfinite_proposal")
+        bound = error_bound(radius, maximum)
+        winner = unique_winner(proposal, bound)
+        if winner is None:
+            return fallback("overlapping_score_intervals")
+
+        # Direct FP64 evaluation of the winning row without the polynomial.
+        step = self.constant_grid(frequencies)
+        if step is None:
+            direct = reference * np.exp((-2j * np.pi * cfo[winner]) * LOCAL / RATE)
+        else:
+            origin = np.exp(-2j * np.pi * cfo[0] * LOCAL / RATE)
+            direct = reference * origin * np.exp((-2j * np.pi * (winner * step)) * LOCAL / RATE)
+        correlations = np.empty((1, len(starts)), dtype=np.complex128)
+        self._single(values, direct, starts, len(starts), EPOCHS, correlations)
+        repaired = float(normalized(correlations, denominator)[0])
+        if abs(repaired - proposal[winner]) > bound:
+            return fallback("winner_outside_enclosure")
+
+        receipt = dict(
+            fallback=None, error_bound=bound, cfo_cells=len(cfo), frames=len(starts),
+            taps=EPOCHS, moment_cells=moments.size,
+            array_bytes=sum(a.nbytes for a in (reference, base, moments, energy, phase, direct)),
+        )
+        if self.audit:
+            exact = np.asarray(self.original(values, template, rate, epoch, frequencies))
+            receipt.update(
+                max_grid_error=float(np.max(np.abs(proposal - exact))),
+                same_winner=int(np.argmax(exact)) == winner,
+                repaired_score_error=abs(float(exact[winner]) - repaired),
+            )
+        proposal[winner] = repaired
+        self.receipts.append(receipt)
+        return tuple(float(value) for value in proposal)

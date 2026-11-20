@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "dense_q10",
+      "method": "dense_q10",
+      "scope": "roof",
+      "title": "Full-epoch Q10 GLRT with a paired v5 position fit",
+      "caption": "DS26-0036 replays eight held raw visits through the Q10 bank and uses archived detections for the remaining 6,757 valid visits. Independent v5 fits on the two inputs agree in each calibration arm. Detector-only parity was also measured on a separate DS29 session.",
+      "cases": ["DS26-0036"],
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "source-lock.json", "qualification.json", "positions.jsonl.gz", "control-positions.jsonl.gz"],
+      "series": [
+        {
+          "key": "one",
+          "label": "Full-epoch Q10 · partial IQ",
+          "file": "positions.jsonl.gz",
+          "value": "dense_q10",
+          "native_field": "source_archive_sha256"
+        },
+        {
+          "key": "stock",
+          "label": "Capture-era archive control",
+          "file": "control-positions.jsonl.gz",
+          "value": "dense_q10_capture_control",
+          "native_field": "source_archive_sha256",
+          "match": ["source_archive_sha256", "catalog_sha256"]
+        }
+      ]
+    }
+  ]
+}

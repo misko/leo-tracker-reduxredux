@@ -1,0 +1,121 @@
+{
+  "charts": [
+    {
+      "caption": "Four full-I/Q detector pairs on one roof, with the same compact solver and four capture-era v5 references. All scheduled positions are counted.",
+      "cases": "sealed",
+      "id": "late-symbol-rescue-verified",
+      "method": "late_symbol_rescue_verified",
+      "provenance": [
+        "scores.csv",
+        "prediction-lock.json",
+        "resources.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Late-symbol rescue",
+          "match": [
+            "tile",
+            "mode",
+            "paired_capture_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "late_symbol_rescue_verified"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide GLRT",
+          "match": [
+            "tile",
+            "mode",
+            "paired_capture_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "diagnostic_whole_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Unconditional timing hint",
+          "match": [
+            "tile",
+            "mode",
+            "paired_capture_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "diagnostic_whole_fftw"
+        }
+      ],
+      "title": "Verify newly detected pilots using later symbols"
+    },
+    {
+      "caption": "Four full-I/Q detector pairs on one roof, with the same compact solver and four capture-era v5 references. All scheduled positions are counted.",
+      "cases": "sealed",
+      "id": "late-symbol-rescue-count-control",
+      "method": "late_symbol_rescue_count_control",
+      "provenance": [
+        "scores.csv",
+        "prediction-lock.json",
+        "resources.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Count-matched rescue",
+          "match": [
+            "tile",
+            "mode",
+            "paired_capture_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "late_symbol_rescue_count_control"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide GLRT",
+          "match": [
+            "tile",
+            "mode",
+            "paired_capture_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "diagnostic_whole_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Unconditional timing hint",
+          "match": [
+            "tile",
+            "mode",
+            "paired_capture_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "diagnostic_whole_fftw"
+        }
+      ],
+      "title": "Add the same number of pilots in fixed hash order"
+    }
+  ],
+  "version": 1
+}

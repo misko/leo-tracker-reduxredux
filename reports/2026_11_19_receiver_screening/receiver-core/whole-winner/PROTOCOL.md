@@ -1,0 +1,7 @@
+# Saved IQ through the private winning-probe handoff
+
+Preregister DS29-0082 from the stored-factor experiment and DS26-0122 as an additional wide recording. Both recordings are complete saved IQ from the previously sealed wide cohort. Replay every eligible window at the same ±800 kHz wide detector build. Keep original exclusions and capture clocks. Compare the released phase-release receiver with native candidate JSON against the same solver and Graph receiving only the private winning-probe stream.
+
+Use CPUs 3 and 5 in both legs, one raw lane per core and the first core for the subsequent position solve. Run DS29-0082 stock then private and DS26-0122 private then stock. Every leg has a 286-second wall limit, an enforced 512 MiB cgroup with zero swap, and nice 10. No new signal collection. The source, catalogue and offer are frozen before dashboard scoring.
+
+Verify exact original native SHA without writing the public candidate document on the private path. Compare all metadata and support digests, observation and convergence counts, receiver decisions and both arms' coordinates, conditional RF RMS and frequency scores. Report elapsed and CPU from whole saved IQ to result, handoff cost and bytes, total raw lane bytes, charge and decoder authority. A service failure remains a measurement in the denominator. All original v5 position policies use their existing archived reference inputs.

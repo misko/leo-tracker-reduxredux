@@ -1,0 +1,5 @@
+# Pair the same whole-IQ cavity worker on the two ordinary recordings
+
+Preserve the completed ordinary DS26-0036 whole-cavity receipt and run DS29-0082 once with the exact same capped worker, Zstd decoder, detector, factor assembly, and truth-free request binding. Use one 512 MiB zero-swap Linux user cgroup covering all stages, nice 10, two single-thread raw lanes on CPUs 18 and 19, and the original 300 s service deadline. Replace the orchestrator with the original direct lifetime-bounded five-refresh secant cavity worker on CPU 18. No new RF and no restart.
+
+Verify the pre-existing ordinary cavity control of each recording before launch. Compare both calibration arms' coordinates and RF RMS against those controls, and keep the prior DS29 row-major full-recovery endpoint separate. Compare complete saved-IQ wall to the measured acquisition span. Report 20 ms individually for native calls. Preserve failures, source/input locks and the measured cgroup observations. Use no additional recording unless the complete recorded-IQ authority and an independent same-ordinary cavity control can both be verified before its launch.

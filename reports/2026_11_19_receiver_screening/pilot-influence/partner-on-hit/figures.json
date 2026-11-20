@@ -1,0 +1,82 @@
+{
+  "charts": [
+    {
+      "caption": "Four stored-factor inputs share one physical acquisition and RF primary schedule. Eight recordings, including six earlier challenges. The partner-on-hit fits were newly measured with both calibration arms. Calls are schedule counts.",
+      "cases": "sealed",
+      "id": "partner-on-hit-factorial",
+      "method": "partner_on_hit",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "effects.csv",
+        "effects-summary.csv",
+        "summary.csv",
+        "capture-era-v5.csv",
+        "support.csv",
+        "resources.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Alternating primary only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile",
+            "stock_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "one_lane_roster"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Partner on hit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile",
+            "stock_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "partner_on_hit"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Partner on miss",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile",
+            "stock_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "second_on_miss_roster"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Both stock lanes",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile",
+            "stock_native_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        }
+      ],
+      "title": "Partner antenna observations on primary hits and misses"
+    }
+  ],
+  "version": 2
+}

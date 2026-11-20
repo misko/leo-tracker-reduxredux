@@ -1,0 +1,40 @@
+{
+  "attempt": "/var/tmp/leo-paced-rf-20261119/DS29-0082/oldest_rf",
+  "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-iq-bench-c2c8189a8570",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=350s",
+    "--setenv=TMPDIR=/var/tmp/leo-paced-rf-20261119/DS29-0082/oldest_rf",
+    "--setenv=PYTHONPATH=/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src:/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--setenv=OPENBLAS_NUM_THREADS=1",
+    "--setenv=OMP_NUM_THREADS=1",
+    "--setenv=MKL_NUM_THREADS=1",
+    "--setenv=NUMEXPR_NUM_THREADS=1",
+    "--setenv=BLIS_NUM_THREADS=1",
+    "taskset",
+    "-c",
+    "12",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.qualification.paced_rf",
+    "worker",
+    "/var/tmp/leo-paced-rf-20261119/DS29-0082/oldest_rf"
+  ],
+  "log_inode": [
+    64512,
+    816310
+  ],
+  "plan_sha256": "d1d995853f315f9b945bf299aa3c41310a7797e8d9e48018a208cbdf69cd9734",
+  "reserved_monotonic_usec": 5806763011607,
+  "unit": "leo-iq-bench-c2c8189a8570.service"
+}

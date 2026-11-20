@@ -1,0 +1,7 @@
+# Standalone cavity executable with a smaller source distribution
+
+Compare the direct lifetime receiver with a build containing only its scientific entry, preparation and numerical dependencies. The restored numerical inputs, bounded working sets, optional cavity selection, native compiler settings, positional prior and calibration arms stay the same. The comparator is the complete direct lifetime source distribution.
+
+Use the two previously verified ordinary recordings DS26-0036 and DS29-0082. Also choose the smallest SHA-256 of `cavity-payload-independent-1/<recording>` within each dataset in the frozen roof16 list, excluding recordings used by the earlier direct-entry comparison. This selects capture-era DS26-0112 and DS29-0127 using identifiers alone. They are holdouts for this source change at the same roof.
+
+Run both packages in fresh, isolated interpreters in their own source trees, one numerical thread, 512 MiB of cgroup memory, zero swap, nice 10 and a 165 s service budget. Use the same core for a given pair. Run full first on DS26-0036 and DS29-0127, and small first on DS29-0082 and DS26-0112. Include every status. Treat both coordinates, both conditional RF RMS values, decisions and all numerical work counters as equality checks. Report published position errors separately from the RF fit. Check whole-process CPU, wall and memory, along with project sources shipped and loaded. A footprint reduction can occur without a wall-time improvement. Raw IQ, third-party installed dependencies and target-board performance are outside this test.

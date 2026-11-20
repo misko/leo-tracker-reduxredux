@@ -1,0 +1,98 @@
+{
+  "cases": [
+    "DS26-0036",
+    "DS29-0082"
+  ],
+  "comparisons": [
+    {
+      "cpu": 20,
+      "id": "DS26-0036",
+      "input_sha256": "57453501b7914467d8feb94333dc73d40d002639f520909df15b44faeea9e5a9",
+      "methods": {
+        "compact_finish": {
+          "conditional_rms_hz": {
+            "c0": 74.76091584692344,
+            "fitted_c": 74.6822975132965
+          },
+          "cpu_s": 154.538964957,
+          "geographic_error_km": {
+            "c0": 1.278365369593505,
+            "fitted_c": 1.2081427594614282
+          },
+          "wall_s": 155.83200543839484,
+          "worker_peak_kib": 1420016
+        },
+        "v5_catalogue_memory": {
+          "conditional_rms_hz": {
+            "c0": 74.76091584692344,
+            "fitted_c": 74.6822975132965
+          },
+          "cpu_s": 132.63559108099997,
+          "geographic_error_km": {
+            "c0": 1.278365369593505,
+            "fitted_c": 1.2081427594614282
+          },
+          "wall_s": 133.37072499841452,
+          "worker_peak_kib": 1301324
+        }
+      }
+    },
+    {
+      "cpu": 21,
+      "id": "DS29-0082",
+      "input_sha256": "9a1430659dccf7bb304a8cdf75f9096824a8e8af9934169c74816d5fa03897bb",
+      "methods": {
+        "compact_finish": {
+          "conditional_rms_hz": {
+            "c0": 97.00356915094589,
+            "fitted_c": 96.68362191875039
+          },
+          "cpu_s": 117.54128696400001,
+          "geographic_error_km": {
+            "c0": 0.5669471792636951,
+            "fitted_c": 0.5172295209652011
+          },
+          "wall_s": 118.31797943264246,
+          "worker_peak_kib": 1298192
+        },
+        "v5_catalogue_memory": {
+          "conditional_rms_hz": {
+            "c0": 97.00356915094589,
+            "fitted_c": 96.68362191875039
+          },
+          "cpu_s": 94.70573004799999,
+          "geographic_error_km": {
+            "c0": 0.5669471792636951,
+            "fitted_c": 0.5172295209652011
+          },
+          "wall_s": 96.13265267759562,
+          "worker_peak_kib": 1080176
+        }
+      }
+    }
+  ],
+  "control": "compact_finish",
+  "frozen_source": "sha256:36be340683b030af69ed99194d3c8fbe976093d49d16c4cfb7be4960344898ae",
+  "method": "v5_catalogue_memory",
+  "runs": {
+    "candidate": {
+      "method": "v5_catalogue_memory",
+      "position_sha256": "08e6ef1df0d7a2b1f0127cdcdde5558574cc6e8ea5ace7b840fbfae3d939b465",
+      "positions": "positions.jsonl.gz"
+    },
+    "control": {
+      "method": "compact_finish",
+      "position_sha256": "a84c511e95d8b46ae58e998c8d42d73e385a42a891332ddcb9f311ba9af5c17b",
+      "positions": "stock-positions.jsonl.gz"
+    }
+  },
+  "satellites_per_batch": 256,
+  "stage_archives": {
+    "DS26-0036-compact_finish-stages.jsonl.gz": "sha256:8a2ed872edea03fa6c1713a0c4299506396256f53e0eb4638369b616d2dd2c44",
+    "DS26-0036-propagation-only-stages.jsonl.gz": "sha256:6fec8c414d6f598e0aeea46b7a8564498c9998e7ad61e60a650a60bcc5b28f9d",
+    "DS26-0036-v5_catalogue_memory-stages.jsonl.gz": "sha256:9fa4354192d05d3d07973d8f7367d5c787ed29037e1d7ac99e6c4cdb430ea303",
+    "DS29-0082-compact_finish-stages.jsonl.gz": "sha256:433545a17f0ce7691f5fc77bbc1d19189d96be17fbcb54cad3f4d2960bc06548",
+    "DS29-0082-propagation-only-stages.jsonl.gz": "sha256:a852f757a751c25a4ce5f78f32538e8646986c7f6dd7f83e80ba495932f77638",
+    "DS29-0082-v5_catalogue_memory-stages.jsonl.gz": "sha256:6e9aac1539817730f786db2dccd93a8e3b6b8c3d26d238ceb60fe4a597c410cd"
+  }
+}

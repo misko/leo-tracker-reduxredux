@@ -1,0 +1,87 @@
+{
+  "charts": [
+    {
+      "caption": "Held samples test for observable slope reversals. Position is unmeasured.",
+      "cases": [
+        "DS26-0122",
+        "DS29-0247"
+      ],
+      "id": "doppler_turns-diagnostic",
+      "method": "doppler_turns",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "diagnostic-positions.jsonl.gz",
+          "key": "one",
+          "label": "Doppler turn stage",
+          "value": "doppler_turns"
+        }
+      ],
+      "title": "Doppler turn stage on real containing recordings"
+    },
+    {
+      "caption": "Held samples test for observable slope reversals. Position is unmeasured.",
+      "cases": [
+        "DS26-0070-omitted",
+        "DS29-0316-omitted"
+      ],
+      "id": "doppler_turns-omitted",
+      "method": "doppler_turns",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "omitted-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Doppler turn stage",
+          "value": "doppler_turns"
+        }
+      ],
+      "title": "Doppler turn stage with real omitted offers"
+    },
+    {
+      "caption": "Held samples test for observable slope reversals. Position is unmeasured.",
+      "cases": [
+        "447199c7ad4f0e75e0230403-present",
+        "447199c7ad4f0e75e0230403-omitted",
+        "52bb706411b801596fab8d51-present",
+        "52bb706411b801596fab8d51-omitted"
+      ],
+      "id": "doppler_turns-simulated",
+      "method": "doppler_turns",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "queries": "simulated-queries.json",
+      "scope": "transfer",
+      "seal": "simulated-figure-lock.json",
+      "series": [
+        {
+          "file": "simulated-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Doppler turn stage",
+          "value": "doppler_turns"
+        }
+      ],
+      "title": "Doppler turn stage at new simulated sites"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_previous_orbit",
+      "method": "v5_previous_orbit",
+      "scope": "roof",
+      "title": "Missing history for a decayed previous orbit",
+      "caption": "Both known old-orbit failures now publish with valid current elements. The two unchanged controls exactly match compact secant.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["diagnostic-traces.jsonl.gz"],
+      "series": [
+        {"key": "one", "label": "Per-orbit missing-history prior", "file": "positions.jsonl.gz", "value": "v5_previous_orbit", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Unchanged compact secant", "file": "compact-positions.jsonl.gz", "value": "v5_secant_fit", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "frozen_request_sha256"]}
+      ]
+    }
+  ]
+}

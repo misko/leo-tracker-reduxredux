@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "portable_v5-roof",
+      "method": "portable_v5",
+      "scope": "roof",
+      "title": "Portable v5 on one roof recording",
+      "caption": "DS26-0036 uses the original GLRT factors and causal history. The portable wrapper and stock give identical positions.",
+      "cases": ["DS26-0036"],
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {"key": "one", "label": "Portable v5", "file": "roof-positions.jsonl.gz", "value": "portable_v5"},
+        {"key": "stock", "label": "Compact projector stock", "file": "roof-stock-positions.jsonl.gz", "value": "orbit_projector", "match": ["native_sha256", "catalog_sha256", "history_sha256"]}
+      ]
+    },
+    {
+      "id": "portable_v5-synthetic",
+      "method": "portable_v5",
+      "scope": "transfer",
+      "title": "Portable v5 at two simulated sites",
+      "caption": "The original causal history drives both true and omitted tile queries at each simulated site. One correct-tile query returned a fix. The other correct query and both omitted queries reached the 180-second deadline.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {"present": "Correct tile supplied", "missing": "Correct region omitted"},
+      "series": [
+        {"key": "candidate", "label": "Portable v5 · published", "file": "synthetic-positions.jsonl.gz", "value": "portable_v5"}
+      ]
+    },
+    {
+      "id": "portable_v5-synthetic-retry",
+      "method": "portable_v5",
+      "scope": "transfer",
+      "title": "Portable v5 · two simulated query retries",
+      "caption": "The second correct-tile query and first omitted query reuse the exact original packets. Both retries reached 195 seconds. The four original attempts have a separate chart.",
+      "cases": "sealed",
+      "seal": "retry-figure-lock.json",
+      "queries": "retry-figure-queries.json",
+      "condition_labels": {"present": "Correct tile supplied", "missing": "Correct region omitted"},
+      "provenance": ["retry.json", "figure-lock.json", "figure-queries.json"],
+      "series": [
+        {"key": "candidate", "label": "Portable v5 retries", "file": "retry-positions.jsonl.gz", "value": "portable_v5"}
+      ]
+    }
+  ]
+}

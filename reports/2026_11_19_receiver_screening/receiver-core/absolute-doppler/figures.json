@@ -1,0 +1,233 @@
+{
+  "charts": [
+    {
+      "caption": "The new methods search worldwide. V5 receives the containing offer.",
+      "cases": [
+        "DS26-0122",
+        "DS29-0247"
+      ],
+      "id": "absolute_doppler-diagnostic",
+      "method": "absolute_doppler",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared clock level \u00b7 forced",
+          "key": "one",
+          "label": "Shared clock level \u00b7 publication",
+          "value": "absolute_doppler",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Free arc intercept \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "absolute_doppler_free_offset",
+          "where": {
+            "cohort": "diagnostic"
+          }
+        }
+      ],
+      "title": "Absolute Doppler from anonymous GLRT on diagnostic recordings"
+    },
+    {
+      "caption": "Both methods search worldwide and retain forced positions.",
+      "cases": [
+        "DS26-0261",
+        "DS26-0168",
+        "DS26-0114",
+        "DS29-0519"
+      ],
+      "id": "absolute_doppler-reserve",
+      "method": "absolute_doppler",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "scope": "roof",
+      "seal": "reserve-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared clock level \u00b7 forced",
+          "key": "one",
+          "label": "Shared clock level \u00b7 publication",
+          "value": "absolute_doppler",
+          "where": {
+            "cohort": "reserve"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Free arc intercept \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "absolute_doppler_free_offset",
+          "where": {
+            "cohort": "reserve"
+          }
+        }
+      ],
+      "title": "Absolute Doppler on four preselected held roof recordings"
+    },
+    {
+      "caption": "The two authentic offers are used for scoring only. No omitted-offer v5 comparison.",
+      "cases": [
+        "DS26-0070-omitted",
+        "DS29-0316-omitted"
+      ],
+      "id": "absolute_doppler-omitted",
+      "method": "absolute_doppler",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared clock level \u00b7 forced",
+          "key": "candidate",
+          "label": "Shared clock level \u00b7 publication",
+          "value": "absolute_doppler",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Free arc intercept \u00b7 forced",
+          "key": "stock",
+          "label": "Free arc intercept \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "absolute_doppler_free_offset",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Site-free absolute Doppler with real omitted offers"
+    },
+    {
+      "caption": "Two independent simulated sites. Each uses the same predictions for both offers.",
+      "cases": [
+        "a5f3636c329bff657f3dfd36-present",
+        "a5f3636c329bff657f3dfd36-omitted",
+        "fe540aa1e7cf48bd68a084bf-present",
+        "fe540aa1e7cf48bd68a084bf-omitted"
+      ],
+      "id": "absolute_doppler-simulated",
+      "method": "absolute_doppler",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "queries": "simulated-queries.json",
+      "scope": "transfer",
+      "seal": "simulated-figure-lock.json",
+      "series": [
+        {
+          "file": "simulated-positions.jsonl.gz",
+          "forced_label": "Shared clock level \u00b7 forced",
+          "key": "candidate",
+          "label": "Shared clock level \u00b7 publication",
+          "value": "absolute_doppler"
+        },
+        {
+          "file": "simulated-positions.jsonl.gz",
+          "forced_label": "Free arc intercept \u00b7 forced",
+          "key": "stock",
+          "label": "Free arc intercept \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "absolute_doppler_free_offset"
+        }
+      ],
+      "title": "Absolute Doppler at new simulated locations"
+    },
+    {
+      "caption": "DS26-0122 RF observations with displaced orbital prediction times.",
+      "cases": [
+        "DS26-0122-orbit-time-shift"
+      ],
+      "id": "absolute_doppler-null",
+      "method": "absolute_doppler",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "synthetic-truth.json"
+      ],
+      "queries": "null-queries.json",
+      "scope": "transfer",
+      "seal": "null-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared clock level \u00b7 forced",
+          "key": "candidate",
+          "label": "Shared clock level \u00b7 publication",
+          "value": "absolute_doppler",
+          "where": {
+            "cohort": "null"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Free arc intercept \u00b7 forced",
+          "key": "stock",
+          "label": "Free arc intercept \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "absolute_doppler_free_offset",
+          "where": {
+            "cohort": "null"
+          }
+        }
+      ],
+      "title": "Absolute Doppler with the causal orbits shifted by 120 seconds"
+    }
+  ],
+  "version": 1
+}

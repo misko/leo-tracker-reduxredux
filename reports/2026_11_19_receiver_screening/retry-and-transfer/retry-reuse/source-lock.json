@@ -1,0 +1,448 @@
+{
+  "build": {
+    "commands": {
+      "baseline": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants",
+        "/srv/bulk/leo-dev/retry-reuse-20261119-v1/prepared/capture_fft.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/retry-reuse-20261119-v1/prepared/original_kernel.so"
+      ],
+      "candidate": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants",
+        "/srv/bulk/leo-dev/retry-reuse-20261119-v1/candidate/capture_fft.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/retry-reuse-20261119-v1/candidate/retry_reuse.so"
+      ]
+    },
+    "libraries": {
+      "candidate/retry_reuse.so": "b158cf9450cd1600495f955b89dee3e65b5aded6650118bdd97f5592df2f26bf",
+      "conditioned.so": "378219a59d7b9b13f7548d9d056917853aad369c720ded4b1d07c32d661bfa1e",
+      "fused.so": "dc34f7196391931e27105425217bfcac3a47833571cb36fe8260686a9ce1ffb0",
+      "prepared/original_kernel.so": "26d1e10bb0cf0f15d58d922c46a2b50e38124d54a7efdccfcb8e2ba46783de02"
+    }
+  },
+  "cases": {
+    "DS26-0237": {
+      "archive_native_sha256": "854ff1f1a97e3f40b7a904d0a5fe3298070dfb8faaf3d42fc91443060feed2e7",
+      "windows": [
+        {
+          "acquisition": {
+            "actual_if_center_hz": 1359687500,
+            "complete": true,
+            "contiguous_with_previous": false,
+            "counter_authority": "hardware",
+            "device_session": 459281252147078900,
+            "discarded_samples": 226606,
+            "generation": 3360429890940445423,
+            "global_visit": 53,
+            "guard_ms": 0.0,
+            "host_final_sample_monotonic_ns": 3921798129308964,
+            "host_request_monotonic_ns": [
+              0,
+              0
+            ],
+            "host_request_utc_ns": [
+              0,
+              0
+            ],
+            "listen_ms": 20.0,
+            "policy_id": "ordered-continuous-20ms-v1",
+            "quality_flags": [],
+            "recall_skipped": false,
+            "requested_if_center_hz": 1359687500,
+            "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":32,\"flags\":3,\"frequency_hz\":1359687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":3360429890940445423,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":3921798125300895,\"realtime_ns\":1793240567005008156},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":5,\"profile_crc32\":545157745,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":14816148306540,\"session\":459281252147078900,\"source_rate_hz\":10000000,\"target\":5,\"transition_after\":14816148346883,\"transition_before\":14816148320277,\"valid_end\":14816148746883,\"valid_start\":14816148546883,\"visit\":53}",
+            "sample_count": 200000,
+            "sample_end": 14816148746883,
+            "sample_rate_hz": 10000000,
+            "sample_start": 14816148546883,
+            "sample_start_utc_ns": null,
+            "sweep": 6,
+            "target_index": 5,
+            "tune_ms": 2.6606,
+            "validity_authority": "provider_attested",
+            "validity_includes_guard": true
+          },
+          "iq_sha256": "sha256:dc38b003ecbd3fc0c9cf743689da995814e43a2f3aa94ce51046e29aa0be056d",
+          "manifest_sha256": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "probes_sha256": "sha256:7d0a190e50a723e3f05360e1bc259ea8f3a67eef41e59578900daa7af18185c6",
+          "rate": 10000000,
+          "receivers": [
+            0,
+            1
+          ],
+          "segment": 0,
+          "sequence": 53,
+          "target": {
+            "band": null,
+            "channel": 6,
+            "edge": "lower",
+            "if_center_hz": 1359687500,
+            "lnb_lo_hz": 10600000000,
+            "polarization": null,
+            "profile_id": null,
+            "rf_center_hz": 11959687500,
+            "rf_mapping_authority": "hypothesis",
+            "target_id": "ch6-lower-lo10600000000"
+          },
+          "target_id": "ch6-lower-lo10600000000",
+          "visit": 53
+        },
+        {
+          "acquisition": {
+            "actual_if_center_hz": 1709687500,
+            "complete": true,
+            "contiguous_with_previous": false,
+            "counter_authority": "hardware",
+            "device_session": 459281252147078900,
+            "discarded_samples": 225621,
+            "generation": 3360429890940445423,
+            "global_visit": 43,
+            "guard_ms": 0.0,
+            "host_final_sample_monotonic_ns": 3921797682137287,
+            "host_request_monotonic_ns": [
+              0,
+              0
+            ],
+            "host_request_utc_ns": [
+              0,
+              0
+            ],
+            "listen_ms": 20.0,
+            "policy_id": "ordered-continuous-20ms-v1",
+            "quality_flags": [],
+            "recall_skipped": false,
+            "requested_if_center_hz": 1709687500,
+            "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":8,\"flags\":3,\"frequency_hz\":1709687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":3360429890940445423,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":3921797678015782,\"realtime_ns\":1793240566557722961},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":3,\"profile_crc32\":1966477309,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":14816143878093,\"session\":459281252147078900,\"source_rate_hz\":10000000,\"target\":3,\"transition_after\":14816143917873,\"transition_before\":14816143892252,\"valid_end\":14816144317873,\"valid_start\":14816144117873,\"visit\":43}",
+            "sample_count": 200000,
+            "sample_end": 14816144317873,
+            "sample_rate_hz": 10000000,
+            "sample_start": 14816144117873,
+            "sample_start_utc_ns": null,
+            "sweep": 5,
+            "target_index": 3,
+            "tune_ms": 2.5621,
+            "validity_authority": "provider_attested",
+            "validity_includes_guard": true
+          },
+          "iq_sha256": "sha256:4418091498d24933991e310e0b7af155536075a1823aefcd83c54f5fb8b87387",
+          "manifest_sha256": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "probes_sha256": "sha256:0f70ed697cac70cec8f538f1ae5ed66dc8ef98b6217d61d774010f55102656ec",
+          "rate": 10000000,
+          "receivers": [
+            0,
+            1
+          ],
+          "segment": 0,
+          "sequence": 43,
+          "target": {
+            "band": null,
+            "channel": 4,
+            "edge": "lower",
+            "if_center_hz": 1709687500,
+            "lnb_lo_hz": 9750000000,
+            "polarization": null,
+            "profile_id": null,
+            "rf_center_hz": 11459687500,
+            "rf_mapping_authority": "hypothesis",
+            "target_id": "ch4-lower-lo9750000000"
+          },
+          "target_id": "ch4-lower-lo9750000000",
+          "visit": 43
+        }
+      ]
+    },
+    "DS29-0082": {
+      "archive_native_sha256": "fe2b362bb0c6324db2084e7ea926393bed38acced14d48dafdf6221376d2ad40",
+      "windows": [
+        {
+          "acquisition": {
+            "actual_if_center_hz": 1590312500,
+            "complete": true,
+            "contiguous_with_previous": false,
+            "counter_authority": "hardware",
+            "device_session": 5598466333409479404,
+            "discarded_samples": 226522,
+            "generation": 8025459312556368214,
+            "global_visit": 13,
+            "guard_ms": 0.0,
+            "host_final_sample_monotonic_ns": 4408532470713784,
+            "host_request_monotonic_ns": [
+              0,
+              0
+            ],
+            "host_request_utc_ns": [
+              0,
+              0
+            ],
+            "listen_ms": 20.0,
+            "policy_id": "ordered-continuous-20ms-v1",
+            "quality_flags": [],
+            "recall_skipped": false,
+            "requested_if_center_hz": 1590312500,
+            "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":32,\"flags\":3,\"frequency_hz\":1590312500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":8025459312556368214,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":4408532466545500,\"realtime_ns\":1793727301346252836},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":5,\"profile_crc32\":75701073,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":21911676580620,\"session\":5598466333409479404,\"source_rate_hz\":10000000,\"target\":5,\"transition_after\":21911676621312,\"transition_before\":21911676594790,\"valid_end\":21911677021312,\"valid_start\":21911676821312,\"visit\":13}",
+            "sample_count": 200000,
+            "sample_end": 21911677021312,
+            "sample_rate_hz": 10000000,
+            "sample_start": 21911676821312,
+            "sample_start_utc_ns": null,
+            "sweep": 1,
+            "target_index": 5,
+            "tune_ms": 2.6522,
+            "validity_authority": "provider_attested",
+            "validity_includes_guard": true
+          },
+          "iq_sha256": "sha256:a0fbe6a1e529e639f23d47df2769ab3174d30a27ed8d35c1d96d2b74fb75e1fa",
+          "manifest_sha256": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "probes_sha256": "sha256:a1fbe85d62f1da4a5c02e5082af581ce85927c344a99266e21c3a384a3b78a73",
+          "rate": 10000000,
+          "receivers": [
+            0,
+            1
+          ],
+          "segment": 0,
+          "sequence": 13,
+          "target": {
+            "band": null,
+            "channel": 6,
+            "edge": "upper",
+            "if_center_hz": 1590312500,
+            "lnb_lo_hz": 10600000000,
+            "polarization": null,
+            "profile_id": null,
+            "rf_center_hz": 12190312500,
+            "rf_mapping_authority": "hypothesis",
+            "target_id": "ch6-upper-lo10600000000"
+          },
+          "target_id": "ch6-upper-lo10600000000",
+          "visit": 13
+        },
+        {
+          "acquisition": {
+            "actual_if_center_hz": 1940312500,
+            "complete": true,
+            "contiguous_with_previous": false,
+            "counter_authority": "hardware",
+            "device_session": 5598466333409479404,
+            "discarded_samples": 225990,
+            "generation": 8025459312556368214,
+            "global_visit": 43,
+            "guard_ms": 0.0,
+            "host_final_sample_monotonic_ns": 4408533800617016,
+            "host_request_monotonic_ns": [
+              0,
+              0
+            ],
+            "host_request_utc_ns": [
+              0,
+              0
+            ],
+            "listen_ms": 20.0,
+            "policy_id": "ordered-continuous-20ms-v1",
+            "quality_flags": [],
+            "recall_skipped": false,
+            "requested_if_center_hz": 1940312500,
+            "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":8,\"flags\":3,\"frequency_hz\":1940312500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":8025459312556368214,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":4408533796415428,\"realtime_ns\":1793727302676122565},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":3,\"profile_crc32\":3091958952,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":21911689867992,\"session\":5598466333409479404,\"source_rate_hz\":10000000,\"target\":3,\"transition_after\":21911689908364,\"transition_before\":21911689882374,\"valid_end\":21911690308364,\"valid_start\":21911690108364,\"visit\":43}",
+            "sample_count": 200000,
+            "sample_end": 21911690308364,
+            "sample_rate_hz": 10000000,
+            "sample_start": 21911690108364,
+            "sample_start_utc_ns": null,
+            "sweep": 5,
+            "target_index": 3,
+            "tune_ms": 2.599,
+            "validity_authority": "provider_attested",
+            "validity_includes_guard": true
+          },
+          "iq_sha256": "sha256:3270b008c3b1c60a29653f66b263291b95fccc9a2c3246a24e92e385266af05c",
+          "manifest_sha256": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "probes_sha256": "sha256:a0bd46811489f4645210f4f79ba340575e70896b2a685cd0ccb25f29d716e6b7",
+          "rate": 10000000,
+          "receivers": [
+            0,
+            1
+          ],
+          "segment": 0,
+          "sequence": 43,
+          "target": {
+            "band": null,
+            "channel": 4,
+            "edge": "upper",
+            "if_center_hz": 1940312500,
+            "lnb_lo_hz": 9750000000,
+            "polarization": null,
+            "profile_id": null,
+            "rf_center_hz": 11690312500,
+            "rf_mapping_authority": "hypothesis",
+            "target_id": "ch4-upper-lo9750000000"
+          },
+          "target_id": "ch4-upper-lo9750000000",
+          "visit": 43
+        }
+      ]
+    },
+    "DS29-0519": {
+      "archive_native_sha256": "31d59b2f74179edd7a18506d94a4c65ab12ea3ba7b6a1499617d920d2aace2af",
+      "windows": [
+        {
+          "acquisition": {
+            "actual_if_center_hz": 1709687500,
+            "complete": true,
+            "contiguous_with_previous": false,
+            "counter_authority": "hardware",
+            "device_session": 3924353581428820616,
+            "discarded_samples": 230387,
+            "generation": 4549834881532190949,
+            "global_visit": 155,
+            "guard_ms": 0.0,
+            "host_final_sample_monotonic_ns": 5078340658591290,
+            "host_request_monotonic_ns": [
+              0,
+              0
+            ],
+            "host_request_utc_ns": [
+              0,
+              0
+            ],
+            "listen_ms": 20.0,
+            "policy_id": "ordered-continuous-20ms-v1",
+            "quality_flags": [],
+            "recall_skipped": false,
+            "requested_if_center_hz": 1709687500,
+            "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":8,\"flags\":3,\"frequency_hz\":1709687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":4549834881532190949,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":5078340654459841,\"realtime_ns\":1794397109534167048},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":3,\"profile_crc32\":1966477309,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":28626184156065,\"session\":3924353581428820616,\"source_rate_hz\":10000000,\"target\":3,\"transition_after\":28626184200351,\"transition_before\":28626184169964,\"valid_end\":28626184600351,\"valid_start\":28626184400351,\"visit\":155}",
+            "sample_count": 200000,
+            "sample_end": 28626184600351,
+            "sample_rate_hz": 10000000,
+            "sample_start": 28626184400351,
+            "sample_start_utc_ns": null,
+            "sweep": 19,
+            "target_index": 3,
+            "tune_ms": 3.0387,
+            "validity_authority": "provider_attested",
+            "validity_includes_guard": true
+          },
+          "iq_sha256": "sha256:5d7ed5b3d88d1ff1e9fa5153379766102c4a6f3c8befe22accbd5813c0efc618",
+          "manifest_sha256": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "probes_sha256": "sha256:68709aa834424fbbacb695a83bdb554d1b84a5e5bb4d691ac78460c43ad29d5c",
+          "rate": 10000000,
+          "receivers": [
+            0,
+            1
+          ],
+          "segment": 0,
+          "sequence": 155,
+          "target": {
+            "band": null,
+            "channel": 4,
+            "edge": "lower",
+            "if_center_hz": 1709687500,
+            "lnb_lo_hz": 9750000000,
+            "polarization": null,
+            "profile_id": null,
+            "rf_center_hz": 11459687500,
+            "rf_mapping_authority": "hypothesis",
+            "target_id": "ch4-lower-lo9750000000"
+          },
+          "target_id": "ch4-lower-lo9750000000",
+          "visit": 155
+        },
+        {
+          "acquisition": {
+            "actual_if_center_hz": 1709687500,
+            "complete": true,
+            "contiguous_with_previous": false,
+            "counter_authority": "hardware",
+            "device_session": 3924353581428820616,
+            "discarded_samples": 226199,
+            "generation": 4549834881532190949,
+            "global_visit": 43,
+            "guard_ms": 0.0,
+            "host_final_sample_monotonic_ns": 5078335692966875,
+            "host_request_monotonic_ns": [
+              0,
+              0
+            ],
+            "host_request_utc_ns": [
+              0,
+              0
+            ],
+            "listen_ms": 20.0,
+            "policy_id": "ordered-continuous-20ms-v1",
+            "quality_flags": [],
+            "recall_skipped": false,
+            "requested_if_center_hz": 1709687500,
+            "retune_receipt": "{\"adc12_clipping_components\":[0,0],\"adc12_out_of_range_components\":[0,0],\"analog_bandwidth_hz\":8000000,\"effective_weight\":65536,\"eligible_mask\":8,\"flags\":3,\"frequency_hz\":1709687500,\"gain_counter\":0,\"gain_read_duration_ns\":0,\"gain_valid\":false,\"generation\":4549834881532190949,\"guard_policy_id\":\"minimum-post-recall-v1\",\"host_delivery_clock\":{\"monotonic_ns\":5078335688869646,\"realtime_ns\":1794397104568576854},\"iq_bytes\":1600000,\"minimum_post_recall_guard_samples\":200000,\"missing_samples_before\":0,\"observed_post_recall_guard_samples\":200000,\"post_recall_guard_satisfied\":true,\"profile\":3,\"profile_crc32\":1966477309,\"protocol_version\":5,\"result\":1,\"rx1_gain_index\":0,\"rx2_gain_index\":0,\"sample_code_geometry\":\"ad9361-signed12-in-ci16-v1\",\"selection_counter\":28626134518119,\"session\":3924353581428820616,\"source_rate_hz\":10000000,\"target\":3,\"transition_after\":28626134558670,\"transition_before\":28626134532471,\"valid_end\":28626134958670,\"valid_start\":28626134758670,\"visit\":43}",
+            "sample_count": 200000,
+            "sample_end": 28626134958670,
+            "sample_rate_hz": 10000000,
+            "sample_start": 28626134758670,
+            "sample_start_utc_ns": null,
+            "sweep": 5,
+            "target_index": 3,
+            "tune_ms": 2.6199,
+            "validity_authority": "provider_attested",
+            "validity_includes_guard": true
+          },
+          "iq_sha256": "sha256:b8cfab1d3c4c18ee5174586ecccefa57074cc2d1ed3e690ae1c2082009d8856c",
+          "manifest_sha256": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "probes_sha256": "sha256:9b0ea7284285d2e15313ed3beea53d7916b2795d89d3590dbf4364f3fbf90b7a",
+          "rate": 10000000,
+          "receivers": [
+            0,
+            1
+          ],
+          "segment": 0,
+          "sequence": 43,
+          "target": {
+            "band": null,
+            "channel": 4,
+            "edge": "lower",
+            "if_center_hz": 1709687500,
+            "lnb_lo_hz": 9750000000,
+            "polarization": null,
+            "profile_id": null,
+            "rf_center_hz": 11459687500,
+            "rf_mapping_authority": "hypothesis",
+            "target_id": "ch4-lower-lo9750000000"
+          },
+          "target_id": "ch4-lower-lo9750000000",
+          "visit": 43
+        }
+      ]
+    }
+  },
+  "files": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/retry_reuse_eval.py": "ce8cdce8596d59d362d57b82c3dda68c657af9002eeb796dda1652643eafa059",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/original_kernel_cache.h": "9a2953fd5a7816e731538b35af4243f5a2822d39d67cdb3b1851e7ee370b7706",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/retry_reuse.py": "40cf2de995a5b5c971f442eab9cc8493c3070563eb5e6667fa5ab4ccfa483c5d"
+  }
+}

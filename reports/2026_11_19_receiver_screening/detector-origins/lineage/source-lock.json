@@ -1,0 +1,215 @@
+{
+  "arm_evidence": {
+    "reports/2026_11_19_receiver_screening/detector-origins/embedded/raw-input-audit.json": "a0e127a6f856eb41b55ba7eb40e108e8b1752481cad779a62ab943f272cd6c0d",
+    "reports/2026_11_19_receiver_screening/detector-origins/embedded/receipt.json": "faa63a35f69a32c851c6f2db35dbc619e93e99376b8436e58a6a49bc2a5f17fd"
+  },
+  "cases": [
+    "DS26-0036",
+    "DS26-0237",
+    "DS29-0082",
+    "DS29-0174"
+  ],
+  "files": {
+    "DS26-0036.json.gz": "8efe68cadc163dcad6d891bbd01f4b6b9947cf6d6eb00f7563cd9fcf9f7d6d9a",
+    "DS26-0237.json.gz": "4e231061ad9908138ad717ddfcfc32eb9b0779a174eab70a753733a5c990538f",
+    "DS29-0082.json.gz": "a9850cf231b7f85f4983b829bae9c87813f4c4a3f33697cad8f90caf97c383d2",
+    "DS29-0174.json.gz": "4e6ff000c9236b3ad1e474457a49f0a7be0c0258df163f662b1e4583aaf7fd42",
+    "PROTOCOL.md": "5cdf9f68ae558d452fd58174b97f79191dd037dd3f5a18022f0061381c57ddb3",
+    "README.md": "9339c0e5b289f7092fd9daa839788a5d49c4154a7485f42fd04ef0e123c63e3b",
+    "coarse-x86.json": "a8892aaad896abe111f8753cafd34bf26fe66e1b57936b344fde1a699f5c91b0",
+    "comparison.json": "85ae6b52972187ead184ca29fbb008b42c1278317ca1314b11e0da382a6fc91a",
+    "folded-fixture.json": "14e31dc8a626420240e062496e9ecc1753113f20bdb49242462b473e25cee1f3"
+  },
+  "installed_receipts": {
+    "DS26-0036": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:8ac4a2b2e24de8ae2cccd592cb55e8d86226dd9e6c0f5046b8957a5880c4d76b",
+        "release": "fast-1f3a91c6a882b6e7eac8827fbb95f215",
+        "root": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "run_id": "fast-3cde7bbf1ca4b300a6d596052daf82f8"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/deployment-manifest.json": "f2ad5e23e25dff4efbfa117448b76749f36635c78b97b70300e96c98301d1934",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "DS26-0237": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:23f22f794f4b34f2feeb49b49405dc0c27b5fde70dce72cd0e001990b2148b50",
+        "release": "fast-1f3a91c6a882b6e7eac8827fbb95f215",
+        "root": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "run_id": "fast-6e72192d3fc05b95683b97ad69eef1b4"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/deployment-manifest.json": "f2ad5e23e25dff4efbfa117448b76749f36635c78b97b70300e96c98301d1934",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "DS29-0082": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:a7ecaa95694bad7ff72201bd15251d43b393b9a49f523011f940b74ccb016e9c",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:a7ecaa95694bad7ff72201bd15251d43b393b9a49f523011f940b74ccb016e9c",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:954f0fec1dfbd9c86e91272033683abeb9144466fb6810ca53f43c9e40809c6d",
+        "release": "fast-33b3892e0162eac7fd2232898aa9d1ce",
+        "root": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "run_id": "fast-09b6e939479d6bc789f2875b54219319"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-source-parity.json": "29f165a3a3f94d58a81c154189fcfc46d0cdc378a4d063896daae269032920bc",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition.c": "60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/release-revision.txt": "f168c737a8b3f8dcec5782510c5301cc0509c4627df6bc7ec6de6579361ab59a"
+      }
+    },
+    "DS29-0174": {
+      "architecture": "x86_64",
+      "capture": {
+        "code_sha256": "sha256:c086c53550f09f857b4c4ab951f7f0e96dea98081364f713374b60e57bd5553c",
+        "configuration": {
+          "execution": {
+            "maximum_windows_per_job": 64
+          },
+          "implementation_digest": "sha256:c086c53550f09f857b4c4ab951f7f0e96dea98081364f713374b60e57bd5553c",
+          "stages": {
+            "fast-scan": {
+              "gate": "either_receiver",
+              "margin_gate": 0.025,
+              "mode": "ungated",
+              "predictor": "disabled-unqualified-at-native-rate",
+              "sample_rate_hz": 10000000,
+              "schema_version": 2,
+              "strong_margin": 0.1,
+              "threshold": 0.013219531315217865,
+              "window_samples": 200000
+            }
+          }
+        },
+        "environment_sha256": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+        "input_manifest_sha256": "sha256:005dbbd105717d54919ec67f35e83bede32199d03a18f29b0cf3e311e5e6e0d1",
+        "release": "fast-a9ce664313cc56759cdffefe4750f833",
+        "root": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "run_id": "fast-a3cb68d8132ac430a1eb700384503ca0"
+      },
+      "capture_coarse_backend": "avx2_fma",
+      "numpy": "2.5.2",
+      "ordinary_build_receipt_sha256": "6a54ed132aefb7951a3690108b6a0c50a04c867e47c0d7ebf4888e1f54f63976",
+      "ordinary_library_sha256": "110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768",
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_version": "3.12.14",
+      "sources": {
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/runtime-manifest.json": "e05bfc29c8987c83623ac8f310a68b45a27de355ae1020ece7de066f5eb728d2",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.c": "7dd6ad1300dca46e986178ea755cd896819b9bae148072617c32cc80ce8458bf",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "77f0719b9c1658c042c53408b7941dedd9126fbfa738bade7113bc060eadd865",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition_grid.inc": "1b67c6dcf6e1310816f202e07356b4334a6dcd64d764462329a60d617139917a",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/acquisition.py": "6a1e88345d2d64f6d6e11f1d586753b74bcc0ef5a6f6816e42880eb8bc6e7a23",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    }
+  },
+  "sources": {
+    "tools/pipeline_eval/qualification/capture_detector_fixture.py": "7cbd1e945625eb9a7dfc966f5033df1d142bf78abf3da8661197d7de3b2a5039",
+    "tools/pipeline_eval/qualification/capture_detector_lineage.py": "d5693a71f929a4a4d61bcc6de044357e93ecb0712f5ae167b8ca6cdf4bdbce2e",
+    "tools/pipeline_eval/qualification/capture_detector_replay.py": "1dddf1920615803b434c2502011ca5331eb25c8a266059d095cc3d2b7fe8acde"
+  }
+}

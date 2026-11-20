@@ -1,0 +1,78 @@
+Marginalized coarse-to-fine position grid
+
+The primary design scores a 25 km square in east/north coordinates at the
+shared regional center. It chooses the highest-scoring cell after two bounded
+subdivision levels. The coarse-only control chooses the highest-scoring cell
+from the same initial 49 evaluations. The design was fixed before scoring
+geography.
+
+Start with 7 × 7 cell centers at 3.571 km spacing. Refine the four highest
+scoring centers spaced at least 7.143 km from each other. Split each into 3 × 3
+children, then split the best child of each refined parent again. Reuse the
+unchanged center's score when splitting. This gives 113 unique evaluations,
+49 coarse and 64 additional evaluations per arm, and 113 leaves partitioning
+the original box. The finest cells have a 0.397 km width. Adaptive refinement
+can choose different centers for each arm under the same budget and policy.
+
+Receive anonymous curved graph tracks from tracks001/candidate at the end of
+each scan. Use the grid support's longest-64 policy, 12 sampled CFOs per
+track, and up to 12 candidate identities per retained track. The support code
+constructs the candidate descriptors from causal Starlink TLEs under each
+scan's start cutoff, with 5-second table knots and a linear regional Doppler
+approximation. Both c arms use the same descriptors. The recorded graph
+metadata has a null alias period. The scorer uses the panel support's
+4.4 microsecond convention, corresponding to a 227272.7 Hz alias period, to
+choose an integer frequency branch per track/candidate/cell. The fixed
+nearest branch is an approximation to a wrapped mixture.
+
+Sum candidate components and a fixed clutter term per track. Each candidate
+component integrates an independent Gaussian track timing nuisance with a
+2 s standard deviation. The score combines a 180 Hz shape scale and 550 Hz
+level scale and treats each correlated track as one contribution. Five EM
+updates per cell profile four shared receiver/side offsets relative to a
+common, data-derived bias vote. Their Gaussian prior standard deviation is
+32 kHz. The fitted-c arm adds a shared linear RF term with a zero-centered
+200 kHz/GHz prior. The c0 arm fixes that term to zero. Positions use the same
+search box and no additional position prior. Conditional timing for the
+selected identity gives diagnostic absolute CFO RMS. Paired RMS uses the
+intersection of tracks with the same selected identity in both arms.
+
+The result includes each cell's center, width, and profile score. It also
+reports the gap to the strongest sampled alternative at least 5 km away,
+area within two score units of the peak, and whether the winning cell touches
+the box. Those diagnostics depend on the sampled grid, nuisance fit, and
+clutter scale. They provide no calibrated geographic probability. The grid
+can miss peaks narrower than its coarse spacing or outside the box.
+
+Held-out checks reserve every fourth complete descriptor by mean track time.
+Fit position, calibration, and the lane bias vote on remaining tracks.
+Evaluate the held tracks with these shared terms frozen and sum identities,
+independent track timing, and clutter at those fixed terms. This measures
+internal transfer within an archived scan graph. The upstream graph was
+formed after the scan and the check does not measure a pre-deadline forecast.
+No evaluation positions, previous pose, v5 answers, or saved identity labels
+entered the solver. No raw-IQ, on-device, or first-fix test was run.
+
+Run from the repository root with the frozen dependency and the repo venv.
+
+  OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src \
+    .venv/bin/python reports/2026_11_18_embedded_prototypes/08_grid/grid.py
+
+Use test_grid.py in place of grid.py to run the synthetic check alone. It
+compares the analytic timing integral with quadrature, verifies tiling and
+budgets, and recovers a planted position with RF calibration. The replay
+times wall-clock host compute after acquisition, including graph JSON read,
+causal TLE construction, descriptor generation, the bias vote, and both grid
+arms. Coarse scores are reused inside that time. It times the optional
+holdout check separately. Logged array sizes exclude Python object overhead.
+
+Both arms returned estimates in all eight cases. Refined in-sample score rose
+in all cases. Whole held-track scores rose by about 0.010 and 0.011 per track
+on average for c0 and fitted c. Two scans in each arm show an alternative
+more than 5 km away within two score units. Two winning cells per arm touch
+the search box. Fitting c reduces the median paired CFO RMS from 174.5 to
+168.3 Hz, with changes in both directions across cases. Mean refined held
+score changes by +0.0036 per track. The estimated cell changes by 0.397 km
+in four cases and stays at the same center in the other four. Geographic
+error is scored independently from the emitted endpoints.

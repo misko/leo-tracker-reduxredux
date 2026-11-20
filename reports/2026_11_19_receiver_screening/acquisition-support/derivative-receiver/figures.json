@@ -1,0 +1,207 @@
+{
+  "charts": [
+    {
+      "caption": "Anonymous native GLRT, one causal TLE and the original containing offer.",
+      "cases": [
+        "DS26-0223",
+        "DS29-0174"
+      ],
+      "id": "derivative_receiver-diagnostic",
+      "method": "derivative_receiver",
+      "provenance": [
+        "prediction-lock.json",
+        "blind-plan.json",
+        "scores.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "diagnostic-positions.jsonl.gz",
+          "forced_label": "Differential slope and curvature \u00b7 forced",
+          "key": "one",
+          "label": "Differential slope and curvature \u00b7 publication",
+          "value": "derivative_receiver"
+        },
+        {
+          "file": "diagnostic-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Independent curvature \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "polynomial_curvature_only"
+        }
+      ],
+      "title": "Polynomial Doppler derivatives on diagnostic roof recordings"
+    },
+    {
+      "caption": "Four prespecified archived roof recordings with the same native input and phase grid.",
+      "cases": [
+        "DS26-0293",
+        "DS26-0183",
+        "DS26-0040",
+        "DS29-0357"
+      ],
+      "id": "derivative_receiver-reserve",
+      "method": "derivative_receiver",
+      "provenance": [
+        "prediction-lock.json",
+        "blind-plan.json",
+        "scores.json"
+      ],
+      "scope": "roof",
+      "seal": "reserve-figure-lock.json",
+      "series": [
+        {
+          "file": "reserve-positions.jsonl.gz",
+          "forced_label": "Differential slope and curvature \u00b7 forced",
+          "key": "one",
+          "label": "Differential slope and curvature \u00b7 publication",
+          "value": "derivative_receiver"
+        },
+        {
+          "file": "reserve-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Independent curvature \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "polynomial_curvature_only"
+        }
+      ],
+      "title": "Polynomial Doppler derivatives on held roof recordings"
+    },
+    {
+      "caption": "Authenticated real native GLRT with its genuinely omitted offer.",
+      "cases": [
+        "DS26-0209-omitted",
+        "DS29-0127-omitted"
+      ],
+      "id": "derivative_receiver-omitted",
+      "method": "derivative_receiver",
+      "provenance": [
+        "prediction-lock.json",
+        "blind-plan.json",
+        "scores.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "omitted-positions.jsonl.gz",
+          "forced_label": "Differential slope and curvature \u00b7 forced",
+          "key": "candidate",
+          "label": "Differential slope and curvature \u00b7 publication",
+          "value": "derivative_receiver"
+        },
+        {
+          "file": "omitted-positions.jsonl.gz",
+          "forced_label": "Independent curvature \u00b7 forced",
+          "key": "stock",
+          "label": "Independent curvature \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "polynomial_curvature_only"
+        }
+      ],
+      "title": "Polynomial Doppler derivatives with the true roof omitted"
+    },
+    {
+      "caption": "Simulated native GLRT with measured archive frequency disturbances.",
+      "cases": [
+        "6fde484c2b10a6821aecd5e3",
+        "7450f38aea034bf1df14fb26",
+        "1699e8c6344e2c10b8b0bc21",
+        "f8d0a6cb84790a7d6131a3e5"
+      ],
+      "id": "derivative_receiver-simulated",
+      "method": "derivative_receiver",
+      "provenance": [
+        "prediction-lock.json",
+        "blind-plan.json",
+        "scores.json"
+      ],
+      "queries": "simulated-queries.json",
+      "scope": "transfer",
+      "seal": "simulated-figure-lock.json",
+      "series": [
+        {
+          "file": "simulated-positions.jsonl.gz",
+          "forced_label": "Differential slope and curvature \u00b7 forced",
+          "key": "candidate",
+          "label": "Differential slope and curvature \u00b7 publication",
+          "value": "derivative_receiver"
+        },
+        {
+          "file": "simulated-positions.jsonl.gz",
+          "forced_label": "Independent curvature \u00b7 forced",
+          "key": "stock",
+          "label": "Independent curvature \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "polynomial_curvature_only"
+        }
+      ],
+      "title": "Polynomial Doppler derivatives at two new simulated sites"
+    },
+    {
+      "caption": "Prepared single-band beacon measurements using the independent curvature path.",
+      "cases": [
+        "b9558301ab0f8f9f15e55a5ab8be049f",
+        "cf764fa603c8a535b2560c6bf36ad9ae",
+        "7c024f9dfc3e147ad8a1dccf8d7ad509",
+        "53c95fb73354c3f89a7da93a025097ce"
+      ],
+      "id": "derivative_receiver-field",
+      "method": "derivative_receiver",
+      "provenance": [
+        "prediction-lock.json",
+        "blind-plan.json",
+        "scores.json"
+      ],
+      "queries": "field-queries.json",
+      "scope": "transfer",
+      "seal": "field-figure-lock.json",
+      "series": [
+        {
+          "file": "field-positions.jsonl.gz",
+          "forced_label": "Differential slope and curvature \u00b7 forced",
+          "key": "candidate",
+          "label": "Differential slope and curvature \u00b7 publication",
+          "value": "derivative_receiver"
+        },
+        {
+          "file": "field-positions.jsonl.gz",
+          "forced_label": "Independent curvature \u00b7 forced",
+          "key": "stock",
+          "label": "Independent curvature \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "original_request_sha256",
+            "native_sha256",
+            "catalog_sha256"
+          ],
+          "value": "polynomial_curvature_only"
+        }
+      ],
+      "title": "Polynomial derivatives of measured StarLoc beacons"
+    }
+  ],
+  "version": 1
+}

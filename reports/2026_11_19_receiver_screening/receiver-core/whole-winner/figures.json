@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "whole-winner-iq-wide",
+      "method": "whole_winner",
+      "title": "Saved wide IQ through the private winning-probe stream",
+      "scope": "roof",
+      "cases": ["DS26-0122", "DS29-0082"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["scores.csv", "resources.csv", "parity.json"],
+      "caption": "Two fresh pairs share the complete saved IQ and wide detector under enforced 512 MiB with zero swap. DS26-0122 is new to the private handoff trial. The archived original v5 curves use capture-era factors.",
+      "series": [
+        {"key": "one", "label": "Wide IQ to private stream", "file": "positions.jsonl.gz", "value": "whole_winner", "native_authority": "frozen", "native_field": "capture_native_sha256"},
+        {"key": "stock", "label": "Wide IQ to candidate JSON", "file": "positions.jsonl.gz", "value": "whole_winner_stock", "native_authority": "frozen", "native_field": "capture_native_sha256", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile", "mode"]}
+      ]
+    }
+  ]
+}

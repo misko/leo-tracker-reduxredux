@@ -1,0 +1,54 @@
+{
+  "charts": [
+    {
+      "caption": "Each site has two sessions with fresh emitters and receiver clocks.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Original containing offer",
+        "far_missing": "Far missing offer",
+        "near_missing": "Near missing offer"
+      },
+      "id": "stationary-simulated-sites",
+      "method": "stationary-simulated-sites",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "All sessions (diagnostic)",
+          "key": "candidate",
+          "label": "All sessions",
+          "value": "all_sessions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "First session (diagnostic)",
+          "key": "stock",
+          "label": "First session",
+          "value": "session_1"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "73 s time shuffle (diagnostic)",
+          "key": "one",
+          "label": "73 s time shuffle",
+          "value": "time_shuffle"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "No data, offer center (diagnostic)",
+          "key": "four",
+          "label": "No data, offer center",
+          "value": "center"
+        }
+      ],
+      "title": "Stationary likelihood across two independent simulated sites"
+    }
+  ],
+  "version": 2
+}

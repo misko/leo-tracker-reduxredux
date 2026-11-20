@@ -1,0 +1,7 @@
+# Qualify the pruned fine CFO transform
+
+Replay the pre-existing frozen row-wise selector panel of 16 saved CI16 visits. Start with the installed producer and authenticate both receiver projections against the archived factor rows. Compare the complete prepared detector with the row-wise selector against the same path with the pruned fine CFO transform. Keep the conditioned scorer, integer and fractional GLRT refiners, input arrays, grids, selector, thresholds and probe projection fixed.
+
+Compare the complete ordered public payload and archived factor projection in two warm arms and five paired timed repeats. Alternate which mode runs first. Separately audit every fine score tuple against the original transform on all 16 visits and time only the fine scoring ports during that audit. Capture requested bins, frames, rank gaps, fallbacks, process CPU time, wall time and high-water RSS. Keep archive decoding and the full-grid score audit outside the measured detector intervals.
+
+The candidate needs exact public and factor parity for both waveform edges and all three producer roots, no dropped or skipped supported searches, and material CPU savings at complete detector scope. Require at least 15 ms pooled paired median savings before adding this compiled path to whole-waveform replay. Keep original dispatch for unsupported geometry or a failed arithmetic check. The comparison uses existing recordings.

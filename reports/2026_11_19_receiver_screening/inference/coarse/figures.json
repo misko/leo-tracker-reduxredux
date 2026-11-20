@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "sparse_epoch",
+      "method": "sparse_epoch",
+      "scope": "roof",
+      "title": "Stride-six epoch scout with partial-IQ v5 fits",
+      "caption": "The scout substitutes eight valid raw visits in DS26-0036 and seven in DS29-0082. Independent v5 controls use the capture-era archive. Both position arms agree for these limited substitutions. The held detector missed five of 20 original fractional positives.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "score-audit.json.gz", "positions.jsonl.gz", "control-positions.jsonl.gz"],
+      "series": [
+        {
+          "key": "one",
+          "label": "Stride-six scout · partial IQ",
+          "file": "positions.jsonl.gz",
+          "value": "sparse_epoch",
+          "native_field": "source_archive_sha256"
+        },
+        {
+          "key": "stock",
+          "label": "Capture-era archive control",
+          "file": "control-positions.jsonl.gz",
+          "value": "sparse_epoch_capture_control",
+          "native_field": "source_archive_sha256",
+          "match": ["source_archive_sha256", "catalog_sha256"]
+        }
+      ]
+    }
+  ]
+}

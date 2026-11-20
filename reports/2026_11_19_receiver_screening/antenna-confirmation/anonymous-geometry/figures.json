@@ -1,0 +1,138 @@
+{
+  "charts": [
+    {
+      "caption": "Worldwide search uses no region. Original v5 uses the containing offer.",
+      "cases": [
+        "DS26-0261",
+        "DS29-0519"
+      ],
+      "id": "anonymous_geometry-containing",
+      "method": "anonymous_geometry",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "containing-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared drift \u00b7 forced",
+          "key": "one",
+          "label": "Shared drift",
+          "value": "anonymous_geometry",
+          "where": {
+            "cohort": "containing"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Curvature only",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "anonymous_geometry_curvature",
+          "where": {
+            "cohort": "containing"
+          }
+        }
+      ],
+      "title": "Worldwide pass geometry on measured roofs"
+    },
+    {
+      "caption": "Authentic wrong offers are used only to score. Search remains worldwide.",
+      "cases": [
+        "DS26-0070-omitted",
+        "DS29-0316-omitted"
+      ],
+      "id": "anonymous_geometry-omitted",
+      "method": "anonymous_geometry",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared drift \u00b7 forced",
+          "key": "candidate",
+          "label": "Shared drift",
+          "value": "anonymous_geometry",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Curvature only \u00b7 forced",
+          "key": "stock",
+          "label": "Curvature only",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "anonymous_geometry_curvature",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Worldwide pass geometry with omitted offers"
+    },
+    {
+      "caption": "Within-chain shape permutation. Error is relative to the source roof.",
+      "cases": [
+        "DS26-0261-profile-shuffle",
+        "DS29-0519-profile-shuffle"
+      ],
+      "id": "anonymous_geometry-shuffle",
+      "method": "anonymous_geometry",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "shuffle-queries.json",
+      "scope": "transfer",
+      "seal": "shuffle-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Shared drift \u00b7 forced",
+          "key": "candidate",
+          "label": "Shared drift",
+          "value": "anonymous_geometry",
+          "where": {
+            "cohort": "shuffle"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Curvature only \u00b7 forced",
+          "key": "stock",
+          "label": "Curvature only",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "original_request_sha256"
+          ],
+          "value": "anonymous_geometry_curvature",
+          "where": {
+            "cohort": "shuffle"
+          }
+        }
+      ],
+      "title": "Worldwide pass geometry on shuffled shapes"
+    }
+  ],
+  "version": 2
+}

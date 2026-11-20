@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "stable_phase_initial_audit",
+      "method": "stable_phase_initial_audit",
+      "scope": "roof",
+      "cases": "roof135",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "audit-lock.json", "digest_key": "audit_lock_sha256"},
+      "provenance": ["phase-histories.jsonl.gz"],
+      "title": "Archived initial-only phase-stop diagnostic",
+      "caption": "The convergence rule reads saved original first-stage trajectories. The lowest stopped c = 0 fit objective selects the shared branch, and each arm uses its own saved checkpoint. The five-round curve is the original initial stage. The four original v5 curves are final reference positions.",
+      "series": [
+        {"key": "one", "label": "Stable phase stop · archived initial only", "file": "positions.jsonl.gz", "value": "stable_phase_initial_audit"},
+        {"key": "stock", "label": "Five rounds · archived initial only", "file": "five-round-positions.jsonl.gz", "value": "original_initial_phase_history", "match": ["native_sha256", "catalog_sha256", "input_sha256", "source_archive_sha256"]}
+      ]
+    }
+  ]
+}

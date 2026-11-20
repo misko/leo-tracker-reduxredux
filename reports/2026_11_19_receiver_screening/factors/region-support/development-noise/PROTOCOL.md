@@ -1,0 +1,7 @@
+# Development-calibrated uncertainty for held tile support
+
+The first region fit obtained stable unrestricted estimates and positive held advantages on correct offers. Its one-arc effective weighting with a 150 Hz scale gave a displacement uncertainty of 2.3–2.9 km, although removing one complete orbit changed the fitted position by less than 0.14 km. The second experiment treats those queries as development evidence.
+
+Use the same physical model, coarse and refined search, fixed identities, train/held mask, jackknife and 95% mass rule. Change only the scale for the measurement Jacobian in the local displacement covariance. Estimate it from the median of independent orbital development RMS values, multiplied by the degrees-of-freedom factor √(n/(n−2)) for two fitted coordinates. Keep the frozen likelihood's 40 Hz minimum and preserve the phase-prior rows' original precision. The held in/out likelihood and thresholds still use 150 Hz and remain untouched. This conditional covariance retains the nonlinear orbit-deletion scatter. It does not estimate global assignment uncertainty.
+
+Freeze before drawing two additional independent sites and re-run exactly the same offer roster as the first experiment. An outside result, ambiguous region, or timeout has no published coordinate. A slow bounded fit retains its 195-second limit. Compare the frequency and location outcomes independently in both calibration arms.

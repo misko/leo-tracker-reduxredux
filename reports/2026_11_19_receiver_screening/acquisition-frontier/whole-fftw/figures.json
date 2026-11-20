@@ -1,0 +1,68 @@
+{
+  "charts": [
+    {
+      "caption": "Same-window FFTW and NumPy scouts feed the same wide detector and phase release. Stock wide uses original starts. All run on the same saved IQ and original tile. The four original v5 controls use capture-era factors.",
+      "cases": [
+        "DS26-0168",
+        "DS29-0604"
+      ],
+      "id": "frontier-whole-fftw",
+      "method": "frontier_whole_fftw",
+      "provenance": [
+        "prediction-lock.json",
+        "audit.json",
+        "scores.csv",
+        "deadlines.csv",
+        "summary.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "comparison.jsonl.gz",
+          "key": "one",
+          "label": "FFTW differential",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "frontier_whole_fftw"
+        },
+        {
+          "file": "comparison.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "NumPy differential",
+          "match": [
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile",
+            "mode",
+            "paired_capture_sha256"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "frontier-whole-iq_candidate"
+        },
+        {
+          "file": "comparison.jsonl.gz",
+          "key": "stock",
+          "label": "Stock 21-bin wide",
+          "match": [
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile",
+            "mode",
+            "paired_capture_sha256"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "frontier-whole-iq_control"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Native FFTW scout on two complete held recordings"
+    }
+  ],
+  "version": 1
+}

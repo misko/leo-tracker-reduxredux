@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "DS29-0519 retained its original 25 km offer and causal archive. Both compact calibration arms run with matched scientific support.",
+      "cases": "sealed",
+      "id": "batched-waveform",
+      "method": "original_capture_batched_fine_full_iq",
+      "provenance": [
+        "source-lock.json",
+        "audit.json",
+        "comparison.json",
+        "positions.jsonl.gz"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh complete batched fine-CFO replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_batched_fine_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original archive, independent compact fit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_archived_factors_compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier complete fast four-region replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Earlier complete fast five-region replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        }
+      ],
+      "title": "Position on the screened lower-edge waveform"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,88 @@
+{
+  "charts": [
+    {
+      "caption": "One blinded generated site. The fitted RF coefficient is absorbed by the local carrier offset. Numeric positions use the c0 gauge.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far_missing": "Far missing",
+        "near_missing": "Near missing"
+      },
+      "id": "code-carrier-simulation-joint",
+      "method": "code-carrier-simulation-joint",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Joint shared fit",
+          "key": "candidate",
+          "label": "Joint shared",
+          "value": "joint"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Carrier only fit",
+          "key": "stock",
+          "label": "Carrier only",
+          "value": "carrier"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Joint free fit",
+          "key": "one",
+          "label": "Joint free",
+          "value": "joint_free"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Tile center fit",
+          "key": "four",
+          "label": "Tile center",
+          "value": "center"
+        }
+      ],
+      "title": "Code plus carrier on the same native endpoints"
+    },
+    {
+      "caption": "One blinded generated site. The fitted RF coefficient is absorbed by the local carrier offset. Numeric positions use the c0 gauge.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Containing",
+        "far_missing": "Far missing",
+        "near_missing": "Near missing"
+      },
+      "id": "code-carrier-simulation-shuffle",
+      "method": "code-carrier-simulation-shuffle",
+      "queries": "queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Joint shared fit",
+          "key": "candidate",
+          "label": "Joint shared",
+          "value": "joint"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Epoch shuffle fit",
+          "key": "stock",
+          "label": "Epoch shuffle",
+          "value": "code_shuffle"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "CFO shuffle fit",
+          "key": "one",
+          "label": "CFO shuffle",
+          "value": "carrier_shuffle"
+        }
+      ],
+      "title": "Code and carrier with matched timing shuffles"
+    }
+  ],
+  "version": 2
+}

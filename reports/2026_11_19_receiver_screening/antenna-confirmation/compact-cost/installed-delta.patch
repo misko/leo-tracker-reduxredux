@@ -1,0 +1,148 @@
+--- phase-release/leo/analysis/localization_v3/elements.py
++++ regional/leo/analysis/localization_v3/elements.py
+@@ -6,6 +6,7 @@
+ """
+ import sys
+ from collections import OrderedDict
++from hashlib import sha256
+ 
+ from sgp4.api import Satrec
+ 
+@@ -19,8 +20,17 @@
+         self.maximum_bytes = maximum_bytes
+         self.bytes = self.hits = self.misses = self.evictions = 0
+         self._records = OrderedDict()
++        self.constructed = self.offered = self.planned = 0
++        self._validated = set()
+ 
+-    def __call__(self, text):
++    screened = True
++
++    def __call__(self, text, *, selected=None):
++        if self.screened:
++            fingerprint = sha256(text.encode()).digest()
++            narrow = selected is not None and fingerprint in self._validated
++        else:
++            narrow = False
+         if text in self._records:
+             self.hits += 1
+             records, _ = self._records[text]
+@@ -41,7 +51,13 @@
+                 self._records[text] = records, size
+                 self.bytes += size
+         names, numbers, satellites = [], [], []
+-        for record in records:
++        self.offered += len(records)
++        if narrow:
++            self.planned += 1
++            rows = tuple(r for r in records if r.satellite_number in selected)
++        else:
++            rows = records
++        for record in rows:
+             try:
+                 satellite = Satrec.twoline2rv(record.first_line, record.second_line)
+             except (ValueError, RuntimeError) as error:
+@@ -51,6 +67,11 @@
+             names.append(record.name)
+             numbers.append(int(satellite.satnum))
+             satellites.append(satellite)
++        self.constructed += len(satellites)
++        if (self.screened and not narrow and len(self._validated) < 512
++                and all(number == r.satellite_number
++                        for number, r in zip(numbers, records, strict=True))):
++            self._validated.add(fingerprint)
+         return ElementSetCatalogue(tuple(names), tuple(numbers), tuple(satellites))
+ 
+     def statistics(self):
+--- phase-release/leo/application/localization_v3.py
++++ regional/leo/application/localization_v3.py
+@@ -38,5 +38,19 @@
+     else:
+         history = prepare_phase_history(archive, sky['nominal_elements'], prepared['metadata'],
+                                         element_parser=element_parser)
++    prior = forecast(history)
++    if own_parser:
++        import json
++        import sys
++        from hashlib import sha256
++
++        evidence = {k: v for k, v in sky.items() if k != 'bank'}
++        complete = json.dumps([evidence, history, prior], sort_keys=True,
++                              default=lambda value: value.tolist())
++        print('catalogue-work ' + json.dumps(dict(
++            evidence_sha256=sha256(complete.encode()).hexdigest(),
++            offered=element_parser.offered, constructed=element_parser.constructed,
++            projected_snapshots=element_parser.planned, **element_parser.statistics(),
++        )), file=sys.stderr, flush=True)
+     return dict(status='inputs_prepared', tracks=prepared, sky=sky, noise=noise,
+-                phase_history=history, phase_forecast=forecast(history))
++                phase_history=history, phase_forecast=prior)
+--- phase-release/leo/operations/localization_v3_inputs.py
++++ regional/leo/operations/localization_v3_inputs.py
+@@ -12,6 +12,13 @@
+ from tools.pipeline_eval.variants.v5_direct_lifetime import regional_bank
+ from leo.operations.causal_tle_catalogue import causal_catalogue
+ from leo.sky.propagation import parse_element_sets
++
++
++def screened_catalogue(reader, snapshot, parser, numbers):
++    text = reader.read(snapshot)
++    if getattr(parser, 'screened', False):
++        return parser(text, selected=numbers)
++    return parser(text)
+ 
+ 
+ def prepare_recovery_catalogue(reader, cutoff_utc_ns, *, element_parser=parse_element_sets):
+@@ -54,8 +61,9 @@
+                 or snapshot.collected_utc_ns > unique[snapshot.sha256].collected_utc_ns):
+             unique[snapshot.sha256] = snapshot
+     previous, rejected = {}, set()
++    regional = frozenset(map(int, elements))
+     for snapshot in unique.values():
+-        cat = element_parser(reader.read(snapshot))
++        cat = screened_catalogue(reader, snapshot, element_parser, regional)
+         for name, number, satellite, epoch in zip(
+                 cat.names, cat.satellite_numbers, cat.satellites,
+                 cat.element_epoch_utc_ns(), strict=True):
+@@ -102,8 +110,9 @@
+                 or snapshot.collected_utc_ns < unique[snapshot.sha256].collected_utc_ns):
+             unique[snapshot.sha256] = snapshot
+     history, sources = {number:[] for number in elements}, []
++    regional = frozenset(map(int, elements))
+     for snapshot in sorted(unique.values()):
+-        cat = element_parser(reader.read(snapshot))
++        cat = screened_catalogue(reader, snapshot, element_parser, regional)
+         sources.append(dict(collected_utc_ns=snapshot.collected_utc_ns, sha256=snapshot.sha256))
+         for number, satellite, epoch in zip(cat.satellite_numbers, cat.satellites,
+                                             cat.element_epoch_utc_ns(), strict=True):
+@@ -152,7 +161,7 @@
+         latest_text += f'0 {name}\n{lines[0]}\n{lines[1]}\n'
+     lookup, old = set(chosen.satellite_numbers), {}
+     for snapshot in snapshots:
+-        cat = element_parser(reader.read(snapshot))
++        cat = screened_catalogue(reader, snapshot, element_parser, lookup)
+         for name, number, satellite, epoch in zip(
+                 cat.names, cat.satellite_numbers, cat.satellites,
+                 cat.element_epoch_utc_ns(), strict=True):
+--- phase-release/tools/pipeline_eval/variants/direct_lifetime_kernels.py
++++ regional/tools/pipeline_eval/variants/direct_lifetime_kernels.py
+@@ -223,8 +223,8 @@
+     )
+     parser.maximum_bytes = 0
+ 
+-    def consume(text):
+-        catalogue = parser(text)
++    def consume(text, *, selected=None):
++        catalogue = parser(text) if selected is None else parser(text, selected=selected)
+         entry = parser._records.pop(text, None)
+         if entry is not None:
+             size = entry[1]
+@@ -233,6 +233,8 @@
+             receipt["released_entries"] += 1
+         return catalogue
+ 
++
++    consume.screened = getattr(parser, 'screened', False)
+     try:
+         yield consume
+     finally:

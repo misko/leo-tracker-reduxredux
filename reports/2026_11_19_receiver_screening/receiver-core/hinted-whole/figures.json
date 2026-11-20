@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "hinted-whole",
+      "method": "hinted_whole",
+      "title": "Complete saved IQ with causal detector hints",
+      "scope": "roof",
+      "cases": ["DS26-0237", "DS29-0519"],
+      "seal": "figure-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["prediction-lock.json", "trace.jsonl.gz", "detector-scores.json", "independent-stock.json", "resources.csv", "scores.csv"],
+      "caption": "One chronological wide-GLRT lane per complete saved recording. Each detector feeds only its own prior winners. Slot-four hints and stock share the capped phase-release solver. Four archived v5 roles use capture-era factors.",
+      "series": [
+        {"file": "positions.jsonl.gz", "key": "one", "label": "Causal slot-four hints", "value": "hinted_whole", "native_authority": "frozen", "native_field": "capture_native_sha256"},
+        {"file": "positions.jsonl.gz", "key": "stock", "label": "Stock chronological wide GLRT", "value": "hinted_whole_stock", "native_authority": "frozen", "native_field": "capture_native_sha256", "match": ["input_sha256", "catalog_sha256", "tile", "mode"]}
+      ]
+    }
+  ]
+}

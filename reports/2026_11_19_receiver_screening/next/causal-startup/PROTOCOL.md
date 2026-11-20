@@ -1,0 +1,7 @@
+# Start compact cavity from the first-delivery clock
+
+Use the two sealed DS26-0036 and DS29-0082 ordinary full-factor recordings. Authenticate the opening raw replay envelope against the original first-delivery bracket and bind the screening tile, supplied tile, track configuration, causal TLE snapshot bytes and existing numerical libraries. The nominal acquisition schedule is 300 seconds. Regional sky uses the later of 300 s and the actual last fitted track sample. Reuse prepared sky, phase history and forecast only if the final clock authority, screen and complete track horizon agree.
+
+Run one worker per case on CPU 20 and CPU 21 at nice 10, with one BLAS thread and no IQ collection. Pair the stock direct cavity and the unchanged cavity solve with startup. Run stock then startup on DS26, reversed on DS29. Keep the final native-factor path off the worker command line and deliver it over standard input 20 seconds after each launch. Use distinct fresh processes and a 155-second cap per attempt. Compare physical elapsed times from that replay release, pre-release CPU and resident working set, and exact two-arm decisions, positions, conditional RF RMS and frequency scores. Retain every attempted outcome.
+
+This is shifted release of a complete stored input, on a shared Linux host. It measures actual elapsed time across the release boundary. It does not measure CPU contention, memory charge or final-delivery timing during live acquisition.

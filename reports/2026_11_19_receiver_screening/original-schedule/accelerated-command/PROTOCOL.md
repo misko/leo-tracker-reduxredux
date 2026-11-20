@@ -1,0 +1,11 @@
+# Accelerated original detector through the public command
+
+Use the complete roof recording with the fewest signed scheduled visits among entries in the frozen inventory that have an original request, native input and acquisition run ID. Break ties by recording ID. Verify that the capture has a supported producer and complete signed manifests. The selected recording is DS26-0020, with 6,764 scheduled visits. Selection uses neither position errors nor detector outputs.
+
+Run the public command with `--accelerated`. First check one complete chunk. Then process the complete recording using the 256-point stored FFT, original 12/22 anchor schedule, row-wise peak selector and four-frame fine search. Use eight CPU-pinned raw workers with a 600-second limit and a 512 MiB cap per service. Allow 180 seconds for the paired position fit. The original capture, causal TLE archive, offered region, track settings and numerical budget are shared with an independently run compact fit on the original archived factors. Retain all exclusions or failed services. Do not tune a detector setting or change a case after reading the survey.
+
+Seal both predictions before geographic scoring. Compare every physical probe, candidate field, order, gate, clock and exclusion. Measure geographic error separately from RF residual and frequency score in both calibration arms and show all four original v5 options. Report actual elapsed, raw detector CPU, and the fraction of valid visits completing within 20 ms. The same-recording 256/512 whole-waveform comparison on DS29-0519 is a separate experiment.
+
+## Same-case completion check
+
+During the first raw replay, one worker on an efficiency core was approaching its wall limit. Before that service ended or a fresh position existed, a secondary run was specified for the event of a raw timeout. Keep the primary outcome and all its receipts. Run the same public command once in a new directory on the same host's eight performance cores, numbered 0 through 7. Keep all scientific inputs, chunk assignment sizes and the per-service 600 s raw and 180 s position caps. Report this completion check separately, including its own deadlines and positions. The two runs have different CPU affinities and are unsuitable for estimating a detector speedup.

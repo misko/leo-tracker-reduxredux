@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_track_projection",
+      "method": "v5_track_projection",
+      "scope": "roof",
+      "title": "Track-sized early Doppler projections",
+      "caption": "Two complete aligned-finish pairs use the same whole-IQ-derived ordinary GLRT factors. The candidate computes only the track columns requested by the early ranked search and family confidence.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Track-column projection", "file": "track-positions.jsonl.gz", "value": "v5_track_projection", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Aligned compact finish", "file": "control-positions.jsonl.gz", "value": "v5_armijo_aligned_finish", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

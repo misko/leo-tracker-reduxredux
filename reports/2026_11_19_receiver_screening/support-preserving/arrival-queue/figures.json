@@ -1,0 +1,87 @@
+{
+  "charts": [
+    {
+      "caption": "One active detector and one waiting slot on saved IQ at the original delivery pace. Retained native packets are byte-verified. The matched unpaced control uses every valid visit. Original v5 references use capture-era factors.",
+      "cases": "sealed",
+      "id": "paced-position-control",
+      "method": "arrival_queue_control",
+      "provenance": [
+        "positions-control-lock.json",
+        "position-control-input-lock.json",
+        "positions-control.jsonl.gz",
+        "positions-candidate-lock.json",
+        "position-candidate-input-lock.json",
+        "positions-candidate.jsonl.gz",
+        "position-scores.csv",
+        "stage-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "position-score-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Paced retained visits",
+          "native_field": "paired_capture_sha256",
+          "value": "arrival_queue_control"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete unpaced visits",
+          "match": [
+            "paired_paced_native_sha256",
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union_stock"
+        }
+      ],
+      "title": "Position after actual paced drops \u00b7 stock wide"
+    },
+    {
+      "caption": "One active detector and one waiting slot on saved IQ at the original delivery pace. Retained native packets are byte-verified. The matched unpaced control uses every valid visit. Original v5 references use capture-era factors.",
+      "cases": "sealed",
+      "id": "paced-position-candidate",
+      "method": "arrival_queue_candidate",
+      "provenance": [
+        "positions-control-lock.json",
+        "position-control-input-lock.json",
+        "positions-control.jsonl.gz",
+        "positions-candidate-lock.json",
+        "position-candidate-input-lock.json",
+        "positions-candidate.jsonl.gz",
+        "position-scores.csv",
+        "stage-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "position-score-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Paced retained visits",
+          "native_field": "paired_capture_sha256",
+          "value": "arrival_queue_candidate"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete unpaced visits",
+          "match": [
+            "paired_paced_native_sha256",
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union"
+        }
+      ],
+      "title": "Position after actual paced drops \u00b7 fifth center"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,74 @@
+{
+  "charts": [
+    {
+      "caption": "Both compact calibration arms share the original 25 km offer and causal TLE request with the earlier complete fast controls.",
+      "cases": "sealed",
+      "id": "coarse-waveform",
+      "method": "original_capture_coarse_complete_iq",
+      "provenance": [
+        "source-lock.json",
+        "audit.json",
+        "comparison.json",
+        "positions.jsonl.gz"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh complete selected detector",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_coarse_complete_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original archive, independent compact fit",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "capture_archived_factors_compact"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier complete fast four-region replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Earlier complete fast five-region replay",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_five_regions"
+        }
+      ],
+      "title": "Complete upper-edge DS26-0162 waveform and position"
+    }
+  ],
+  "version": 2
+}

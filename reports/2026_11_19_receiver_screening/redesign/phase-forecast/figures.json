@@ -1,0 +1,138 @@
+{
+  "charts": [
+    {
+      "caption": "Causal prior-to-current TEME timing forecast. Both fits use the same native Graph and offer. Points use the fresh receiver and archived nominal fits.",
+      "cases": [
+        "DS26-0197",
+        "DS26-0223"
+      ],
+      "id": "native_phase_forecast-diagnostic",
+      "method": "native_phase_forecast",
+      "provenance": [
+        "native-plan.json",
+        "catalogue-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "diagnostic-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Signed phase prior \u00b7 forced",
+          "key": "one",
+          "label": "Signed phase prior \u00b7 publication",
+          "value": "native_phase_forecast",
+          "where": {
+            "study_cohort": "diagnostic"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Nominal native joint \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "study_cohort": "diagnostic"
+          }
+        }
+      ],
+      "title": "Signed phase prior on diagnosed recordings"
+    },
+    {
+      "caption": "Causal prior-to-current TEME timing forecast. Both fits use the same native Graph and offer. Points use the fresh receiver and archived nominal fits.",
+      "cases": [
+        "DS26-0237",
+        "DS26-0098",
+        "DS29-0082",
+        "DS29-0247"
+      ],
+      "id": "native_phase_forecast-confirmation",
+      "method": "native_phase_forecast",
+      "provenance": [
+        "native-plan.json",
+        "catalogue-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "confirmation-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Signed phase prior \u00b7 forced",
+          "key": "one",
+          "label": "Signed phase prior \u00b7 publication",
+          "value": "native_phase_forecast",
+          "where": {
+            "study_cohort": "confirmation"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Nominal native joint \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "study_cohort": "confirmation"
+          }
+        }
+      ],
+      "title": "Signed phase prior on four reserve recordings"
+    },
+    {
+      "caption": "Causal prior-to-current TEME timing forecast. Both fits use the same native Graph and offer. Points use the fresh receiver and archived nominal fits.",
+      "cases": [
+        "DS26-0209-omitted",
+        "DS29-0357-omitted"
+      ],
+      "id": "native_phase_forecast-omitted",
+      "method": "native_phase_forecast",
+      "provenance": [
+        "native-plan.json",
+        "catalogue-lock.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Signed phase prior \u00b7 forced",
+          "key": "candidate",
+          "label": "Signed phase prior \u00b7 publication",
+          "value": "native_phase_forecast",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        },
+        {
+          "file": "control-positions.jsonl.gz",
+          "forced_label": "Nominal native joint \u00b7 forced",
+          "key": "stock",
+          "label": "Nominal native joint \u00b7 publication",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "study_cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Signed phase prior with the true region omitted"
+    }
+  ],
+  "version": 1
+}

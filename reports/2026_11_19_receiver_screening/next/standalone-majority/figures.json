@@ -1,0 +1,89 @@
+{
+  "charts": [
+    {
+      "caption": "Previously examined native GLRT inputs with exact paired offers.",
+      "cases": "sealed",
+      "id": "standalone-majority-primary",
+      "method": "v5_cavity_payload_majority",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "scoring-targets.json"
+      ],
+      "queries": "primary-queries.json",
+      "scope": "transfer",
+      "seal": "primary-figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Standalone strict majority",
+          "value": "v5_cavity_payload_majority",
+          "where": {
+            "cohort": "diagnosed-primary"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Sealed prior standalone",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "history_sha256",
+            "track_config_sha256"
+          ],
+          "value": "v5_cavity_payload_small",
+          "where": {
+            "cohort": "diagnosed-primary"
+          }
+        }
+      ],
+      "title": "Standalone initial majority on the four diagnosed transfer offers"
+    },
+    {
+      "caption": "Previously examined native GLRT inputs with exact paired offers.",
+      "cases": "sealed",
+      "id": "standalone-majority-archived-near",
+      "method": "v5_cavity_payload_majority",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "scoring-targets.json"
+      ],
+      "queries": "archived-near-queries.json",
+      "scope": "transfer",
+      "seal": "archived-near-figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Standalone strict majority",
+          "value": "v5_cavity_payload_majority",
+          "where": {
+            "cohort": "archived-near"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Same-core ungated standalone",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "history_sha256",
+            "track_config_sha256"
+          ],
+          "value": "v5_cavity_payload_small",
+          "where": {
+            "cohort": "archived-near"
+          }
+        }
+      ],
+      "title": "Standalone initial majority on one archived near omission"
+    }
+  ],
+  "version": 1
+}

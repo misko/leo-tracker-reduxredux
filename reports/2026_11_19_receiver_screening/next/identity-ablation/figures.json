@@ -1,0 +1,115 @@
+{
+  "charts": [
+    {
+      "caption": "Forced rooftop estimates. Published v5 identities are a privileged input. Every refit uses the same physical estimator, causal TLE snapshot and offer.",
+      "cases": [
+        "DS26-0197",
+        "DS29-0316",
+        "DS26-0313",
+        "DS26-0245",
+        "DS29-0519",
+        "DS29-0127"
+      ],
+      "condition_labels": {
+        "diagnostic": "Diagnostics",
+        "reserve": "Locked reserves"
+      },
+      "id": "identity_ablation-full",
+      "method": "identity_ablation",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "source-audit.json",
+        "tle-inventory.csv"
+      ],
+      "queries": "scoring-queries.json",
+      "scope": "transfer",
+      "seal": "full-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Anonymous identities \u00b7 forced",
+          "key": "candidate",
+          "label": "Anonymous identities \u00b7 publication",
+          "value": "identity_ablation",
+          "where": {
+            "cell": "independent_full"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Published v5 identities \u00b7 forced",
+          "key": "stock",
+          "label": "Published v5 identities \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256"
+          ],
+          "value": "identity_ablation",
+          "where": {
+            "cell": "v5_full"
+          }
+        }
+      ],
+      "title": "Fixed-orbit refit with each receiver\u2019s measured peaks"
+    },
+    {
+      "caption": "Forced rooftop estimates. Published v5 identities are a privileged input. Every refit uses the same physical estimator, causal TLE snapshot and offer.",
+      "cases": [
+        "DS26-0197",
+        "DS29-0316",
+        "DS26-0313",
+        "DS26-0245",
+        "DS29-0519",
+        "DS29-0127"
+      ],
+      "condition_labels": {
+        "diagnostic": "Diagnostics",
+        "reserve": "Locked reserves"
+      },
+      "id": "identity_ablation-shared",
+      "method": "identity_ablation",
+      "provenance": [
+        "blind-plan.json",
+        "prediction-lock.json",
+        "scores.json",
+        "source-audit.json",
+        "tle-inventory.csv"
+      ],
+      "queries": "scoring-queries.json",
+      "scope": "transfer",
+      "seal": "shared-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Anonymous identities \u00b7 forced",
+          "key": "candidate",
+          "label": "Anonymous identities \u00b7 publication",
+          "value": "identity_ablation",
+          "where": {
+            "cell": "shared_independent"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Published v5 identities \u00b7 forced",
+          "key": "stock",
+          "label": "Published v5 identities \u00b7 publication",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256"
+          ],
+          "value": "identity_ablation",
+          "where": {
+            "cell": "shared_v5"
+          }
+        }
+      ],
+      "title": "Fixed-orbit refit on identical measured peaks"
+    }
+  ],
+  "version": 1
+}

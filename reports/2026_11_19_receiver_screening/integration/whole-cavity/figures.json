@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "whole_cavity",
+      "method": "whole_cavity",
+      "scope": "roof",
+      "title": "Saved IQ to bounded DS26 cavity",
+      "caption": "Ordinary saved-IQ replay through the cavity result under the shared 512 MiB cap. The original v5 choices use capture-era factors.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["stages.json.gz", "comparison.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Bounded ordinary cavity", "file": "positions.jsonl.gz", "value": "whole_cavity", "native_authority": "ordinary", "where": {"mode": "matched-tile"}}
+      ]
+    }
+  ]
+}

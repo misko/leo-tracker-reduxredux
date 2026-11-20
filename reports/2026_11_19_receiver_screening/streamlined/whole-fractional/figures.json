@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "whole_fractional",
+      "method": "whole_fractional",
+      "scope": "roof",
+      "title": "Prepared fractional kernel through position",
+      "caption": "Both ordinary methods replay all their saved visits and use the same capped cavity worker. Original v5 choices use capture-era factors.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["stages.json.gz", "comparison.json", "abi-preflight.json"],
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Prepared fractional", "file": "positions.jsonl.gz", "value": "whole_fractional", "native_authority": "ordinary", "native_field": "origin_native_sha256", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Stock detector", "file": "control-positions.jsonl.gz", "value": "whole_cavity", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["tile"]}
+      ]
+    }
+  ]
+}

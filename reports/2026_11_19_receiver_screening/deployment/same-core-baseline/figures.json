@@ -1,0 +1,50 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh runs on the same pinned CPU within each pair. Both methods used the same stored GLRT, causal catalogue and supplied tile. All scheduled attempts count.",
+      "cases": [
+        "DS26-0026",
+        "DS26-0146",
+        "DS29-0174",
+        "DS29-0316"
+      ],
+      "id": "same-core-original-compact-v5-roof4",
+      "method": "v5_secant_fit",
+      "provenance": [
+        "scores.csv",
+        "timings.csv",
+        "summary.json",
+        "logic.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Fresh compact secant",
+          "value": "v5_secant_fit"
+        },
+        {
+          "file": "original-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Fresh original no repair",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "resolved_request_sha256"
+          ],
+          "value": "original-baseline"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Same-core original v5 and compact secant on four matched recordings"
+    }
+  ],
+  "version": 1
+}

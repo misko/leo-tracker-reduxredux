@@ -1,0 +1,60 @@
+{
+  "charts": [
+    {
+      "caption": "Both receivers were recomputed at all original retry visits. Positions use the same original causal request, catalogue and 25 km offer.",
+      "cases": "sealed",
+      "id": "upper-primary-position",
+      "method": "upper_original_primary12_complete_factors",
+      "provenance": [
+        "source-lock.json",
+        "primary-lock.json",
+        "audit.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "12 anchors only",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "upper_original_primary12_complete_factors"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Original conditional 12/22",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_field_exact_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full wide four-region",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "complete_four_regions"
+        }
+      ],
+      "title": "Upper-edge position with the original primary anchors"
+    }
+  ],
+  "version": 2
+}

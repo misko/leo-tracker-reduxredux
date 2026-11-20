@@ -1,0 +1,416 @@
+{
+  "architecture": "x86_64",
+  "builder_bytes": 8676,
+  "builder_sha256": "8447da1fdbca5a840e8964b0e394654e6505cc7eeda9bf665c37e0d4fc599cbf",
+  "custom_layout_release": {
+    "fftw_prefix": "/work/custom-fftw",
+    "schema": "leo-wide-runtime-release/v1",
+    "source_capsule_sha256": "b8ad02aad7699f4f4cd88505c30aa376b341198ff11bc566b39e71066ddf58f7",
+    "variants": {
+      "adjacent": {
+        "build_receipt_sha256": "c9beeabc8e26bcd82f27395f4c8fbda39a7773be73a116f8837716f19e46c59b",
+        "outputs": {
+          "leo-native-glrt-short-window": {
+            "reference_exact": true,
+            "sha256": "982f52e1b9c8eb6ab68d98902c8fefb23b44a7f427e72c9133e761d124cf6eae"
+          },
+          "libleo-adaptive-detector.so": {
+            "reference_exact": true,
+            "sha256": "758a0ccc4b61c4c8cc7fc96c23ea34bfea38eeb6e7c34cc225f28129cefae2d3"
+          }
+        },
+        "reference_toolchain_exact": true,
+        "toolchain": {
+          "archiver_sha256": "4c513e84e8f707efcd2cce581a6f47b9023789fd3a58c89fb465f1f8366e30bd",
+          "compiler_sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88",
+          "compiler_version": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+          "fftw_double_library_sha256": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7",
+          "fftw_float_archive_sha256": "4bd8265039f3c116e1c891f67a984e9adbf38af33cbf866b16c68ef66da6498a",
+          "fftw_header_sha256": "0dd1b988b681d5797aaf10c2c57c107f7dca510695e4b94b3855eb52550d282c"
+        }
+      }
+    }
+  },
+  "filesystem": "ext4",
+  "isolation": {
+    "invisible": [
+      "/srv/bulk",
+      "project checkout",
+      "/tmp/ordinary-fractional-runtime-20261119",
+      "/tmp/leo-pipeline-native.sfewXn"
+    ],
+    "mounts": [
+      "read-only /usr",
+      "fresh device /dev",
+      "/proc",
+      "empty tmpfs /tmp",
+      "copied files in ext4 /work"
+    ],
+    "network_namespace": "unshared and independently checked",
+    "python": "system python3 -I -B; project import probe raised ModuleNotFoundError",
+    "tool": "bubblewrap 0.11.1"
+  },
+  "packages": {
+    "binutils": "2.46-3ubuntu2",
+    "gcc-15": "15.2.0-16ubuntu1",
+    "libfftw3-dev": "3.3.10-2fakesync1build3"
+  },
+  "payload_parity": {
+    "DS26-0036": {
+      "archive_receipt_sha256": "b19440a6a723818a4be6c14f42eb75e275af857d4753c7426c6ad9e6eefc104f",
+      "cases": [
+        {
+          "case": "archived_IQ",
+          "iq_sha256": "sha256:146b2873f2f3c6cc7b11bb2aba2c15bfc3742d8188c310d2371a41fc597d2d66",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:eed391f5895f4b637ff142aed13bf2c2eb0c1ae2d43a8bdc9d767d9e2bfa2d76",
+              "positive_counts": [
+                5,
+                4
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:eed391f5895f4b637ff142aed13bf2c2eb0c1ae2d43a8bdc9d767d9e2bfa2d76",
+              "positive_counts": [
+                5,
+                4
+              ]
+            }
+          },
+          "visit": 5147
+        },
+        {
+          "case": "empty",
+          "iq_sha256": "sha256:58e0a2f7c0e88d03332c57054d218a14ea5c2b4a408cc7a5f7780f04298ba981",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 0,
+              "payload_sha256": "sha256:a407d5afbe35b55efcd52c8d3a1bfa882430d436578e911d23de750dbba8b651",
+              "positive_counts": [
+                0,
+                0
+              ]
+            },
+            "stock": {
+              "candidate_rows": 0,
+              "payload_sha256": "sha256:a407d5afbe35b55efcd52c8d3a1bfa882430d436578e911d23de750dbba8b651",
+              "positive_counts": [
+                0,
+                0
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "noise",
+          "iq_sha256": "sha256:cc354dfd0dd8b75a993b96b41a5d27549e44c99e0dde89b3d4db7d0ac0df7af4",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 2,
+              "payload_sha256": "sha256:65a3210e3f0cbc106e8f84a92cdea836337e308aae977de93149f993b3fe9136",
+              "positive_counts": [
+                0,
+                0
+              ]
+            },
+            "stock": {
+              "candidate_rows": 2,
+              "payload_sha256": "sha256:65a3210e3f0cbc106e8f84a92cdea836337e308aae977de93149f993b3fe9136",
+              "positive_counts": [
+                0,
+                0
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "weak",
+          "iq_sha256": "sha256:bacdd046c68c3fe86964144c93a357f86ff044144f9f350eca939be80122b601",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 10,
+              "payload_sha256": "sha256:e54fce2868b8ffa1209519c4e9aa02b8cd2738f6d3288e444d479f32fed597a5",
+              "positive_counts": [
+                4,
+                4
+              ]
+            },
+            "stock": {
+              "candidate_rows": 10,
+              "payload_sha256": "sha256:e54fce2868b8ffa1209519c4e9aa02b8cd2738f6d3288e444d479f32fed597a5",
+              "positive_counts": [
+                4,
+                4
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "positive-edge",
+          "iq_sha256": "sha256:3137f4f01d75526c9a86eb4af3e7e570bb4d7d75adda5e0b3d211fefefeebfaa",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:6a11f0f522cde52288d6d06276391b80f9a95fed74ab3e5cda1693df44d87fb6",
+              "positive_counts": [
+                4,
+                4
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:6a11f0f522cde52288d6d06276391b80f9a95fed74ab3e5cda1693df44d87fb6",
+              "positive_counts": [
+                4,
+                4
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "negative-edge",
+          "iq_sha256": "sha256:400b5d112f5375b39a73266aae4aa3ce6e60551f170cd0e5db293790a136f7c0",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:ae538e890298372ed34827051548379e290a940b006b2ed2762fa47e84b705ca",
+              "positive_counts": [
+                3,
+                4
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:ae538e890298372ed34827051548379e290a940b006b2ed2762fa47e84b705ca",
+              "positive_counts": [
+                3,
+                4
+              ]
+            }
+          },
+          "visit": null
+        }
+      ],
+      "edge": "lower"
+    },
+    "DS29-0082": {
+      "archive_receipt_sha256": "00f563f0fab9fb46f177861d153e130ec560af117d35f5f6f80193b20b4522cb",
+      "cases": [
+        {
+          "case": "archived_IQ",
+          "iq_sha256": "sha256:2335e28b8b70af313e4edcabe2170950bed478ff04729bfaef8c02d7e2c86138",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:5d2b3d7fe0bc0c37e9e11961d16ab53ed307b67333fa706e4e10255104398875",
+              "positive_counts": [
+                0,
+                0
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:5d2b3d7fe0bc0c37e9e11961d16ab53ed307b67333fa706e4e10255104398875",
+              "positive_counts": [
+                0,
+                0
+              ]
+            }
+          },
+          "visit": 5147
+        },
+        {
+          "case": "empty",
+          "iq_sha256": "sha256:58e0a2f7c0e88d03332c57054d218a14ea5c2b4a408cc7a5f7780f04298ba981",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 0,
+              "payload_sha256": "sha256:a407d5afbe35b55efcd52c8d3a1bfa882430d436578e911d23de750dbba8b651",
+              "positive_counts": [
+                0,
+                0
+              ]
+            },
+            "stock": {
+              "candidate_rows": 0,
+              "payload_sha256": "sha256:a407d5afbe35b55efcd52c8d3a1bfa882430d436578e911d23de750dbba8b651",
+              "positive_counts": [
+                0,
+                0
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "noise",
+          "iq_sha256": "sha256:cc354dfd0dd8b75a993b96b41a5d27549e44c99e0dde89b3d4db7d0ac0df7af4",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 0,
+              "payload_sha256": "sha256:1bf52eaa4afeb3d7a3ab90faab45b49fbf660a1e65cbc3471c52b724af8d0892",
+              "positive_counts": [
+                0,
+                0
+              ]
+            },
+            "stock": {
+              "candidate_rows": 0,
+              "payload_sha256": "sha256:1bf52eaa4afeb3d7a3ab90faab45b49fbf660a1e65cbc3471c52b724af8d0892",
+              "positive_counts": [
+                0,
+                0
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "weak",
+          "iq_sha256": "sha256:8000d816fbf93f5c1015010cd60249b6613283640301044e839c25cb5f1f3972",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:d1cc779d9b9dac08374e015ea2b71c6365ee931e43653181f7d8b0e1a91b4d2d",
+              "positive_counts": [
+                4,
+                5
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:d1cc779d9b9dac08374e015ea2b71c6365ee931e43653181f7d8b0e1a91b4d2d",
+              "positive_counts": [
+                4,
+                5
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "positive-edge",
+          "iq_sha256": "sha256:5dae90c64027fb48896bd70949238e6205c41a4182de1f6c3b75f307acfea6f3",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:f7d040969f0b6620ccd11dcfcaeb001cfa165e2df1c312d654faeb8da2dc655d",
+              "positive_counts": [
+                4,
+                4
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:f7d040969f0b6620ccd11dcfcaeb001cfa165e2df1c312d654faeb8da2dc655d",
+              "positive_counts": [
+                4,
+                4
+              ]
+            }
+          },
+          "visit": null
+        },
+        {
+          "case": "negative-edge",
+          "iq_sha256": "sha256:a6b8b3cb1a7f9801c0fa17035e7cdfbbcf432c72dabe1142d43a29bc536bc157",
+          "roles": {
+            "adjacent": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:5f7d4acea3a8a058bc9f81a61f20c6e00c2cd7a4e4caef077c6acb908cdc5f36",
+              "positive_counts": [
+                5,
+                4
+              ]
+            },
+            "stock": {
+              "candidate_rows": 16,
+              "payload_sha256": "sha256:5f7d4acea3a8a058bc9f81a61f20c6e00c2cd7a4e4caef077c6acb908cdc5f36",
+              "positive_counts": [
+                5,
+                4
+              ]
+            }
+          },
+          "visit": null
+        }
+      ],
+      "edge": "upper"
+    }
+  },
+  "schema": "leo-wide-runtime-offline-check/v1",
+  "source": {
+    "bytes": 80344,
+    "capsule_sha256": "b8ad02aad7699f4f4cd88505c30aa376b341198ff11bc566b39e71066ddf58f7",
+    "compiled_closure_members": 29,
+    "historical_build_receipts": {
+      "adjacent": {
+        "path": "reports/2026_11_19_receiver_screening/track-recovery/wide-kernel/build-receipt.json",
+        "sha256": "dc33d1ae07c62ad5bf1062ddf65f9b9a4b3c1c27b96da25ed083fde54acff12e"
+      },
+      "stock": {
+        "path": "reports/2026_11_19_receiver_screening/receiver-core/cfo-stride/control-build.json",
+        "sha256": "cc6b1813cdd5a1144f45aeaee762a5e4175367029a36803d1536e37ae6cb6ef8"
+      }
+    },
+    "members": 35
+  },
+  "system_prefix_release": {
+    "fftw_prefix": "/usr",
+    "schema": "leo-wide-runtime-release/v1",
+    "source_capsule_sha256": "b8ad02aad7699f4f4cd88505c30aa376b341198ff11bc566b39e71066ddf58f7",
+    "variants": {
+      "adjacent": {
+        "build_receipt_sha256": "e8adbb1405ec00a6e7da0363bf54efa82c328484a45111452f94c0e289d42b2a",
+        "outputs": {
+          "leo-native-glrt-short-window": {
+            "reference_exact": true,
+            "sha256": "982f52e1b9c8eb6ab68d98902c8fefb23b44a7f427e72c9133e761d124cf6eae"
+          },
+          "libleo-adaptive-detector.so": {
+            "reference_exact": true,
+            "sha256": "758a0ccc4b61c4c8cc7fc96c23ea34bfea38eeb6e7c34cc225f28129cefae2d3"
+          }
+        },
+        "reference_toolchain_exact": true,
+        "toolchain": {
+          "archiver_sha256": "4c513e84e8f707efcd2cce581a6f47b9023789fd3a58c89fb465f1f8366e30bd",
+          "compiler_sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88",
+          "compiler_version": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+          "fftw_double_library_sha256": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7",
+          "fftw_float_archive_sha256": "4bd8265039f3c116e1c891f67a984e9adbf38af33cbf866b16c68ef66da6498a",
+          "fftw_header_sha256": "0dd1b988b681d5797aaf10c2c57c107f7dca510695e4b94b3855eb52550d282c"
+        }
+      },
+      "stock": {
+        "build_receipt_sha256": "d7bb9bb1e9406bb69aeb8813aee2ede639ab79e3794b493e7768764ae9da1c2b",
+        "outputs": {
+          "leo-native-glrt-short-window": {
+            "reference_exact": true,
+            "sha256": "f5a75e3ab06b7e8d90378ba2242e0dc541081a3c5109fb5114989085ee05507f"
+          },
+          "libleo-adaptive-detector.so": {
+            "reference_exact": true,
+            "sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66"
+          }
+        },
+        "reference_toolchain_exact": true,
+        "toolchain": {
+          "archiver_sha256": "4c513e84e8f707efcd2cce581a6f47b9023789fd3a58c89fb465f1f8366e30bd",
+          "compiler_sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88",
+          "compiler_version": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+          "fftw_double_library_sha256": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7",
+          "fftw_float_archive_sha256": "4bd8265039f3c116e1c891f67a984e9adbf38af33cbf866b16c68ef66da6498a",
+          "fftw_header_sha256": "0dd1b988b681d5797aaf10c2c57c107f7dca510695e4b94b3855eb52550d282c"
+        }
+      }
+    }
+  }
+}

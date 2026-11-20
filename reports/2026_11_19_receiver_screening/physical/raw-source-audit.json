@@ -1,0 +1,70 @@
+{
+  "qualified_independent_recordings_found": 0,
+  "tested_requirement": "independent calibrated receiver location, UTC, capture-time orbit catalogue, and multiple anonymous tracks in actual Qin pilot lanes",
+  "local_recheck": {
+    "decoded_ut_tree": "/srv/bulk/leo/ut-starlink-pilots",
+    "raw_exemplar_zip_bin_or_sc16_members_in_decoded_ut_tree": 0,
+    "raw_capture_staging": "/mnt/qnap01/mouse9911/leo/captures",
+    "raw_capture_staging_entries": 0,
+    "local_snapshot_tree": "/mnt/qnap01/mouse9911/tle/snapshots",
+    "local_starlink_snapshot_sources": ["space-track", "huggingface"],
+    "local_starlink_snapshot_months": ["2026-08", "2026-09", "2026-10", "2026-11"]
+  },
+  "ut_austin_raw_exemplar": {
+    "directory": "https://rnl-data.ae.utexas.edu/datastore/supplementaryMaterial/qin-starlink-pilots/raw-iq-data/",
+    "url": "https://rnl-data.ae.utexas.edu/datastore/supplementaryMaterial/qin-starlink-pilots/raw-iq-data/exemplar250-257.zip",
+    "archive_bytes": 40653199,
+    "http_ranges_verified": [
+      {"status": 206, "first": 0, "last": 1058, "sha256": "6d4b9684620c65f2788eb8aee9b1fd75ed1ae10728c5001dda72f284f7d093d4"},
+      {"status": 206, "first": 40587642, "last": 40653198, "sha256": "aabc4c9d927300f5dc0d932e82c116aaf971b326220f04bbc8a58a665e265aa6"}
+    ],
+    "bytes_fetched": 66616,
+    "metadata_members_crc_verified": {
+      "README.txt": "bdbf73db37001d72bd4b921a8e33889357ce6701779148b13544c0831161c609",
+      "sliceInfo.json": "2be3e49639310311cfa9c436a0655ac19ee1569ba0883f9a351c5c188c711338",
+      "exemplar250-257.json": "47e99c494f95bf552fcf6d841d41b6b7e17270ac2b363457ef20e66665b5a62c",
+      "readIQslice.m": "793f9c7bcacba19fba5dc34d56ee2ddf783947cb6b734d7859e2cd691fafb404"
+    },
+    "raw_iq_in_manifest_members": 1,
+    "raw_iq_uncompressed_bytes": 50000000,
+    "raw_iq_member_crc32_declared": "05018326",
+    "raw_iq_member_retrieved": false,
+    "sample_format": "interleaved little-endian signed int16 complex IQ",
+    "nominal_sample_rate_hz": 250000000,
+    "actual_center_hz": 12075117197.1668,
+    "nominal_rf_span_hz": [11950117197.1668, 12200117197.1668],
+    "nominal_channel": 6,
+    "complex_samples": 12500000,
+    "duration_s": 0.05,
+    "exemplar_whole_frames": 7,
+    "source_guide_exemplar_satellites": [31848],
+    "source_guide_capture_date": "2025-01-21",
+    "source_unix_time_field_verbatim": "17375117563",
+    "source_unix_time_unit_documented_in_zip": false,
+    "site_coordinate_in_zip": false,
+    "tle_or_captured_catalogue_in_zip": false,
+    "disposition": "physical Qin pilot acquisition control with one 50 ms waveform excerpt; no localization roster"
+  },
+  "ohio_state_wideband": {
+    "source": "https://people.engineering.osu.edu/media/document/2025-09-26/kassas_joint_tracking_and_beacon_refinement_of_wideband_starlink_leo_signals_for_pnt.pdf",
+    "site_authority": "ElectroScience Laboratory in Columbus, Ohio",
+    "dates_authority": "June and August 2025",
+    "reported_long_run_s": 360,
+    "reported_wideband_satellite_tracks": 10,
+    "nominal_rf_center_hz": 10825000000,
+    "bandwidth_hz": 250000000,
+    "nominal_full_gain_bandwidth_hz_approx": 200000000,
+    "public_raw_packet_and_causal_tle_found": false,
+    "disposition": "paper establishes collection; underlying files and observation-time authority not linked to a replayable publication"
+  },
+  "westford_haystack": {
+    "collection_source": "https://par.nsf.gov/servlets/purl/10570502",
+    "site_source": "https://www.haystack.mit.edu/about/haystack-telescopes-and-facilities/westford-radio-telescope/",
+    "site_authority": "Westford geodetic VLBI station",
+    "public_figure": "same STARLINK-5949 pass spectrograms at two frequencies",
+    "reported_raw_format": "Digital RF",
+    "reported_bandwidth_limit": "approximately half one Starlink channel per IQ collection",
+    "public_raw_packet_and_causal_tle_found": false,
+    "disposition": "positive evidence of recorded multi-frequency collections; file-level pilot coverage, timestamps and frozen orbit source unavailable"
+  }
+}

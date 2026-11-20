@@ -1,0 +1,92 @@
+{
+  "charts": [
+    {
+      "caption": "Matched native GLRT factors through the same streaming Graph and TLE.",
+      "cases": "roof135",
+      "id": "native-anchor-full-roof",
+      "method": "native_anchor_receiver",
+      "provenance": [
+        "plan.json",
+        "stock-original-prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Streamed orbit anchors",
+          "value": "native_anchor_receiver",
+          "where": {
+            "cohort": "roof"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived native joint",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "roof"
+          }
+        }
+      ],
+      "title": "Independent anchors \u00b7 full native roof"
+    },
+    {
+      "caption": "Matched native GLRT factors through the same streaming Graph and TLE.",
+      "cases": [
+        "DS29-0357-omitted",
+        "DS29-0604-omitted",
+        "DS26-0277-omitted",
+        "DS29-0316-omitted",
+        "DS29-0127-omitted",
+        "DS26-0209-omitted",
+        "DS26-0203-omitted",
+        "DS26-0070-omitted",
+        "DS26-0036-r0"
+      ],
+      "id": "native-anchor-full-omitted",
+      "method": "native_anchor_receiver",
+      "provenance": [
+        "plan.json",
+        "stock-original-prediction-lock.json"
+      ],
+      "queries": "omitted-queries.json",
+      "scope": "transfer",
+      "seal": "omitted-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Streamed orbit anchors",
+          "value": "native_anchor_receiver",
+          "where": {
+            "cohort": "omitted"
+          }
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived native joint",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "omitted"
+          }
+        }
+      ],
+      "title": "Independent anchors \u00b7 nine omitted regions"
+    }
+  ],
+  "version": 1
+}

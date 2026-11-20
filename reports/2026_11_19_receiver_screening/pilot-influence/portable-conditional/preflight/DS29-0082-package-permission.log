@@ -1,0 +1,27 @@
+Running as unit: leo-portable-conditional-ds29-0082.service
+Traceback (most recent call last):
+  File "/var/tmp/leo-portable-conditional-field/receive.py", line 373, in <module>
+    main()
+  File "/var/tmp/leo-portable-conditional-field/receive.py", line 369, in main
+    replay(args.manifest.resolve(strict=True), args.out.resolve(), args.cpus, args.raw_deadline, args.detector)
+  File "/var/tmp/leo-portable-conditional-field/receive.py", line 256, in replay
+    lock = verify_package()
+           ^^^^^^^^^^^^^^^^
+  File "/var/tmp/leo-portable-conditional-field/receive.py", line 119, in verify_package
+    lock = read(ROOT / "files.json")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/leo-portable-conditional-field/receive.py", line 23, in read
+    return json.loads(Path(path).read_bytes())
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1019, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/var/tmp/leo-portable-conditional-field/files.json'
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 104ms
+             CPU time consumed: 91ms
+                   Memory peak: 14.7M (swap: 0B)

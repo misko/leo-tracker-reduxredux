@@ -1,0 +1,145 @@
+{
+  "cases": {
+    "DS26-0237": {
+      "candidate": {
+        "files": {
+          "plan.json": "e8c95ada79ebc472f2f575c5855290c012d53267e04bd1fef3b8d1d5ec2f632c",
+          "position.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "raw.json": "78616f48f3d116bb2256fadfa53fa2e3bc4c6781ba4447e1a3f50a3dbbac37cc",
+          "service.json": "a04971d97c33aeebdc2dd99617efe7b015d822fdcf5c3fc56380a7042d69964c",
+          "service.log": "f0774e8ddb7e9e26a0cd56fb4aa225e903c4897f07b476d18500836721214eab"
+        },
+        "phase_messages": [
+          "stage: full recorded IQ enter",
+          "stage: raw complete",
+          "stage: standalone receiver enter"
+        ]
+      },
+      "control": {
+        "files": {
+          "end.json": "1b0d2e3b90ca64d6232beafe7f23f678e4c342df2e38b43a885d7edafca6aef6",
+          "plan.json": "d3818e48037c686d0a621837c4f535aba64800682c0201cf6d8312efcd9f4886",
+          "position.json": "3a705945c2966bb474c143906e73de565fa649a14b0f59d2dbf6d7ff0f52746e",
+          "raw.json": "694b5348f8878cf339e015e069cc8ef4aee9929a4302854d0c671fceedc5e4ed",
+          "service.json": "5d536d5755dad3bf8a1fd79ee6a699ad7e8007587b867a77905b34cb154f9ad1",
+          "service.log": "491e0e928bce0abc54d2918678bb6019373ffcd8f7941cd55e1892727435be60"
+        },
+        "phase_messages": [
+          "stage: full recorded IQ enter",
+          "stage: raw complete",
+          "stage: standalone receiver enter",
+          "stage: both calibration arms returned"
+        ]
+      }
+    },
+    "DS29-0082": {
+      "candidate": {
+        "files": {
+          "end.json": "a1e71fccc8721d9c5f6cc862efd47162b15a41e17ec6bbb3c8872cea98825227",
+          "plan.json": "8548414faeddbe5797b2a63e83856a6ea7766c340b62b8231e7f94aad8fdc0b7",
+          "position.json": "d6f261d4163cda5a2fb2fa7d6e45fdd1bf94295c4156ced687c777a6c4de780b",
+          "raw.json": "c4b0144cfc01d8077a45c90d45ea365f28d6012747e547d1c81126877f6d2fbf",
+          "service.json": "0a3897ffaa496c48a242b897a1a49786f24fd2fda852c4dd0399b2616ad65cbf",
+          "service.log": "6266f303c5fb11bb797619f940db4666631fbf2e1338ce33e25965807a7a34a6"
+        },
+        "phase_messages": [
+          "stage: full recorded IQ enter",
+          "stage: raw complete",
+          "stage: standalone receiver enter",
+          "stage: both calibration arms returned"
+        ]
+      },
+      "control": {
+        "files": {
+          "plan.json": "05d27a887ecd45da9b13c7f386baa3172697f7a3b1033d723d64c1b54c021f8d",
+          "position.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "raw.json": "3fd984e5f1d7411068c337c17e1bd7d2ded366320c9ee2769a76d2f0920368cb",
+          "service.json": "cc981ede13d66ff357662d146cc081940f1a1e41087fa5f8d19b75e68ca384c8",
+          "service.log": "fd4b9af5a628ec544ac9eb88b5b7447ec41c7390140b176137259b20bf81fd29"
+        },
+        "phase_messages": [
+          "stage: full recorded IQ enter",
+          "stage: raw complete",
+          "stage: standalone receiver enter"
+        ]
+      }
+    }
+  },
+  "exporter_sha256": "11f9d43674caaa03adac1ccac9be64f0f8f017211f8b63cc63651c6a2ede2f35",
+  "paired_checks": [
+    {
+      "branch": "control",
+      "case": "DS29-0082",
+      "primary_status": "timed_out",
+      "product_equal": {
+        "input_sha256": false,
+        "native_sha256": true
+      },
+      "published_position_arms_equal": null,
+      "repeat_status": "ok",
+      "same_support": {
+        "clock_sha256": true,
+        "excluded_sha256": true,
+        "probes_sha256": true,
+        "raw_authority": true
+      },
+      "scientific_request_equal_after_local_relocation": true
+    },
+    {
+      "branch": "candidate",
+      "case": "DS29-0082",
+      "primary_status": "ok",
+      "product_equal": {
+        "input_sha256": false,
+        "native_sha256": true
+      },
+      "published_position_arms_equal": true,
+      "repeat_status": "ok",
+      "same_support": {
+        "clock_sha256": true,
+        "excluded_sha256": true,
+        "probes_sha256": true,
+        "raw_authority": true
+      },
+      "scientific_request_equal_after_local_relocation": true
+    },
+    {
+      "branch": "control",
+      "case": "DS26-0237",
+      "primary_status": "ok",
+      "product_equal": {
+        "input_sha256": false,
+        "native_sha256": true
+      },
+      "published_position_arms_equal": true,
+      "repeat_status": "ok",
+      "same_support": {
+        "clock_sha256": true,
+        "excluded_sha256": true,
+        "probes_sha256": true,
+        "raw_authority": true
+      },
+      "scientific_request_equal_after_local_relocation": true
+    },
+    {
+      "branch": "candidate",
+      "case": "DS26-0237",
+      "primary_status": "timed_out",
+      "product_equal": {
+        "input_sha256": false,
+        "native_sha256": true
+      },
+      "published_position_arms_equal": null,
+      "repeat_status": "ok",
+      "same_support": {
+        "clock_sha256": true,
+        "excluded_sha256": true,
+        "probes_sha256": true,
+        "raw_authority": true
+      },
+      "scientific_request_equal_after_local_relocation": true
+    }
+  ],
+  "primary_source_lock_sha256": "2fa56ef979d8f36fa44cf530b3db0394ca61f37186cada08628282af43bfd0fc",
+  "repeat_prediction_lock_sha256": "376087bb676ed73004f86069293390c8e01e0f781e2d42be0ae418c176140a85"
+}

@@ -1,0 +1,1312 @@
+{
+  "batch_build": [
+    "cc",
+    "-std=c11",
+    "-O3",
+    "-march=native",
+    "-fopenmp-simd",
+    "-ffp-contract=off",
+    "-shared",
+    "-fPIC",
+    "-mavx2",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_batch.c",
+    "-lm",
+    "-o",
+    "/srv/bulk/leo-dev/fine-batch-20261119/frozen/fine_batch.so"
+  ],
+  "build": [
+    "cc",
+    "-std=c11",
+    "-O3",
+    "-march=native",
+    "-fopenmp-simd",
+    "-ffp-contract=off",
+    "-shared",
+    "-fPIC",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+    "-lm",
+    "-o",
+    "/srv/bulk/leo-dev/fine-search-20261119/qualified/fine_search.so"
+  ],
+  "cases": {
+    "DS26-0237": {
+      "archive_sha256": "854ff1f1a97e3f40b7a904d0a5fe3298070dfb8faaf3d42fc91443060feed2e7",
+      "cpu": 4,
+      "edge": "lower",
+      "input_manifest": "sha256:23f22f794f4b34f2feeb49b49405dc0c27b5fde70dce72cd0e001990b2148b50",
+      "root": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+      "rows": [
+        {
+          "iq_sha256": "sha256:0aefd277846b93ceb5f8ca26d60296fa68ab404924b4664e16f58789e5e9d4da",
+          "manifest": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "probes": [
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.032708049526806754,
+                  "fractional_epoch_offset_samples": -0.07257452069606876,
+                  "fractional_exact_score": 0.03586762986281167,
+                  "fractional_margin": 0.0031595803360049135,
+                  "fractional_tracking_cfo_hz": 26643.544160603225,
+                  "integer_epoch_sample": 6414,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03923760836219987,
+                  "fractional_epoch_offset_samples": 0.30743486392524205,
+                  "fractional_exact_score": 0.04206490460946348,
+                  "fractional_margin": 0.0028272962472636123,
+                  "fractional_tracking_cfo_hz": 573041.1893006634,
+                  "integer_epoch_sample": 13177,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03607425732215561,
+                  "fractional_epoch_offset_samples": -0.027298094302386517,
+                  "fractional_exact_score": 0.04446396265012104,
+                  "fractional_margin": 0.00838970532796543,
+                  "fractional_tracking_cfo_hz": -509915.24718526495,
+                  "integer_epoch_sample": 10699,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 7400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816141465504,
+              "visit_index": 37
+            },
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03566965509827729,
+                  "fractional_epoch_offset_samples": 1.4824068529333134,
+                  "fractional_exact_score": 0.038091389212533924,
+                  "fractional_margin": 0.0024217341142566337,
+                  "fractional_tracking_cfo_hz": -752955.0685107739,
+                  "integer_epoch_sample": 11672,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.0325604550795817,
+                  "fractional_epoch_offset_samples": -0.9240292723704435,
+                  "fractional_exact_score": 0.037779139520058506,
+                  "fractional_margin": 0.005218684440476809,
+                  "fractional_tracking_cfo_hz": -114014.27596044382,
+                  "integer_epoch_sample": 6389,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03454567650833215,
+                  "fractional_epoch_offset_samples": 0.959303090138085,
+                  "fractional_exact_score": 0.04137592864128039,
+                  "fractional_margin": 0.006830252132948238,
+                  "fractional_tracking_cfo_hz": -506765.31115251424,
+                  "integer_epoch_sample": 8903,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.04270764641573113,
+                  "fractional_epoch_offset_samples": -0.9383211712818954,
+                  "fractional_exact_score": 0.04177461975694337,
+                  "fractional_margin": -0.0009330266587877639,
+                  "fractional_tracking_cfo_hz": 6853.5122524186445,
+                  "integer_epoch_sample": 13211,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.035095449649040635,
+                  "fractional_epoch_offset_samples": 0.1788128244443889,
+                  "fractional_exact_score": 0.04401243512705579,
+                  "fractional_margin": 0.008916985478015158,
+                  "fractional_tracking_cfo_hz": -331682.58350867464,
+                  "integer_epoch_sample": 8903,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 7400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816141465504,
+              "visit_index": 37
+            }
+          ],
+          "role": "development",
+          "segment": 0,
+          "visit": 37
+        },
+        {
+          "iq_sha256": "sha256:ce153e336eded53965567babc79b623e291d1e2cffc78ae4f546ce44e40cc038",
+          "manifest": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "probes": [
+            {
+              "actual_rf_hz": 10709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.04059863789193282,
+                  "fractional_epoch_offset_samples": -0.22430964696235972,
+                  "fractional_exact_score": 0.5773485622684058,
+                  "fractional_margin": 0.536749924376473,
+                  "fractional_tracking_cfo_hz": -141092.7177529301,
+                  "integer_epoch_sample": 1449,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04059863789193282,
+                  "fractional_epoch_offset_samples": -0.22430964696235972,
+                  "fractional_exact_score": 0.5773485622684058,
+                  "fractional_margin": 0.536749924376473,
+                  "fractional_tracking_cfo_hz": -141092.7177529301,
+                  "integer_epoch_sample": 1449,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03504918429508589,
+                  "fractional_epoch_offset_samples": -0.4147549379632736,
+                  "fractional_exact_score": 0.4589847133032565,
+                  "fractional_margin": 0.4239355290081706,
+                  "fractional_tracking_cfo_hz": -207001.7232875329,
+                  "integer_epoch_sample": 1069,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03499163953181449,
+                  "fractional_epoch_offset_samples": -1.4702249241983156,
+                  "fractional_exact_score": 0.044753420374480865,
+                  "fractional_margin": 0.009761780842666372,
+                  "fractional_tracking_cfo_hz": -120467.42345348556,
+                  "integer_epoch_sample": 5376,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03665166061263096,
+                  "fractional_epoch_offset_samples": -0.9082259979773454,
+                  "fractional_exact_score": 0.04834839502809198,
+                  "fractional_margin": 0.01169673441546102,
+                  "fractional_tracking_cfo_hz": -316132.8747627994,
+                  "integer_epoch_sample": 8860,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 1,
+              "edge": "lower",
+              "payload_start_sample": 12800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816153416738,
+              "visit_index": 64
+            },
+            {
+              "actual_rf_hz": 10709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03265951074766177,
+                  "fractional_epoch_offset_samples": -0.5208580470631482,
+                  "fractional_exact_score": 0.23400851568330305,
+                  "fractional_margin": 0.20134900493564128,
+                  "fractional_tracking_cfo_hz": 386076.8966170464,
+                  "integer_epoch_sample": 9448,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03608443359727244,
+                  "fractional_epoch_offset_samples": -0.08249809887075296,
+                  "fractional_exact_score": 0.040369367242726426,
+                  "fractional_margin": 0.004284933645453987,
+                  "fractional_tracking_cfo_hz": -678676.6623959757,
+                  "integer_epoch_sample": 11307,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03892700442811467,
+                  "fractional_epoch_offset_samples": -1.493935520737469,
+                  "fractional_exact_score": 0.043340435242851104,
+                  "fractional_margin": 0.004413430814736434,
+                  "fractional_tracking_cfo_hz": -137868.89858689258,
+                  "integer_epoch_sample": 12430,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03938507258536894,
+                  "fractional_epoch_offset_samples": 1.1707132778231322,
+                  "fractional_exact_score": 0.041452665233815474,
+                  "fractional_margin": 0.0020675926484465326,
+                  "fractional_tracking_cfo_hz": -529759.5722420207,
+                  "integer_epoch_sample": 12869,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03641240233010863,
+                  "fractional_epoch_offset_samples": 0.8008890274622833,
+                  "fractional_exact_score": 0.03818093072464016,
+                  "fractional_margin": 0.0017685283945315308,
+                  "fractional_tracking_cfo_hz": -701273.023108578,
+                  "integer_epoch_sample": 11162,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03440471470744737,
+                  "fractional_epoch_offset_samples": -1.1514498624237692,
+                  "fractional_exact_score": 0.03549403459637147,
+                  "fractional_margin": 0.0010893198889240993,
+                  "fractional_tracking_cfo_hz": -263227.66460817575,
+                  "integer_epoch_sample": 3339,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 1,
+              "edge": "lower",
+              "payload_start_sample": 12800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816153416738,
+              "visit_index": 64
+            }
+          ],
+          "role": "blind",
+          "segment": 0,
+          "visit": 64
+        },
+        {
+          "iq_sha256": "sha256:63ff9f6b269c48ee1020881540ed3494de9c1e9c20da1bbac4680d5c33b3caf9",
+          "manifest": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "probes": [
+            {
+              "actual_rf_hz": 12209687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.0377633329485581,
+                  "fractional_epoch_offset_samples": 1.4907535567831538,
+                  "fractional_exact_score": 0.03943220843220088,
+                  "fractional_margin": 0.0016688754836427858,
+                  "fractional_tracking_cfo_hz": -288729.9969390264,
+                  "integer_epoch_sample": 8668,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.0377633329485581,
+                  "fractional_epoch_offset_samples": 1.4907535567831538,
+                  "fractional_exact_score": 0.03943220843220088,
+                  "fractional_margin": 0.0016688754836427858,
+                  "fractional_tracking_cfo_hz": -288729.9969390264,
+                  "integer_epoch_sample": 8668,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 7,
+              "edge": "lower",
+              "payload_start_sample": 12400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816152528834,
+              "visit_index": 62
+            },
+            {
+              "actual_rf_hz": 12209687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03876925565571487,
+                  "fractional_epoch_offset_samples": 0.9303580950915262,
+                  "fractional_exact_score": 0.04169514429711224,
+                  "fractional_margin": 0.002925888641397374,
+                  "fractional_tracking_cfo_hz": -584390.198863639,
+                  "integer_epoch_sample": 12104,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03721520612304455,
+                  "fractional_epoch_offset_samples": -0.6181251841017741,
+                  "fractional_exact_score": 0.039433896917342184,
+                  "fractional_margin": 0.002218690794297637,
+                  "fractional_tracking_cfo_hz": -827174.4994988937,
+                  "integer_epoch_sample": 2471,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03608562083100026,
+                  "fractional_epoch_offset_samples": -1.224745920718717,
+                  "fractional_exact_score": 0.039949428295454635,
+                  "fractional_margin": 0.0038638074644543746,
+                  "fractional_tracking_cfo_hz": -321342.0478750827,
+                  "integer_epoch_sample": 10103,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.04102875384129001,
+                  "fractional_epoch_offset_samples": 0.0007413479248984934,
+                  "fractional_exact_score": 0.03832146837331027,
+                  "fractional_margin": -0.002707285467979742,
+                  "fractional_tracking_cfo_hz": 435866.3380426894,
+                  "integer_epoch_sample": 10931,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 7,
+              "edge": "lower",
+              "payload_start_sample": 12400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816152528834,
+              "visit_index": 62
+            }
+          ],
+          "role": "blind",
+          "segment": 0,
+          "visit": 62
+        }
+      ],
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "DS29-0082": {
+      "archive_sha256": "fe2b362bb0c6324db2084e7ea926393bed38acced14d48dafdf6221376d2ad40",
+      "cpu": 4,
+      "edge": "upper",
+      "input_manifest": "sha256:954f0fec1dfbd9c86e91272033683abeb9144466fb6810ca53f43c9e40809c6d",
+      "root": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+      "rows": [
+        {
+          "iq_sha256": "sha256:da8092364bea2649b06d6d3f85de4791814e0a450b62bee4652d7a2b037e90a3",
+          "manifest": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "probes": [
+            {
+              "actual_rf_hz": 12690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03526138710754176,
+                  "fractional_epoch_offset_samples": -1.1579389046952955,
+                  "fractional_exact_score": 0.04167623087286616,
+                  "fractional_margin": 0.0064148437653244045,
+                  "fractional_tracking_cfo_hz": -509831.573213511,
+                  "integer_epoch_sample": 4690,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.033740246928886254,
+                  "fractional_epoch_offset_samples": 0.04793540386192508,
+                  "fractional_exact_score": 0.04075161903861077,
+                  "fractional_margin": 0.007011372109724516,
+                  "fractional_tracking_cfo_hz": -803740.0300846347,
+                  "integer_epoch_sample": 8122,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.044076720284020744,
+                  "fractional_epoch_offset_samples": -1.3823887171037914,
+                  "fractional_exact_score": 0.04191659835333967,
+                  "fractional_margin": -0.002160121930681075,
+                  "fractional_tracking_cfo_hz": -94760.22486458374,
+                  "integer_epoch_sample": 11459,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03705762378125704,
+                  "fractional_epoch_offset_samples": 1.0097534871392015,
+                  "fractional_exact_score": 0.038357673338436656,
+                  "fractional_margin": 0.0013000495571796125,
+                  "fractional_tracking_cfo_hz": -163443.55584173536,
+                  "integer_epoch_sample": 11990,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03694037718688388,
+                  "fractional_epoch_offset_samples": -0.9678364519075279,
+                  "fractional_exact_score": 0.039103660177345886,
+                  "fractional_margin": 0.0021632829904620066,
+                  "fractional_tracking_cfo_hz": -310571.33466665307,
+                  "integer_epoch_sample": 2091,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.0472789905436583,
+                  "fractional_epoch_offset_samples": 1.2341813937926096,
+                  "fractional_exact_score": 0.04577877452250203,
+                  "fractional_margin": -0.0015002160211562698,
+                  "fractional_tracking_cfo_hz": 161555.6133422525,
+                  "integer_epoch_sample": 4340,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 8,
+              "edge": "upper",
+              "payload_start_sample": 7800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911688334473,
+              "visit_index": 39
+            },
+            {
+              "actual_rf_hz": 12690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.04080879676868319,
+                  "fractional_epoch_offset_samples": 0.30142624580798505,
+                  "fractional_exact_score": 0.03775724709912283,
+                  "fractional_margin": -0.003051549669560359,
+                  "fractional_tracking_cfo_hz": -79936.57858397519,
+                  "integer_epoch_sample": 10547,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03111896604479407,
+                  "fractional_epoch_offset_samples": 1.3865090019313038,
+                  "fractional_exact_score": 0.04334191562902818,
+                  "fractional_margin": 0.01222294958423411,
+                  "fractional_tracking_cfo_hz": -528972.7216265717,
+                  "integer_epoch_sample": 8861,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.0390815248064452,
+                  "fractional_epoch_offset_samples": -0.11652082928168221,
+                  "fractional_exact_score": 0.03631626460407605,
+                  "fractional_margin": -0.0027652602023691547,
+                  "fractional_tracking_cfo_hz": 168182.56313696058,
+                  "integer_epoch_sample": 2101,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.033462847125854664,
+                  "fractional_epoch_offset_samples": 0.42766520578903233,
+                  "fractional_exact_score": 0.04124749597518864,
+                  "fractional_margin": 0.007784648849333976,
+                  "fractional_tracking_cfo_hz": -519891.3422460998,
+                  "integer_epoch_sample": 8344,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.0372895283908173,
+                  "fractional_epoch_offset_samples": -1.1474501375672777,
+                  "fractional_exact_score": 0.043705861095540297,
+                  "fractional_margin": 0.006416332704722999,
+                  "fractional_tracking_cfo_hz": 681984.134733332,
+                  "integer_epoch_sample": 6814,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.033878340730140226,
+                  "fractional_epoch_offset_samples": -0.5845856158107747,
+                  "fractional_exact_score": 0.04262036823145366,
+                  "fractional_margin": 0.008742027501313435,
+                  "fractional_tracking_cfo_hz": -63749.90014476271,
+                  "integer_epoch_sample": 2318,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 8,
+              "edge": "upper",
+              "payload_start_sample": 7800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911688334473,
+              "visit_index": 39
+            }
+          ],
+          "role": "development",
+          "segment": 0,
+          "visit": 39
+        },
+        {
+          "iq_sha256": "sha256:bbe294af404e1cbdcb8723780cb661010be065b997b91b45303ad5dc3aedf78d",
+          "manifest": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "probes": [
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03455588990454589,
+                  "fractional_epoch_offset_samples": 1.1558427042241648,
+                  "fractional_exact_score": 0.03863788563661208,
+                  "fractional_margin": 0.00408199573206619,
+                  "fractional_tracking_cfo_hz": 507491.32124217344,
+                  "integer_epoch_sample": 7614,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.030288509460670666,
+                  "fractional_epoch_offset_samples": 0.1438530447135444,
+                  "fractional_exact_score": 0.03990890077171372,
+                  "fractional_margin": 0.009620391311043051,
+                  "fractional_tracking_cfo_hz": 241629.6242983066,
+                  "integer_epoch_sample": 7279,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.039355129967725694,
+                  "fractional_epoch_offset_samples": 0.641449821840252,
+                  "fractional_exact_score": 0.03837894620011491,
+                  "fractional_margin": -0.000976183767610786,
+                  "fractional_tracking_cfo_hz": -218281.6432704624,
+                  "integer_epoch_sample": 476,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.037714186191403994,
+                  "fractional_epoch_offset_samples": -0.14705756952670582,
+                  "fractional_exact_score": 0.0405337812741233,
+                  "fractional_margin": 0.0028195950827193048,
+                  "fractional_tracking_cfo_hz": 229343.8433854357,
+                  "integer_epoch_sample": 5394,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 11800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911697210039,
+              "visit_index": 59
+            },
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.033613898889217786,
+                  "fractional_epoch_offset_samples": 0.9588336163071574,
+                  "fractional_exact_score": 0.04311842031082956,
+                  "fractional_margin": 0.009504521421611775,
+                  "fractional_tracking_cfo_hz": -38589.73417736142,
+                  "integer_epoch_sample": 7082,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.04307686513685389,
+                  "fractional_epoch_offset_samples": -1.4079188210388323,
+                  "fractional_exact_score": 0.048190478200736464,
+                  "fractional_margin": 0.005113613063882576,
+                  "fractional_tracking_cfo_hz": 566393.2373550799,
+                  "integer_epoch_sample": 12094,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03680534200193029,
+                  "fractional_epoch_offset_samples": 1.2638415803358538,
+                  "fractional_exact_score": 0.03934032696621036,
+                  "fractional_margin": 0.0025349849642800695,
+                  "fractional_tracking_cfo_hz": 150473.08798928998,
+                  "integer_epoch_sample": 7124,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 11800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911697210039,
+              "visit_index": 59
+            }
+          ],
+          "role": "blind",
+          "segment": 0,
+          "visit": 59
+        },
+        {
+          "iq_sha256": "sha256:77ef8dcfc53a05e5c70d956b1288a342fe3b003ac44c8c01f921dafdf65c7d4f",
+          "manifest": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "probes": [
+            {
+              "actual_rf_hz": 12440312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.036969284863014,
+                  "fractional_epoch_offset_samples": -0.24836523720665576,
+                  "fractional_exact_score": 0.6189078768472698,
+                  "fractional_margin": 0.5819385919842558,
+                  "fractional_tracking_cfo_hz": -76561.49372088362,
+                  "integer_epoch_sample": 3109,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04209254027631514,
+                  "fractional_epoch_offset_samples": -0.07438545498454727,
+                  "fractional_exact_score": 0.5038577920368805,
+                  "fractional_margin": 0.4617652517605654,
+                  "fractional_tracking_cfo_hz": -201461.75918185178,
+                  "integer_epoch_sample": 4282,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03942713563972279,
+                  "fractional_epoch_offset_samples": 0.29580714025309596,
+                  "fractional_exact_score": 0.4873132667941724,
+                  "fractional_margin": 0.44788613115444964,
+                  "fractional_tracking_cfo_hz": -304040.2797620192,
+                  "integer_epoch_sample": 3108,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03942713563972279,
+                  "fractional_epoch_offset_samples": 0.29580714025309596,
+                  "fractional_exact_score": 0.4873132667941724,
+                  "fractional_margin": 0.44788613115444964,
+                  "fractional_tracking_cfo_hz": -304040.2797620192,
+                  "integer_epoch_sample": 3108,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03477266430131731,
+                  "fractional_epoch_offset_samples": 0.6248889821372343,
+                  "fractional_exact_score": 0.04654278165349492,
+                  "fractional_margin": 0.01177011735217761,
+                  "fractional_tracking_cfo_hz": -74411.94921062855,
+                  "integer_epoch_sample": 11478,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.04419409741890286,
+                  "fractional_epoch_offset_samples": -0.04978422610317756,
+                  "fractional_exact_score": 0.03733661582090964,
+                  "fractional_margin": -0.006857481597993216,
+                  "fractional_tracking_cfo_hz": -241339.168773483,
+                  "integer_epoch_sample": 11478,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.04083698923282404,
+                  "fractional_epoch_offset_samples": 1.276436609726812,
+                  "fractional_exact_score": 0.04236629170376943,
+                  "fractional_margin": 0.00152930247094539,
+                  "fractional_tracking_cfo_hz": -447757.63487214566,
+                  "integer_epoch_sample": 11541,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 7,
+              "edge": "upper",
+              "payload_start_sample": 20400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911716250702,
+              "visit_index": 102
+            },
+            {
+              "actual_rf_hz": 12440312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03917147505303071,
+                  "fractional_epoch_offset_samples": -0.15603055261522386,
+                  "fractional_exact_score": 0.039634785680995245,
+                  "fractional_margin": 0.00046331062796453604,
+                  "fractional_tracking_cfo_hz": -547072.2883738236,
+                  "integer_epoch_sample": 1697,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.0368393375230263,
+                  "fractional_epoch_offset_samples": 0.1766443945207742,
+                  "fractional_exact_score": 0.0407147218359273,
+                  "fractional_margin": 0.0038753843129009993,
+                  "fractional_tracking_cfo_hz": -185863.67709916428,
+                  "integer_epoch_sample": 9296,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.04062179465318858,
+                  "fractional_epoch_offset_samples": -1.3361349387883696,
+                  "fractional_exact_score": 0.03906025215781874,
+                  "fractional_margin": -0.0015615424953698415,
+                  "fractional_tracking_cfo_hz": -566543.9167326933,
+                  "integer_epoch_sample": 11204,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.031110452091242236,
+                  "fractional_epoch_offset_samples": -0.5799346882134904,
+                  "fractional_exact_score": 0.04511939718068349,
+                  "fractional_margin": 0.014008945089441251,
+                  "fractional_tracking_cfo_hz": -607351.703808686,
+                  "integer_epoch_sample": 7047,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.039858862912013744,
+                  "fractional_epoch_offset_samples": 1.166916373534008,
+                  "fractional_exact_score": 0.03904771376202902,
+                  "fractional_margin": -0.0008111491499847232,
+                  "fractional_tracking_cfo_hz": -132820.4171416707,
+                  "integer_epoch_sample": 8677,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 7,
+              "edge": "upper",
+              "payload_start_sample": 20400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911716250702,
+              "visit_index": 102
+            }
+          ],
+          "role": "blind",
+          "segment": 0,
+          "visit": 102
+        }
+      ],
+      "sources": {
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    },
+    "DS29-0519": {
+      "archive_sha256": "31d59b2f74179edd7a18506d94a4c65ab12ea3ba7b6a1499617d920d2aace2af",
+      "cpu": 4,
+      "edge": "lower",
+      "input_manifest": "sha256:2657427dbfc138d9721fb816e1f633d5e7b04c31857a9df73533631c92f14762",
+      "root": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+      "rows": [
+        {
+          "iq_sha256": "sha256:819d7dc197c0ba2426da364c5ba48e582790b9ae2fdd9b7d26e92d8bfb4c4cb5",
+          "manifest": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "probes": [
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03684099688561138,
+                  "fractional_epoch_offset_samples": 0.22808800550179523,
+                  "fractional_exact_score": 0.039365760006153425,
+                  "fractional_margin": 0.002524763120542048,
+                  "fractional_tracking_cfo_hz": -449516.8513395649,
+                  "integer_epoch_sample": 12296,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.0431594946579097,
+                  "fractional_epoch_offset_samples": 0.16978112211227836,
+                  "fractional_exact_score": 0.04215512950270949,
+                  "fractional_margin": -0.001004365155200207,
+                  "fractional_tracking_cfo_hz": -545392.5830177427,
+                  "integer_epoch_sample": 13323,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03827564927814846,
+                  "fractional_epoch_offset_samples": -0.32473450457519754,
+                  "fractional_exact_score": 0.04067681200509468,
+                  "fractional_margin": 0.002401162726946224,
+                  "fractional_tracking_cfo_hz": -391870.99550151714,
+                  "integer_epoch_sample": 11972,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.04239062188227518,
+                  "fractional_epoch_offset_samples": -1.177295627208019,
+                  "fractional_exact_score": 0.04425792832411424,
+                  "fractional_margin": 0.0018673064418390575,
+                  "fractional_tracking_cfo_hz": 302584.49860667856,
+                  "integer_epoch_sample": 10480,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.04011251943728919,
+                  "fractional_epoch_offset_samples": -1.3369544324319191,
+                  "fractional_exact_score": 0.03866874350757851,
+                  "fractional_margin": -0.0014437759297106778,
+                  "fractional_tracking_cfo_hz": -456733.501108008,
+                  "integer_epoch_sample": 11560,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 7400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626132097791,
+              "visit_index": 37
+            },
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.032302852051097106,
+                  "fractional_epoch_offset_samples": -0.006069495899592582,
+                  "fractional_exact_score": 0.044681416537468106,
+                  "fractional_margin": 0.012378564486371,
+                  "fractional_tracking_cfo_hz": -547618.9853547593,
+                  "integer_epoch_sample": 4528,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.032824284807627994,
+                  "fractional_epoch_offset_samples": 0.7711827478431451,
+                  "fractional_exact_score": 0.03795196072487594,
+                  "fractional_margin": 0.0051276759172479425,
+                  "fractional_tracking_cfo_hz": -717601.9700918389,
+                  "integer_epoch_sample": 9669,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03579239387739123,
+                  "fractional_epoch_offset_samples": -0.20727729925348246,
+                  "fractional_exact_score": 0.036795901165509876,
+                  "fractional_margin": 0.0010035072881186477,
+                  "fractional_tracking_cfo_hz": -768918.1338682295,
+                  "integer_epoch_sample": 4482,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 7400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626132097791,
+              "visit_index": 37
+            }
+          ],
+          "role": "development",
+          "segment": 0,
+          "visit": 37
+        },
+        {
+          "iq_sha256": "sha256:1164251c725ce6d19f366c6fd1491484aaf9af5c7518b7168d46ec6281e190a8",
+          "manifest": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "probes": [
+            {
+              "actual_rf_hz": 11459687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03519949559561535,
+                  "fractional_epoch_offset_samples": 0.007326565078853282,
+                  "fractional_exact_score": 0.6523585799956678,
+                  "fractional_margin": 0.6171590844000525,
+                  "fractional_tracking_cfo_hz": -229097.4256802724,
+                  "integer_epoch_sample": 3525,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03519949559561535,
+                  "fractional_epoch_offset_samples": 0.007326565078853282,
+                  "fractional_exact_score": 0.6523585799956678,
+                  "fractional_margin": 0.6171590844000525,
+                  "fractional_tracking_cfo_hz": -229097.4256802724,
+                  "integer_epoch_sample": 3525,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.040570333029860024,
+                  "fractional_epoch_offset_samples": 0.13509479219366882,
+                  "fractional_exact_score": 0.4999020674303604,
+                  "fractional_margin": 0.4593317344005004,
+                  "fractional_tracking_cfo_hz": -97164.76359163731,
+                  "integer_epoch_sample": 104,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.040570333029860024,
+                  "fractional_epoch_offset_samples": 0.13509479219366882,
+                  "fractional_exact_score": 0.4999020674303604,
+                  "fractional_margin": 0.4593317344005004,
+                  "fractional_tracking_cfo_hz": -97164.76359163731,
+                  "integer_epoch_sample": 104,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03240217060284755,
+                  "fractional_epoch_offset_samples": -0.5116355941884715,
+                  "fractional_exact_score": 0.2899730530702527,
+                  "fractional_margin": 0.2575708824674051,
+                  "fractional_tracking_cfo_hz": -456164.3131588938,
+                  "integer_epoch_sample": 3525,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.04273336300761071,
+                  "fractional_epoch_offset_samples": -0.2634054618677441,
+                  "fractional_exact_score": 0.49260206076574653,
+                  "fractional_margin": 0.4498686977581358,
+                  "fractional_tracking_cfo_hz": -2135.49618376368,
+                  "integer_epoch_sample": 3525,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03952626723249519,
+                  "fractional_epoch_offset_samples": 0.21213335360475583,
+                  "fractional_exact_score": 0.3601462557813794,
+                  "fractional_margin": 0.3206199885488842,
+                  "fractional_tracking_cfo_hz": 129883.05659022539,
+                  "integer_epoch_sample": 104,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 4,
+              "edge": "lower",
+              "payload_start_sample": 13400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626145392936,
+              "visit_index": 67
+            },
+            {
+              "actual_rf_hz": 11459687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03218838518190178,
+                  "fractional_epoch_offset_samples": -0.03327126112157036,
+                  "fractional_exact_score": 0.3972753793667799,
+                  "fractional_margin": 0.36508699418487817,
+                  "fractional_tracking_cfo_hz": 404864.3102929131,
+                  "integer_epoch_sample": 3525,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.032192632642649086,
+                  "fractional_epoch_offset_samples": 0.9662850607753306,
+                  "fractional_exact_score": 0.3972783662005303,
+                  "fractional_margin": 0.3650857335578812,
+                  "fractional_tracking_cfo_hz": 404866.2478227436,
+                  "integer_epoch_sample": 3524,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03924618467361617,
+                  "fractional_epoch_offset_samples": 0.05205835764883236,
+                  "fractional_exact_score": 0.041843825442973916,
+                  "fractional_margin": 0.0025976407693577425,
+                  "fractional_tracking_cfo_hz": -269915.1477317136,
+                  "integer_epoch_sample": 10742,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.037144745550332675,
+                  "fractional_epoch_offset_samples": 0.8466958136625131,
+                  "fractional_exact_score": 0.041231911254115815,
+                  "fractional_margin": 0.00408716570378314,
+                  "fractional_tracking_cfo_hz": -297484.33801180345,
+                  "integer_epoch_sample": 8927,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03626451877820552,
+                  "fractional_epoch_offset_samples": 0.3953955339301169,
+                  "fractional_exact_score": 0.04353065564406462,
+                  "fractional_margin": 0.007266136865859099,
+                  "fractional_tracking_cfo_hz": 411383.43219322537,
+                  "integer_epoch_sample": 630,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.040470660972842104,
+                  "fractional_epoch_offset_samples": -0.0536539390000555,
+                  "fractional_exact_score": 0.03937793925098723,
+                  "fractional_margin": -0.0010927217218548724,
+                  "fractional_tracking_cfo_hz": 357848.93164825474,
+                  "integer_epoch_sample": 11583,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "lower",
+              "payload_start_sample": 13400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626145392936,
+              "visit_index": 67
+            }
+          ],
+          "role": "blind",
+          "segment": 0,
+          "visit": 67
+        },
+        {
+          "iq_sha256": "sha256:7ae107893698086e5b95eec4bb16cc55936b2096152ee4cce7f56738c145b1c5",
+          "manifest": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "probes": [
+            {
+              "actual_rf_hz": 11209687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03305029242353903,
+                  "fractional_epoch_offset_samples": 0.9707107216313626,
+                  "fractional_exact_score": 0.04262328996123973,
+                  "fractional_margin": 0.009572997537700696,
+                  "fractional_tracking_cfo_hz": 317449.93160086917,
+                  "integer_epoch_sample": 12698,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03305029242353903,
+                  "fractional_epoch_offset_samples": 0.9707107216313626,
+                  "fractional_exact_score": 0.04262328996123973,
+                  "fractional_margin": 0.009572997537700696,
+                  "fractional_tracking_cfo_hz": 317449.93160086917,
+                  "integer_epoch_sample": 12698,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.038116070893106306,
+                  "fractional_epoch_offset_samples": 0.07465510235381793,
+                  "fractional_exact_score": 0.03719568098543953,
+                  "fractional_margin": -0.0009203899076667757,
+                  "fractional_tracking_cfo_hz": -1557.2529832151922,
+                  "integer_epoch_sample": 7843,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 3,
+              "edge": "lower",
+              "payload_start_sample": 11600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626141409155,
+              "visit_index": 58
+            },
+            {
+              "actual_rf_hz": 11209687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.034937558711579504,
+                  "fractional_epoch_offset_samples": 0.42997216328465204,
+                  "fractional_exact_score": 0.03907606631687682,
+                  "fractional_margin": 0.004138507605297319,
+                  "fractional_tracking_cfo_hz": -682633.0020053646,
+                  "integer_epoch_sample": 9840,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.034889745477505486,
+                  "fractional_epoch_offset_samples": 1.2196699901518018,
+                  "fractional_exact_score": 0.035678738763333016,
+                  "fractional_margin": 0.00078899328582753,
+                  "fractional_tracking_cfo_hz": -666219.2201006791,
+                  "integer_epoch_sample": 2178,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 3,
+              "edge": "lower",
+              "payload_start_sample": 11600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626141409155,
+              "visit_index": 58
+            }
+          ],
+          "role": "blind",
+          "segment": 0,
+          "visit": 58
+        }
+      ],
+      "sources": {
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "77f0719b9c1658c042c53408b7941dedd9126fbfa738bade7113bc060eadd865",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_bounds.py": "f83a8330629c9cc0323822a322302a7e028f4a8a114182eaf676381e13362d2c",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_exact.py": "8b5c556aded30ab0622a55287cc32db274e126c35f50fcb622d2101b8ae583bf",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_integer.py": "58d88ee1f6776d71149b1b2c4ee6676483d1f0b52b27cfc1b8b4a2eb8d06e83f",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_native/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "59dd006a9bc9c07fd83e0234d68046f5fc4a57cf577576eecfdacd957c9ab0bd",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_selection.py": "7e22b1e585bd2442565a2756256cd2ca18c695720fc5760274a4ca0e615473dd",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_sparse_native/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "4ba8d2e14858e274113bde80dde54cb35459617350e9179d49685b083ef239a6",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/acquisition.py": "6a1e88345d2d64f6d6e11f1d586753b74bcc0ef5a6f6816e42880eb8bc6e7a23",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/coarse_screen.py": "7feabf0cc6c93dc630f29de997efc73bed029396cc401db9a694be29fdc2e2b4",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+        "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+      }
+    }
+  },
+  "libs": {
+    "batch": {
+      "path": "/srv/bulk/leo-dev/fine-batch-20261119/frozen/fine_batch.so",
+      "sha256": "98a23962c45e8077b4f9a98904d836d77d99041d08e06aeb9bb0f635778c6f65"
+    },
+    "batched32": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_batched_fft.so",
+      "sha256": "5c7f96f8219d29a776660c4b0de5deafadaf4983774432e5868e1817423144ec"
+    },
+    "cfo": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/conditioned.so",
+      "sha256": "378219a59d7b9b13f7548d9d056917853aad369c720ded4b1d07c32d661bfa1e"
+    },
+    "fine": {
+      "path": "/srv/bulk/leo-dev/fine-search-20261119/qualified/fine_search.so",
+      "sha256": "4d0b38f6c10aedba4f585e006fda5683ac78eafbc45be96a3609acf786b0458a"
+    },
+    "fused": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/fused.so",
+      "sha256": "dc34f7196391931e27105425217bfcac3a47833571cb36fe8260686a9ce1ffb0"
+    },
+    "prepared": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/original-kernel-v1/original_kernel.so",
+      "sha256": "26d1e10bb0cf0f15d58d922c46a2b50e38124d54a7efdccfcb8e2ba46783de02"
+    },
+    "sliding": {
+      "path": "/srv/bulk/leo-dev/sliding-pilot-20261120/qualified/sliding_pilot.so",
+      "sha256": "c25a8ac969cccf42ced4fec6a4d788c4faf1f05fbf80e82e3a762ca11b7f121a"
+    }
+  },
+  "modes": [
+    "prepared",
+    "rolling64",
+    "rolling32",
+    "paired32"
+  ],
+  "python_sha256": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+  "repeats": 5,
+  "sliding_build": [
+    "cc",
+    "-std=c11",
+    "-O3",
+    "-march=native",
+    "-mavx2",
+    "-fopenmp-simd",
+    "-ffp-contract=fast",
+    "-fno-math-errno",
+    "-fno-trapping-math",
+    "-fPIC",
+    "-shared",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/sliding_pilot.c",
+    "-lm",
+    "-o",
+    "/srv/bulk/leo-dev/sliding-pilot-20261120/qualified/sliding_pilot.so"
+  ],
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/antenna-confirmation/capture-exact/source-lock.json": "e55a87c41b7de9e643b069d14e3b07c3c3f3989f06ec0fc76b9f72a197c64276",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/coarse-and-navigation/sliding-pilot-bank/PROTOCOL.md": "5b3d8e7735c16070f42135398fed84d58cf4f28900c12e5410910fa58378b3ec",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/original-support/original-kernel/source-lock.json": "266d46c7e8c79aae94f41b4c19dbea3b558a2d2795c06ca6c7a6b48ac2f16de3",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/pilot-search-and-region/fine-search/PROTOCOL.md": "3d988b7ac9aee035b0a5119beadf298b14178530ce20efe4a116c8cc126ae46a",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/pilot-search-and-region/fine-search/input-lock.json": "f80af754408e5df03c4f081315e6e640678bfef8c8f36e74641d06f7e4e7d4ff",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/pilot-search-and-region/fine-search/qualification-lock.json": "905317d53cb7b41a341bc6c121bc99bddf9caf4da1e666f1e3580111184c4895",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/receiver-deadline/prepared-hotpath/PROTOCOL.md": "922c8478f1ed6723120aee8d0074cd94411c258f70c7d55d6a13a245a7e2dc8c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/receiver-deadline/prepared-hotpath/SELECTOR.md": "52348e9d13404496066e752903a12656c04ac9ae2117cb619564448cea03edd1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/receiver-deadline/prepared-hotpath/qualification-lock.json": "c8bfb6ef30c385a85f7129ed18bc9565cfa02021be0c1174dcb1d2ee0fb5c52e",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/receiver-deadline/prepared-hotpath/selector-input-lock.json": "d71a022c051992b3ec2b8fa6439a6349b3dc26541e3b99762e6365df7a66413c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/retry-and-transfer/fine-batch/PROTOCOL.md": "1e61c04820e84015f9892f264768b47622919b56818742d434e7c429ecd86e5d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/retry-and-transfer/fine-batch/input-lock.json": "7b2b7ade681f2f78455a2775bdbc937caa11b223555cb8bc7dfec9cb0e814dfe",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/retry-and-transfer/fine-batch/qualification-lock.json": "b529eda1890f00ee6ecb7362de1fe2cd613888c8d8057224abb3c747d9aca1e9",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/fine_batch_trial.py": "5e3c84f38563c9253acbd4bba38fe220ca12420e0d1413a9bdc176ea029ab566",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/fine_search_trial.py": "fea166bca56d20cf4689dc13c320debfffc3b3dc6c3333e15837590499720509",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/prepared_hotpath_selector.py": "b5819a175b7897012ba54a41adf23f343a1d7a6f24caec0b27a28ce8c0a9bd3b",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/prepared_hotpath_trial.py": "441555ea8d0cefe93e9a32e7ba18d1e2d28793cfc40dfc8bdd14fc33089a6185",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/sliding_pilot_trial.py": "14295c6dfe35fcbafa115aa67bd55565fde2310cde49230bad110ff2f6f59838",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/anchor_grid.py": "8ca26e8d87daf4f8f7f92fbfbcd813bd478f7f4f446e2028c62db5c863b1e551",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_batch.c": "226d35c4d2f7c0babf0a08b80b03b1e79d74077c02a92d341c12aaf6732f316c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_batch.py": "08ed341c3dbe928b6ecb420ae4b2b050c037120efb52bd7d90a4564560cb4cad",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.py": "c484609d9a40ae8052f645c18917f98ce94bacbba056078c7ba40ab1c4d06ccc",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/prepared_hotpath.py": "af424b931bc0ccd9dd867f7665916387de2f1983875401776ef522db99dd9afe",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/prepared_hotpath_peaks.py": "a4198d5e47fdf337b1ee8605c715d9da24672cffddf3774b1a8265d5ad929527",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/sliding_pilot.c": "7283e56e29a1a73a67d665de6e713ec85afa9750fd796ce20717959e558641b2",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/sliding_pilot.py": "679f8de753059ec4b616a7658d809ebed869b27f453b6027f4586a008654c29a",
+    "/opt/leo-fast-auto/20261010-r1/venv/lib/python3.12/site-packages/numpy/fft/_pocketfft_umath.cpython-312-x86_64-linux-gnu.so": "29a1547b480b7ddc1e45cdc772b3f4b614cccced70204181bf5d3ad138a04ebb",
+    "/srv/bulk/leo-dev/prepared-hotpath-20261119/run/input-lock.json": "6b6e54d6dcc6ce729ad4b1210a2684648bb32b8e29af71c26e9e8041575e355a"
+  }
+}

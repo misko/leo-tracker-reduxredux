@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "peak-null-excess-six",
+      "method": "peak_null_excess",
+      "scope": "roof",
+      "title": "Rolled-pilot excess ranking on six wide GLRT recordings",
+      "caption": "Both phase-release runs start from the same sealed wide GLRT measurements and containing tile. Two development and four reserve captures come from one roof. Original v5 uses capture-era factors.",
+      "cases": "sealed",
+      "seal": "six-figure-lock.json",
+      "provenance": ["prediction-lock.json", "factor-audit.json", "pilot-semantics-audit.json"],
+      "series": [
+        {"key": "one", "label": "Causal rolled-pilot excess", "file": "predictions.jsonl.gz", "value": "peak_null_excess", "native_authority": "ordinary", "native_field": "paired_ordinary_sha256"},
+        {"key": "stock", "label": "Unchanged wide GLRT", "file": "predictions.jsonl.gz", "value": "wide_unchanged", "native_authority": "ordinary", "native_field": "paired_ordinary_sha256", "match": ["tile", "catalog_sha256", "history_sha256", "track_config_sha256", "wide_native_sha256", "original_request_sha256"]}
+      ]
+    },
+    {
+      "id": "peak-null-excess-reserve",
+      "method": "peak_null_excess",
+      "scope": "roof",
+      "title": "Rolled-pilot excess ranking on the four reserve captures",
+      "caption": "Both phase-release runs share the same wide GLRT measurements and containing tile at the original roof. The reserve recordings use the predeclared development rule with no refitting.",
+      "cases": "sealed",
+      "seal": "reserve-figure-lock.json",
+      "provenance": ["prediction-lock.json", "factor-audit.json", "pilot-semantics-audit.json"],
+      "series": [
+        {"key": "one", "label": "Causal rolled-pilot excess", "file": "reserve-predictions.jsonl.gz", "value": "peak_null_excess", "native_authority": "ordinary", "native_field": "paired_ordinary_sha256"},
+        {"key": "stock", "label": "Unchanged wide GLRT", "file": "reserve-predictions.jsonl.gz", "value": "wide_unchanged", "native_authority": "ordinary", "native_field": "paired_ordinary_sha256", "match": ["tile", "catalog_sha256", "history_sha256", "track_config_sha256", "wide_native_sha256", "original_request_sha256"]}
+      ]
+    }
+  ]
+}

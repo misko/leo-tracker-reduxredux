@@ -1,0 +1,36 @@
+{
+  "charts": [
+    {
+      "caption": "The complete compact v5 peers use the same stored native factors, causal ledger and tile on matched logical CPUs. The pruned validations leave the original propagation audit and all position decisions intact.",
+      "cases": "sealed",
+      "id": "v5_recovery_bank_reuse",
+      "method": "v5_recovery_bank_reuse",
+      "scope": "roof",
+      "seal": "receipt.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Shared immutable recovery bank",
+          "value": "v5_recovery_bank_reuse"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full compact v5",
+          "match": [
+            "input_sha256",
+            "scientific_request_sha256"
+          ],
+          "value": "compact_finish"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Reuse the causal orbital bank in complete v5 reassociation"
+    }
+  ],
+  "version": 1
+}

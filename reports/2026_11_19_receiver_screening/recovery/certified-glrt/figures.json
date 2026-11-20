@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "certified_glrt",
+      "method": "certified_glrt",
+      "scope": "roof",
+      "title": "Exact guarded-acquisition reuse with a partial-IQ v5 fit",
+      "caption": "The fresh trial substitutes eight held DS26-0036 detector visits and retains 6,757 other valid archived visits. The paired control is the independently measured original-archive fit from the Q10 study, bound to the same native and catalogue bytes. No reuse hits occurred in the separate held detector audit.",
+      "cases": ["DS26-0036"],
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "source-lock.json", "qualification.json", "positions.jsonl.gz", "control-positions.jsonl.gz"],
+      "series": [
+        {
+          "key": "one",
+          "label": "Exact reuse · partial IQ",
+          "file": "positions.jsonl.gz",
+          "value": "certified_glrt",
+          "native_field": "source_archive_sha256"
+        },
+        {
+          "key": "stock",
+          "label": "Matched capture-era archive control",
+          "file": "control-positions.jsonl.gz",
+          "value": "certified_glrt_capture_control",
+          "native_field": "source_archive_sha256",
+          "match": ["source_archive_sha256", "catalog_sha256"]
+        }
+      ]
+    }
+  ]
+}

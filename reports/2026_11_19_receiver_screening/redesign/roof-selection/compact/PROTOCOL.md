@@ -1,0 +1,7 @@
+# Compact secant on the 32-recording roof complement
+
+Freeze the exact set difference `ds26-all159` minus `ds26-common127` from the authenticated panel inventory. Store all 32 rows in canonical order. Dispatch eligible cases in SHA-256 order under the fixed ASCII prefix `roof-selection-v1:` followed by the ID. Input eligibility uses only frozen native, causal catalogue, track configuration and blind baseline request authority. An archived numerical failure is still eligible when those inputs authenticate. Preserve the frozen `no_native_run` disposition as unavailable.
+
+Run the unmodified compact secant worker with its original five initial phase rounds and original cold-branch search on both calibration arms. Use the frozen capture-era factors, causal TLE archive and original tile. Use one granted CPU per lane with lowered scheduler priority. Each numerical launch has 195 seconds, with a shared 12-minute wall window and five-second journal reserve. Stop dispatch when the time remaining cannot supply a complete per-worker slot. Record claims and outcomes separately. Keep unlaunched eligible cases distinct from fresh timeouts, worker failures and algorithm withholds.
+
+Score after sealing against the independent receiver location and all four archived capture-era v5 role outcomes. Retain the original statuses and the original publication RF residual independently of the compact conditional RF RMS. Report the full scheduled complement and the subset attempted on matched recordings. Do not extrapolate the attempted subset to the unlaunched rows.

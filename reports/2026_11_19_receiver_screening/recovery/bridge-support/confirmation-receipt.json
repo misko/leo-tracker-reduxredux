@@ -1,0 +1,88 @@
+{
+  "cases": [
+    "DS26-0032",
+    "DS26-0146",
+    "DS26-0080",
+    "DS29-0127",
+    "DS29-0316",
+    "DS29-0519"
+  ],
+  "cohorts": {
+    "comparison": [
+      "DS26-0036"
+    ],
+    "confirmation": [
+      "DS26-0032",
+      "DS26-0146",
+      "DS26-0080",
+      "DS29-0127",
+      "DS29-0316",
+      "DS29-0519"
+    ],
+    "diagnosed": [
+      "DS26-0066",
+      "DS29-0082"
+    ]
+  },
+  "comparisons": [
+    {
+      "id": "DS26-0066",
+      "input_sha256": "d929bdf89bea355e3001c3be98fbee9305e1fed493efa2f00b5a39cc0e2f893c"
+    },
+    {
+      "id": "DS29-0082",
+      "input_sha256": "9a1430659dccf7bb304a8cdf75f9096824a8e8af9934169c74816d5fa03897bb"
+    },
+    {
+      "id": "DS26-0036",
+      "input_sha256": "57453501b7914467d8feb94333dc73d40d002639f520909df15b44faeea9e5a9"
+    },
+    {
+      "id": "DS26-0032",
+      "input_sha256": "6fa7dea2d526ddd555e77b4712507db42986a4946b3d3fd87e2b8369f83a46a9"
+    },
+    {
+      "id": "DS26-0146",
+      "input_sha256": "b00337d4a81614be521eecb8adc40420581de6d24faf4524118501246642f660"
+    },
+    {
+      "id": "DS26-0080",
+      "input_sha256": "41427bba37cf30cc2e959c2695e63d0dfe4401632e3925b9f4a9779e26c9285e"
+    },
+    {
+      "id": "DS29-0127",
+      "input_sha256": "6518a073a1baf4fd28058c5703b4b94d9a0b5d12891d1d78b57717a72cb6fe16"
+    },
+    {
+      "id": "DS29-0316",
+      "input_sha256": "89b59cd79467015b635279cc5589cb56fea240888bccbd43c36bf072cb2cf099"
+    },
+    {
+      "id": "DS29-0519",
+      "input_sha256": "1116035712cedc15df763be9a0d302e0713189b481e06638cf24b8425a2e46ac"
+    }
+  ],
+  "files": {
+    "positions.jsonl.gz": "421d1ce1de971e20682df6ebe15ed50de11d2039ea4f7f7a0d45c9db08b9e71d",
+    "prior-positions.jsonl.gz": "275fe63567fc580d168deb245ba0af62a7291394d184892d98cc17bf5ae77f4f",
+    "stock-positions.jsonl.gz": "3567295697820fbb28a112018aee7d1a62bd90ba195bbbab0bf44f3bccf6ea4a"
+  },
+  "runs": {
+    "candidate": {
+      "method": "bridge_support",
+      "position_sha256": "421d1ce1de971e20682df6ebe15ed50de11d2039ea4f7f7a0d45c9db08b9e71d",
+      "positions": "positions.jsonl.gz"
+    },
+    "control": {
+      "method": "orbit_projector",
+      "position_sha256": "3567295697820fbb28a112018aee7d1a62bd90ba195bbbab0bf44f3bccf6ea4a",
+      "positions": "stock-positions.jsonl.gz"
+    },
+    "prior": {
+      "method": "bridge_cavity",
+      "position_sha256": "275fe63567fc580d168deb245ba0af62a7291394d184892d98cc17bf5ae77f4f",
+      "positions": "prior-positions.jsonl.gz"
+    }
+  },
+  "source_lock_sha256": "1c5de88bb95689856b4ad94d5add5d2eb1fb0c1b6bb97f4c5dfbe3494b6399df"
+}

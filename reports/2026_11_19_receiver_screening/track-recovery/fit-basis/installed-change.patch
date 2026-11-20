@@ -1,0 +1,90 @@
+--- a/leo/analysis/localization_v3/discovery.py
++++ b/leo/analysis/localization_v3/discovery.py
+@@ -13,7 +13,6 @@
+ from leo.analysis.research.phase_linear_geometry import phase_linear_frequency
+ from leo.analysis.research.retained_track_likelihood import PERIOD
+ from leo.analysis.research.shared_orbit_phase_fit import (
+-    augment_phase_statistics,
+     joint_update,
+     penalized_score,
+     profile_phases,
+@@ -24,7 +23,7 @@
+ DRIFT_BOUND_HZ_S = 5.0
+ 
+ 
+-def statistics(groups, bank, corrections, height=0):
++def statistics(groups, bank, corrections, height=0, *, phase_derivative=None):
+     """Exact sufficient statistics; no per-track offset in the fitted model."""
+     # npz members decompress on every access. Materialize once for this scan.
+     if isinstance(bank, np.lib.npyio.NpzFile):
+@@ -32,6 +31,7 @@
+     fragments, starts, comp_index = [], [], []
+     means, cross, centered_rss, visible = [], [], [], []
+     ns, mx, xx, gs, qs, curvature, fragment_active = [], [], [], [], [], [], []
++    phase = dict(hm=[], hh=[], xh=[], zh=[]) if phase_derivative is not None else None
+     for ci, (_, members) in enumerate(groups):
+         starts.append(len(fragments))
+         active = False
+@@ -44,12 +44,30 @@
+             xc = x - x.mean()
+             q = track["rf_hz"] / REFERENCE_RF
+             z = track["values"][None, :] - q * bank[f"doppler_{height}"][:, indexes]
+-            z -= corrections[str(track["channel"])]
++            correction = corrections[str(track["channel"])]
++            uncorrected = (
++                z.copy(order="K")
++                if phase is not None and (correction != 0 or np.signbit(correction))
++                else None
++            )
++            z -= correction
+             mean = z.mean(axis=1)
+             centered = z - mean[:, None]
+             means.append(mean)
+             cross.append(centered @ xc)
+             centered_rss.append(np.sum(centered**2, axis=1))
++            if phase is not None:
++                h = q * phase_derivative[:, indexes]
++                hm = h.mean(axis=1)
++                hc = h - hm[:, None]
++                phase_z = centered
++                if uncorrected is not None:
++                    phase_z = uncorrected - uncorrected.mean(axis=1)[:, None]
++                phase_time = (t - t.mean()) / 150
++                phase["hm"].append(hm)
++                phase["hh"].append(np.sum(hc * hc, axis=1))
++                phase["xh"].append(hc @ phase_time)
++                phase["zh"].append(np.sum(hc * phase_z, axis=1))
+             visible.append(np.min(bank["elevation_deg"][:, indexes], axis=1) >= 0.0)
+             yd = track["values"] - track["values"].mean()
+             affine = yd - xc * (yd @ xc) / max(xc @ xc, 1e-12)
+@@ -82,6 +100,8 @@
+         fragment_active=np.array(fragment_active),
+     )
+     result["count"] = np.add.reduceat(result["n"], result["starts"])
++    if phase is not None:
++        result.update({key: np.asarray(rows) for key, rows in phase.items()})
+     shape = np.maximum(
+         0, result["rss"] - result["xz"] ** 2 / np.maximum(result["xx"][:, None], 1e-12)
+     )
+@@ -270,8 +290,8 @@
+         groups,
+         dict(time_s=scan.times, doppler_0=base[0], elevation_deg=base[1]),
+         {str(t["channel"]): 0.0 for t in scan.tracks},
+-    )
+-    stats = augment_phase_statistics(stats, scan.times, base[0], base[2])
++        phase_derivative=base[2],
++    )
+     # Eligibility is frozen from the original raw observations, even when a
+     # receiver smooth term was subtracted for proposal generation.
+     stats["active"][:] = True
+@@ -370,8 +390,8 @@
+         scan.groups,
+         dict(time_s=scan.times, doppler_0=base[0], elevation_deg=base[1]),
+         {str(t["channel"]): 0.0 for t in scan.tracks},
+-    )
+-    stats = augment_phase_statistics(stats, scan.times, base[0], base[2])
++        phase_derivative=base[2],
++    )
+     bounds = np.full(len(scan.norads), 15.0)
+     initial = np.zeros(8)
+     phases, _ = proposal_phases(stats, initial, scan.sigma, bounds, return_components=True)

@@ -1,0 +1,54 @@
+{
+  "charts": [
+    {
+      "caption": "Same causal catalogue and 25 km tile. Primary and v5 two-omitted timed out.",
+      "cases": [
+        "DS26-0020"
+      ],
+      "id": "accelerated-command-ds26-0020",
+      "method": "accelerated_command_measured",
+      "provenance": [
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Primary",
+          "native_field": "archived_native_sha256",
+          "value": "accelerated_command_measured"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archive fit",
+          "match": [
+            "archived_native_sha256",
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "archived_native_sha256",
+          "value": "accelerated_command_archive"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Completion",
+          "match": [
+            "archived_native_sha256",
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "archived_native_sha256",
+          "value": "accelerated_command_secondary"
+        }
+      ],
+      "title": "Public accelerated detector and archived-factor compact fit"
+    }
+  ],
+  "version": 2
+}

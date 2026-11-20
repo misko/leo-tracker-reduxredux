@@ -1,0 +1,32 @@
+{
+  "charts": [
+    {
+      "caption": "A separate forty-query near-edge panel with complete native GLRT.",
+      "cases": "sealed",
+      "condition_labels": {
+        "6 km outside": "6 km outside",
+        "Near boundary \u00b7 site inside": "Near boundary \u00b7 site inside",
+        "Near boundary \u00b7 site outside": "Near boundary \u00b7 site outside",
+        "Original tile": "Original tile"
+      },
+      "id": "native-anchor-near-edge",
+      "method": "native_anchor_receiver",
+      "provenance": [
+        "prediction-lock.json"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Streamed orbit anchors",
+          "value": "native_anchor_receiver"
+        }
+      ],
+      "title": "Independent anchors \u00b7 blind near-edge offers"
+    }
+  ],
+  "version": 1
+}

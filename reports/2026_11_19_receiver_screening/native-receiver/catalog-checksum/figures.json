@@ -1,0 +1,85 @@
+{
+  "charts": [
+    {
+      "caption": "Both compact v5 fits use the original GLRT and causal snapshots.",
+      "cases": "sealed",
+      "id": "catalog-checksum-original",
+      "method": "catalog_checksum_frozen",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parity.json",
+        "geography.csv",
+        "frequency.csv"
+      ],
+      "scope": "roof",
+      "seal": "original-figure-lock.json",
+      "series": [
+        {
+          "file": "original-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed checksum",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "catalog_checksum_installed"
+        },
+        {
+          "file": "original-positions.jsonl.gz",
+          "key": "one",
+          "label": "Frozen ASCII checksum",
+          "value": "catalog_checksum_frozen"
+        }
+      ],
+      "title": "Frozen checksum on original offers"
+    },
+    {
+      "caption": "The tile center is 15 km east. Both fits use the 20 m publication guard.",
+      "cases": "sealed",
+      "condition_labels": {
+        "east-15-km": "15 km east"
+      },
+      "id": "catalog-checksum-shifted",
+      "method": "catalog_checksum_frozen",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parity.json",
+        "geography.csv",
+        "frequency.csv"
+      ],
+      "queries": "shifted-queries.json",
+      "scope": "transfer",
+      "seal": "shifted-figure-lock.json",
+      "series": [
+        {
+          "file": "shifted-positions.jsonl.gz",
+          "forced_label": "Installed diagnostic",
+          "key": "stock",
+          "label": "Installed checksum",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "catalog_checksum_installed"
+        },
+        {
+          "file": "shifted-positions.jsonl.gz",
+          "forced_label": "Frozen checksum diagnostic",
+          "key": "candidate",
+          "label": "Frozen ASCII checksum",
+          "value": "catalog_checksum_frozen"
+        }
+      ],
+      "title": "Frozen checksum on shifted offer"
+    }
+  ],
+  "version": 2
+}

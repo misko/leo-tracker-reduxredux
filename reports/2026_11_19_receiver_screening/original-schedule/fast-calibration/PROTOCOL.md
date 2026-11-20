@@ -1,0 +1,9 @@
+# Shared-pilot signed CFO transfer protocol
+
+From the twenty existing complete four-region roof recordings, hash physical recording identifiers and manifests separately by edge. Use the first three lower and first three upper recordings as held data and the next four per edge for development. Assign the first held case per edge to the positional sign-reversal control. Select using physical metadata only.
+
+Build co-recorded literal gated-winner pairs from development on the same physical receiver, RF, wrapped epoch within two samples and signed CFO within 1 kHz. Keep aliased winners, rejected literal candidates, other branches and missing gates in the census. Fit median signed CFO offset, Huber affine signed CFO and hierarchical median edge/RF offset on development. Select the richer form only if it lowers the mean leave-one-recording-out median absolute CFO residual by at least 1 Hz against the global offset.
+
+Freeze coefficients before processing held fast-only factors or opening held originals. Apply the selected CFO correction to all fast gate-positive candidates using only their own RF, edge and signed CFO. Keep all candidate gates, ranks, epoch, margin, clocks and physical exclusions. Use unchanged fast factors and matched original factors as controls. Compare opposite sign on all fixed residual pairs and on the predeclared positional control recordings.
+
+Use normal compact rediscovery on corrected factors and the authentic prior compact fits for unchanged complete fast and original. Keep observations, candidate, prior and search settings matched between zero and fitted calibration within each policy. Freeze position predictions before opening held original factors for measurement scoring or reading survey truth. Report original acquisition costs, correction cost and compact service cost separately.

@@ -8,6 +8,10 @@ The repository is intentionally a fresh implementation. The historical
 `leo-tracker` and `leo-tracker-redux` repositories are scientific references and
 regression oracles, not runtime dependencies.
 
+The [algorithm guide](algorithms.md) lists the active algo07v5 configurations
+and compact v5 first, with runnable examples, earlier releases, and the
+receiver benchmark catalog.
+
 The stable documentation entrance is [`docs/README.md`](docs/README.md). It
 links the current scientific understanding, architecture, Standard and Research
 pipelines, evidence ledger, operations, qualification, and documentation
@@ -37,6 +41,8 @@ pipeline](docs/pipelines/standard-analysis.md). All signal evidence remains
 candidate-only.
 The additive, non-authoritative Hough comparison product is documented in the
 [alternate CFO line product](docs/analysis/alternate-cfo-line-product.md).
+Use the [receiver benchmark](tools/pipeline_eval/README.md) to replay archived IQ, compare
+GLRT and position modules, or score a receiver against the original v5 options.
 The denser profile, deterministic 1-in-8 dwell routing, offline experiment
 method, and promotion boundary are documented in the [Research analysis
 pipeline](docs/pipelines/research-analysis.md). The [evidence

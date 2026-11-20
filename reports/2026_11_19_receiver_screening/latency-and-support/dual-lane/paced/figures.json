@@ -1,0 +1,54 @@
+{
+  "charts": [
+    {
+      "caption": "Same saved DS29 waveform, native search and causal offer. Both paced paths use their own verified admitted packets. Original v5 uses capture-era inputs.",
+      "cases": "sealed",
+      "id": "dual-lane-paced-position",
+      "method": "dual_lane_fifth",
+      "provenance": [
+        "position-scores.csv",
+        "positions-candidate-lock.json",
+        "stage-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "position-score-lock.json",
+      "series": [
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "one",
+          "label": "Parallel retained packets",
+          "native_field": "paired_capture_sha256",
+          "value": "dual_lane_fifth"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Historical serial retained packets",
+          "match": [
+            "paired_paced_native_sha256",
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "arrival_queue_candidate"
+        },
+        {
+          "file": "matched-positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "All valid archived packets",
+          "match": [
+            "paired_paced_native_sha256",
+            "catalog_sha256",
+            "original_request_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union"
+        }
+      ],
+      "title": "Position from two-antenna fifth center at recorded cadence"
+    }
+  ],
+  "version": 2
+}

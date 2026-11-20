@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_armijo_finish",
+      "method": "v5_armijo_finish",
+      "scope": "roof",
+      "title": "Armijo position with the compact final decision",
+      "caption": "Four full capture-era inputs include two cavity stress cases. DS26-0066 failed in the phase remap. The archived compact-finish slot on DS26-0287 is unavailable.",
+      "cases": ["DS26-0066", "DS26-0287", "DS26-0002", "DS29-0082"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Armijo through compact finish", "file": "positions.jsonl.gz", "value": "v5_armijo_finish", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Stock compact finish", "file": "stock-finish-positions.jsonl.gz", "value": "compact_finish", "where": {"mode": "matched-tile"}, "match": ["input_sha256"]},
+        {"key": "all_visits", "label": "Armijo cavity endpoint", "file": "armijo-cavity-positions.jsonl.gz", "value": "v5_armijo_fit", "where": {"mode": "matched-tile"}, "match": ["input_sha256"]},
+        {"key": "one_native_factors", "label": "Stock cavity endpoint", "file": "stock-cavity-positions.jsonl.gz", "value": "orbit_projector", "where": {"mode": "matched-tile"}, "match": ["input_sha256"]}
+      ]
+    },
+    {
+      "id": "v5_armijo_finish_phase_seed",
+      "method": "v5_armijo_finish_phase_seed",
+      "scope": "roof",
+      "title": "Aligned phase seed · DS26-0066 retry",
+      "caption": "The retry checks the adopted satellite order and initializes appended phases at zero. The first Armijo finish failed on the same input.",
+      "cases": ["DS26-0066"],
+      "seal": "phase-retry-prediction-lock.json",
+      "source_lock": {"file": "phase-retry-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["phase-retry-ordered-inputs.json.gz", "phase-retry-primary-receipt.json", "phase-retry-primary-traceback.txt"],
+      "series": [
+        {"key": "one", "label": "Aligned phase-seed retry", "file": "phase-retry-positions.jsonl.gz", "value": "v5_armijo_finish_phase_seed"},
+        {"key": "stock", "label": "Original failed finish", "file": "phase-retry-first-attempt.jsonl.gz", "value": "v5_armijo_finish", "match": ["input_sha256"]},
+        {"key": "all_visits", "label": "Archival Armijo cavity", "file": "armijo-cavity-positions.jsonl.gz", "value": "v5_armijo_fit", "where": {"id": "DS26-0066"}, "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

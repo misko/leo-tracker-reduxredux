@@ -1,0 +1,93 @@
+{
+  "charts": [
+    {
+      "caption": "Full recorded IQ, the same wide frequency search and the same position solver. Each receiver proposes four or sixteen pilot start times. All recordings use one physical roof.",
+      "cases": [
+        "DS26-0014",
+        "DS26-0036",
+        "DS26-0122",
+        "DS26-0237",
+        "DS29-0082",
+        "DS29-0127",
+        "DS29-0174",
+        "DS29-0247"
+      ],
+      "id": "scout-centers-all",
+      "method": "scout-centers_candidate",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "all-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Sixteen pilot start times",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-centers_candidate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Four pilot start times",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-centers_control"
+        }
+      ],
+      "title": "Search four or sixteen pilot start times before the position fit"
+    },
+    {
+      "caption": "Full recorded IQ, the same wide frequency search and the same position solver. Each receiver proposes four or sixteen pilot start times. All recordings use one physical roof.",
+      "cases": [
+        "DS26-0014",
+        "DS29-0127"
+      ],
+      "id": "scout-centers-new-iq",
+      "method": "scout-centers_candidate",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "new-iq-figure-lock.json",
+      "series": [
+        {
+          "file": "new-iq.jsonl.gz",
+          "key": "one",
+          "label": "Sixteen pilot start times",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-centers_candidate"
+        },
+        {
+          "file": "new-iq.jsonl.gz",
+          "key": "stock",
+          "label": "Four pilot start times",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-centers_control"
+        }
+      ],
+      "title": "Pilot start-time budget on two new complete waveforms"
+    }
+  ],
+  "version": 1
+}

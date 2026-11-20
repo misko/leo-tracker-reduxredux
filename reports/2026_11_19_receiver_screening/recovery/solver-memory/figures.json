@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_tiled_salvage",
+      "method": "v5_tiled_salvage",
+      "scope": "roof",
+      "title": "Bounded in-memory conservative phase salvage",
+      "caption": "Both complete compact finishes use the same authenticated ordinary factors and bounded preparation. The candidate scores the coarse phase grid in 16-satellite tiles.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Tiled coarse salvage", "file": "tile-positions.jsonl.gz", "value": "v5_tiled_salvage", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Complete aligned control", "file": "control-positions.jsonl.gz", "value": "history_stream_prep", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

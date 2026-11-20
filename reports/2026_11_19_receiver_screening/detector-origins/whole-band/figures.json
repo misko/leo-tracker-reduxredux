@@ -1,0 +1,91 @@
+{
+  "charts": [
+    {
+      "caption": "All eligible 20 ms visits on both receivers. Both runs use the same four proposed epoch neighborhoods and differ in frequency span. Original v5 used its capture-era detector. One physical roof.",
+      "cases": [
+        "DS26-0036",
+        "DS26-0122",
+        "DS26-0237",
+        "DS29-0082",
+        "DS29-0174",
+        "DS29-0247"
+      ],
+      "id": "whole-band-six",
+      "method": "regional_wide_full_iq",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "six-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Wide GLRT \u00b7 \u00b1800 kHz",
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "regional_wide_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Narrow GLRT \u00b7 \u00b1400 kHz",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "ordinary_narrow_full_iq"
+        }
+      ],
+      "title": "Full-IQ position error with two GLRT frequency ranges"
+    },
+    {
+      "caption": "All eligible 20 ms visits on both receivers. Both runs use the same four proposed epoch neighborhoods and differ in frequency span. Original v5 used its capture-era detector. One physical roof.",
+      "cases": [
+        "DS26-0122",
+        "DS29-0247"
+      ],
+      "id": "whole-band-reserve",
+      "method": "regional_wide_full_iq",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "reserve-figure-lock.json",
+      "series": [
+        {
+          "file": "reserve.jsonl.gz",
+          "key": "one",
+          "label": "Wide GLRT \u00b7 \u00b1800 kHz",
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "regional_wide_full_iq"
+        },
+        {
+          "file": "reserve.jsonl.gz",
+          "key": "stock",
+          "label": "Narrow GLRT \u00b7 \u00b1400 kHz",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "ordinary_narrow_full_iq"
+        }
+      ],
+      "title": "GLRT search bandwidth on two additional reserve recordings"
+    }
+  ],
+  "version": 1
+}

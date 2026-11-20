@@ -1,0 +1,138 @@
+{
+  "arm_sysroot": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot",
+  "binaries": {
+    "bank/arm": {
+      "bytes": 22780,
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/bank",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_board_folded.c",
+        "-lfftw3",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/bank/arm"
+      ],
+      "elf": "ELF Header:\n  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF32\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Position-Independent Executable file)\n  Machine:                           ARM\n  Version:                           0x1\n  Entry point address:               0x1755\n  Start of program headers:          52 (bytes into file)\n  Start of section headers:          21300 (bytes into file)\n  Flags:                             0x5000400, Version5 EABI, hard-float ABI\n  Size of this header:               52 (bytes)\n  Size of program headers:           32 (bytes)\n  Number of program headers:         9\n  Size of section headers:           40 (bytes)\n  Number of section headers:         37\n  Section header string table index: 36\n\nDynamic section at offset 0x2e44 contains 30 entries:\n  Tag        Type                         Name/Value\n 0x00000001 (NEEDED)                     Shared library: [libfftw3.so.3]\n 0x00000001 (NEEDED)                     Shared library: [libm.so.6]\n 0x00000001 (NEEDED)                     Shared library: [libc.so.6]\n 0x00000001 (NEEDED)                     Shared library: [ld-linux-armhf.so.3]\n 0x0000000c (INIT)                       0xa88\n 0x0000000d (FINI)                       0x2694\n 0x00000019 (INIT_ARRAY)                 0x12e3c\n 0x0000001b (INIT_ARRAYSZ)               4 (bytes)\n 0x0000001a (FINI_ARRAY)                 0x12e40\n 0x0000001c (FINI_ARRAYSZ)               4 (bytes)\n 0x00000004 (HASH)                       0x1b4\n 0x00000005 (STRTAB)                     0x638\n 0x00000006 (SYMTAB)                     0x318\n 0x0000000a (STRSZ)                      547 (bytes)\n 0x0000000b (SYMENT)                     16 (bytes)\n 0x00000015 (DEBUG)                      0x0\n 0x00000003 (PLTGOT)                     0x12f54\n 0x00000002 (PLTRELSZ)                   240 (bytes)\n 0x00000014 (PLTREL)                     REL\n 0x00000017 (JMPREL)                     0x998\n 0x00000011 (REL)                        0x930\n 0x00000012 (RELSZ)                      104 (bytes)\n 0x00000013 (RELENT)                     8 (bytes)\n 0x00000018 (BIND_NOW)                   \n 0x6ffffffb (FLAGS_1)                    Flags: NOW PIE\n 0x6ffffffe (VERNEED)                    0x8c0\n 0x6fffffff (VERNEEDNUM)                 3\n 0x6ffffff0 (VERSYM)                     0x85c\n 0x6ffffffa (RELCOUNT)                   6\n 0x00000000 (NULL)                       0x0\nAttribute Section: aeabi\nFile Attributes\n  Tag_CPU_name: \"7-A\"\n  Tag_CPU_arch: v7\n  Tag_CPU_arch_profile: Application\n  Tag_ARM_ISA_use: Yes\n  Tag_THUMB_ISA_use: Thumb-2\n  Tag_FP_arch: VFPv3\n  Tag_Advanced_SIMD_arch: NEONv1\n  Tag_ABI_PCS_wchar_t: 4\n  Tag_ABI_FP_rounding: Needed\n  Tag_ABI_FP_denormal: Needed\n  Tag_ABI_FP_exceptions: Needed\n  Tag_ABI_FP_number_model: IEEE 754\n  Tag_ABI_align_needed: 8-byte\n  Tag_ABI_align_preserved: 8-byte, except leaf SP\n  Tag_ABI_enum_size: int\n  Tag_ABI_VFP_args: VFP registers\n  Tag_CPU_unaligned_access: v6\n  Tag_MPextension_use: Allowed\n  Tag_Virtualization_use: TrustZone\n",
+      "sha256": "dfa6aaaa12b6609d6ccb36bc99a2e65c4099df47ed9c52f11a7cc9d4d3812ab3"
+    },
+    "bank/host": {
+      "bytes": 21512,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-I",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/bank",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_board_folded.c",
+        "-lfftw3",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/bank/host"
+      ],
+      "elf": "ELF Header:\n  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF64\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Position-Independent Executable file)\n  Machine:                           Advanced Micro Devices X86-64\n  Version:                           0x1\n  Entry point address:               0x1db0\n  Start of program headers:          64 (bytes into file)\n  Start of section headers:          19528 (bytes into file)\n  Flags:                             0x0\n  Size of this header:               64 (bytes)\n  Size of program headers:           56 (bytes)\n  Number of program headers:         14\n  Size of section headers:           64 (bytes)\n  Number of section headers:         31\n  Section header string table index: 30\n\nDynamic section at offset 0x3ce8 contains 29 entries:\n  Tag        Type                         Name/Value\n 0x0000000000000001 (NEEDED)             Shared library: [libfftw3.so.3]\n 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]\n 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]\n 0x000000000000000c (INIT)               0x1000\n 0x000000000000000d (FINI)               0x2e70\n 0x0000000000000019 (INIT_ARRAY)         0x4cd8\n 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)\n 0x000000000000001a (FINI_ARRAY)         0x4ce0\n 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)\n 0x000000006ffffef5 (GNU_HASH)           0x390\n 0x0000000000000005 (STRTAB)             0x6d8\n 0x0000000000000006 (SYMTAB)             0x3c0\n 0x000000000000000a (STRSZ)              447 (bytes)\n 0x000000000000000b (SYMENT)             24 (bytes)\n 0x0000000000000015 (DEBUG)              0x0\n 0x0000000000000003 (PLTGOT)             0x4ef8\n 0x0000000000000002 (PLTRELSZ)           600 (bytes)\n 0x0000000000000014 (PLTREL)             RELA\n 0x0000000000000017 (JMPREL)             0xa50\n 0x0000000000000007 (RELA)               0x960\n 0x0000000000000008 (RELASZ)             240 (bytes)\n 0x0000000000000009 (RELAENT)            24 (bytes)\n 0x000000000000001e (FLAGS)              BIND_NOW\n 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE\n 0x000000006ffffffe (VERNEED)            0x8e0\n 0x000000006fffffff (VERNEEDNUM)         2\n 0x000000006ffffff0 (VERSYM)             0x898\n 0x000000006ffffff9 (RELACOUNT)          3\n 0x0000000000000000 (NULL)               0x0\n",
+      "sha256": "fc32342584e8a16531a4d63cd3819bd3301a25483cb7a0e9afa2ff45609d7988"
+    },
+    "direct/arm": {
+      "bytes": 22496,
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/direct",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_board_folded.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/direct/arm"
+      ],
+      "elf": "ELF Header:\n  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF32\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Position-Independent Executable file)\n  Machine:                           ARM\n  Version:                           0x1\n  Entry point address:               0x1ab1\n  Start of program headers:          52 (bytes into file)\n  Start of section headers:          21016 (bytes into file)\n  Flags:                             0x5000400, Version5 EABI, hard-float ABI\n  Size of this header:               52 (bytes)\n  Size of program headers:           32 (bytes)\n  Number of program headers:         9\n  Size of section headers:           40 (bytes)\n  Number of section headers:         37\n  Section header string table index: 36\n\nDynamic section at offset 0x2e64 contains 29 entries:\n  Tag        Type                         Name/Value\n 0x00000001 (NEEDED)                     Shared library: [libm.so.6]\n 0x00000001 (NEEDED)                     Shared library: [libc.so.6]\n 0x00000001 (NEEDED)                     Shared library: [ld-linux-armhf.so.3]\n 0x0000000c (INIT)                       0x820\n 0x0000000d (FINI)                       0x1ed4\n 0x00000019 (INIT_ARRAY)                 0x12e5c\n 0x0000001b (INIT_ARRAYSZ)               4 (bytes)\n 0x0000001a (FINI_ARRAY)                 0x12e60\n 0x0000001c (FINI_ARRAYSZ)               4 (bytes)\n 0x00000004 (HASH)                       0x1b4\n 0x00000005 (STRTAB)                     0x4bc\n 0x00000006 (SYMTAB)                     0x28c\n 0x0000000a (STRSZ)                      390 (bytes)\n 0x0000000b (SYMENT)                     16 (bytes)\n 0x00000015 (DEBUG)                      0x0\n 0x00000003 (PLTGOT)                     0x12f6c\n 0x00000002 (PLTRELSZ)                   192 (bytes)\n 0x00000014 (PLTREL)                     REL\n 0x00000017 (JMPREL)                     0x760\n 0x00000011 (REL)                        0x6f8\n 0x00000012 (RELSZ)                      104 (bytes)\n 0x00000013 (RELENT)                     8 (bytes)\n 0x00000018 (BIND_NOW)                   \n 0x6ffffffb (FLAGS_1)                    Flags: NOW PIE\n 0x6ffffffe (VERNEED)                    0x688\n 0x6fffffff (VERNEEDNUM)                 3\n 0x6ffffff0 (VERSYM)                     0x642\n 0x6ffffffa (RELCOUNT)                   6\n 0x00000000 (NULL)                       0x0\nAttribute Section: aeabi\nFile Attributes\n  Tag_CPU_name: \"7-A\"\n  Tag_CPU_arch: v7\n  Tag_CPU_arch_profile: Application\n  Tag_ARM_ISA_use: Yes\n  Tag_THUMB_ISA_use: Thumb-2\n  Tag_FP_arch: VFPv3\n  Tag_Advanced_SIMD_arch: NEONv1\n  Tag_ABI_PCS_wchar_t: 4\n  Tag_ABI_FP_rounding: Needed\n  Tag_ABI_FP_denormal: Needed\n  Tag_ABI_FP_exceptions: Needed\n  Tag_ABI_FP_number_model: IEEE 754\n  Tag_ABI_align_needed: 8-byte\n  Tag_ABI_align_preserved: 8-byte, except leaf SP\n  Tag_ABI_enum_size: int\n  Tag_ABI_VFP_args: VFP registers\n  Tag_CPU_unaligned_access: v6\n  Tag_MPextension_use: Allowed\n  Tag_Virtualization_use: TrustZone\n",
+      "sha256": "7a884dd7f5d90206b667bd3fec125fee59d06176e9ba94c16296250bd90e0158"
+    },
+    "direct/host": {
+      "bytes": 21256,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-I",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/direct",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_board_folded.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/folded-measure.MNfNfi/exact/direct/host"
+      ],
+      "elf": "ELF Header:\n  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 \n  Class:                             ELF64\n  Data:                              2's complement, little endian\n  Version:                           1 (current)\n  OS/ABI:                            UNIX - System V\n  ABI Version:                       0\n  Type:                              DYN (Position-Independent Executable file)\n  Machine:                           Advanced Micro Devices X86-64\n  Version:                           0x1\n  Entry point address:               0x28b0\n  Start of program headers:          64 (bytes into file)\n  Start of section headers:          19272 (bytes into file)\n  Flags:                             0x0\n  Size of this header:               64 (bytes)\n  Size of program headers:           56 (bytes)\n  Number of program headers:         14\n  Size of section headers:           64 (bytes)\n  Number of section headers:         31\n  Section header string table index: 30\n\nDynamic section at offset 0x3d20 contains 28 entries:\n  Tag        Type                         Name/Value\n 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]\n 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]\n 0x000000000000000c (INIT)               0x1000\n 0x000000000000000d (FINI)               0x2bb0\n 0x0000000000000019 (INIT_ARRAY)         0x4d10\n 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)\n 0x000000000000001a (FINI_ARRAY)         0x4d18\n 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)\n 0x000000006ffffef5 (GNU_HASH)           0x390\n 0x0000000000000005 (STRTAB)             0x660\n 0x0000000000000006 (SYMTAB)             0x3c0\n 0x000000000000000a (STRSZ)              366 (bytes)\n 0x000000000000000b (SYMENT)             24 (bytes)\n 0x0000000000000015 (DEBUG)              0x0\n 0x0000000000000003 (PLTGOT)             0x4f20\n 0x0000000000000002 (PLTRELSZ)           480 (bytes)\n 0x0000000000000014 (PLTREL)             RELA\n 0x0000000000000017 (JMPREL)             0x988\n 0x0000000000000007 (RELA)               0x898\n 0x0000000000000008 (RELASZ)             240 (bytes)\n 0x0000000000000009 (RELAENT)            24 (bytes)\n 0x000000000000001e (FLAGS)              BIND_NOW\n 0x000000006ffffffb (FLAGS_1)            Flags: NOW PIE\n 0x000000006ffffffe (VERNEED)            0x808\n 0x000000006fffffff (VERNEEDNUM)         2\n 0x000000006ffffff0 (VERSYM)             0x7ce\n 0x000000006ffffff9 (RELACOUNT)          3\n 0x0000000000000000 (NULL)               0x0\n",
+      "sha256": "1f12d2147467f50fbbfa35629b7aef688cc3119729b14cdaab7670106ec5e909"
+    }
+  },
+  "captured_iq": "sha256:cf8d9de48fc5468bcaa5bc7948400714559d795b6030b18482a2fc4d6a5595fb",
+  "captured_manifest_sha256": "14e31dc8a626420240e062496e9ecc1753113f20bdb49242462b473e25cee1f3",
+  "fftw": {
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libfftw3.so.3": "311b6ee1acd0aee1c1db9b7f9e8a41d4a918463b70cce441aad5f4679665eef4",
+    "/usr/lib/x86_64-linux-gnu/libfftw3.so.3": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7"
+  },
+  "host_cpu": 5,
+  "input": {
+    "captured": {
+      "recipe": null,
+      "sha256": "294eac42047a9f9fbaeb8b7ba26202bb137496603527ab0b7954e71af209636a",
+      "tag": "b0dfa1cd555802a5"
+    },
+    "noise": {
+      "recipe": null,
+      "sha256": "81ee2359d0b0ef8accdfcff13453f8f2de294f493ccd6d2b7f7d841a40211396",
+      "tag": "d0e598a6571b9b81"
+    },
+    "weak-pair": {
+      "recipe": {
+        "interfering_tone_hz_rms": [
+          400000,
+          0.55
+        ],
+        "per_lane_noise_std": 1,
+        "pilot_epochs_cfo_hz_rms": [
+          [
+            713,
+            240000,
+            0.22
+          ],
+          [
+            717,
+            -240000,
+            0.2
+          ]
+        ]
+      },
+      "sha256": "fe5c635ef4426edca7bf830782ceb284f6f027cdcd14356e681b2e1e8c222e91",
+      "tag": "b83cce8ca952a1c6"
+    }
+  },
+  "shape": [
+    21,
+    13333
+  ],
+  "sources": {
+    "PROTOCOL.md": "d9c0b8fdca08b45bc6bc947ea53f663a7daf18920f891c567094a6da4518c682",
+    "_native_acquisition_grid.inc": "3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+    "capture_board_folded.c": "a6617ecef4f0272fe7252fcaf8ccc2d6eff9994164960527d500d9a2962ad336",
+    "folded_bank.c": "6af2aab7595533b5cba9dfb2c460bc95e1440952aefcaf3d04fd67d7a94f99e6",
+    "folded_bank_trial.py": "cf900f8c89eadd2ce421e79680d187778d2b0b7acc9d38d7fc24cd0603a7b495"
+  }
+}

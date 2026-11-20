@@ -223,6 +223,20 @@ VALID_PAIR = (
 )
 
 
+def test_element_checksum_at_the_last_data_column_and_in_the_trailer():
+    for code in range(128):
+        char = chr(code)
+        contribution = int(char) if char.isdecimal() else int(char == "-")
+        assert element_line_checksum(" " * 67 + char + "-7") == contribution
+    assert element_line_checksum("9-9" + " " * 65 + "²") == 9
+
+
+def test_element_checksum_preserves_non_ascii_digit_behavior():
+    assert element_line_checksum("９-١ ö") == 1
+    with pytest.raises(ValueError):
+        element_line_checksum("²")
+
+
 def test_the_reference_pair_is_accepted() -> None:
     catalogue = parse_element_sets("\n".join(VALID_PAIR))
     assert len(catalogue) == 1

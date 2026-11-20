@@ -1,0 +1,1526 @@
+{
+  "full": {
+    "coarse_search": {
+      "fft_samples": 256,
+      "library_sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286",
+      "planner": "stored-measure",
+      "qualification_sha256": "10eea2f5602dc6ebd948c378808cadc3b3b64a1b446da7ad725a6d287c19a6e4"
+    },
+    "fine_search": {
+      "backend": "batched",
+      "frame_lanes": 4,
+      "installation": {
+        "command": null,
+        "mode": "reused",
+        "source": "/srv/bulk/leo-dev/fine-batch-20261119/frozen/fine_batch.so",
+        "wall_s": 0.00010615214705467224
+      },
+      "library": {
+        "path": "/var/tmp/leo-original-schedule-20261120/full/kernels/fine_batch.so",
+        "sha256": "98a23962c45e8077b4f9a98904d836d77d99041d08e06aeb9bb0f635778c6f65"
+      },
+      "numpy_version": "2.5.2",
+      "pocketfft_sha256": "29a1547b480b7ddc1e45cdc772b3f4b614cccced70204181bf5d3ad138a04ebb",
+      "qualification_sha256": "b529eda1890f00ee6ecb7362de1fe2cd613888c8d8057224abb3c747d9aca1e9",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_batch.c": "226d35c4d2f7c0babf0a08b80b03b1e79d74077c02a92d341c12aaf6732f316c",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_batch.py": "08ed341c3dbe928b6ecb420ae4b2b050c037120efb52bd7d90a4564560cb4cad",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_search.py": "c484609d9a40ae8052f645c18917f98ce94bacbba056078c7ba40ab1c4d06ccc",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/prepared_hotpath.py": "af424b931bc0ccd9dd867f7665916387de2f1983875401776ef522db99dd9afe",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/refine_bank.py": "34986485227b71a8e23ad8898904c8a25ff48961995cf2bd71949780c4770cf6"
+      },
+      "version": "batched-v1",
+      "workers": {
+        "0": {
+          "compatible": true,
+          "cpu": 0,
+          "installed_fallbacks": 0,
+          "pruned_calls": 16312,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        },
+        "1": {
+          "compatible": true,
+          "cpu": 1,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15976,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        },
+        "10": {
+          "compatible": true,
+          "cpu": 10,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15088,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        },
+        "11": {
+          "compatible": true,
+          "cpu": 11,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15048,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        },
+        "17": null,
+        "18": {
+          "compatible": true,
+          "cpu": 18,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15224,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        },
+        "6": {
+          "compatible": true,
+          "cpu": 6,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15152,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        },
+        "7": {
+          "compatible": true,
+          "cpu": 7,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15144,
+          "source_lock_sha256": "fe7e535352d7d0132a1476b4aaf582b0903e1632cd2d909fc681bfb86e6275a7"
+        }
+      }
+    },
+    "id": "DS26-0020",
+    "mode": "full",
+    "peak_selector": {
+      "backend": "row-wise",
+      "producer_sha256": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+      "producer_source": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py",
+      "qualification_sha256": "c8bfb6ef30c385a85f7129ed18bc9565cfa02021be0c1174dcb1d2ee0fb5c52e",
+      "sha256": "a4198d5e47fdf337b1ee8605c715d9da24672cffddf3774b1a8265d5ad929527",
+      "source": "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/prepared_hotpath_peaks.py",
+      "version": "row-wise-v1"
+    },
+    "raw_services": {
+      "0": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-0",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-917ab3fe854d.service",
+          "cgroup_state": "removed",
+          "invocation_id": "6699a158c5b04bc28f75aa55ccca657f",
+          "plan_sha256": "561083fda5d7950bfb2bc781b9ec86e21b3148e2f810258c73b7d4ecd67f1b85"
+        },
+        "exit_code": 0,
+        "log_sha256": "d674cea889a8e833e7509a9de03fb2d37b28d500a024ceadcfda5a33bc74625a",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed65;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a829fe276;t=660aac03bcad1;x=45e08acb4aeafb43",
+          "start_event_usec": 5817577235062,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f01f;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a9a6dfc6d;t=660aad809e4c9;x=f42587a50d7ccf34",
+          "terminal_event_usec": 5817976618093,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 399.383031,
+        "supervisor_s": 399.4395949617028,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "265314680000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-917ab3fe854d.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "516861952",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-917ab3fe854d"
+      },
+      "1": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-1",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-d8292ee262b4.service",
+          "cgroup_state": "removed",
+          "invocation_id": "5bace9f29e3645f685a2319efb58a50b",
+          "plan_sha256": "dbb2bf8294ea0b2cc375187dbc6afab765d5d0c9a27415a9ac7880f1ac5fbc95"
+        },
+        "exit_code": 0,
+        "log_sha256": "b8f385d1507c636391fa9a0160a0c03da261554b1666fc5a880af915be6a679f",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed69;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a82a01bb9;t=660aac03c0415;x=86c10e4334fe51ea",
+          "start_event_usec": 5817577249721,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f00a;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a989ced7c;t=660aad638d5d8;x=95b195f363d4d737",
+          "terminal_event_usec": 5817946140028,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 368.890307,
+        "supervisor_s": 368.95847370103,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "257873523000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-d8292ee262b4.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536780800",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-d8292ee262b4"
+      },
+      "10": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-10",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-2b461c4ebd94.service",
+          "cgroup_state": "removed",
+          "invocation_id": "0b88176863a74279b51cfda065b13181",
+          "plan_sha256": "d023a018f12dba7e7531508edbd73e958c5b62ebcdae89683f0b60791a3827e3"
+        },
+        "exit_code": 0,
+        "log_sha256": "e0779ea340c55cc4f3c821fc15e43b6d334d080d8c2395ad89bd94683c93b4f9",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed64;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a829fa5ff;t=660aac03b8e5b;x=530a0f83858d0850",
+          "start_event_usec": 5817577219583,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f073;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a9f26cce0;t=660aadcc2b53c;x=5e6b10e9f75f8351",
+          "terminal_event_usec": 5818055838944,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 478.619361,
+        "supervisor_s": 478.68754356820136,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "461383821000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-2b461c4ebd94.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "525934592",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-2b461c4ebd94"
+      },
+      "11": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-11",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-8911643a06a1.service",
+          "cgroup_state": "removed",
+          "invocation_id": "c1fd7688301a43309745fdaed76d2d30",
+          "plan_sha256": "18b1be3e57250323d57645a78a2c69e514c3c2c99f5c7efba0138f75c9e97fc1"
+        },
+        "exit_code": 0,
+        "log_sha256": "d11d59fb2b9e22c5ecc84c22f7b86f84c57139fc14be4804510dcd5f62b346a9",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed6a;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a82a08ecf;t=660aac03c772b;x=9c4afd751b8bdbd3",
+          "start_event_usec": 5817577279183,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f153;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa05c4a63;t=660aaddf832bf;x=7eeed7d025eeb544",
+          "terminal_event_usec": 5818076121699,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 498.842516,
+        "supervisor_s": 498.9382781162858,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "453150379000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-8911643a06a1.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536870912",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-8911643a06a1"
+      },
+      "17": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-17",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-d2517e83c7c8.service",
+          "cgroup_state": "removed",
+          "invocation_id": "77fc86f6ac96444abb37c1f791bd66a6",
+          "plan_sha256": "03bd32bc3b8806d6a1d0dd3b8dd2f709a1ac5fda326b52474750f46ce8dd3a09"
+        },
+        "exit_code": 1,
+        "log_sha256": "fa2e857b37892141ccbfaff92a1008d9ab0204fcf66317c36d48f4dc58257d65",
+        "monotonic": {
+          "active_enter_usec": 5817577241292,
+          "active_exit_usec": 5818177451357,
+          "inactive_enter_usec": 5818177488861,
+          "source": "systemd-manager"
+        },
+        "reason": null,
+        "service_active_s": 600.210065,
+        "service_wall_s": 600.247569,
+        "supervisor_s": 600.3278901195154,
+        "systemd": {
+          "ActiveEnterTimestampMonotonic": "5817577241292",
+          "ActiveExitTimestampMonotonic": "5818177451357",
+          "ActiveState": "failed",
+          "CPUUsageNSec": "445132565000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Environment": "TMPDIR=/var/tmp/leo-original-schedule-20261120/full/raw-17 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 BLIS_NUM_THREADS=1",
+          "ExecMainCode": "2",
+          "ExecMainExitTimestampMonotonic": "5818177469267",
+          "ExecMainPID": "2400079",
+          "ExecMainStartTimestampMonotonic": "5817577238706",
+          "ExecMainStatus": "15",
+          "ExecStart": "{ path=/usr/bin/taskset ; argv[]=/usr/bin/taskset -c 17 /srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/.venv/bin/python -B -m tools.pipeline_eval.original_receiver worker /var/tmp/leo-original-schedule-20261120/full/raw-17 ; ignore_errors=no ; start_time=[Fri 2026-11-20 00:59:06 UTC] ; stop_time=[Fri 2026-11-20 01:09:06 UTC] ; pid=2400079 ; code=killed ; status=15/TERM }",
+          "Id": "leo-iq-bench-d2517e83c7c8.service",
+          "InactiveEnterTimestampMonotonic": "5818177488861",
+          "InvocationID": "77fc86f6ac96444abb37c1f791bd66a6",
+          "KillMode": "control-group",
+          "LoadState": "loaded",
+          "MainPID": "0",
+          "MemoryMax": "536870912",
+          "MemoryPeak": "536870912",
+          "MemorySwapMax": "0",
+          "MemorySwapPeak": "0",
+          "Result": "timeout",
+          "RuntimeMaxUSec": "10min",
+          "SubState": "failed",
+          "Transient": "yes"
+        },
+        "unit": "leo-iq-bench-d2517e83c7c8"
+      },
+      "18": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-18",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-b5a086a92cd7.service",
+          "cgroup_state": "removed",
+          "invocation_id": "fefb9303ace54245a4a52b6e6e2d6d53",
+          "plan_sha256": "80b4c32d0aba85bb6b8bace23b32758ab6087e1ceebc9f5fc5ce8bc9885d6f15"
+        },
+        "exit_code": 0,
+        "log_sha256": "a365c40758b1d027ff23b5d33f316f729cafcbcc8e34458c0e4050ad1d4fb76f",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed66;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a829fea13;t=660aac03bd26f;x=85e6e4861b42b724",
+          "start_event_usec": 5817577237011,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f194;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa1e738f8;t=660aadf832154;x=d789d05f3125fd5c",
+          "terminal_event_usec": 5818102003960,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 524.766949,
+        "supervisor_s": 524.8351448206231,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "461945988000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-b5a086a92cd7.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536870912",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-b5a086a92cd7"
+      },
+      "6": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-6",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-1a6f315cca9d.service",
+          "cgroup_state": "removed",
+          "invocation_id": "e2027ffae91f489095229c9af6abcee0",
+          "plan_sha256": "be9305bbd51a0c7bfa8ffcff1e7849c8e1da037f683275aa3fc3908612560129"
+        },
+        "exit_code": 0,
+        "log_sha256": "aa6e04c750e15679d99ae5a5990ba378c6f3efbc01c017212ed8a57916d47833",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed63;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a829f9714;t=660aac03b7f70;x=5dbc77e6af7641f7",
+          "start_event_usec": 5817577215764,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f002;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a97ce837f;t=660aad56a6bdb;x=148be63db32260ab",
+          "terminal_event_usec": 5817932612479,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 355.396715,
+        "supervisor_s": 355.46122574899346,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "247102179000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-1a6f315cca9d.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536338432",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-1a6f315cca9d"
+      },
+      "7": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/full/raw-7",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-c2ac9c0d5ed4.service",
+          "cgroup_state": "removed",
+          "invocation_id": "c453f9552f10439099ee8f46217e54db",
+          "plan_sha256": "c1d1fadd5f58ca8e2379a9d86479e4335def29aaf0f0d864e8bcc7967be7063a"
+        },
+        "exit_code": 0,
+        "log_sha256": "61e3e6ddb250f79bc8cf0edac42f070cf30fcc059e4d70c04d5027bbbe450e5a",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346ed67;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a829ff111;t=660aac03bd96d;x=75ca23a90344426f",
+          "start_event_usec": 5817577238801,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346eff8;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a9736bcaf;t=660aad4d2a50b;x=1dda787de5982592",
+          "terminal_event_usec": 5817922665647,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 345.426846,
+        "supervisor_s": 345.495875605382,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "245993558000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-c2ac9c0d5ed4.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536870912",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-c2ac9c0d5ed4"
+      }
+    },
+    "raw_wall_s": 600.3872609687969,
+    "setup_wall_s": 1.432576235383749,
+    "stage": "raw",
+    "status": "timed_out"
+  },
+  "secondary": {
+    "coarse_search": {
+      "fft_samples": 256,
+      "library_sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286",
+      "planner": "stored-measure",
+      "qualification_sha256": "10eea2f5602dc6ebd948c378808cadc3b3b64a1b446da7ad725a6d287c19a6e4"
+    },
+    "completed_visits": 6764,
+    "counts": {
+      "candidate_rows": 62161,
+      "detector_cpu_s": 2002.3865380509994,
+      "empty_probe_rows": 40,
+      "invalid_capture": 3,
+      "iq_bytes": 10822400000,
+      "positive_candidates": 14242,
+      "probe_rows": 13522,
+      "processed_windows": 6761,
+      "recording_windows": 6764,
+      "window_delivery_span_s": 299.967959732
+    },
+    "fine_search": {
+      "backend": "batched",
+      "frame_lanes": 4,
+      "installation": {
+        "command": null,
+        "mode": "reused",
+        "source": "/srv/bulk/leo-dev/fine-batch-20261119/frozen/fine_batch.so",
+        "wall_s": 0.0003009270876646042
+      },
+      "library": {
+        "path": "/var/tmp/leo-original-schedule-20261120/completion/kernels/fine_batch.so",
+        "sha256": "98a23962c45e8077b4f9a98904d836d77d99041d08e06aeb9bb0f635778c6f65"
+      },
+      "numpy_version": "2.5.2",
+      "pocketfft_sha256": "29a1547b480b7ddc1e45cdc772b3f4b614cccced70204181bf5d3ad138a04ebb",
+      "qualification_sha256": "b529eda1890f00ee6ecb7362de1fe2cd613888c8d8057224abb3c747d9aca1e9",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_batch.c": "226d35c4d2f7c0babf0a08b80b03b1e79d74077c02a92d341c12aaf6732f316c",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_batch.py": "08ed341c3dbe928b6ecb420ae4b2b050c037120efb52bd7d90a4564560cb4cad",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_search.py": "c484609d9a40ae8052f645c18917f98ce94bacbba056078c7ba40ab1c4d06ccc",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/prepared_hotpath.py": "af424b931bc0ccd9dd867f7665916387de2f1983875401776ef522db99dd9afe",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/refine_bank.py": "34986485227b71a8e23ad8898904c8a25ff48961995cf2bd71949780c4770cf6"
+      },
+      "version": "batched-v1",
+      "workers": {
+        "0": {
+          "compatible": true,
+          "cpu": 0,
+          "installed_fallbacks": 0,
+          "pruned_calls": 16312,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "1": {
+          "compatible": true,
+          "cpu": 1,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15976,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "2": {
+          "compatible": true,
+          "cpu": 2,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15152,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "3": {
+          "compatible": true,
+          "cpu": 3,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15144,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "4": {
+          "compatible": true,
+          "cpu": 4,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15088,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "5": {
+          "compatible": true,
+          "cpu": 5,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15048,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "6": {
+          "compatible": true,
+          "cpu": 6,
+          "installed_fallbacks": 0,
+          "pruned_calls": 14984,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        },
+        "7": {
+          "compatible": true,
+          "cpu": 7,
+          "installed_fallbacks": 0,
+          "pruned_calls": 15224,
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8"
+        }
+      }
+    },
+    "grid_calls": 15366,
+    "id": "DS26-0020",
+    "invalid_visits": 3,
+    "mode": "full",
+    "native_sha256": "sha256:9c12b5038c9b758d8af0eda4fef7e9e8c2d3e64c50cd6bdf378adbbcba3505e7",
+    "peak_selector": {
+      "backend": "row-wise",
+      "producer_sha256": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+      "producer_source": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py",
+      "qualification_sha256": "c8bfb6ef30c385a85f7129ed18bc9565cfa02021be0c1174dcb1d2ee0fb5c52e",
+      "sha256": "a4198d5e47fdf337b1ee8605c715d9da24672cffddf3774b1a8265d5ad929527",
+      "source": "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/prepared_hotpath_peaks.py",
+      "version": "row-wise-v1"
+    },
+    "position_service": {
+      "binding": {
+        "attempt": "/var/tmp/leo-original-schedule-20261120/completion/position",
+        "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e8cb7d1e8eab.service",
+        "cgroup_state": "removed",
+        "invocation_id": "dd87d14be80e4f26a8176d7e80af9d2e",
+        "plan_sha256": "4f4a4ef055dc5d11e6e5237f33d12b6d0a1f274e00ed02d2c983ab3565d888bf"
+      },
+      "exit_code": 0,
+      "log_sha256": "23e0dd9f4e7974476f967aa325801ea5b976a0826fc1735cfd0c4486383cd0d9",
+      "monotonic": {
+        "source": "systemd-journal",
+        "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f395;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab92d59d5;t=660aaf6c94231;x=28930ce9eeaee23e",
+        "start_event_usec": 5818492475861,
+        "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f3c1;b=192fd5d5cd924abdb6d41ebae795ef83;m=54abcbc0dce;t=660aafa57f62a;x=5572402d1cb27507",
+        "terminal_event_usec": 5818552159694,
+        "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+      },
+      "reason": null,
+      "service_active_s": null,
+      "service_wall_s": 59.683833,
+      "supervisor_s": 59.72236590459943,
+      "systemd": {
+        "ActiveState": "inactive",
+        "CPUUsageNSec": "59400027000",
+        "ControlGroup": "",
+        "ControlPID": "0",
+        "Id": "leo-iq-bench-e8cb7d1e8eab.service",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "MemoryPeak": "423141376",
+        "MemorySwapPeak": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "unit": "leo-iq-bench-e8cb7d1e8eab"
+    },
+    "raw_services": {
+      "0": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-0",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-97258253b6e4.service",
+          "cgroup_state": "removed",
+          "invocation_id": "eb7c6ab000094a889002bbe52d01e2ad",
+          "plan_sha256": "6d1ae455ac31a4d0ed4553913e1b4a4344d81d05f1e8aaa5d39ad0a326292ca7"
+        },
+        "exit_code": 0,
+        "log_sha256": "41869e01aef1863cdbece58586754049cae526c86e50f2069c7282f1434c7865",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f23f;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa849b451;t=660aae5e59cad;x=ca4b469d36b3595d",
+          "start_event_usec": 5818209121361,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f392;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab9123523;t=660aaf6ae1d7f;x=8bf1c4b23bbda647",
+          "terminal_event_usec": 5818490696995,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 281.575634,
+        "supervisor_s": 281.677343304269,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "269890576000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-97258253b6e4.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "463851520",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-97258253b6e4"
+      },
+      "1": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-1",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-4bf8886a39e4.service",
+          "cgroup_state": "removed",
+          "invocation_id": "d76415de1be74acd882dbca20a1ffa00",
+          "plan_sha256": "51abb83577e2ce03921e692f0234715112dbed1f0cd35a427c3311f697e36d4d"
+        },
+        "exit_code": 0,
+        "log_sha256": "55e529abdb0e0ae56af456753c10456f4ff6371e31846f533df25cffbe232818",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f23a;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa8493c25;t=660aae5e52481;x=62049e7d7d5bb564",
+          "start_event_usec": 5818209090597,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f394;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab91cd6fc;t=660aaf6b8bf57;x=123e0e9f1b395304",
+          "terminal_event_usec": 5818491393788,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 282.303191,
+        "supervisor_s": 282.37903854064643,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "263814019000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-4bf8886a39e4.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "463523840",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-4bf8886a39e4"
+      },
+      "2": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-2",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-bf65b83fde75.service",
+          "cgroup_state": "removed",
+          "invocation_id": "0ad759abcb1d407e8bacec74c24dae17",
+          "plan_sha256": "2972c3fecd67ffb813e6090a1946c7029cd85abda646ccb0acb4cd4196cf2f1d"
+        },
+        "exit_code": 0,
+        "log_sha256": "0c276cb36e6c71e9e33617d3b16c8fc09ddae7bec4d159fc7b4c810e8136649a",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f240;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa849c353;t=660aae5e5abaf;x=5fb7e290ee35ecf3",
+          "start_event_usec": 5818209125203,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f383;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab87a8b48;t=660aaf61673a4;x=e7a5907a652db5d0",
+          "terminal_event_usec": 5818480757576,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 271.632373,
+        "supervisor_s": 271.6971083059907,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "250759847000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-bf65b83fde75.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536870912",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-bf65b83fde75"
+      },
+      "3": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-3",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-93dfc0367e55.service",
+          "cgroup_state": "removed",
+          "invocation_id": "6a53de01231b4d839ccb91664c73c5fd",
+          "plan_sha256": "3cf4044704d139b26285ca0002c8815cc6e9be6cfc6c520a506e2489c1dbea65"
+        },
+        "exit_code": 0,
+        "log_sha256": "a84d2d8402a28140131d683c9a6ee4c944811043c90558a2ba186e26eeeb6347",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f23e;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa849ab2a;t=660aae5e59386;x=54c0b8f4addf4102",
+          "start_event_usec": 5818209119018,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f37d;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab83d75ea;t=660aaf5d95e46;x=125e7f46d28abbe3",
+          "terminal_event_usec": 5818476754410,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 267.635392,
+        "supervisor_s": 267.7105428595096,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "253269057000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-93dfc0367e55.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "469680128",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-93dfc0367e55"
+      },
+      "4": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-4",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-9267b48a806c.service",
+          "cgroup_state": "removed",
+          "invocation_id": "2ea4225e789940b8b10efb5964e4ebfb",
+          "plan_sha256": "6e589f1bd5e502d6e4e428c286fc08cd8baf8450297f5ed554706bfdd55ae533"
+        },
+        "exit_code": 0,
+        "log_sha256": "5188f06d69f8458f4abca245fa17508bcc05df5b78c5a9a6d11f2b2c30ec836a",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f23d;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa8499959;t=660aae5e581b5;x=9e871ae2e3232217",
+          "start_event_usec": 5818209114457,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f378;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab804e02b;t=660aaf5a0c887;x=baacbca35f6dd151",
+          "terminal_event_usec": 5818473046059,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 263.931602,
+        "supervisor_s": 263.99490837100893,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "249358850000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-9267b48a806c.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "478027776",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-9267b48a806c"
+      },
+      "5": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-5",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e0e7f8e7ed33.service",
+          "cgroup_state": "removed",
+          "invocation_id": "9cf96a3d42d140ceb563b33966e1c1bb",
+          "plan_sha256": "f1b150d2ec9daf1582dc4ef703be684e2525436f1b33fc4d95c8cddf4145222b"
+        },
+        "exit_code": 0,
+        "log_sha256": "556cf611c79ea432eb7b0d355c39339fcb5f9dd0146e509fdc3eab91ce7792aa",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f241;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa84abcc2;t=660aae5e6a51e;x=5b14e176bfb12a88",
+          "start_event_usec": 5818209189058,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f37a;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab8240a2d;t=660aaf5bff289;x=f17ba5ad7c4cb9be",
+          "terminal_event_usec": 5818475088429,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 265.899371,
+        "supervisor_s": 266.0546297803521,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "250303007000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-e0e7f8e7ed33.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "462725120",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-e0e7f8e7ed33"
+      },
+      "6": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-6",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-534c28fefb06.service",
+          "cgroup_state": "removed",
+          "invocation_id": "ae7fd4c5f9a2470889b343909e21a1f3",
+          "plan_sha256": "586672635940f9cd300fe2963263115834e58e8d3bab331d532aa6f8b5ca8e6b"
+        },
+        "exit_code": 0,
+        "log_sha256": "aedc4c281e3fa0ad67a5b6e4bc06078824ee7a2f34b147006040c624de4e2822",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f23b;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa8494bf7;t=660aae5e53453;x=469a018da6bd9b04",
+          "start_event_usec": 5818209094647,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f387;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab89054f4;t=660aaf62c3d50;x=402c604c117946e8",
+          "terminal_event_usec": 5818482185460,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 273.090813,
+        "supervisor_s": 273.1507066860795,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "249348666000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-534c28fefb06.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "536870912",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-534c28fefb06"
+      },
+      "7": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/completion/raw-7",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-5bf4fe0bcd98.service",
+          "cgroup_state": "removed",
+          "invocation_id": "04093d9c7f7441b380f845dfb69d9386",
+          "plan_sha256": "0de24821c024efbff76923921d12f0438c5d6d015d2a34eeb1e2a4be5b4c4c56"
+        },
+        "exit_code": 0,
+        "log_sha256": "125bc1a5649a906bfb4b7e9f6d033173a058fdeee1c84bcf72396fb49dd4d959",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f23c;b=192fd5d5cd924abdb6d41ebae795ef83;m=54aa8498ff2;t=660aae5e5784e;x=bcca1f7eaeccb757",
+          "start_event_usec": 5818209112050,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346f385;b=192fd5d5cd924abdb6d41ebae795ef83;m=54ab887e802;t=660aaf623d05e;x=83b508434b70e0e4",
+          "terminal_event_usec": 5818481633282,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 272.521232,
+        "supervisor_s": 272.5878863101825,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "255802199000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-5bf4fe0bcd98.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "472780800",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-5bf4fe0bcd98"
+      }
+    },
+    "raw_wall_s": 282.428040869534,
+    "recorded_visits": 6764,
+    "result": {
+      "arms": {
+        "c0": {
+          "latlon": [
+            37.841979083643224,
+            -122.48805440167263
+          ],
+          "rf_rms_hz": 72.54673733249193
+        },
+        "fitted_c": {
+          "latlon": [
+            37.84260513929363,
+            -122.4874819746472
+          ],
+          "rf_rms_hz": 72.51225661510077
+        }
+      },
+      "boundary": "Stored native GLRT and causal TLEs through the compact v5 cavity decision",
+      "metrics": {
+        "c0_frequency_score": 29906.675228073284,
+        "cavity_offered": false,
+        "compact_projections": 7462,
+        "fitted_c_frequency_score": 29915.612405620934,
+        "initial_arm_fits": 3,
+        "initial_branches": 3,
+        "observations": 4892,
+        "stage_s": {
+          "cavity": 6.97730253636837,
+          "conservative": 9.966927569359541,
+          "family": 7.713643830269575,
+          "initial": 20.91294007562101,
+          "native_preparation": 11.246807957068086,
+          "signed": 1.325617921538651
+        },
+        "tracks": 131
+      },
+      "status": "ok"
+    },
+    "setup_wall_s": 1.1688917707651854,
+    "stage": "position",
+    "status": "ok",
+    "valid_visits": 6761,
+    "workers": {
+      "0": {
+        "chunks": 14,
+        "exit_code": 0,
+        "output_sha256": "1c9aaded61f76c007db99f87e1f45d0f9be3d199af33d7480f16895050911b62",
+        "service_log_sha256": "b79e1892397356eb1a227ed3c2aee245e1ba9b0a823e462b2c255cdc06497905",
+        "terminal": {
+          "count": 896,
+          "cpu": 0,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-97258253b6e4.service",
+            "cpu.stat.usage_usec": 269153868,
+            "cpus": [
+              0
+            ],
+            "memory.current": 310980608,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 463851520,
+            "memory.stat.anon": 220372992,
+            "memory.stat.file": 88662016,
+            "memory.stat.kernel": 1703936,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409753,
+            "rss_peak_kib": 203892
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-97258253b6e4.service",
+            "cpu.stat.usage_usec": 1735905,
+            "cpus": [
+              0
+            ],
+            "memory.current": 164012032,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 164012032,
+            "memory.stat.anon": 162721792,
+            "memory.stat.file": 4096,
+            "memory.stat.kernel": 1118208,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409753,
+            "rss_peak_kib": 147112
+          }
+        }
+      },
+      "1": {
+        "chunks": 14,
+        "exit_code": 0,
+        "output_sha256": "81e00d5caf43819b1c4e6ab599764a4211052ee31ac9b73560cdbcd102127b53",
+        "service_log_sha256": "98cb15c90bb173142b04b884ca3b92ff6f2fab48c643703fd3e8fb360dc8be91",
+        "terminal": {
+          "count": 876,
+          "cpu": 1,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-4bf8886a39e4.service",
+            "cpu.stat.usage_usec": 263015198,
+            "cpus": [
+              1
+            ],
+            "memory.current": 312197120,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 463523840,
+            "memory.stat.anon": 220794880,
+            "memory.stat.file": 89530368,
+            "memory.stat.kernel": 1622016,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409735,
+            "rss_peak_kib": 204448
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-4bf8886a39e4.service",
+            "cpu.stat.usage_usec": 1599836,
+            "cpus": [
+              1
+            ],
+            "memory.current": 164708352,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 164708352,
+            "memory.stat.anon": 162729984,
+            "memory.stat.file": 684032,
+            "memory.stat.kernel": 1114112,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409735,
+            "rss_peak_kib": 146920
+          }
+        }
+      },
+      "2": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "6fa08e7ac0857d9d9aa8f4bf080ea91a77609c72ad5bdae312f820bb129eb999",
+        "service_log_sha256": "3df94de0a0cf3213f927473fd58cc807e9b45ccc8d51b0bb154d96cd84bcb124",
+        "terminal": {
+          "count": 832,
+          "cpu": 2,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-bf65b83fde75.service",
+            "cpu.stat.usage_usec": 249982403,
+            "cpus": [
+              2
+            ],
+            "memory.current": 278179840,
+            "memory.events.max": 289,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 201961472,
+            "memory.stat.file": 74481664,
+            "memory.stat.kernel": 1544192,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409738,
+            "rss_peak_kib": 205692
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-bf65b83fde75.service",
+            "cpu.stat.usage_usec": 1671252,
+            "cpus": [
+              2
+            ],
+            "memory.current": 167141376,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 167141376,
+            "memory.stat.anon": 162734080,
+            "memory.stat.file": 2785280,
+            "memory.stat.kernel": 1110016,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409738,
+            "rss_peak_kib": 146956
+          }
+        }
+      },
+      "3": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "a119bfef766e5334ca476ccc5cbccb2efdb699448fca88131cb614d443417371",
+        "service_log_sha256": "25628a72790cb947f4681b11b3ac6b896c0eb88ec6fc887295bd702d6b9b1412",
+        "terminal": {
+          "count": 832,
+          "cpu": 3,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-93dfc0367e55.service",
+            "cpu.stat.usage_usec": 252505070,
+            "cpus": [
+              3
+            ],
+            "memory.current": 314552320,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 469680128,
+            "memory.stat.anon": 218595328,
+            "memory.stat.file": 94416896,
+            "memory.stat.kernel": 1617920,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409744,
+            "rss_peak_kib": 202008
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-93dfc0367e55.service",
+            "cpu.stat.usage_usec": 1579233,
+            "cpus": [
+              3
+            ],
+            "memory.current": 164839424,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 164839424,
+            "memory.stat.anon": 162738176,
+            "memory.stat.file": 868352,
+            "memory.stat.kernel": 1110016,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409744,
+            "rss_peak_kib": 147068
+          }
+        }
+      },
+      "4": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "fc86185cdb73cb3779adb05d7ad8cf7d9b5eb61599f92b328736bef33d533948",
+        "service_log_sha256": "df1e4274f2ad1ff17b1a174653a3c23492c67ac49f59523602823933f37585a6",
+        "terminal": {
+          "count": 831,
+          "cpu": 4,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-9267b48a806c.service",
+            "cpu.stat.usage_usec": 248533530,
+            "cpus": [
+              4
+            ],
+            "memory.current": 300204032,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 478027776,
+            "memory.stat.anon": 220966912,
+            "memory.stat.file": 77582336,
+            "memory.stat.kernel": 1613824,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409747,
+            "rss_peak_kib": 203732
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-9267b48a806c.service",
+            "cpu.stat.usage_usec": 1555749,
+            "cpus": [
+              4
+            ],
+            "memory.current": 170762240,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 170762240,
+            "memory.stat.anon": 162734080,
+            "memory.stat.file": 6860800,
+            "memory.stat.kernel": 1105920,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409747,
+            "rss_peak_kib": 147064
+          }
+        }
+      },
+      "5": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "fad8a9aa007bb6a3272ddb826124219a8ebc0a4c8e9c6133df7804f6f1fd6610",
+        "service_log_sha256": "19705b156044149cde99446292c1fec843ad12dc777505b60b632e878fb42842",
+        "terminal": {
+          "count": 831,
+          "cpu": 5,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e0e7f8e7ed33.service",
+            "cpu.stat.usage_usec": 249534490,
+            "cpus": [
+              5
+            ],
+            "memory.current": 282697728,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 462725120,
+            "memory.stat.anon": 203554816,
+            "memory.stat.file": 77152256,
+            "memory.stat.kernel": 1765376,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409741,
+            "rss_peak_kib": 212340
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-e0e7f8e7ed33.service",
+            "cpu.stat.usage_usec": 1567727,
+            "cpus": [
+              5
+            ],
+            "memory.current": 165236736,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 165236736,
+            "memory.stat.anon": 162746368,
+            "memory.stat.file": 1138688,
+            "memory.stat.kernel": 1101824,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409741,
+            "rss_peak_kib": 146984
+          }
+        }
+      },
+      "6": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "19f284bd7db028f3995a28896bfde221d963b1146b485b2025c5bcabc85749b2",
+        "service_log_sha256": "76af18bae71914f94d3813c9979aefac4fc5c872e92c8c2a51c94fe879416386",
+        "terminal": {
+          "count": 832,
+          "cpu": 6,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-534c28fefb06.service",
+            "cpu.stat.usage_usec": 248625852,
+            "cpus": [
+              6
+            ],
+            "memory.current": 298479616,
+            "memory.events.max": 242,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 219131904,
+            "memory.stat.file": 77414400,
+            "memory.stat.kernel": 1699840,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409750,
+            "rss_peak_kib": 203328
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-534c28fefb06.service",
+            "cpu.stat.usage_usec": 1578773,
+            "cpus": [
+              6
+            ],
+            "memory.current": 164147200,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 164147200,
+            "memory.stat.anon": 161775616,
+            "memory.stat.file": 4096,
+            "memory.stat.kernel": 1101824,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409750,
+            "rss_peak_kib": 147076
+          }
+        }
+      },
+      "7": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "3a1fcf54a98abbf1b37f35adac7a0981a612c458bc60f3e2b1575d74a2f42fd5",
+        "service_log_sha256": "7072fc66affce388a5421081a357c3747bd7b9646870edd5efa9c9737f1f99b7",
+        "terminal": {
+          "count": 831,
+          "cpu": 7,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-5bf4fe0bcd98.service",
+            "cpu.stat.usage_usec": 255052147,
+            "cpus": [
+              7
+            ],
+            "memory.current": 259555328,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 472780800,
+            "memory.stat.anon": 220352512,
+            "memory.stat.file": 37429248,
+            "memory.stat.kernel": 1671168,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409756,
+            "rss_peak_kib": 204004
+          },
+          "kind": "worker",
+          "source_lock_sha256": "7937402c279a040c54673d1980c14cfadd5f7d4c657e9528b2fd1ea83c1016e8",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-5bf4fe0bcd98.service",
+            "cpu.stat.usage_usec": 1667589,
+            "cpus": [
+              7
+            ],
+            "memory.current": 163876864,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 163876864,
+            "memory.stat.anon": 162734080,
+            "memory.stat.file": 4096,
+            "memory.stat.kernel": 1105920,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2409756,
+            "rss_peak_kib": 147000
+          }
+        }
+      }
+    }
+  },
+  "smoke": {
+    "coarse_search": {
+      "fft_samples": 256,
+      "library_sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286",
+      "planner": "stored-measure",
+      "qualification_sha256": "10eea2f5602dc6ebd948c378808cadc3b3b64a1b446da7ad725a6d287c19a6e4"
+    },
+    "completed_visits": 64,
+    "fine_search": {
+      "backend": "batched",
+      "frame_lanes": 4,
+      "installation": {
+        "command": null,
+        "mode": "reused",
+        "source": "/srv/bulk/leo-dev/fine-batch-20261119/frozen/fine_batch.so",
+        "wall_s": 0.00013666506856679916
+      },
+      "library": {
+        "path": "/var/tmp/leo-original-schedule-20261120/smoke/kernels/fine_batch.so",
+        "sha256": "98a23962c45e8077b4f9a98904d836d77d99041d08e06aeb9bb0f635778c6f65"
+      },
+      "numpy_version": "2.5.2",
+      "pocketfft_sha256": "29a1547b480b7ddc1e45cdc772b3f4b614cccced70204181bf5d3ad138a04ebb",
+      "qualification_sha256": "b529eda1890f00ee6ecb7362de1fe2cd613888c8d8057224abb3c747d9aca1e9",
+      "sources": {
+        "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_batch.c": "226d35c4d2f7c0babf0a08b80b03b1e79d74077c02a92d341c12aaf6732f316c",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_batch.py": "08ed341c3dbe928b6ecb420ae4b2b050c037120efb52bd7d90a4564560cb4cad",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/fine_search.py": "c484609d9a40ae8052f645c18917f98ce94bacbba056078c7ba40ab1c4d06ccc",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/prepared_hotpath.py": "af424b931bc0ccd9dd867f7665916387de2f1983875401776ef522db99dd9afe",
+        "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/refine_bank.py": "34986485227b71a8e23ad8898904c8a25ff48961995cf2bd71949780c4770cf6"
+      },
+      "version": "batched-v1",
+      "workers": {
+        "18": {
+          "compatible": true,
+          "cpu": 18,
+          "installed_fallbacks": 0,
+          "pruned_calls": 1176,
+          "source_lock_sha256": "9c7a79c8e109de53de7a1753ea300b30cf74eb53d03301d7b6164b596f501174"
+        }
+      }
+    },
+    "grid_calls": 147,
+    "id": "DS26-0020",
+    "invalid_visits": 0,
+    "mode": "smoke",
+    "peak_selector": {
+      "backend": "row-wise",
+      "producer_sha256": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+      "producer_source": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py",
+      "qualification_sha256": "c8bfb6ef30c385a85f7129ed18bc9565cfa02021be0c1174dcb1d2ee0fb5c52e",
+      "sha256": "a4198d5e47fdf337b1ee8605c715d9da24672cffddf3774b1a8265d5ad929527",
+      "source": "/srv/bulk/leo-dev/pipeline-eval-20261118/clean-checkout/tools/pipeline_eval/variants/prepared_hotpath_peaks.py",
+      "version": "row-wise-v1"
+    },
+    "raw_services": {
+      "18": {
+        "binding": {
+          "attempt": "/var/tmp/leo-original-schedule-20261120/smoke/raw-18",
+          "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-9c2a97e5458d.service",
+          "cgroup_state": "removed",
+          "invocation_id": "867771c71ef14377a35b1172cf219d52",
+          "plan_sha256": "b72d1af827fbda780674b39a0777ae549b1e64caf6c2f8e313ef721fdb335258"
+        },
+        "exit_code": 0,
+        "log_sha256": "2cee5ac55424b3767e9d5fd6b75ef9a7e96b03b056e730bb3854d772abdc0b0a",
+        "monotonic": {
+          "source": "systemd-journal",
+          "start_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346e67e;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a7c27e7ec;t=660aab9c3d047;x=340c77ad4af08dd3",
+          "start_event_usec": 5817468708844,
+          "terminal_cursor": "s=cb7aae09455945fcb38d240d50e21c64;i=346e96a;b=192fd5d5cd924abdb6d41ebae795ef83;m=54a7e3dd34d;t=660aabbd9bba9;x=1702d81394242d2b",
+          "terminal_event_usec": 5817503699789,
+          "terminal_message_id": "ae8f7b866b0347b9af31fe1c80b127c0"
+        },
+        "reason": null,
+        "service_active_s": null,
+        "service_wall_s": 34.990945,
+        "supervisor_s": 35.01839901506901,
+        "systemd": {
+          "ActiveState": "inactive",
+          "CPUUsageNSec": "34579419000",
+          "ControlGroup": "",
+          "ControlPID": "0",
+          "Id": "leo-iq-bench-9c2a97e5458d.service",
+          "LoadState": "not-found",
+          "MainPID": "0",
+          "MemoryPeak": "287965184",
+          "MemorySwapPeak": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "unit": "leo-iq-bench-9c2a97e5458d"
+      }
+    },
+    "raw_wall_s": 35.05684751085937,
+    "recorded_visits": 6764,
+    "setup_wall_s": 1.5910340044647455,
+    "stage": "raw",
+    "status": "stage_only",
+    "valid_visits": 64,
+    "workers": {
+      "18": {
+        "chunks": 1,
+        "exit_code": 0,
+        "output_sha256": "4ae0ee3baf080a7d2d647df51ef27499e30561cb2db500d099135b9b2486815a",
+        "service_log_sha256": "4c55424021407802c08b7a7ae5193b7e96d1b671e919e9b8ea4613b7e42177c7",
+        "terminal": {
+          "count": 64,
+          "cpu": 18,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-9c2a97e5458d.service",
+            "cpu.stat.usage_usec": 33744477,
+            "cpus": [
+              18
+            ],
+            "memory.current": 273752064,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 287965184,
+            "memory.stat.anon": 209653760,
+            "memory.stat.file": 63057920,
+            "memory.stat.kernel": 1302528,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2395063,
+            "rss_peak_kib": 203900
+          },
+          "kind": "worker",
+          "source_lock_sha256": "9c7a79c8e109de53de7a1753ea300b30cf74eb53d03301d7b6164b596f501174",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-9c2a97e5458d.service",
+            "cpu.stat.usage_usec": 2200023,
+            "cpus": [
+              18
+            ],
+            "memory.current": 163852288,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 163852288,
+            "memory.stat.anon": 162521088,
+            "memory.stat.file": 69632,
+            "memory.stat.kernel": 1114112,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2395063,
+            "rss_peak_kib": 146820
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "charts": [
+    {
+      "caption": "Matched anonymous GLRT Doppler tracks and causal TLE.",
+      "cases": [
+        "DS26-0036",
+        "DS26-0122",
+        "DS26-0237",
+        "DS29-0082",
+        "DS29-0174",
+        "DS29-0247"
+      ],
+      "id": "joint-orbits-timing",
+      "method": "joint_orbits",
+      "provenance": [
+        "original-prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "one",
+          "label": "Joint phase",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "input_sha256"
+          ],
+          "value": "joint_orbits"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "stock",
+          "label": "Exact orbit",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "input_sha256"
+          ],
+          "value": "robust_orbit_fit"
+        },
+        {
+          "file": "predictions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Lean robust EM",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "input_sha256"
+          ],
+          "value": "robust_em"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Joint orbital assignment \u00b7 Stored timing recordings"
+    }
+  ],
+  "version": 1
+}

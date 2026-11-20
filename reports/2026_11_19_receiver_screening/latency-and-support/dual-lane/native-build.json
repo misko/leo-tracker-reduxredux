@@ -1,0 +1,73 @@
+{
+  "api": [
+    "leo_dual_lane_analyze_v1",
+    "leo_dual_lane_create_v1",
+    "leo_dual_lane_destroy_v1",
+    "leo_dual_lane_trace_size_v1",
+    "leo_native_hotpath_analyze_v1",
+    "leo_native_hotpath_create_v1",
+    "leo_native_hotpath_destroy_v1",
+    "leo_native_hotpath_result_size_v1",
+    "leo_native_hotpath_trace_size_v1"
+  ],
+  "args": [
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/source/build.py",
+    "--compiler",
+    "/usr/bin/gcc",
+    "--archiver",
+    "/usr/bin/gcc-ar",
+    "--fftw-prefix",
+    "/tmp/leo-pipeline-native.sfewXn/fftw",
+    "--target",
+    "host",
+    "--output-dir",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/detector",
+    "--work-dir",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/objects"
+  ],
+  "detector_build_sha256": "0da434abf182f8191d145bcc5961b0bf98159c06a791a28e6b14f12dabe44381",
+  "files": {
+    "libleo-adaptive-detector.so.1": "6553fb28990670d29a8fa089b6ccc5dd816137f7a61575c09322c40261de1dec",
+    "libleo-dual-lane.so": "d2353afbb703ac9a30a6f9dfeada0da3f798e7ddf3ba14b4d37e9e3aebe74121"
+  },
+  "input_source_sha256": "a1567ccb86154698f2ce7f12515fb4bc8c4cce01df7f26c3ff79d24b08eb15bd",
+  "link": [
+    "/usr/bin/gcc",
+    "-std=c11",
+    "-shared",
+    "-fPIC",
+    "-O3",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-pthread",
+    "-I",
+    "/tmp/leo-pipeline-native.sfewXn/fftw/include",
+    "-I",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/source",
+    "-I",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants",
+    "-I",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/dual_lane_native.c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath.c",
+    "/tmp/leo-pipeline-native.sfewXn/fftw/lib/libfftw3f.a",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/libleo-adaptive-detector.so.1",
+    "-lm",
+    "-Wl,-rpath,$ORIGIN",
+    "-Wl,--version-script=/var/tmp/leo-dual-lane-De3lVUqp/build/dual-lane.exports",
+    "-o",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/libleo-dual-lane.so"
+  ],
+  "published_hotpath_lock_sha256": "8850a5118fa09c66ec81c8ca14502fceeb73d1c8f39eeff421f184dbf17fc77a",
+  "source_changes": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/dual_lane_build.py": "8b24be57904e084a20f7cc3b7813b69f67ed9af54b1abe8f60ecd56f8deb53d5",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/dual_lane_native.c": "b9819a1a8c0f5890b86e1c1ddabf04964081c88fc0bc474559f8e6a0d039ba33",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/incremental_rescue_graft.py": "02a0b088f29bf7123b41aa2df5c0cf2c20bc87a32ec6d03f12ecc08001b2e61d",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/dual_lane_scout.c": "727d6d5fd37b7af358adbf6ebb6b3a1de7510fee32acf39349915c323887521c",
+    "/var/tmp/leo-dual-lane-De3lVUqp/build/source/native_glrt.c": "1d0623b4b2401cbd79b8cec7acedce6ece8568038739000ad5cd919f3e1f46fa"
+  },
+  "source_revision": "/home/mouse9911/gits/leo-tracker-reduxredux"
+}

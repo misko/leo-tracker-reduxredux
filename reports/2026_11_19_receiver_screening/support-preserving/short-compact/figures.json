@@ -1,0 +1,154 @@
+{
+  "charts": [
+    {
+      "caption": "Independent 75-second fits, checked at 150 and 225 s. Gate compares both c arms and nominal local position confidence. Complete compact is the scheduled fallback. Four original v5 options use full capture-era factors.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082",
+        "DS26-0168",
+        "DS29-0604"
+      ],
+      "id": "short_compact-roof",
+      "method": "short_compact",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "timing.csv"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Released before 300 s",
+          "value": "short_compact",
+          "where": {
+            "profile": "roof"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete compact stock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "short_compact_full",
+          "where": {
+            "profile": "roof"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "75\u2013150 s estimate \u00b7 ungated",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "short_compact_at150",
+          "where": {
+            "profile": "roof"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "150\u2013225 s estimate \u00b7 ungated",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "short_compact_at225",
+          "where": {
+            "profile": "roof"
+          }
+        }
+      ],
+      "title": "Early compact v5 fix by independent time blocks"
+    },
+    {
+      "caption": "Independent 75-second fits, checked at 150 and 225 s. Gate compares both c arms and nominal local position confidence. Complete compact is the scheduled fallback. One previously sealed simulated waveform with two omitted offers.",
+      "cases": [
+        "cdcb1adad136be5cc7d13aaaccfb959d",
+        "89d943a3959819200ccacc3909921535",
+        "00ad8eb4ca408706ae450042285a6248"
+      ],
+      "condition_labels": {
+        "containing": "25 km containing",
+        "far-omitted": "25 km far omitted",
+        "omitted": "25 km near omitted"
+      },
+      "id": "short_compact-transfer",
+      "method": "short_compact",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv",
+        "timing.csv"
+      ],
+      "queries": "waveform-queries.json",
+      "scope": "transfer",
+      "seal": "transfer-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Released before 300 s",
+          "value": "short_compact",
+          "where": {
+            "profile": "waveform"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Complete compact stock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "short_compact_full",
+          "where": {
+            "profile": "waveform"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "75\u2013150 s estimate \u00b7 ungated",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "short_compact_at150",
+          "where": {
+            "profile": "waveform"
+          }
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "four",
+          "label": "150\u2013225 s estimate \u00b7 ungated",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "short_compact_at225",
+          "where": {
+            "profile": "waveform"
+          }
+        }
+      ],
+      "title": "Early compact v5 fix by independent time blocks"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,12 @@
+--- a/native_glrt_reference.c
++++ b/native_glrt_reference.c
+@@ -75,7 +75,8 @@
+     size_t *complex_times,size_t *row_count)
+ {
+     if(!complex_times||!row_count||!valid_rate(rate)||
+-       (dwell_ms!=120&&dwell_ms!=240&&dwell_ms!=360)||
++       (dwell_ms!=120&&dwell_ms!=240&&dwell_ms!=360&&
++        !(dwell_ms==20&&stride_ms==20))||
+        (stride_ms!=10&&stride_ms!=20&&stride_ms!=120))
+         return LEO_NATIVE_GLRT_INVALID;
+     *complex_times=(size_t)rate*dwell_ms/1000u;

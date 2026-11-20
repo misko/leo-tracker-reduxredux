@@ -1,0 +1,32 @@
+Running as unit: leo-iq-bench-40d5a73c7021.service
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/dual_lane_pace.py", line 14, in <module>
+    from . import arrival_queue_position as position
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/arrival_queue_position.py", line 14, in <module>
+    from . import bracketed_position as fit
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/bracketed_position.py", line 17, in <module>
+    from .whole_pressure_trial import rows_from
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_pressure_trial.py", line 12, in <module>
+    from . import whole_band_results as band
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/whole_band_results.py", line 12, in <module>
+    from .full_held_scores import held_references
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/full_held_scores.py", line 11, in <module>
+    from . import full_held_pair as trial
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/full_held_pair.py", line 12, in <module>
+    from . import capture_release, full_held_control, iq_schedule, raw_robust, whole_cavity_scores
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/iq_schedule.py", line 14, in <module>
+    from . import raw_robust, whole_cavity_scores, whole_pair
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/raw_robust.py", line 19, in <module>
+    from . import recording_to_v5, robust_em_trials
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/robust_em_trials.py", line 18, in <module>
+    from ..variants import projected_fit, robust_em
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/robust_em.py", line 7, in <module>
+    from scipy.linalg import cholesky, solve_triangular
+ModuleNotFoundError: No module named 'scipy'
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 4.086s
+             CPU time consumed: 2.447s
+                   Memory peak: 106.8M (swap: 0B)

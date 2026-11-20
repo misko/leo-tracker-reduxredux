@@ -1,0 +1,5 @@
+# Join saved ordinary DS26 IQ with the lifetime-bounded cavity solver
+
+Run one fresh replay of DS26-0036 within a single 512 MiB zero-swap Linux user cgroup. Keep the already verified complete ordinary detector, 128 KiB authenticated compressed reads and two native single-thread lanes on CPU 18 and 19 at nice 10. Verify the same complete native factor bytes and same truth-free request, then replace the orchestrator with the frozen direct lifetime-bounded five-refresh secant cavity worker on CPU 18. Use its original physical cgroup sampler. Enforce a 300 s service deadline. Run once, with no restart.
+
+The numerical endpoint is the cavity result. It is paired against the earlier same-ordinary secant cavity coordinates and RF fits, with both c arms. The existing row-major recovery run on DS26 failed at signed context and stays separately preserved. Record both partial and complete outcomes, acquisition-time and per-visit comparisons separately, runtime, and cgroup counters. Seal sources and same-input controls before launch, and seal predictions before geography.

@@ -1,0 +1,54 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh same-IQ pairs under 512 MiB and zero swap with unchanged phase release. Original v5 curves use capture-era observations.",
+      "cases": [
+        "DS26-0241",
+        "DS29-0357"
+      ],
+      "id": "exact-wide-iq-all",
+      "method": "exact-wide-iq_candidate",
+      "provenance": [
+        "prediction-lock.json",
+        "resources.json",
+        "scores.csv",
+        "native-parity.json",
+        "complete-comparison.csv",
+        "native-call-times.jsonl.gz",
+        "selection.json"
+      ],
+      "scope": "roof",
+      "seal": "all-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Exact wide-kernel refactor",
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "exact-wide-iq_candidate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Stock wide detector",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "exact-wide-iq_control"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Exact wide detector on held complete IQ"
+    }
+  ],
+  "version": 1
+}

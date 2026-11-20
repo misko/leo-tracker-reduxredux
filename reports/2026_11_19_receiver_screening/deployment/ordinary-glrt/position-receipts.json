@@ -1,0 +1,762 @@
+{
+  "DS26-0036": {
+    "packet": {
+      "catalog_timestamp": 1792904651911878285,
+      "catalogue": {
+        "path": "/input/catalogue",
+        "sha256": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86"
+      },
+      "cutoff": 1792908972366467298,
+      "mode": "native",
+      "native": {
+        "path": "/input/native",
+        "sha256": "34595d08613914e41b3632b82996ccbb056c523b06839d49f39b1b1f15faed2d"
+      },
+      "offer": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      },
+      "probe_limit": 13538,
+      "track_config": {
+        "path": "/input/track_config",
+        "sha256": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      }
+    },
+    "stages": {
+      "archive_and_peak_selection": {
+        "cpu_s": 0.15430653000000005,
+        "wall_s": 0.31933492980897427
+      },
+      "backend_import": {
+        "cpu_s": 7.215000000004856e-06,
+        "wall_s": 1.1089257895946503e-05
+      },
+      "catalogue_read": {
+        "cpu_s": 0.0043904629999999,
+        "wall_s": 0.020130585879087448
+      },
+      "graph": {
+        "cpu_s": 1.5676237869999998,
+        "wall_s": 2.614369214512408
+      },
+      "nuisance_backend": {
+        "cpu_s": 3.571101321,
+        "wall_s": 4.826832557097077
+      }
+    },
+    "stock": {
+      "catalog_sha256": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86",
+      "id": "DS26-0036",
+      "input_sha256": "6c3ee18115ffe27e179b8755ac72b078c579b67e120c4bff0d3d28a8eedfe35e",
+      "method": "ordinary_glrt_band_capture_control",
+      "native_sha256": "41b74326231d17abcc1ed6e8cfd37574a2f5752c366bc1e8b959c39c1ec5f94e",
+      "observation_sha256": "38124d94670a0f7ce78d64b2810503dfb3141859175d10affbbbe81b0e884bc0",
+      "position_error_km": {
+        "c0": 0.654485583084909,
+        "fitted_c": 0.7391755236905405
+      },
+      "result": {
+        "arms": {
+          "c0": {
+            "c_hz_per_ghz": 0.0,
+            "forced_latlon": [
+              37.84934735747605,
+              -122.47830443048738
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 27015.436943634813,
+            "held_normalized_mean_loss": 3.1484505925127784,
+            "held_score": 0.6134959330460837,
+            "latlon": [
+              37.84934735747605,
+              -122.47830443048738
+            ],
+            "radius_km": 3.0336064564427305,
+            "region_id": "original",
+            "rf_rms_hz": 232.4386938753843
+          },
+          "fitted_c": {
+            "c_hz_per_ghz": -515.7927876440053,
+            "forced_latlon": [
+              37.849149683235375,
+              -122.47733184330507
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 27014.17480215201,
+            "held_normalized_mean_loss": 2.6874176422468197,
+            "held_score": 0.6718139924766018,
+            "latlon": [
+              37.849149683235375,
+              -122.47733184330507
+            ],
+            "radius_km": 3.0395936031051938,
+            "region_id": "original",
+            "rf_rms_hz": 209.30471802005252
+          }
+        },
+        "boundary": "Complete saved IQ through ordinary GLRT, streaming Graph and joint clock plus offset",
+        "metrics": {
+          "associated_observations": 3066,
+          "catalog_entries": 11142,
+          "causal_satellites": 11086,
+          "coarse_knots": 17,
+          "coarse_satellites": 11086,
+          "coarse_state_evaluations": 188462,
+          "conditional_held_by_arm": {
+            "c0": {
+              "conditional_held_rf_rms_hz": 2804.8663553496417,
+              "held_deviance_per_point": 56.439701463080205,
+              "held_points": 120,
+              "held_tracks": 10,
+              "raw_held_rf_rms_hz": 2794.8228202951664
+            },
+            "fitted_c": {
+              "conditional_held_rf_rms_hz": 2802.014524610198,
+              "held_deviance_per_point": 56.36273936126477,
+              "held_points": 120,
+              "held_tracks": 10,
+              "raw_held_rf_rms_hz": 2721.744359724683
+            }
+          },
+          "cross_radio_orbits": 24,
+          "curved_fit_tracks": 55,
+          "curved_tracks": 57,
+          "distinct_radio_lanes": 4,
+          "duplicates_removed": 0,
+          "final_fit_wall_s": 0.17235382460057735,
+          "final_model": {
+            "c0": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 89.23315975953996,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 113.16061112863994,
+              "weighted_noise_log_determinant": 26314.014569812574
+            },
+            "fitted_c": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 87.45362682071328,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 113.1787735654383,
+              "weighted_noise_log_determinant": 26314.014569812574
+            }
+          },
+          "final_ownership": {
+            "points": 3066,
+            "sha256": "d2f36a1c005113518f110a7ae3807877433b157cbe8e4d9afd1a24de29902be1",
+            "tracks": 102
+          },
+          "fine_knots": 65,
+          "fine_satellites": 968,
+          "fine_state_evaluations": 62920,
+          "fit_s": 2.337800880894065,
+          "fit_tracks": 102,
+          "held_by_arm": {
+            "c0": {
+              "held_compatible_tracks": 9,
+              "held_normalized_mean_loss": 3.1484505925127784,
+              "held_orbits": 8,
+              "held_score": 0.6134959330460837
+            },
+            "fitted_c": {
+              "held_compatible_tracks": 9,
+              "held_normalized_mean_loss": 2.6874176422468197,
+              "held_orbits": 8,
+              "held_score": 0.6718139924766018
+            }
+          },
+          "held_compatible_tracks": 9,
+          "held_normalized_mean_loss": 3.1484505925127784,
+          "held_orbits": 8,
+          "held_prefix_ownership": {
+            "points": 348,
+            "sha256": "326df3eaf26df947801c061e45256404a748cedbae0c0415a57ee9b0ab2fbfb1",
+            "tracks": 10
+          },
+          "held_score": 0.6134959330460837,
+          "held_tracks": 10,
+          "input_points": 3121,
+          "input_tracks": 104,
+          "observation_s": 0.016674306243658066,
+          "orbit_count": 36,
+          "orbit_s": 0.7780851097777486,
+          "paired_full_moves": 0,
+          "paired_training_moves": 1,
+          "pooled_shift_km": 1.8459729738129702,
+          "regional_satellites": 968,
+          "rejected_by_outlier": 2,
+          "repeated_orbits": 25,
+          "separated_orbits": 34,
+          "shortlist_s": 2.223550047725439,
+          "shortlisted_tracks": 104,
+          "training_ownership": {
+            "points": 2755,
+            "sha256": "7e388cfdb9510b11133d5481590e700701b4bc8843d5378177550ed9fa4ec7bb",
+            "tracks": 93
+          },
+          "undersized_points_excluded": 0,
+          "unique_fit_points": 3121
+        },
+        "reason": null,
+        "status": "ok"
+      },
+      "source_ordinary_sha256": "41b74326231d17abcc1ed6e8cfd37574a2f5752c366bc1e8b959c39c1ec5f94e",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      }
+    },
+    "trial": {
+      "archived_valid_visits": 6757,
+      "catalog_sha256": "15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86",
+      "factor_probes_sha256": "sha256:e7b45704e90c543181e661dcd5e45809c014310a8ddf5b70d6d8cdbe77746c60",
+      "fresh_visits": 8,
+      "host_receipt_sha256": "22106332c8d3440b62fdf2d31373ad0186b0257f3db0fd49004fef6cd2a0a9b7",
+      "id": "DS26-0036",
+      "input_sha256": "3cef5374dfe014d82de915e626c59f2739a56ad3762f3ad7b59d875848316ae5",
+      "method": "ordinary_glrt_band",
+      "native_sha256": "34595d08613914e41b3632b82996ccbb056c523b06839d49f39b1b1f15faed2d",
+      "observation_sha256": "38124d94670a0f7ce78d64b2810503dfb3141859175d10affbbbe81b0e884bc0",
+      "position_error_km": {
+        "c0": 0.654485583084909,
+        "fitted_c": 0.7391755236905405
+      },
+      "result": {
+        "arms": {
+          "c0": {
+            "c_hz_per_ghz": 0.0,
+            "forced_latlon": [
+              37.84934735747605,
+              -122.47830443048738
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 27015.436943634813,
+            "held_normalized_mean_loss": 3.1484505925127784,
+            "held_score": 0.6134959330460837,
+            "latlon": [
+              37.84934735747605,
+              -122.47830443048738
+            ],
+            "radius_km": 3.0336064564427305,
+            "region_id": "original",
+            "rf_rms_hz": 232.4386938753843
+          },
+          "fitted_c": {
+            "c_hz_per_ghz": -515.7927876440053,
+            "forced_latlon": [
+              37.849149683235375,
+              -122.47733184330507
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 27014.17480215201,
+            "held_normalized_mean_loss": 2.6874176422468197,
+            "held_score": 0.6718139924766018,
+            "latlon": [
+              37.849149683235375,
+              -122.47733184330507
+            ],
+            "radius_km": 3.0395936031051938,
+            "region_id": "original",
+            "rf_rms_hz": 209.30471802005252
+          }
+        },
+        "boundary": "Held ordinary fine-band IQ factor substitution plus complete ordinary archive",
+        "metrics": {
+          "associated_observations": 3066,
+          "catalog_entries": 11142,
+          "causal_satellites": 11086,
+          "coarse_knots": 17,
+          "coarse_satellites": 11086,
+          "coarse_state_evaluations": 188462,
+          "conditional_held_by_arm": {
+            "c0": {
+              "conditional_held_rf_rms_hz": 2804.8663553496417,
+              "held_deviance_per_point": 56.439701463080205,
+              "held_points": 120,
+              "held_tracks": 10,
+              "raw_held_rf_rms_hz": 2794.8228202951664
+            },
+            "fitted_c": {
+              "conditional_held_rf_rms_hz": 2802.014524610198,
+              "held_deviance_per_point": 56.36273936126477,
+              "held_points": 120,
+              "held_tracks": 10,
+              "raw_held_rf_rms_hz": 2721.744359724683
+            }
+          },
+          "cross_radio_orbits": 24,
+          "curved_fit_tracks": 55,
+          "curved_tracks": 57,
+          "distinct_radio_lanes": 4,
+          "duplicates_removed": 0,
+          "final_fit_wall_s": 0.26489057019352913,
+          "final_model": {
+            "c0": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 89.23315975953996,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 113.16061112863994,
+              "weighted_noise_log_determinant": 26314.014569812574
+            },
+            "fitted_c": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 87.45362682071328,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 113.1787735654383,
+              "weighted_noise_log_determinant": 26314.014569812574
+            }
+          },
+          "final_ownership": {
+            "points": 3066,
+            "sha256": "d2f36a1c005113518f110a7ae3807877433b157cbe8e4d9afd1a24de29902be1",
+            "tracks": 102
+          },
+          "fine_knots": 65,
+          "fine_satellites": 968,
+          "fine_state_evaluations": 62920,
+          "fit_s": 2.4685318171977997,
+          "fit_tracks": 102,
+          "held_by_arm": {
+            "c0": {
+              "held_compatible_tracks": 9,
+              "held_normalized_mean_loss": 3.1484505925127784,
+              "held_orbits": 8,
+              "held_score": 0.6134959330460837
+            },
+            "fitted_c": {
+              "held_compatible_tracks": 9,
+              "held_normalized_mean_loss": 2.6874176422468197,
+              "held_orbits": 8,
+              "held_score": 0.6718139924766018
+            }
+          },
+          "held_compatible_tracks": 9,
+          "held_normalized_mean_loss": 3.1484505925127784,
+          "held_orbits": 8,
+          "held_prefix_ownership": {
+            "points": 348,
+            "sha256": "326df3eaf26df947801c061e45256404a748cedbae0c0415a57ee9b0ab2fbfb1",
+            "tracks": 10
+          },
+          "held_score": 0.6134959330460837,
+          "held_tracks": 10,
+          "input_points": 3121,
+          "input_tracks": 104,
+          "observation_s": 0.03366433456540108,
+          "orbit_count": 36,
+          "orbit_s": 0.40076113771647215,
+          "paired_full_moves": 0,
+          "paired_training_moves": 1,
+          "pooled_shift_km": 1.8459729738129702,
+          "regional_satellites": 968,
+          "rejected_by_outlier": 2,
+          "repeated_orbits": 25,
+          "separated_orbits": 34,
+          "shortlist_s": 0.9404125344008207,
+          "shortlisted_tracks": 104,
+          "training_ownership": {
+            "points": 2755,
+            "sha256": "7e388cfdb9510b11133d5481590e700701b4bc8843d5378177550ed9fa4ec7bb",
+            "tracks": 93
+          },
+          "undersized_points_excluded": 0,
+          "unique_fit_points": 3121
+        },
+        "reason": null,
+        "status": "ok"
+      },
+      "source_ordinary_sha256": "41b74326231d17abcc1ed6e8cfd37574a2f5752c366bc1e8b959c39c1ec5f94e",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      }
+    },
+    "worker": {
+      "cpu_s": 5.82016082,
+      "wall_s": 9.022730616852641
+    },
+    "worker_wall_s": 9.40467286389321
+  },
+  "DS29-0082": {
+    "packet": {
+      "catalog_timestamp": 1793725398225506404,
+      "catalogue": {
+        "path": "/input/catalogue",
+        "sha256": "ac5115781df3dc522c9a04c14cab7cbfb678dd1a8927e35e28f0231f996de92c"
+      },
+      "cutoff": 1793727300592098060,
+      "mode": "native",
+      "native": {
+        "path": "/input/native",
+        "sha256": "273c9bb4b0d551cb81f0edf145ce9f877b32c041e8d53e67ce73b42feaf7dd9e"
+      },
+      "offer": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      },
+      "probe_limit": 13544,
+      "track_config": {
+        "path": "/input/track_config",
+        "sha256": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+      }
+    },
+    "stages": {
+      "archive_and_peak_selection": {
+        "cpu_s": 0.10801944099999994,
+        "wall_s": 0.1150193503126502
+      },
+      "backend_import": {
+        "cpu_s": 4.9899999999825084e-06,
+        "wall_s": 8.803792297840118e-06
+      },
+      "catalogue_read": {
+        "cpu_s": 0.004679978000000085,
+        "wall_s": 0.004676497541368008
+      },
+      "graph": {
+        "cpu_s": 0.723009007,
+        "wall_s": 0.9465006478130817
+      },
+      "nuisance_backend": {
+        "cpu_s": 2.581977751,
+        "wall_s": 4.781095195561647
+      }
+    },
+    "stock": {
+      "catalog_sha256": "ac5115781df3dc522c9a04c14cab7cbfb678dd1a8927e35e28f0231f996de92c",
+      "id": "DS29-0082",
+      "input_sha256": "cfa779adcb9c72b2d8dc9e42f9151043de136796d26b6e9242a5f5094987f134",
+      "method": "ordinary_glrt_band_capture_control",
+      "native_sha256": "9b66406e24a94f2cf11adfe858289dbd45696d4e1244d5374b5679d32e8bec49",
+      "observation_sha256": "db378a819642bf9ab58077b87253a66980edeeb17af728b186fb2fcb3c8d10d2",
+      "position_error_km": {
+        "c0": null,
+        "fitted_c": null
+      },
+      "result": {
+        "arms": {
+          "c0": {
+            "c_hz_per_ghz": 0.0,
+            "forced_latlon": [
+              37.83502378675525,
+              -122.46530913826662
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 15430.058558750392,
+            "held_normalized_mean_loss": 15.9375361903227,
+            "held_score": 0.26262342658042426,
+            "latlon": null,
+            "radius_km": 3.718213555631123,
+            "region_id": null,
+            "rf_rms_hz": 260.2370376458376
+          },
+          "fitted_c": {
+            "c_hz_per_ghz": -639.5415665552396,
+            "forced_latlon": [
+              37.83656930648426,
+              -122.46480048368814
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 15428.977635789544,
+            "held_normalized_mean_loss": 15.832165502595474,
+            "held_score": 0.28991979622381037,
+            "latlon": null,
+            "radius_km": 3.725214758087223,
+            "region_id": null,
+            "rf_rms_hz": 214.0187095959353
+          }
+        },
+        "boundary": "Complete saved IQ through ordinary GLRT, streaming Graph and joint clock plus offset",
+        "metrics": {
+          "associated_observations": 1711,
+          "catalog_entries": 11185,
+          "causal_satellites": 11155,
+          "coarse_knots": 17,
+          "coarse_satellites": 11154,
+          "coarse_state_evaluations": 189635,
+          "conditional_held_by_arm": {
+            "c0": {
+              "conditional_held_rf_rms_hz": 918.2992694257363,
+              "held_deviance_per_point": 18.25177542903807,
+              "held_points": 133,
+              "held_tracks": 16,
+              "raw_held_rf_rms_hz": 1850.4138965763893
+            },
+            "fitted_c": {
+              "conditional_held_rf_rms_hz": 916.7933429643274,
+              "held_deviance_per_point": 18.249007857893847,
+              "held_points": 133,
+              "held_tracks": 16,
+              "raw_held_rf_rms_hz": 1860.9489377436942
+            }
+          },
+          "cross_radio_orbits": 15,
+          "curved_fit_tracks": 27,
+          "curved_tracks": 29,
+          "distinct_radio_lanes": 4,
+          "duplicates_removed": 0,
+          "final_fit_wall_s": 0.13005418796092272,
+          "final_model": {
+            "c0": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 65.78561940205577,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 137.4982402125634,
+              "weighted_noise_log_determinant": 14925.91541923051
+            },
+            "fitted_c": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 64.43280871687926,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 137.53711026398435,
+              "weighted_noise_log_determinant": 14925.91541923051
+            }
+          },
+          "final_ownership": {
+            "points": 1711,
+            "sha256": "ab795004de60534db68b3ae204a48cd4d2f3d4dc962fdf6a9911876e33b15607",
+            "tracks": 68
+          },
+          "fine_knots": 65,
+          "fine_satellites": 1109,
+          "fine_state_evaluations": 72085,
+          "fit_s": 0.6075433939695358,
+          "fit_tracks": 68,
+          "held_by_arm": {
+            "c0": {
+              "held_compatible_tracks": 8,
+              "held_normalized_mean_loss": 15.9375361903227,
+              "held_orbits": 8,
+              "held_score": 0.26262342658042426
+            },
+            "fitted_c": {
+              "held_compatible_tracks": 10,
+              "held_normalized_mean_loss": 15.832165502595474,
+              "held_orbits": 10,
+              "held_score": 0.28991979622381037
+            }
+          },
+          "held_compatible_tracks": 8,
+          "held_normalized_mean_loss": 15.9375361903227,
+          "held_orbits": 8,
+          "held_prefix_ownership": {
+            "points": 387,
+            "sha256": "c46f1078dba868d063890ee2879c51e411e53cf0b89fb3952c5a8fc62691c2f8",
+            "tracks": 16
+          },
+          "held_score": 0.26262342658042426,
+          "held_tracks": 16,
+          "input_points": 1763,
+          "input_tracks": 70,
+          "observation_s": 0.00955596100538969,
+          "orbit_count": 34,
+          "orbit_s": 0.24056936707347631,
+          "paired_full_moves": 0,
+          "paired_training_moves": 0,
+          "pooled_shift_km": 0.4483201459878242,
+          "regional_satellites": 1109,
+          "rejected_by_outlier": 2,
+          "repeated_orbits": 15,
+          "separated_orbits": 34,
+          "shortlist_s": 0.2991222841665149,
+          "shortlisted_tracks": 70,
+          "training_ownership": {
+            "points": 1349,
+            "sha256": "b4dd5b51daa612023060266e223278a48b3383bad83b71a2d3388d182f9c6d8b",
+            "tracks": 53
+          },
+          "undersized_points_excluded": 0,
+          "unique_fit_points": 1763
+        },
+        "reason": "weak_held_track_support",
+        "status": "withheld"
+      },
+      "source_ordinary_sha256": "9b66406e24a94f2cf11adfe858289dbd45696d4e1244d5374b5679d32e8bec49",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      }
+    },
+    "trial": {
+      "archived_valid_visits": 4864,
+      "catalog_sha256": "ac5115781df3dc522c9a04c14cab7cbfb678dd1a8927e35e28f0231f996de92c",
+      "factor_probes_sha256": "sha256:3f1db09013b548025bcb9eb0ef03e38c4690258651f3ca10361085b5d7d8fc7a",
+      "fresh_visits": 4,
+      "host_receipt_sha256": "8d791a6b107ca9cc9d73886f794eb0ca03b16b2cda5486f116c8cc7bda05795b",
+      "id": "DS29-0082",
+      "input_sha256": "cfb90a4685ff9d4b244e42c05378ca1499975e351a9020e74832d207784faff5",
+      "method": "ordinary_glrt_band",
+      "native_sha256": "273c9bb4b0d551cb81f0edf145ce9f877b32c041e8d53e67ce73b42feaf7dd9e",
+      "observation_sha256": "db378a819642bf9ab58077b87253a66980edeeb17af728b186fb2fcb3c8d10d2",
+      "position_error_km": {
+        "c0": null,
+        "fitted_c": null
+      },
+      "result": {
+        "arms": {
+          "c0": {
+            "c_hz_per_ghz": 0.0,
+            "forced_latlon": [
+              37.83502378675525,
+              -122.46530913826662
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 15430.058558750392,
+            "held_normalized_mean_loss": 15.9375361903227,
+            "held_score": 0.26262342658042426,
+            "latlon": null,
+            "radius_km": 3.718213555631123,
+            "region_id": null,
+            "rf_rms_hz": 260.2370376458376
+          },
+          "fitted_c": {
+            "c_hz_per_ghz": -639.5415665552396,
+            "forced_latlon": [
+              37.83656930648426,
+              -122.46480048368814
+            ],
+            "forced_region_id": "original",
+            "frequency_score": 15428.977635789544,
+            "held_normalized_mean_loss": 15.832165502595474,
+            "held_score": 0.28991979622381037,
+            "latlon": null,
+            "radius_km": 3.725214758087223,
+            "region_id": null,
+            "rf_rms_hz": 214.0187095959353
+          }
+        },
+        "boundary": "Held ordinary fine-band IQ factor substitution plus complete ordinary archive",
+        "metrics": {
+          "associated_observations": 1711,
+          "catalog_entries": 11185,
+          "causal_satellites": 11155,
+          "coarse_knots": 17,
+          "coarse_satellites": 11154,
+          "coarse_state_evaluations": 189635,
+          "conditional_held_by_arm": {
+            "c0": {
+              "conditional_held_rf_rms_hz": 918.2992694257363,
+              "held_deviance_per_point": 18.25177542903807,
+              "held_points": 133,
+              "held_tracks": 16,
+              "raw_held_rf_rms_hz": 1850.4138965763893
+            },
+            "fitted_c": {
+              "conditional_held_rf_rms_hz": 916.7933429643274,
+              "held_deviance_per_point": 18.249007857893847,
+              "held_points": 133,
+              "held_tracks": 16,
+              "raw_held_rf_rms_hz": 1860.9489377436942
+            }
+          },
+          "cross_radio_orbits": 15,
+          "curved_fit_tracks": 27,
+          "curved_tracks": 29,
+          "distinct_radio_lanes": 4,
+          "duplicates_removed": 0,
+          "final_fit_wall_s": 0.1881738817319274,
+          "final_model": {
+            "c0": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 65.78561940205577,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 137.4982402125634,
+              "weighted_noise_log_determinant": 14925.91541923051
+            },
+            "fitted_c": {
+              "accepted_steps": 3,
+              "clock_rms_hz": 64.43280871687926,
+              "exact_objective_evaluations": 4,
+              "fit_conditional_rf_rms_hz": 137.53711026398435,
+              "weighted_noise_log_determinant": 14925.91541923051
+            }
+          },
+          "final_ownership": {
+            "points": 1711,
+            "sha256": "ab795004de60534db68b3ae204a48cd4d2f3d4dc962fdf6a9911876e33b15607",
+            "tracks": 68
+          },
+          "fine_knots": 65,
+          "fine_satellites": 1109,
+          "fine_state_evaluations": 72085,
+          "fit_s": 1.3931152084842324,
+          "fit_tracks": 68,
+          "held_by_arm": {
+            "c0": {
+              "held_compatible_tracks": 8,
+              "held_normalized_mean_loss": 15.9375361903227,
+              "held_orbits": 8,
+              "held_score": 0.26262342658042426
+            },
+            "fitted_c": {
+              "held_compatible_tracks": 10,
+              "held_normalized_mean_loss": 15.832165502595474,
+              "held_orbits": 10,
+              "held_score": 0.28991979622381037
+            }
+          },
+          "held_compatible_tracks": 8,
+          "held_normalized_mean_loss": 15.9375361903227,
+          "held_orbits": 8,
+          "held_prefix_ownership": {
+            "points": 387,
+            "sha256": "c46f1078dba868d063890ee2879c51e411e53cf0b89fb3952c5a8fc62691c2f8",
+            "tracks": 16
+          },
+          "held_score": 0.26262342658042426,
+          "held_tracks": 16,
+          "input_points": 1763,
+          "input_tracks": 70,
+          "observation_s": 0.01538015902042389,
+          "orbit_count": 34,
+          "orbit_s": 0.4507151646539569,
+          "paired_full_moves": 0,
+          "paired_training_moves": 0,
+          "pooled_shift_km": 0.4483201459878242,
+          "regional_satellites": 1109,
+          "rejected_by_outlier": 2,
+          "repeated_orbits": 15,
+          "separated_orbits": 34,
+          "shortlist_s": 1.54510394949466,
+          "shortlisted_tracks": 70,
+          "training_ownership": {
+            "points": 1349,
+            "sha256": "b4dd5b51daa612023060266e223278a48b3383bad83b71a2d3388d182f9c6d8b",
+            "tracks": 53
+          },
+          "undersized_points_excluded": 0,
+          "unique_fit_points": 1763
+        },
+        "reason": "weak_held_track_support",
+        "status": "withheld"
+      },
+      "source_ordinary_sha256": "9b66406e24a94f2cf11adfe858289dbd45696d4e1244d5374b5679d32e8bec49",
+      "tile": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "id": "original"
+      }
+    },
+    "worker": {
+      "cpu_s": 3.924838105,
+      "wall_s": 6.36065819952637
+    },
+    "worker_wall_s": 6.840439484454691
+  }
+}

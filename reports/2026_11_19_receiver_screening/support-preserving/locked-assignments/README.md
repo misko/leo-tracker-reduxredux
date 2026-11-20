@@ -1,0 +1,28 @@
+# Does differential rescue change the winning satellites?
+
+The final stock and rescue assignments agreed on all but one shared active curved observation across both recordings. No coherent stock group changed satellite in the matched refits. The locked fits therefore coincide exactly with one another in both calibrations. Restricting the stock fit to the common curved support still changes the position on both recordings, even while holding groups, aliases, family weights, and predictive-linear support fixed.
+
+The experiment replays the complete stock and negative-rescue positions on DS26-0168 and DS29-0604, then captures the actual point-to-satellite assignments. It compares two continuous refits on the same surviving curved observations. Both retain stock track grouping, Graph-unwrapped CFO, group aliases, family weights, radio-noise inputs and search offer. One refit locks the stock NORADs. The other substitutes an observed union NORAD only when all matched points in an original stock group agree on that owner. The refits retain the declared stock predictive-linear support and report it separately. [Frozen protocol](PROTOCOL.md) · [Source, input, and receiver lock](plan.json)
+
+The comparison tracks three ways the unrestricted result can change. The common active points reveal whether final satellite ownership changed. The totals identify support entering and leaving the fit, and the overlap of the stock and union groups identifies splits and merges. Capturing the signed incumbent and the published output separates actual cavity adoption from a cavity offer. An exact re-fit of the original chosen stock configuration controls for the diagnostic's use of the stock numerical state. [Assignment evidence](assignment-effects.json) · [Fit receipts](attempts.json)
+
+Each refit reports RMS on the same matched curved points and separately evaluates the active stock curved observations omitted from both refits. Omitted-stock RMS is a conditional diagnostic for these losses of support. The held points are defined by the observed support difference. Both calibration arms share each fixed assignment and input mask.
+
+| Recording | Unrestricted stock | Locked common support | Unrestricted union | Held stock RMS, locked fit |
+| --- | ---: | ---: | ---: | ---: |
+| DS26-0168 | 0.805 / 0.796 km | 0.858 / 0.846 km | 1.472 / 1.473 km | 150.43 / 162.87 Hz |
+| DS29-0604 | 0.735 / 0.734 km | 0.685 / 0.686 km | 0.780 / 0.797 km | 126.66 / 123.15 Hz |
+
+Horizontal errors and RF RMS list zero c and fitted c in that order. On the fitted common support, conditional Doppler RMS was 70.206 / 70.206 Hz on DS26-0168 and 95.151 / 95.126 Hz on DS29-0604. The held observations were 160 and 63 stock curved points, respectively. Both refits passed the original paired gates and retained all 619 and 668 stock predictive points respectively. The original winning-stock refits reproduced both positions, RF RMS and objectives exactly. Each fresh unrestricted output also reproduced its sealed parent. [Both-arm scores and four original v5 references](scores.csv) · [Position charts](figures.json)
+
+## DS26-0168
+
+The union curves admitted 532 points absent from the stock final curved support and omitted 82 stock curved points. Four stock groups split and two union groups merged shared points in final support. The common support contained 2,749 points before excluding one 78-point group with inconsistent union owners. One point in that group had a different final NORAD and one shared point had a different carrier-ambiguity winding. The raw comparison flags 26 exact floating-point CFO differences, of which 25 round to zero winding difference. Predictive support was 619 → 698 points, with 567 shared and their satellite identities unchanged.
+
+The earlier conservative fits had 97 different satellite assignments across 3,143 shared curved points. For 64 of those points, the stock cavity then adopted the same owner already selected by the unrestricted union, changing 47386 to 61704. The stock cavity trial passed without constrained refinement. No cavity trial was offered on the full union. The stock cavity moved the endpoint 1.203 / 1.200 km and reduced error from 0.947 / 0.954 km to 0.805 / 0.796 km. The union was already 0.525 / 0.520 km worse than the stock incumbent before this decision. The earlier fit and the stock cavity correction account for different parts of the observed gap. [Conservative, final and cavity evidence](assignment-effects.json)
+
+## DS29-0604
+
+All 2,631 shared final curved points kept the same owner and lifted CFO. The union added 286 curved points absent from stock final support and omitted 63 stock points. Five stock groups split and one union group merged shared points. Predictive support rose from 668 to 811 points, with 612 shared and their assigned satellites unchanged. Neither unrestricted fit offered cavity recovery. The measured difference occurred with changes in active support and its grouping, with no reassignment of a shared point. The matched refits isolate omission within the stock model. The experiment does not separate the effects of all newly admitted evidence from regrouping and their changes to the continuous likelihood. [Assignment and grouping evidence](assignment-effects.json)
+
+The four fresh services completed under physical 512 MiB cgroups and zero swap. Isolated common-support optimization of both arms took 2.63–3.66 seconds per fit. Those times begin at the observed winning configuration. The stock service includes complete native preparation and inference, the exact stock control and both matched refits. [Service and numerical time scopes](resources.csv) · [Prediction lock](prediction-lock.json)

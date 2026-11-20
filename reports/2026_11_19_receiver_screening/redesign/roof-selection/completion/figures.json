@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "compact_roof_completion",
+      "method": "v5_secant_fit",
+      "scope": "roof",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["roster.json"],
+      "title": "Compact secant on the eight previously unlaunched roof recordings",
+      "caption": "This add-only supplement selected exactly the eligible cases that had no launch in the original bounded run. The compact worker used the same prepared request and original 195-second cap. The four capture-era role outcomes come from earlier executions on these same recordings.",
+      "series": [
+        {"key": "one", "label": "Compact secant · fresh completion", "file": "positions.jsonl.gz", "value": "v5_secant_fit", "where": {"mode": "matched-tile"}}
+      ]
+    },
+    {
+      "id": "compact_roof_completed_complement",
+      "method": "v5_secant_fit",
+      "scope": "roof",
+      "cases": "ds26-excluded32",
+      "seal": "all32-prediction-lock.json",
+      "title": "Compact secant after the add-only DS26 complement replay",
+      "caption": "The merged archive retains the original bounded outcomes and adds only the eight previously unlaunched cases. All 31 eligible recordings were attempted. The four archived capture-era roles use the same original recordings.",
+      "series": [
+        {"key": "one", "label": "Compact secant · complete eligible replay", "file": "all32-positions.jsonl.gz", "value": "v5_secant_fit", "where": {"mode": "matched-tile"}}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Centre phase and offset profile
+
+The first bridge issued no fixes on six stored native recordings. Three centre profiles supplied no acceptable curved support, and two other recordings had no passing paired calibration. DS26-0313 reached cavity nomination and failed because the nominated model had an empty retained observation mask. Full worker wall ranged from 21.77 to 46.77 seconds. [Predictions and control pairs](receipt.json) · [Scores](scores.csv)
+
+The initial profile estimated a satellite phase and a small per-track intercept before fitting the shared radio coefficients. At that point the large shared receiver offsets and drifts still affected the track residuals. The seed admitted 13 points on DS26-0036 and none on DS29-0082. DS26-0036 had zero compatible tracks after the shared fit. The follow-up protocol ranks the curved part of each track after removing its independent offset and linear rate, then estimates the shared radio terms with the actual v5 likelihood. [Frozen first protocol](PROTOCOL.md) · [First implementation and worker source](sealed-worker-sources.tar.gz) · [Follow-up protocol](../PROTOCOL.md)

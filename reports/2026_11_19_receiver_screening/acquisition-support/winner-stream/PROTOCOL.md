@@ -1,0 +1,5 @@
+# Private winning-observation handoff
+
+Use exact wide native exports from the authenticated full saved-IQ replay. Compare fresh phase-release controls and a direct Graph handoff on DS26-0036 and DS29-0082. Keep DS29-0247 as the existing independent wide reserve. Each pair uses the same pinned host core (3 or 5), one math thread, nice 10, an enforced cgroup 512 MiB limit with zero swap, and a 190-second cap per position worker. Run opposite method orders on the first pair of recordings. Preserve all scientific and operational statuses. Include stream-conversion cost in the comparison as well as separately reporting materialized-stream consumption.
+
+Keep valid negative probes, admission and distinct candidate counts, clock bracket, delivery clocks, visit/probe counters, and full provenance including exclusions. Retain the same frozen Graph lane segmentation, track IDs and reports. The compact transport is a private optional input. Original inputs and public archive contracts remain supported. No detector or RF collection rerun is required by this comparison.

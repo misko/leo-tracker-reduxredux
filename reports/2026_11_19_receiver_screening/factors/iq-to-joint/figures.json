@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "iq_to_joint",
+      "method": "iq_to_joint",
+      "scope": "roof",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["stage-receipts.json"],
+      "title": "Archived IQ through ordinary GLRT and joint orbits",
+      "caption": "Two genuine complete IQ replays use the bounded archive reader, ordinary two-receiver GLRT, fresh streaming Graph and joint orbit fit. The archived secant control uses the same ordinary factors. The archived joint control uses capture-era factors with the same Graph and joint solver. The four original v5 lines use capture-era factors.",
+      "series": [
+        {"key": "one", "label": "Recorded IQ · ordinary GLRT and joint fit", "file": "positions.jsonl.gz", "value": "iq_to_joint", "native_authority": "ordinary", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Ordinary GLRT · compact secant", "file": "ordinary-secant-positions.jsonl.gz", "value": "v5_secant_fit", "native_authority": "ordinary", "where": {"mode": "matched-tile"}, "match": ["native_sha256", "catalog_sha256", "tile"]},
+        {"key": "one_native_factors", "label": "Capture-era GLRT · same Graph and joint fit", "file": "capture-era-joint-positions.jsonl.gz", "value": "native_joint_orbits", "where": {"mode": "matched-tile"}, "match": ["catalog_sha256", "tile"]}
+      ]
+    },
+    {
+      "id": "iq_to_joint_missing_tile",
+      "method": "iq_to_joint",
+      "scope": "transfer",
+      "cases": "sealed",
+      "seal": "missing-tile-lock.json",
+      "queries": "missing-tile-queries.json",
+      "provenance": ["missing-tile-query.json"],
+      "title": "Ordinary GLRT and joint orbits with the correct tile omitted",
+      "caption": "DS26-0036 uses the same complete IQ-derived ordinary factors, fresh graph method and causal catalogue. Only the sealed tile changes. Forced coordinates are diagnostic.",
+      "series": [
+        {"key": "candidate", "label": "Joint orbit fix with correct tile omitted", "file": "missing-tile-positions.jsonl.gz", "value": "iq_to_joint", "where": {"mode": "wrong-region"}}
+      ]
+    }
+  ]
+}

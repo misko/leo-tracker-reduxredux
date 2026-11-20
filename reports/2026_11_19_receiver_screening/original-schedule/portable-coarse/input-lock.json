@@ -1,0 +1,141 @@
+{
+  "builds": {
+    "aarch64": {
+      "bytes": 777416,
+      "command": [
+        "aarch64-linux-gnu-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=armv8-a",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/portable-coarse-20261120/qualified/aarch64/portable-coarse"
+      ],
+      "sha256": "7121588ed58946391dede913ccb38f0389603bba788ea9a31e8428c60eb8aa12",
+      "tool": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+    },
+    "cortex-a9": {
+      "bytes": 5146168,
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/portable-coarse-20261120/qualified/cortex-a9/portable-coarse"
+      ],
+      "sha256": "0b4f6076cac957ceb55f2e6b771c2d36b9493154b4fb5d59aae75d57d4218bc4",
+      "tool": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]"
+    },
+    "x86": {
+      "bytes": 958016,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffp-contract=off",
+        "-fopenmp-simd",
+        "-static",
+        "-fstack-usage",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-fno-math-errno",
+        "-march=x86-64-v3",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/portable-coarse-20261120/qualified/x86/portable-coarse"
+      ],
+      "sha256": "12aa74254ee879c4268d16a2d5acdb8bb8b6b670aa8528e7d306391ab1e3b90f",
+      "tool": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+    }
+  },
+  "cases": {
+    "DS26-0237": {
+      "all.ci16": "be433ca105a88b9b4d916be7f5011a18ef738b377cb5c6a03320aa4b9c7581e6",
+      "golden.json": "55e676443ea8c18b78e2da15c92e577dc38bc717dfedd7210596cdce591bb38e",
+      "short.ci16": "563f339a7133c4181780e5887d8d4d61bc6ef07bf9eadf0130fcce48e31c9379"
+    },
+    "DS29-0082": {
+      "all.ci16": "8f9543de9a5e5fd529276e7f2b37897a8c0bcda80c491ff323212568344d8e51",
+      "golden.json": "aab40ff9d128242adebaa0d181d4a443660d50f735b883e2ea0bf1957fba14d6",
+      "short.ci16": "25a5fc6f936fabda6463ae21de890dafc3de76d2b68ff3255a8785b87012e571"
+    },
+    "DS29-0519": {
+      "all.ci16": "a37b2eef0001991c3d0f56c6e2bf7581ee7e962dfffa786581aea33508fd9b04",
+      "golden.json": "ba964d449b1cb873dfd0c825534e6e3351dcff21d54c5bc3730539dfdeb8689d",
+      "short.ci16": "a37b2eef0001991c3d0f56c6e2bf7581ee7e962dfffa786581aea33508fd9b04"
+    }
+  },
+  "parent_manifest_sha256": "481a79c7581330d68dfd1ed5dd35e4fe27bac4bc77c1a3996d4907e782a6b9ec",
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/fft_full.c": "0068c0de52a277688b2f36dc23acdf8e7c9bea8cbf563fa39ecab004d75eab6d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/native/adaptive/detector/kernel/private/native_presence/fft.h": "41a84a54b0c6954f5257cce2dced3e2267e883ac8876f465005716f60f42e0ba",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/original-schedule/portable-coarse/PROTOCOL.md": "a7deb5ac7580b1597b9bde8580ab4935f6f9d79a820c9f2c19c7f55e7fca394a",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_cli.c": "f5914dc8a89cc83556462e68dfbba890df3f7af0fb17c4b483edfb44a602ac36",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/portable_coarse_trial.py": "c9daf820848847d3cc79b34f658352b714e6c226250c801e68738be21de69ef2",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/fine_search.c": "4ecef2edc76d36f9c2c7eec221b8a2a35ee43ce442264634426a6da531157565",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.c": "98007bd64e40c927868e05db01b837db0d76289b090ce96d052fab966562cdf4",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.h": "768088aab45e90acc2a6d8060b7a50e27705e1171376f94703c3e721835a1f2c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse.py": "ee6ca8eb99e76019b0f9e0f6b3f0aab9d4f29a5ff6a98a49ba33f4c4c16ec141",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_coarse_qin.h": "a2cf21e8c8178d0868f6653a549940115f46f587b3b783f72886fc37edceb3a6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.c": "be926ca8ef8213eae30500e2eea276ae093e2ea70724c0ee6ac6b5a7f7e1925b",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_fine.h": "e4a93a37dbaadce0ed94f297d7540c7a29c51fb17dc901582a09e980eb604f89",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.c": "21fba989cfeb2ed3b9334dec5b0c10da77aaa0affad43116183526de4dd5dcbe",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/portable_verifier.h": "3ca69c879a1db9122b4ac64b191dd39123d69f96b33eb687b29f0e2a236cdc19",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8"
+  }
+}

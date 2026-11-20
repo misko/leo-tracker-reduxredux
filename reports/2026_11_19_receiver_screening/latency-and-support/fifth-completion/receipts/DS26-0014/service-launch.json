@@ -1,0 +1,37 @@
+{
+  "attempt": "/var/tmp/leo-fifth-completion-20261119/DS26-0014/candidate",
+  "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+  "command": [
+    "systemd-run",
+    "--user",
+    "--wait",
+    "--pipe",
+    "--unit=leo-iq-bench-bfc8bb76f20f",
+    "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "--property=MemoryMax=536870912",
+    "--property=MemorySwapMax=0",
+    "--property=Nice=10",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=450s",
+    "--setenv=TMPDIR=/var/tmp/leo-fifth-completion-20261119/DS26-0014/candidate",
+    "--setenv=OPENBLAS_NUM_THREADS=1",
+    "--setenv=OMP_NUM_THREADS=1",
+    "--setenv=MKL_NUM_THREADS=1",
+    "taskset",
+    "-c",
+    "12,13",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-B",
+    "-m",
+    "tools.pipeline_eval.qualification.fifth_completion",
+    "worker",
+    "/var/tmp/leo-fifth-completion-20261119/DS26-0014/candidate"
+  ],
+  "log_inode": [
+    64512,
+    800227
+  ],
+  "plan_sha256": "50b78fc803dd3849b3bbb70feae2719e13612b3958521ff1dbd454b53f2c693f",
+  "reserved_monotonic_usec": 5797125307575,
+  "unit": "leo-iq-bench-bfc8bb76f20f.service"
+}

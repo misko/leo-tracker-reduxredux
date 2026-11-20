@@ -1,0 +1,27 @@
+Running as unit: leo-portable-receiver-4622e010e5d3.service; invocation ID: d161310cae7d413298ca7ab43a7bf990
+Traceback (most recent call last):
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 357, in <module>
+    main()
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 353, in main
+    replay(args.manifest.resolve(strict=True), args.out.resolve(), args.cpus, args.raw_deadline)
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 251, in replay
+    lock = verify_package()
+           ^^^^^^^^^^^^^^^^
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 119, in verify_package
+    lock = read(ROOT / "files.json")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/leo-portable-relocated-20261119/receive.py", line 23, in read
+    return json.loads(Path(path).read_bytes())
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1019, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/var/tmp/leo-portable-relocated-20261119/files.json'
+          Finished with result: exit-code
+Main processes terminated with: code=exited, status=1/FAILURE
+               Service runtime: 365ms
+             CPU time consumed: 122ms
+                   Memory peak: 15M (swap: 0B)

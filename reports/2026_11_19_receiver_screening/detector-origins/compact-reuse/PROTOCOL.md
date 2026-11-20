@@ -1,0 +1,7 @@
+# Exact reuse in the standalone cavity receiver
+
+Profile the 78-source release on ordinary DS26-0036 and DS29-0082. The diagnostic counts repeated coordinates within the fixed-phase fit, exact layout matches across its three initial branches, unused alias projections and the dominant Python and native operations. Profiling timings diagnose the code path.
+
+Qualify two independent source overlays. The first keeps exact prior projection slices of the single nominal immutable scan stencil during ordered initial ranking. Only observer, altitude, RF, exact column selection and original projection backend matches can reuse values. The cache holds at most 48 MiB of accounted data and at most 512 entries, and expires before fitting the independent branches. The second eliminates repeated valid checksum arithmetic of identical 68-column TLE prefixes with a 32,768-entry cache limited to initial preparation. Archive SHA-256 verification, line shape, catalogue number, causal ages and numerical elements are still checked by the original pipeline.
+
+On CPUs 16 and 17, run the checked public source package and both overlays with the same immutable native, catalogue, offered tile, numerical C libraries and one BLAS thread. Each has an enforced 512 MiB zero-swap cgroup, nice 10, and a 155-second service cap. Reverse method order across cases. Compare both calibration outputs, conditional RF and decision counts exactly, accounting for the deliberately reduced physical projection count separately. Report measured wall, CPU, charge and cache occupancy for every attempt.

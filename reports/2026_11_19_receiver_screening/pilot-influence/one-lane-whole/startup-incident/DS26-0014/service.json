@@ -1,0 +1,52 @@
+{
+  "binding": {
+    "attempt": "/var/tmp/leo-one-lane-whole-20261119/DS26-0014/candidate",
+    "boot_id": "192fd5d5cd924abdb6d41ebae795ef83",
+    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-iq-bench-999d0e50319a.service",
+    "cgroup_state": "removed",
+    "invocation_id": "6ad8fc30cf984e998dc2465d9770f01e",
+    "plan_sha256": "26c0b616e5e782874f2097a55521b4e98bb200302de3ae195ba870e27cab814f"
+  },
+  "exit_code": 1,
+  "log_sha256": "779a1c848ef27af9bfc8f53d5b37d8b2667623f032e50e3335434828c7f410b9",
+  "monotonic": {
+    "active_enter_usec": 5801492724397,
+    "active_exit_usec": 5801498350342,
+    "inactive_enter_usec": 5801498350342,
+    "source": "systemd-manager"
+  },
+  "reason": null,
+  "service_active_s": 5.625945,
+  "service_wall_s": 5.625945,
+  "supervisor_s": 5.686790250241756,
+  "systemd": {
+    "ActiveEnterTimestampMonotonic": "5801492724397",
+    "ActiveExitTimestampMonotonic": "5801498350342",
+    "ActiveState": "failed",
+    "CPUUsageNSec": "6828631000",
+    "ControlGroup": "",
+    "ControlPID": "0",
+    "Environment": "TMPDIR=/var/tmp/leo-one-lane-whole-20261119/DS26-0014/candidate OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
+    "ExecMainCode": "1",
+    "ExecMainExitTimestampMonotonic": "5801498350201",
+    "ExecMainPID": "2109980",
+    "ExecMainStartTimestampMonotonic": "5801492720909",
+    "ExecMainStatus": "1",
+    "ExecStart": "{ path=/usr/bin/taskset ; argv[]=/usr/bin/taskset -c 12,13 /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -B -m tools.pipeline_eval.qualification.one_lane_whole worker /var/tmp/leo-one-lane-whole-20261119/DS26-0014/candidate ; ignore_errors=no ; start_time=[Thu 2026-11-19 20:31:01 UTC] ; stop_time=[Thu 2026-11-19 20:31:07 UTC] ; pid=2109980 ; code=exited ; status=1 }",
+    "Id": "leo-iq-bench-999d0e50319a.service",
+    "InactiveEnterTimestampMonotonic": "5801498350342",
+    "InvocationID": "6ad8fc30cf984e998dc2465d9770f01e",
+    "KillMode": "control-group",
+    "LoadState": "loaded",
+    "MainPID": "0",
+    "MemoryMax": "536870912",
+    "MemoryPeak": "350867456",
+    "MemorySwapMax": "0",
+    "MemorySwapPeak": "0",
+    "Result": "exit-code",
+    "RuntimeMaxUSec": "7min 30s",
+    "SubState": "failed",
+    "Transient": "yes"
+  },
+  "unit": "leo-iq-bench-999d0e50319a"
+}

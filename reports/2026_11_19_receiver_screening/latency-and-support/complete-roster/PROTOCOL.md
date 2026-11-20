@@ -1,0 +1,15 @@
+# Four versus five pilot timing regions on every scheduled recording
+
+Freeze the union of the original 12-recording stock-wide benchmark, the eight-recording genuine fifth-region comparison and the new manifest-selected DS26-0255 / DS29-0330 pair. The older studies overlap on DS26-0237 and DS29-0082. Both repeated stock estimates must agree exactly on the original input binding, emitted native measurements, two position endpoints and scientific scores before merging. Use the original 12-case fixed-primary policy for stock. Preserve its earliest eligible attempt in a sensitivity analysis, including its timeout. No new estimate substitutes for a terminal failed or withheld trial.
+
+| Prior evidence or preregistration | SHA-256 |
+| --- | --- |
+| Twelve-recording stock figure receipt | `cc04b4499bece1da0a447cb965d5c6998a463cfdb850e5169a94194445fa24e3` |
+| Eight-recording stock/fifth figure receipt | `7520dee62bdd2e62e910861f0aadee1f561dfc51dae36c3c19a3639cfc0adf29` |
+| Two new recordings and detector configuration | `a2bd77f451ce6c1544ddd9c497fc7cdb495beec080d542c38a12b3675df3bea1` |
+
+The ten previously stock-only cases are DS26-0014, DS26-0036, DS26-0122, DS26-0162, DS26-0241, DS29-0127, DS29-0174, DS29-0247, DS29-0357 and DS29-0519. Run the same fifth-region receiver on all ten. It keeps the stock four timing regions and adds one frozen proposal from the lag-44 FFTW scout. Its geometry, candidates, catalogue, tile and calibration budget have the same definitions as the eight-case comparison. The new stock and fifth branches process both lanes of each five-minute saved recording, including the same hardware exclusions. All twenty recordings come from the same surveyed roof. Acquisition IDs for the new pair were chosen before their detector errors were known. The ten-case expansion already has published stock scores.
+
+Compute horizontal error for each policy and recording separately with zero and fitted calibration, using all four original capture-era v5 options for reference. For each group report coverage, median, P95, and counts within 5% and 10% of original no-repair v5. Threshold counts use the full scheduled denominator. A missing, failed or withheld position contributes no successful fix. Leave numeric position blank when no estimate exists. Keep conditional Doppler RMS and frequency objective separate from geographic error. For the two fixed policies, count paired improvements and report their differences in metres on exactly those recordings where both returned positions.
+
+Publish separate distributions for the full twenty, the ten newly run fifth comparisons and the two wholly new recordings. The original eight retain their own archived chart. Compare the earliest eligible stock attempts on the same twenty to show the effect of timeouts. Wall-time differences between independently scheduled runs on different cores or at different times do not identify a detector speedup. Matched timing on the two freshly selected cases and the earlier eight-case report retain their original boundaries. Paced and queue-model outputs are outside this complete-visit benchmark.

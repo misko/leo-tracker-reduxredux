@@ -1,0 +1,46 @@
+{
+  "charts": [
+    {
+      "caption": "Two complete reserve IQ recordings. Each wideband detector scores the two channels independently. The candidate also tests pilot start times proposed by the second receiver.",
+      "cases": [
+        "DS26-0122",
+        "DS29-0247"
+      ],
+      "id": "paired-epochs-full",
+      "method": "shared_epoch_full_iq",
+      "provenance": [
+        "resources.json",
+        "scores.csv",
+        "prediction-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Both channels propose",
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "shared_epoch_full_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Each channel proposes",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "paired_ordinary_sha256",
+          "value": "regional_wide_full_iq"
+        }
+      ],
+      "title": "Sharing pilot start proposals across simultaneous receivers"
+    }
+  ],
+  "version": 1
+}

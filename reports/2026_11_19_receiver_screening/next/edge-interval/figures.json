@@ -1,0 +1,131 @@
+{
+  "charts": [
+    {
+      "caption": "Both arms use matched native inputs and causal orbital history. Forced estimates preserve a terminal full-fit endpoint when available.",
+      "cases": "sealed",
+      "id": "compact-subscan-interval-synthetic",
+      "method": "v5_secant_subscan_interval",
+      "provenance": [
+        "prediction-lock.json",
+        "inputs.json",
+        "source-lock.json"
+      ],
+      "queries": "synthetic-queries.json",
+      "scope": "transfer",
+      "seal": "synthetic-figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "forced_label": "Subscan gate \u00b7 forced endpoint",
+          "key": "candidate",
+          "label": "Subscan position interval",
+          "value": "v5_secant_subscan_interval",
+          "where": {
+            "scope": "synthetic"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Frozen paired interior rule",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_interior",
+          "where": {
+            "scope": "synthetic"
+          }
+        }
+      ],
+      "title": "Compact near-edge position interval \u00b7 New simulated sites"
+    },
+    {
+      "caption": "Both arms use matched native inputs and causal orbital history. Forced estimates preserve a terminal full-fit endpoint when available.",
+      "cases": "sealed",
+      "id": "compact-subscan-interval-measured",
+      "method": "v5_secant_subscan_interval",
+      "provenance": [
+        "prediction-lock.json",
+        "inputs.json",
+        "source-lock.json"
+      ],
+      "queries": "measured-queries.json",
+      "scope": "transfer",
+      "seal": "measured-figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "forced_label": "Subscan gate \u00b7 forced endpoint",
+          "key": "candidate",
+          "label": "Subscan position interval",
+          "value": "v5_secant_subscan_interval",
+          "where": {
+            "scope": "measured"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Frozen paired interior rule",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_interior",
+          "where": {
+            "scope": "measured"
+          }
+        }
+      ],
+      "title": "Compact near-edge position interval \u00b7 Authentic shifted roof offer"
+    },
+    {
+      "caption": "Both arms use matched native inputs and causal orbital history. Forced estimates preserve a terminal full-fit endpoint when available.",
+      "cases": "sealed",
+      "id": "compact-subscan-interval-independent",
+      "method": "v5_secant_subscan_interval",
+      "provenance": [
+        "prediction-lock.json",
+        "inputs.json",
+        "source-lock.json"
+      ],
+      "queries": "independent-queries.json",
+      "scope": "transfer",
+      "seal": "independent-figure-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "forced_label": "Subscan gate \u00b7 forced endpoint",
+          "key": "candidate",
+          "label": "Subscan position interval",
+          "value": "v5_secant_subscan_interval",
+          "where": {
+            "id": "be1a4739970232efa7ddb172"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Independent stock compact",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "worker_input_sha256",
+            "history_sha256"
+          ],
+          "value": "v5_secant_transfer_stock",
+          "where": {
+            "id": "be1a4739970232efa7ddb172"
+          }
+        }
+      ],
+      "title": "Compact near-edge position interval \u00b7 Independent stock far control"
+    }
+  ],
+  "version": 1
+}

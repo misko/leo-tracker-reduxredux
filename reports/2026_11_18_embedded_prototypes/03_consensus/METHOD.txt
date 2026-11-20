@@ -1,0 +1,61 @@
+Geometry-balanced leave-satellite-family-fold-out consensus
+
+Use the shared twelve-candidate descriptor, lane-bias vote and 7 by 7
+regional vote. Freeze each selected track's winning candidate with cost
+below 12 and lift one frequency alias at the grid hypothesis. A satellite
+family comprises all selected tracks with the same inferred catalogue
+ID. Identical observations, times, RF and inferred IDs are collapsed.
+The full-scan graph is evaluated at the end of its acquisition.
+
+Order families by the strength of their demeaned east/north gradient
+information after profiling orbit phase. Assign each family to the
+smallest fold that gains the most regularized position information.
+Fit one all-family hypothesis and up to four leave-one-fold-out fits.
+Each fit uses four fixed track IRLS passes and weights the members of
+each family by inverse family size. Per-family orbit timing and global
+receiver offsets, drifts and optional RF coefficient are eliminated by
+Schur complements. Solve the remaining bounded east/north quadratic
+over the declared 25 km box. Score each whole family once by its median
+whitened track error plus its profiled phase penalty, capped at 9. A
+single inlier refit can replace the initial winner if it improves the
+same criterion. Require at least four inlier tracks from three families.
+The cap is the square of three whitened residual units and applies to
+the combined shape, level and phase statistic.
+
+The two arms share observations, candidates, aliases, folds, thresholds,
+iteration limits and all priors apart from adding a jointly fitted c
+with the shared zero-mean 200000 Hz/GHz prior. The primary frequency
+RMS scores all unique shortlisted tracks using the endpoint coefficients
+and a profiled phase per family, including excluded families. Inlier
+RMS and per-family consensus loss are recorded separately. The compact
+control is the shared cold solver on the identical initial tracks and
+grid vote. Its absolute RMS uses its jointly optimized family phases.
+Neither position differences nor reference coordinates were used to
+choose the algorithm or score RF fit.
+
+Run from the repository root:
+  export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1
+  export PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src
+  .venv/bin/python reports/2026_11_18_embedded_prototypes/03_consensus/test_consensus.py
+  .venv/bin/python reports/2026_11_18_embedded_prototypes/03_consensus/consensus.py
+
+Inputs are the read-only anonymous archived graph tracks and the
+latest eligible TLE snapshot collected by scan start, restricted to
+eligible Starlink element epochs from the preceding 48 hours. Both
+paths are supplied by the shared benchmark. The selected TLE digest
+and stage timings are in result.json. No saved satellite assignments,
+v5 output, or geographic truth enters the prototype.
+
+Wall time starts before reading the graph JSON and ends after both
+consensus arms on one host numerical thread. The separately timed
+compact comparison starts after the same common frontend. The profile
+does not include IQ processing, construction of the graph, on-device
+runtime, or partial-scan availability. Two fixed-size per-track Gram
+arrays support the inner fit. Reported bytes cover these arrays only.
+The runnable checks cover bounded quadratic elimination, fold balance,
+and exact file-backed replay equality after adding five copies of an
+already selected family at the consensus input.
+An additional sensitivity check on the same case adds alternating
+6 kHz error to every track in that family after shortlisting. The output
+records family rejection and displacement relative to each solver's
+clean estimate.

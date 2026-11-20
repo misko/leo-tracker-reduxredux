@@ -1,0 +1,5 @@
+# Existing detector modes on the ordered reader
+
+The new portable release replayed DS29-0082 in stock mode and in two-worker second-on-miss mode. Each received only the signed capture manifests, causal TLE catalogue, track configuration and offered region. The new application reproduced the complete native bytes and both geographic and RF results for each earlier mode. This covered 4,868 valid and 1,904 hardware-invalid visits. Every conditional visit used the same physical primary and partner decision as the earlier release, including all 3,831 partner calls.
+
+The stock service took 88.2 s and the second-on-miss service took 126.7 s on separate host CPU pairs, each capped at 512 MiB and zero swap. These clocks describe the compatibility runs. The paired thread-count benchmarks use a common pair of cores per recording. [Original requests and expected native digests](plan.json) · [Scientific comparisons and resource measurements](results.json) · [Paired portable measurements](../README.md)

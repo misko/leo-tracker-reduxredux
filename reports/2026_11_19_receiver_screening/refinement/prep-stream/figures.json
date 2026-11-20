@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "prep_stream_sky",
+      "method": "prep_stream_sky",
+      "scope": "roof",
+      "title": "Bounded causal sky preparation on ordinary factors",
+      "caption": "Both preparation paths screen the same causal catalogue and pass the full regional bank to the aligned compact finish. The matched factors are from authenticated complete ordinary detector replays.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Bounded sky preparation", "file": "stream-positions.jsonl.gz", "value": "prep_stream_sky", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}},
+        {"key": "stock", "label": "Aligned compact finish", "file": "control-positions.jsonl.gz", "value": "v5_armijo_aligned_finish", "native_authority": "ordinary", "where": {"detector": "ordinary", "mode": "matched-tile"}, "match": ["input_sha256", "cpu", "tile"]}
+      ]
+    }
+  ]
+}

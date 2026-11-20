@@ -1,0 +1,54 @@
+{
+  "charts": [
+    {
+      "caption": "Genuine first-delivery clocks and a timed release of stored ordinary factors. Both paths use the same compact cavity.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "causal-startup",
+      "method": "v5_causal_startup",
+      "provenance": [
+        "comparison.json",
+        "timing.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Early causal orbit preparation",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_causal_startup"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "After-release direct cavity",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_direct_cavity"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Causal startup before factor release"
+    }
+  ],
+  "version": 1
+}

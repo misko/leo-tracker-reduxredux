@@ -1,0 +1,60 @@
+{
+  "activation": {
+    "policy": "unprivileged-differential",
+    "programs": {
+      "tools/pipeline_eval/qualification/differential_runtime.py": "e78204bf6d16857c21aa96386b00f19d0a0532dfda1fc85fdfa7fc16380a8856",
+      "tools/pipeline_eval/qualification/differential_runtime_raw.py": "a46a3bd018a48679b7eebd78e57191517db18d6a27fa10feb699749183bf319a",
+      "tools/pipeline_eval/qualification/frontier_whole_replay_candidate.py": "2084db39f2def187322bcc5963dc21c71cdb4ac45c3864ff0c65a1842bfc8184",
+      "tools/pipeline_eval/qualification/recording_to_v5.py": "78fe64e643dd05a3853e1c684811f8143d636afaa622aaab29827f49b6786929",
+      "tools/pipeline_eval/qualification/whole_memory_chain_worker.py": "d1a208842639eecab18f6fbd4ab8b9839dab0c297ac1b850520224b697dbff35",
+      "tools/pipeline_eval/variants/differential_pilot.py": "de6d3bebd773902e919d1df0c7a8a92bf8d64d695128a2a1de4f62ba7a4b8842",
+      "tools/pipeline_eval/variants/differential_runtime.py": "e0853a88da148ea3a62ee13addef4886a7c14bc0f555ef098933cf706a6c8e8c",
+      "tools/pipeline_eval/variants/frame_coherence.py": "22075e8f5b315170cc77feceb2ad85ccc6a97b83aa88e2d4b812ee1253d4860f",
+      "tools/pipeline_eval/variants/hinted_glrt.h": "cc7688a02221d2c6417b4e527ea1d42f6b85103631c3c5af00337fcb1de04c8a",
+      "tools/pipeline_eval/variants/hinted_glrt.py": "31ebc789cc4c5a2364d77c68b7d79ff9f61d8d50df446e3b37b8c785de28ae9d",
+      "tools/pipeline_eval/whole_iq.py": "106c6419d8382fa12b887492da0cb6dc048151e267f827b44a3858f45dfeaed2"
+    },
+    "prospective_lock_sha256": "f7d4b080ce7fadd290d90b376a08117e4618d3313a01c8234afb387450c4dcd4",
+    "receipt_files": {
+      "hinted-build-lock.json": "86f5644aecdda1e4eb2e4a97d269be509b0ff7865b79a8bff96b97221b953947",
+      "hinted-build-receipt.json": "c2e72f2cd2ea86f7cfdc56e23a0fea2710ad345e6698b879f3f146b3d1982cbd",
+      "pilot-input-lock.json.gz": "4ee24c6af96b267a67ac1e4fa9712c783b2a3ae970750634d2d79dba446f4ff7",
+      "pilot-prediction-lock.json": "536064c122033695dbe0735ae85feb00cd778cc25631f2c13c358125afe12d0b",
+      "pilot-qualification.json": "74750280d0b744d9f4f0f4a8c6988e6496659cd51e8ad986528639e42e7387c6"
+    }
+  },
+  "candidate": {
+    "label": "Differential pilot hint",
+    "sha256": "418e6d7569e73e2eb8b5107b50edf803d4d7271f1e863ffbba9c6b3c08380bd1"
+  },
+  "caption": "Two fresh complete saved-IQ recordings, one per dataset, under 512 MiB and zero swap. Both replay branches share phase release. The four original v5 policies use capture-era factors.",
+  "cases": [
+    {
+      "cohort": "new-holdout",
+      "cpus": [
+        14,
+        15
+      ],
+      "first": "control",
+      "id": "DS26-0168"
+    },
+    {
+      "cohort": "new-holdout",
+      "cpus": [
+        22,
+        23
+      ],
+      "first": "control",
+      "id": "DS29-0604"
+    }
+  ],
+  "control": {
+    "label": "Stock 21-bin wide",
+    "sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66"
+  },
+  "id": "frontier-whole-iq",
+  "launcher_sha256": "313d7988e85255f27adb6488253a6beea34cc68e02782680b2e61e16eb3ace17",
+  "limit_s": 450,
+  "selection_sha256": "dee78fc7486148712cbe7a6ec8e948e865c7a1f120c28fab60c3ff9c20aabac6",
+  "title": "Acquisition change on held complete IQ"
+}

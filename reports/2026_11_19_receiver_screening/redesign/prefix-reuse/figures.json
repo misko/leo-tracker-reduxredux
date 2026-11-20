@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "persistent_native_prefix_stop",
+      "method": "persistent-native-prefix-stop",
+      "scope": "transfer",
+      "title": "Persistent and fresh native prefix replay",
+      "caption": "The same causal GLRT visits, offer, Graph and smooth-clock stop policy feed both paths. Overlapping points indicate equivalent positions. Forced fits remain diagnostic. Any publication in an omitted tile is false.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {"matched": "Matched archive offer", "near-omitted": "Near-edge omitted offer"},
+      "series": [
+        {"key": "candidate", "label": "Persistent ordered worker", "file": "positions.jsonl.gz", "value": "persistent-native-prefix-stop"},
+        {"key": "stock", "label": "Separate fresh workers", "file": "positions.jsonl.gz", "value": "fresh-native-prefix-stop", "match": ["native_sha256", "catalog_sha256", "track_config_sha256"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,472 @@
+{
+  "lock_sha256": "b90858d6db735a131ef84dc57f0531f9d64cba77765116ce6aa5c81681608368",
+  "rows": [
+    {
+      "capture_id": "synthetic-dateline",
+      "catalog_sha256": "5b8516c34680b74acef399927d853115a7dbd21a2b751cb1209d9e35ba7734e8",
+      "cpu": 7,
+      "diagnostics": [
+        "                       ^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/direct_lifetime_kernels.py\", line 279, in read",
+        "    values = self.operation(sliced, *self.coordinates, **self.options)",
+        "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/orbit_projector.py\", line 91, in evaluate",
+        "    raise ValueError(\"geodetic coordinate outside domain\")",
+        "ValueError: geodetic coordinate outside domain",
+        "          Finished with result: exit-code",
+        "Main processes terminated with: code=exited, status=1/FAILURE",
+        "               Service runtime: 16.986s",
+        "             CPU time consumed: 16.863s",
+        "                   Memory peak: 271.4M (swap: 0B)"
+      ],
+      "exit_code": 1,
+      "history_sha256": "10570eac06a538ab29a974502393acdb9cc9467214e884d1d0533fde4e5a35b3",
+      "id": "positive",
+      "input_sha256": "43e92de6b809cbc21d47dbb45322e1404c58216d7acd6ef5b2e27b43e4c414c1",
+      "method": "v5_cavity_payload_small",
+      "native_sha256": "39fca9fb339fffdf951b9332b9a647f884ebf36b944811d03fd58bba12d31514",
+      "result": {
+        "arms": {
+          "c0": {
+            "latlon": null
+          },
+          "fitted_c": {
+            "latlon": null
+          }
+        },
+        "boundary": "Native GLRT clocked captures and causal TLE history to portable compact v5 cavity",
+        "metrics": {},
+        "reason": "service failure",
+        "status": "failed"
+      },
+      "runtime": {
+        "finish": [
+          {
+            "cgroup_cpu_s": 16.622243,
+            "cgroup_peak": 284606464,
+            "code_counts": {
+              "<native-bound-original-boundaries>": 4,
+              "leo/__init__.py": 1,
+              "leo/analysis/__init__.py": 1,
+              "leo/analysis/glrt_frequency_input.py": 8,
+              "leo/analysis/graph_tracklets.py": 5,
+              "leo/analysis/localization_v3/__init__.py": 1,
+              "leo/analysis/localization_v3/acceptance.py": 2,
+              "leo/analysis/localization_v3/cavity_prediction.py": 1,
+              "leo/analysis/localization_v3/conservative_recovery.py": 1,
+              "leo/analysis/localization_v3/discovery.py": 15,
+              "leo/analysis/localization_v3/discovery_likelihood.py": 4,
+              "leo/analysis/localization_v3/elements.py": 7,
+              "leo/analysis/localization_v3/event_position.py": 1,
+              "leo/analysis/localization_v3/families.py": 14,
+              "leo/analysis/localization_v3/family_cavity.py": 1,
+              "leo/analysis/localization_v3/family_weighting.py": 1,
+              "leo/analysis/localization_v3/feasible.py": 1,
+              "leo/analysis/localization_v3/hierarchical.py": 1,
+              "leo/analysis/localization_v3/history_policy.py": 1,
+              "leo/analysis/localization_v3/history_position.py": 1,
+              "leo/analysis/localization_v3/marginal.py": 11,
+              "leo/analysis/localization_v3/noise.py": 6,
+              "leo/analysis/localization_v3/orbit_modes.py": 8,
+              "leo/analysis/localization_v3/orbits.py": 2,
+              "leo/analysis/localization_v3/phase_prior.py": 11,
+              "leo/analysis/localization_v3/position.py": 4,
+              "leo/analysis/localization_v3/predictive_linear.py": 1,
+              "leo/analysis/localization_v3/region.py": 6,
+              "leo/analysis/localization_v3/retained_position.py": 2,
+              "leo/analysis/localization_v3/scan.py": 17,
+              "leo/analysis/localization_v3/signed_context.py": 1,
+              "leo/analysis/localization_v3/signed_phase.py": 1,
+              "leo/analysis/localization_v3/tracks.py": 8,
+              "leo/analysis/localization_v4/__init__.py": 1,
+              "leo/analysis/localization_v4/backend.py": 4,
+              "leo/analysis/localization_v4/native_bound.py": 17,
+              "leo/analysis/polynomial_tracklets.py": 24,
+              "leo/analysis/research/__init__.py": 1,
+              "leo/analysis/research/component_frequency_bias.py": 3,
+              "leo/analysis/research/continuous_curve_fit.py": 4,
+              "leo/analysis/research/orbit_phase_geometry.py": 3,
+              "leo/analysis/research/orbit_uncertainty.py": 2,
+              "leo/analysis/research/orbital_support.py": 1,
+              "leo/analysis/research/phase_linear_geometry.py": 2,
+              "leo/analysis/research/polynomial_satellite_diagnostics.py": 2,
+              "leo/analysis/research/prepared_phase_geometry.py": 4,
+              "leo/analysis/research/retained_track_likelihood.py": 4,
+              "leo/analysis/research/shared_orbit_phase_fit.py": 9,
+              "leo/analysis/research/track_catalogue_geometry.py": 3,
+              "leo/analysis/sparse_glrt_likelihood.py": 6,
+              "leo/analysis/tracklet_fitting.py": 4,
+              "leo/application/__init__.py": 1,
+              "leo/application/localization_v3.py": 4,
+              "leo/application/localization_v3_engine.py": 3,
+              "leo/contracts/__init__.py": 1,
+              "leo/contracts/base.py": 2,
+              "leo/contracts/digests.py": 1,
+              "leo/contracts/sky.py": 10,
+              "leo/operations/__init__.py": 1,
+              "leo/operations/causal_tle_catalogue.py": 6,
+              "leo/operations/localization_v3_inputs.py": 12,
+              "leo/operations/tle_archive.py": 12,
+              "leo/sky/__init__.py": 1,
+              "leo/sky/doppler.py": 1,
+              "leo/sky/frames.py": 7,
+              "leo/sky/propagation.py": 15,
+              "leo/sky/sampling.py": 3,
+              "leo/sky/screening.py": 3,
+              "leo/sky/sites.py": 2,
+              "tools/pipeline_eval/__init__.py": 1,
+              "tools/pipeline_eval/variants/__init__.py": 1,
+              "tools/pipeline_eval/variants/compact_cavity_optimizer.py": 1,
+              "tools/pipeline_eval/variants/direct_lifetime_kernels.py": 41,
+              "tools/pipeline_eval/variants/orbit_projector.py": 10,
+              "tools/pipeline_eval/variants/v5_core.py": 5,
+              "tools/pipeline_eval/variants/v5_direct_cavity.py": 10,
+              "tools/pipeline_eval/variants/v5_direct_lifetime.py": 7
+            },
+            "eval_modules": [],
+            "execution_locations": 404,
+            "paths": 77,
+            "peak_rss_kib": 318288
+          }
+        ],
+        "origins": [],
+        "proof": [
+          {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-cavity-transfer-4c3c8fd12fd5.service",
+            "cpu": 7,
+            "memory": 536870912,
+            "nice": 10,
+            "swap": 0,
+            "tmpdir": "/srv/bulk/leo-dev/leo-longitude.5EaGWr/replay/runs/positive/small"
+          }
+        ],
+        "stage": [
+          {
+            "charge": 95412224,
+            "name": "prepare_native_scan",
+            "peak": 95412224,
+            "wall_s": 0.398199406452477
+          },
+          {
+            "charge": 284606464,
+            "name": "initial_selection",
+            "peak": 284606464,
+            "wall_s": 12.41364836320281
+          }
+        ]
+      },
+      "screen_center": [
+        36.0,
+        -179.96
+      ],
+      "stderr_sha256": "26661acc49c41e0356a51443bbadada542deea89a5e7e308bb009e034ac65835",
+      "tile": {
+        "center": [
+          36.02,
+          179.97
+        ],
+        "id": "positive",
+        "width_km": 25.0
+      },
+      "track_config_sha256": "f839fdcb8a25df9f210d6f8848bc7a11768e27335f05d3533f01b1f5c3eed6dc",
+      "wall_s": 17.042481005191803
+    },
+    {
+      "capture_id": "synthetic-dateline",
+      "catalog_sha256": "5b8516c34680b74acef399927d853115a7dbd21a2b751cb1209d9e35ba7734e8",
+      "cpu": 7,
+      "diagnostics": [
+        "Running as unit: leo-cavity-transfer-23ea3b9cec49.service",
+        "          Finished with result: success",
+        "Main processes terminated with: code=exited, status=0/SUCCESS",
+        "               Service runtime: 30.193s",
+        "             CPU time consumed: 30.119s",
+        "                   Memory peak: 263.5M (swap: 0B)"
+      ],
+      "exit_code": 0,
+      "history_sha256": "10570eac06a538ab29a974502393acdb9cc9467214e884d1d0533fde4e5a35b3",
+      "id": "far-omitted",
+      "input_sha256": "cede0429cf6460657604a3231f422d256a1a4d300fb30c581f1302efdfac8966",
+      "method": "v5_cavity_payload_small",
+      "native_sha256": "39fca9fb339fffdf951b9332b9a647f884ebf36b944811d03fd58bba12d31514",
+      "result": {
+        "arms": {
+          "c0": {
+            "latlon": [
+              35.9224042033037,
+              -179.5429899252497
+            ],
+            "rf_rms_hz": 84.90088908855454
+          },
+          "fitted_c": {
+            "latlon": [
+              35.92235223938432,
+              -179.5429899252497
+            ],
+            "rf_rms_hz": 84.9043081153898
+          }
+        },
+        "boundary": "Stored native GLRT and causal TLEs through the compact v5 cavity decision",
+        "metrics": {
+          "c0_frequency_score": 5729.184048209781,
+          "cavity_offered": true,
+          "compact_projections": 1943,
+          "fitted_c_frequency_score": 5739.2237724361075,
+          "initial_arm_fits": 3,
+          "initial_branches": 3,
+          "observations": 1030,
+          "stage_s": {
+            "cavity": 5.781630034558475,
+            "conservative": 4.313523042947054,
+            "family": 1.2382727097719908,
+            "initial": 6.153727727942169,
+            "native_preparation": 11.484369145706296,
+            "signed": 0.4745783293619752
+          },
+          "tracks": 26
+        },
+        "status": "ok"
+      },
+      "runtime": {
+        "finish": [
+          {
+            "cgroup_cpu_s": 29.951335,
+            "cgroup_peak": 276402176,
+            "code_counts": {
+              "<native-bound-original-boundaries>": 4,
+              "leo/__init__.py": 1,
+              "leo/analysis/__init__.py": 1,
+              "leo/analysis/glrt_frequency_input.py": 8,
+              "leo/analysis/graph_tracklets.py": 5,
+              "leo/analysis/localization_v3/__init__.py": 1,
+              "leo/analysis/localization_v3/acceptance.py": 23,
+              "leo/analysis/localization_v3/cavity_prediction.py": 4,
+              "leo/analysis/localization_v3/conservative_recovery.py": 14,
+              "leo/analysis/localization_v3/discovery.py": 16,
+              "leo/analysis/localization_v3/discovery_likelihood.py": 4,
+              "leo/analysis/localization_v3/elements.py": 7,
+              "leo/analysis/localization_v3/event_position.py": 11,
+              "leo/analysis/localization_v3/families.py": 14,
+              "leo/analysis/localization_v3/family_cavity.py": 16,
+              "leo/analysis/localization_v3/family_weighting.py": 6,
+              "leo/analysis/localization_v3/feasible.py": 14,
+              "leo/analysis/localization_v3/hierarchical.py": 1,
+              "leo/analysis/localization_v3/history_policy.py": 12,
+              "leo/analysis/localization_v3/history_position.py": 7,
+              "leo/analysis/localization_v3/marginal.py": 12,
+              "leo/analysis/localization_v3/noise.py": 6,
+              "leo/analysis/localization_v3/orbit_modes.py": 8,
+              "leo/analysis/localization_v3/orbits.py": 2,
+              "leo/analysis/localization_v3/phase_prior.py": 11,
+              "leo/analysis/localization_v3/position.py": 7,
+              "leo/analysis/localization_v3/predictive_linear.py": 9,
+              "leo/analysis/localization_v3/region.py": 6,
+              "leo/analysis/localization_v3/retained_position.py": 8,
+              "leo/analysis/localization_v3/scan.py": 17,
+              "leo/analysis/localization_v3/signed_context.py": 4,
+              "leo/analysis/localization_v3/signed_phase.py": 10,
+              "leo/analysis/localization_v3/tracks.py": 8,
+              "leo/analysis/localization_v4/__init__.py": 1,
+              "leo/analysis/localization_v4/backend.py": 4,
+              "leo/analysis/localization_v4/native_bound.py": 17,
+              "leo/analysis/polynomial_tracklets.py": 24,
+              "leo/analysis/research/__init__.py": 1,
+              "leo/analysis/research/component_frequency_bias.py": 3,
+              "leo/analysis/research/continuous_curve_fit.py": 4,
+              "leo/analysis/research/orbit_phase_geometry.py": 4,
+              "leo/analysis/research/orbit_uncertainty.py": 3,
+              "leo/analysis/research/orbital_support.py": 2,
+              "leo/analysis/research/phase_linear_geometry.py": 4,
+              "leo/analysis/research/polynomial_satellite_diagnostics.py": 2,
+              "leo/analysis/research/prepared_phase_geometry.py": 4,
+              "leo/analysis/research/retained_track_likelihood.py": 4,
+              "leo/analysis/research/shared_orbit_phase_fit.py": 9,
+              "leo/analysis/research/track_catalogue_geometry.py": 3,
+              "leo/analysis/sparse_glrt_likelihood.py": 6,
+              "leo/analysis/tracklet_fitting.py": 4,
+              "leo/application/__init__.py": 1,
+              "leo/application/localization_v3.py": 4,
+              "leo/application/localization_v3_engine.py": 3,
+              "leo/contracts/__init__.py": 1,
+              "leo/contracts/base.py": 2,
+              "leo/contracts/digests.py": 1,
+              "leo/contracts/sky.py": 10,
+              "leo/operations/__init__.py": 1,
+              "leo/operations/causal_tle_catalogue.py": 6,
+              "leo/operations/localization_v3_inputs.py": 12,
+              "leo/operations/tle_archive.py": 12,
+              "leo/sky/__init__.py": 1,
+              "leo/sky/doppler.py": 1,
+              "leo/sky/frames.py": 7,
+              "leo/sky/propagation.py": 15,
+              "leo/sky/sampling.py": 3,
+              "leo/sky/screening.py": 3,
+              "leo/sky/sites.py": 2,
+              "tools/pipeline_eval/__init__.py": 1,
+              "tools/pipeline_eval/variants/__init__.py": 1,
+              "tools/pipeline_eval/variants/compact_cavity_optimizer.py": 8,
+              "tools/pipeline_eval/variants/direct_lifetime_kernels.py": 53,
+              "tools/pipeline_eval/variants/orbit_projector.py": 10,
+              "tools/pipeline_eval/variants/v5_core.py": 8,
+              "tools/pipeline_eval/variants/v5_direct_cavity.py": 12,
+              "tools/pipeline_eval/variants/v5_direct_lifetime.py": 11
+            },
+            "eval_modules": [],
+            "execution_locations": 565,
+            "paths": 77,
+            "peak_rss_kib": 310796
+          }
+        ],
+        "origins": [
+          {
+            "leo": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/__init__.py",
+            "leo.analysis": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/__init__.py",
+            "leo.analysis.glrt_frequency_input": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/glrt_frequency_input.py",
+            "leo.analysis.graph_tracklets": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/graph_tracklets.py",
+            "leo.analysis.localization_v3": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/__init__.py",
+            "leo.analysis.localization_v3.acceptance": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/acceptance.py",
+            "leo.analysis.localization_v3.cavity_prediction": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/cavity_prediction.py",
+            "leo.analysis.localization_v3.conservative_recovery": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/conservative_recovery.py",
+            "leo.analysis.localization_v3.discovery": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/discovery.py",
+            "leo.analysis.localization_v3.discovery_likelihood": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/discovery_likelihood.py",
+            "leo.analysis.localization_v3.elements": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/elements.py",
+            "leo.analysis.localization_v3.event_position": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/event_position.py",
+            "leo.analysis.localization_v3.families": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/families.py",
+            "leo.analysis.localization_v3.family_cavity": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/family_cavity.py",
+            "leo.analysis.localization_v3.family_weighting": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/family_weighting.py",
+            "leo.analysis.localization_v3.feasible": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/feasible.py",
+            "leo.analysis.localization_v3.hierarchical": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/hierarchical.py",
+            "leo.analysis.localization_v3.history_policy": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/history_policy.py",
+            "leo.analysis.localization_v3.history_position": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/history_position.py",
+            "leo.analysis.localization_v3.marginal": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/marginal.py",
+            "leo.analysis.localization_v3.noise": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/noise.py",
+            "leo.analysis.localization_v3.orbit_modes": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/orbit_modes.py",
+            "leo.analysis.localization_v3.orbits": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/orbits.py",
+            "leo.analysis.localization_v3.phase_prior": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/phase_prior.py",
+            "leo.analysis.localization_v3.position": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/position.py",
+            "leo.analysis.localization_v3.predictive_linear": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/predictive_linear.py",
+            "leo.analysis.localization_v3.region": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/region.py",
+            "leo.analysis.localization_v3.retained_position": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/retained_position.py",
+            "leo.analysis.localization_v3.scan": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/scan.py",
+            "leo.analysis.localization_v3.signed_context": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/signed_context.py",
+            "leo.analysis.localization_v3.signed_phase": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/signed_phase.py",
+            "leo.analysis.localization_v3.tracks": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v3/tracks.py",
+            "leo.analysis.localization_v4": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v4/__init__.py",
+            "leo.analysis.localization_v4.backend": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v4/backend.py",
+            "leo.analysis.localization_v4.native_bound": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/localization_v4/native_bound.py",
+            "leo.analysis.polynomial_tracklets": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/polynomial_tracklets.py",
+            "leo.analysis.research": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/__init__.py",
+            "leo.analysis.research.component_frequency_bias": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/component_frequency_bias.py",
+            "leo.analysis.research.continuous_curve_fit": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/continuous_curve_fit.py",
+            "leo.analysis.research.orbit_phase_geometry": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/orbit_phase_geometry.py",
+            "leo.analysis.research.orbit_uncertainty": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/orbit_uncertainty.py",
+            "leo.analysis.research.orbital_support": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/orbital_support.py",
+            "leo.analysis.research.phase_linear_geometry": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/phase_linear_geometry.py",
+            "leo.analysis.research.polynomial_satellite_diagnostics": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/polynomial_satellite_diagnostics.py",
+            "leo.analysis.research.prepared_phase_geometry": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/prepared_phase_geometry.py",
+            "leo.analysis.research.retained_track_likelihood": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/retained_track_likelihood.py",
+            "leo.analysis.research.shared_orbit_phase_fit": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/shared_orbit_phase_fit.py",
+            "leo.analysis.research.track_catalogue_geometry": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/research/track_catalogue_geometry.py",
+            "leo.analysis.sparse_glrt_likelihood": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/sparse_glrt_likelihood.py",
+            "leo.analysis.tracklet_fitting": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/analysis/tracklet_fitting.py",
+            "leo.application": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/application/__init__.py",
+            "leo.application.localization_v3": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/application/localization_v3.py",
+            "leo.application.localization_v3_engine": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/application/localization_v3_engine.py",
+            "leo.contracts": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/contracts/__init__.py",
+            "leo.contracts.base": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/contracts/base.py",
+            "leo.contracts.digests": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/contracts/digests.py",
+            "leo.contracts.sky": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/contracts/sky.py",
+            "leo.operations": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/operations/__init__.py",
+            "leo.operations.causal_tle_catalogue": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/operations/causal_tle_catalogue.py",
+            "leo.operations.localization_v3_inputs": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/operations/localization_v3_inputs.py",
+            "leo.operations.tle_archive": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/operations/tle_archive.py",
+            "leo.sky": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/__init__.py",
+            "leo.sky.doppler": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/doppler.py",
+            "leo.sky.frames": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/frames.py",
+            "leo.sky.propagation": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/propagation.py",
+            "leo.sky.sampling": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/sampling.py",
+            "leo.sky.screening": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/screening.py",
+            "leo.sky.sites": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/leo/sky/sites.py",
+            "tools.pipeline_eval": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/__init__.py",
+            "tools.pipeline_eval.variants": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/__init__.py",
+            "tools.pipeline_eval.variants.compact_cavity_optimizer": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/compact_cavity_optimizer.py",
+            "tools.pipeline_eval.variants.direct_lifetime_kernels": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/direct_lifetime_kernels.py",
+            "tools.pipeline_eval.variants.orbit_projector": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/orbit_projector.py",
+            "tools.pipeline_eval.variants.v5_core": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/v5_core.py",
+            "tools.pipeline_eval.variants.v5_direct_cavity": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/v5_direct_cavity.py",
+            "tools.pipeline_eval.variants.v5_direct_lifetime": "/srv/bulk/leo-dev/cavity-trim-hZWtOlK5/paired/small/tools/pipeline_eval/variants/v5_direct_lifetime.py"
+          }
+        ],
+        "proof": [
+          {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-cavity-transfer-23ea3b9cec49.service",
+            "cpu": 7,
+            "memory": 536870912,
+            "nice": 10,
+            "swap": 0,
+            "tmpdir": "/srv/bulk/leo-dev/leo-longitude.5EaGWr/replay/runs/far-omitted/small"
+          }
+        ],
+        "stage": [
+          {
+            "charge": 94679040,
+            "name": "prepare_native_scan",
+            "peak": 94679040,
+            "wall_s": 0.39307393971830606
+          },
+          {
+            "charge": 276226048,
+            "name": "initial_selection",
+            "peak": 276226048,
+            "wall_s": 12.037557919509709
+          },
+          {
+            "charge": 276402176,
+            "name": "conservative_recovery",
+            "peak": 276402176,
+            "wall_s": 18.164352140389383
+          },
+          {
+            "charge": 276402176,
+            "name": "history_policy",
+            "peak": 276402176,
+            "wall_s": 22.46281729452312
+          },
+          {
+            "charge": 215277568,
+            "name": "signed_context",
+            "peak": 276402176,
+            "wall_s": 23.764157939702272
+          },
+          {
+            "charge": 215719936,
+            "name": "nominate_families",
+            "peak": 276402176,
+            "wall_s": 24.175668701529503
+          },
+          {
+            "charge": 220463104,
+            "name": "cavity_policy",
+            "peak": 276402176,
+            "wall_s": 25.769768930971622
+          }
+        ]
+      },
+      "screen_center": [
+        36.0,
+        -179.96
+      ],
+      "stderr_sha256": "03318abe36719bc57d376decdee779332890f2b57262454601d6f1d15d32fd9e",
+      "tile": {
+        "center": [
+          35.998718048729025,
+          -179.40419547178348
+        ],
+        "id": "far-omitted",
+        "width_km": 25.0
+      },
+      "track_config_sha256": "f839fdcb8a25df9f210d6f8848bc7a11768e27335f05d3533f01b1f5c3eed6dc",
+      "wall_s": 30.252626922912896
+    }
+  ]
+}

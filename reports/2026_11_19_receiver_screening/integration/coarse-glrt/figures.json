@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "coarse_glrt_triplet",
+      "method": "coarse_glrt_triplet",
+      "scope": "roof",
+      "title": "Ordinary GLRT with adjacent coarse epoch processing",
+      "caption": "Fresh clock + offset fits use modified ordinary GLRT outputs from 12 DS26 and 11 DS29 held IQ visits, with archived ordinary factors elsewhere. The earlier complete original replay gives the matched control. Both DS29 arms withheld their fixes.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["PROTOCOL.md", "qualification.json", "position-receipts.json"],
+      "series": [
+        {"key": "one", "label": "Three coarse epochs · partial replay", "file": "positions.jsonl.gz", "value": "coarse_glrt_triplet", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "forced_label": "Triplet coarse forced diagnostics"},
+        {"key": "stock", "label": "Original GLRT · complete replay", "file": "control-positions.jsonl.gz", "value": "coarse_glrt_triplet_capture_control", "native_authority": "ordinary", "native_field": "source_ordinary_sha256", "match": ["source_ordinary_sha256", "catalog_sha256", "observation_sha256", "tile"]}
+      ]
+    }
+  ]
+}

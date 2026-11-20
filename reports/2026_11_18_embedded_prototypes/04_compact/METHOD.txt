@@ -1,0 +1,70 @@
+Compact batch Doppler lookup table
+
+The primary design was fixed before geographic scoring. Replay issues a fix at
+the end of each archived scan using anonymous graph tracks and TLEs available
+at capture start. The solver reads CFO, sample times, lane and RF information
+from the graph. It uses the latest archived Starlink snapshot at or before the
+capture cutoff and admits element epochs at most 48 hours old. No evaluation
+coordinates, saved assignments, older receiver fixes or v5 results enter the
+fit. Source paths are declared in the shared study protocol and cold_replay.py.
+
+Each satellite row contains 8-second knots on a uniform time axis. One knot
+occupies 10 little-endian bytes: int32 Doppler in 0.125 Hz steps at 11.5 GHz,
+int16 east and north gradients in 0.0625 Hz/km steps, and int16 sine elevation
+in 1/32767 steps. The prototype rejects overflow. Four neighboring knots
+produce a cubic value and the same polynomial yields the time slope, saving a
+separate rate table. Receiver displacement uses a first-order tangent model.
+The float64 control stores the same four fields at the same knots and takes
+the identical interpolation, scoring and fitting path.
+
+The search samples 12 points from each of up to 64 curved tracks. It processes
+16 satellites per tile and retains six best shape candidates plus sufficient
+shape-and-level competitors to fill a 12-candidate shortlist. Candidate
+statistics use four means and ten distinct covariance terms. Lane-bias voting
+and a 7-by-7 position grid choose a shared set of inlier hypotheses, wrapped
+using the detector CFO period. Both c arms then fit those exact same inliers
+with four robust reweighting passes. Fit parameters are continuous east and
+north coordinates, four lane offsets and drifts, and one shared time shift
+per selected satellite. The fitted arm adds one global RF-dependent
+coefficient c. The solver accumulates track-local normal equations, profiles
+out the nuisance coordinates and solves the remaining two-dimensional box
+problem exactly at each pass.
+
+Run from this directory with the repository Python environment.
+
+  export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1
+  export PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src
+  ../../../.venv/bin/python test_compact.py
+  ../../../.venv/bin/python compact.py
+
+The test verifies packed layout and rounding bounds, interpolation and its
+derivative, tiled candidate merging, equivalence to the shared cost and the
+profiled box fit against a dense solver. The replay writes result.json.
+
+Eight compact runs produced estimates in both arms. The compact and float64
+runs chose identical inlier track/satellite pairs on all eight scans. Their
+continuous endpoints were within 2.60 m in both c arms and fitted residual
+RMS changed by at most 0.027 Hz. Across the case-specific midpoint geometry
+checks, p95 packed-vs-float64 error reached 0.507 Hz across the four search
+corners. Fresh SGP4 checks gave p95 compact Doppler errors of 1.38–1.67 Hz at
+the center and 54.29–63.82 Hz at the corners. The largest sampled corner
+error was 442 Hz. The spatial approximation contributes most of that error.
+
+Median compact table payload was 382,888 bytes including IDs and time-axis
+metadata, versus 1,217,260 bytes in float64. Median shortlist arrays occupied
+89,088 bytes and sampled tracks 12,288 bytes. The largest continuous-fit
+normal matrix occupied 12,800 bytes and the largest numeric track-equation
+storage 65,024 bytes. These are explicit numeric storage counts. Python
+objects, temporary arrays, file decode and runtime memory are additional.
+
+Median host end-to-end wall time was 0.522 s, measured from archived graph
+read through the end of both compact arms, including TLE selection and
+propagation. Independent float64 and fresh-SGP4 checks were outside that
+interval. The median post-construction solve through both arms took 0.360 s
+with the compact table and 0.349 s with float64. The prototype was run on
+x86_64 with one numerical thread. ARM latency, portable serialization, raw
+IQ, detector throughput and earlier issue deadlines remain unmeasured.
+
+Fitted c reduced per-case residual RMS in seven of eight compact fits, with
+a median paired reduction of 3.37 Hz. This summarizes in-sample RF fit.
+The study scores geographic error independently against reference coordinates.

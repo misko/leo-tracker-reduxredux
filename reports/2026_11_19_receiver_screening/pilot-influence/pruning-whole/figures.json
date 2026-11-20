@@ -1,0 +1,48 @@
+{
+  "charts": [
+    {
+      "caption": "The live fit uses exact emitted support on CPU0/1. Archived stock uses all valid packets. The four v5 roles use capture-era factors.",
+      "cases": "sealed",
+      "id": "native-pruning-whole-position",
+      "method": "native_pruning_whole_four",
+      "provenance": [
+        "position-input-lock.json",
+        "raw-lock.json",
+        "scores.csv",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Paced active-set four",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "native_pruning_whole_four"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived full stock four",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union_stock"
+        }
+      ],
+      "title": "Exact four-region receiver on one recorded arrival sequence"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,47 @@
+{
+  "charts": [
+    {
+      "caption": "DS26-0162 with the original tile and causal catalogue. The fixed cadence retains complete visits on each RF lane.",
+      "cases": "sealed",
+      "id": "scheduled-original-waveform",
+      "method": "original_capture_phase_staggered_four",
+      "provenance": [
+        "source-lock.json",
+        "audit.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Actual quarter-scheduled original capture IQ",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_phase_staggered_four"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "All original archived factors with fresh compact solve",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "original_capture_all_factors_compact"
+        }
+      ],
+      "title": "Original acquisition on a fixed quarter waveform schedule"
+    }
+  ],
+  "version": 2
+}

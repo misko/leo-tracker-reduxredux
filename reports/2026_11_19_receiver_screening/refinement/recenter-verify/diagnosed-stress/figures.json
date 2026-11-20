@@ -1,0 +1,41 @@
+{
+  "charts": [
+    {
+      "caption": "Complete native factors with independently timed single-pass smooth controls.",
+      "cases": [
+        "72aaa1db3143b2f3dc96",
+        "2d257491c63945c990fd"
+      ],
+      "condition_labels": {
+        "near-outside": "1\u20132 km outside",
+        "six-outside": "6 km outside"
+      },
+      "id": "native_recenter_verify-diagnosed-stress",
+      "method": "native_recenter_verify",
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "native_recenter_verify.jsonl.gz",
+          "key": "candidate",
+          "label": "Recentered 50 km verification",
+          "value": "native_recenter_verify"
+        },
+        {
+          "file": "native_joint_clock_model.jsonl.gz",
+          "key": "stock",
+          "label": "Single-pass smooth oscillator",
+          "match": [
+            "input_sha256",
+            "tile",
+            "observation_sha256"
+          ],
+          "value": "native_joint_clock_model"
+        }
+      ],
+      "title": "Recentered verification on two known false fixes"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,22 @@
+# One receiver carrier offset across the final Bellaterra passes
+
+A single daily receiver intercept preserved frequency differences between passes. On the independently held April 7–8 observation pair, it published the containing offer at **10.376 km with `c = 0` and 10.512 km with fitted `c`**. The independent per-pass model published at 10.889 km. The zero-offset model reached 5.190 km as a forced fit and withheld because the independently fitted day results differed by 6.123 km. These are actual receiver coordinates estimated from the owner’s measured VHF Doppler and cooperative identities at the same Bellaterra station. The offered center itself was 8.276 km away. [Both-arm matched scores](scores.csv) · [Prior-only comparison, fixed `c = 0`](charts/c0/external-orbcomm-shared-offset-prior.png)
+
+| Measured comparison | Containing disposition and error | Near-omitted disposition and forced error | Containing held frequency RMS |
+| --- | ---: | ---: | ---: |
+| Shared intercept, `c = 0` | Published, 10.376 km | Withheld, 10.689 km | 4.370 Hz |
+| Shared intercept, fitted `c` | Published, 10.512 km | Withheld, 10.825 km | 5.434 Hz |
+| Fixed zero CFO offsets | Withheld, 5.190 km | Withheld, 4.893 km | 29.870 Hz |
+| One free offset per pass | Published, 10.889 km | Withheld, 10.987 km | 3.170 Hz |
+| Time-reversed values with original labels | Withheld, 24.256 km | Withheld, 29.337 km | 4,086.282 Hz |
+| Offered center | Prior only, 8.276 km | Prior only, 14.025 km | — |
+
+All numerical methods withheld the near omission. Both shared-intercept arms reached its face. The earlier four-day-pair results include wrong interior publications, so this single successful omission check remains a bounded test. The same nominal carriers, pass support, orbit states, position grid and checks apply across all numerical branches. [Fixed-`c` position chart](charts/c0/external-orbcomm-shared-offset.png) · [Fitted-`c` position chart](charts/fitted_c/external-orbcomm-shared-offset.png) · [Frozen protocol](PROTOCOL.md)
+
+## Calibration and held support
+
+The training-day effective intercept at the containing fix was 33.121 Hz at `c = 0` and 31.325 Hz with a fitted slope of +19.334 Hz/MHz. The residualized RF-slope column retained 99.9% and 97.0% of its norm after removing the common intercept and horizontal local response on the two days. It clears the frozen 5% conditional estimability rule. The fitted slope was carried unchanged into the independently received April 8 observations, where only a new single receiver intercept was profiled. Fitting `c` increased held frequency RMS by 1.065 Hz and position error by 0.137 km on the containing offer. The slope is identifiable within the stated common-offset and nominal-transmitter model. It remains inseparable from arbitrary per-channel transmitter offsets and is not a calibrated receiver truth. The free-pass branch projects out the slope exactly. The intentionally fixed-zero and no-signal controls have no fitted slope arm. [Prediction archive and calibration metrics](positions.jsonl.gz)
+
+April 7 contributed 2,851 sampled carrier observations from 72 pass-channel traces and six orbits. The shorter April 8 holdout contributed 1,040 from 26 traces and four of those orbits. The fixed orbit inventory used the six exact TLEs published by the owner, each with both an earlier owner-declared use and an exact independently archived CelesTrak collection in IAU SatChecker before the April 6 18:00 UTC cutoff. Both day packets used the same element for any repeated orbit. This was a disjoint temporal holdout at one receiver, with cooperative carrier attribution and the source’s original survey-dependent censoring intact. The isolated numerical query took about 0.94–0.97 s wall for all arms. [Held support and historical byte matches](support.json) · [Source seal](source-lock.json) · [Prediction seal](prediction-lock.json) · [Score seal](score-lock.json)
+
+Run `python -m tools.pipeline_eval.qualification.external_orbcomm_clock_trial` with `prepare`, `solve` and `score`, using the same fresh work directory, new `--out` containing `PROTOCOL.md`, and the original Dataverse inputs for `prepare --source`. The first study’s separately sealed six IAU histories are verified before binding this experiment. The scorer opens the survey and region labels after terminal predictions. [Original cooperative VHF experiment](../README.md)

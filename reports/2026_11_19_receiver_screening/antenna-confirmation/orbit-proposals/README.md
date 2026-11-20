@@ -1,0 +1,24 @@
+# Ground proposals from anonymous Doppler derivatives
+
+Orbit-derived proposals put an initial candidate closer to the measured roof on all four recordings. On DS29-0519 the blind training winner then landed **7.80 km** from the roof, compared with **5,047 km** for the sealed uniform search. Held data favored another location, so the receiver withheld that estimate. It also withheld the other three recordings and both deranged controls. [Position and support scores](scores.csv) · [Support figure](orbit-proposal-support.png)
+
+The receiver approximates each causal Earth-fixed orbit as locally circular around the pass midpoint. Given a proposed receiver drift, Doppler slope gives range acceleration and Doppler curvature gives jerk. Eliminating range rate gives one monotone equation for slant range on the interval from overhead to the horizon. Each admissible root gives an along-track component and two mirror cross-track components. All feasible causal orbit states can propose a receiver direction. The actual site is never used to form or rank the proposals. A planted circular case recovered both signs to within two parts per million in direction, while physically impossible derivatives yielded no proposals. [Prospective protocol](PROTOCOL.md) · [Inference source lock](source-lock.json)
+
+Independent early 30 s blocks vote over the inverse clouds by relative nearest-point rank. The nominee is formed from actual inverse coordinates near a voting node. The 32,768 equal-area nodes are used for inexpensive consensus. Exact Doppler is evaluated at the 160 nominated sites and at the fixed refinements of the top eight. Each proposed site has its own early common-drift fit. The published threshold and entire late-arc score match the previous worldwide receiver. The final early winner must beat other basins and eight 25 km rivals on held data. A constant RF calibration term cancels under the derivative operator, which leaves fitted `c` unavailable. [Prediction lock](prediction-lock.json) · [Two-arm position charts](charts/README.md)
+
+## Recorded outcomes
+
+The four unshuffled native recordings are separate acquisitions at the same recorded roof. The two omitted location offers are original frozen requests and stay exclusively in post-seal evaluation. The two deranged runs permute complete shape vectors within receiver chain and time split. They retain the same clocks, profile counts and causal orbits. Their geographic errors are distances from their source roof. No estimate in the table was released.
+
+| Recording and scored scope | Closest inverse nominee, km | Forced inverse error, km | Uniform forced error, km | Inverse held loss | Uniform held loss | Given-survey held loss |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| DS26-0261 containing | 140.34 | 17,602.27 | 9,805.69 | 6.24 | 8.01 | 2.20 |
+| DS29-0519 containing | 22.52 | 7.80 | 5,046.87 | 5.71 | 6.89 | 3.48 |
+| DS26-0070 omitted | 96.88 | 7,762.54 | 4,340.05 | 6.93 | 7.42 | 6.56 |
+| DS29-0316 omitted | 263.42 | 9,958.15 | 2,124.95 | 8.47 | 6.23 | 2.51 |
+| DS26-0261 deranged | 459.74 | 4,427.80 | 13,664.19 | 5.21 | 6.62 | — |
+| DS29-0519 deranged | 405.22 | 12,089.30 | 10,907.73 | 7.14 | 8.56 | — |
+
+The nearest initial uniform point was 394.22 km from the measured site for every recording. The DS29-0519 inverse winner was inside the evaluator's containing offer. It had three confident held blocks and four tentative orbit families, but a held lead of −3.70 against the required +0.15. The previous post-seal survey diagnostic had +0.89 against its local 25 km rivals at the surveyed point. The withheld result establishes one useful worldwide proposal and unresolved basin discrimination. All three other real forced estimates got farther from the roof. DS26-0261 and DS26-0070 show why smaller normalized held loss alone cannot establish better geography. The same-capture original v5 options retain their independently observed containing-offer positions in the standard roof comparison. [All decisions and conditions](scores.csv) · [Prior survey-only diagnostic](../anonymous-geometry/survey-diagnostic.json)
+
+The six exact runs produced 728,526–1,135,844 physical inverse points each, with 14–20 contributing early arcs and six independent voting blocks. Exactly 360 sites went to the exact training scorer per run, including validation rivals, for 1.99–3.32 million visible orbit/profile comparisons. Native handoff through decision took 11.18–16.32 CPU seconds, 16.06–47.22 elapsed seconds and 389–519 MiB peak RSS per request. The earlier uniform worker also ran curvature-only, so wall and total CPU are historical context with a different workload. The 192-line scientific modification reuses the exact earlier observer, clock and validation functions. Two component tests cover inversion degeneracies and planted independent spatial consensus. [Timing receipts](positions.jsonl.gz) · [Scoring and comparator binding](score-lock.json)

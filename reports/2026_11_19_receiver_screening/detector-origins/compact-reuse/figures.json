@@ -1,0 +1,35 @@
+{
+  "charts": [
+    {
+      "id": "cavity-reuse-columns",
+      "method": "v5_cavity_reuse",
+      "title": "Standalone cavity · reuse of initial orbit columns",
+      "scope": "roof",
+      "cases": ["DS26-0036", "DS29-0082"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["scores.csv", "resources.csv", "comparison.json", "profiling.json"],
+      "caption": "Two previously acquired ordinary native inputs through the public standalone compact cavity. Fresh matched controls share each core, an enforced 512 MiB cgroup and zero swap. Initial ranking alone reuses immutable projection columns. Original v5 references use capture-era factors.",
+      "series": [
+        {"key": "one", "label": "Reuse initial orbit columns", "file": "columns-positions.jsonl.gz", "value": "v5_cavity_reuse", "native_authority": "ordinary"},
+        {"key": "stock", "label": "Fresh standalone cavity", "file": "stock-positions.jsonl.gz", "value": "v5_direct_lifetime", "native_authority": "ordinary", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile"]}
+      ]
+    },
+    {
+      "id": "cavity-reuse-tle",
+      "method": "v5_cavity_tle_reuse",
+      "title": "Standalone cavity · reuse of TLE checksums",
+      "scope": "roof",
+      "cases": ["DS26-0036", "DS29-0082"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["scores.csv", "resources.csv", "comparison.json", "profiling.json"],
+      "caption": "Two previously acquired ordinary native inputs. Fresh paired standalone workers share each core, an enforced 512 MiB cgroup and zero swap. Cache reuses checksum arithmetic while original source validation and causal catalogue selection still run. Original v5 references use capture-era factors.",
+      "series": [
+        {"key": "one", "label": "Reuse TLE checksums", "file": "checksum-positions.jsonl.gz", "value": "v5_cavity_tle_reuse", "native_authority": "ordinary"},
+        {"key": "stock", "label": "Fresh standalone cavity", "file": "stock-positions.jsonl.gz", "value": "v5_direct_lifetime", "native_authority": "ordinary", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile"]}
+      ]
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,689 @@
+{
+  "historical": {
+    "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/latency-and-support/complete-roster/all-positions.jsonl.gz",
+    "receipt_sha256": "2bc3768d2c146adc402992f5bbb5714119c2be77ec1959fa6c16329bdebef73a",
+    "sha256": "8505c00578975f8ae3ac1e4f5295f0441fa4c3a28a08b791fa7a8d3c3a107cbd"
+  },
+  "position": {
+    "actual": {
+      "command": [
+        "systemd-run",
+        "--user",
+        "--wait",
+        "--pipe",
+        "--unit=leo-capture-position-actual-6ef045d7",
+        "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+        "--property=MemoryMax=536870912",
+        "--property=MemorySwapMax=0",
+        "--property=Nice=10",
+        "--property=KillMode=control-group",
+        "--property=RuntimeMaxSec=180s",
+        "taskset",
+        "-c",
+        "0",
+        "env",
+        "TMPDIR=/srv/bulk/leo-dev/field-exact-waveform-ds29-0082-20261119/actual",
+        "OPENBLAS_NUM_THREADS=1",
+        "OMP_NUM_THREADS=1",
+        "MKL_NUM_THREADS=1",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+        "-B",
+        "-m",
+        "tools.pipeline_eval.whole_iq",
+        "position",
+        "/srv/bulk/leo-dev/field-exact-waveform-ds29-0082-20261119/actual"
+      ],
+      "end": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-position-actual-6ef045d7.service",
+        "cpu.stat.usage_usec": 27078165,
+        "cpus": [
+          0
+        ],
+        "memory.current": 16379904,
+        "memory.events.max": 0,
+        "memory.events.oom": 0,
+        "memory.events.oom_kill": 0,
+        "memory.max": 536870912,
+        "memory.peak": 286035968,
+        "memory.stat.anon": 14962688,
+        "memory.stat.file": 61440,
+        "memory.stat.kernel": 1007616,
+        "memory.swap.current": 0,
+        "memory.swap.max": 0,
+        "monotonic_s": 5811927.293457163,
+        "nice": 10,
+        "pid": 2287057,
+        "rss_peak_kib": 25456
+      },
+      "exit_code": 0,
+      "log_sha256": "5ff7023a5f38004254c2949aff0919c42d7fff744369d749e4a94c9b45dd5e60",
+      "wall_s": 29.596201308071613
+    },
+    "archive": {
+      "command": [
+        "systemd-run",
+        "--user",
+        "--wait",
+        "--pipe",
+        "--unit=leo-capture-position-archive-9bd27641",
+        "--working-directory=/home/mouse9911/gits/leo-tracker-reduxredux",
+        "--property=MemoryMax=536870912",
+        "--property=MemorySwapMax=0",
+        "--property=Nice=10",
+        "--property=KillMode=control-group",
+        "--property=RuntimeMaxSec=180s",
+        "taskset",
+        "-c",
+        "1",
+        "env",
+        "TMPDIR=/srv/bulk/leo-dev/field-exact-waveform-ds29-0082-20261119/archive",
+        "OPENBLAS_NUM_THREADS=1",
+        "OMP_NUM_THREADS=1",
+        "MKL_NUM_THREADS=1",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+        "-B",
+        "-m",
+        "tools.pipeline_eval.whole_iq",
+        "position",
+        "/srv/bulk/leo-dev/field-exact-waveform-ds29-0082-20261119/archive"
+      ],
+      "end": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-position-archive-9bd27641.service",
+        "cpu.stat.usage_usec": 27323978,
+        "cpus": [
+          1
+        ],
+        "memory.current": 16953344,
+        "memory.events.max": 0,
+        "memory.events.oom": 0,
+        "memory.events.oom_kill": 0,
+        "memory.max": 536870912,
+        "memory.peak": 286715904,
+        "memory.stat.anon": 14974976,
+        "memory.stat.file": 790528,
+        "memory.stat.kernel": 1028096,
+        "memory.swap.current": 0,
+        "memory.swap.max": 0,
+        "monotonic_s": 5811924.156806287,
+        "nice": 10,
+        "pid": 2287046,
+        "rss_peak_kib": 25484
+      },
+      "exit_code": 0,
+      "log_sha256": "3305b701b02b31f89c351a8ae7a95aa5dbbbe87a97f4f7b7077ca452988fc2d5",
+      "wall_s": 29.07671876437962
+    }
+  },
+  "raw": {
+    "completed": 6772,
+    "completed_chunks": 106,
+    "completed_worker_cpu_s": 1919.2748419999998,
+    "compressed_bytes": 8404820401,
+    "counts": {
+      "candidate_rows": 42162,
+      "detector_cpu_s": 1892.8399214309998,
+      "empty_probe_rows": 38,
+      "invalid_capture": 1904,
+      "iq_bytes": 10835200000,
+      "positive_candidates": 4582,
+      "probe_rows": 9736,
+      "processed_windows": 4868,
+      "recording_windows": 6772,
+      "window_delivery_span_s": 299.997146242
+    },
+    "invalid": 1904,
+    "largest_worker_peak_bytes": 536870912,
+    "largest_worker_process_rss_kib": 213936,
+    "measured_folded_calls": 10875,
+    "measured_native_sha256": "fff1a8c6c8337af1773005d78805cbe210da620912be4acdf7bb4311982d2408",
+    "parity": {
+      "capture_validity_fields_exact": {
+        "excluded_windows": true,
+        "invalid_capture": true,
+        "processed_windows": true,
+        "rf_mapping_authorities": true,
+        "skipped_fast_score": true,
+        "window_count": true
+      },
+      "changed_probes": [],
+      "classification": "exact",
+      "clock_fields_exact": {
+        "clock_anchor": true,
+        "delivery_clocks": true,
+        "last_sample_counter": true,
+        "schema_version": true
+      },
+      "comparisons": {
+        "compared_candidates": 42162,
+        "compared_probes": 9736
+      },
+      "counts": {
+        "fresh": {
+          "candidate_schema_errors": 0,
+          "candidates": 42162,
+          "empty_probes": 38,
+          "gate_formula_errors": 0,
+          "gate_passes": 4582,
+          "probes": 9736,
+          "probes_sha256": "sha256:9684d0694954339ae91eb369a0f27bcba23c7714f3abc2f9e50945546290355c",
+          "probes_with_gate_pass": 1868
+        },
+        "reference": {
+          "candidate_schema_errors": 0,
+          "candidates": 42162,
+          "empty_probes": 38,
+          "gate_formula_errors": 0,
+          "gate_passes": 4582,
+          "probes": 9736,
+          "probes_sha256": "sha256:9684d0694954339ae91eb369a0f27bcba23c7714f3abc2f9e50945546290355c",
+          "probes_with_gate_pass": 1868
+        }
+      },
+      "delivery_clock_rows_differ": 0,
+      "exact": {
+        "candidates": 42162,
+        "probes": 9736
+      },
+      "gate_equivalence": {
+        "differing_gate_masks": 0,
+        "differing_gate_sequence": 0,
+        "differing_positive_probes": 0
+      },
+      "max_absolute_numeric_delta": {
+        "fractional_control_score": 0.0,
+        "fractional_epoch_offset_samples": 0.0,
+        "fractional_exact_score": 0.0,
+        "fractional_margin": 0.0,
+        "fractional_tracking_cfo_hz": 0.0,
+        "integer_epoch_sample": 0.0
+      },
+      "per_candidate_field": {
+        "candidate_rank": 0,
+        "fractional_control_score": 0,
+        "fractional_epoch_offset_samples": 0,
+        "fractional_exact_score": 0,
+        "fractional_margin": 0,
+        "fractional_tracking_cfo_hz": 0,
+        "integer_epoch_sample": 0,
+        "passed_fractional_margin_gate": 0
+      },
+      "probe_order_exact": true,
+      "rank_masks": {
+        "differing_candidate_counts": 0,
+        "differing_empty_probes": 0,
+        "differing_masks": 0
+      },
+      "source_fields_differ": [],
+      "unmatched_probes": []
+    },
+    "planned_chunks": 106,
+    "scheduled": 6772,
+    "total_measured_detector_cpu_s": 1892.839921431,
+    "valid": 4868,
+    "valid_detector": {
+      "cpu_ms": {
+        "max": 1683.7457540000003,
+        "mean": 388.7939735386196,
+        "min": 234.96202599999094,
+        "n": 4868,
+        "p10": 263.2880857000089,
+        "p25": 270.8322960000018,
+        "p50": 290.8896760000044,
+        "p75": 473.8031760000076,
+        "p90": 526.7629593999907,
+        "p95": 754.9357973500263,
+        "p99": 1105.39716183,
+        "within_20": 0
+      },
+      "wall_ms": {
+        "max": 15699.164195917547,
+        "mean": 547.1690713685089,
+        "min": 236.61770019680262,
+        "n": 4868,
+        "p10": 267.2786175273359,
+        "p25": 280.6949515361339,
+        "p50": 401.2211705558002,
+        "p75": 514.5383481867611,
+        "p90": 834.7107170149685,
+        "p95": 1197.5994599517428,
+        "p99": 3804.3120674323227,
+        "within_20": 0
+      }
+    },
+    "wall_s": 496.5895786220208,
+    "workers": {
+      "0": {
+        "chunks": 14,
+        "exit_code": 0,
+        "output_sha256": "ccf6547e2be9677000286d9c516f0505ceb4d1afad3523801263479ae3ae2506",
+        "service_log_sha256": "9c5183619f4ef3bc6603b0249a2b7898c483228070ffc94c07e087cd59b0da04",
+        "terminal": {
+          "count": 637,
+          "cpu": 0,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-0-79b6c2ce.service",
+            "cpu.stat.usage_usec": 207361344,
+            "cpus": [
+              0
+            ],
+            "memory.current": 523874304,
+            "memory.events.max": 1939,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 175423488,
+            "memory.stat.file": 347156480,
+            "memory.stat.kernel": 1191936,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271686,
+            "rss_peak_kib": 207360
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-0-79b6c2ce.service",
+            "cpu.stat.usage_usec": 1560144,
+            "cpus": [
+              0
+            ],
+            "memory.current": 127823872,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 127823872,
+            "memory.stat.anon": 126947328,
+            "memory.stat.file": 90112,
+            "memory.stat.kernel": 757760,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271686,
+            "rss_peak_kib": 156156
+          }
+        }
+      },
+      "1": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "cd98dffd7e2b881537a12a347cc0121bf9aea04bb62d0165f85f0f92864fe490",
+        "service_log_sha256": "5c2cfa85a95cbe2e6173f604f3a3b87acaee4222b2e7eaa67b403d45db859ce3",
+        "terminal": {
+          "count": 600,
+          "cpu": 1,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-1-0356b780.service",
+            "cpu.stat.usage_usec": 202472423,
+            "cpus": [
+              1
+            ],
+            "memory.current": 536846336,
+            "memory.events.max": 1913,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 175128576,
+            "memory.stat.file": 360497152,
+            "memory.stat.kernel": 1179648,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271689,
+            "rss_peak_kib": 206536
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-1-0356b780.service",
+            "cpu.stat.usage_usec": 1460356,
+            "cpus": [
+              1
+            ],
+            "memory.current": 126763008,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 127795200,
+            "memory.stat.anon": 125919232,
+            "memory.stat.file": 0,
+            "memory.stat.kernel": 765952,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271689,
+            "rss_peak_kib": 156052
+          }
+        }
+      },
+      "20": {
+        "chunks": 14,
+        "exit_code": 0,
+        "output_sha256": "aad78a210e9af53106ee07e3e060bf666e87105e6d695768cffebbce77bc2f5a",
+        "service_log_sha256": "9af830cbf59eac15b6a8b9c73d428a62a48a66fe04ebc9a60c41e84abf289db8",
+        "terminal": {
+          "count": 636,
+          "cpu": 20,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-20-14e698a5.service",
+            "cpu.stat.usage_usec": 383838172,
+            "cpus": [
+              20
+            ],
+            "memory.current": 373030912,
+            "memory.events.max": 643,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 177381376,
+            "memory.stat.file": 193818624,
+            "memory.stat.kernel": 1552384,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271713,
+            "rss_peak_kib": 208492
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-20-14e698a5.service",
+            "cpu.stat.usage_usec": 2092173,
+            "cpus": [
+              20
+            ],
+            "memory.current": 126992384,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 128024576,
+            "memory.stat.anon": 125894656,
+            "memory.stat.file": 172032,
+            "memory.stat.kernel": 757760,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271713,
+            "rss_peak_kib": 155960
+          }
+        }
+      },
+      "21": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "5a0b8f303e7c74163b57ef4f9a1de3d5d1b0b80f36e13207ca1991959d5a40ba",
+        "service_log_sha256": "3d2fe861576c24332efd5ff758e2273d1ff1bcc05053c59afdeaeda43cd74951",
+        "terminal": {
+          "count": 598,
+          "cpu": 21,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-21-ab14f0ac.service",
+            "cpu.stat.usage_usec": 356176982,
+            "cpus": [
+              21
+            ],
+            "memory.current": 193626112,
+            "memory.events.max": 664,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 174424064,
+            "memory.stat.file": 17453056,
+            "memory.stat.kernel": 1736704,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271712,
+            "rss_peak_kib": 207564
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-21-ab14f0ac.service",
+            "cpu.stat.usage_usec": 2033397,
+            "cpus": [
+              21
+            ],
+            "memory.current": 127959040,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 127959040,
+            "memory.stat.anon": 126910464,
+            "memory.stat.file": 225280,
+            "memory.stat.kernel": 757760,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271712,
+            "rss_peak_kib": 156096
+          }
+        }
+      },
+      "4": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "09de174327148489fb4e0cda4a4cfe813c8993aed95182c550e7243d2f330886",
+        "service_log_sha256": "9bee8e0b468b204ba87bc5aaeb22802ffa74dfb6494f9a71a7c16a46459ba8a6",
+        "terminal": {
+          "count": 600,
+          "cpu": 4,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-4-df43a6e0.service",
+            "cpu.stat.usage_usec": 193813734,
+            "cpus": [
+              4
+            ],
+            "memory.current": 536662016,
+            "memory.events.max": 1957,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 176050176,
+            "memory.stat.file": 359313408,
+            "memory.stat.kernel": 1265664,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271695,
+            "rss_peak_kib": 207996
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-4-df43a6e0.service",
+            "cpu.stat.usage_usec": 1423973,
+            "cpus": [
+              4
+            ],
+            "memory.current": 127881216,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 127881216,
+            "memory.stat.anon": 126939136,
+            "memory.stat.file": 0,
+            "memory.stat.kernel": 770048,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271695,
+            "rss_peak_kib": 156176
+          }
+        }
+      },
+      "5": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "f5724b9eb9cbabef4c708e59875a0ff4f4ddae9d3e650fda96ff12ccb1759b0d",
+        "service_log_sha256": "2aba36bfde066494cb60f1729bc16de2283f21fa8c70ba7c874a1cee195f60f5",
+        "terminal": {
+          "count": 599,
+          "cpu": 5,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-5-b0966b9c.service",
+            "cpu.stat.usage_usec": 193684564,
+            "cpus": [
+              5
+            ],
+            "memory.current": 533323776,
+            "memory.events.max": 1786,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 175304704,
+            "memory.stat.file": 356880384,
+            "memory.stat.kernel": 1069056,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271699,
+            "rss_peak_kib": 206424
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-5-b0966b9c.service",
+            "cpu.stat.usage_usec": 1418038,
+            "cpus": [
+              5
+            ],
+            "memory.current": 127692800,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 128462848,
+            "memory.stat.anon": 125906944,
+            "memory.stat.file": 827392,
+            "memory.stat.kernel": 753664,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271699,
+            "rss_peak_kib": 155968
+          }
+        }
+      },
+      "6": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "303ad867a1fa9eae57e8f44860656692e1ce3cbe186a24f8418224076a5fbdb9",
+        "service_log_sha256": "0c9960c64cf0e453c840375ddf9e4876e8aad256521745e9e4c2932762b9c28f",
+        "terminal": {
+          "count": 599,
+          "cpu": 6,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-6-5e57b9fa.service",
+            "cpu.stat.usage_usec": 198020752,
+            "cpus": [
+              6
+            ],
+            "memory.current": 536788992,
+            "memory.events.max": 1532,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 173629440,
+            "memory.stat.file": 362020864,
+            "memory.stat.kernel": 1089536,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271703,
+            "rss_peak_kib": 206804
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-6-5e57b9fa.service",
+            "cpu.stat.usage_usec": 1479083,
+            "cpus": [
+              6
+            ],
+            "memory.current": 127926272,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 127926272,
+            "memory.stat.anon": 126922752,
+            "memory.stat.file": 0,
+            "memory.stat.kernel": 757760,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271703,
+            "rss_peak_kib": 156184
+          }
+        }
+      },
+      "7": {
+        "chunks": 13,
+        "exit_code": 0,
+        "output_sha256": "ed15e0562ad037075b9ffb3ea4f95a65df9005857623a14f103e84f8dadf52f6",
+        "service_log_sha256": "4b93d5af07d1d5a19d5da4505df2884ec1786b17e3494acc3b2f6d7380b5e0f2",
+        "terminal": {
+          "count": 599,
+          "cpu": 7,
+          "end": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-7-507e7c07.service",
+            "cpu.stat.usage_usec": 196888174,
+            "cpus": [
+              7
+            ],
+            "memory.current": 536842240,
+            "memory.events.max": 1475,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 536870912,
+            "memory.stat.anon": 182853632,
+            "memory.stat.file": 352825344,
+            "memory.stat.kernel": 1089536,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271708,
+            "rss_peak_kib": 213936
+          },
+          "kind": "worker",
+          "source_lock_sha256": "fd4e8467733d96c3679306e1229523c467df9a3d4f2c81fc49828a26667645d3",
+          "start": {
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-capture-whole-7-507e7c07.service",
+            "cpu.stat.usage_usec": 1514139,
+            "cpus": [
+              7
+            ],
+            "memory.current": 127025152,
+            "memory.events.max": 0,
+            "memory.events.oom": 0,
+            "memory.events.oom_kill": 0,
+            "memory.max": 536870912,
+            "memory.peak": 127795200,
+            "memory.stat.anon": 126021632,
+            "memory.stat.file": 0,
+            "memory.stat.kernel": 761856,
+            "memory.swap.current": 0,
+            "memory.swap.max": 0,
+            "nice": 10,
+            "pid": 2271708,
+            "rss_peak_kib": 156056
+          }
+        }
+      }
+    }
+  }
+}

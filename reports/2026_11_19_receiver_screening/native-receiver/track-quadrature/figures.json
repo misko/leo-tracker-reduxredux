@@ -1,0 +1,56 @@
+{
+  "charts": [
+    {
+      "caption": "Same stored GLRT, causal TLE, and tile. Both compressed modes refit original points.",
+      "cases": [
+        "DS26-0084",
+        "DS26-0168",
+        "DS26-0072",
+        "DS29-0357",
+        "DS29-0082",
+        "DS29-0519"
+      ],
+      "id": "track_quadrature_native_joint",
+      "method": "track_quadrature",
+      "provenance": [
+        "source-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "prediction-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Lobatto 8 times",
+          "value": "track_quadrature"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Full track times",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "all_samples"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Uniform 8 times",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "uniform_samples"
+        }
+      ],
+      "title": "Eight Doppler times for catalogue screening"
+    }
+  ],
+  "version": 2
+}

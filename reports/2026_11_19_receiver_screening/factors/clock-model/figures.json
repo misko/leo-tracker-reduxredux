@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "joint_clock_model-matched",
+      "method": "joint_clock_model",
+      "scope": "roof",
+      "title": "Shared receiver clock on ten matched recordings",
+      "caption": "Six timing and four independent confirmation recordings. The shared clock and exact clock-off control use the same assignment, aliases and exact held predictor. The as-built joint and robust receivers use their original publication gates. All use authenticated anonymous GLRT tracks and the causal catalogue.",
+      "cases": "sealed",
+      "seal": "matched-figure-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "series": [
+        {"key": "one", "label": "Shared fractional receiver clock", "file": "matched-figure-positions.jsonl.gz", "field": "variant", "value": "joint_clock_model"},
+        {"key": "stock", "label": "Exact matched clock-off", "file": "matched-figure-positions.jsonl.gz", "field": "variant", "value": "joint_fixed_reference", "match": ["input_sha256", "observation_sha256"]},
+        {"key": "one_native_factors", "label": "As-built joint receiver", "file": "matched-figure-positions.jsonl.gz", "field": "variant", "value": "joint_orbits", "match": ["input_sha256", "observation_sha256"]},
+        {"key": "all_visits", "label": "As-built robust exact receiver", "file": "matched-figure-positions.jsonl.gz", "field": "variant", "value": "robust_orbit_fit", "match": ["input_sha256", "observation_sha256"]}
+      ]
+    },
+    {
+      "id": "joint_clock_model-wrong-offer",
+      "method": "joint_clock_model",
+      "scope": "transfer",
+      "title": "Shared receiver clock with the correct tile omitted",
+      "caption": "All three sealed wrong offers were withheld. Forced coordinates are diagnostic estimates and enter no published-position curve.",
+      "cases": "sealed",
+      "seal": "wrong-figure-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "queries": "wrong-figure-queries.json",
+      "series": [
+        {"key": "candidate", "label": "Shared fractional receiver clock", "file": "wrong-figure-positions.jsonl.gz", "field": "variant", "value": "joint_clock_model", "forced_label": "Shared clock forced diagnostic"},
+        {"key": "stock", "label": "Exact matched clock-off", "file": "wrong-figure-positions.jsonl.gz", "field": "variant", "value": "joint_fixed_reference", "forced_label": "Clock-off forced diagnostic", "match": ["input_sha256", "observation_sha256"]},
+        {"key": "one", "label": "As-built joint receiver", "file": "wrong-figure-positions.jsonl.gz", "field": "variant", "value": "joint_orbits", "forced_label": "As-built joint forced diagnostic", "match": ["input_sha256", "observation_sha256"]}
+      ]
+    }
+  ]
+}

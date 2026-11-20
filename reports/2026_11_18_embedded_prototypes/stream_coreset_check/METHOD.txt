@@ -1,0 +1,49 @@
+Supplementary same-panel compatibility check
+
+Use prototype #1's original Replay, including the native chronological
+reader, admission, linking, and segment retention through its full scan
+deadline. Freeze once, build the same causal TLE bank and track descriptors,
+and compute the common receiver bias seed. Use prototype #6's existing
+geometry-12 selection directly on those descriptors. The control submits all
+descriptors from the same stream. Both use the same existing 49 grid cells,
+12 candidates per track, inlier cost < 12, minimum 4 tracks and 3 satellites,
+and 4 robust solve passes per c arm. Each policy fixes its own assignments
+and selected observations across the c=0 and fitted-c arms. Conditional
+information diagnostics use #6's unregularized inlier Jacobian.
+
+Inputs are the eight shared DS26 cases, using native.json and the causal TLE
+snapshots under /srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs/. This
+check uses the panel search center as its only location input. It compares
+the two stream outputs without geographic scoring and sits outside the ten
+primary rankings. Absolute CFO RMS uses each policy's retained inliers.
+
+Each case's arms are the geometry-12 endpoints. The same-stream control is
+cases[].full_control.arms. Primary wall time is measured on one host thread
+from archived detector output through both fits, including archive decoding,
+candidate filtering, tracking, orbit/descriptor and bias work, and selection.
+The control's additional_wall_s measures its downstream call after reuse of
+that preparation. Its logical_total_wall_s adds the measured shared stages
+to the measured control's grid and fits. Diagnostics are outside the clocks.
+IQ, detector runtime and target board performance are outside timing scope.
+
+After fitting, reopen prototype #1's saved results and require exact equality
+of stream counters and the observation hash, TLE receipt, descriptor counts,
+and the ordered list of assigned satellites. Check endpoint differences to
+1e-10 degrees, RMS differences to 1e-8 Hz, and grid score differences to
+1e-10. This is the execution's correctness test on the same eight scans.
+
+The full control reproduced the saved assignments, endpoints, RF RMS and
+grid scores exactly on all eight scans. Both policies estimated all scans
+in both arms. Median grid work was 7,056 candidate-cell evaluations and 156
+fit rows per robust iteration for geometry-12, compared with 37,632 and 715
+for full. Median total host time was 421.4 ms for geometry-12 and 423.2 ms for
+full. Shared work alone took 416.9 ms. Both had rank two after deleting any
+one inlier satellite. The fitted-c weakest-axis information median was
+0.026 km^-2 for geometry-12 and 0.198 km^-2 for full. Within geometry-12, c
+reduced the paired median CFO RMS by 1.96 Hz and reduced RMS in seven scans.
+
+Run from the repository root:
+
+  OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src \
+    .venv/bin/python reports/2026_11_18_embedded_prototypes/stream_coreset_check/replay.py

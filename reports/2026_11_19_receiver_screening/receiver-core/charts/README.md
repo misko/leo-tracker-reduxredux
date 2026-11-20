@@ -1,0 +1,93 @@
+# Receiver-core measurements
+
+Roof plots compare each study on its scheduled recordings against all four original v5 options. Matched stock fits use the inputs and solver boundary described on each page. Blank rows retain failed or withheld attempts in the denominator. Diagnostic estimates appear only when a receiver saved one.
+
+Wrong-region and independent-site results have their own figures. V5 enters only the paired original-tile comparisons. A false published point remains visible.
+
+## Roof comparisons
+
+**Fitted calibration** · [PDF](fitted_c/modifications.pdf) · [Per-sample CSV](fitted_c/modifications.csv)
+
+- [Absolute Doppler from anonymous GLRT on diagnostic recordings](fitted_c/absolute_doppler-diagnostic.png)
+- [Absolute Doppler on four preselected held roof recordings](fitted_c/absolute_doppler-reserve.png)
+- [Capture-era alias index on matched winners](fitted_c/alias-attribution-alias.png)
+- [Capture-era wrapped CFO on matched winners](fitted_c/alias-attribution-residual.png)
+- [Capture-era alias index and wrapped CFO](fitted_c/alias-attribution-joint.png)
+- [Circular exchange of donor CFO deltas](fitted_c/alias-attribution-null.png)
+- [A smaller Doppler grid on eight complete roof recordings](fitted_c/wide-cfo-stride-all.png)
+- [Doppler grid spacing on two additional complete waveforms](fitted_c/wide-cfo-stride-additional.png)
+- [Complete saved IQ with causal detector hints](fitted_c/hinted-whole.png)
+- [Global fractional-margin admission on four held recordings](fitted_c/wide-margin-admission.png)
+- [Candidate allocation at matched count on DS29-0127](fitted_c/wide-margin-allocation-control.png)
+- [Ranked cavity nomination without unused modes · companion](fitted_c/ranked-fit-cavity-companion.png)
+- [Ranked cavity · independent 185-second reserve confirmation](fitted_c/ranked-fit-cavity-reserve-confirmation.png)
+- [Ranked cavity nomination without unused modes · development](fitted_c/ranked-fit-cavity-development.png)
+- [Ranked cavity nomination without unused modes · held](fitted_c/ranked-fit-cavity-held.png)
+- [Regional absolute Doppler on the diagnostic roof recordings](fitted_c/regional_levels-diagnostic.png)
+- [Regional absolute Doppler on four held roof recordings](fitted_c/regional_levels-reserve.png)
+- [Saved wide IQ through the private winning-probe stream](fitted_c/whole-winner-iq-wide.png)
+- [Original full v5 and compact on identical wide GLRT factors](fitted_c/wide-full-v5.png)
+- [Original v5 numerical repeat · same wide factors](fitted_c/wide-reference-recovery.png)
+
+**Zero calibration** · [PDF](c0/modifications.pdf) · [Per-sample CSV](c0/modifications.csv)
+
+- [Absolute Doppler from anonymous GLRT on diagnostic recordings](c0/absolute_doppler-diagnostic.png)
+- [Absolute Doppler on four preselected held roof recordings](c0/absolute_doppler-reserve.png)
+- [Capture-era alias index on matched winners](c0/alias-attribution-alias.png)
+- [Capture-era wrapped CFO on matched winners](c0/alias-attribution-residual.png)
+- [Capture-era alias index and wrapped CFO](c0/alias-attribution-joint.png)
+- [Circular exchange of donor CFO deltas](c0/alias-attribution-null.png)
+- [A smaller Doppler grid on eight complete roof recordings](c0/wide-cfo-stride-all.png)
+- [Doppler grid spacing on two additional complete waveforms](c0/wide-cfo-stride-additional.png)
+- [Complete saved IQ with causal detector hints](c0/hinted-whole.png)
+- [Global fractional-margin admission on four held recordings](c0/wide-margin-admission.png)
+- [Candidate allocation at matched count on DS29-0127](c0/wide-margin-allocation-control.png)
+- [Ranked cavity nomination without unused modes · companion](c0/ranked-fit-cavity-companion.png)
+- [Ranked cavity · independent 185-second reserve confirmation](c0/ranked-fit-cavity-reserve-confirmation.png)
+- [Ranked cavity nomination without unused modes · development](c0/ranked-fit-cavity-development.png)
+- [Ranked cavity nomination without unused modes · held](c0/ranked-fit-cavity-held.png)
+- [Regional absolute Doppler on the diagnostic roof recordings](c0/regional_levels-diagnostic.png)
+- [Regional absolute Doppler on four held roof recordings](c0/regional_levels-reserve.png)
+- [Saved wide IQ through the private winning-probe stream](c0/whole-winner-iq-wide.png)
+- [Original full v5 and compact on identical wide GLRT factors](c0/wide-full-v5.png)
+- [Original v5 numerical repeat · same wide factors](c0/wide-reference-recovery.png)
+
+## Wrong regions and new sites
+
+**Fitted calibration** · [PDF](fitted_c/transfer.pdf) · [Per-sample CSV](fitted_c/transfer.csv)
+
+- [Site-free absolute Doppler with real omitted offers](fitted_c/absolute_doppler-omitted.png)
+- [Absolute Doppler at new simulated locations](fitted_c/absolute_doppler-simulated.png)
+- [Absolute Doppler with the causal orbits shifted by 120 seconds](fitted_c/absolute_doppler-null.png)
+- [Paired 20 m tile-face guard on two new simulated sites](fitted_c/boundary-policy-fresh.png)
+- [Phase-release tile-face decisions on four archived sites](fitted_c/boundary-policy-archived-phase-release.png)
+- [Archived base compact tile-face decisions on four simulated sites](fitted_c/boundary-policy-archived-compact.png)
+- [Tile-face guard on measured compact roof endpoints](fitted_c/boundary-policy-measured.png)
+- [Phase release on four new simulated receiver sites](fitted_c/compact-blind-phase-release.png)
+- [Base compact on four new simulated receiver sites](fitted_c/compact-blind-compact.png)
+- [Original v5 numerical reference on two new-location offers](fitted_c/compact-blind-original-numerical-reference.png)
+- [Installed 20 m interior profile on two recorded offers](fitted_c/installed-interior.png)
+- [20 m publication guard on six measured roof offers](fitted_c/measured-boundary-policy.png)
+- [Track-time null on two measured roof recordings](fitted_c/native_region_time_null-archived-roof.png)
+- [Track-time null at two new synthetic sites](fitted_c/native_region_time_null-fresh-synthetic.png)
+- [Regional absolute Doppler on real omitted offers](fitted_c/regional_levels-omitted.png)
+- [Regional absolute Doppler at two newly drawn simulated sites](fitted_c/regional_levels-simulated.png)
+
+**Zero calibration** · [PDF](c0/transfer.pdf) · [Per-sample CSV](c0/transfer.csv)
+
+- [Site-free absolute Doppler with real omitted offers](c0/absolute_doppler-omitted.png)
+- [Absolute Doppler at new simulated locations](c0/absolute_doppler-simulated.png)
+- [Absolute Doppler with the causal orbits shifted by 120 seconds](c0/absolute_doppler-null.png)
+- [Paired 20 m tile-face guard on two new simulated sites](c0/boundary-policy-fresh.png)
+- [Phase-release tile-face decisions on four archived sites](c0/boundary-policy-archived-phase-release.png)
+- [Archived base compact tile-face decisions on four simulated sites](c0/boundary-policy-archived-compact.png)
+- [Tile-face guard on measured compact roof endpoints](c0/boundary-policy-measured.png)
+- [Phase release on four new simulated receiver sites](c0/compact-blind-phase-release.png)
+- [Base compact on four new simulated receiver sites](c0/compact-blind-compact.png)
+- [Original v5 numerical reference on two new-location offers](c0/compact-blind-original-numerical-reference.png)
+- [Installed 20 m interior profile on two recorded offers](c0/installed-interior.png)
+- [20 m publication guard on six measured roof offers](c0/measured-boundary-policy.png)
+- [Track-time null on two measured roof recordings](c0/native_region_time_null-archived-roof.png)
+- [Track-time null at two new synthetic sites](c0/native_region_time_null-fresh-synthetic.png)
+- [Regional absolute Doppler on real omitted offers](c0/regional_levels-omitted.png)
+- [Regional absolute Doppler at two newly drawn simulated sites](c0/regional_levels-simulated.png)

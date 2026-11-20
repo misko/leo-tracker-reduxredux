@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "robust_support-site-transfer",
+      "method": "robust_support",
+      "scope": "transfer",
+      "title": "Robust support gating at four new simulated sites",
+      "caption": "Simulated native candidates carry replayed Doppler residuals and observation gaps from measured donor tracks. Both receivers use the same anonymous track projection and causal catalogue.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "condition_labels": {
+        "Correct tile supplied": "Correct tile supplied",
+        "Correct region omitted · near": "Correct region omitted · near",
+        "Correct region omitted · far": "Correct region omitted · far",
+        "Shuffled detections · no site": "Shuffled detections · no site"
+      },
+      "provenance": ["capture-manifest.json", "input-lock.json", "labels.json", "offers.json", "prediction-lock.json"],
+      "series": [
+        {
+          "key": "candidate",
+          "label": "Support gate · published",
+          "forced_label": "Support gate · forced",
+          "file": "predictions.jsonl.gz",
+          "value": "robust_support"
+        },
+        {
+          "key": "stock",
+          "label": "Orbit-aware fit · published",
+          "forced_label": "Orbit-aware fit · forced",
+          "file": "predictions.jsonl.gz",
+          "value": "robust_orbit_fit",
+          "match": ["worker_input_sha256"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "charts": [
+    {
+      "caption": "Fresh saved-IQ rescue with matched stock and fifth-center controls. Both calibration arms use the same causal receiver.",
+      "cases": "sealed",
+      "id": "whole-incremental-rescue",
+      "method": "whole_incremental_rescue",
+      "provenance": [
+        "scores.csv",
+        "deadlines.csv",
+        "prediction-lock.json",
+        "probe-audit.json",
+        "resources.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Stock-first incremental rescue",
+          "match": [
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_incremental_rescue"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Earlier complete stock wide",
+          "match": [
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Earlier unconditional fifth center",
+          "match": [
+            "catalog_sha256",
+            "tile",
+            "original_request_sha256",
+            "paired_capture_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "whole_center_union"
+        }
+      ],
+      "title": "One extra differential region after a stock-negative lane"
+    }
+  ],
+  "version": 1
+}

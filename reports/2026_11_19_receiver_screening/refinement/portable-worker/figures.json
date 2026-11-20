@@ -1,0 +1,173 @@
+{
+  "charts": [
+    {
+      "caption": "The portable launch and audited parent used identical complete GLRT factors, catalogue, Graph and position fit. The chart shows deployment parity.",
+      "cases": [
+        "DS26-0036"
+      ],
+      "id": "portable_native_joint-capture-era",
+      "method": "portable_native_joint",
+      "provenance": [
+        "figure-verification.json"
+      ],
+      "scope": "roof",
+      "seal": "portable_native_joint-capture-era-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "one",
+          "label": "Portable launch",
+          "value": "portable_native_joint",
+          "where": {
+            "cohort": "capture-era"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Audited parent",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "tile"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "capture-era"
+          }
+        }
+      ],
+      "title": "Portable joint on capture-era GLRT"
+    },
+    {
+      "caption": "The portable launch and audited parent used identical complete GLRT factors, catalogue, Graph and position fit. The chart shows deployment parity. The original v5 references use capture-era factors.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "portable_native_joint-ordinary",
+      "method": "portable_native_joint",
+      "provenance": [
+        "figure-verification.json"
+      ],
+      "scope": "roof",
+      "seal": "portable_native_joint-ordinary-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "one",
+          "label": "Portable launch",
+          "native_authority": "ordinary",
+          "value": "portable_native_joint",
+          "where": {
+            "cohort": "ordinary"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Audited parent",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "iq_to_joint",
+          "where": {
+            "cohort": "ordinary"
+          }
+        }
+      ],
+      "title": "Portable joint on ordinary GLRT"
+    },
+    {
+      "caption": "The portable launch and audited parent used identical complete GLRT factors, catalogue, Graph and position fit. The chart shows deployment parity.",
+      "cases": [
+        "DS29-0082"
+      ],
+      "id": "portable_native_clock-capture-era",
+      "method": "portable_native_clock",
+      "provenance": [
+        "figure-verification.json"
+      ],
+      "scope": "roof",
+      "seal": "portable_native_clock-capture-era-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "one",
+          "label": "Portable launch",
+          "value": "portable_native_clock",
+          "where": {
+            "cohort": "capture-era"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Audited parent",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "tile"
+          ],
+          "value": "native_joint_clock_model",
+          "where": {
+            "cohort": "capture-era"
+          }
+        }
+      ],
+      "title": "Portable smooth clock on capture-era GLRT"
+    },
+    {
+      "caption": "The portable launch and audited parent used identical complete GLRT factors, catalogue, Graph and position fit. The chart shows deployment parity.",
+      "cases": [
+        "DS26-0036-r0"
+      ],
+      "id": "portable_native_clock-omitted-tile",
+      "method": "portable_native_clock",
+      "provenance": [
+        "figure-verification.json"
+      ],
+      "queries": "figure-omitted-query.json",
+      "scope": "transfer",
+      "seal": "portable_native_clock-omitted-tile-lock.json",
+      "series": [
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Portable launch",
+          "value": "portable_native_clock",
+          "where": {
+            "cohort": "omitted-tile"
+          }
+        },
+        {
+          "file": "figure-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Audited parent",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "observation_sha256",
+            "tile"
+          ],
+          "value": "native_joint_clock_model",
+          "where": {
+            "cohort": "omitted-tile"
+          }
+        }
+      ],
+      "title": "Portable smooth clock with the correct tile omitted"
+    }
+  ],
+  "version": 1
+}

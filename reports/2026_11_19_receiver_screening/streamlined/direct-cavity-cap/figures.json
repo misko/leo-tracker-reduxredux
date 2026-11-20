@@ -1,0 +1,61 @@
+{
+  "charts": [
+    {
+      "caption": "Both direct entries were OOM-killed on both inputs. The prior same-input 512 MiB lifetime service returned both arms.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082"
+      ],
+      "id": "direct-cavity-cap-ordinary",
+      "method": "v5_direct_cavity_cap",
+      "provenance": [
+        "scores.csv",
+        "resources.csv",
+        "parity.json",
+        "bounded-lock.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Parser cut \u00b7 OOM",
+          "native_authority": "ordinary",
+          "value": "v5_direct_cavity_cap"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Staged \u00b7 OOM",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_direct_cavity"
+        },
+        {
+          "file": "lifetime-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Lifetime cavity",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "whole_cavity"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Direct compact v5 cavity at 512 MiB"
+    }
+  ],
+  "version": 1
+}

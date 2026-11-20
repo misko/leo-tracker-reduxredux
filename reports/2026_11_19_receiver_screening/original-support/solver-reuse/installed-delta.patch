@@ -1,0 +1,358 @@
+--- phase-release/leo/analysis/localization_v3/acceptance.py
++++ endpoint/leo/analysis/localization_v3/acceptance.py
+@@ -6,6 +6,8 @@
+ from collections import defaultdict
+ 
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint
+ 
+ from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
+ from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
+@@ -164,7 +166,7 @@
+         dict(fit=fit, method="receiver_smooth", arm=arm),
+         problem_factory=lambda *args: adapter,
+     )
+-    result = p.calculate(x)
++    result = endpoint(p, x)
+     rows = []
+     for row, i, sl in zip(original["tracks"], p.members, p.slices, strict=True):
+         gate = conditional_gate(result["conditional_residual_hz"][sl], p.scan.tracks[i]["times"])
+@@ -217,7 +219,7 @@
+     supported_groups = {(scan.tracks[i]["receiver"], int(scan.tracks[i]["channel"] > 4))
+                         for i in p.members if scan.tracks[i]["key"] in accepted}
+     predictions, elevations, available = [], [], []
+-    result = p.calculate(x)
++    result = endpoint(p, x)
+     begin = p.hardware.shape[1] + p.smooth.shape[1] + len(p.labels)
+     for j in labels:
+         phase = np.array([state["phases"][j]])
+--- phase-release/leo/analysis/localization_v3/conservative_recovery.py
++++ endpoint/leo/analysis/localization_v3/conservative_recovery.py
+@@ -7,6 +7,8 @@
+ import copy
+ 
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint
+ 
+ from leo.analysis.localization_v3.acceptance import conditional_gate, extend_associations
+ from leo.analysis.localization_v3.retained_position import (
+@@ -126,7 +128,7 @@
+     points must neither fail the suffix gate nor be counted as accepted suffix.
+     """
+     scan, state = p.scan, p.state(x)
+-    result = p.calculate(x)
++    result = endpoint(p, x)
+     frequency, elevation = p.conditional_frequency(x)
+     rows = []
+     for row, i, sl, alias in zip(p.rows, p.members, p.slices, p.alias, strict=True):
+--- phase-release/leo/analysis/localization_v3/event_position.py
++++ endpoint/leo/analysis/localization_v3/event_position.py
+@@ -267,6 +267,7 @@
+         return original(np.asarray(x))
+ 
+     p.calculate = lambda x: calculate(tuple(x))
++    p._has_fit_cache = True
+     return p
+ 
+ 
+--- phase-release/leo/analysis/localization_v3/history_position.py
++++ endpoint/leo/analysis/localization_v3/history_position.py
+@@ -1,6 +1,8 @@
+ """Family-weighted phase-history likelihood, preserving original nuisance arithmetic."""
+ 
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint
+ 
+ from leo.analysis.localization_v3.conservative_recovery import retained_metrics
+ from leo.analysis.localization_v3.marginal import JointMarginal
+@@ -127,7 +129,7 @@
+             dict(epoch=epoch, fit=result, phase_change_s=float(max(abs(phase - reference))))
+         )
+         reference = np.clip(phase, -15, 15)
+-    c = p.calculate(anchor)
++    c = endpoint(p, anchor)
+     residual = p.residual(anchor)
+     return dict(
+         endpoint_east_north_km=anchor,
+--- phase-release/leo/analysis/localization_v3/marginal.py
++++ endpoint/leo/analysis/localization_v3/marginal.py
+@@ -1,5 +1,7 @@
+ """Joint Gaussian nuisance integration with explicit scan and regional evidence."""
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint
+ 
+ from leo.analysis.localization_v3.families import AnchoredFamilies
+ from leo.analysis.localization_v3.orbit_modes import build_modes
+@@ -200,7 +202,7 @@
+         return np.r_[result["residual"], np.maximum(0, -result["elevation"]) / 2]
+ 
+     def state(self, x):
+-        result = self.calculate(x)
++        result = endpoint(self, x)
+         a = result["coefficient"]
+         scales = result["scales"]
+         nb, ns = self.hardware.shape[1], self.smooth.shape[1]
+@@ -221,7 +223,7 @@
+         )
+ 
+     def diagnostics(self, x):
+-        result = self.calculate(x)
++        result = endpoint(self, x)
+         state = self.state(x)
+         return dict(
+             quadratic=result["quadratic"],
+@@ -244,7 +246,7 @@
+ 
+     def conditional_frequency(self, x):
+         """Reference-Hz orbit prediction, excluding hardware and curve constants."""
+-        result = self.calculate(x)
++        result = endpoint(self, x)
+         a = result["coefficient"]
+         start = self.hardware.shape[1] + self.smooth.shape[1]
+         stop = start + len(self.labels) + 3 * len(self.supported)
+--- phase-release/leo/analysis/localization_v3/position.py
++++ endpoint/leo/analysis/localization_v3/position.py
+@@ -5,6 +5,8 @@
+ separate policies, still under construction.
+ """
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint, optimize
+ 
+ from leo.analysis.localization_v3.marginal import JointMarginal
+ from leo.analysis.research.continuous_curve_fit import bounded_gauss_newton
+@@ -61,13 +63,12 @@
+         return result
+ 
+     def residual(self, x):
+-        result = self.calculate(x)
++        result = endpoint(self, x)
+         return np.r_[result['residual'], np.maximum(0, -result['elevation'][self.keep]) / 2]
+ 
+ def fit(problem, start=(0.0, 0.0), iterations=48):
+-    result = bounded_gauss_newton(problem.residual, start, problem.lower, problem.upper,
+-                                 iterations=iterations)
+-    calculated = problem.calculate(result['parameters'])
++    result = optimize(problem, bounded_gauss_newton, start, iterations)
++    calculated = endpoint(problem, result['parameters'])
+     return dict(result, residual_rms_hz=float(np.sqrt(np.mean(
+         calculated['conditional_residual_hz'][problem.keep] ** 2))),
+         active_points=int(problem.keep.sum()),
+--- phase-release/leo/analysis/localization_v3/predictive_linear.py
++++ endpoint/leo/analysis/localization_v3/predictive_linear.py
+@@ -3,6 +3,8 @@
+ from types import SimpleNamespace
+ 
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint
+ 
+ from leo.analysis.localization_v3.acceptance import extend_associations
+ from leo.analysis.localization_v3.conservative_recovery import retained_metrics
+@@ -290,7 +292,7 @@
+         next_phase = np.clip(p.state(x)["phases"][p.labels], -15, 15)
+         history.append(dict(fit=r, phase_change_s=float(max(abs(next_phase - reference)))))
+         reference = next_phase
+-    c = p.calculate(x)
++    c = endpoint(p, x)
+     curved = p.curved_calculate(x) if entries else c
+     linear_gates = []
+     for e, sl in zip(entries, getattr(p, "linear_slices", []), strict=True):
+--- phase-release/leo/analysis/localization_v3/retained_position.py
++++ endpoint/leo/analysis/localization_v3/retained_position.py
+@@ -1,6 +1,8 @@
+ """Phase-refreshed retained-point fitting with explicit causal prior evidence."""
+ 
+ import numpy as np
++
++from tools.pipeline_eval.variants.compact_endpoint import endpoint
+ 
+ from leo.analysis.localization_v3.marginal import JointMarginal
+ from leo.analysis.localization_v3.orbit_modes import previous_bank
+@@ -125,7 +127,7 @@
+         )
+         phase = np.clip(posterior_phase, -15, 15)
+         reference_scale = posterior_scale
+-    c = p.calculate(anchor)
++    c = endpoint(p, anchor)
+     rows = []
+     for row, i, sl in zip(p.rows, p.members, p.slices, strict=True):
+         r = c["conditional_residual_hz"][sl]
+--- phase-release/tools/pipeline_eval/variants/compact_cavity_optimizer.py
++++ endpoint/tools/pipeline_eval/variants/compact_cavity_optimizer.py
+@@ -41,7 +41,7 @@
+     return best
+ 
+ 
+-def bounded_secant(residual, initial, lower, upper, *, iterations=24, step=1e-3):
++def bounded_secant(residual, initial, lower, upper, *, iterations=24, step=1e-3, on_accept=None):
+     """Preserve the stock objective and fit history in a km-scaled two-dimensional box."""
+     x, lo, hi = (np.asarray(a, dtype=float) for a in (initial, lower, upper))
+     if (
+@@ -54,6 +54,8 @@
+         raise ValueError("finite two-dimensional position and ordered bounds required")
+     x = np.clip(x, lo, hi)
+     r = residual(x)
++    if on_accept is not None:
++        on_accept(x)
+     score = float(r @ r)
+     history = [dict(parameters=x.copy(), score=score)]
+     evaluations, refreshes, total_updates, rejected = 1, 0, 0, 0
+@@ -117,6 +119,8 @@
+                 if updates == SECANT_LIMIT:
+                     jacobian = None
+             x, r, score = proposal, rr, candidate
++            if on_accept is not None:
++                on_accept(x)
+             history.append(dict(parameters=x.copy(), score=score))
+             break
+         else:
+--- phase-release/tools/pipeline_eval/variants/compact_endpoint.py
++++ endpoint/tools/pipeline_eval/variants/compact_endpoint.py
+@@ -0,0 +1,126 @@
++"""Carry the exact accepted compact fit posterior into its reporting consumers."""
++
++import hashlib
++import json
++from collections import Counter
++from contextvars import ContextVar
++from time import process_time_ns
++from weakref import ref
++
++import numpy as np
++
++_endpoint = ContextVar("compact_accepted_endpoint", default=None)
++_trace = ContextVar("compact_endpoint_trace", default=None)
++
++
++def reset(enabled):
++    _endpoint.set(None)
++    _trace.set((enabled, Counter(), hashlib.sha256()))
++
++
++def receipt():
++    enabled, totals, digest = _trace.get()
++    _endpoint.set(None)
++    return dict(totals, enabled=enabled, fit_trajectory_sha256=digest.hexdigest())
++
++
++def _coord(point):
++    return np.asarray(point, dtype="<f8").tobytes()
++
++
++def _binding(problem):
++    calculate = problem.__dict__.get("calculate")
++    return (
++        None if calculate is None else ref(calculate),
++        problem.keep.tobytes(),
++        _coord(problem.reference),
++        _coord(problem.phase_sigma),
++        tuple(problem.alias),
++        problem.fitted_c,
++    )
++
++
++def endpoint(problem, x):
++    trace = _trace.get()
++    frozen = _endpoint.get()
++    if trace is None or not trace[0]:
++        return problem.calculate(x)
++    _, stats, _ = trace
++    if frozen is not None:
++        owner, point, binding, value = frozen
++        if owner() is problem and point == _coord(x) and binding == _binding(problem):
++            stats["reporting_calculations_saved"] += 1
++            return value
++        stats["reporting_recomputed"] += 1
++    return problem.calculate(x)
++
++
++def optimize(problem, optimizer, start, iterations):
++    """Intercept only this fit's complete evaluations and retain the accepted exact value."""
++    trace = _trace.get()
++    _endpoint.set(None)
++    if trace is None:
++        return optimizer(
++            problem.residual, start, problem.lower, problem.upper, iterations=iterations
++        )
++    enabled, stats, digest = trace
++    enabled = enabled and not getattr(problem, "_has_fit_cache", False)
++    stats["fits"] += 1
++    original = problem.calculate
++    prior = problem.__dict__.get("calculate")
++    latest = accepted = None
++
++    def observed(x):
++        nonlocal latest
++        value = original(x)
++        latest = (_coord(x), value)
++        stats["fit_full_calculations"] += 1
++        return value
++
++    def accept(x):
++        nonlocal accepted
++        if latest is not None and latest[0] == _coord(x):
++            accepted = latest
++
++    if enabled:
++        problem.calculate = observed
++    started = process_time_ns()
++    try:
++        callback = {"on_accept": accept} if enabled else {}
++        fit = optimizer(
++            problem.residual, start, problem.lower, problem.upper, iterations=iterations, **callback
++        )
++    finally:
++        if enabled:
++            if prior is None:
++                del problem.calculate
++            else:
++                problem.calculate = prior
++    stats["optimizer_cpu_ns"] += process_time_ns() - started
++    stats["optimizer_evaluations"] += fit["evaluations"]
++    digest.update(
++        json.dumps(
++            dict(
++                c=problem.fitted_c,
++                members=[int(i) for i in problem.members],
++                families=[int(r["candidate_index"]) for r in problem.rows],
++                aliases=[int(i) for i in problem.alias],
++                keep=problem.keep.tobytes().hex(),
++                reference=problem.reference.tolist(),
++                sigma=problem.phase_sigma.tolist(),
++                path=[(x["parameters"].tolist(), x["score"]) for x in fit["history"]],
++                evaluations=fit["evaluations"],
++                stopped=fit["stopped"],
++                jacobian_refreshes=fit["jacobian_refreshes"],
++                secant_updates=fit["secant_updates"],
++                rejected_trials=fit["rejected_trials"],
++            ),
++            sort_keys=True,
++            separators=(",", ":"),
++            allow_nan=False,
++        ).encode()
++    )
++    if enabled and accepted is not None and accepted[0] == _coord(fit["parameters"]):
++        _endpoint.set((ref(problem), accepted[0], _binding(problem), accepted[1]))
++        stats["resolved_endpoints"] += 1
++    return fit
+--- phase-release/tools/pipeline_eval/variants/v5_direct_cavity.py
++++ endpoint/tools/pipeline_eval/variants/v5_direct_cavity.py
+@@ -190,9 +190,13 @@
+         )
+     )
+     projector = orbit_projector.Projector(library)
++    from .compact_endpoint import receipt, reset
++
++    reset(True)
+     with numerical_bindings(projector):
+         result = infer(prepared, region, bound, {"native_preparation": perf_counter() - start})
+     result["metrics"]["compact_projections"] = projector.calls
++    result["metrics"]["endpoint_reuse"] = receipt()
+     return result
+ 
+ 

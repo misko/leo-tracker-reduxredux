@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "fractional_adjoint",
+      "method": "fractional_adjoint",
+      "scope": "roof",
+      "title": "Fractional adjoint detector with the v5 position fit",
+      "caption": "Eight valid raw visits per recording use the fractional adjoint detector. The remaining detections come from the capture-era archive. The paired position control uses the complete capture-era factors.",
+      "cases": "smoke-two",
+      "seal": "prediction-lock.json",
+      "provenance": ["qualification.json", "positions.jsonl.gz", "control-positions.jsonl.gz", "DS26-0036-development.json.gz", "DS26-0036-early.json.gz", "DS26-0036-late.json.gz", "DS29-0082-development.json.gz", "DS29-0082-early.json.gz", "DS29-0082-late.json.gz"],
+      "series": [
+        {
+          "key": "one",
+          "label": "Fractional adjoint · sampled IQ",
+          "file": "figure-positions.jsonl.gz",
+          "value": "fractional_adjoint",
+          "native_field": "source_archive_sha256"
+        },
+        {
+          "key": "stock",
+          "label": "Capture-era archive control",
+          "file": "figure-control-positions.jsonl.gz",
+          "value": "fractional_adjoint_capture_control",
+          "native_field": "source_archive_sha256",
+          "match": ["source_archive_sha256", "catalog_sha256"]
+        }
+      ]
+    }
+  ]
+}

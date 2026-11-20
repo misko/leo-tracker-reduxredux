@@ -1,0 +1,86 @@
+{
+  "api": [
+    "leo_native_hotpath_analyze_v1",
+    "leo_native_hotpath_create_v1",
+    "leo_native_hotpath_destroy_v1",
+    "leo_native_hotpath_result_size_v1",
+    "leo_native_hotpath_trace_size_v1"
+  ],
+  "archive_sha256": "4bd8265039f3c116e1c891f67a984e9adbf38af33cbf866b16c68ef66da6498a",
+  "candidate_receipt_sha256": "a1567ccb86154698f2ce7f12515fb4bc8c4cce01df7f26c3ff79d24b08eb15bd",
+  "commands": {
+    "hotpath": [
+      "/usr/bin/gcc",
+      "-std=c11",
+      "-shared",
+      "-fPIC",
+      "-O3",
+      "-ffp-contract=off",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/tmp/leo-pipeline-native.sfewXn/fftw/include",
+      "-I",
+      "/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/source",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath.c",
+      "/tmp/leo-pipeline-native.sfewXn/fftw/lib/libfftw3f.a",
+      "/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/hotpath/libleo-adaptive-detector.so.1",
+      "-lm",
+      "-Wl,-rpath,$ORIGIN",
+      "-Wl,--version-script=/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/hotpath.exports",
+      "-o",
+      "/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/hotpath/libleo-native-hotpath.so"
+    ],
+    "reference": [
+      "/usr/bin/gcc",
+      "-std=c11",
+      "-shared",
+      "-fPIC",
+      "-O3",
+      "-ffp-contract=off",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/tmp/leo-pipeline-native.sfewXn/fftw/include",
+      "-I",
+      "/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/source",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants",
+      "-DLEO_HOTPATH_REFERENCE",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath.c",
+      "/tmp/leo-pipeline-native.sfewXn/fftw/lib/libfftw3f.a",
+      "/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/reference/libleo-adaptive-detector.so.1",
+      "-lm",
+      "-Wl,-rpath,$ORIGIN",
+      "-Wl,--version-script=/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/hotpath.exports",
+      "-o",
+      "/home/mouse9911/.cache/leo-native-hotpath-20261119/build-v1/reference/libleo-native-hotpath.so"
+    ]
+  },
+  "compiler_sha256": "b5f1b773a7c733738352000c92a077dc5852a1a2fc6d836b1e411be1e9ec5f88",
+  "control_sha256": "232dbf154dff310254a32bc4564e6a8c9e2cd1113e408e81770f217e828a0d0f",
+  "libraries": {
+    "hotpath": {
+      "libleo-adaptive-detector.so.1": "dc46db7aa03e83ed1abf9bac7059318a9bdf7e1e792f5f8f4740c00130ef5906",
+      "libleo-native-hotpath.so": "f14a27cd269d80f4cf812d22576bd46b3882921f4bc9bdf2a6dd53bd7a3d7988"
+    },
+    "reference": {
+      "libleo-adaptive-detector.so.1": "3d1d1451b151b36dbcd6750326396bbfe6a1b0c5bd5b79e7555676ad65ba2342",
+      "libleo-native-hotpath.so": "2a4747b2a961f81739b8e5811ffa231741308f284ecacc53af18150889a20449"
+    }
+  },
+  "original_stock_sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66",
+  "original_union_sha256": "3d1d1451b151b36dbcd6750326396bbfe6a1b0c5bd5b79e7555676ad65ba2342",
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/native_hotpath_build.py": "4478c8de8f9347d879d4ac9c43f29eaf39932c2d24b593a9cfe148aef195caa0",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/differential_runtime_fft.c": "bd23c1665137d0184f4e107981255e7e358f091c2816305125e9df36595d721e",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath.c": "c20d9ec41920faee9101ef9230f1dee38a41bcb7e79d1710ec411bcac603cc62",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath.h": "24eb443d3fa7575f1ccec9a8681c748bceaf34586b41cfdc8ff04ef003cc5842",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath_fold.h": "91daf758664aeedc9f29baa3625abd6dabed67770eb49ad3aaa022069e5384c0",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/native_hotpath_rank.h": "1dc52446f2a8e6e408a647503c75aacc20fabbff520cad91479d7cf580cf1bc3"
+  }
+}

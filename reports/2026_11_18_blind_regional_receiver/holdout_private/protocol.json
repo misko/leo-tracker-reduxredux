@@ -1,0 +1,18 @@
+{
+  "study": "Independent synthetic geographic holdout",
+  "region_seeds_latlon": [[8.1, -1.8], [-26.1, 28.1], [67.8, 20.2], [34.25, 108.8], [-23.4, -46.7], [-29.2, 144.4], [39.55, -105.1], [-0.28, -78.48]],
+  "sites_per_group": 5,
+  "archive_days": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  "archive_month": "2026/11",
+  "archive_tle": "/mnt/qnap01/mouse9911/tle",
+  "archive_native": "/srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs",
+  "archive_graphs": "/srv/bulk/leo/research/algo07v3-20261104/tracks001/candidate",
+  "independent_visit_schedule_cases": ["DS26-0002", "DS26-0058", "DS26-0110", "DS26-0158", "DS26-0181", "DS26-0223", "DS26-0263", "DS26-0281"],
+  "capture": "Three to four distinct archived Space-Track Starlink snapshots per day. Draw a new capture after each snapshot and before the following scheduled archive fetch. The capture is synthetic and does not retain the original UTC of any RF visit template. Publish the full byte-identical TLE captured before the start. Truth propagation uses the first materially updated archive catalog 14 to 48 hours after the capture ends. At least 75% of its common entries must have a strictly post-capture epoch, newer than the causal epoch, and a different line 2. Only those updated orbits can generate signals.",
+  "generation_archive_lookahead_hours": [14, 48],
+  "generation_minimum_updated_common_fraction": 0.75,
+  "geometry": "Five different positions per group. Half the pairs use geographically compact offers with nearby competitors. Their alternative offer comes from an equally drawn four-center layout offset on the opposite side of the same nominal center. The other pairs use geographically dispersed offers, with one replacing the site group and all centers jittered independently in each offer. Truth is placed at an isotropic offset of 2.25 to 11.5 km from its one containing center. The truth must fall outside every other 25 km wide local WGS84 square. The manifest and each offer use independent random shuffles and query and candidate identifiers are independent of truth and condition.",
+  "observations": "Evaluate exact SGP4 states at sampled archived visit offsets with direct rotating-Earth range rates and a WGS84 observer. Model elevation thresholds, terrain masks, receiver heights, temporal sampling gaps, receiver/band bias and drift, RF-dependent calibration, satellite timing and frequency offsets, smooth and white noise, and contaminated tracks. Keep planned observations even when few tracks pass visibility. Generate matched offers by reusing exactly the same public observation and causal catalog bytes.",
+  "separation": "Only the manifest, individual query, observation content hash, and causal TLE content hash directories are solver inputs. Process queries independently. The generator reads no inference or scoring files. Publish a byte commitment before exposing the public directory. Keep this protocol, seed, provenance, and truth private until the explicit unseal.",
+  "capture_duration_s": 300
+}

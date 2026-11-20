@@ -1,0 +1,125 @@
+{
+  "charts": [
+    {
+      "caption": "Same archived native recordings with four supplied tiles per recording.",
+      "cases": [
+        "9a870ec040146d84f7d9",
+        "06928a65f85eb460fe5d",
+        "b70f4df4f10e4476327a",
+        "efdc4450752f12e49e60",
+        "6b5589eb6edf632c0ee5",
+        "15b30a4eff19c1ecd3af",
+        "e6e090e96601c2be7664",
+        "6e065574e99c5e5e3820",
+        "a3f9e0ebaa863d637547",
+        "d105b1a7209fd8f8d289",
+        "ce54a19053328140295b",
+        "93ee25c019f934d4c2df",
+        "72aaa1db3143b2f3dc96",
+        "2d257491c63945c990fd",
+        "cc3d0e49ec795d0bbd6f",
+        "94c927ce15a4dc2b5de1",
+        "27b825e808c85de3d542",
+        "0d7efc40b79366263c55",
+        "beac7b24e7d19a3a4a8a",
+        "2ee7797ba3a1f4f0061e",
+        "fdf5630947cf2d6e882b",
+        "c578e669b0a6a89cded6",
+        "99bcc1db7188d46ce5dd",
+        "59f5a9188d870aece89e"
+      ],
+      "condition_labels": {
+        "near-inside": "1\u20132 km inside",
+        "near-outside": "1\u20132 km outside",
+        "original": "Original",
+        "six-outside": "6 km outside"
+      },
+      "id": "boundary-roof-reserve-original-gates",
+      "method": "native_joint_clock_model",
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "original-gates-figure-lock.json",
+      "series": [
+        {
+          "file": "native_joint_clock_model.jsonl.gz",
+          "key": "candidate",
+          "label": "Native smooth oscillator",
+          "value": "native_joint_clock_model"
+        },
+        {
+          "file": "native_train_update.jsonl.gz",
+          "key": "stock",
+          "label": "Native fixed-training update",
+          "match": [
+            "input_sha256",
+            "tile",
+            "observation_sha256"
+          ],
+          "value": "native_train_update"
+        }
+      ],
+      "title": "Near-edge roof offers"
+    },
+    {
+      "caption": "Same archived native recordings with four supplied tiles per recording.",
+      "cases": [
+        "9a870ec040146d84f7d9",
+        "06928a65f85eb460fe5d",
+        "b70f4df4f10e4476327a",
+        "efdc4450752f12e49e60",
+        "6b5589eb6edf632c0ee5",
+        "15b30a4eff19c1ecd3af",
+        "e6e090e96601c2be7664",
+        "6e065574e99c5e5e3820",
+        "a3f9e0ebaa863d637547",
+        "d105b1a7209fd8f8d289",
+        "ce54a19053328140295b",
+        "93ee25c019f934d4c2df",
+        "72aaa1db3143b2f3dc96",
+        "2d257491c63945c990fd",
+        "cc3d0e49ec795d0bbd6f",
+        "94c927ce15a4dc2b5de1",
+        "27b825e808c85de3d542",
+        "0d7efc40b79366263c55",
+        "beac7b24e7d19a3a4a8a",
+        "2ee7797ba3a1f4f0061e",
+        "fdf5630947cf2d6e882b",
+        "c578e669b0a6a89cded6",
+        "99bcc1db7188d46ce5dd",
+        "59f5a9188d870aece89e"
+      ],
+      "condition_labels": {
+        "near-inside": "1\u20132 km inside",
+        "near-outside": "1\u20132 km outside",
+        "original": "Original",
+        "six-outside": "6 km outside"
+      },
+      "id": "boundary-roof-reserve-containment",
+      "method": "native_joint_clock_model",
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "containment-figure-lock.json",
+      "series": [
+        {
+          "file": "native_joint_clock_model-containment.jsonl.gz",
+          "key": "candidate",
+          "label": "Native smooth oscillator",
+          "value": "native_joint_clock_model"
+        },
+        {
+          "file": "native_train_update-containment.jsonl.gz",
+          "key": "stock",
+          "label": "Native fixed-training update",
+          "match": [
+            "input_sha256",
+            "tile",
+            "observation_sha256"
+          ],
+          "value": "native_train_update"
+        }
+      ],
+      "title": "Roof offers with position-radius containment"
+    }
+  ],
+  "version": 1
+}

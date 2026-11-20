@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "input-factor-comparison",
+      "method": "input_factor_comparison",
+      "scope": "roof",
+      "title": "Capture-era and ordinary factors in five-refresh v5",
+      "caption": "All three comparisons use the same recording session, offered region, causal TLE history and tracking settings. The original no-repair result and capture-era secant share their factors. Ordinary secant uses the complete ordinary detector replay.",
+      "cases": "sealed",
+      "seal": "prediction-lock.json",
+      "provenance": ["comparison.json", "scores.csv"],
+      "series": [
+        {"key": "one", "label": "Five-refresh compact v5, ordinary factors", "file": "positions.jsonl.gz", "value": "whole_fractional", "native_authority": "ordinary", "native_field": "origin_native_sha256"},
+        {"key": "stock", "label": "Five-refresh compact v5, capture-era factors", "file": "positions.jsonl.gz", "value": "v5_secant_fit", "match": ["tile", "catalog_sha256"]}
+      ]
+    }
+  ]
+}

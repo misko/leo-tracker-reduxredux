@@ -1,0 +1,98 @@
+{
+  "charts": [
+    {
+      "caption": "Stored original GLRT and causal orbit inputs are matched across both methods.",
+      "cases": "sealed",
+      "id": "track-preparation-roof",
+      "method": "track_preparation_shared",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parity.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "roof-figure-lock.json",
+      "series": [
+        {
+          "file": "roof-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed preparation",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "track_preparation_original"
+        },
+        {
+          "file": "roof-positions.jsonl.gz",
+          "key": "one",
+          "label": "Shared preparation",
+          "value": "track_preparation_shared"
+        }
+      ],
+      "title": "Exact track preparation on the original paired position inputs"
+    },
+    {
+      "caption": "Stored original GLRT and causal orbit inputs are matched across both methods.",
+      "cases": "sealed",
+      "condition_labels": {
+        "near-outside": "Near omission"
+      },
+      "id": "track-preparation-shifted",
+      "method": "track_preparation_shared",
+      "provenance": [
+        "source-lock.json",
+        "prediction-lock.json",
+        "parity.json",
+        "scores.csv",
+        "completion-check-lock.json",
+        "completion-check.json"
+      ],
+      "queries": "shifted-queries.json",
+      "scope": "transfer",
+      "seal": "shifted-figure-lock.json",
+      "series": [
+        {
+          "file": "shifted-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Installed preparation",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "track_preparation_original"
+        },
+        {
+          "file": "shifted-positions.jsonl.gz",
+          "forced_label": "Withheld diagnostic",
+          "key": "candidate",
+          "label": "Shared preparation",
+          "value": "track_preparation_shared"
+        },
+        {
+          "file": "shifted-positions.jsonl.gz",
+          "forced_label": "Completion check diagnostic",
+          "key": "four",
+          "label": "Installed completion check",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "input_sha256",
+            "tile",
+            "original_request_sha256"
+          ],
+          "value": "track_preparation_installed_completion_check"
+        }
+      ],
+      "title": "Exact track preparation on the original paired position inputs"
+    }
+  ],
+  "version": 2
+}

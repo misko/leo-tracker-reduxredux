@@ -1,0 +1,4691 @@
+{
+  "method": "Streaming alias-aware alpha-beta tracks to compact causal-TLE position solver",
+  "timing_scope": "Full native candidate archive open, decode, deduplicate, link, freeze, causal orbit bank, shortlist, bias/grid and both c fits. Host wall and cpu. Prefix and graph controls are separate. IQ and detector execution excluded.",
+  "cases": [
+    {
+      "case": "DS26-0036",
+      "wall_s": 0.4500376209616661,
+      "cpu_s": 0.4499075320000001,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            6.602167921226471,
+            -8.702754237676281
+          ],
+          "tracks": 61,
+          "satellites": 26,
+          "rms_hz": 414.48930344253074,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.82759680866958,
+            -122.46983329850214
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            6.696873725116282,
+            -8.838170405383766
+          ],
+          "tracks": 61,
+          "satellites": 26,
+          "rms_hz": 376.20061383745906,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.82637684319474,
+            -122.4687550582974
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.07496875803917646,
+          "cpu_s": 0.07496914799999999
+        },
+        "bias_and_grid": {
+          "wall_s": 0.01133208442479372,
+          "cpu_s": 0.011332923999999966
+        },
+        "c0": {
+          "wall_s": 0.0024863993749022484,
+          "cpu_s": 0.002487597000000008
+        },
+        "fitted_c": {
+          "wall_s": 0.0019660666584968567,
+          "cpu_s": 0.0019668400000001363
+        },
+        "stream_filter_link": {
+          "wall_s": 0.03710263594985008,
+          "cpu_s": 0.03681559700000492
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.14051217306405306,
+          "cpu_s": 0.14071609499999505
+        },
+        "freeze_segments": {
+          "wall_s": 0.0002404395490884781,
+          "cpu_s": 0.00024065200000000786
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.18064283672720194,
+          "cpu_s": 0.180603489
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0006278054788708687,
+          "cpu_s": 0.0006259760000000281
+        }
+      },
+      "descriptor_tracks": 61,
+      "matched_tracks": 61,
+      "descriptor_numeric_bytes": 411872,
+      "selected_satellites": [
+        65058,
+        57679,
+        57665,
+        58801,
+        58594,
+        61631,
+        60136,
+        58513,
+        59166,
+        58809,
+        63419,
+        60199,
+        62235,
+        61631,
+        65058,
+        57665,
+        58513,
+        62779,
+        62755,
+        58801,
+        62779,
+        58594,
+        58801,
+        58594,
+        58809,
+        59166,
+        67553,
+        63975,
+        57665,
+        61631,
+        57679,
+        60136,
+        57734,
+        56836,
+        58801,
+        63419,
+        56842,
+        47770,
+        56836,
+        68266,
+        58594,
+        58594,
+        62779,
+        62755,
+        58801,
+        58801,
+        58809,
+        57639,
+        63419,
+        62755,
+        56842,
+        62235,
+        56101,
+        62779,
+        61631,
+        65058,
+        56836,
+        60135,
+        67850,
+        62779,
+        67850
+      ],
+      "common_prefit_grid_score": 47.47591719648642,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        2
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13530,
+        "probes_with_candidates": 3395,
+        "distinct_candidates": 4472,
+        "births": 463,
+        "peak_active_per_lane": 7,
+        "peak_active_total": 28,
+        "continuation_tests": 8046,
+        "continuations_kept": 3819,
+        "confirmations": 129,
+        "curved_tracks_retired": 57,
+        "ambiguous_candidates_skipped": 5,
+        "eligible_segments_before_cap": 61,
+        "solver_segments": 61,
+        "first_track_confirmed_midpoint_air_s": 2.4910740999999996,
+        "solver_support_points": 2925,
+        "solver_observations_sha256": "578a1159734b80daabfb1c12efa98d1058c6b07146e586e84111710ed29069ec",
+        "latest_probe_end_air_s": 299.9955791
+      },
+      "bank": {
+        "snapshot": "1792904651911878285-15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86.tle",
+        "eligible": 11086,
+        "regional": 890,
+        "knots": 64,
+        "float32_bytes": 1139200
+      },
+      "bank_numeric_bytes": 2286032,
+      "air_deadline_s": 299.9955791,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0070",
+      "wall_s": 0.40568867791444063,
+      "cpu_s": 0.40565781199999984,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            12.5,
+            1.4123397160192812
+          ],
+          "tracks": 40,
+          "satellites": 15,
+          "rms_hz": 350.9748181333617,
+          "rms_kind": "absolute",
+          "on_boundary": true,
+          "latlon": [
+            37.918723781225395,
+            -122.40268556935634
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            12.5,
+            1.6209472209393299
+          ],
+          "tracks": 40,
+          "satellites": 15,
+          "rms_hz": 346.17513882316234,
+          "rms_kind": "absolute",
+          "on_boundary": true,
+          "latlon": [
+            37.92060312811657,
+            -122.40268556935634
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.06480038445442915,
+          "cpu_s": 0.06477872500000004
+        },
+        "bias_and_grid": {
+          "wall_s": 0.011081686243414879,
+          "cpu_s": 0.011083152999999957
+        },
+        "c0": {
+          "wall_s": 0.0017457669600844383,
+          "cpu_s": 0.0017467270000000035
+        },
+        "fitted_c": {
+          "wall_s": 0.0015335623174905777,
+          "cpu_s": 0.0015341630000000883
+        },
+        "stream_filter_link": {
+          "wall_s": 0.035626000724732876,
+          "cpu_s": 0.03544677499999471
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.13061690516769886,
+          "cpu_s": 0.13079270100000562
+        },
+        "freeze_segments": {
+          "wall_s": 0.0002232985571026802,
+          "cpu_s": 0.0002234780000001102
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.1595181357115507,
+          "cpu_s": 0.1595180319999998
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0004159752279520035,
+          "cpu_s": 0.00041580899999971166
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 40,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        63321,
+        63321,
+        63326,
+        58041,
+        63326,
+        58041,
+        63326,
+        63679,
+        67054,
+        67054,
+        58065,
+        58065,
+        62317,
+        59263,
+        59029,
+        62317,
+        63321,
+        63326,
+        58062,
+        67054,
+        58065,
+        67047,
+        58041,
+        100041,
+        59263,
+        63326,
+        58062,
+        62317,
+        67889,
+        59932,
+        63679,
+        63326,
+        63321,
+        62317,
+        59932,
+        58041,
+        63320,
+        63326,
+        58041,
+        58062
+      ],
+      "common_prefit_grid_score": 26.019703001233975,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13540,
+        "probes_with_candidates": 4298,
+        "distinct_candidates": 5943,
+        "peak_active_per_lane": 7,
+        "peak_active_total": 37,
+        "births": 484,
+        "continuation_tests": 12205,
+        "continuations_kept": 5323,
+        "confirmations": 170,
+        "curved_tracks_retired": 74,
+        "curved_archive_discards": 10,
+        "eligible_segments_before_cap": 71,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 3.9082432,
+        "solver_support_points": 3473,
+        "solver_observations_sha256": "3ddf616eebacd551fe55ff755f6f7fe8ef1924c7d38cb8aa0509097d27c6b065",
+        "latest_probe_end_air_s": 300.00448259999996
+      },
+      "bank": {
+        "snapshot": "1792958654186240136-6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20.tle",
+        "eligible": 9803,
+        "regional": 834,
+        "knots": 64,
+        "float32_bytes": 1067520
+      },
+      "bank_numeric_bytes": 2142224,
+      "air_deadline_s": 300.0044826,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0112",
+      "wall_s": 0.5280281286686659,
+      "cpu_s": 0.5248122869999996,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            9.014700316406568,
+            -9.358419931624514
+          ],
+          "tracks": 49,
+          "satellites": 27,
+          "rms_hz": 192.8640910309547,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.821689910525905,
+            -122.44236624456379
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            8.9861811139064,
+            -9.339844741420633
+          ],
+          "tracks": 49,
+          "satellites": 27,
+          "rms_hz": 190.34155282697694,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.82185725458179,
+            -122.44269094008908
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.10778597183525562,
+          "cpu_s": 0.1076416469999999
+        },
+        "bias_and_grid": {
+          "wall_s": 0.010882117785513401,
+          "cpu_s": 0.010882624000000618
+        },
+        "c0": {
+          "wall_s": 0.0019688736647367477,
+          "cpu_s": 0.00197101799999988
+        },
+        "fitted_c": {
+          "wall_s": 0.0017438428476452827,
+          "cpu_s": 0.001744433999999906
+        },
+        "stream_filter_link": {
+          "wall_s": 0.041134489700198174,
+          "cpu_s": 0.040959773999953875
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.13590361084789038,
+          "cpu_s": 0.1330341240000461
+        },
+        "freeze_segments": {
+          "wall_s": 0.00036570895463228226,
+          "cpu_s": 0.0003659560000000006
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.2275537271052599,
+          "cpu_s": 0.22753659400000004
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0005479464307427406,
+          "cpu_s": 0.0005474359999997347
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 49,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        65434,
+        65434,
+        58379,
+        59087,
+        69490,
+        66007,
+        66021,
+        67430,
+        58390,
+        64846,
+        66021,
+        68142,
+        66007,
+        58872,
+        66021,
+        66940,
+        53553,
+        66007,
+        52090,
+        66007,
+        66101,
+        69217,
+        57408,
+        67931,
+        67914,
+        67914,
+        66940,
+        67931,
+        68142,
+        67931,
+        65434,
+        66021,
+        100393,
+        63082,
+        63082,
+        64846,
+        63082,
+        100393,
+        66940,
+        68555,
+        68142,
+        58853,
+        59089,
+        59087,
+        66101,
+        59087,
+        100440,
+        66946,
+        67516
+      ],
+      "common_prefit_grid_score": 34.3133922931857,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13474,
+        "probes_with_candidates": 5092,
+        "distinct_candidates": 7764,
+        "births": 729,
+        "peak_active_per_lane": 7,
+        "peak_active_total": 51,
+        "continuation_tests": 18585,
+        "continuations_kept": 6733,
+        "confirmations": 225,
+        "curved_tracks_retired": 94,
+        "ambiguous_candidates_skipped": 7,
+        "curved_archive_discards": 30,
+        "eligible_segments_before_cap": 77,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 3.0220358999999997,
+        "solver_support_points": 3771,
+        "solver_observations_sha256": "12fd55d2819fd944450b60db1a1ba86b7c3241f77e71dd1e8704d5b55352ffed",
+        "latest_probe_end_air_s": 300.0049451
+      },
+      "bank": {
+        "snapshot": "1793023462314268247-aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86.tle",
+        "eligible": 11109,
+        "regional": 1110,
+        "knots": 64,
+        "float32_bytes": 1420800
+      },
+      "bank_numeric_bytes": 2850992,
+      "air_deadline_s": 300.0049451,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0122",
+      "wall_s": 0.4187153782695532,
+      "cpu_s": 0.418200562,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            7.082756833810711,
+            -9.015696571473233
+          ],
+          "tracks": 56,
+          "satellites": 21,
+          "rms_hz": 268.9356697505001,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.8247775083651,
+            -122.4643617195047
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            7.0902825552459285,
+            -9.009987914474042
+          ],
+          "tracks": 56,
+          "satellites": 21,
+          "rms_hz": 268.8882082303261,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.82482893770744,
+            -122.4642760380038
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.06647246610373259,
+          "cpu_s": 0.0664446320000005
+        },
+        "bias_and_grid": {
+          "wall_s": 0.010194630362093449,
+          "cpu_s": 0.010195390999999887
+        },
+        "c0": {
+          "wall_s": 0.0015915650874376297,
+          "cpu_s": 0.001593312999999874
+        },
+        "fitted_c": {
+          "wall_s": 0.0013109445571899414,
+          "cpu_s": 0.0013117180000001838
+        },
+        "stream_filter_link": {
+          "wall_s": 0.03524842485785484,
+          "cpu_s": 0.03507024200002107
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.1305353557690978,
+          "cpu_s": 0.13026249599997897
+        },
+        "freeze_segments": {
+          "wall_s": 0.0002762116491794586,
+          "cpu_s": 0.0002763149999998049
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.17235760670155287,
+          "cpu_s": 0.17232982500000027
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0005591604858636856,
+          "cpu_s": 0.000558617000000261
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 56,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        63149,
+        67179,
+        67180,
+        63149,
+        67180,
+        67180,
+        64064,
+        66980,
+        100480,
+        63149,
+        63149,
+        68096,
+        58059,
+        68096,
+        58059,
+        64064,
+        67519,
+        68075,
+        67180,
+        63584,
+        67180,
+        58059,
+        68075,
+        58059,
+        57252,
+        67180,
+        64064,
+        59962,
+        100480,
+        67180,
+        68096,
+        63149,
+        66984,
+        67180,
+        59076,
+        100480,
+        66984,
+        67180,
+        100483,
+        63386,
+        67519,
+        66984,
+        58048,
+        66980,
+        68096,
+        59028,
+        100483,
+        68075,
+        63124,
+        55365,
+        63386,
+        63584,
+        66984,
+        66984,
+        59962,
+        59962
+      ],
+      "common_prefit_grid_score": 41.57100008094511,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13542,
+        "probes_with_candidates": 4623,
+        "distinct_candidates": 6095,
+        "births": 514,
+        "peak_active_per_lane": 6,
+        "peak_active_total": 35,
+        "continuation_tests": 11490,
+        "continuations_kept": 5447,
+        "confirmations": 175,
+        "curved_tracks_retired": 76,
+        "curved_archive_discards": 12,
+        "eligible_segments_before_cap": 74,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 3.1115499,
+        "solver_support_points": 3731,
+        "solver_observations_sha256": "1b671f0b49c599b6e55136ea8d9bc9f0a9d58f0a67904bb2119d436db80acb0b",
+        "latest_probe_end_air_s": 300.0330464
+      },
+      "bank": {
+        "snapshot": "1793041331314091153-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle",
+        "eligible": 11091,
+        "regional": 872,
+        "knots": 64,
+        "float32_bytes": 1116160
+      },
+      "bank_numeric_bytes": 2239808,
+      "air_deadline_s": 300.0330464,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0203",
+      "wall_s": 0.4108180273324251,
+      "cpu_s": 0.41080943800000025,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            6.106531357973075,
+            -8.83367435412398
+          ],
+          "tracks": 54,
+          "satellites": 18,
+          "rms_hz": 213.95005517147453,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.826417348161044,
+            -122.47547619732659
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            6.163328090103121,
+            -8.77619839432265
+          ],
+          "tracks": 54,
+          "satellites": 18,
+          "rms_hz": 195.14733681104403,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.82693514960069,
+            -122.47482955775895
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.07407476380467415,
+          "cpu_s": 0.07407476000000024
+        },
+        "bias_and_grid": {
+          "wall_s": 0.010275694541633129,
+          "cpu_s": 0.010276387999999415
+        },
+        "c0": {
+          "wall_s": 0.0013823965564370155,
+          "cpu_s": 0.0013833189999994389
+        },
+        "fitted_c": {
+          "wall_s": 0.0011695241555571556,
+          "cpu_s": 0.0011699700000002977
+        },
+        "stream_filter_link": {
+          "wall_s": 0.03292538691312075,
+          "cpu_s": 0.032741348999964615
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.12815144006162882,
+          "cpu_s": 0.12833211200003536
+        },
+        "freeze_segments": {
+          "wall_s": 0.0002556564286351204,
+          "cpu_s": 0.0002558020000007488
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.16204014513641596,
+          "cpu_s": 0.1620394919999999
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.00044126249849796295,
+          "cpu_s": 0.0004415010000000663
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 54,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        57780,
+        57780,
+        57780,
+        57780,
+        59342,
+        58228,
+        59342,
+        57780,
+        59342,
+        63466,
+        63377,
+        59342,
+        63466,
+        63370,
+        63467,
+        59342,
+        59360,
+        58978,
+        67935,
+        68062,
+        63467,
+        68062,
+        59360,
+        63377,
+        67953,
+        60592,
+        67953,
+        59360,
+        68062,
+        59342,
+        56383,
+        58228,
+        59342,
+        59342,
+        58228,
+        58875,
+        69205,
+        68398,
+        59741,
+        67953,
+        63467,
+        63466,
+        57780,
+        68062,
+        59741,
+        58228,
+        68062,
+        60592,
+        63370,
+        58228,
+        58978,
+        59360,
+        59342,
+        69205
+      ],
+      "common_prefit_grid_score": 43.62251878428464,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13474,
+        "probes_with_candidates": 4171,
+        "distinct_candidates": 5532,
+        "peak_active_per_lane": 7,
+        "peak_active_total": 33,
+        "births": 497,
+        "continuation_tests": 10244,
+        "continuations_kept": 4887,
+        "confirmations": 149,
+        "curved_tracks_retired": 67,
+        "ambiguous_candidates_skipped": 2,
+        "curved_archive_discards": 3,
+        "eligible_segments_before_cap": 75,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 3.5954547,
+        "solver_support_points": 3571,
+        "solver_observations_sha256": "721d9e5137d2b3c5d00d287676ccacb9e773015ad1e405e8117a64a425bfcb20",
+        "latest_probe_end_air_s": 299.9767348
+      },
+      "bank": {
+        "snapshot": "1793185228910602426-4c641810f9578d212b2fce8d2a87c144aac5517f989612ab6d5f5bb83a645763.tle",
+        "eligible": 11149,
+        "regional": 882,
+        "knots": 64,
+        "float32_bytes": 1128960
+      },
+      "bank_numeric_bytes": 2265488,
+      "air_deadline_s": 299.9767348,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0209",
+      "wall_s": 0.42999014537781477,
+      "cpu_s": 0.4299568090000001,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            7.231488681605066,
+            -9.237679199689818
+          ],
+          "tracks": 53,
+          "satellites": 24,
+          "rms_hz": 246.12741886939563,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.82277766486766,
+            -122.4626683844457
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            7.246574973535896,
+            -9.179875640584145
+          ],
+          "tracks": 53,
+          "satellites": 24,
+          "rms_hz": 209.30071072890422,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.823298417652396,
+            -122.46249662468198
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.08462357800453901,
+          "cpu_s": 0.08461324399999981
+        },
+        "bias_and_grid": {
+          "wall_s": 0.010115827433764935,
+          "cpu_s": 0.010116596999999672
+        },
+        "c0": {
+          "wall_s": 0.001859232783317566,
+          "cpu_s": 0.0018609579999999681
+        },
+        "fitted_c": {
+          "wall_s": 0.0016451450064778328,
+          "cpu_s": 0.0016459410000013719
+        },
+        "stream_filter_link": {
+          "wall_s": 0.034232283011078835,
+          "cpu_s": 0.03404406699991114
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.12826013285666704,
+          "cpu_s": 0.12843391600008935
+        },
+        "freeze_segments": {
+          "wall_s": 0.0002421066164970398,
+          "cpu_s": 0.00024241700000082744
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.16835789941251278,
+          "cpu_s": 0.16835716499999975
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0005179606378078461,
+          "cpu_s": 0.0005180320000004457
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 53,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        65684,
+        67359,
+        67359,
+        66471,
+        55347,
+        56357,
+        65824,
+        65677,
+        65677,
+        58515,
+        67812,
+        65677,
+        66827,
+        65684,
+        57645,
+        66827,
+        65824,
+        59522,
+        66471,
+        64314,
+        66471,
+        64314,
+        56357,
+        58515,
+        66827,
+        67359,
+        65824,
+        56357,
+        67414,
+        57827,
+        66471,
+        67414,
+        61677,
+        58515,
+        55347,
+        66827,
+        56541,
+        64314,
+        57407,
+        66482,
+        55347,
+        64253,
+        59522,
+        69254,
+        66471,
+        65684,
+        67906,
+        64314,
+        65824,
+        69253,
+        62499,
+        64253,
+        55347
+      ],
+      "common_prefit_grid_score": 40.7995341841301,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13494,
+        "probes_with_candidates": 4385,
+        "distinct_candidates": 6001,
+        "births": 580,
+        "peak_active_per_lane": 6,
+        "peak_active_total": 42,
+        "continuation_tests": 11992,
+        "continuations_kept": 5181,
+        "confirmations": 185,
+        "curved_tracks_retired": 71,
+        "ambiguous_candidates_skipped": 11,
+        "curved_archive_discards": 7,
+        "eligible_segments_before_cap": 74,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 2.8027498,
+        "solver_support_points": 3172,
+        "solver_observations_sha256": "d6971811d4e75ff572392f44d492b75600ee546bcaf52780f76d697c9716dc47",
+        "latest_probe_end_air_s": 299.99906269999997
+      },
+      "bank": {
+        "snapshot": "1793192693669869138-5ba18ecc0f72b38f1a32cdb62053e1321fb3ac8a3465617d4464f77f203b9f46.tle",
+        "eligible": 11141,
+        "regional": 935,
+        "knots": 64,
+        "float32_bytes": 1196800
+      },
+      "bank_numeric_bytes": 2401592,
+      "air_deadline_s": 299.9990627,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0277",
+      "wall_s": 0.43997811432927847,
+      "cpu_s": 0.4399687840000013,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            9.07246804783623,
+            -5.6833500848307095
+          ],
+          "tracks": 63,
+          "satellites": 22,
+          "rms_hz": 171.33935942278723,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.85479864788441,
+            -122.44170855001914
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            9.091345225397006,
+            -5.714717996051313
+          ],
+          "tracks": 63,
+          "satellites": 22,
+          "rms_hz": 168.2324139925142,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.85451605408963,
+            -122.44149363043701
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.0677531249821186,
+          "cpu_s": 0.06775568299999968
+        },
+        "bias_and_grid": {
+          "wall_s": 0.010390589013695717,
+          "cpu_s": 0.010391624000000377
+        },
+        "c0": {
+          "wall_s": 0.001858837902545929,
+          "cpu_s": 0.001860373000001303
+        },
+        "fitted_c": {
+          "wall_s": 0.001853647641837597,
+          "cpu_s": 0.0018556279999994985
+        },
+        "stream_filter_link": {
+          "wall_s": 0.03448175918310881,
+          "cpu_s": 0.03429709000013226
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.12554972432553768,
+          "cpu_s": 0.1257310729998693
+        },
+        "freeze_segments": {
+          "wall_s": 0.00021981075406074524,
+          "cpu_s": 0.00021989000000033343
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.19709255080670118,
+          "cpu_s": 0.19709125800000038
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0005853008478879929,
+          "cpu_s": 0.0005850540000000848
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 63,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        66280,
+        59621,
+        59621,
+        67040,
+        66291,
+        64420,
+        66280,
+        66291,
+        66291,
+        64420,
+        64432,
+        60023,
+        64432,
+        67040,
+        66286,
+        67046,
+        59613,
+        64432,
+        66280,
+        64420,
+        59499,
+        66291,
+        66280,
+        59621,
+        66280,
+        62071,
+        62071,
+        66280,
+        56028,
+        67040,
+        58446,
+        100028,
+        64432,
+        64432,
+        67040,
+        59499,
+        56028,
+        59613,
+        66286,
+        62071,
+        59621,
+        63769,
+        59613,
+        59621,
+        66286,
+        59613,
+        63021,
+        64432,
+        59613,
+        59613,
+        59940,
+        56011,
+        56011,
+        67331,
+        67046,
+        58060,
+        60023,
+        63021,
+        59550,
+        67046,
+        59621,
+        64420,
+        66280
+      ],
+      "common_prefit_grid_score": 47.05203865414107,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        3,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13548,
+        "probes_with_candidates": 5179,
+        "distinct_candidates": 7148,
+        "peak_active_per_lane": 6,
+        "peak_active_total": 42,
+        "births": 624,
+        "continuation_tests": 14138,
+        "continuations_kept": 6160,
+        "confirmations": 179,
+        "curved_tracks_retired": 81,
+        "ambiguous_candidates_skipped": 2,
+        "curved_archive_discards": 17,
+        "eligible_segments_before_cap": 70,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 3.6459968,
+        "solver_support_points": 4072,
+        "solver_observations_sha256": "4d780cbaac20e6dfe66279a3dee18a35aa39fee63ca8813b13aa7a64830bd8b7",
+        "latest_probe_end_air_s": 300.0380727
+      },
+      "bank": {
+        "snapshot": "1793297047368813889-91362ddd01a725beeb7c70d3ee72eb8f34d3c58698d97a8637e1d351f928862f.tle",
+        "eligible": 10792,
+        "regional": 916,
+        "knots": 64,
+        "float32_bytes": 1172480
+      },
+      "bank_numeric_bytes": 2352800,
+      "air_deadline_s": 300.0380727,
+      "archive_at_end": true
+    },
+    {
+      "case": "DS26-0311",
+      "wall_s": 0.42254867870360613,
+      "cpu_s": 0.4224850110000009,
+      "arms": {
+        "c0": {
+          "status": "estimate",
+          "xy": [
+            5.110464706789771,
+            -5.8976581298007815
+          ],
+          "tracks": 63,
+          "satellites": 27,
+          "rms_hz": 162.60536693296123,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.85286794477657,
+            -122.48681656999429
+          ]
+        },
+        "fitted_c": {
+          "status": "estimate",
+          "xy": [
+            5.148262402969544,
+            -5.795306120931172
+          ],
+          "tracks": 63,
+          "satellites": 27,
+          "rms_hz": 125.76657554057253,
+          "rms_kind": "absolute",
+          "on_boundary": false,
+          "latlon": [
+            37.85379003494656,
+            -122.48638623738537
+          ]
+        }
+      },
+      "stages": {
+        "shortlist": {
+          "wall_s": 0.07667860575020313,
+          "cpu_s": 0.07667099899999918
+        },
+        "bias_and_grid": {
+          "wall_s": 0.010066099464893341,
+          "cpu_s": 0.01006782800000039
+        },
+        "c0": {
+          "wall_s": 0.0025207940489053726,
+          "cpu_s": 0.002522782999999862
+        },
+        "fitted_c": {
+          "wall_s": 0.0020464686676859856,
+          "cpu_s": 0.002047857999999181
+        },
+        "stream_filter_link": {
+          "wall_s": 0.03169721085578203,
+          "cpu_s": 0.031494210000005296
+        },
+        "archive_decode_and_candidate_dedup": {
+          "wall_s": 0.12453065998852253,
+          "cpu_s": 0.1247065519999957
+        },
+        "freeze_segments": {
+          "wall_s": 0.0002733049914240837,
+          "cpu_s": 0.0002735119999996982
+        },
+        "causal_orbit_bank": {
+          "wall_s": 0.17405713349580765,
+          "cpu_s": 0.1740386849999993
+        },
+        "archive_open_and_header": {
+          "wall_s": 0.0005143200978636742,
+          "cpu_s": 0.000514143000000189
+        }
+      },
+      "descriptor_tracks": 64,
+      "matched_tracks": 63,
+      "descriptor_numeric_bytes": 432128,
+      "selected_satellites": [
+        62602,
+        100490,
+        63183,
+        62778,
+        62778,
+        58240,
+        64712,
+        64712,
+        59880,
+        61931,
+        62778,
+        62602,
+        62778,
+        64712,
+        58240,
+        58246,
+        62778,
+        58237,
+        62496,
+        63183,
+        100490,
+        62778,
+        62602,
+        62778,
+        64712,
+        61215,
+        55914,
+        66322,
+        66327,
+        62602,
+        66439,
+        64712,
+        100491,
+        66439,
+        59880,
+        66327,
+        64712,
+        68265,
+        64712,
+        58246,
+        56527,
+        59842,
+        62778,
+        61216,
+        55670,
+        55914,
+        62778,
+        59790,
+        59880,
+        66327,
+        57534,
+        66435,
+        57534,
+        66322,
+        66528,
+        58240,
+        66435,
+        66327,
+        62496,
+        62602,
+        59842,
+        56301,
+        68265
+      ],
+      "common_prefit_grid_score": 52.83769600806461,
+      "selected_distinct_rf_by_group": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "c_varies_within_some_receiver_side": true,
+      "stream": {
+        "probes": 13450,
+        "probes_with_candidates": 4248,
+        "distinct_candidates": 5482,
+        "births": 480,
+        "peak_active_per_lane": 6,
+        "peak_active_total": 35,
+        "continuation_tests": 9903,
+        "continuations_kept": 4854,
+        "confirmations": 142,
+        "curved_tracks_retired": 60,
+        "ambiguous_candidates_skipped": 3,
+        "eligible_segments_before_cap": 67,
+        "solver_segments": 64,
+        "first_track_confirmed_midpoint_air_s": 3.0213419999999998,
+        "solver_support_points": 3478,
+        "solver_observations_sha256": "3fd821e6eb297d1bed0e1733fe0397bb14f9b467e3a6fec41d17c8c4ec527128",
+        "latest_probe_end_air_s": 300.0225953
+      },
+      "bank": {
+        "snapshot": "1793354675408927643-b9271cb0b50e60a49b547c429fe146947a6175bf547734f766a32d691467e2af.tle",
+        "eligible": 11131,
+        "regional": 953,
+        "knots": 64,
+        "float32_bytes": 1219840
+      },
+      "bank_numeric_bytes": 2447816,
+      "air_deadline_s": 300.0225953,
+      "archive_at_end": true
+    }
+  ],
+  "checks": {
+    "causal_prefix": {
+      "DS26-0036": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  7.984627398508581,
+                  -6.84827537306445
+                ],
+                "tracks": 10,
+                "satellites": 7,
+                "rms_hz": 126.60194419977113,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.84430382546789,
+                  -122.45409378383036
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  7.873281795443795,
+                  -6.584705795451974
+                ],
+                "tracks": 10,
+                "satellites": 7,
+                "rms_hz": 128.63090398054888,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.8466783261671,
+                  -122.45536147071874
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.0110582634806633,
+                "cpu_s": 0.01105979899999987
+              },
+              "bias_and_grid": {
+                "wall_s": 0.005521022714674473,
+                "cpu_s": 0.005521832000000115
+              },
+              "c0": {
+                "wall_s": 0.0007228292524814606,
+                "cpu_s": 0.0007236559999999059
+              },
+              "fitted_c": {
+                "wall_s": 0.0005078716203570366,
+                "cpu_s": 0.0005082560000000402
+              },
+              "stream_filter_link": {
+                "wall_s": 0.005916859954595566,
+                "cpu_s": 0.005881052999998415
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.02502613514661789,
+                "cpu_s": 0.02506131700000158
+              },
+              "freeze_segments": {
+                "wall_s": 0.00013879407197237015,
+                "cpu_s": 0.0001388890000000309
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.13358638249337673,
+                "cpu_s": 0.13357403300000015
+              }
+            },
+            "descriptor_tracks": 10,
+            "matched_tracks": 10,
+            "descriptor_numeric_bytes": 67520,
+            "selected_satellites": [
+              57665,
+              57665,
+              58513,
+              57734,
+              68266,
+              58513,
+              57639,
+              60135,
+              67850,
+              67850
+            ],
+            "common_prefit_grid_score": 8.032334814075517,
+            "selected_distinct_rf_by_group": [
+              4,
+              0,
+              2,
+              0
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2704,
+              "probes_with_candidates": 644,
+              "distinct_candidates": 841,
+              "births": 101,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 23,
+              "continuation_tests": 1407,
+              "continuations_kept": 697,
+              "confirmations": 32,
+              "curved_tracks_retired": 5,
+              "eligible_segments_before_cap": 10,
+              "solver_segments": 10,
+              "first_track_confirmed_midpoint_air_s": 2.4910740999999996,
+              "solver_support_points": 391,
+              "solver_observations_sha256": "4c435136e9af8d2f6d6ff46390275d6fc67935adf0ab3a383b55749aa55840ec",
+              "latest_probe_end_air_s": 59.982367999999994
+            },
+            "bank": {
+              "snapshot": "1792904651911878285-15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86.tle",
+              "eligible": 11086,
+              "regional": 674,
+              "knots": 16,
+              "float32_bytes": 215680
+            },
+            "bank_numeric_bytes": 436880,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.18257717974483967,
+            "fresh_wall_s": 0.18179572373628616,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  8.845035779825196,
+                  -9.130960081304528
+                ],
+                "tracks": 28,
+                "satellites": 14,
+                "rms_hz": 158.11836731991468,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.82373909836662,
+                  -122.44429790151771
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  8.697901145197068,
+                  -9.037417759676755
+                ],
+                "tracks": 28,
+                "satellites": 14,
+                "rms_hz": 131.1727844147346,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.82458182198489,
+                  -122.44597305205811
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.030290250666439533,
+                "cpu_s": 0.030277742999999857
+              },
+              "bias_and_grid": {
+                "wall_s": 0.010013611055910587,
+                "cpu_s": 0.010014012000000072
+              },
+              "c0": {
+                "wall_s": 0.0008727088570594788,
+                "cpu_s": 0.0008730690000000596
+              },
+              "fitted_c": {
+                "wall_s": 0.0007635410875082016,
+                "cpu_s": 0.0007635950000000058
+              },
+              "stream_filter_link": {
+                "wall_s": 0.0070832716301083565,
+                "cpu_s": 0.007046526000003217
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.026251493021845818,
+                "cpu_s": 0.02628756099999685
+              },
+              "freeze_segments": {
+                "wall_s": 0.00018287543207406998,
+                "cpu_s": 0.00018318999999999974
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.17149423900991678,
+                "cpu_s": 0.171492816
+              }
+            },
+            "descriptor_tracks": 28,
+            "matched_tracks": 28,
+            "descriptor_numeric_bytes": 189056,
+            "selected_satellites": [
+              57665,
+              58513,
+              58801,
+              63419,
+              60199,
+              57665,
+              61631,
+              58513,
+              62755,
+              58594,
+              58801,
+              58594,
+              57665,
+              57734,
+              63419,
+              47770,
+              68266,
+              58594,
+              62755,
+              58801,
+              58801,
+              57639,
+              63419,
+              58801,
+              62755,
+              60135,
+              67850,
+              67850
+            ],
+            "common_prefit_grid_score": 22.207553283150418,
+            "selected_distinct_rf_by_group": [
+              4,
+              2,
+              4,
+              1
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5412,
+              "probes_with_candidates": 1396,
+              "distinct_candidates": 1949,
+              "births": 202,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 26,
+              "continuation_tests": 3737,
+              "continuations_kept": 1658,
+              "confirmations": 58,
+              "curved_tracks_retired": 21,
+              "eligible_segments_before_cap": 28,
+              "solver_segments": 28,
+              "first_track_confirmed_midpoint_air_s": 2.4910740999999996,
+              "solver_support_points": 1256,
+              "solver_observations_sha256": "6ba35629dd4172b8c845334ffae65345386c07de1a6a55fa55b801ca4aaf4b97",
+              "latest_probe_end_air_s": 119.99325590000001
+            },
+            "bank": {
+              "snapshot": "1792904651911878285-15fe5542c17c4d377b6fea0c598c079d13bbee20592ea584fbcd13f108934f86.tle",
+              "eligible": 11086,
+              "regional": 733,
+              "knots": 28,
+              "float32_bytes": 410480
+            },
+            "bank_numeric_bytes": 827048,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.2470342256128788,
+            "fresh_wall_s": 0.24423984065651894,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.0004064682871103287,
+          "cpu_s": 0.0004063439999999474
+        }
+      },
+      "DS26-0070": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  -0.2968483251015317,
+                  1.4296713096714486
+                ],
+                "tracks": 11,
+                "satellites": 4,
+                "rms_hz": 374.4677521760629,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.91887992170875,
+                  -122.54837966402995
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  -0.2478738558125637,
+                  1.4568858860058969
+                ],
+                "tracks": 11,
+                "satellites": 4,
+                "rms_hz": 277.43371404816634,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.91912509807212,
+                  -122.54782208213291
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.01249399222433567,
+                "cpu_s": 0.01249498700000018
+              },
+              "bias_and_grid": {
+                "wall_s": 0.009340215474367142,
+                "cpu_s": 0.009341709000000087
+              },
+              "c0": {
+                "wall_s": 0.000736079178750515,
+                "cpu_s": 0.0007366659999998859
+              },
+              "fitted_c": {
+                "wall_s": 0.00044838711619377136,
+                "cpu_s": 0.00044852399999983916
+              },
+              "stream_filter_link": {
+                "wall_s": 0.006777426227927208,
+                "cpu_s": 0.006739817999997566
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.026031975634396076,
+                "cpu_s": 0.026068905000002474
+              },
+              "freeze_segments": {
+                "wall_s": 0.00015312433242797852,
+                "cpu_s": 0.00015319900000010378
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.16867065243422985,
+                "cpu_s": 0.16865702300000018
+              }
+            },
+            "descriptor_tracks": 13,
+            "matched_tracks": 11,
+            "descriptor_numeric_bytes": 87776,
+            "selected_satellites": [
+              59456,
+              59456,
+              59456,
+              59263,
+              59456,
+              59029,
+              59456,
+              59263,
+              59456,
+              59502,
+              59456
+            ],
+            "common_prefit_grid_score": 7.303357950723025,
+            "selected_distinct_rf_by_group": [
+              3,
+              4,
+              1,
+              1
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2708,
+              "probes_with_candidates": 769,
+              "distinct_candidates": 1112,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 27,
+              "births": 94,
+              "continuation_tests": 2258,
+              "continuations_kept": 997,
+              "confirmations": 37,
+              "curved_tracks_retired": 6,
+              "eligible_segments_before_cap": 13,
+              "solver_segments": 13,
+              "first_track_confirmed_midpoint_air_s": 3.9082432,
+              "solver_support_points": 619,
+              "solver_observations_sha256": "223935d57007922981363f73b41997e29c2dd862cbc068d0f44aa30e6c7f417c",
+              "latest_probe_end_air_s": 59.97407749999999
+            },
+            "bank": {
+              "snapshot": "1792958654186240136-6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20.tle",
+              "eligible": 9803,
+              "regional": 599,
+              "knots": 16,
+              "float32_bytes": 191680
+            },
+            "bank_numeric_bytes": 388280,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.22475662361830473,
+            "fresh_wall_s": 0.19573916401714087,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  7.5128564225792465,
+                  4.385867955409677
+                ],
+                "tracks": 11,
+                "satellites": 7,
+                "rms_hz": 297.8190007718589,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.94551232392261,
+                  -122.45946496925704
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  7.410072480192492,
+                  3.080491725520544
+                ],
+                "tracks": 11,
+                "satellites": 7,
+                "rms_hz": 323.6890460098549,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.93375217770739,
+                  -122.46063518031625
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.027922067791223526,
+                "cpu_s": 0.027902978999999828
+              },
+              "bias_and_grid": {
+                "wall_s": 0.010188301093876362,
+                "cpu_s": 0.010189302000000122
+              },
+              "c0": {
+                "wall_s": 0.0007317075505852699,
+                "cpu_s": 0.0007320150000000858
+              },
+              "fitted_c": {
+                "wall_s": 0.00047796592116355896,
+                "cpu_s": 0.0004780900000000976
+              },
+              "stream_filter_link": {
+                "wall_s": 0.007142098620533943,
+                "cpu_s": 0.007106204000003835
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.026461128145456314,
+                "cpu_s": 0.026488672999996243
+              },
+              "freeze_segments": {
+                "wall_s": 0.000179339200258255,
+                "cpu_s": 0.00017939999999994072
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.13618021737784147,
+                "cpu_s": 0.13618056300000037
+              }
+            },
+            "descriptor_tracks": 29,
+            "matched_tracks": 11,
+            "descriptor_numeric_bytes": 195808,
+            "selected_satellites": [
+              63679,
+              59263,
+              59029,
+              58062,
+              59263,
+              63679,
+              62896,
+              59456,
+              59502,
+              59456,
+              58062
+            ],
+            "common_prefit_grid_score": 8.34438643013074,
+            "selected_distinct_rf_by_group": [
+              3,
+              3,
+              3,
+              1
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5416,
+              "probes_with_candidates": 1749,
+              "distinct_candidates": 2352,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 35,
+              "births": 184,
+              "continuation_tests": 4433,
+              "continuations_kept": 2119,
+              "confirmations": 64,
+              "curved_tracks_retired": 23,
+              "eligible_segments_before_cap": 29,
+              "solver_segments": 29,
+              "first_track_confirmed_midpoint_air_s": 3.9082432,
+              "solver_support_points": 1526,
+              "solver_observations_sha256": "bf72cfa2bbed7980f8dcb60685e2dd21a0800bac6ad214a7bee2136f6ba264b5",
+              "latest_probe_end_air_s": 119.98742240000001
+            },
+            "bank": {
+              "snapshot": "1792958654186240136-6f98b66e0d39b9692921692866694478d0927979c64f8993cf81eaaeecfbec20.tle",
+              "eligible": 9803,
+              "regional": 641,
+              "knots": 28,
+              "float32_bytes": 358960
+            },
+            "bank_numeric_bytes": 723272,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.2093855133280158,
+            "fresh_wall_s": 0.24449448008090258,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.00042929966002702713,
+          "cpu_s": 0.00042913800000032865
+        }
+      },
+      "DS26-0112": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  9.54079904920175,
+                  -6.393554020729803
+                ],
+                "tracks": 25,
+                "satellites": 9,
+                "rms_hz": 240.3331840638539,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.84840041422766,
+                  -122.43637652923418
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  9.51325446267874,
+                  -6.8360675849619135
+                ],
+                "tracks": 25,
+                "satellites": 9,
+                "rms_hz": 218.20794484382324,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.84441380554088,
+                  -122.43669012860605
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.03727579675614834,
+                "cpu_s": 0.037278541000000054
+              },
+              "bias_and_grid": {
+                "wall_s": 0.009367681108415127,
+                "cpu_s": 0.009368896000000682
+              },
+              "c0": {
+                "wall_s": 0.0009148148819804192,
+                "cpu_s": 0.0009156410000006332
+              },
+              "fitted_c": {
+                "wall_s": 0.0006127338856458664,
+                "cpu_s": 0.0006130440000005066
+              },
+              "stream_filter_link": {
+                "wall_s": 0.008473525755107403,
+                "cpu_s": 0.008436597999999407
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.02807085495442152,
+                "cpu_s": 0.02810701800000004
+              },
+              "freeze_segments": {
+                "wall_s": 0.00026284903287887573,
+                "cpu_s": 0.0002629309999999663
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.13964497484266758,
+                "cpu_s": 0.1396455320000003
+              }
+            },
+            "descriptor_tracks": 25,
+            "matched_tracks": 25,
+            "descriptor_numeric_bytes": 168800,
+            "selected_satellites": [
+              64846,
+              69490,
+              66007,
+              64846,
+              66007,
+              66007,
+              66007,
+              69217,
+              64846,
+              58853,
+              66940,
+              67931,
+              66940,
+              58853,
+              52098,
+              66940,
+              58853,
+              52098,
+              64846,
+              66019,
+              64846,
+              58853,
+              69490,
+              69217,
+              67931
+            ],
+            "common_prefit_grid_score": 20.465705768580246,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              4,
+              3
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2682,
+              "probes_with_candidates": 1161,
+              "distinct_candidates": 1874,
+              "births": 187,
+              "peak_active_per_lane": 7,
+              "peak_active_total": 50,
+              "continuation_tests": 4951,
+              "continuations_kept": 1630,
+              "confirmations": 67,
+              "curved_tracks_retired": 13,
+              "ambiguous_candidates_skipped": 2,
+              "eligible_segments_before_cap": 25,
+              "solver_segments": 25,
+              "first_track_confirmed_midpoint_air_s": 3.0220358999999997,
+              "solver_support_points": 1035,
+              "solver_observations_sha256": "53a7b3d8b69bb33a2af40d47acf4c7d03dba5939752ebf812e9c1b8949d05c8f",
+              "latest_probe_end_air_s": 59.9781895
+            },
+            "bank": {
+              "snapshot": "1793023462314268247-aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86.tle",
+              "eligible": 11109,
+              "regional": 793,
+              "knots": 16,
+              "float32_bytes": 253760
+            },
+            "bank_numeric_bytes": 513992,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.22474333923310041,
+            "fresh_wall_s": 0.22187684383243322,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  8.207335798870755,
+                  -9.191153125395797
+                ],
+                "tracks": 45,
+                "satellites": 18,
+                "rms_hz": 214.95255160870263,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.82319681869013,
+                  -122.4515582142946
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  8.4081994419464,
+                  -9.105074227981238
+                ],
+                "tracks": 45,
+                "satellites": 18,
+                "rms_hz": 197.9639773545946,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.82397230425242,
+                  -122.44927135069449
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.0679544098675251,
+                "cpu_s": 0.06795527400000001
+              },
+              "bias_and_grid": {
+                "wall_s": 0.010090483352541924,
+                "cpu_s": 0.010091660999999696
+              },
+              "c0": {
+                "wall_s": 0.0013980846852064133,
+                "cpu_s": 0.001398800999999672
+              },
+              "fitted_c": {
+                "wall_s": 0.001071227714419365,
+                "cpu_s": 0.0010715350000003454
+              },
+              "stream_filter_link": {
+                "wall_s": 0.008884687907993793,
+                "cpu_s": 0.008854470999999364
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.02748071402311325,
+                "cpu_s": 0.027510198000000763
+              },
+              "freeze_segments": {
+                "wall_s": 0.00022507552057504654,
+                "cpu_s": 0.00022524500000020709
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.14509355649352074,
+                "cpu_s": 0.14507969999999926
+              }
+            },
+            "descriptor_tracks": 46,
+            "matched_tracks": 45,
+            "descriptor_numeric_bytes": 310592,
+            "selected_satellites": [
+              64846,
+              69490,
+              66007,
+              58390,
+              64846,
+              66007,
+              66940,
+              53553,
+              66007,
+              66007,
+              58390,
+              69217,
+              67931,
+              66940,
+              67931,
+              67931,
+              67931,
+              64846,
+              66940,
+              58853,
+              59089,
+              67406,
+              66940,
+              67516,
+              66940,
+              67406,
+              66940,
+              58853,
+              52098,
+              69318,
+              58853,
+              52098,
+              64846,
+              58872,
+              66019,
+              69490,
+              67931,
+              64846,
+              68555,
+              67516,
+              58853,
+              69217,
+              66101,
+              53553,
+              64846
+            ],
+            "common_prefit_grid_score": 34.5985765319543,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              4,
+              3
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5384,
+              "probes_with_candidates": 2267,
+              "distinct_candidates": 3619,
+              "births": 344,
+              "peak_active_per_lane": 7,
+              "peak_active_total": 51,
+              "continuation_tests": 9205,
+              "continuations_kept": 3146,
+              "confirmations": 118,
+              "curved_tracks_retired": 39,
+              "ambiguous_candidates_skipped": 5,
+              "eligible_segments_before_cap": 46,
+              "solver_segments": 46,
+              "first_track_confirmed_midpoint_air_s": 3.0220358999999997,
+              "solver_support_points": 2038,
+              "solver_observations_sha256": "9bc20cd457e75954f9e68e14d540e091a58eacf4e0da546a1230d8322e5de337",
+              "latest_probe_end_air_s": 119.97901180000001
+            },
+            "bank": {
+              "snapshot": "1793023462314268247-aff550013de67848a9ab1b43a1c22e4064c0b09d67c39761e37da987d2c86a86.tle",
+              "eligible": 11109,
+              "regional": 865,
+              "knots": 28,
+              "float32_bytes": 484400
+            },
+            "bank_numeric_bytes": 975944,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.2623183261603117,
+            "fresh_wall_s": 0.33307258412241936,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.00043694861233234406,
+          "cpu_s": 0.00043731400000002196
+        }
+      },
+      "DS26-0122": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  2.1164735277189437,
+                  -10.828066234915074
+                ],
+                "tracks": 19,
+                "satellites": 8,
+                "rms_hz": 176.5619325176617,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.8084498537395,
+                  -122.52090362199442
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  2.1198311470848155,
+                  -10.916154877292735
+                ],
+                "tracks": 19,
+                "satellites": 8,
+                "rms_hz": 177.5735423148985,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.807656262366734,
+                  -122.52086539497935
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.021840034052729607,
+                "cpu_s": 0.021842590000000328
+              },
+              "bias_and_grid": {
+                "wall_s": 0.008001834154129028,
+                "cpu_s": 0.00800248899999989
+              },
+              "c0": {
+                "wall_s": 0.0008189277723431587,
+                "cpu_s": 0.0008191740000000891
+              },
+              "fitted_c": {
+                "wall_s": 0.000582418404519558,
+                "cpu_s": 0.0005828909999996412
+              },
+              "stream_filter_link": {
+                "wall_s": 0.006838192231953144,
+                "cpu_s": 0.0068008389999754115
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.026100371032953262,
+                "cpu_s": 0.026137041000025008
+              },
+              "freeze_segments": {
+                "wall_s": 0.00023476127535104752,
+                "cpu_s": 0.0002349429999997099
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.1295907460153103,
+                "cpu_s": 0.1295906320000002
+              }
+            },
+            "descriptor_tracks": 22,
+            "matched_tracks": 19,
+            "descriptor_numeric_bytes": 148544,
+            "selected_satellites": [
+              64064,
+              64064,
+              66147,
+              68096,
+              63386,
+              68096,
+              67180,
+              67180,
+              67180,
+              67180,
+              59962,
+              59028,
+              63386,
+              67180,
+              67180,
+              67321,
+              63386,
+              63386,
+              59962
+            ],
+            "common_prefit_grid_score": 14.56908888540341,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              2,
+              0
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2708,
+              "probes_with_candidates": 892,
+              "distinct_candidates": 1301,
+              "births": 105,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 28,
+              "continuation_tests": 2700,
+              "continuations_kept": 1170,
+              "confirmations": 44,
+              "curved_tracks_retired": 10,
+              "eligible_segments_before_cap": 22,
+              "solver_segments": 22,
+              "first_track_confirmed_midpoint_air_s": 3.1115499,
+              "solver_support_points": 893,
+              "solver_observations_sha256": "04f45ce43aee09d1eb7eb578941451522d3d551a851dfa7c1a49d70f11c86aff",
+              "latest_probe_end_air_s": 59.958734199999995
+            },
+            "bank": {
+              "snapshot": "1793041331314091153-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle",
+              "eligible": 11091,
+              "regional": 619,
+              "knots": 16,
+              "float32_bytes": 198080
+            },
+            "bank_numeric_bytes": 401240,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.19411308877170086,
+            "fresh_wall_s": 0.24215248320251703,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  6.113986890246639,
+                  -8.92893368650997
+                ],
+                "tracks": 33,
+                "satellites": 10,
+                "rms_hz": 217.96513156233107,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.82555915597739,
+                  -122.47539131494014
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  6.114450372018495,
+                  -8.927865998298756
+                ],
+                "tracks": 33,
+                "satellites": 10,
+                "rms_hz": 217.93795595409364,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.8255687747901,
+                  -122.47538603812858
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.03527733217924833,
+                "cpu_s": 0.035278613000000014
+              },
+              "bias_and_grid": {
+                "wall_s": 0.010287867859005928,
+                "cpu_s": 0.01028853800000018
+              },
+              "c0": {
+                "wall_s": 0.0009109685197472572,
+                "cpu_s": 0.0009116760000003055
+              },
+              "fitted_c": {
+                "wall_s": 0.0007330551743507385,
+                "cpu_s": 0.0007333819999999491
+              },
+              "stream_filter_link": {
+                "wall_s": 0.0075949449092149734,
+                "cpu_s": 0.007563046999981893
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.02680124156177044,
+                "cpu_s": 0.026832432000017725
+              },
+              "freeze_segments": {
+                "wall_s": 0.00015033315867185593,
+                "cpu_s": 0.00015055500000027422
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.14071821607649326,
+                "cpu_s": 0.1407181479999995
+              }
+            },
+            "descriptor_tracks": 36,
+            "matched_tracks": 33,
+            "descriptor_numeric_bytes": 243072,
+            "selected_satellites": [
+              67180,
+              67180,
+              67180,
+              64064,
+              68096,
+              100480,
+              68096,
+              64064,
+              67180,
+              67180,
+              67180,
+              64064,
+              59962,
+              100480,
+              68096,
+              67180,
+              63149,
+              100480,
+              63386,
+              63149,
+              68096,
+              59028,
+              63149,
+              63124,
+              63386,
+              59962,
+              59962,
+              63149,
+              67321,
+              63386,
+              63386,
+              100480,
+              59962
+            ],
+            "common_prefit_grid_score": 24.079923172619512,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              3,
+              3
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5416,
+              "probes_with_candidates": 1922,
+              "distinct_candidates": 2590,
+              "births": 203,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 29,
+              "continuation_tests": 4962,
+              "continuations_kept": 2333,
+              "confirmations": 72,
+              "curved_tracks_retired": 31,
+              "eligible_segments_before_cap": 36,
+              "solver_segments": 36,
+              "first_track_confirmed_midpoint_air_s": 3.1115499,
+              "solver_support_points": 1845,
+              "solver_observations_sha256": "d5cc7af2a7cc04ae9e4d4216829a805ef61814cda685041c968049f29ca9274d",
+              "latest_probe_end_air_s": 119.99787280000001
+            },
+            "bank": {
+              "snapshot": "1793041331314091153-fa4cd541a315870c3b956b5e58208a5ae046d0420067d36894f453b9c22cf033.tle",
+              "eligible": 11091,
+              "regional": 663,
+              "knots": 28,
+              "float32_bytes": 371280
+            },
+            "bank_numeric_bytes": 748088,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.222568703815341,
+            "fresh_wall_s": 0.25523399747908115,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.0004509659484028816,
+          "cpu_s": 0.00045095200000044855
+        }
+      },
+      "DS26-0203": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  8.051850087050754,
+                  -9.065076614275913
+                ],
+                "tracks": 16,
+                "satellites": 6,
+                "rms_hz": 149.51427430744232,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.82433264311463,
+                  -122.45332844313866
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  8.038615478698974,
+                  -8.936628763129956
+                ],
+                "tracks": 16,
+                "satellites": 6,
+                "rms_hz": 139.1341791527694,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.825489830962795,
+                  -122.45347912119885
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.016747304238379,
+                "cpu_s": 0.01674963900000037
+              },
+              "bias_and_grid": {
+                "wall_s": 0.008918737061321735,
+                "cpu_s": 0.008919714000000134
+              },
+              "c0": {
+                "wall_s": 0.0006968118250370026,
+                "cpu_s": 0.0006973840000004117
+              },
+              "fitted_c": {
+                "wall_s": 0.00048104673624038696,
+                "cpu_s": 0.00048149800000008014
+              },
+              "stream_filter_link": {
+                "wall_s": 0.0066841719672083855,
+                "cpu_s": 0.006653011999992131
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.025356218218803406,
+                "cpu_s": 0.025386735000007654
+              },
+              "freeze_segments": {
+                "wall_s": 0.00010985136032104492,
+                "cpu_s": 0.0001099470000003322
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.1297010388225317,
+                "cpu_s": 0.12969308300000026
+              }
+            },
+            "descriptor_tracks": 16,
+            "matched_tracks": 16,
+            "descriptor_numeric_bytes": 108032,
+            "selected_satellites": [
+              57780,
+              57780,
+              57780,
+              63466,
+              63466,
+              63370,
+              58978,
+              58875,
+              69205,
+              63466,
+              63370,
+              58978,
+              63466,
+              58875,
+              57780,
+              58978
+            ],
+            "common_prefit_grid_score": 13.627164042524122,
+            "selected_distinct_rf_by_group": [
+              2,
+              4,
+              3,
+              1
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2708,
+              "probes_with_candidates": 905,
+              "distinct_candidates": 1280,
+              "peak_active_per_lane": 7,
+              "peak_active_total": 33,
+              "births": 139,
+              "continuation_tests": 2717,
+              "continuations_kept": 1120,
+              "confirmations": 44,
+              "curved_tracks_retired": 12,
+              "eligible_segments_before_cap": 16,
+              "solver_segments": 16,
+              "first_track_confirmed_midpoint_air_s": 3.5954547,
+              "solver_support_points": 767,
+              "solver_observations_sha256": "58f9357c2bc5461879baea6455016643b5d0c9effff2097f439311012d6e83b3",
+              "latest_probe_end_air_s": 59.988051399999996
+            },
+            "bank": {
+              "snapshot": "1793185228910602426-4c641810f9578d212b2fce8d2a87c144aac5517f989612ab6d5f5bb83a645763.tle",
+              "eligible": 11149,
+              "regional": 670,
+              "knots": 16,
+              "float32_bytes": 214400
+            },
+            "bank_numeric_bytes": 434288,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.18878025375306606,
+            "fresh_wall_s": 0.1885643294081092,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -10.397748355838981
+                ],
+                "tracks": 28,
+                "satellites": 11,
+                "rms_hz": 176.6033428133926,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.81232659138884,
+                  -122.40268556935634
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -10.437860637806423
+                ],
+                "tracks": 28,
+                "satellites": 11,
+                "rms_hz": 174.2434045952948,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.81196521947922,
+                  -122.40268556935634
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.029333626851439476,
+                "cpu_s": 0.0293371389999999
+              },
+              "bias_and_grid": {
+                "wall_s": 0.008988735266029835,
+                "cpu_s": 0.008990555000000455
+              },
+              "c0": {
+                "wall_s": 0.001353318803012371,
+                "cpu_s": 0.0013545169999993334
+              },
+              "fitted_c": {
+                "wall_s": 0.0010661035776138306,
+                "cpu_s": 0.001066295000000217
+              },
+              "stream_filter_link": {
+                "wall_s": 0.005620263516902924,
+                "cpu_s": 0.005581268999987898
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.024290727451443672,
+                "cpu_s": 0.024329113000011837
+              },
+              "freeze_segments": {
+                "wall_s": 0.00013938918709754944,
+                "cpu_s": 0.0001395430000004083
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.2103873724117875,
+                "cpu_s": 0.21035399000000066
+              }
+            },
+            "descriptor_tracks": 28,
+            "matched_tracks": 28,
+            "descriptor_numeric_bytes": 189056,
+            "selected_satellites": [
+              57780,
+              57780,
+              57780,
+              57780,
+              57780,
+              63466,
+              63466,
+              63370,
+              58978,
+              67935,
+              59360,
+              68062,
+              68062,
+              58875,
+              101015,
+              63466,
+              57780,
+              63370,
+              58978,
+              59360,
+              101015,
+              63466,
+              58875,
+              57780,
+              57780,
+              56383,
+              58978,
+              60593
+            ],
+            "common_prefit_grid_score": 23.116376357711715,
+            "selected_distinct_rf_by_group": [
+              3,
+              4,
+              4,
+              4
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5412,
+              "probes_with_candidates": 1613,
+              "distinct_candidates": 2059,
+              "peak_active_per_lane": 7,
+              "peak_active_total": 33,
+              "births": 212,
+              "continuation_tests": 3726,
+              "continuations_kept": 1803,
+              "confirmations": 63,
+              "curved_tracks_retired": 23,
+              "eligible_segments_before_cap": 28,
+              "solver_segments": 28,
+              "first_track_confirmed_midpoint_air_s": 3.5954547,
+              "solver_support_points": 1334,
+              "solver_observations_sha256": "61b46f517579cf7762a95d1ee341e106fb530a1500b43bcef5341b3fc76d13ce",
+              "latest_probe_end_air_s": 119.9612893
+            },
+            "bank": {
+              "snapshot": "1793185228910602426-4c641810f9578d212b2fce8d2a87c144aac5517f989612ab6d5f5bb83a645763.tle",
+              "eligible": 11149,
+              "regional": 724,
+              "knots": 28,
+              "float32_bytes": 405440
+            },
+            "bank_numeric_bytes": 816896,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.2813048716634512,
+            "fresh_wall_s": 0.24767263419926167,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.00036579277366399765,
+          "cpu_s": 0.00036581099999999367
+        }
+      },
+      "DS26-0209": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -2.0078139693058357
+                ],
+                "tracks": 9,
+                "satellites": 6,
+                "rms_hz": 205.00322249499368,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.887911585862106,
+                  -122.40268556935634
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -2.029530901852579
+                ],
+                "tracks": 9,
+                "satellites": 6,
+                "rms_hz": 205.38724616146362,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.88771593782115,
+                  -122.40268556935634
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.01711259875446558,
+                "cpu_s": 0.017114877999999223
+              },
+              "bias_and_grid": {
+                "wall_s": 0.008830567821860313,
+                "cpu_s": 0.008832458000000543
+              },
+              "c0": {
+                "wall_s": 0.0009302236139774323,
+                "cpu_s": 0.000930456999999052
+              },
+              "fitted_c": {
+                "wall_s": 0.0006739860400557518,
+                "cpu_s": 0.000674302000000182
+              },
+              "stream_filter_link": {
+                "wall_s": 0.006737581454217434,
+                "cpu_s": 0.006705367999996881
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.025225389748811722,
+                "cpu_s": 0.02525692900000287
+              },
+              "freeze_segments": {
+                "wall_s": 0.00018159020692110062,
+                "cpu_s": 0.0001816829999992109
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.1985814394429326,
+                "cpu_s": 0.19855462499999987
+              }
+            },
+            "descriptor_tracks": 15,
+            "matched_tracks": 9,
+            "descriptor_numeric_bytes": 101280,
+            "selected_satellites": [
+              69254,
+              66482,
+              59522,
+              58515,
+              57827,
+              61677,
+              66482,
+              59522,
+              59522
+            ],
+            "common_prefit_grid_score": 6.910318923277815,
+            "selected_distinct_rf_by_group": [
+              3,
+              1,
+              2,
+              1
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2692,
+              "probes_with_candidates": 869,
+              "distinct_candidates": 1336,
+              "births": 135,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 31,
+              "continuation_tests": 2957,
+              "continuations_kept": 1153,
+              "confirmations": 44,
+              "curved_tracks_retired": 7,
+              "eligible_segments_before_cap": 15,
+              "solver_segments": 15,
+              "first_track_confirmed_midpoint_air_s": 2.8027498,
+              "solver_support_points": 748,
+              "solver_observations_sha256": "125d0e8770e873b8616559de740929c96da52afb9ba05c57a8fc08bcff839156",
+              "latest_probe_end_air_s": 59.97554099999999
+            },
+            "bank": {
+              "snapshot": "1793192693669869138-5ba18ecc0f72b38f1a32cdb62053e1321fb3ac8a3465617d4464f77f203b9f46.tle",
+              "eligible": 11141,
+              "regional": 711,
+              "knots": 16,
+              "float32_bytes": 227520
+            },
+            "bank_numeric_bytes": 460856,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.25837127305567265,
+            "fresh_wall_s": 0.19500935822725296,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -6.233219658225071
+                ],
+                "tracks": 25,
+                "satellites": 13,
+                "rms_hz": 646.729008798525,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.849844867943915,
+                  -122.40268556935634
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -6.2563259632386625
+                ],
+                "tracks": 25,
+                "satellites": 13,
+                "rms_hz": 649.8995433440684,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.84963670303389,
+                  -122.40268556935634
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.039523432962596416,
+                "cpu_s": 0.03952438299999983
+              },
+              "bias_and_grid": {
+                "wall_s": 0.009465630166232586,
+                "cpu_s": 0.009466208999999282
+              },
+              "c0": {
+                "wall_s": 0.0012046582996845245,
+                "cpu_s": 0.001205119000001531
+              },
+              "fitted_c": {
+                "wall_s": 0.001069195568561554,
+                "cpu_s": 0.0010693950000000285
+              },
+              "stream_filter_link": {
+                "wall_s": 0.007594357244670391,
+                "cpu_s": 0.007567529000015227
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.0262711513787508,
+                "cpu_s": 0.026297283999985765
+              },
+              "freeze_segments": {
+                "wall_s": 0.00013743992894887924,
+                "cpu_s": 0.00013752599999961035
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.13557011727243662,
+                "cpu_s": 0.13556929300000142
+              }
+            },
+            "descriptor_tracks": 35,
+            "matched_tracks": 25,
+            "descriptor_numeric_bytes": 236320,
+            "selected_satellites": [
+              64314,
+              64314,
+              58515,
+              65677,
+              66827,
+              66827,
+              59522,
+              66471,
+              66471,
+              58515,
+              66827,
+              57827,
+              66471,
+              61677,
+              58515,
+              66827,
+              64314,
+              56541,
+              66482,
+              59522,
+              69254,
+              59522,
+              67921,
+              67359,
+              67921
+            ],
+            "common_prefit_grid_score": 20.300982904173654,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              2,
+              2
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5394,
+              "probes_with_candidates": 1985,
+              "distinct_candidates": 2874,
+              "births": 284,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 42,
+              "continuation_tests": 6053,
+              "continuations_kept": 2480,
+              "confirmations": 89,
+              "curved_tracks_retired": 30,
+              "ambiguous_candidates_skipped": 2,
+              "eligible_segments_before_cap": 35,
+              "solver_segments": 35,
+              "first_track_confirmed_midpoint_air_s": 2.8027498,
+              "solver_support_points": 1689,
+              "solver_observations_sha256": "3df46080eef6abd5024858462e7dc61469167b1af43d6b731702a90bc336296b",
+              "latest_probe_end_air_s": 119.97311100000002
+            },
+            "bank": {
+              "snapshot": "1793192693669869138-5ba18ecc0f72b38f1a32cdb62053e1321fb3ac8a3465617d4464f77f203b9f46.tle",
+              "eligible": 11141,
+              "regional": 770,
+              "knots": 28,
+              "float32_bytes": 431200
+            },
+            "bank_numeric_bytes": 868784,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.22090946976095438,
+            "fresh_wall_s": 0.254703501239419,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.00041712820529937744,
+          "cpu_s": 0.0004169840000010083
+        }
+      },
+      "DS26-0277": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -2.609282805722652
+                ],
+                "tracks": 15,
+                "satellites": 7,
+                "rms_hz": 215.11733923330576,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.88249294769619,
+                  -122.40268556935634
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  12.5,
+                  -2.588523428552957
+                ],
+                "tracks": 15,
+                "satellites": 7,
+                "rms_hz": 215.20011939268352,
+                "rms_kind": "absolute",
+                "on_boundary": true,
+                "latlon": [
+                  37.88267996911213,
+                  -122.40268556935634
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.014965003356337547,
+                "cpu_s": 0.014967867000001078
+              },
+              "bias_and_grid": {
+                "wall_s": 0.008689486421644688,
+                "cpu_s": 0.008691257000000618
+              },
+              "c0": {
+                "wall_s": 0.0011089611798524857,
+                "cpu_s": 0.001109393000000125
+              },
+              "fitted_c": {
+                "wall_s": 0.0007414687424898148,
+                "cpu_s": 0.0007416150000008059
+              },
+              "stream_filter_link": {
+                "wall_s": 0.006542067974805832,
+                "cpu_s": 0.006505599000020013
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.025671333074569702,
+                "cpu_s": 0.02570713899997834
+              },
+              "freeze_segments": {
+                "wall_s": 0.000181686133146286,
+                "cpu_s": 0.00018175099999950817
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.13417176995426416,
+                "cpu_s": 0.13415953299999828
+              }
+            },
+            "descriptor_tracks": 15,
+            "matched_tracks": 15,
+            "descriptor_numeric_bytes": 101280,
+            "selected_satellites": [
+              66291,
+              64432,
+              100028,
+              66291,
+              66291,
+              56011,
+              56011,
+              66291,
+              67046,
+              64432,
+              59929,
+              100028,
+              67055,
+              100028,
+              67046
+            ],
+            "common_prefit_grid_score": 11.140313052385618,
+            "selected_distinct_rf_by_group": [
+              4,
+              3,
+              3,
+              2
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2708,
+              "probes_with_candidates": 965,
+              "distinct_candidates": 1316,
+              "peak_active_per_lane": 6,
+              "peak_active_total": 32,
+              "births": 111,
+              "continuation_tests": 2330,
+              "continuations_kept": 1127,
+              "confirmations": 45,
+              "curved_tracks_retired": 8,
+              "eligible_segments_before_cap": 15,
+              "solver_segments": 15,
+              "first_track_confirmed_midpoint_air_s": 3.6459968,
+              "solver_support_points": 669,
+              "solver_observations_sha256": "8e2f3722d72d43c0bf0a7d48e1d14ece07edc962e66e7e72184df5a4e3c2c82c",
+              "latest_probe_end_air_s": 59.9588586
+            },
+            "bank": {
+              "snapshot": "1793297047368813889-91362ddd01a725beeb7c70d3ee72eb8f34d3c58698d97a8637e1d351f928862f.tle",
+              "eligible": 10792,
+              "regional": 656,
+              "knots": 16,
+              "float32_bytes": 209920
+            },
+            "bank_numeric_bytes": 425216,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.19216515310108662,
+            "fresh_wall_s": 0.19300522282719612,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  6.979927669201545,
+                  -6.318060815313906
+                ],
+                "tracks": 36,
+                "satellites": 12,
+                "rms_hz": 172.4383370985354,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.84908053319537,
+                  -122.4655324454259
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  6.968514133583289,
+                  -6.24154215895443
+                ],
+                "tracks": 36,
+                "satellites": 12,
+                "rms_hz": 167.78238074719627,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.84976989045987,
+                  -122.46566239029174
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.0348524134606123,
+                "cpu_s": 0.03485398900000014
+              },
+              "bias_and_grid": {
+                "wall_s": 0.009433932602405548,
+                "cpu_s": 0.009434589999999687
+              },
+              "c0": {
+                "wall_s": 0.0010225893929600716,
+                "cpu_s": 0.0010234219999993854
+              },
+              "fitted_c": {
+                "wall_s": 0.0007601147517561913,
+                "cpu_s": 0.0007603189999993987
+              },
+              "stream_filter_link": {
+                "wall_s": 0.007274183444678783,
+                "cpu_s": 0.007239428999984199
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.025769542902708054,
+                "cpu_s": 0.02580359900001561
+              },
+              "freeze_segments": {
+                "wall_s": 0.00024194736033678055,
+                "cpu_s": 0.00024225099999952704
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.1387560861185193,
+                "cpu_s": 0.13875119200000086
+              }
+            },
+            "descriptor_tracks": 36,
+            "matched_tracks": 36,
+            "descriptor_numeric_bytes": 243072,
+            "selected_satellites": [
+              66291,
+              66291,
+              66291,
+              64432,
+              64432,
+              64432,
+              66291,
+              100028,
+              64432,
+              64432,
+              67046,
+              62071,
+              62071,
+              62071,
+              59613,
+              64432,
+              59613,
+              59613,
+              56011,
+              56011,
+              67331,
+              67046,
+              67046,
+              59613,
+              59621,
+              59621,
+              59929,
+              100028,
+              62071,
+              67055,
+              59621,
+              100028,
+              67331,
+              59621,
+              67046,
+              59940
+            ],
+            "common_prefit_grid_score": 28.082618102954186,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              4,
+              4
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5418,
+              "probes_with_candidates": 1952,
+              "distinct_candidates": 2689,
+              "peak_active_per_lane": 6,
+              "peak_active_total": 35,
+              "births": 245,
+              "continuation_tests": 5258,
+              "continuations_kept": 2309,
+              "confirmations": 76,
+              "curved_tracks_retired": 25,
+              "eligible_segments_before_cap": 36,
+              "solver_segments": 36,
+              "first_track_confirmed_midpoint_air_s": 3.6459968,
+              "solver_support_points": 1765,
+              "solver_observations_sha256": "85772d78a6a723682707daad392d9720bd1a84bdee5bc90eafc627fa24e76c07",
+              "latest_probe_end_air_s": 119.98628640000001
+            },
+            "bank": {
+              "snapshot": "1793297047368813889-91362ddd01a725beeb7c70d3ee72eb8f34d3c58698d97a8637e1d351f928862f.tle",
+              "eligible": 10792,
+              "regional": 709,
+              "knots": 28,
+              "float32_bytes": 397040
+            },
+            "bank_numeric_bytes": 799976,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.21823186986148357,
+            "fresh_wall_s": 0.2982871439307928,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.00047907885164022446,
+          "cpu_s": 0.00047905599999964465
+        }
+      },
+      "DS26-0311": {
+        "prefixes": [
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  9.400316850222321,
+                  -7.690290591912386
+                ],
+                "tracks": 13,
+                "satellites": 7,
+                "rms_hz": 121.37715621911929,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.83671810277556,
+                  -122.43797594076725
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  9.517343150133216,
+                  -7.515739737463537
+                ],
+                "tracks": 13,
+                "satellites": 7,
+                "rms_hz": 95.34081375826555,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.83829063299582,
+                  -122.43664357826788
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.013790137134492397,
+                "cpu_s": 0.013791643999999437
+              },
+              "bias_and_grid": {
+                "wall_s": 0.008889232762157917,
+                "cpu_s": 0.008889884000000237
+              },
+              "c0": {
+                "wall_s": 0.0006531504914164543,
+                "cpu_s": 0.0006536029999999471
+              },
+              "fitted_c": {
+                "wall_s": 0.0004753163084387779,
+                "cpu_s": 0.0004754330000000806
+              },
+              "stream_filter_link": {
+                "wall_s": 0.006076602265238762,
+                "cpu_s": 0.006033445000035442
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.02514609508216381,
+                "cpu_s": 0.025188622999964494
+              },
+              "freeze_segments": {
+                "wall_s": 8.12876969575882e-05,
+                "cpu_s": 8.146999999958382e-05
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.1309769432991743,
+                "cpu_s": 0.13097662300000046
+              }
+            },
+            "descriptor_tracks": 13,
+            "matched_tracks": 13,
+            "descriptor_numeric_bytes": 87776,
+            "selected_satellites": [
+              58246,
+              66327,
+              59880,
+              66439,
+              100491,
+              66439,
+              66327,
+              59880,
+              58246,
+              59790,
+              66327,
+              68265,
+              66327
+            ],
+            "common_prefit_grid_score": 11.034402238876266,
+            "selected_distinct_rf_by_group": [
+              3,
+              3,
+              3,
+              2
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 2702,
+              "probes_with_candidates": 863,
+              "distinct_candidates": 1070,
+              "births": 109,
+              "peak_active_per_lane": 5,
+              "peak_active_total": 28,
+              "continuation_tests": 1846,
+              "continuations_kept": 930,
+              "confirmations": 37,
+              "curved_tracks_retired": 10,
+              "eligible_segments_before_cap": 13,
+              "solver_segments": 13,
+              "first_track_confirmed_midpoint_air_s": 3.0213419999999998,
+              "solver_support_points": 583,
+              "solver_observations_sha256": "31e4c9647a64956a721e04ee3013c3401b4d2f7483e43213c5f4e75de0ff2e4e",
+              "latest_probe_end_air_s": 59.98991229999999
+            },
+            "bank": {
+              "snapshot": "1793354675408927643-b9271cb0b50e60a49b547c429fe146947a6175bf547734f766a32d691467e2af.tle",
+              "eligible": 11131,
+              "regional": 676,
+              "knots": 16,
+              "float32_bytes": 216320
+            },
+            "bank_numeric_bytes": 438176,
+            "air_deadline_s": 60.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.18616187945008278,
+            "fresh_wall_s": 0.19195182342082262,
+            "independent_replay_exact": true
+          },
+          {
+            "arms": {
+              "c0": {
+                "status": "estimate",
+                "xy": [
+                  8.759452486087657,
+                  -6.973302773281275
+                ],
+                "tracks": 25,
+                "satellites": 10,
+                "rms_hz": 139.22934708762853,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.84317745249296,
+                  -122.44527228053538
+                ]
+              },
+              "fitted_c": {
+                "status": "estimate",
+                "xy": [
+                  8.854320187615286,
+                  -6.751248662094273
+                ],
+                "tracks": 25,
+                "satellites": 10,
+                "rms_hz": 106.90502654884286,
+                "rms_kind": "absolute",
+                "on_boundary": false,
+                "latlon": [
+                  37.845177939981134,
+                  -122.44419219710103
+                ]
+              }
+            },
+            "stages": {
+              "shortlist": {
+                "wall_s": 0.027126869186758995,
+                "cpu_s": 0.027129812000000086
+              },
+              "bias_and_grid": {
+                "wall_s": 0.00931335985660553,
+                "cpu_s": 0.009314540000000093
+              },
+              "c0": {
+                "wall_s": 0.0008302051573991776,
+                "cpu_s": 0.0008315969999994621
+              },
+              "fitted_c": {
+                "wall_s": 0.0006270799785852432,
+                "cpu_s": 0.0006273249999999564
+              },
+              "stream_filter_link": {
+                "wall_s": 0.005805331282317638,
+                "cpu_s": 0.005761614999984843
+              },
+              "archive_decode_and_candidate_dedup": {
+                "wall_s": 0.02528494130820036,
+                "cpu_s": 0.025328003000016253
+              },
+              "freeze_segments": {
+                "wall_s": 0.00023555941879749298,
+                "cpu_s": 0.00023564399999997931
+              },
+              "causal_orbit_bank": {
+                "wall_s": 0.14228678029030561,
+                "cpu_s": 0.14228665599999957
+              }
+            },
+            "descriptor_tracks": 25,
+            "matched_tracks": 25,
+            "descriptor_numeric_bytes": 168800,
+            "selected_satellites": [
+              62778,
+              59880,
+              62778,
+              62778,
+              62778,
+              58246,
+              62778,
+              66327,
+              66439,
+              100491,
+              66439,
+              59880,
+              66327,
+              68265,
+              58246,
+              56527,
+              62778,
+              59790,
+              66327,
+              59880,
+              66435,
+              66435,
+              66327,
+              66435,
+              68265
+            ],
+            "common_prefit_grid_score": 21.552900503646445,
+            "selected_distinct_rf_by_group": [
+              4,
+              4,
+              3,
+              2
+            ],
+            "c_varies_within_some_receiver_side": true,
+            "stream": {
+              "probes": 5410,
+              "probes_with_candidates": 1525,
+              "distinct_candidates": 1888,
+              "births": 162,
+              "peak_active_per_lane": 6,
+              "peak_active_total": 28,
+              "continuation_tests": 3175,
+              "continuations_kept": 1674,
+              "confirmations": 56,
+              "curved_tracks_retired": 17,
+              "eligible_segments_before_cap": 25,
+              "solver_segments": 25,
+              "first_track_confirmed_midpoint_air_s": 3.0213419999999998,
+              "solver_support_points": 1213,
+              "solver_observations_sha256": "8327871a9c2f69a4034d2c23884f5c845f7dc90cb34b4bbd2832aa6b63d8ddf1",
+              "latest_probe_end_air_s": 119.99509330000001
+            },
+            "bank": {
+              "snapshot": "1793354675408927643-b9271cb0b50e60a49b547c429fe146947a6175bf547734f766a32d691467e2af.tle",
+              "eligible": 11131,
+              "regional": 736,
+              "knots": 28,
+              "float32_bytes": 412160
+            },
+            "bank_numeric_bytes": 830432,
+            "air_deadline_s": 120.0,
+            "archive_at_end": false,
+            "incremental_wall_s": 0.21161413192749023,
+            "fresh_wall_s": 0.31581038050353527,
+            "independent_replay_exact": true
+          }
+        ],
+        "full_tracker_matches_uninterrupted": true,
+        "incremental_archive_open_and_header": {
+          "wall_s": 0.0004131253808736801,
+          "cpu_s": 0.000413050000000581
+        }
+      }
+    },
+    "graph_full": {
+      "DS26-0036": {
+        "graph_track_count": 94,
+        "graph_curved_count": 59,
+        "graph_read_and_fit": {
+          "wall_s": 0.0913047781214118,
+          "cpu_s": 0.09130291899999987
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              6.3826872704904805,
+              -8.366559167177085
+            ],
+            "tracks": 58,
+            "satellites": 24,
+            "rms_hz": 176.05355808944242,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.83062559308849,
+              -122.47233211960989
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              6.452109546916389,
+              -8.442306108541265
+            ],
+            "tracks": 58,
+            "satellites": 24,
+            "rms_hz": 138.22169525186362,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.82994318821134,
+              -122.47154173627041
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.071841093711555,
+            "cpu_s": 0.07184065100000003
+          },
+          "bias_and_grid": {
+            "wall_s": 0.010962632484734058,
+            "cpu_s": 0.010963387999999963
+          },
+          "c0": {
+            "wall_s": 0.001971602439880371,
+            "cpu_s": 0.0019728230000000124
+          },
+          "fitted_c": {
+            "wall_s": 0.0017599761486053467,
+            "cpu_s": 0.001760383000000143
+          }
+        },
+        "descriptor_tracks": 59,
+        "matched_tracks": 58,
+        "descriptor_numeric_bytes": 398368,
+        "selected_satellites": [
+          62235,
+          57679,
+          61631,
+          60136,
+          59166,
+          58513,
+          58801,
+          60199,
+          58809,
+          58594,
+          61631,
+          58594,
+          62779,
+          57665,
+          65058,
+          62779,
+          57665,
+          58801,
+          59166,
+          67553,
+          61631,
+          63419,
+          60136,
+          57679,
+          63975,
+          57734,
+          62755,
+          57665,
+          58801,
+          63419,
+          56842,
+          56836,
+          62779,
+          61631,
+          56101,
+          58801,
+          58801,
+          57639,
+          58594,
+          65058,
+          62779,
+          58594,
+          68266,
+          56836,
+          58513,
+          61631,
+          63419,
+          67850,
+          63419,
+          57734,
+          62779,
+          63419,
+          65058,
+          65058,
+          58594,
+          56842,
+          57665,
+          65058
+        ],
+        "common_prefit_grid_score": 44.85878854297928,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          3
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0070": {
+        "graph_track_count": 137,
+        "graph_curved_count": 64,
+        "graph_read_and_fit": {
+          "wall_s": 0.08428007271140814,
+          "cpu_s": 0.08424534800000005
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              12.2618087874093,
+              -2.020390135717788
+            ],
+            "tracks": 38,
+            "satellites": 15,
+            "rms_hz": 1254.167344732815,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.88779828706561,
+              -122.40539741310067
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              12.218371508718635,
+              -1.9272354329770147
+            ],
+            "tracks": 38,
+            "satellites": 15,
+            "rms_hz": 1247.91097008258,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.88863751862183,
+              -122.40589195322751
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.06437761802226305,
+            "cpu_s": 0.06434407600000025
+          },
+          "bias_and_grid": {
+            "wall_s": 0.011106565594673157,
+            "cpu_s": 0.011107543999999692
+          },
+          "c0": {
+            "wall_s": 0.00125845056027174,
+            "cpu_s": 0.0012590380000001566
+          },
+          "fitted_c": {
+            "wall_s": 0.0009362949058413506,
+            "cpu_s": 0.0009367549999996783
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 38,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          58041,
+          58062,
+          58065,
+          58041,
+          63679,
+          63326,
+          67054,
+          63326,
+          59029,
+          63321,
+          67054,
+          58041,
+          58065,
+          57908,
+          67047,
+          58065,
+          63326,
+          63679,
+          67889,
+          67054,
+          63321,
+          62317,
+          63326,
+          63679,
+          63326,
+          63321,
+          63321,
+          58041,
+          58041,
+          67054,
+          59610,
+          63321,
+          57908,
+          67054,
+          58834,
+          58062,
+          61259,
+          57908
+        ],
+        "common_prefit_grid_score": 23.719564040487015,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0112": {
+        "graph_track_count": 151,
+        "graph_curved_count": 80,
+        "graph_read_and_fit": {
+          "wall_s": 0.13608165737241507,
+          "cpu_s": 0.13607875000000025
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              9.178803030675722,
+              -10.673551607191248
+            ],
+            "tracks": 54,
+            "satellites": 29,
+            "rms_hz": 224.62550180258287,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.80984187741269,
+              -122.44049790981592
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              9.167177467945429,
+              -10.668323771545372
+            ],
+            "tracks": 54,
+            "satellites": 29,
+            "rms_hz": 220.1861608601559,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.80988897503112,
+              -122.44063026864319
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.11229907162487507,
+            "cpu_s": 0.11229746099999982
+          },
+          "bias_and_grid": {
+            "wall_s": 0.011490058153867722,
+            "cpu_s": 0.011490650999999907
+          },
+          "c0": {
+            "wall_s": 0.0022856760770082474,
+            "cpu_s": 0.002286360000000265
+          },
+          "fitted_c": {
+            "wall_s": 0.0020213089883327484,
+            "cpu_s": 0.0020225780000000526
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 54,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          64846,
+          59087,
+          65434,
+          66021,
+          69490,
+          66007,
+          58379,
+          68142,
+          64846,
+          58872,
+          66021,
+          67430,
+          53553,
+          57408,
+          63285,
+          66101,
+          59079,
+          52090,
+          59079,
+          100393,
+          66007,
+          63082,
+          66021,
+          66940,
+          66021,
+          67406,
+          68142,
+          67406,
+          67931,
+          59089,
+          58853,
+          69217,
+          65434,
+          67914,
+          66940,
+          66007,
+          100393,
+          67516,
+          67914,
+          58872,
+          58872,
+          63082,
+          66940,
+          66101,
+          53023,
+          66021,
+          68142,
+          59087,
+          58390,
+          69318,
+          69490,
+          66940,
+          59079,
+          66101
+        ],
+        "common_prefit_grid_score": 36.86630911799925,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0122": {
+        "graph_track_count": 134,
+        "graph_curved_count": 87,
+        "graph_read_and_fit": {
+          "wall_s": 0.08614822942763567,
+          "cpu_s": 0.0861272280000005
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              7.761611213178127,
+              -8.483670310456299
+            ],
+            "tracks": 54,
+            "satellites": 21,
+            "rms_hz": 249.19158097111028,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.829570537743635,
+              -122.45663285754553
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              7.764134199249567,
+              -8.480548492617743
+            ],
+            "tracks": 54,
+            "satellites": 21,
+            "rms_hz": 249.04133163463084,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.82959866222867,
+              -122.45660413295943
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.06542576849460602,
+            "cpu_s": 0.06542369499999978
+          },
+          "bias_and_grid": {
+            "wall_s": 0.010777655988931656,
+            "cpu_s": 0.010778704999999889
+          },
+          "c0": {
+            "wall_s": 0.001509551890194416,
+            "cpu_s": 0.0014912689999997397
+          },
+          "fitted_c": {
+            "wall_s": 0.0012774281203746796,
+            "cpu_s": 0.0012780949999999791
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 54,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          67180,
+          63149,
+          63149,
+          67179,
+          67180,
+          66980,
+          63149,
+          68096,
+          63149,
+          67180,
+          58059,
+          64064,
+          57252,
+          67180,
+          58059,
+          64064,
+          67180,
+          63149,
+          100480,
+          59076,
+          68075,
+          67180,
+          64064,
+          66980,
+          68075,
+          100480,
+          67519,
+          67180,
+          58059,
+          67180,
+          66984,
+          66984,
+          58059,
+          63124,
+          68075,
+          67519,
+          68096,
+          63584,
+          100483,
+          63386,
+          100483,
+          59962,
+          58059,
+          68096,
+          59028,
+          67180,
+          100483,
+          67321,
+          67519,
+          67330,
+          59962,
+          67180,
+          58059,
+          63584
+        ],
+        "common_prefit_grid_score": 41.688319460281264,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0203": {
+        "graph_track_count": 121,
+        "graph_curved_count": 66,
+        "graph_read_and_fit": {
+          "wall_s": 0.09651711862534285,
+          "cpu_s": 0.09651507799999948
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              9.965522573872164,
+              -9.836340328443542
+            ],
+            "tracks": 57,
+            "satellites": 21,
+            "rms_hz": 226.8891294510056,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.817384321365374,
+              -122.43154098630663
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              10.038286859168863,
+              -9.702440752805153
+            ],
+            "tracks": 57,
+            "satellites": 21,
+            "rms_hz": 195.8231621108886,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.8185906238486,
+              -122.43071255367997
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.07632617559283972,
+            "cpu_s": 0.07632589199999984
+          },
+          "bias_and_grid": {
+            "wall_s": 0.010573364794254303,
+            "cpu_s": 0.01057391299999999
+          },
+          "c0": {
+            "wall_s": 0.0015783393755555153,
+            "cpu_s": 0.0015798660000001519
+          },
+          "fitted_c": {
+            "wall_s": 0.0014185868203639984,
+            "cpu_s": 0.001419231999999937
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 57,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          57780,
+          57780,
+          59342,
+          57780,
+          63466,
+          67953,
+          59342,
+          59360,
+          59342,
+          59342,
+          63467,
+          58978,
+          68062,
+          63377,
+          68062,
+          63466,
+          59360,
+          59360,
+          59342,
+          58228,
+          67953,
+          57780,
+          68256,
+          58228,
+          63467,
+          58228,
+          56383,
+          57780,
+          67953,
+          68062,
+          63377,
+          63467,
+          68398,
+          63466,
+          68062,
+          58228,
+          60593,
+          59741,
+          67935,
+          60592,
+          63370,
+          59360,
+          58228,
+          57780,
+          59342,
+          59360,
+          67935,
+          68062,
+          68398,
+          58228,
+          59342,
+          57780,
+          57780,
+          68067,
+          101015,
+          57780,
+          58875
+        ],
+        "common_prefit_grid_score": 43.69757912352524,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0209": {
+        "graph_track_count": 139,
+        "graph_curved_count": 78,
+        "graph_read_and_fit": {
+          "wall_s": 0.10114398784935474,
+          "cpu_s": 0.10114199799999923
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              7.96630841221207,
+              -7.948716349823144
+            ],
+            "tracks": 53,
+            "satellites": 23,
+            "rms_hz": 537.4589132047112,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.83438994279439,
+              -122.45430234831873
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              7.978422883267874,
+              -7.604386940777717
+            ],
+            "tracks": 53,
+            "satellites": 23,
+            "rms_hz": 534.6668308915484,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.837492009542544,
+              -122.45416442319467
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.08123387582600117,
+            "cpu_s": 0.0812338730000004
+          },
+          "bias_and_grid": {
+            "wall_s": 0.010013950057327747,
+            "cpu_s": 0.010014823000000561
+          },
+          "c0": {
+            "wall_s": 0.0018482096493244171,
+            "cpu_s": 0.0018494799999988487
+          },
+          "fitted_c": {
+            "wall_s": 0.0015813019126653671,
+            "cpu_s": 0.0015816379999993302
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 53,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          66471,
+          55347,
+          65824,
+          65684,
+          65677,
+          58515,
+          67812,
+          55347,
+          67414,
+          64314,
+          64314,
+          64314,
+          65684,
+          65684,
+          57645,
+          64314,
+          66827,
+          56357,
+          65677,
+          58515,
+          66471,
+          64314,
+          55347,
+          69254,
+          59522,
+          66827,
+          52139,
+          65824,
+          65684,
+          67359,
+          66827,
+          57407,
+          64253,
+          66482,
+          66471,
+          67906,
+          56357,
+          65684,
+          62499,
+          64253,
+          67414,
+          65677,
+          56357,
+          56541,
+          55347,
+          65684,
+          67359,
+          61856,
+          65684,
+          67359,
+          64314,
+          67359,
+          65824
+        ],
+        "common_prefit_grid_score": 40.028933208555536,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0277": {
+        "graph_track_count": 151,
+        "graph_curved_count": 85,
+        "graph_read_and_fit": {
+          "wall_s": 0.0910421721637249,
+          "cpu_s": 0.09104029500000088
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              10.000849424642997,
+              -4.6204478638372315
+            ],
+            "tracks": 64,
+            "satellites": 20,
+            "rms_hz": 143.09829493971623,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.86437434356903,
+              -122.43113878465431
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              10.032525511345298,
+              -4.592421249691306
+            ],
+            "tracks": 64,
+            "satellites": 20,
+            "rms_hz": 142.13649980732137,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.86462683558837,
+              -122.43077814751479
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.06975663639605045,
+            "cpu_s": 0.06975490099999959
+          },
+          "bias_and_grid": {
+            "wall_s": 0.010232541710138321,
+            "cpu_s": 0.010233150999999552
+          },
+          "c0": {
+            "wall_s": 0.0015971465036273003,
+            "cpu_s": 0.0015980010000014033
+          },
+          "fitted_c": {
+            "wall_s": 0.0013670148327946663,
+            "cpu_s": 0.0013676619999998252
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 64,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          59621,
+          67040,
+          66291,
+          64432,
+          64420,
+          64420,
+          59613,
+          62071,
+          67046,
+          66291,
+          59499,
+          66280,
+          58446,
+          64432,
+          66291,
+          66280,
+          66280,
+          100028,
+          64432,
+          66291,
+          66286,
+          59613,
+          62071,
+          59621,
+          67040,
+          59613,
+          62071,
+          56028,
+          64420,
+          59613,
+          67040,
+          64420,
+          63021,
+          67046,
+          59550,
+          67040,
+          64432,
+          66280,
+          66280,
+          56011,
+          59621,
+          59621,
+          63021,
+          64420,
+          66286,
+          67046,
+          59621,
+          59621,
+          59940,
+          64735,
+          66280,
+          56028,
+          60023,
+          59940,
+          67040,
+          64432,
+          100028,
+          64432,
+          67040,
+          67046,
+          66280,
+          59621,
+          63021,
+          64432
+        ],
+        "common_prefit_grid_score": 49.20619992979779,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      },
+      "DS26-0311": {
+        "graph_track_count": 117,
+        "graph_curved_count": 71,
+        "graph_read_and_fit": {
+          "wall_s": 0.10493266209959984,
+          "cpu_s": 0.10405777999999977
+        },
+        "arms": {
+          "c0": {
+            "status": "estimate",
+            "xy": [
+              4.747568980821662,
+              -6.2694502215941
+            ],
+            "tracks": 64,
+            "satellites": 27,
+            "rms_hz": 155.75699636714575,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.84951846647213,
+              -122.49094819388422
+            ]
+          },
+          "fitted_c": {
+            "status": "estimate",
+            "xy": [
+              4.86280266914136,
+              -6.142019953082972
+            ],
+            "tracks": 64,
+            "satellites": 27,
+            "rms_hz": 117.94316064155025,
+            "rms_kind": "absolute",
+            "on_boundary": false,
+            "latlon": [
+              37.85066648690916,
+              -122.4896362405447
+            ]
+          }
+        },
+        "stages": {
+          "shortlist": {
+            "wall_s": 0.0807077931240201,
+            "cpu_s": 0.08069109699999899
+          },
+          "bias_and_grid": {
+            "wall_s": 0.011019287630915642,
+            "cpu_s": 0.010513983999999255
+          },
+          "c0": {
+            "wall_s": 0.002851317636668682,
+            "cpu_s": 0.002603031999999672
+          },
+          "fitted_c": {
+            "wall_s": 0.002267133444547653,
+            "cpu_s": 0.0021687269999990377
+          }
+        },
+        "descriptor_tracks": 64,
+        "matched_tracks": 64,
+        "descriptor_numeric_bytes": 432128,
+        "selected_satellites": [
+          64712,
+          66435,
+          64712,
+          62778,
+          59880,
+          61931,
+          64712,
+          62602,
+          100490,
+          58240,
+          63183,
+          58246,
+          62496,
+          58237,
+          62778,
+          55914,
+          66327,
+          62778,
+          61215,
+          64712,
+          100490,
+          68265,
+          62778,
+          63183,
+          66439,
+          66327,
+          62602,
+          62778,
+          55670,
+          58246,
+          56527,
+          61216,
+          64712,
+          62778,
+          66439,
+          58240,
+          100491,
+          58240,
+          59880,
+          100490,
+          57534,
+          59790,
+          62778,
+          66435,
+          66528,
+          66322,
+          62778,
+          62602,
+          66322,
+          64712,
+          59880,
+          57534,
+          100490,
+          62496,
+          62778,
+          66327,
+          56301,
+          62778,
+          56301,
+          62602,
+          59842,
+          62778,
+          62778,
+          62602
+        ],
+        "common_prefit_grid_score": 53.25315000832228,
+        "selected_distinct_rf_by_group": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "c_varies_within_some_receiver_side": true
+      }
+    },
+    "capacities": {
+      "lanes": 16,
+      "live_tracks_per_lane": 8,
+      "unique_candidates_per_probe": 4,
+      "candidate_track_tests_per_probe": 32,
+      "subsampled_points_plus_latest_per_live_track": 128,
+      "archived_segments": 64,
+      "solver_segments": 64,
+      "parser_block_chars": 65536
+    }
+  }
+}

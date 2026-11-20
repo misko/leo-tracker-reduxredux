@@ -1,0 +1,81 @@
+{
+  "charts": [
+    {
+      "caption": "Audit of the two primary timeout cases and their fresh full-IQ repeats. Both studies use the same memory, swap and 360 s limits. The repeats use local ext4 scratch.",
+      "cases": [
+        "DS29-0082",
+        "DS26-0237"
+      ],
+      "id": "scout-deadline-primary-audit",
+      "method": "scout-deadline-primary-audit",
+      "provenance": [
+        "capture-era-v5.csv",
+        "primary-scores.csv",
+        "primary-resources.json",
+        "primary-repeat-provenance.json"
+      ],
+      "scope": "roof",
+      "seal": "audit-figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Sixteen starts \u00b7 secondary",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-deadline-repeat_candidate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Four starts \u00b7 secondary",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-deadline-repeat_control"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Sixteen starts \u00b7 primary",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-primary-audit_candidate"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "all_visits",
+          "label": "Four starts \u00b7 primary",
+          "match": [
+            "tile",
+            "catalog_sha256",
+            "original_request_sha256",
+            "mode"
+          ],
+          "native_authority": "frozen",
+          "native_field": "paired_capture_sha256",
+          "value": "scout-primary-audit_control"
+        }
+      ],
+      "title": "Primary timeout outcomes beside their two-case deadline repeat"
+    }
+  ],
+  "version": 1
+}

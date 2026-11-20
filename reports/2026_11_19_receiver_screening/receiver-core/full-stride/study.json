@@ -1,0 +1,21 @@
+{
+  "id": "wide-cfo-stride",
+  "title": "A smaller Doppler grid on eight complete roof recordings",
+  "caption": "Full saved I/Q through the same compact position solver. Both GLRT detectors span ±800 kHz with four proposed pilot starts. The candidate fills skipped bins only near each region's strongest coarse response.",
+  "control": {"label": "21 coarse Doppler bins", "sha256": "db80b772cf9f52941cc0073067816e571308cb43c3096516b77f73ed54986c66"},
+  "candidate": {"label": "11 bins plus local neighbors", "sha256": "68876717e4fe51b9aef99d737d771709f95f5eba1fb2b5fd977f96b2892e9b17"},
+  "limit_s": 360,
+  "cases": [
+    {"id": "DS26-0162", "cpus": [0,1], "first":"candidate", "cohort":"additional waveform"},
+    {"id": "DS29-0519", "cpus": [18,19], "first":"control", "cohort":"additional waveform"},
+    {"id": "DS26-0036", "cpus": [0,1], "first":"control", "cohort":"previous waveform"},
+    {"id": "DS29-0082", "cpus": [18,19], "first":"candidate", "cohort":"previous waveform"},
+    {"id": "DS26-0237", "cpus": [0,1], "first":"candidate", "cohort":"previous waveform"},
+    {"id": "DS29-0174", "cpus": [18,19], "first":"control", "cohort":"previous waveform"},
+    {"id": "DS26-0122", "cpus": [0,1], "first":"control", "cohort":"previous waveform"},
+    {"id": "DS29-0247", "cpus": [18,19], "first":"candidate", "cohort":"previous waveform"}
+  ],
+  "additional_panels": [
+    {"id":"additional", "cohort":"additional waveform", "title":"Doppler grid spacing on two additional complete waveforms"}
+  ]
+}

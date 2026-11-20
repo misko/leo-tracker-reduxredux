@@ -1,0 +1,59 @@
+{
+  "charts": [
+    {
+      "caption": "A full ordinary recording under 512 MiB. Controls use the same saved visits. Original v5 roles use capture-era factors.",
+      "cases": [
+        "DS29-0082"
+      ],
+      "id": "direct-whole-prepared-slim",
+      "method": "v5_direct_whole",
+      "provenance": [
+        "comparison.json",
+        "timings.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Direct slim",
+          "native_authority": "ordinary",
+          "native_field": "origin_native_sha256",
+          "value": "v5_direct_whole"
+        },
+        {
+          "file": "prepared-positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Prior prepared",
+          "match": [
+            "tile",
+            "catalog_sha256"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "origin_native_sha256",
+          "value": "whole_fractional"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Ordinary stock",
+          "match": [
+            "tile",
+            "catalog_sha256"
+          ],
+          "native_authority": "ordinary",
+          "native_field": "native_sha256",
+          "value": "whole_cavity"
+        }
+      ],
+      "source_lock": {
+        "digest_key": "source_lock_sha256",
+        "file": "source-lock.json"
+      },
+      "title": "Full saved IQ through the slim direct receiver"
+    }
+  ],
+  "version": 1
+}

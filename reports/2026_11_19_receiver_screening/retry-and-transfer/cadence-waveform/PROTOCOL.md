@@ -1,0 +1,7 @@
+# Chronological saved-IQ cadence protocol
+
+Use two complete 64-slot chunks per recording, one per half selected by the fixed hash of recording and chunk coordinates. Require at least 32 valid visits per chunk from the archived capture exclusion list. Freeze the four spans before inspecting their candidate outcomes for reporting.
+
+Replay the original conditional, wait after a retry miss, and wait after a retry hit on the same authenticated CI16 on the same core. Use two rounds with a rotating order of the three modes at each visit. Every mode and round starts with empty timers at the start of each span. Each timer key is the physical receiver ID and actual RF. Use the signed recorded host delivery clock. During a wait, preserve the failed receiver's original primary evaluation and skip the 22-anchor acquisition itself. Update a timer only from the fractional gate returned by a freshly executed retry.
+
+Use the same qualified prepared workspace, exact row selector and pruned fine kernel across modes and recordings. Check all complete projected factor rows against the frozen full conditional and primary-only evidence. Compare the set of executed retries against cold-start factor controls driven by the same delivery clocks and record-only timer states. Measure inclusive resident detector CPU and wall, actual retry call CPU, grid invocations, and ideal equal-paced costs separately. This study measures the waveform detector without a new position fit.

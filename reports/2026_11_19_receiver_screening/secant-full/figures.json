@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "v5_secant_fit-roof135",
+      "method": "v5_secant_fit",
+      "scope": "roof",
+      "title": "Secant position fit on all 135 roof recordings",
+      "caption": "The full cohort has 127 DS26 and eight DS29 recordings, with 121 fresh secant fits and 14 authenticated prior fits. All use complete capture-era GLRT and the same causal inputs as the archived compact projector.",
+      "cases": "roof135",
+      "seal": "receipt.json",
+      "provenance": ["plan.json", "prediction-lock.json", "original-v5-inputs.json"],
+      "series": [
+        {"key": "one", "label": "Secant position fit", "file": "v5_secant_fit.jsonl.gz", "value": "v5_secant_fit"},
+        {"key": "stock", "label": "Archived compact projector", "file": "orbit_projector.jsonl.gz", "value": "orbit_projector", "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "charts": [
+    {
+      "caption": "Matched recordings, causal catalogues and supplied regions. Compact v5 runs its full cavity workflow. The native receivers rebuild identical anonymous Graph tracks for three different position fits.",
+      "cases": "roof135",
+      "id": "full-receiver-comparison-roof135",
+      "method": "full_receiver_comparison",
+      "provenance": [
+        "sources.json",
+        "summary.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "roof-lock.json",
+      "series": [
+        {
+          "file": "v5_secant_fit.jsonl.gz",
+          "key": "one",
+          "label": "Compact v5 secant",
+          "value": "v5_secant_fit"
+        },
+        {
+          "file": "native_joint_orbits.jsonl.gz",
+          "key": "stock",
+          "label": "Native joint orbits",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_joint_orbits",
+          "where": {
+            "cohort": "roof"
+          }
+        },
+        {
+          "file": "native_train_update.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Native training update",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_train_update",
+          "where": {
+            "cohort": "roof"
+          }
+        },
+        {
+          "file": "native_joint_clock_model.jsonl.gz",
+          "key": "all_visits",
+          "label": "Native smooth clock",
+          "match": [
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "native_joint_clock_model",
+          "where": {
+            "cohort": "roof"
+          }
+        }
+      ],
+      "title": "Full-roof position accuracy on 135 recordings"
+    }
+  ],
+  "version": 1
+}

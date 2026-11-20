@@ -1,0 +1,145 @@
+{
+  "alpha": 0.05,
+  "schema": "antenna-confirmation/v1",
+  "scopes": {
+    "direct_validation": {
+      "scheduled": [
+        "DS26-0168",
+        "DS29-0174"
+      ],
+      "state": "sealed"
+    },
+    "discovery": {
+      "scheduled": [
+        "DS26-0122",
+        "DS26-0162",
+        "DS26-0197",
+        "DS26-0241",
+        "DS29-0082",
+        "DS29-0357",
+        "DS26-0014",
+        "DS29-0519"
+      ],
+      "state": "sealed"
+    },
+    "fresh": {
+      "scheduled": [
+        "DS26-0066",
+        "DS29-0085"
+      ],
+      "state": "sealed"
+    },
+    "pooled": {
+      "scheduled": [
+        "DS26-0014",
+        "DS26-0026",
+        "DS26-0036",
+        "DS26-0122",
+        "DS26-0144",
+        "DS26-0162",
+        "DS26-0168",
+        "DS26-0197",
+        "DS26-0237",
+        "DS26-0241",
+        "DS26-0255",
+        "DS29-0047",
+        "DS29-0082",
+        "DS29-0127",
+        "DS29-0174",
+        "DS29-0247",
+        "DS29-0316",
+        "DS29-0330",
+        "DS29-0357",
+        "DS29-0491",
+        "DS29-0519",
+        "DS29-0604"
+      ],
+      "state": "sealed"
+    },
+    "validation": {
+      "scheduled": [
+        "DS26-0026",
+        "DS26-0036",
+        "DS26-0144",
+        "DS26-0168",
+        "DS26-0237",
+        "DS26-0255",
+        "DS29-0047",
+        "DS29-0127",
+        "DS29-0174",
+        "DS29-0247",
+        "DS29-0316",
+        "DS29-0330",
+        "DS29-0491",
+        "DS29-0604"
+      ],
+      "state": "sealed"
+    }
+  },
+  "tests": [
+    {
+      "arm": "c0",
+      "contrast": "add_hit_without_miss",
+      "exact_sign_p": 0.057373046875,
+      "holm_p": 0.2294921875,
+      "improvements": 11,
+      "losses": 3,
+      "measure": "error_km",
+      "median_change": -0.2631814227741736,
+      "paired": 14,
+      "passes_adjusted_005": false,
+      "scheduled": 14,
+      "scope": "validation",
+      "test_family": "held geography",
+      "ties": 0
+    },
+    {
+      "arm": "c0",
+      "contrast": "add_miss_with_hit",
+      "exact_sign_p": 0.1795654296875,
+      "holm_p": 0.5386962890625,
+      "improvements": 4,
+      "losses": 10,
+      "measure": "error_km",
+      "median_change": 0.03227336269826536,
+      "paired": 14,
+      "passes_adjusted_005": false,
+      "scheduled": 14,
+      "scope": "validation",
+      "test_family": "held geography",
+      "ties": 0
+    },
+    {
+      "arm": "fitted_c",
+      "contrast": "add_hit_without_miss",
+      "exact_sign_p": 0.1795654296875,
+      "holm_p": 0.5386962890625,
+      "improvements": 10,
+      "losses": 4,
+      "measure": "error_km",
+      "median_change": -0.22205622236069847,
+      "paired": 14,
+      "passes_adjusted_005": false,
+      "scheduled": 14,
+      "scope": "validation",
+      "test_family": "held geography",
+      "ties": 0
+    },
+    {
+      "arm": "fitted_c",
+      "contrast": "add_miss_with_hit",
+      "exact_sign_p": 0.79052734375,
+      "holm_p": 0.79052734375,
+      "improvements": 6,
+      "losses": 8,
+      "measure": "error_km",
+      "median_change": 0.044000657813362154,
+      "paired": 14,
+      "passes_adjusted_005": false,
+      "scheduled": 14,
+      "scope": "validation",
+      "test_family": "held geography",
+      "ties": 0
+    }
+  ]
+}

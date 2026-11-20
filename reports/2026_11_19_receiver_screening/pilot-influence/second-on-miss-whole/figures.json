@@ -1,0 +1,61 @@
+{
+  "charts": [
+    {
+      "caption": "Actual saved IQ, original 25 km offers and both calibration settings. The original strict pilot gate decides whether the second antenna runs.",
+      "cases": "sealed",
+      "id": "second-on-miss-whole",
+      "method": "second_on_miss_whole",
+      "provenance": [
+        "scores.csv",
+        "summary.json",
+        "prediction-lock.json",
+        "parity.json"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Second antenna on primary miss",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "second_on_miss_whole"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archived dual stock",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "one_lane_whole_stock"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one_native_factors",
+          "label": "Archived alternating one antenna",
+          "match": [
+            "paired_capture_sha256",
+            "original_request_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "one_lane_whole"
+        }
+      ],
+      "title": "Second antenna after a primary miss on two complete saved recordings"
+    }
+  ],
+  "version": 2
+}

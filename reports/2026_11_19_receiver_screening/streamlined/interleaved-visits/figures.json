@@ -1,0 +1,47 @@
+{
+  "charts": [
+    {
+      "caption": "Complete five-minute capture-era GLRT records, full-clock tracking and the same compact solver. Four recording IDs were drawn by hash.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0082",
+        "DS26-0094",
+        "DS26-0066",
+        "DS29-0604",
+        "DS29-0519"
+      ],
+      "id": "interleaved-visits-roof6",
+      "method": "interleaved_visits",
+      "provenance": [
+        "prediction-lock.json",
+        "plan.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Three of four visits per channel",
+          "value": "interleaved_visits"
+        },
+        {
+          "file": "stock.jsonl.gz",
+          "key": "stock",
+          "label": "All visits \u00b7 compact v5",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "resolved_request_sha256"
+          ],
+          "value": "v5_secant_fit"
+        }
+      ],
+      "title": "Skip one in four visits on every RF channel"
+    }
+  ],
+  "version": 1
+}

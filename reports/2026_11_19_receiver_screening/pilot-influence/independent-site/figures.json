@@ -1,0 +1,58 @@
+{
+  "charts": [
+    {
+      "caption": "Four new boards per site, one receiver installation, one nominal RF. Matched searches share anonymous measured tracks. Fitted c is unidentifiable.",
+      "cases": "sealed",
+      "condition_labels": {
+        "containing": "Contains receiver",
+        "corner": "1 km past both corner axes",
+        "face": "1 km beyond face",
+        "far": "20 km beyond face"
+      },
+      "id": "independent-site-omission-frontier",
+      "method": "starloc_new_boards_held",
+      "provenance": [
+        "prediction-lock.json",
+        "scores.csv"
+      ],
+      "queries": "figure-queries.json",
+      "scope": "transfer",
+      "seal": "score-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Held gate \u00b7 forced",
+          "key": "candidate",
+          "label": "Held gate",
+          "value": "starloc_new_boards_held"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Interior only \u00b7 forced",
+          "key": "stock",
+          "label": "Interior only",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "starloc_new_boards_interior"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "forced_label": "Ungated \u00b7 forced",
+          "key": "one",
+          "label": "Ungated",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalogue_sha256"
+          ],
+          "value": "starloc_new_boards_ungated"
+        }
+      ],
+      "title": "Geographic false publication on eight measured beacon sites"
+    }
+  ],
+  "version": 2
+}

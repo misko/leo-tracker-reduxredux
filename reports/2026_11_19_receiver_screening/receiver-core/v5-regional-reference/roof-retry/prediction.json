@@ -1,0 +1,199 @@
+{
+  "events": [
+    {
+      "event": "stage",
+      "seconds": 38.31370802875608,
+      "stage": "native_preparation"
+    },
+    {
+      "event": "stage",
+      "seconds": 7.1694705775007606,
+      "stage": "recovery_catalogue"
+    },
+    {
+      "event": "stage",
+      "seconds": 38.52173951920122,
+      "stage": "initial"
+    },
+    {
+      "event": "stage",
+      "seconds": 17.513752410188317,
+      "stage": "conservative"
+    },
+    {
+      "event": "stage",
+      "seconds": 19.33836541697383,
+      "stage": "family"
+    },
+    {
+      "event": "stage",
+      "seconds": 11.032554538920522,
+      "stage": "signed"
+    },
+    {
+      "event": "stage",
+      "seconds": 6.958459815941751,
+      "stage": "cavity"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.10625942703336477,
+      "stage": "inventory"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.0030769575387239456,
+      "stage": "predictive"
+    },
+    {
+      "event": "recovery_stage",
+      "stage": "inventory",
+      "status": "complete"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.00795803777873516,
+      "stage": "numerical"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.0010204212740063667,
+      "stage": "gap"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.07200269401073456,
+      "stage": "residual"
+    },
+    {
+      "event": "stage",
+      "seconds": 33.80406487733126,
+      "stage": "residual_screen"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.0056731849908828735,
+      "stage": "addition"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.07578302640467882,
+      "stage": "incumbent"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.8099561026319861,
+      "stage": "ranking"
+    },
+    {
+      "event": "stage",
+      "seconds": 34.36743277311325,
+      "stage": "admission"
+    },
+    {
+      "event": "stage",
+      "seconds": 0.015139909461140633,
+      "stage": "final"
+    }
+  ],
+  "exit_code": 0,
+  "method": "v5_original_regional_reference",
+  "request_sha256": "aab7fd10cee3cc697ea652b9bca93213d814d25a3b69e23d0f88ac97ea07aa7b",
+  "resources": {
+    "finish": {
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-v5-regional-5463db780dda.service",
+      "cpu_affinity": [
+        23
+      ],
+      "cpu_s": 154.568715,
+      "memory_limit_bytes": 3221225472,
+      "memory_peak_bytes": 1474404352,
+      "nice": 10,
+      "swap_limit_bytes": 0
+    },
+    "start": {
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/leo-v5-regional-5463db780dda.service",
+      "cpu_affinity": [
+        23
+      ],
+      "cpu_s": 2.7574449999999997,
+      "memory_limit_bytes": 3221225472,
+      "memory_peak_bytes": 141115392,
+      "nice": 10,
+      "swap_limit_bytes": 0
+    }
+  },
+  "result": {
+    "arms": {
+      "c0": {
+        "latlon": [
+          37.845496107002454,
+          -122.48113274446547
+        ],
+        "rf_rms_hz": 97.00356915094589
+      },
+      "fitted_c": {
+        "latlon": [
+          37.849671446478126,
+          -122.47991581718864
+        ],
+        "rf_rms_hz": 96.68362191875039
+      }
+    },
+    "boundary": "Native detector input to both v5 position decisions",
+    "metrics": {
+      "c0_associated_observations": 929,
+      "c0_conditional_rms_hz": 97.00356915094589,
+      "c0_frequency_score": 6337.717527988337,
+      "fitted_c_associated_observations": 929,
+      "fitted_c_conditional_rms_hz": 96.68362191875039,
+      "fitted_c_frequency_score": 6342.809181263315,
+      "native_observations": 1868,
+      "stage_s": [
+        38.31370802875608,
+        7.1694705775007606,
+        38.52173951920122,
+        17.513752410188317,
+        19.33836541697383,
+        11.032554538920522,
+        6.958459815941751,
+        0.10625942703336477,
+        0.0030769575387239456,
+        0.00795803777873516,
+        0.0010204212740063667,
+        0.07200269401073456,
+        33.80406487733126,
+        0.0056731849908828735,
+        0.07578302640467882,
+        0.8099561026319861,
+        34.36743277311325,
+        0.015139909461140633
+      ],
+      "stages": [
+        "native_preparation",
+        "recovery_catalogue",
+        "initial",
+        "conservative",
+        "family",
+        "signed",
+        "cavity",
+        "inventory",
+        "predictive",
+        "numerical",
+        "gap",
+        "residual",
+        "residual_screen",
+        "addition",
+        "incumbent",
+        "ranking",
+        "admission",
+        "final"
+      ],
+      "tracks": 61
+    },
+    "status": "ok"
+  },
+  "service": "Running as unit: leo-v5-regional-5463db780dda.service; invocation ID: e0b6f00b6bd24207a9acb89cc91be358\n          Finished with result: success\nMain processes terminated with: code=exited, status=0/SUCCESS\n               Service runtime: 3min 37.600s\n             CPU time consumed: 2min 35.557s\n                   Memory peak: 1.3G (swap: 0B)\n",
+  "stage_log_sha256": "e4798905b9c638097475391548b2eb28948dd6008b6636e31ef18dc70002baf1",
+  "wall_s": 217.65159811265767
+}

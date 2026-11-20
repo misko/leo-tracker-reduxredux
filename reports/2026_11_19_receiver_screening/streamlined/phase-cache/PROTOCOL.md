@@ -1,0 +1,7 @@
+# Exact native normal-solve reuse
+
+The capped profile on DS29-0316 motivated one candidate. The native normal and conditional likelihood solver was timed separately from interpolation, static layout caching, and the original signed/cavity result caches. Confirm on the other three cases from the same locked capped-lifetime panel, ordered by SHA-256 of their native GLRT digest with salt `phase-cache-confirm-v1:`. The profile case is excluded. Keep both coefficient arms, the five-refresh solver, actual published endpoints, the original four role controls and the sealed unrestricted compact result.
+
+The candidate retains one native call keyed by backend and process identity, input arity, keyword order, exact dtype, shape and layout, and bytewise values. Copy the input bytes and return private result data. Unsupported layouts or sizes use the ordinary backend. Input storage is capped at 4 MiB and output arrays at 256 KiB. Compare timed calls and whole worker CPU, wall and kernel peak memory. No output position or RF metric enters the cache or roster.
+
+Run fresh capped controls and candidates on CPUs 20–22, one nice-10 worker and one numerical thread per CPU. Alternate pair order by the sealed digest rank. Set the actual 512 MiB kernel cap, no swap and the same 195 s leg cap in both methods. Retain every attempt regardless of timeout/withholding. Geographic scoring starts after both methods seal. The stored complete GLRT is the experiment boundary.

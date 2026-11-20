@@ -1,0 +1,48 @@
+{
+  "charts": [
+    {
+      "caption": "One complete capture through relocated stock and compact phase-release. Identical position and RF outputs in both arms. Original v5 options use capture-era factors.",
+      "cases": "sealed",
+      "id": "portable-saved-iq-position",
+      "method": "portable_saved_iq",
+      "provenance": [
+        "deployment-proof.json",
+        "position-scores.csv",
+        "prediction-lock.json",
+        "service.json"
+      ],
+      "scope": "roof",
+      "seal": "chart-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Relocated receiver",
+          "match": [
+            "tile",
+            "native_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "portable_saved_iq"
+        },
+        {
+          "file": "positions.jsonl.gz",
+          "key": "stock",
+          "label": "Archive stock",
+          "match": [
+            "tile",
+            "native_sha256",
+            "catalog_sha256",
+            "original_request_sha256"
+          ],
+          "native_field": "paired_capture_sha256",
+          "value": "portable_archived_stock"
+        }
+      ],
+      "title": "Relocated saved-IQ receiver parity"
+    }
+  ],
+  "version": 1
+}

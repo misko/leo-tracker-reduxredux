@@ -1,0 +1,94 @@
+01 Streaming track and position
+
+Primary design chosen before scoring geography
+
+The tracker consumes archived fractional-margin-passing candidates in sample
+counter order. Each probe can supply up to four distinct candidates in
+descending margin order. Candidates separated by under 350 Hz modulo the
+1/4.4 us alias period merge at the strongest candidate. Each receiver/channel/
+RF lane uses at most eight constant-rate alpha–beta states. The first
+continuation initializes the rate. Subsequent gains are 0.8 and 0.35 with a
+rate cap of ±8 kHz/s. The innovation gate depends on time gap and track maturity.
+Greedy assignment uses normalized innovation, a first-hit penalty, and a small
+rank preference. Each peak and track can link once per probe. A candidate is
+skipped when its two best confirmed track costs differ by under 0.12.
+
+Confirmation requires six hits over at least 1.5 s. States expire on the next
+probe in their lane after 2.5 s idle for one/two hits or 6 s otherwise, and at
+most 180 s of elapsed support is linked per segment. On overflow, an unexplained
+peak may evict a tentative track, with age and hits breaking ties. Frequency
+payloads keep actual alias-lifted samples. When at capacity, the tracker
+retains every other stored point, doubles the sampling stride, and separately
+keeps the latest point. It can retain up to 64 retired curved segments and
+submits up to 64 ranked by hit count, including eligible live segments. A
+segment must span 20 s, have at least 12 retained samples, and have at least
+250 Hz RMS around a straight line.
+
+The compact solver in ../support/cold_replay.py uses a prior-available TLE
+snapshot, a 48 h element age cutoff, five-second orbit knots, and the common
+25 km square. It samples 12 points per submitted track, retains 12 satellite
+alternatives, votes for receiver-side biases, and searches a 7 by 7 position
+grid. Tracks with cost below 12 enter refinement, which requires four tracks
+and three distinct satellite assignments. Both arms reuse the same data,
+assignments, grid start, alias policy, and four robust solve passes. One fixes
+c to zero and one fits a shared RF-dependent term with the support solver's
+prior. The retained RFs vary within a receiver-side group on every case and
+deadline, so the term has variation beyond group intercepts. Physical
+calibration and per-fix integrity remain unverified. The shared solver returns
+absolute in-sample RF RMS and flags box-edge fixes.
+
+Run from this directory
+
+  export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1
+  export PYTHONPATH=/home/mouse9911/.cache/accuracy-repair-20261115/frozen-001/src
+  ../../../.venv/bin/python -m unittest -v test_tracker
+  ../../../.venv/bin/python prototype.py
+
+The output is result.json. Option --case DS26-0036 prints a single-case smoke
+run. Inputs are native.json and tle/ under the case folders in
+/srv/bulk/leo-dev/algo07v3-shortcuts-20261107/inputs. The full control uses
+only track measurement and curvature fields from the anonymous graph archive
+at /srv/bulk/leo/research/algo07v3-20261104/tracks001/candidate. The graph was
+linked offline and provides a track-construction control with the same causal
+orbit bank and compact solver. Its candidate membership and temporal evidence
+can differ from the streaming run. Reference location, v5 estimates, saved
+satellite identities, and future orbit snapshots did not enter fitting.
+
+Verification and cost
+
+An incremental replay freezes solves at the 60- and 120-second air deadlines
+and reads observations only when the 20 ms probe is complete. The archive
+reader may buffer raw text and extract the next record's timestamp to detect
+the cutoff. Its candidate payload stays unparsed until eligible. All 16
+deadline fits exactly match independent reopened-prefix runs in selected
+observations, satellite assignments, grid score, and both RF/location
+estimates. Continuing through both checkpoints reproduced the uninterrupted
+full tracker on all eight cases. A synthetic malformed-future-record check
+guards the parsing cutoff. Four tracker checks cover duplicate alias peaks,
+multi-track unwrapping and compaction, ambiguous competition, and expiration.
+
+Full host wall time includes opening native JSON, decoding and ranking probes,
+state updates, segment selection, TLE bank construction, shortlist, bias/grid,
+and both c solves. CPU times and stage wall times are recorded separately. The
+prefix and graph control runs are outside the primary full clock. Both arms
+yielded estimates in all eight cases at each air deadline and at full duration.
+The primary full median was 0.426 s wall (range 0.406–0.528 s), with median
+0.035 s state updates, 0.129 s archive decode/candidate ranking, 0.173 s orbit
+bank, and 0.075 s satellite shortlist. Median absolute RF residual RMS was
+230.0 Hz at c=0 and 202.2 Hz with fitted c over the full scans. The full-scan
+graph control produced 225.8 and 208.0 Hz median RF RMS, respectively. All
+geographic scoring is external to this replay.
+
+The nominal tracker bound is 16 lanes, 128 live states, 32 continuation tests
+per probe, and 128 time/CFO pairs per live or retired segment. The persistent
+numeric payload bound is 384 KiB at two float64 values per pair, before state
+scalars, Python objects, archive parser buffers, and temporary freeze copies.
+The peak seen was 51 simultaneous states and seven in a lane. The JSON reader
+buffers chunks of 64 Ki characters plus boundary text and one pending record.
+The full-scan float64 orbit banks occupy 2.14–2.85 MB in the eight runs. The
+packed shortlist arrays occupy 0.41–0.43 MB. Whole-process RSS, SGP4 scratch
+space, and optimizer scratch space remain unmeasured.
+
+IQ acquisition, pilot detection, live retuning, target hardware latency, power,
+and integrity qualification were outside this host replay. Results use the
+native detector's archived probes and the panel's regional search prior.

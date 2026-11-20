@@ -1,0 +1,43 @@
+{
+  "charts": [
+    {
+      "caption": "Three same-core pairs from the original capture-era GLRT factors under 512 MiB and zero swap. DS26-0090 was held by a salted choice. DS29-0357 covers cavity recovery.",
+      "cases": [
+        "DS26-0036",
+        "DS29-0357",
+        "DS26-0090"
+      ],
+      "id": "acquisition-frontier-compact-cut",
+      "method": "v5_compact_cut",
+      "provenance": [
+        "parity.json",
+        "resources.csv",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "figure-lock.json",
+      "series": [
+        {
+          "file": "positions.jsonl.gz",
+          "key": "one",
+          "label": "Direct compact bindings",
+          "value": "v5_compact_cut"
+        },
+        {
+          "file": "stock-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Phase-release compact v5",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "value": "v5_phase_stock_cut_control"
+        }
+      ],
+      "title": "Compact v5 with direct numerical bindings"
+    }
+  ],
+  "version": 1
+}

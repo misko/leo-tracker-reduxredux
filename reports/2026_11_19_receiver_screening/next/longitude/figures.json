@@ -1,0 +1,86 @@
+{
+  "charts": [
+    {
+      "caption": "Paired stored-native fits. Both offers use the same synthetic RF and causal history. A publication on the far omitted tile is a localization failure.",
+      "cases": "sealed",
+      "condition_labels": {
+        "far-omitted": "Far omitted",
+        "positive": "Containing offer"
+      },
+      "id": "cavity-longitude-dateline",
+      "method": "v5_cavity_payload_wrapped",
+      "provenance": [
+        "prediction-lock.json",
+        "control-lock.json",
+        "control-predictions.json",
+        "scores.csv",
+        "dateline-queries.json"
+      ],
+      "queries": "dateline-queries.json",
+      "scope": "transfer",
+      "seal": "cavity-longitude-dateline-figure-lock.json",
+      "series": [
+        {
+          "file": "cavity-longitude-dateline-positions.jsonl.gz",
+          "key": "candidate",
+          "label": "Longitude-safe compact cavity",
+          "value": "v5_cavity_payload_wrapped"
+        },
+        {
+          "file": "cavity-longitude-dateline-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original small package",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile",
+            "track_config_sha256",
+            "history_sha256",
+            "screen_center"
+          ],
+          "value": "v5_cavity_payload_small"
+        }
+      ],
+      "title": "Synthetic dateline crossing through the full compact cavity"
+    },
+    {
+      "caption": "Fresh wrapped package and sealed original small-package control. Both used the same ordinary GLRT factors, causal archive and tile.",
+      "cases": "sealed",
+      "id": "cavity-longitude-roof-control",
+      "method": "v5_cavity_payload_wrapped",
+      "provenance": [
+        "prediction-lock.json",
+        "control-lock.json",
+        "control-predictions.json",
+        "scores.csv"
+      ],
+      "scope": "roof",
+      "seal": "cavity-longitude-roof-control-figure-lock.json",
+      "series": [
+        {
+          "file": "cavity-longitude-roof-control-positions.jsonl.gz",
+          "key": "one",
+          "label": "Longitude-safe compact cavity",
+          "native_authority": "ordinary",
+          "value": "v5_cavity_payload_wrapped"
+        },
+        {
+          "file": "cavity-longitude-roof-control-positions.jsonl.gz",
+          "key": "stock",
+          "label": "Original small package",
+          "match": [
+            "input_sha256",
+            "native_sha256",
+            "catalog_sha256",
+            "tile"
+          ],
+          "native_authority": "ordinary",
+          "value": "v5_cavity_payload_small"
+        }
+      ],
+      "title": "Longitude-safe compact cavity on an ordinary in-range capture"
+    }
+  ],
+  "version": 1
+}

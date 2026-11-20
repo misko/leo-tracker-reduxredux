@@ -1,0 +1,68 @@
+{
+  "initial_selection_sha256": "131107c3e28aa9f3c728cb8401b02354bd54fc4d7407f832e023102727ffd540",
+  "qualification_source_sha256": "58fb149a12eaa94154d930ba2bdb37f350eef47b5ecc10dbb891e33308a1683d",
+  "rule": "Compare measured plans at the two fastest lengths with the released bank.",
+  "variant_source_sha256": "87ebe96f7ea1565e3234bd68a594d767bf8d579a3bb06f697183b3111308a44e",
+  "variants": {
+    "256": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/capture_fft.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so"
+      ],
+      "generated": {
+        "capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+        "fftw.wisdom": "5343fa0b1de9d15f793906b4818402748ac4edf7cc1cd0c75fd81a21e914d7d9",
+        "folded_bank.c": "e524399aef9a1a1d8aa9b46219971dbb185355ac90095bcadf49e326d2e85763",
+        "original_kernel_cache.h": "e4d597458bca8e6fb4ff9fc3a057dba9fbcaedca9e7a49240c842f2d3beb1eac"
+      },
+      "path": "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-256/prepared_measured.so",
+      "planning_cpu_ns": 42124652,
+      "sha256": "40965b750fb0e833fd211f4c069bb3eb0f190a40a0cf65963a2e5ebbe6456286"
+    },
+    "512": {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-ffp-contract=off",
+        "-fno-fast-math",
+        "-fPIC",
+        "-shared",
+        "-pthread",
+        "-march=native",
+        "-fopenmp-simd",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-512/capture_fft.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-512/prepared_measured.so"
+      ],
+      "generated": {
+        "capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+        "fftw.wisdom": "4bf410e0abae61f21814a81fc285c36c6f1db3ee61a2e475817e2cf57b2513e7",
+        "folded_bank.c": "81890c02fc8d8f549ce149d46cd1efd144c4f7e8ec1c81d2f0217b87ebc8ac6f",
+        "original_kernel_cache.h": "686e6034d008444873d8a4c65aaeaab6237efbf1f755b39a97220601d31b6b1c"
+      },
+      "path": "/srv/bulk/leo-dev/fft-length-20261120-v1/planned-512/prepared_measured.so",
+      "planning_cpu_ns": 60245666,
+      "sha256": "c578efae3ca597ce80be4a8c48b6c9256c2d6bec7d4bcb16a80fa5076ec7a11f"
+    }
+  }
+}

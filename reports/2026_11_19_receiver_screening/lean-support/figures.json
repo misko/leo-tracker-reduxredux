@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "charts": [
+    {
+      "id": "robust_support",
+      "method": "robust_support",
+      "scope": "roof",
+      "title": "Robust support gating on eight roof recordings",
+      "caption": "The support gate and two fit controls use the same prepared anonymous GLRT tracks, causal catalogue and original 25 km tile.",
+      "cases": ["DS29-0357", "DS29-0604", "DS26-0277", "DS29-0316", "DS29-0127", "DS26-0209", "DS26-0203", "DS26-0070"],
+      "seal": "figure-lock.json",
+      "provenance": ["source-lock.json", "prediction-lock.json"],
+      "series": [
+        {"key": "one", "label": "Support gate · published", "forced_label": "Support gate · forced", "file": "predictions.jsonl.gz", "value": "robust_support", "where": {"mode": "matched-tile"}},
+        {"key": "stock", "label": "Lean robust fit", "file": "predictions.jsonl.gz", "value": "robust_em", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "observation_sha256", "tile"]},
+        {"key": "all_visits", "label": "Orbit-aware robust fit", "file": "predictions.jsonl.gz", "value": "robust_orbit_fit", "where": {"mode": "matched-tile"}, "match": ["input_sha256", "observation_sha256", "tile"]}
+      ]
+    },
+    {
+      "id": "robust_support-wrong-region",
+      "method": "robust_support",
+      "scope": "transfer",
+      "title": "Robust support gating with the correct roof region omitted",
+      "caption": "Each of the eight roof recordings receives its prespecified wrong tile. All three fits see the same prepared tracks and causal catalogue. The corresponding original-tile trials have a separate chart.",
+      "cases": "sealed",
+      "seal": "figure-lock.json",
+      "queries": "figure-queries.json",
+      "provenance": ["source-lock.json", "prediction-lock.json", "wrong-offers.json"],
+      "series": [
+        {"key": "candidate", "label": "Support gate · published", "forced_label": "Support gate · forced", "file": "predictions.jsonl.gz", "value": "robust_support", "where": {"mode": "wrong-region"}},
+        {"key": "stock", "label": "Lean robust fit · published", "forced_label": "Lean robust fit · forced", "file": "predictions.jsonl.gz", "value": "robust_em", "where": {"mode": "wrong-region"}, "match": ["input_sha256"]},
+        {"key": "one", "label": "Orbit-aware fit · published", "forced_label": "Orbit-aware fit · forced", "file": "predictions.jsonl.gz", "value": "robust_orbit_fit", "where": {"mode": "wrong-region"}, "match": ["input_sha256"]}
+      ]
+    }
+  ]
+}

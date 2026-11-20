@@ -1,0 +1,3657 @@
+{
+  "batched_build": [
+    "cc",
+    "-std=c11",
+    "-O3",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-fPIC",
+    "-shared",
+    "-pthread",
+    "-march=native",
+    "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_fft.c",
+    "-lfftw3f",
+    "-lm",
+    "-o",
+    "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_batched_fft.so"
+  ],
+  "cases": {
+    "DS26-0162": {
+      "controls": false,
+      "cpu": 0,
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_sha256": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+      "root": {
+        "archived_native_sha256": "fd43c1a3df0a08ba7ca2e7c54742a9958ace638131694fcb5e92a349c3d29079",
+        "edge": "upper",
+        "input_manifest_sha256": "sha256:747c1cca6641883f7474dfc6dd279407bbefcd957706440732e22499afb9bcfd",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "sources": {
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_fractional.py": "ae177873aee33dc4efad0e7737fc0cd8f6785dfd9b2c9e698644d3d86b00e3f7",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+        },
+        "visits": [
+          0,
+          1,
+          2,
+          19,
+          76,
+          77
+        ]
+      },
+      "rows": [
+        {
+          "archive_probe": {
+            "actual_rf_hz": 11440312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.07549134345712934,
+                "fractional_epoch_offset_samples": 0.5554191963838988,
+                "fractional_exact_score": 0.8301126137090017,
+                "fractional_margin": 0.7546212702518723,
+                "fractional_tracking_cfo_hz": 446237.0539042983,
+                "integer_epoch_sample": 1702,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.07552167042111253,
+                "fractional_epoch_offset_samples": -0.4445158400751844,
+                "fractional_exact_score": 0.8300616108013467,
+                "fractional_margin": 0.7545399403802341,
+                "fractional_tracking_cfo_hz": 446233.25953727035,
+                "integer_epoch_sample": 1703,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.06353450976954396,
+                "fractional_epoch_offset_samples": -0.813685812806626,
+                "fractional_exact_score": 0.4728194145397797,
+                "fractional_margin": 0.40928490477023577,
+                "fractional_tracking_cfo_hz": 446564.7176842673,
+                "integer_epoch_sample": 1703,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.04351212300158476,
+                "fractional_epoch_offset_samples": -0.020759862630707,
+                "fractional_exact_score": 0.05183301510045841,
+                "fractional_margin": 0.008320892098873649,
+                "fractional_tracking_cfo_hz": 610951.5699899329,
+                "integer_epoch_sample": 12560,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.046979861057124005,
+                "fractional_epoch_offset_samples": 0.6061818018000463,
+                "fractional_exact_score": 0.7617583596073207,
+                "fractional_margin": 0.7147784985501967,
+                "fractional_tracking_cfo_hz": 445952.6094806031,
+                "integer_epoch_sample": 1702,
+                "passed_fractional_margin_gate": true
+              }
+            ],
+            "channel": 3,
+            "edge": "upper",
+            "payload_start_sample": 400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 11367664659190,
+            "visit_index": 2
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 11440312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.05855281109019781,
+                  "fractional_epoch_offset_samples": 0.31364116465459846,
+                  "fractional_exact_score": 0.8303477456886024,
+                  "fractional_margin": 0.7717949345984045,
+                  "fractional_tracking_cfo_hz": -169390.95805056434,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.05855281109019781,
+                  "fractional_epoch_offset_samples": 0.31364116465459846,
+                  "fractional_exact_score": 0.8303477456886024,
+                  "fractional_margin": 0.7717949345984045,
+                  "fractional_tracking_cfo_hz": -169390.95805056434,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.04802039627933196,
+                  "fractional_epoch_offset_samples": 1.3162029231115402,
+                  "fractional_exact_score": 0.7397304217712916,
+                  "fractional_margin": 0.6917100254919596,
+                  "fractional_tracking_cfo_hz": -396630.7190104377,
+                  "integer_epoch_sample": 2296,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.051990160199229564,
+                  "fractional_epoch_offset_samples": 0.17383448163158485,
+                  "fractional_exact_score": 0.47796605572417356,
+                  "fractional_margin": 0.42597589552494397,
+                  "fractional_tracking_cfo_hz": 58028.91324717601,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03924784091105068,
+                  "fractional_epoch_offset_samples": -0.16737333381142155,
+                  "fractional_exact_score": 0.17122450628315394,
+                  "fractional_margin": 0.13197666537210326,
+                  "fractional_tracking_cfo_hz": -397006.98441165773,
+                  "integer_epoch_sample": 2296,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.05016647977576173,
+                  "fractional_epoch_offset_samples": 0.3010344878569871,
+                  "fractional_exact_score": 0.1844423555486515,
+                  "fractional_margin": 0.13427587577288974,
+                  "fractional_tracking_cfo_hz": -197313.6956757161,
+                  "integer_epoch_sample": 1702,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.04386645748088209,
+                  "fractional_epoch_offset_samples": 0.14378900415169305,
+                  "fractional_exact_score": 0.043418459714315356,
+                  "fractional_margin": -0.0004479977665667323,
+                  "fractional_tracking_cfo_hz": -706276.005283331,
+                  "integer_epoch_sample": 2295,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03863180937407671,
+                  "fractional_epoch_offset_samples": -1.0957057380405821,
+                  "fractional_exact_score": 0.05408933874515113,
+                  "fractional_margin": 0.015457529371074419,
+                  "fractional_tracking_cfo_hz": -661222.4557492469,
+                  "integer_epoch_sample": 10512,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 3,
+              "edge": "upper",
+              "payload_start_sample": 400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 11367664659190,
+              "visit_index": 2
+            },
+            {
+              "actual_rf_hz": 11440312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.07572997350381408,
+                  "fractional_epoch_offset_samples": 0.5559860555317061,
+                  "fractional_exact_score": 0.8294799416550115,
+                  "fractional_margin": 0.7537499681511974,
+                  "fractional_tracking_cfo_hz": 446204.6803694976,
+                  "integer_epoch_sample": 1702,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.07571793498238336,
+                  "fractional_epoch_offset_samples": -0.44404613737665455,
+                  "fractional_exact_score": 0.829526750553236,
+                  "fractional_margin": 0.7538088155708527,
+                  "fractional_tracking_cfo_hz": 446206.47601546836,
+                  "integer_epoch_sample": 1703,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.04700398241518864,
+                  "fractional_epoch_offset_samples": 0.6071484616512118,
+                  "fractional_exact_score": 0.7607289881891338,
+                  "fractional_margin": 0.7137250057739452,
+                  "fractional_tracking_cfo_hz": 445940.818297338,
+                  "integer_epoch_sample": 1702,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.06354238800890527,
+                  "fractional_epoch_offset_samples": -0.8132216066811897,
+                  "fractional_exact_score": 0.473356270529394,
+                  "fractional_margin": 0.4098138825204887,
+                  "fractional_tracking_cfo_hz": 446538.45118792297,
+                  "integer_epoch_sample": 1703,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03620534388280401,
+                  "fractional_epoch_offset_samples": 0.3164558039664921,
+                  "fractional_exact_score": 0.1708089269791112,
+                  "fractional_margin": 0.1346035830963072,
+                  "fractional_tracking_cfo_hz": 218581.51975711805,
+                  "integer_epoch_sample": 1701,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.0532616522989857,
+                  "fractional_epoch_offset_samples": 0.24780049225133838,
+                  "fractional_exact_score": 0.4550522897639949,
+                  "fractional_margin": 0.4017906374650092,
+                  "fractional_tracking_cfo_hz": 474098.0294696073,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.0532616522989857,
+                  "fractional_epoch_offset_samples": 0.24780049225133838,
+                  "fractional_exact_score": 0.4550522897639949,
+                  "fractional_margin": 0.4017906374650092,
+                  "fractional_tracking_cfo_hz": 474098.0294696073,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 3,
+              "edge": "upper",
+              "payload_start_sample": 400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 11367664659190,
+              "visit_index": 2
+            }
+          ],
+          "case": "DS26-0162",
+          "causal": [
+            null,
+            1703
+          ],
+          "channel": 3,
+          "counter": 11367664659190,
+          "index_sha256": "sha256:a009b1052948aad1d42edf6dda63c769a15260c49e08b3183967ba7990733fd7",
+          "iq_sha256": "sha256:040f2d9eb30ee6cf1248a993a277cb8d5aa4215c14eeecc89f2f6ad2bf7601d0",
+          "kind": "matched",
+          "known_center": 1703,
+          "manifest_sha256": "01eac9f44d50616b2b537b512fb0896331dcf7064847dea5da04fdeadfe81edc",
+          "raw_prefix_bytes": 4800000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 11440312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.07572997350381408,
+                "fractional_epoch_offset_samples": 0.5559860555317061,
+                "fractional_exact_score": 0.8294799416550115,
+                "fractional_margin": 0.7537499681511974,
+                "fractional_tracking_cfo_hz": 446204.6803694976,
+                "integer_epoch_sample": 1702,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.07571793498238336,
+                "fractional_epoch_offset_samples": -0.44404613737665455,
+                "fractional_exact_score": 0.829526750553236,
+                "fractional_margin": 0.7538088155708527,
+                "fractional_tracking_cfo_hz": 446206.47601546836,
+                "integer_epoch_sample": 1703,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.04700398241518864,
+                "fractional_epoch_offset_samples": 0.6071484616512118,
+                "fractional_exact_score": 0.7607289881891338,
+                "fractional_margin": 0.7137250057739452,
+                "fractional_tracking_cfo_hz": 445940.818297338,
+                "integer_epoch_sample": 1702,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.06354238800890527,
+                "fractional_epoch_offset_samples": -0.8132216066811897,
+                "fractional_exact_score": 0.473356270529394,
+                "fractional_margin": 0.4098138825204887,
+                "fractional_tracking_cfo_hz": 446538.45118792297,
+                "integer_epoch_sample": 1703,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.03620534388280401,
+                "fractional_epoch_offset_samples": 0.3164558039664921,
+                "fractional_exact_score": 0.1708089269791112,
+                "fractional_margin": 0.1346035830963072,
+                "fractional_tracking_cfo_hz": 218581.51975711805,
+                "integer_epoch_sample": 1701,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.0532616522989857,
+                "fractional_epoch_offset_samples": 0.24780049225133838,
+                "fractional_exact_score": 0.4550522897639949,
+                "fractional_margin": 0.4017906374650092,
+                "fractional_tracking_cfo_hz": 474098.0294696073,
+                "integer_epoch_sample": 2297,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.0532616522989857,
+                "fractional_epoch_offset_samples": 0.24780049225133838,
+                "fractional_exact_score": 0.4550522897639949,
+                "fractional_margin": 0.4017906374650092,
+                "fractional_tracking_cfo_hz": 474098.0294696073,
+                "integer_epoch_sample": 2297,
+                "passed_fractional_margin_gate": true
+              }
+            ],
+            "channel": 3,
+            "edge": "upper",
+            "payload_start_sample": 400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 11367664659190,
+            "visit_index": 2
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 11440312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.05854108492817377,
+                  "fractional_epoch_offset_samples": 0.3134778592481155,
+                  "fractional_exact_score": 0.8302524541204612,
+                  "fractional_margin": 0.7717113691922874,
+                  "fractional_tracking_cfo_hz": -169394.03572744844,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.05854108492817377,
+                  "fractional_epoch_offset_samples": 0.3134778592481155,
+                  "fractional_exact_score": 0.8302524541204612,
+                  "fractional_margin": 0.7717113691922874,
+                  "fractional_tracking_cfo_hz": -169394.03572744844,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.04803878834704383,
+                  "fractional_epoch_offset_samples": 1.3151708149763126,
+                  "fractional_exact_score": 0.7398664243145487,
+                  "fractional_margin": 0.691827635967505,
+                  "fractional_tracking_cfo_hz": -396637.52082860377,
+                  "integer_epoch_sample": 2296,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.05199344663603229,
+                  "fractional_epoch_offset_samples": 0.1737474939019134,
+                  "fractional_exact_score": 0.47802866515083736,
+                  "fractional_margin": 0.4260352185148051,
+                  "fractional_tracking_cfo_hz": 58031.72975897254,
+                  "integer_epoch_sample": 2297,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.04656341473336848,
+                  "fractional_epoch_offset_samples": -1.0972003293383779,
+                  "fractional_exact_score": 0.04760094354410014,
+                  "fractional_margin": 0.0010375288107316583,
+                  "fractional_tracking_cfo_hz": -165187.68712191656,
+                  "integer_epoch_sample": 12127,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03410670554322019,
+                  "fractional_epoch_offset_samples": 0.9842265045655344,
+                  "fractional_exact_score": 0.040471413989367516,
+                  "fractional_margin": 0.006364708446147324,
+                  "fractional_tracking_cfo_hz": -330043.90783684416,
+                  "integer_epoch_sample": 484,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 3,
+              "edge": "upper",
+              "payload_start_sample": 400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 11367664659190,
+              "visit_index": 2
+            },
+            {
+              "actual_rf_hz": 11440312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.07549134345712934,
+                  "fractional_epoch_offset_samples": 0.5554191963838988,
+                  "fractional_exact_score": 0.8301126137090017,
+                  "fractional_margin": 0.7546212702518723,
+                  "fractional_tracking_cfo_hz": 446237.0539042983,
+                  "integer_epoch_sample": 1702,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.07552167042111253,
+                  "fractional_epoch_offset_samples": -0.4445158400751844,
+                  "fractional_exact_score": 0.8300616108013467,
+                  "fractional_margin": 0.7545399403802341,
+                  "fractional_tracking_cfo_hz": 446233.25953727035,
+                  "integer_epoch_sample": 1703,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.06353450976954396,
+                  "fractional_epoch_offset_samples": -0.813685812806626,
+                  "fractional_exact_score": 0.4728194145397797,
+                  "fractional_margin": 0.40928490477023577,
+                  "fractional_tracking_cfo_hz": 446564.7176842673,
+                  "integer_epoch_sample": 1703,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.04351212300158476,
+                  "fractional_epoch_offset_samples": -0.020759862630707,
+                  "fractional_exact_score": 0.05183301510045841,
+                  "fractional_margin": 0.008320892098873649,
+                  "fractional_tracking_cfo_hz": 610951.5699899329,
+                  "integer_epoch_sample": 12560,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.046979861057124005,
+                  "fractional_epoch_offset_samples": 0.6061818018000463,
+                  "fractional_exact_score": 0.7617583596073207,
+                  "fractional_margin": 0.7147784985501967,
+                  "fractional_tracking_cfo_hz": 445952.6094806031,
+                  "integer_epoch_sample": 1702,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 3,
+              "edge": "upper",
+              "payload_start_sample": 400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 11367664659190,
+              "visit_index": 2
+            }
+          ],
+          "segment": 0,
+          "sequence": 2,
+          "sham": [
+            null,
+            8369
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.07549134345712934,
+            "fractional_epoch_offset_samples": 0.5554191963838988,
+            "fractional_exact_score": 0.8301126137090017,
+            "fractional_margin": 0.7546212702518723,
+            "fractional_tracking_cfo_hz": 446237.0539042983,
+            "integer_epoch_sample": 1702,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 2
+        },
+        {
+          "archive_probe": {
+            "actual_rf_hz": 11690312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.03660599772946363,
+                "fractional_epoch_offset_samples": -0.9240404669271035,
+                "fractional_exact_score": 0.27224755530323863,
+                "fractional_margin": 0.235641557573775,
+                "fractional_tracking_cfo_hz": 443000.20328031556,
+                "integer_epoch_sample": 3039,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.03733305791029127,
+                "fractional_epoch_offset_samples": 1.3561517520947426,
+                "fractional_exact_score": 0.04608626365587159,
+                "fractional_margin": 0.00875320574558032,
+                "fractional_tracking_cfo_hz": -701492.8955514523,
+                "integer_epoch_sample": 11150,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.03708645685363657,
+                "fractional_epoch_offset_samples": 1.2586088481695459,
+                "fractional_exact_score": 0.045398362232987495,
+                "fractional_margin": 0.008311905379350927,
+                "fractional_tracking_cfo_hz": -736979.8877076909,
+                "integer_epoch_sample": 1420,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.03204677779693963,
+                "fractional_epoch_offset_samples": -0.9626693585665588,
+                "fractional_exact_score": 0.043437842609629865,
+                "fractional_margin": 0.011391064812690234,
+                "fractional_tracking_cfo_hz": -471141.77805580414,
+                "integer_epoch_sample": 7985,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.03350526627999844,
+                "fractional_epoch_offset_samples": 0.08002548474772142,
+                "fractional_exact_score": 0.20226076561861622,
+                "fractional_margin": 0.16875549933861778,
+                "fractional_tracking_cfo_hz": 215479.21048299945,
+                "integer_epoch_sample": 3038,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 6,
+                "fractional_control_score": 0.038348133837981004,
+                "fractional_epoch_offset_samples": -1.3037919116194276,
+                "fractional_exact_score": 0.040262852037066345,
+                "fractional_margin": 0.0019147181990853412,
+                "fractional_tracking_cfo_hz": -169454.1023014494,
+                "integer_epoch_sample": 10376,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.04221442045008808,
+                "fractional_epoch_offset_samples": 1.2806066831044882,
+                "fractional_exact_score": 0.04422047547534616,
+                "fractional_margin": 0.00200605502525808,
+                "fractional_tracking_cfo_hz": 38193.55355922008,
+                "integer_epoch_sample": 3471,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 4,
+            "edge": "upper",
+            "payload_start_sample": 3800000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 11367672178207,
+            "visit_index": 19
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03739661671195273,
+                  "fractional_epoch_offset_samples": 0.8244152313599005,
+                  "fractional_exact_score": 0.03580505610322012,
+                  "fractional_margin": -0.0015915606087326117,
+                  "fractional_tracking_cfo_hz": 350012.0481143946,
+                  "integer_epoch_sample": 8055,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03393252942213704,
+                  "fractional_epoch_offset_samples": 1.2477228420441124,
+                  "fractional_exact_score": 0.03964310701482412,
+                  "fractional_margin": 0.005710577592687081,
+                  "fractional_tracking_cfo_hz": -686047.0930037925,
+                  "integer_epoch_sample": 8055,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.035271287084515185,
+                  "fractional_epoch_offset_samples": -0.21602317547334893,
+                  "fractional_exact_score": 0.04540521706210867,
+                  "fractional_margin": 0.010133929977593485,
+                  "fractional_tracking_cfo_hz": -417249.90961474855,
+                  "integer_epoch_sample": 9463,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.036144878192505114,
+                  "fractional_epoch_offset_samples": -0.2828834872603558,
+                  "fractional_exact_score": 0.03736882229677556,
+                  "fractional_margin": 0.001223944104270444,
+                  "fractional_tracking_cfo_hz": 523030.83712978894,
+                  "integer_epoch_sample": 9463,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03365998495836357,
+                  "fractional_epoch_offset_samples": 0.12231165839315869,
+                  "fractional_exact_score": 0.03804733058754198,
+                  "fractional_margin": 0.004387345629178405,
+                  "fractional_tracking_cfo_hz": -324063.6971573355,
+                  "integer_epoch_sample": 4594,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 3800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 11367672178207,
+              "visit_index": 19
+            },
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.038772519451817776,
+                  "fractional_epoch_offset_samples": 1.2062163531978836,
+                  "fractional_exact_score": 0.03919534778717149,
+                  "fractional_margin": 0.0004228283353537171,
+                  "fractional_tracking_cfo_hz": 674716.9239651766,
+                  "integer_epoch_sample": 7441,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.035929268172675284,
+                  "fractional_epoch_offset_samples": 1.3348627388118235,
+                  "fractional_exact_score": 0.041240348902707044,
+                  "fractional_margin": 0.00531108073003176,
+                  "fractional_tracking_cfo_hz": 156692.67761257262,
+                  "integer_epoch_sample": 9258,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 3800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 11367672178207,
+              "visit_index": 19
+            }
+          ],
+          "case": "DS26-0162",
+          "causal": [
+            null,
+            3038
+          ],
+          "channel": 4,
+          "counter": 11367672178207,
+          "index_sha256": "sha256:a009b1052948aad1d42edf6dda63c769a15260c49e08b3183967ba7990733fd7",
+          "iq_sha256": "sha256:ec0742a1ba4ff2e5f54ecb35271992818cb734c6efd0f67fafae8e33ba70ece9",
+          "kind": "miss",
+          "known_center": 3038,
+          "manifest_sha256": "01eac9f44d50616b2b537b512fb0896331dcf7064847dea5da04fdeadfe81edc",
+          "raw_prefix_bytes": 32000000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 11690312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.038772519451817776,
+                "fractional_epoch_offset_samples": 1.2062163531978836,
+                "fractional_exact_score": 0.03919534778717149,
+                "fractional_margin": 0.0004228283353537171,
+                "fractional_tracking_cfo_hz": 674716.9239651766,
+                "integer_epoch_sample": 7441,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 6,
+                "fractional_control_score": 0.035929268172675284,
+                "fractional_epoch_offset_samples": 1.3348627388118235,
+                "fractional_exact_score": 0.041240348902707044,
+                "fractional_margin": 0.00531108073003176,
+                "fractional_tracking_cfo_hz": 156692.67761257262,
+                "integer_epoch_sample": 9258,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 4,
+            "edge": "upper",
+            "payload_start_sample": 3800000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 11367672178207,
+            "visit_index": 19
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03317244940696878,
+                  "fractional_epoch_offset_samples": -1.0947289565375027,
+                  "fractional_exact_score": 0.043483479099855483,
+                  "fractional_margin": 0.010311029692886706,
+                  "fractional_tracking_cfo_hz": -304352.15238891,
+                  "integer_epoch_sample": 8701,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.034421857119438314,
+                  "fractional_epoch_offset_samples": 0.257867967956034,
+                  "fractional_exact_score": 0.039065274226301475,
+                  "fractional_margin": 0.004643417106863161,
+                  "fractional_tracking_cfo_hz": -830223.3131611644,
+                  "integer_epoch_sample": 7745,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.030091605924012714,
+                  "fractional_epoch_offset_samples": -0.19663975260291605,
+                  "fractional_exact_score": 0.04071098443816122,
+                  "fractional_margin": 0.010619378514148507,
+                  "fractional_tracking_cfo_hz": -211070.36871060857,
+                  "integer_epoch_sample": 13104,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.037763614277386254,
+                  "fractional_epoch_offset_samples": 1.1182298303002938,
+                  "fractional_exact_score": 0.040114518153472875,
+                  "fractional_margin": 0.0023509038760866213,
+                  "fractional_tracking_cfo_hz": -354389.02850897715,
+                  "integer_epoch_sample": 9336,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 3800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 11367672178207,
+              "visit_index": 19
+            },
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03660599772946363,
+                  "fractional_epoch_offset_samples": -0.9240404669271035,
+                  "fractional_exact_score": 0.27224755530323863,
+                  "fractional_margin": 0.235641557573775,
+                  "fractional_tracking_cfo_hz": 443000.20328031556,
+                  "integer_epoch_sample": 3039,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03733305791029127,
+                  "fractional_epoch_offset_samples": 1.3561517520947426,
+                  "fractional_exact_score": 0.04608626365587159,
+                  "fractional_margin": 0.00875320574558032,
+                  "fractional_tracking_cfo_hz": -701492.8955514523,
+                  "integer_epoch_sample": 11150,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03708645685363657,
+                  "fractional_epoch_offset_samples": 1.2586088481695459,
+                  "fractional_exact_score": 0.045398362232987495,
+                  "fractional_margin": 0.008311905379350927,
+                  "fractional_tracking_cfo_hz": -736979.8877076909,
+                  "integer_epoch_sample": 1420,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03204677779693963,
+                  "fractional_epoch_offset_samples": -0.9626693585665588,
+                  "fractional_exact_score": 0.043437842609629865,
+                  "fractional_margin": 0.011391064812690234,
+                  "fractional_tracking_cfo_hz": -471141.77805580414,
+                  "integer_epoch_sample": 7985,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03350526627999844,
+                  "fractional_epoch_offset_samples": 0.08002548474772142,
+                  "fractional_exact_score": 0.20226076561861622,
+                  "fractional_margin": 0.16875549933861778,
+                  "fractional_tracking_cfo_hz": 215479.21048299945,
+                  "integer_epoch_sample": 3038,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.038348133837981004,
+                  "fractional_epoch_offset_samples": -1.3037919116194276,
+                  "fractional_exact_score": 0.040262852037066345,
+                  "fractional_margin": 0.0019147181990853412,
+                  "fractional_tracking_cfo_hz": -169454.1023014494,
+                  "integer_epoch_sample": 10376,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.04221442045008808,
+                  "fractional_epoch_offset_samples": 1.2806066831044882,
+                  "fractional_exact_score": 0.04422047547534616,
+                  "fractional_margin": 0.00200605502525808,
+                  "fractional_tracking_cfo_hz": 38193.55355922008,
+                  "integer_epoch_sample": 3471,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 3800000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 11367672178207,
+              "visit_index": 19
+            }
+          ],
+          "segment": 0,
+          "sequence": 19,
+          "sham": [
+            null,
+            9704
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.03660599772946363,
+            "fractional_epoch_offset_samples": -0.9240404669271035,
+            "fractional_exact_score": 0.27224755530323863,
+            "fractional_margin": 0.235641557573775,
+            "fractional_tracking_cfo_hz": 443000.20328031556,
+            "integer_epoch_sample": 3039,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 19
+        }
+      ]
+    },
+    "DS26-0237": {
+      "controls": true,
+      "cpu": 0,
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_sha256": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+      "root": {
+        "archived_native_sha256": "854ff1f1a97e3f40b7a904d0a5fe3298070dfb8faaf3d42fc91443060feed2e7",
+        "edge": "lower",
+        "input_manifest_sha256": "sha256:23f22f794f4b34f2feeb49b49405dc0c27b5fde70dce72cd0e001990b2148b50",
+        "producer": "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src",
+        "sources": {
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_fractional.py": "ae177873aee33dc4efad0e7737fc0cd8f6785dfd9b2c9e698644d3d86b00e3f7",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+          "/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+        },
+        "visits": [
+          4,
+          7,
+          64,
+          72,
+          130,
+          198
+        ]
+      },
+      "rows": [
+        {
+          "archive_probe": {
+            "actual_rf_hz": 12459687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.04208699094826388,
+                "fractional_epoch_offset_samples": -0.07331194340082774,
+                "fractional_exact_score": 0.36849595985723044,
+                "fractional_margin": 0.32640896890896653,
+                "fractional_tracking_cfo_hz": 398914.74318232894,
+                "integer_epoch_sample": 4081,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.04048308804641897,
+                "fractional_epoch_offset_samples": 0.04295562354035007,
+                "fractional_exact_score": 0.2828062977136252,
+                "fractional_margin": 0.24232320966720622,
+                "fractional_tracking_cfo_hz": 398863.8287280756,
+                "integer_epoch_sample": 4081,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.03879574824111953,
+                "fractional_epoch_offset_samples": -0.4349910358868281,
+                "fractional_exact_score": 0.03813043525232338,
+                "fractional_margin": -0.0006653129887961504,
+                "fractional_tracking_cfo_hz": -434142.9079480658,
+                "integer_epoch_sample": 6423,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.03343469159326064,
+                "fractional_epoch_offset_samples": -0.06476397994877607,
+                "fractional_exact_score": 0.040392915020776965,
+                "fractional_margin": 0.006958223427516327,
+                "fractional_tracking_cfo_hz": 75316.47592474254,
+                "integer_epoch_sample": 4799,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.034289486369832915,
+                "fractional_epoch_offset_samples": -0.8184069464101651,
+                "fractional_exact_score": 0.038449769622149695,
+                "fractional_margin": 0.004160283252316779,
+                "fractional_tracking_cfo_hz": 264781.6491681639,
+                "integer_epoch_sample": 11359,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 8,
+            "edge": "lower",
+            "payload_start_sample": 1400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 14816128174534,
+            "visit_index": 7
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 12459687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.034814920920493354,
+                  "fractional_epoch_offset_samples": 0.3867221933816416,
+                  "fractional_exact_score": 0.5730131899090537,
+                  "fractional_margin": 0.5381982689885604,
+                  "fractional_tracking_cfo_hz": -294559.7359697626,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.034814920920493354,
+                  "fractional_epoch_offset_samples": 0.3867221933816416,
+                  "fractional_exact_score": 0.5730131899090537,
+                  "fractional_margin": 0.5381982689885604,
+                  "fractional_tracking_cfo_hz": -294559.7359697626,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.034392508914418786,
+                  "fractional_epoch_offset_samples": 0.3200359572632216,
+                  "fractional_exact_score": 0.43803501601580697,
+                  "fractional_margin": 0.40364250710138816,
+                  "fractional_tracking_cfo_hz": -67495.72539713579,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.034931047020432385,
+                  "fractional_epoch_offset_samples": 0.3112154749464113,
+                  "fractional_exact_score": 0.03847566403160942,
+                  "fractional_margin": 0.0035446170111770384,
+                  "fractional_tracking_cfo_hz": -603785.4025310555,
+                  "integer_epoch_sample": 9543,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.034804195304950866,
+                  "fractional_epoch_offset_samples": -0.011015817714924712,
+                  "fractional_exact_score": 0.036587477144699954,
+                  "fractional_margin": 0.0017832818397490874,
+                  "fractional_tracking_cfo_hz": -603792.8538699668,
+                  "integer_epoch_sample": 9543,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03918818255720566,
+                  "fractional_epoch_offset_samples": 1.161662540143445,
+                  "fractional_exact_score": 0.04279983239362238,
+                  "fractional_margin": 0.003611649836416722,
+                  "fractional_tracking_cfo_hz": 25525.976052214763,
+                  "integer_epoch_sample": 9541,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.032567653031632164,
+                  "fractional_epoch_offset_samples": 0.12621888258931577,
+                  "fractional_exact_score": 0.052676211736592614,
+                  "fractional_margin": 0.02010855870496045,
+                  "fractional_tracking_cfo_hz": -390183.7180703631,
+                  "integer_epoch_sample": 12074,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 8,
+              "edge": "lower",
+              "payload_start_sample": 1400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816128174534,
+              "visit_index": 7
+            },
+            {
+              "actual_rf_hz": 12459687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.042146664182470414,
+                  "fractional_epoch_offset_samples": -0.08084932534564553,
+                  "fractional_exact_score": 0.3680380364414898,
+                  "fractional_margin": 0.3258913722590194,
+                  "fractional_tracking_cfo_hz": 398902.7076874656,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04044235535492116,
+                  "fractional_epoch_offset_samples": 0.043559703613835134,
+                  "fractional_exact_score": 0.28273092001165395,
+                  "fractional_margin": 0.2422885646567328,
+                  "fractional_tracking_cfo_hz": 398846.1226427491,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.042146664182470414,
+                  "fractional_epoch_offset_samples": -0.08084932534564553,
+                  "fractional_exact_score": 0.3680380364414898,
+                  "fractional_margin": 0.3258913722590194,
+                  "fractional_tracking_cfo_hz": 398902.7076874656,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03656971935974786,
+                  "fractional_epoch_offset_samples": -0.6005434743026254,
+                  "fractional_exact_score": 0.03780507202372579,
+                  "fractional_margin": 0.0012353526639779303,
+                  "fractional_tracking_cfo_hz": 193575.6220718511,
+                  "integer_epoch_sample": 4194,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 8,
+              "edge": "lower",
+              "payload_start_sample": 1400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816128174534,
+              "visit_index": 7
+            }
+          ],
+          "case": "DS26-0237",
+          "causal": [
+            null,
+            4081
+          ],
+          "channel": 8,
+          "counter": 14816128174534,
+          "index_sha256": "sha256:d39473b4e11ee4b4d89dc2e7e8421e6f3d8617d9286fd940d586480c7e4ff52f",
+          "iq_sha256": "sha256:6e19fe4b9480e2d5f326e7c9fc6fe3e8204f570a4f64355885d1097a2cceb28c",
+          "kind": "matched",
+          "known_center": 4081,
+          "manifest_sha256": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "raw_prefix_bytes": 12800000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 12459687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.042146664182470414,
+                "fractional_epoch_offset_samples": -0.08084932534564553,
+                "fractional_exact_score": 0.3680380364414898,
+                "fractional_margin": 0.3258913722590194,
+                "fractional_tracking_cfo_hz": 398902.7076874656,
+                "integer_epoch_sample": 4081,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.04044235535492116,
+                "fractional_epoch_offset_samples": 0.043559703613835134,
+                "fractional_exact_score": 0.28273092001165395,
+                "fractional_margin": 0.2422885646567328,
+                "fractional_tracking_cfo_hz": 398846.1226427491,
+                "integer_epoch_sample": 4081,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.042146664182470414,
+                "fractional_epoch_offset_samples": -0.08084932534564553,
+                "fractional_exact_score": 0.3680380364414898,
+                "fractional_margin": 0.3258913722590194,
+                "fractional_tracking_cfo_hz": 398902.7076874656,
+                "integer_epoch_sample": 4081,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.03656971935974786,
+                "fractional_epoch_offset_samples": -0.6005434743026254,
+                "fractional_exact_score": 0.03780507202372579,
+                "fractional_margin": 0.0012353526639779303,
+                "fractional_tracking_cfo_hz": 193575.6220718511,
+                "integer_epoch_sample": 4194,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 8,
+            "edge": "lower",
+            "payload_start_sample": 1400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 14816128174534,
+            "visit_index": 7
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 12459687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03481806322462083,
+                  "fractional_epoch_offset_samples": 0.3870063485327418,
+                  "fractional_exact_score": 0.5730430860437928,
+                  "fractional_margin": 0.5382250228191721,
+                  "fractional_tracking_cfo_hz": -294562.0228403091,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.034818063224589885,
+                  "fractional_epoch_offset_samples": 0.3870063485327259,
+                  "fractional_exact_score": 0.5730430860437445,
+                  "fractional_margin": 0.5382250228191546,
+                  "fractional_tracking_cfo_hz": -294562.022840309,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.0343923105086588,
+                  "fractional_epoch_offset_samples": 0.32003394774230515,
+                  "fractional_exact_score": 0.438037089958516,
+                  "fractional_margin": 0.40364477944985716,
+                  "fractional_tracking_cfo_hz": -67495.96314562338,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.035804872383246346,
+                  "fractional_epoch_offset_samples": 0.7596350384079823,
+                  "fractional_exact_score": 0.04280233297815877,
+                  "fractional_margin": 0.006997460594912422,
+                  "fractional_tracking_cfo_hz": -482228.80966994166,
+                  "integer_epoch_sample": 7365,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03730787499965641,
+                  "fractional_epoch_offset_samples": -1.1333813087904565,
+                  "fractional_exact_score": 0.037735400269824804,
+                  "fractional_margin": 0.00042752527016839265,
+                  "fractional_tracking_cfo_hz": -764204.0639674434,
+                  "integer_epoch_sample": 11441,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 8,
+              "edge": "lower",
+              "payload_start_sample": 1400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816128174534,
+              "visit_index": 7
+            },
+            {
+              "actual_rf_hz": 12459687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.04208699094826388,
+                  "fractional_epoch_offset_samples": -0.07331194340082774,
+                  "fractional_exact_score": 0.36849595985723044,
+                  "fractional_margin": 0.32640896890896653,
+                  "fractional_tracking_cfo_hz": 398914.74318232894,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04048308804641897,
+                  "fractional_epoch_offset_samples": 0.04295562354035007,
+                  "fractional_exact_score": 0.2828062977136252,
+                  "fractional_margin": 0.24232320966720622,
+                  "fractional_tracking_cfo_hz": 398863.8287280756,
+                  "integer_epoch_sample": 4081,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03879574824111953,
+                  "fractional_epoch_offset_samples": -0.4349910358868281,
+                  "fractional_exact_score": 0.03813043525232338,
+                  "fractional_margin": -0.0006653129887961504,
+                  "fractional_tracking_cfo_hz": -434142.9079480658,
+                  "integer_epoch_sample": 6423,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03343469159326064,
+                  "fractional_epoch_offset_samples": -0.06476397994877607,
+                  "fractional_exact_score": 0.040392915020776965,
+                  "fractional_margin": 0.006958223427516327,
+                  "fractional_tracking_cfo_hz": 75316.47592474254,
+                  "integer_epoch_sample": 4799,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.034289486369832915,
+                  "fractional_epoch_offset_samples": -0.8184069464101651,
+                  "fractional_exact_score": 0.038449769622149695,
+                  "fractional_margin": 0.004160283252316779,
+                  "fractional_tracking_cfo_hz": 264781.6491681639,
+                  "integer_epoch_sample": 11359,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 8,
+              "edge": "lower",
+              "payload_start_sample": 1400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816128174534,
+              "visit_index": 7
+            }
+          ],
+          "segment": 0,
+          "sequence": 7,
+          "sham": [
+            null,
+            10747
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.04208699094826388,
+            "fractional_epoch_offset_samples": -0.07331194340082774,
+            "fractional_exact_score": 0.36849595985723044,
+            "fractional_margin": 0.32640896890896653,
+            "fractional_tracking_cfo_hz": 398914.74318232894,
+            "integer_epoch_sample": 4081,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 7
+        },
+        {
+          "archive_probe": {
+            "actual_rf_hz": 10709687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.03274516400184855,
+                "fractional_epoch_offset_samples": -0.6359984051785328,
+                "fractional_exact_score": 0.28031942612931265,
+                "fractional_margin": 0.2475742621274641,
+                "fractional_tracking_cfo_hz": 385301.8917022629,
+                "integer_epoch_sample": 5920,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.03518926748965981,
+                "fractional_epoch_offset_samples": -1.4351921853200458,
+                "fractional_exact_score": 0.03641462495130287,
+                "fractional_margin": 0.0012253574616430604,
+                "fractional_tracking_cfo_hz": -776478.5602845326,
+                "integer_epoch_sample": 1710,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.035595431656679236,
+                "fractional_epoch_offset_samples": 1.4925509720658816,
+                "fractional_exact_score": 0.040599561410205424,
+                "fractional_margin": 0.005004129753526189,
+                "fractional_tracking_cfo_hz": -742431.2333701235,
+                "integer_epoch_sample": 9887,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 6,
+                "fractional_control_score": 0.042404684317019714,
+                "fractional_epoch_offset_samples": 0.7693511403681887,
+                "fractional_exact_score": 0.042724569229339315,
+                "fractional_margin": 0.00031988491231960126,
+                "fractional_tracking_cfo_hz": -146512.60849595343,
+                "integer_epoch_sample": 7413,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.03539036450218642,
+                "fractional_epoch_offset_samples": -1.0507937341853422,
+                "fractional_exact_score": 0.03824984667294021,
+                "fractional_margin": 0.0028594821707537896,
+                "fractional_tracking_cfo_hz": -490138.945632595,
+                "integer_epoch_sample": 9515,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 1,
+            "edge": "lower",
+            "payload_start_sample": 14400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 14816156966929,
+            "visit_index": 72
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 10709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.040166083498681754,
+                  "fractional_epoch_offset_samples": 0.5887497877207224,
+                  "fractional_exact_score": 0.5302279567426463,
+                  "fractional_margin": 0.49006187324396455,
+                  "fractional_tracking_cfo_hz": -142216.45014355378,
+                  "integer_epoch_sample": 11285,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.040166083498681754,
+                  "fractional_epoch_offset_samples": 0.5887497877207224,
+                  "fractional_exact_score": 0.5302279567426463,
+                  "fractional_margin": 0.49006187324396455,
+                  "fractional_tracking_cfo_hz": -142216.45014355378,
+                  "integer_epoch_sample": 11285,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03742814726414053,
+                  "fractional_epoch_offset_samples": 0.6812614272014901,
+                  "fractional_exact_score": 0.46133979097112954,
+                  "fractional_margin": 0.423911643706989,
+                  "fractional_tracking_cfo_hz": -208123.18348192604,
+                  "integer_epoch_sample": 10889,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03742814726414053,
+                  "fractional_epoch_offset_samples": 0.6812614272014901,
+                  "fractional_exact_score": 0.46133979097112954,
+                  "fractional_margin": 0.423911643706989,
+                  "fractional_tracking_cfo_hz": -208123.18348192604,
+                  "integer_epoch_sample": 10889,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.036981587994967605,
+                  "fractional_epoch_offset_samples": -0.6734303476495107,
+                  "fractional_exact_score": 0.04038396774000622,
+                  "fractional_margin": 0.003402379745038618,
+                  "fractional_tracking_cfo_hz": 501852.99028559256,
+                  "integer_epoch_sample": 10887,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 1,
+              "edge": "lower",
+              "payload_start_sample": 14400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816156966929,
+              "visit_index": 72
+            },
+            {
+              "actual_rf_hz": 10709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03318180160771146,
+                  "fractional_epoch_offset_samples": 0.5671684762948228,
+                  "fractional_exact_score": 0.0378414853754741,
+                  "fractional_margin": 0.004659683767762636,
+                  "fractional_tracking_cfo_hz": -162107.33431535363,
+                  "integer_epoch_sample": 8994,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03701880867824089,
+                  "fractional_epoch_offset_samples": -0.41982250322791115,
+                  "fractional_exact_score": 0.03930658067923013,
+                  "fractional_margin": 0.002287772000989244,
+                  "fractional_tracking_cfo_hz": 103747.18496435047,
+                  "integer_epoch_sample": 8995,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.034534854607481506,
+                  "fractional_epoch_offset_samples": 0.30297810691050403,
+                  "fractional_exact_score": 0.03393661521218257,
+                  "fractional_margin": -0.0005982393952989329,
+                  "fractional_tracking_cfo_hz": 579036.3347371209,
+                  "integer_epoch_sample": 9312,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.034872137253253103,
+                  "fractional_epoch_offset_samples": -0.35097784755764444,
+                  "fractional_exact_score": 0.03692867169903773,
+                  "fractional_margin": 0.0020565344457846232,
+                  "fractional_tracking_cfo_hz": -690344.4797410015,
+                  "integer_epoch_sample": 8994,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 1,
+              "edge": "lower",
+              "payload_start_sample": 14400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816156966929,
+              "visit_index": 72
+            }
+          ],
+          "case": "DS26-0237",
+          "causal": [
+            null,
+            5919
+          ],
+          "channel": 1,
+          "counter": 14816156966929,
+          "index_sha256": "sha256:c5a1817dbdf07511a0886aa6e3d26be9acdab8fc45340e6460b2566ffe161d3b",
+          "iq_sha256": "sha256:149b8668b3a3df341e9fc049d8e5c6dccd6a4c4d367e1c79e62d14b9c11df981",
+          "kind": "miss",
+          "known_center": 5919,
+          "manifest_sha256": "ded00d162f493103413b06bb45c432861822cc2e3c16a1391747613786787352",
+          "raw_prefix_bytes": 14400000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 10709687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.03318180160771146,
+                "fractional_epoch_offset_samples": 0.5671684762948228,
+                "fractional_exact_score": 0.0378414853754741,
+                "fractional_margin": 0.004659683767762636,
+                "fractional_tracking_cfo_hz": -162107.33431535363,
+                "integer_epoch_sample": 8994,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.03701880867824089,
+                "fractional_epoch_offset_samples": -0.41982250322791115,
+                "fractional_exact_score": 0.03930658067923013,
+                "fractional_margin": 0.002287772000989244,
+                "fractional_tracking_cfo_hz": 103747.18496435047,
+                "integer_epoch_sample": 8995,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.034534854607481506,
+                "fractional_epoch_offset_samples": 0.30297810691050403,
+                "fractional_exact_score": 0.03393661521218257,
+                "fractional_margin": -0.0005982393952989329,
+                "fractional_tracking_cfo_hz": 579036.3347371209,
+                "integer_epoch_sample": 9312,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 6,
+                "fractional_control_score": 0.034872137253253103,
+                "fractional_epoch_offset_samples": -0.35097784755764444,
+                "fractional_exact_score": 0.03692867169903773,
+                "fractional_margin": 0.0020565344457846232,
+                "fractional_tracking_cfo_hz": -690344.4797410015,
+                "integer_epoch_sample": 8994,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 1,
+            "edge": "lower",
+            "payload_start_sample": 14400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 14816156966929,
+            "visit_index": 72
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 10709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.039924553862922645,
+                  "fractional_epoch_offset_samples": 0.5852069604167737,
+                  "fractional_exact_score": 0.5358732190058395,
+                  "fractional_margin": 0.49594866514291686,
+                  "fractional_tracking_cfo_hz": -142062.0560617865,
+                  "integer_epoch_sample": 11285,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.039924553862922645,
+                  "fractional_epoch_offset_samples": 0.5852069604167737,
+                  "fractional_exact_score": 0.5358732190058395,
+                  "fractional_margin": 0.49594866514291686,
+                  "fractional_tracking_cfo_hz": -142062.0560617865,
+                  "integer_epoch_sample": 11285,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.037389580519586046,
+                  "fractional_epoch_offset_samples": -0.31077777360307685,
+                  "fractional_exact_score": 0.4648397393646334,
+                  "fractional_margin": 0.42745015884504733,
+                  "fractional_tracking_cfo_hz": -208037.2270176754,
+                  "integer_epoch_sample": 10890,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.0570168324926883,
+                  "fractional_epoch_offset_samples": 0.7102765377313887,
+                  "fractional_exact_score": 0.2713441746870792,
+                  "fractional_margin": 0.21432734219439092,
+                  "fractional_tracking_cfo_hz": -22390.107091354956,
+                  "integer_epoch_sample": 5986,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.04007807867268163,
+                  "fractional_epoch_offset_samples": 1.202426629961358,
+                  "fractional_exact_score": 0.036878136085403364,
+                  "fractional_margin": -0.003199942587278265,
+                  "fractional_tracking_cfo_hz": 191722.3743569394,
+                  "integer_epoch_sample": 6234,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.043432896519379656,
+                  "fractional_epoch_offset_samples": -1.021912840283085,
+                  "fractional_exact_score": 0.0404352660030257,
+                  "fractional_margin": -0.0029976305163539538,
+                  "fractional_tracking_cfo_hz": 195463.442428325,
+                  "integer_epoch_sample": 8441,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03706411905742888,
+                  "fractional_epoch_offset_samples": 1.1574962141684997,
+                  "fractional_exact_score": 0.04728681959729225,
+                  "fractional_margin": 0.01022270053986337,
+                  "fractional_tracking_cfo_hz": -245123.59338861873,
+                  "integer_epoch_sample": 12278,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 1,
+              "edge": "lower",
+              "payload_start_sample": 14400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 14816156966929,
+              "visit_index": 72
+            },
+            {
+              "actual_rf_hz": 10709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03274516400184855,
+                  "fractional_epoch_offset_samples": -0.6359984051785328,
+                  "fractional_exact_score": 0.28031942612931265,
+                  "fractional_margin": 0.2475742621274641,
+                  "fractional_tracking_cfo_hz": 385301.8917022629,
+                  "integer_epoch_sample": 5920,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03518926748965981,
+                  "fractional_epoch_offset_samples": -1.4351921853200458,
+                  "fractional_exact_score": 0.03641462495130287,
+                  "fractional_margin": 0.0012253574616430604,
+                  "fractional_tracking_cfo_hz": -776478.5602845326,
+                  "integer_epoch_sample": 1710,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.035595431656679236,
+                  "fractional_epoch_offset_samples": 1.4925509720658816,
+                  "fractional_exact_score": 0.040599561410205424,
+                  "fractional_margin": 0.005004129753526189,
+                  "fractional_tracking_cfo_hz": -742431.2333701235,
+                  "integer_epoch_sample": 9887,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.042404684317019714,
+                  "fractional_epoch_offset_samples": 0.7693511403681887,
+                  "fractional_exact_score": 0.042724569229339315,
+                  "fractional_margin": 0.00031988491231960126,
+                  "fractional_tracking_cfo_hz": -146512.60849595343,
+                  "integer_epoch_sample": 7413,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03539036450218642,
+                  "fractional_epoch_offset_samples": -1.0507937341853422,
+                  "fractional_exact_score": 0.03824984667294021,
+                  "fractional_margin": 0.0028594821707537896,
+                  "fractional_tracking_cfo_hz": -490138.945632595,
+                  "integer_epoch_sample": 9515,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 1,
+              "edge": "lower",
+              "payload_start_sample": 14400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 14816156966929,
+              "visit_index": 72
+            }
+          ],
+          "segment": 0,
+          "sequence": 72,
+          "sham": [
+            null,
+            12585
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.03274516400184855,
+            "fractional_epoch_offset_samples": -0.6359984051785328,
+            "fractional_exact_score": 0.28031942612931265,
+            "fractional_margin": 0.2475742621274641,
+            "fractional_tracking_cfo_hz": 385301.8917022629,
+            "integer_epoch_sample": 5920,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 72
+        }
+      ]
+    },
+    "DS29-0082": {
+      "controls": true,
+      "cpu": 1,
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_sha256": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+      "root": {
+        "archived_native_sha256": "fe2b362bb0c6324db2084e7ea926393bed38acced14d48dafdf6221376d2ad40",
+        "edge": "upper",
+        "input_manifest_sha256": "sha256:954f0fec1dfbd9c86e91272033683abeb9144466fb6810ca53f43c9e40809c6d",
+        "producer": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src",
+        "sources": {
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "40f6cdfc221e78a8f08d22e42757df5bd7a8f1a8e8d86f46802325b72febb888",
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/acquisition.py": "ef87f40f289e47724ba9fb135b37775d45a2e3fb0b5573e8e9d2b441d20339d6",
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/fast_scan_fractional.py": "ae177873aee33dc4efad0e7737fc0cd8f6785dfd9b2c9e698644d3d86b00e3f7",
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+          "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/native-worker/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+        },
+        "visits": [
+          0,
+          2,
+          3,
+          13,
+          80,
+          130
+        ]
+      },
+      "rows": [
+        {
+          "archive_probe": {
+            "actual_rf_hz": 11690312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.042168709941626956,
+                "fractional_epoch_offset_samples": 0.4048791771250897,
+                "fractional_exact_score": 0.5125825549298035,
+                "fractional_margin": 0.47041384498817657,
+                "fractional_tracking_cfo_hz": 399413.9371557507,
+                "integer_epoch_sample": 6601,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.04216284757978367,
+                "fractional_epoch_offset_samples": -0.5949207375175622,
+                "fractional_exact_score": 0.5125394360993658,
+                "fractional_margin": 0.47037658851958214,
+                "fractional_tracking_cfo_hz": 399417.57342459774,
+                "integer_epoch_sample": 6602,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.03670273966670202,
+                "fractional_epoch_offset_samples": 0.8456247228598801,
+                "fractional_exact_score": 0.04246233510568988,
+                "fractional_margin": 0.005759595438987859,
+                "fractional_tracking_cfo_hz": -463486.3231397716,
+                "integer_epoch_sample": 6699,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.03670273966668687,
+                "fractional_epoch_offset_samples": 0.8456247228598646,
+                "fractional_exact_score": 0.042462335105662684,
+                "fractional_margin": 0.005759595438975813,
+                "fractional_tracking_cfo_hz": -463486.3231397715,
+                "integer_epoch_sample": 6699,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.03437216847867709,
+                "fractional_epoch_offset_samples": 0.2670836242842324,
+                "fractional_exact_score": 0.03770788381657917,
+                "fractional_margin": 0.0033357153379020774,
+                "fractional_tracking_cfo_hz": -117980.34514880634,
+                "integer_epoch_sample": 4824,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.0362140161988264,
+                "fractional_epoch_offset_samples": -0.2854210007603621,
+                "fractional_exact_score": 0.04631278150747845,
+                "fractional_margin": 0.010098765308652051,
+                "fractional_tracking_cfo_hz": -375928.2537495954,
+                "integer_epoch_sample": 12435,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 6,
+                "fractional_control_score": 0.03967124660048716,
+                "fractional_epoch_offset_samples": -0.8729673994337331,
+                "fractional_exact_score": 0.23437301261134255,
+                "fractional_margin": 0.1947017660108554,
+                "fractional_tracking_cfo_hz": 627047.7883544159,
+                "integer_epoch_sample": 6602,
+                "passed_fractional_margin_gate": true
+              }
+            ],
+            "channel": 4,
+            "edge": "upper",
+            "payload_start_sample": 600000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 21911672380670,
+            "visit_index": 3
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.0445240745227924,
+                  "fractional_epoch_offset_samples": -0.24936275131837637,
+                  "fractional_exact_score": 0.6438504129456849,
+                  "fractional_margin": 0.5993263384228925,
+                  "fractional_tracking_cfo_hz": -75672.35594759064,
+                  "integer_epoch_sample": 3638,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.036162255133391295,
+                  "fractional_epoch_offset_samples": 0.4854923531073658,
+                  "fractional_exact_score": 0.5262494816342368,
+                  "fractional_margin": 0.4900872265008455,
+                  "fractional_tracking_cfo_hz": -302927.3620684143,
+                  "integer_epoch_sample": 3637,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.0445240745227924,
+                  "fractional_epoch_offset_samples": -0.24936275131837637,
+                  "fractional_exact_score": 0.6438504129456849,
+                  "fractional_margin": 0.5993263384228925,
+                  "fractional_tracking_cfo_hz": -75672.35594759064,
+                  "integer_epoch_sample": 3638,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.036162255133391295,
+                  "fractional_epoch_offset_samples": 0.4854923531073658,
+                  "fractional_exact_score": 0.5262494816342368,
+                  "fractional_margin": 0.4900872265008455,
+                  "fractional_tracking_cfo_hz": -302927.3620684143,
+                  "integer_epoch_sample": 3637,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03502957706034462,
+                  "fractional_epoch_offset_samples": 0.37986134159375223,
+                  "fractional_exact_score": 0.4454979445843565,
+                  "fractional_margin": 0.4104683675240119,
+                  "fractional_tracking_cfo_hz": -78319.67542688671,
+                  "integer_epoch_sample": 2538,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03977206252489967,
+                  "fractional_epoch_offset_samples": 0.13848035693522828,
+                  "fractional_exact_score": 0.3439275334748339,
+                  "fractional_margin": 0.3041554709499342,
+                  "fractional_tracking_cfo_hz": -305872.98635876697,
+                  "integer_epoch_sample": 2538,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03501754137400872,
+                  "fractional_epoch_offset_samples": 1.3850058977398034,
+                  "fractional_exact_score": 0.44558616702076825,
+                  "fractional_margin": 0.41056862564675956,
+                  "fractional_tracking_cfo_hz": -78293.56502884148,
+                  "integer_epoch_sample": 2537,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911672380670,
+              "visit_index": 3
+            },
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.042193266818560046,
+                  "fractional_epoch_offset_samples": -0.5960467602645423,
+                  "fractional_exact_score": 0.5127404348919637,
+                  "fractional_margin": 0.4705471680734037,
+                  "fractional_tracking_cfo_hz": 399396.9849361167,
+                  "integer_epoch_sample": 6602,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.042190527184343365,
+                  "fractional_epoch_offset_samples": 0.4040651272334281,
+                  "fractional_exact_score": 0.5127250467689044,
+                  "fractional_margin": 0.47053451958456105,
+                  "fractional_tracking_cfo_hz": 399399.04436975456,
+                  "integer_epoch_sample": 6601,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.0396717653392717,
+                  "fractional_epoch_offset_samples": -0.8743894289033028,
+                  "fractional_exact_score": 0.23335809165538085,
+                  "fractional_margin": 0.19368632631610916,
+                  "fractional_tracking_cfo_hz": 626648.1189298909,
+                  "integer_epoch_sample": 6602,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.039942898830183364,
+                  "fractional_epoch_offset_samples": 0.30562338940732753,
+                  "fractional_exact_score": 0.39945185088421103,
+                  "fractional_margin": 0.35950895205402766,
+                  "fractional_tracking_cfo_hz": 399503.5826132818,
+                  "integer_epoch_sample": 6601,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03461198982025878,
+                  "fractional_epoch_offset_samples": -0.7071490072954247,
+                  "fractional_exact_score": 0.03925281457256601,
+                  "fractional_margin": 0.004640824752307232,
+                  "fractional_tracking_cfo_hz": 277567.83571628126,
+                  "integer_epoch_sample": 3027,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911672380670,
+              "visit_index": 3
+            }
+          ],
+          "case": "DS29-0082",
+          "causal": [
+            null,
+            6601
+          ],
+          "channel": 4,
+          "counter": 21911672380670,
+          "index_sha256": "sha256:04a4209fa8cab456aa6726b608a836f77df6d272149ff727775c665eae431337",
+          "iq_sha256": "sha256:64a749efbe28a4fd2a2eb074bd1973239aa20b068508dbc4ba923b65448c9db6",
+          "kind": "matched",
+          "known_center": 6601,
+          "manifest_sha256": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "raw_prefix_bytes": 6400000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 11690312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.042193266818560046,
+                "fractional_epoch_offset_samples": -0.5960467602645423,
+                "fractional_exact_score": 0.5127404348919637,
+                "fractional_margin": 0.4705471680734037,
+                "fractional_tracking_cfo_hz": 399396.9849361167,
+                "integer_epoch_sample": 6602,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.042190527184343365,
+                "fractional_epoch_offset_samples": 0.4040651272334281,
+                "fractional_exact_score": 0.5127250467689044,
+                "fractional_margin": 0.47053451958456105,
+                "fractional_tracking_cfo_hz": 399399.04436975456,
+                "integer_epoch_sample": 6601,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.0396717653392717,
+                "fractional_epoch_offset_samples": -0.8743894289033028,
+                "fractional_exact_score": 0.23335809165538085,
+                "fractional_margin": 0.19368632631610916,
+                "fractional_tracking_cfo_hz": 626648.1189298909,
+                "integer_epoch_sample": 6602,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.039942898830183364,
+                "fractional_epoch_offset_samples": 0.30562338940732753,
+                "fractional_exact_score": 0.39945185088421103,
+                "fractional_margin": 0.35950895205402766,
+                "fractional_tracking_cfo_hz": 399503.5826132818,
+                "integer_epoch_sample": 6601,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.03461198982025878,
+                "fractional_epoch_offset_samples": -0.7071490072954247,
+                "fractional_exact_score": 0.03925281457256601,
+                "fractional_margin": 0.004640824752307232,
+                "fractional_tracking_cfo_hz": 277567.83571628126,
+                "integer_epoch_sample": 3027,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 4,
+            "edge": "upper",
+            "payload_start_sample": 600000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 21911672380670,
+            "visit_index": 3
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.04461014506545466,
+                  "fractional_epoch_offset_samples": -0.24599718826632877,
+                  "fractional_exact_score": 0.6441495088919651,
+                  "fractional_margin": 0.5995393638265104,
+                  "fractional_tracking_cfo_hz": -75709.24630860794,
+                  "integer_epoch_sample": 3638,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04461014506545466,
+                  "fractional_epoch_offset_samples": -0.24599718826632877,
+                  "fractional_exact_score": 0.6441495088919651,
+                  "fractional_margin": 0.5995393638265104,
+                  "fractional_tracking_cfo_hz": -75709.24630860794,
+                  "integer_epoch_sample": 3638,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03499494700387014,
+                  "fractional_epoch_offset_samples": 0.3900806949927099,
+                  "fractional_exact_score": 0.44552236594574796,
+                  "fractional_margin": 0.41052741894187783,
+                  "fractional_tracking_cfo_hz": -78267.8243266201,
+                  "integer_epoch_sample": 2538,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.0361736234454536,
+                  "fractional_epoch_offset_samples": 0.4860959377602251,
+                  "fractional_exact_score": 0.5271530617178996,
+                  "fractional_margin": 0.49097943827244594,
+                  "fractional_tracking_cfo_hz": -302944.5292051221,
+                  "integer_epoch_sample": 3637,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.0361736234454536,
+                  "fractional_epoch_offset_samples": 0.4860959377602251,
+                  "fractional_exact_score": 0.5271530617178996,
+                  "fractional_margin": 0.49097943827244594,
+                  "fractional_tracking_cfo_hz": -302944.5292051221,
+                  "integer_epoch_sample": 3637,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.046625599061132776,
+                  "fractional_epoch_offset_samples": 1.3800658602223448,
+                  "fractional_exact_score": 0.036020785355615224,
+                  "fractional_margin": -0.010604813705517552,
+                  "fractional_tracking_cfo_hz": 379705.302431679,
+                  "integer_epoch_sample": 4200,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.043299332740934615,
+                  "fractional_epoch_offset_samples": -0.5417425043714619,
+                  "fractional_exact_score": 0.04712189673517486,
+                  "fractional_margin": 0.0038225639942402467,
+                  "fractional_tracking_cfo_hz": 529097.4703304031,
+                  "integer_epoch_sample": 3987,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911672380670,
+              "visit_index": 3
+            },
+            {
+              "actual_rf_hz": 11690312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.042168709941626956,
+                  "fractional_epoch_offset_samples": 0.4048791771250897,
+                  "fractional_exact_score": 0.5125825549298035,
+                  "fractional_margin": 0.47041384498817657,
+                  "fractional_tracking_cfo_hz": 399413.9371557507,
+                  "integer_epoch_sample": 6601,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04216284757978367,
+                  "fractional_epoch_offset_samples": -0.5949207375175622,
+                  "fractional_exact_score": 0.5125394360993658,
+                  "fractional_margin": 0.47037658851958214,
+                  "fractional_tracking_cfo_hz": 399417.57342459774,
+                  "integer_epoch_sample": 6602,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03670273966670202,
+                  "fractional_epoch_offset_samples": 0.8456247228598801,
+                  "fractional_exact_score": 0.04246233510568988,
+                  "fractional_margin": 0.005759595438987859,
+                  "fractional_tracking_cfo_hz": -463486.3231397716,
+                  "integer_epoch_sample": 6699,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03670273966668687,
+                  "fractional_epoch_offset_samples": 0.8456247228598646,
+                  "fractional_exact_score": 0.042462335105662684,
+                  "fractional_margin": 0.005759595438975813,
+                  "fractional_tracking_cfo_hz": -463486.3231397715,
+                  "integer_epoch_sample": 6699,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03437216847867709,
+                  "fractional_epoch_offset_samples": 0.2670836242842324,
+                  "fractional_exact_score": 0.03770788381657917,
+                  "fractional_margin": 0.0033357153379020774,
+                  "fractional_tracking_cfo_hz": -117980.34514880634,
+                  "integer_epoch_sample": 4824,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.0362140161988264,
+                  "fractional_epoch_offset_samples": -0.2854210007603621,
+                  "fractional_exact_score": 0.04631278150747845,
+                  "fractional_margin": 0.010098765308652051,
+                  "fractional_tracking_cfo_hz": -375928.2537495954,
+                  "integer_epoch_sample": 12435,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.03967124660048716,
+                  "fractional_epoch_offset_samples": -0.8729673994337331,
+                  "fractional_exact_score": 0.23437301261134255,
+                  "fractional_margin": 0.1947017660108554,
+                  "fractional_tracking_cfo_hz": 627047.7883544159,
+                  "integer_epoch_sample": 6602,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 4,
+              "edge": "upper",
+              "payload_start_sample": 600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911672380670,
+              "visit_index": 3
+            }
+          ],
+          "segment": 0,
+          "sequence": 3,
+          "sham": [
+            null,
+            13267
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.042168709941626956,
+            "fractional_epoch_offset_samples": 0.4048791771250897,
+            "fractional_exact_score": 0.5125825549298035,
+            "fractional_margin": 0.47041384498817657,
+            "fractional_tracking_cfo_hz": 399413.9371557507,
+            "integer_epoch_sample": 6601,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 3
+        },
+        {
+          "archive_probe": {
+            "actual_rf_hz": 12190312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.03491096475967539,
+                "fractional_epoch_offset_samples": -0.19146415145709691,
+                "fractional_exact_score": 0.33528143179262204,
+                "fractional_margin": 0.3003704670329467,
+                "fractional_tracking_cfo_hz": 432614.89903495595,
+                "integer_epoch_sample": 5144,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.03491096475967539,
+                "fractional_epoch_offset_samples": -0.19146415145709691,
+                "fractional_exact_score": 0.33528143179262204,
+                "fractional_margin": 0.3003704670329467,
+                "fractional_tracking_cfo_hz": 432614.89903495595,
+                "integer_epoch_sample": 5144,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.03194771469452163,
+                "fractional_epoch_offset_samples": -1.1920274563921278,
+                "fractional_exact_score": 0.03904804844457501,
+                "fractional_margin": 0.007100333750053381,
+                "fractional_tracking_cfo_hz": 36556.21160973846,
+                "integer_epoch_sample": 1229,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.03337230243388424,
+                "fractional_epoch_offset_samples": -1.228862277828661,
+                "fractional_exact_score": 0.043106866864852815,
+                "fractional_margin": 0.009734564430968574,
+                "fractional_tracking_cfo_hz": 429498.6663834725,
+                "integer_epoch_sample": 10749,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.040384610147295476,
+                "fractional_epoch_offset_samples": 0.7194009801619291,
+                "fractional_exact_score": 0.25470543977179866,
+                "fractional_margin": 0.2143208296245032,
+                "fractional_tracking_cfo_hz": 432382.3228377171,
+                "integer_epoch_sample": 5143,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.03595185034621268,
+                "fractional_epoch_offset_samples": 1.122577594331319,
+                "fractional_exact_score": 0.03647886157991965,
+                "fractional_margin": 0.0005270112337069713,
+                "fractional_tracking_cfo_hz": 24710.591343214088,
+                "integer_epoch_sample": 2712,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 6,
+            "edge": "upper",
+            "payload_start_sample": 2600000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 21911676821312,
+            "visit_index": 13
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 12190312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.037205499350181734,
+                  "fractional_epoch_offset_samples": -0.113878496094402,
+                  "fractional_exact_score": 0.24430744364831075,
+                  "fractional_margin": 0.207101944298129,
+                  "fractional_tracking_cfo_hz": -344537.93067724624,
+                  "integer_epoch_sample": 1269,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.042419439972325834,
+                  "fractional_epoch_offset_samples": -0.3313117992282314,
+                  "fractional_exact_score": 0.18050520843385073,
+                  "fractional_margin": 0.1380857684615249,
+                  "fractional_tracking_cfo_hz": -571911.4591516613,
+                  "integer_epoch_sample": 1269,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.037201994513280566,
+                  "fractional_epoch_offset_samples": 0.8868160502241828,
+                  "fractional_exact_score": 0.24431215199717748,
+                  "fractional_margin": 0.2071101574838969,
+                  "fractional_tracking_cfo_hz": -344530.46850108186,
+                  "integer_epoch_sample": 1268,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.04462422943061605,
+                  "fractional_epoch_offset_samples": -1.4372031049819154,
+                  "fractional_exact_score": 0.03914366598575588,
+                  "fractional_margin": -0.00548056344486017,
+                  "fractional_tracking_cfo_hz": -74082.33886495407,
+                  "integer_epoch_sample": 4859,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03548890437514507,
+                  "fractional_epoch_offset_samples": -1.118075305375183,
+                  "fractional_exact_score": 0.04149783064298732,
+                  "fractional_margin": 0.006008926267842253,
+                  "fractional_tracking_cfo_hz": -657244.0181407798,
+                  "integer_epoch_sample": 1269,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.039558602141044626,
+                  "fractional_epoch_offset_samples": -0.7341401431687072,
+                  "fractional_exact_score": 0.03691813659816808,
+                  "fractional_margin": -0.002640465542876544,
+                  "fractional_tracking_cfo_hz": 740276.7398381446,
+                  "integer_epoch_sample": 7515,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03548890437514507,
+                  "fractional_epoch_offset_samples": -1.118075305375183,
+                  "fractional_exact_score": 0.04149783064298732,
+                  "fractional_margin": 0.006008926267842253,
+                  "fractional_tracking_cfo_hz": -657244.0181407798,
+                  "integer_epoch_sample": 1269,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "upper",
+              "payload_start_sample": 2600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911676821312,
+              "visit_index": 13
+            },
+            {
+              "actual_rf_hz": 12190312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03322627692339832,
+                  "fractional_epoch_offset_samples": -1.170650209480481,
+                  "fractional_exact_score": 0.03568633447602303,
+                  "fractional_margin": 0.0024600575526247045,
+                  "fractional_tracking_cfo_hz": -445795.17690525134,
+                  "integer_epoch_sample": 2255,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03322627692339832,
+                  "fractional_epoch_offset_samples": -1.170650209480481,
+                  "fractional_exact_score": 0.03568633447602303,
+                  "fractional_margin": 0.0024600575526247045,
+                  "fractional_tracking_cfo_hz": -445795.17690525134,
+                  "integer_epoch_sample": 2255,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.04170897763188466,
+                  "fractional_epoch_offset_samples": 0.2018487985129037,
+                  "fractional_exact_score": 0.03421830317005867,
+                  "fractional_margin": -0.00749067446182599,
+                  "fractional_tracking_cfo_hz": -812261.3812015681,
+                  "integer_epoch_sample": 2257,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.04059194405892683,
+                  "fractional_epoch_offset_samples": 0.6313556609371805,
+                  "fractional_exact_score": 0.04944005950317236,
+                  "fractional_margin": 0.008848115444245533,
+                  "fractional_tracking_cfo_hz": 178967.13615992753,
+                  "integer_epoch_sample": 10714,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03799821582385251,
+                  "fractional_epoch_offset_samples": -0.40622640792912706,
+                  "fractional_exact_score": 0.04355422367782833,
+                  "fractional_margin": 0.005556007853975822,
+                  "fractional_tracking_cfo_hz": -145808.49738692876,
+                  "integer_epoch_sample": 10714,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "upper",
+              "payload_start_sample": 2600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911676821312,
+              "visit_index": 13
+            }
+          ],
+          "case": "DS29-0082",
+          "causal": [
+            null,
+            5144
+          ],
+          "channel": 6,
+          "counter": 21911676821312,
+          "index_sha256": "sha256:04a4209fa8cab456aa6726b608a836f77df6d272149ff727775c665eae431337",
+          "iq_sha256": "sha256:a0fbe6a1e529e639f23d47df2769ab3174d30a27ed8d35c1d96d2b74fb75e1fa",
+          "kind": "miss",
+          "known_center": 5144,
+          "manifest_sha256": "e87a6682f8cd8aeb2ae0f04bd81fd6f371b1974277b5cfff8f9b7a23b43d7388",
+          "raw_prefix_bytes": 22400000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 12190312500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.03322627692339832,
+                "fractional_epoch_offset_samples": -1.170650209480481,
+                "fractional_exact_score": 0.03568633447602303,
+                "fractional_margin": 0.0024600575526247045,
+                "fractional_tracking_cfo_hz": -445795.17690525134,
+                "integer_epoch_sample": 2255,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.03322627692339832,
+                "fractional_epoch_offset_samples": -1.170650209480481,
+                "fractional_exact_score": 0.03568633447602303,
+                "fractional_margin": 0.0024600575526247045,
+                "fractional_tracking_cfo_hz": -445795.17690525134,
+                "integer_epoch_sample": 2255,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.04170897763188466,
+                "fractional_epoch_offset_samples": 0.2018487985129037,
+                "fractional_exact_score": 0.03421830317005867,
+                "fractional_margin": -0.00749067446182599,
+                "fractional_tracking_cfo_hz": -812261.3812015681,
+                "integer_epoch_sample": 2257,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.04059194405892683,
+                "fractional_epoch_offset_samples": 0.6313556609371805,
+                "fractional_exact_score": 0.04944005950317236,
+                "fractional_margin": 0.008848115444245533,
+                "fractional_tracking_cfo_hz": 178967.13615992753,
+                "integer_epoch_sample": 10714,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.03799821582385251,
+                "fractional_epoch_offset_samples": -0.40622640792912706,
+                "fractional_exact_score": 0.04355422367782833,
+                "fractional_margin": 0.005556007853975822,
+                "fractional_tracking_cfo_hz": -145808.49738692876,
+                "integer_epoch_sample": 10714,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 6,
+            "edge": "upper",
+            "payload_start_sample": 2600000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 21911676821312,
+            "visit_index": 13
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 12190312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03718002600999366,
+                  "fractional_epoch_offset_samples": -0.11011322672255178,
+                  "fractional_exact_score": 0.24425382237387652,
+                  "fractional_margin": 0.20707379636388287,
+                  "fractional_tracking_cfo_hz": -344496.95140745066,
+                  "integer_epoch_sample": 1269,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03510677583449034,
+                  "fractional_epoch_offset_samples": -1.226939554608029,
+                  "fractional_exact_score": 0.038009438016653914,
+                  "fractional_margin": 0.002902662182163576,
+                  "fractional_tracking_cfo_hz": -175206.5747549658,
+                  "integer_epoch_sample": 4025,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03531186084482003,
+                  "fractional_epoch_offset_samples": -0.24033124214284893,
+                  "fractional_exact_score": 0.042127844406408516,
+                  "fractional_margin": 0.006815983561588489,
+                  "fractional_tracking_cfo_hz": 437761.3730359218,
+                  "integer_epoch_sample": 12437,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.033992787711715614,
+                  "fractional_epoch_offset_samples": 0.7098778483442314,
+                  "fractional_exact_score": 0.04084806223896502,
+                  "fractional_margin": 0.006855274527249405,
+                  "fractional_tracking_cfo_hz": 365141.67439492815,
+                  "integer_epoch_sample": 12436,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03143611220804187,
+                  "fractional_epoch_offset_samples": 0.23284001998669915,
+                  "fractional_exact_score": 0.03963158595916095,
+                  "fractional_margin": 0.008195473751119078,
+                  "fractional_tracking_cfo_hz": 70792.9655809719,
+                  "integer_epoch_sample": 620,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "upper",
+              "payload_start_sample": 2600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 21911676821312,
+              "visit_index": 13
+            },
+            {
+              "actual_rf_hz": 12190312500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03491096475967539,
+                  "fractional_epoch_offset_samples": -0.19146415145709691,
+                  "fractional_exact_score": 0.33528143179262204,
+                  "fractional_margin": 0.3003704670329467,
+                  "fractional_tracking_cfo_hz": 432614.89903495595,
+                  "integer_epoch_sample": 5144,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03491096475967539,
+                  "fractional_epoch_offset_samples": -0.19146415145709691,
+                  "fractional_exact_score": 0.33528143179262204,
+                  "fractional_margin": 0.3003704670329467,
+                  "fractional_tracking_cfo_hz": 432614.89903495595,
+                  "integer_epoch_sample": 5144,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03194771469452163,
+                  "fractional_epoch_offset_samples": -1.1920274563921278,
+                  "fractional_exact_score": 0.03904804844457501,
+                  "fractional_margin": 0.007100333750053381,
+                  "fractional_tracking_cfo_hz": 36556.21160973846,
+                  "integer_epoch_sample": 1229,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03337230243388424,
+                  "fractional_epoch_offset_samples": -1.228862277828661,
+                  "fractional_exact_score": 0.043106866864852815,
+                  "fractional_margin": 0.009734564430968574,
+                  "fractional_tracking_cfo_hz": 429498.6663834725,
+                  "integer_epoch_sample": 10749,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.040384610147295476,
+                  "fractional_epoch_offset_samples": 0.7194009801619291,
+                  "fractional_exact_score": 0.25470543977179866,
+                  "fractional_margin": 0.2143208296245032,
+                  "fractional_tracking_cfo_hz": 432382.3228377171,
+                  "integer_epoch_sample": 5143,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03595185034621268,
+                  "fractional_epoch_offset_samples": 1.122577594331319,
+                  "fractional_exact_score": 0.03647886157991965,
+                  "fractional_margin": 0.0005270112337069713,
+                  "fractional_tracking_cfo_hz": 24710.591343214088,
+                  "integer_epoch_sample": 2712,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "upper",
+              "payload_start_sample": 2600000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 21911676821312,
+              "visit_index": 13
+            }
+          ],
+          "segment": 0,
+          "sequence": 13,
+          "sham": [
+            null,
+            11810
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.03491096475967539,
+            "fractional_epoch_offset_samples": -0.19146415145709691,
+            "fractional_exact_score": 0.33528143179262204,
+            "fractional_margin": 0.3003704670329467,
+            "fractional_tracking_cfo_hz": 432614.89903495595,
+            "integer_epoch_sample": 5144,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 13
+        }
+      ]
+    },
+    "DS29-0519": {
+      "controls": false,
+      "cpu": 1,
+      "python": "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+      "python_sha256": "8f9781a98200d9ecda7e00464e4c64b1327abae788ae8e6979d5c859311410c7",
+      "root": {
+        "archived_native_sha256": "31d59b2f74179edd7a18506d94a4c65ab12ea3ba7b6a1499617d920d2aace2af",
+        "edge": "lower",
+        "input_manifest_sha256": "sha256:2657427dbfc138d9721fb816e1f633d5e7b04c31857a9df73533631c92f14762",
+        "producer": "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src",
+        "sources": {
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "77f0719b9c1658c042c53408b7941dedd9126fbfa738bade7113bc060eadd865",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_bounds.py": "f83a8330629c9cc0323822a322302a7e028f4a8a114182eaf676381e13362d2c",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_exact.py": "8b5c556aded30ab0622a55287cc32db274e126c35f50fcb622d2101b8ae583bf",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_integer.py": "58d88ee1f6776d71149b1b2c4ee6676483d1f0b52b27cfc1b8b4a2eb8d06e83f",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_native/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "59dd006a9bc9c07fd83e0234d68046f5fc4a57cf577576eecfdacd957c9ab0bd",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_screen_selection.py": "7e22b1e585bd2442565a2756256cd2ca18c695720fc5760274a4ca0e615473dd",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/_sparse_native/_native_acquisition.cpython-312-x86_64-linux-gnu.so": "4ba8d2e14858e274113bde80dde54cb35459617350e9179d49685b083ef239a6",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/acquisition.py": "6a1e88345d2d64f6d6e11f1d586753b74bcc0ef5a6f6816e42880eb8bc6e7a23",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/coarse_screen.py": "7feabf0cc6c93dc630f29de997efc73bed029396cc401db9a694be29fdc2e2b4",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/fast_scan_fractional.py": "ded78ffbb46ad5322757e22dd33c08a5eabf6b9fdbc1b767342dcef7a6b6910b",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/fast_scan_scores.py": "fbefc411d1ec407c90a39a4ea2f823a62b11683c2d0877bdbd1c717acfec12aa",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/analysis/starlink/templates.py": "7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_analysis.py": "c5b35f4a2adb5bcc67af535713a9719b7681c0c751f86e85bab9c051188130a2",
+          "/opt/leo-native-glrt-runtime/a1b999aad5bdc924fd90d35e055878bc23bd4c06/src/leo/scanner/fast_scan_detector.py": "3a34612a9ebb4384062d69457b43c4a072ae2b5a40b01f3364ff39292eb09e83"
+        },
+        "visits": [
+          4,
+          12,
+          155,
+          157,
+          270,
+          732
+        ]
+      },
+      "rows": [
+        {
+          "archive_probe": {
+            "actual_rf_hz": 11709687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.03587400656347757,
+                "fractional_epoch_offset_samples": -0.6982567040284913,
+                "fractional_exact_score": 0.3469478256430463,
+                "fractional_margin": 0.31107381907956877,
+                "fractional_tracking_cfo_hz": 463632.9390403775,
+                "integer_epoch_sample": 4931,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.037540837498335054,
+                "fractional_epoch_offset_samples": -1.376537085500825,
+                "fractional_exact_score": 0.03798186534401016,
+                "fractional_margin": 0.00044102784567510295,
+                "fractional_tracking_cfo_hz": 335117.78488490486,
+                "integer_epoch_sample": 12455,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.034999441787215806,
+                "fractional_epoch_offset_samples": -1.2130393252472127,
+                "fractional_exact_score": 0.0414699435640462,
+                "fractional_margin": 0.006470501776830395,
+                "fractional_tracking_cfo_hz": 68038.24827270341,
+                "integer_epoch_sample": 1942,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.04067976501562821,
+                "fractional_epoch_offset_samples": -0.2471723324990542,
+                "fractional_exact_score": 0.03797734385350219,
+                "fractional_margin": -0.0027024211621260175,
+                "fractional_tracking_cfo_hz": 608571.2931071392,
+                "integer_epoch_sample": 9658,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 5,
+            "edge": "lower",
+            "payload_start_sample": 2400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 28626121033499,
+            "visit_index": 12
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 11709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03402140456047006,
+                  "fractional_epoch_offset_samples": -0.5871849875620804,
+                  "fractional_exact_score": 0.6045803394084395,
+                  "fractional_margin": 0.5705589348479694,
+                  "fractional_tracking_cfo_hz": -225547.62296388985,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03402140456047006,
+                  "fractional_epoch_offset_samples": -0.5871849875620804,
+                  "fractional_exact_score": 0.6045803394084395,
+                  "fractional_margin": 0.5705589348479694,
+                  "fractional_tracking_cfo_hz": -225547.62296388985,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.037882523032234966,
+                  "fractional_epoch_offset_samples": 0.17477659390741948,
+                  "fractional_exact_score": 0.2542178443281625,
+                  "fractional_margin": 0.21633532129592756,
+                  "fractional_tracking_cfo_hz": -452627.47410039225,
+                  "integer_epoch_sample": 4930,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03852300878398657,
+                  "fractional_epoch_offset_samples": 1.1393028296619445,
+                  "fractional_exact_score": 0.22499078863016092,
+                  "fractional_margin": 0.18646777984617435,
+                  "fractional_tracking_cfo_hz": -256796.75642996866,
+                  "integer_epoch_sample": 4673,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.03686946834251932,
+                  "fractional_epoch_offset_samples": 0.49873258979130586,
+                  "fractional_exact_score": 0.4629824167058456,
+                  "fractional_margin": 0.4261129483633263,
+                  "fractional_tracking_cfo_hz": 1662.9984774900076,
+                  "integer_epoch_sample": 4930,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03852053911115226,
+                  "fractional_epoch_offset_samples": 0.13816465757807705,
+                  "fractional_exact_score": 0.22565971006431057,
+                  "fractional_margin": 0.1871391709531583,
+                  "fractional_tracking_cfo_hz": -256767.69195451797,
+                  "integer_epoch_sample": 4674,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.037651972227997474,
+                  "fractional_epoch_offset_samples": 0.6653108773224055,
+                  "fractional_exact_score": 0.15933094350508392,
+                  "fractional_margin": 0.12167897127708645,
+                  "fractional_tracking_cfo_hz": -256755.14311803548,
+                  "integer_epoch_sample": 4673,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03639987206487513,
+                  "fractional_epoch_offset_samples": 0.21454826052384052,
+                  "fractional_exact_score": 0.07702138578119015,
+                  "fractional_margin": 0.04062151371631502,
+                  "fractional_tracking_cfo_hz": -483675.0888416708,
+                  "integer_epoch_sample": 4674,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 5,
+              "edge": "lower",
+              "payload_start_sample": 2400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626121033499,
+              "visit_index": 12
+            },
+            {
+              "actual_rf_hz": 11709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.035888655617673446,
+                  "fractional_epoch_offset_samples": -0.6987958963906395,
+                  "fractional_exact_score": 0.34680342127111496,
+                  "fractional_margin": 0.3109147656534415,
+                  "fractional_tracking_cfo_hz": 463655.15186826873,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03997411149995504,
+                  "fractional_epoch_offset_samples": 0.5973219789088884,
+                  "fractional_exact_score": 0.04480917167970997,
+                  "fractional_margin": 0.004835060179754928,
+                  "fractional_tracking_cfo_hz": -502011.40697682824,
+                  "integer_epoch_sample": 6151,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03997411149995504,
+                  "fractional_epoch_offset_samples": 0.5973219789088884,
+                  "fractional_exact_score": 0.04480917167970997,
+                  "fractional_margin": 0.004835060179754928,
+                  "fractional_tracking_cfo_hz": -502011.40697682824,
+                  "integer_epoch_sample": 6151,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.039962072467080556,
+                  "fractional_epoch_offset_samples": -0.8739743900906742,
+                  "fractional_exact_score": 0.23736677203475867,
+                  "fractional_margin": 0.19740469956767812,
+                  "fractional_tracking_cfo_hz": 690506.3060756354,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.03474158168815162,
+                  "fractional_epoch_offset_samples": -1.0347061349611624,
+                  "fractional_exact_score": 0.03539977229054924,
+                  "fractional_margin": 0.0006581906023976208,
+                  "fractional_tracking_cfo_hz": -329408.25036798825,
+                  "integer_epoch_sample": 12148,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 5,
+              "edge": "lower",
+              "payload_start_sample": 2400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626121033499,
+              "visit_index": 12
+            }
+          ],
+          "case": "DS29-0519",
+          "causal": [
+            null,
+            4930
+          ],
+          "channel": 5,
+          "counter": 28626121033499,
+          "index_sha256": "sha256:a8c4aa278d98c4f1425c4ef16eabb256848da200e4034f2c91df80c59491220f",
+          "iq_sha256": "sha256:860c5ddd9fc0101c7a9c6e4daf4ce3f47e13b4517fdd62cbac01af5e25cb936d",
+          "kind": "matched",
+          "known_center": 4930,
+          "manifest_sha256": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "raw_prefix_bytes": 20800000,
+          "receiver": 1,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 11709687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.035888655617673446,
+                "fractional_epoch_offset_samples": -0.6987958963906395,
+                "fractional_exact_score": 0.34680342127111496,
+                "fractional_margin": 0.3109147656534415,
+                "fractional_tracking_cfo_hz": 463655.15186826873,
+                "integer_epoch_sample": 4931,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.03997411149995504,
+                "fractional_epoch_offset_samples": 0.5973219789088884,
+                "fractional_exact_score": 0.04480917167970997,
+                "fractional_margin": 0.004835060179754928,
+                "fractional_tracking_cfo_hz": -502011.40697682824,
+                "integer_epoch_sample": 6151,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 3,
+                "fractional_control_score": 0.03997411149995504,
+                "fractional_epoch_offset_samples": 0.5973219789088884,
+                "fractional_exact_score": 0.04480917167970997,
+                "fractional_margin": 0.004835060179754928,
+                "fractional_tracking_cfo_hz": -502011.40697682824,
+                "integer_epoch_sample": 6151,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.039962072467080556,
+                "fractional_epoch_offset_samples": -0.8739743900906742,
+                "fractional_exact_score": 0.23736677203475867,
+                "fractional_margin": 0.19740469956767812,
+                "fractional_tracking_cfo_hz": 690506.3060756354,
+                "integer_epoch_sample": 4931,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.03474158168815162,
+                "fractional_epoch_offset_samples": -1.0347061349611624,
+                "fractional_exact_score": 0.03539977229054924,
+                "fractional_margin": 0.0006581906023976208,
+                "fractional_tracking_cfo_hz": -329408.25036798825,
+                "integer_epoch_sample": 12148,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 5,
+            "edge": "lower",
+            "payload_start_sample": 2400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 1,
+            "valid_start_counter": 28626121033499,
+            "visit_index": 12
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 11709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03402807088148915,
+                  "fractional_epoch_offset_samples": -0.5871718451259254,
+                  "fractional_exact_score": 0.6050254666148441,
+                  "fractional_margin": 0.570997395733355,
+                  "fractional_tracking_cfo_hz": -225525.4682721386,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03402807088148915,
+                  "fractional_epoch_offset_samples": -0.5871718451259254,
+                  "fractional_exact_score": 0.6050254666148441,
+                  "fractional_margin": 0.570997395733355,
+                  "fractional_tracking_cfo_hz": -225525.4682721386,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03851965135516969,
+                  "fractional_epoch_offset_samples": 1.13802893014323,
+                  "fractional_exact_score": 0.22573423149091468,
+                  "fractional_margin": 0.187214580135745,
+                  "fractional_tracking_cfo_hz": -256764.1652237312,
+                  "integer_epoch_sample": 4673,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.03780037199329197,
+                  "fractional_epoch_offset_samples": 0.18589712137927147,
+                  "fractional_exact_score": 0.2543716598597161,
+                  "fractional_margin": 0.21657128786642413,
+                  "fractional_tracking_cfo_hz": -225450.9315679982,
+                  "integer_epoch_sample": 4930,
+                  "passed_fractional_margin_gate": true
+                }
+              ],
+              "channel": 5,
+              "edge": "lower",
+              "payload_start_sample": 2400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626121033499,
+              "visit_index": 12
+            },
+            {
+              "actual_rf_hz": 11709687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03587400656347757,
+                  "fractional_epoch_offset_samples": -0.6982567040284913,
+                  "fractional_exact_score": 0.3469478256430463,
+                  "fractional_margin": 0.31107381907956877,
+                  "fractional_tracking_cfo_hz": 463632.9390403775,
+                  "integer_epoch_sample": 4931,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.037540837498335054,
+                  "fractional_epoch_offset_samples": -1.376537085500825,
+                  "fractional_exact_score": 0.03798186534401016,
+                  "fractional_margin": 0.00044102784567510295,
+                  "fractional_tracking_cfo_hz": 335117.78488490486,
+                  "integer_epoch_sample": 12455,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 3,
+                  "fractional_control_score": 0.034999441787215806,
+                  "fractional_epoch_offset_samples": -1.2130393252472127,
+                  "fractional_exact_score": 0.0414699435640462,
+                  "fractional_margin": 0.006470501776830395,
+                  "fractional_tracking_cfo_hz": 68038.24827270341,
+                  "integer_epoch_sample": 1942,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.04067976501562821,
+                  "fractional_epoch_offset_samples": -0.2471723324990542,
+                  "fractional_exact_score": 0.03797734385350219,
+                  "fractional_margin": -0.0027024211621260175,
+                  "fractional_tracking_cfo_hz": 608571.2931071392,
+                  "integer_epoch_sample": 9658,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 5,
+              "edge": "lower",
+              "payload_start_sample": 2400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626121033499,
+              "visit_index": 12
+            }
+          ],
+          "segment": 0,
+          "sequence": 12,
+          "sham": [
+            null,
+            11596
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 0,
+            "fractional_control_score": 0.03587400656347757,
+            "fractional_epoch_offset_samples": -0.6982567040284913,
+            "fractional_exact_score": 0.3469478256430463,
+            "fractional_margin": 0.31107381907956877,
+            "fractional_tracking_cfo_hz": 463632.9390403775,
+            "integer_epoch_sample": 4931,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 12
+        },
+        {
+          "archive_probe": {
+            "actual_rf_hz": 11959687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 0,
+                "fractional_control_score": 0.044014188471619704,
+                "fractional_epoch_offset_samples": -1.0457360215295557,
+                "fractional_exact_score": 0.03923304454808376,
+                "fractional_margin": -0.004781143923535944,
+                "fractional_tracking_cfo_hz": 109643.76376363965,
+                "integer_epoch_sample": 11750,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 1,
+                "fractional_control_score": 0.03928997447614947,
+                "fractional_epoch_offset_samples": -0.14921054558335065,
+                "fractional_exact_score": 0.04125713339055282,
+                "fractional_margin": 0.0019671589144033483,
+                "fractional_tracking_cfo_hz": 23947.673781822326,
+                "integer_epoch_sample": 7448,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.03928997447614947,
+                "fractional_epoch_offset_samples": -0.14921054558335065,
+                "fractional_exact_score": 0.04125713339055282,
+                "fractional_margin": 0.0019671589144033483,
+                "fractional_tracking_cfo_hz": 23947.673781822326,
+                "integer_epoch_sample": 7448,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.039388880210805784,
+                "fractional_epoch_offset_samples": -1.3889313157595207,
+                "fractional_exact_score": 0.040082096337477474,
+                "fractional_margin": 0.0006932161266716905,
+                "fractional_tracking_cfo_hz": 270109.00492412416,
+                "integer_epoch_sample": 2395,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 6,
+                "fractional_control_score": 0.04075544199124578,
+                "fractional_epoch_offset_samples": 0.6750291671960822,
+                "fractional_exact_score": 0.30094901096481536,
+                "fractional_margin": 0.2601935689735696,
+                "fractional_tracking_cfo_hz": -408372.9096973911,
+                "integer_epoch_sample": 131,
+                "passed_fractional_margin_gate": true
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.04200738622770115,
+                "fractional_epoch_offset_samples": -1.3649477450234238,
+                "fractional_exact_score": 0.03960874874463731,
+                "fractional_margin": -0.002398637483063841,
+                "fractional_tracking_cfo_hz": -794777.782465561,
+                "integer_epoch_sample": 11278,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 6,
+            "edge": "lower",
+            "payload_start_sample": 31400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 0,
+            "valid_start_counter": 28626185285528,
+            "visit_index": 157
+          },
+          "baseline": [
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03974401116162397,
+                  "fractional_epoch_offset_samples": 1.1684110843830056,
+                  "fractional_exact_score": 0.038814339386129125,
+                  "fractional_margin": -0.0009296717754948419,
+                  "fractional_tracking_cfo_hz": -676455.290442691,
+                  "integer_epoch_sample": 8284,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 4,
+                  "fractional_control_score": 0.040440343664458374,
+                  "fractional_epoch_offset_samples": 0.4651628140365435,
+                  "fractional_exact_score": 0.040227858181675624,
+                  "fractional_margin": -0.00021248548278274965,
+                  "fractional_tracking_cfo_hz": -69037.43867849714,
+                  "integer_epoch_sample": 8285,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.036911653833059235,
+                  "fractional_epoch_offset_samples": -0.762424503985776,
+                  "fractional_exact_score": 0.044991495530103884,
+                  "fractional_margin": 0.008079841697044648,
+                  "fractional_tracking_cfo_hz": 613043.5882399486,
+                  "integer_epoch_sample": 3196,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.03876492377770162,
+                  "fractional_epoch_offset_samples": 1.41023157050933,
+                  "fractional_exact_score": 0.03863518719541621,
+                  "fractional_margin": -0.00012973658228540574,
+                  "fractional_tracking_cfo_hz": -114168.4016024568,
+                  "integer_epoch_sample": 8284,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 31400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626185285528,
+              "visit_index": 157
+            },
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.03680309950409359,
+                  "fractional_epoch_offset_samples": -0.9543368118282571,
+                  "fractional_exact_score": 0.03794062827368702,
+                  "fractional_margin": 0.0011375287695934294,
+                  "fractional_tracking_cfo_hz": 742000.0803027004,
+                  "integer_epoch_sample": 8448,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.04310217055465843,
+                  "fractional_epoch_offset_samples": 1.313754289455411,
+                  "fractional_exact_score": 0.042795593995996105,
+                  "fractional_margin": -0.0003065765586623276,
+                  "fractional_tracking_cfo_hz": -304463.01179082214,
+                  "integer_epoch_sample": 8447,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 31400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626185285528,
+              "visit_index": 157
+            }
+          ],
+          "case": "DS29-0519",
+          "causal": [
+            132,
+            null
+          ],
+          "channel": 6,
+          "counter": 28626185285528,
+          "index_sha256": "sha256:df9f3c85f2608eedd75f69388f409235d4a5feab9d8cdaf24b11603b66365081",
+          "iq_sha256": "sha256:172056b0c4fb82eef3bde9e2587412b61571182bfc04bdfbc539bd7fb4258b2c",
+          "kind": "miss",
+          "known_center": 132,
+          "manifest_sha256": "1c099105c697193756bb11a8f4c02cef8a0ad7f8fe5f976d5a3e25b454b10135",
+          "raw_prefix_bytes": 48000000,
+          "receiver": 0,
+          "receiver_ids": [
+            0,
+            1
+          ],
+          "reference_wide_probe": {
+            "actual_rf_hz": 11959687500.0,
+            "candidates": [
+              {
+                "candidate_rank": 2,
+                "fractional_control_score": 0.03974401116162397,
+                "fractional_epoch_offset_samples": 1.1684110843830056,
+                "fractional_exact_score": 0.038814339386129125,
+                "fractional_margin": -0.0009296717754948419,
+                "fractional_tracking_cfo_hz": -676455.290442691,
+                "integer_epoch_sample": 8284,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 4,
+                "fractional_control_score": 0.040440343664458374,
+                "fractional_epoch_offset_samples": 0.4651628140365435,
+                "fractional_exact_score": 0.040227858181675624,
+                "fractional_margin": -0.00021248548278274965,
+                "fractional_tracking_cfo_hz": -69037.43867849714,
+                "integer_epoch_sample": 8285,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 5,
+                "fractional_control_score": 0.036911653833059235,
+                "fractional_epoch_offset_samples": -0.762424503985776,
+                "fractional_exact_score": 0.044991495530103884,
+                "fractional_margin": 0.008079841697044648,
+                "fractional_tracking_cfo_hz": 613043.5882399486,
+                "integer_epoch_sample": 3196,
+                "passed_fractional_margin_gate": false
+              },
+              {
+                "candidate_rank": 7,
+                "fractional_control_score": 0.03876492377770162,
+                "fractional_epoch_offset_samples": 1.41023157050933,
+                "fractional_exact_score": 0.03863518719541621,
+                "fractional_margin": -0.00012973658228540574,
+                "fractional_tracking_cfo_hz": -114168.4016024568,
+                "integer_epoch_sample": 8284,
+                "passed_fractional_margin_gate": false
+              }
+            ],
+            "channel": 6,
+            "edge": "lower",
+            "payload_start_sample": 31400000,
+            "probe_index": 0,
+            "probe_start_ms": 0,
+            "receiver_id": 0,
+            "valid_start_counter": 28626185285528,
+            "visit_index": 157
+          },
+          "sealed_probes": [
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 0,
+                  "fractional_control_score": 0.044014188471619704,
+                  "fractional_epoch_offset_samples": -1.0457360215295557,
+                  "fractional_exact_score": 0.03923304454808376,
+                  "fractional_margin": -0.004781143923535944,
+                  "fractional_tracking_cfo_hz": 109643.76376363965,
+                  "integer_epoch_sample": 11750,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 1,
+                  "fractional_control_score": 0.03928997447614947,
+                  "fractional_epoch_offset_samples": -0.14921054558335065,
+                  "fractional_exact_score": 0.04125713339055282,
+                  "fractional_margin": 0.0019671589144033483,
+                  "fractional_tracking_cfo_hz": 23947.673781822326,
+                  "integer_epoch_sample": 7448,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 2,
+                  "fractional_control_score": 0.03928997447614947,
+                  "fractional_epoch_offset_samples": -0.14921054558335065,
+                  "fractional_exact_score": 0.04125713339055282,
+                  "fractional_margin": 0.0019671589144033483,
+                  "fractional_tracking_cfo_hz": 23947.673781822326,
+                  "integer_epoch_sample": 7448,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.039388880210805784,
+                  "fractional_epoch_offset_samples": -1.3889313157595207,
+                  "fractional_exact_score": 0.040082096337477474,
+                  "fractional_margin": 0.0006932161266716905,
+                  "fractional_tracking_cfo_hz": 270109.00492412416,
+                  "integer_epoch_sample": 2395,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 6,
+                  "fractional_control_score": 0.04075544199124578,
+                  "fractional_epoch_offset_samples": 0.6750291671960822,
+                  "fractional_exact_score": 0.30094901096481536,
+                  "fractional_margin": 0.2601935689735696,
+                  "fractional_tracking_cfo_hz": -408372.9096973911,
+                  "integer_epoch_sample": 131,
+                  "passed_fractional_margin_gate": true
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.04200738622770115,
+                  "fractional_epoch_offset_samples": -1.3649477450234238,
+                  "fractional_exact_score": 0.03960874874463731,
+                  "fractional_margin": -0.002398637483063841,
+                  "fractional_tracking_cfo_hz": -794777.782465561,
+                  "integer_epoch_sample": 11278,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 31400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 0,
+              "valid_start_counter": 28626185285528,
+              "visit_index": 157
+            },
+            {
+              "actual_rf_hz": 11959687500.0,
+              "candidates": [
+                {
+                  "candidate_rank": 5,
+                  "fractional_control_score": 0.036280828540502665,
+                  "fractional_epoch_offset_samples": 0.08841645372892264,
+                  "fractional_exact_score": 0.03834439369483729,
+                  "fractional_margin": 0.002063565154334625,
+                  "fractional_tracking_cfo_hz": -431758.040659842,
+                  "integer_epoch_sample": 4819,
+                  "passed_fractional_margin_gate": false
+                },
+                {
+                  "candidate_rank": 7,
+                  "fractional_control_score": 0.039713433110715235,
+                  "fractional_epoch_offset_samples": 1.4929466068817807,
+                  "fractional_exact_score": 0.04794910096705043,
+                  "fractional_margin": 0.008235667856335192,
+                  "fractional_tracking_cfo_hz": -610226.2022816602,
+                  "integer_epoch_sample": 4819,
+                  "passed_fractional_margin_gate": false
+                }
+              ],
+              "channel": 6,
+              "edge": "lower",
+              "payload_start_sample": 31400000,
+              "probe_index": 0,
+              "probe_start_ms": 0,
+              "receiver_id": 1,
+              "valid_start_counter": 28626185285528,
+              "visit_index": 157
+            }
+          ],
+          "segment": 0,
+          "sequence": 157,
+          "sham": [
+            6798,
+            null
+          ],
+          "stratum": "strong",
+          "target": {
+            "candidate_rank": 6,
+            "fractional_control_score": 0.04075544199124578,
+            "fractional_epoch_offset_samples": 0.6750291671960822,
+            "fractional_exact_score": 0.30094901096481536,
+            "fractional_margin": 0.2601935689735696,
+            "fractional_tracking_cfo_hz": -408372.9096973911,
+            "integer_epoch_sample": 131,
+            "passed_fractional_margin_gate": true
+          },
+          "visit": 157
+        }
+      ]
+    }
+  },
+  "libraries": {
+    "batched32": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_batched_fft.so",
+      "sha256": "5c7f96f8219d29a776660c4b0de5deafadaf4983774432e5868e1817423144ec"
+    },
+    "cfo": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/conditioned.so",
+      "sha256": "378219a59d7b9b13f7548d9d056917853aad369c720ded4b1d07c32d661bfa1e"
+    },
+    "fft64": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/capture_fft64.so",
+      "sha256": "93b52b495f2e2575574ad6b821de8f52d3a7dee6771e49441dea4d76dbadacfb"
+    },
+    "fused": {
+      "path": "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/fused.so",
+      "sha256": "dc34f7196391931e27105425217bfcac3a47833571cb36fe8260686a9ce1ffb0"
+    }
+  },
+  "previous_lock": "af9794ca3b464184cf3f108230249ffcee7d129d5f10e62bce1a3e17e6720faa",
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_19_receiver_screening/antenna-confirmation/capture-exact/PROTOCOL.md": "aab5a6dce549aec13baed98b9b29c0f84940816eaedc3c9f56b77ee54e7d34b6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_exact_trial.py": "9e105aa0d3ff39e420b97fea8fe06a2c26d9377e97c40f85b516fd1c28122ece",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_fft_trial.py": "bee7bb92d8c4aee31bc814ca4d96ff7cfc92fb7faa4e1d167ff55074bace833d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/qualification/capture_starts.py": "756d119e827fe43ffadf982ddf01b46c02b9fc4dc8990b1cc7b5ace607c54ee8",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/capture_batched_fft.py": "f8c53c5b9fe30f2cece56aa25ebe8676447f19301b438366bbdcf01b5d32f306",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/capture_fft.c": "814ae511f91d2cfec3c37731f5eecf5838195df112d8002fcbb412c4f5c1d6d9",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/capture_fft.py": "c80c248e29d71add2fe55b87686306050131f508800806374290bc171eb9a675",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.c": "48e5c9a7cd7e02f9604d6121b1a5f7fb843df2e8e8562cb107d3035aca75c085",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/conditioned_cfo_bank.py": "1e0a834bf60789df75b38df4ed1cf41c827ff203ff282629d8d0355ebe4ec9b4",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/folded_bank.c": "6af2aab7595533b5cba9dfb2c460bc95e1440952aefcaf3d04fd67d7a94f99e6",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.c": "483ad4109ed5cf84b0b50c98a6efe903aee1e320e31161d66e95f07cdf958aa8",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/pipeline_eval/variants/refine_bank.py": "34986485227b71a8e23ad8898904c8a25ff48961995cf2bd71949780c4770cf6",
+    "/srv/bulk/leo-dev/receiver-screening-20261119/capture-exact-v2/folded_bank.c": "5db305f9d1ec8b1a761b47561204768efee6bef43bb012dfa42679c934bf5b94",
+    "/usr/lib/x86_64-linux-gnu/libfftw3.so.3": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7",
+    "/usr/lib/x86_64-linux-gnu/libfftw3f.so.3": "8fae0bc5d15b6caf5bb843f6a9328d2b08cd5440bef97722401cffdebc553611"
+  }
+}

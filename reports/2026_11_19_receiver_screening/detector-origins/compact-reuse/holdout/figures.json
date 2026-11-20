@@ -1,0 +1,20 @@
+{
+  "charts": [
+    {
+      "id": "cavity-reuse-columns-holdout",
+      "method": "v5_cavity_reuse",
+      "title": "Initial orbit column reuse · capture-era reserve",
+      "scope": "roof",
+      "cases": ["DS26-0112", "DS29-0127"],
+      "seal": "prediction-lock.json",
+      "source_lock": {"file": "source-lock.json", "digest_key": "source_lock_sha256"},
+      "provenance": ["scores.csv", "resources.csv", "comparison.json"],
+      "caption": "Two capture-era recordings preselected by the standalone release before the reuse experiment. Each pair runs through the same full compact cavity, original offer and causal catalogue on the same core, with an enforced 512 MiB cgroup and zero swap. The v5 reference curves show the original archived policies.",
+      "series": [
+        {"key": "one", "label": "Reuse initial orbit columns", "file": "columns-positions.jsonl.gz", "value": "v5_cavity_reuse", "native_authority": "frozen"},
+        {"key": "stock", "label": "Fresh standalone cavity", "file": "stock-positions.jsonl.gz", "value": "v5_direct_lifetime", "native_authority": "frozen", "match": ["input_sha256", "native_sha256", "catalog_sha256", "tile"]}
+      ]
+    }
+  ],
+  "version": 1
+}
