@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tarfile
+from hashlib import sha256
 from pathlib import Path
 
 import numpy as np
@@ -10,11 +12,41 @@ import pytest
 
 from leo.analysis.starlink.native_short_window import NativeShortWindow
 from leo.storage.short_window import ShortWindowWriter
-from tests.native_adaptive.detector import test_native_detector as native_detector
+from native.adaptive.detector.build import build
+from tests.analysis.test_native_glrt import _host_fftw_prefix
 from tools.analyze_short_window_recording import analyze_recording
 
-RAW = native_detector.RAW
-native_artifact = native_detector.built
+pytestmark = [pytest.mark.fftw, pytest.mark.real_corpus]
+DS9_PANEL = Path(__file__).resolve().parents[2] / "reports/2026_09_30_arm_ds9_native_comparison"
+RAW = "607957d70258c2ae53439f9b149821eea15ee95d1863ee5bb845412a2cc3fdc8.ci16"
+
+
+@pytest.fixture(scope="module")
+def native_artifact(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
+    directory = tmp_path_factory.mktemp("native-short-window")
+    archive = Path(os.environ.get("LEO_DS9_NATIVE_ARCHIVE", DS9_PANEL / "local/inputs.tar"))
+    assert archive.is_file(), "set LEO_DS9_NATIVE_ARCHIVE to the archived DS9 inputs.tar"
+    expected = json.loads((DS9_PANEL / "panel.json").read_bytes())["files"]
+    fixture = directory / "fixture"
+    fixture.mkdir()
+    with tarfile.open(archive) as source:
+        for name in ("lower-exact.c128", "lower-control.c128", RAW):
+            member = source.extractfile(name)
+            assert member is not None
+            data = member.read()
+            assert sha256(data).hexdigest() == expected[name]
+            (fixture / name).write_bytes(data)
+    compiler = Path("/usr/bin/gcc")
+    output = directory / "output"
+    build(
+        output_dir=output,
+        work_dir=directory / "build",
+        compiler=compiler,
+        archiver=Path("/usr/bin/gcc-ar"),
+        fftw_prefix=_host_fftw_prefix(directory, compiler),
+        target="host",
+    )
+    return output, fixture
 
 
 def _arrays(fixture: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

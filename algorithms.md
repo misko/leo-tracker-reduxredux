@@ -69,6 +69,12 @@ The latest comparison includes 159 DS26 recordings, the 127-recording DS26 bench
 
 The six named benchmark galleries are `fixed` (four versus five timing regions), `staggered` (timing-region schedule), `one-lane` (single acquisition lane), `antenna-confirmation` (antenna use and retries), `original-support` (preserving original pilot support) and `receiver-deadline` (acquisition and timing deadlines). Use their names with `benchmark --receiver`. To inspect other sealed studies, use `benchmark --study PATH --out DIR`. [All per-modification plots](reports/2026_11_19_position_atlas/README.md)
 
+The benchmark tests include a bit-for-bit comparison of archived RF diagnostics on 135 recordings. The one-command test run selects the study's NumPy version in an isolated environment.
+
+```sh
+OPENBLAS_NUM_THREADS=1 uv run --locked --with numpy==2.5.2 python -m pytest tests/pipeline_eval
+```
+
 ## Other algo07 implementations
 
 | Implementation | Status | What it does and how to run it |
@@ -131,6 +137,7 @@ The prototype studies record their inputs, assumptions and position errors. The 
 | Research recording analysis | Supported research mode. Samples more densely and publishes an independently versioned set of recording products. [Profile and controls](docs/pipelines/research-analysis.md) | Open the recording in the configured control UI and select the Research reprocess action. Each offline study also provides its own replay command. |
 | Persistent-hop and adaptive-hop analysis | Supported scanner workers. Persistent-hop analyzes and tracks recurrent visits. Adaptive-hop computes metrics from the actual recorded visits. [Persistent-hop worker](src/leo/cli/persistent_hop_analysis.py) · [Adaptive-hop worker](src/leo/cli/adaptive_hop_analysis.py) | `.venv/bin/leo-persistent-hop-analysis --bulk-root "$BULK_ROOT" --session-id "$SESSION_ID" --site "$SITE_PRESET"` or `.venv/bin/leo-adaptive-hop-analysis --bulk-root "$BULK_ROOT" --session-id "$SESSION_ID"` |
 | Adaptive dual-receiver phase | Supported scanner diagnostic. V2 extracts relative phase from saved paired receiver samples. V1 publishes an existing evidence figure with its qualified counts. [V2 extraction](src/leo/cli/adaptive_dual_rx_phase_v2.py) · [V1 publication](src/leo/cli/adaptive_dual_rx_phase_publish.py) | `.venv/bin/leo-adaptive-dual-rx-phase-v2 --bulk-root "$BULK_ROOT" --session-id "$SESSION_ID"` |
+| Native short-window GLRT | Standalone detector. Runs exact and control pilot templates against each complete 20 ms window in a sealed recording and writes per-window evidence. [Detector build](native/adaptive/detector/README.md) · [Replay CLI](tools/analyze_short_window_recording.py) | `.venv/bin/python tools/analyze_short_window_recording.py "$RECORDING" --library "$LIBRARY" --exact-template "$EXACT" --control-template "$CONTROL" --output "$OUT_JSONL"` |
 
 ## Registered benchmark experiments
 

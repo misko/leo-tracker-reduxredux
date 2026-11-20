@@ -41,7 +41,8 @@ jobs:
       # The protected real-IQ lane below fails closed on the dedicated host.
       # Hosted runners deliberately execute the portable suite only; the corpus
       # is not redistributable until its license has been assessed.
-      - run: uv run pytest -m "not real_corpus and not legacy_oracle"
+      - run: uv run pytest -m "not real_corpus and not legacy_oracle and not frozen_v5_numerics"
+      - run: OPENBLAS_NUM_THREADS=1 uv run --locked --with numpy==2.5.2 python -m pytest -m frozen_v5_numerics tests/pipeline_eval
       - run: uv lock --check
 
   real-corpus:

@@ -68,6 +68,7 @@ def test_archived_comparison_uses_only_the_two_authenticated_endpoints(run):
     assert all(row["dispatch"] is run for row in records)
 
 
+@pytest.mark.frozen_v5_numerics
 def test_all_recorded_gates_replay_from_a_relocated_receipt(tmp_path):
     for name in (
         "PROTOCOL.md",
