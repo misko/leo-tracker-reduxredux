@@ -11,6 +11,8 @@
 | 95th-percentile error among fixes | 2.700 km | **2.258 km** |
 | Median raw-to-result time on 24 matched complete recordings | 35.97 min | **5.44 min** |
 
+With RF calibration fixed at zero, original and compact still returned 420 and 439 fixes. Their median errors were 888 m and 828 m. Fitting the coefficient reduced median frequency RMS from 123.42 to 97.42 Hz for original and from 115.08 to 115.05 Hz for compact. Each pipeline measures RMS on its own observations. [Matched calibration results](RESULTS.md#calibration) · [Deployed ALGO07 and ALGO08 web figures](../ALGO08/README.md)
+
 ## Where the positions landed
 
 ![Cumulative horizontal position error for both receivers on DS30](position-error.png)

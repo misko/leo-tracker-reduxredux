@@ -34,6 +34,8 @@ The four signal views show both receivers across channels 1–8. Each pair below
 
 On Gauss the automatic watcher selects ALGO08 for an unassigned sealed recording. A job already assigned to the ALGO07 pipeline resumes under its original identity. A successful ALGO08 fix publishes the eight PNGs atomically under its own run ID. A scientific withholding decision publishes its reason with no position or position PNG. Worker failures appear in the automatic recording status.
 
+On November 21 the first recording to finish under the new default was the 08:55 UTC lower-edge scan. The standard Gauss scan page displayed the completed ALGO08 result, and Chromium decoded all eight PNGs there. Its horizontal error was 614 m with fitted calibration and 653 m with calibration fixed at zero. A separate replay of DS30-0003 through the installed service environment reproduced the published decision and both positions byte for byte in its terminal receipt. [First automatic scan on the Gauss LAN](http://gauss:8090/?scan_kind=fast&scan_id=fast8-auto-20261121-085557-e20f7f08-1-lower) · [Published manifest](http://gauss:8090/api/v2/fast-scans/algo08-75fc65851211b638301e33722fde31a5/standard-analysis)
+
 To replay a saved fast recording manually, use the installed release with a writable local output root. The launcher supplies the Gauss regional configuration, read-only orbit archive and evaluation-only roof reference.
 
 ```sh
