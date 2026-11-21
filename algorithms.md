@@ -4,6 +4,8 @@
 
 The November 20 progress report compares original GLRT, one scan and two-scan cancellation on Gauss and shows how each affected original and compact v5 position fixes. [Dated algorithm report](2026_11_20_algorithms.md)
 
+The ALGO08 release gallery pairs all eight Gauss web figures for the same raw recording with the historical production ALGO07 figures. [Side-by-side PNGs and release instructions](reports/ALGO08/README.md)
+
 On DS30, two-scan cancellation + compact v5 returned 439/455 fixes and original GLRT + algo07v5 returned 420/455. On 24 complete recordings timed from raw I/Q on the same Gauss core, compact's median paired speedup was 6.08×. [Full validation and replay commands](reports/2026_11_21_ds30_full/README.md) · [Plots and calibration comparisons](reports/2026_11_21_ds30_full/RESULTS.md)
 
 ## Active algo07 variants and compact v5
