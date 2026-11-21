@@ -40,7 +40,8 @@ def register_fast_scan_commands(scanner):
 
 
 def process_automatic(recording, *, store, database_url, standard_command, glrt_lock,
-                      standard_mode='algo07', standard_reader=None, glrt_workers=8):
+                      standard_mode='algo08', standard_reader=None, glrt_workers=8,
+                      algo08_command=None):
     """Resume the existing GLRT queue, then the existing standard CLI pipeline."""
     if type(glrt_workers) is not int or not 1 <= glrt_workers <= 32:
         raise ValueError('GLRT workers must be an integer within 1..32')
@@ -49,6 +50,29 @@ def process_automatic(recording, *, store, database_url, standard_command, glrt_
     identifier = recording.name
     try:
         state = store.automatic_status(identifier) or {}
+        if standard_mode == 'algo08':
+            # Resume jobs assigned before the cutover using their original producer.
+            incumbent = (state.get('standard_algorithm') == 'ALGO07' or
+                (state.get('standard_algorithm') != 'ALGO08' and
+                 (state.get('run_id') or state.get('state') in ('glrt', 'tracking'))))
+            if incumbent:
+                standard_mode = 'algo07'
+            else:
+                if not algo08_command:
+                    raise ValueError('ALGO08 release launcher is required')
+                store.update_automatic(identifier, state='tracking', standard_algorithm='ALGO08',
+                                       failure=None)
+                with glrt_lock:
+                    invocation = subprocess.run([*algo08_command, '--recording', str(recording),
+                        '--bulk-root', str(store.root)], capture_output=True, text=True, timeout=3600)
+                if invocation.returncode:
+                    raise RuntimeError('ALGO08 failed: ' + invocation.stderr[-1500:])
+                receipt = json.loads(invocation.stdout.splitlines()[-1])
+                if receipt['decision'] not in ('complete', 'withheld') or not receipt['run_id'].startswith('algo08-'):
+                    raise ValueError('Invalid ALGO08 terminal receipt')
+                return store.update_automatic(identifier, **receipt, state='complete', failure=None,
+                    standard_algorithm='ALGO08', standard_stages={'two_scan': True, 'compact_v5': True},
+                    standard_terminal_sha256=receipt['terminal_sha256'])
         if not state.get("run_id"):
             with glrt_lock:
                 store.update_automatic(identifier, state="glrt", failure=None)
@@ -167,7 +191,8 @@ def watch_automatic(args):
                         active[recording.name] = pool.submit(process_automatic, recording,
                             store=store, database_url=os.environ["LEO_DATABASE_URL"],
                             standard_command=[args.standard_python, args.standard_script],
-                            glrt_lock=glrt_lock,standard_mode=args.standard_mode,glrt_workers=args.glrt_workers)
+                            glrt_lock=glrt_lock,standard_mode=args.standard_mode,glrt_workers=args.glrt_workers,
+                            algo08_command=[args.algo08_launcher])
                 time.sleep(5)
 
 
@@ -179,7 +204,8 @@ if __name__ == "__main__":
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--standard-python", default='')
     parser.add_argument("--standard-script", default='')
-    parser.add_argument('--standard-mode',choices=('algo07','legacy'),default='algo07')
+    parser.add_argument('--standard-mode',choices=('algo08','algo07','legacy'),default='algo08')
+    parser.add_argument('--algo08-launcher',default='/opt/leo-algo08/current/run')
     parser.add_argument('--glrt-workers',type=int,choices=range(1,33),default=8)
     parser.add_argument('--capture-serial');parser.add_argument('--capture-uri',default='ip:192.168.1.20')
     parser.add_argument('--staging-root',type=Path,action='append',default=[])

@@ -1,6 +1,7 @@
 """Use compact v5's missing-history treatment for an unusable earlier orbit."""
 
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
@@ -19,8 +20,9 @@ def subset(catalogue, indexes):
     )
 
 
-def worker(request, result, library):
-    from leo.analysis.localization_v3 import orbit_modes
+@contextmanager
+def history_support():
+    from leo.analysis.localization_v3 import orbit_modes, retained_position
 
     previous = orbit_modes.previous_bank
     parsed = orbit_modes.parse_element_sets
@@ -57,14 +59,17 @@ def worker(request, result, library):
             with patch.object(orbit_modes, "parse_element_sets", verified_catalogue):
                 return previous(scan, labels)
 
-    try:
-        with patch.object(orbit_modes, "previous_bank", isolate):
+    with (patch.object(orbit_modes, "previous_bank", isolate),
+          patch.object(retained_position, "previous_bank", isolate)):
+        yield lambda: dict(unavailable_previous_norads=sorted(excluded), retries=calls)
+
+
+def worker(request, result, library):
+    with history_support() as receipt:
+        try:
             v5_secant_fit.worker(request, result, library, "secant")
-    finally:
-        save_json(
-            Path(result).with_name("history-retry.json"),
-            dict(unavailable_previous_norads=sorted(excluded), retries=calls),
-        )
+        finally:
+            save_json(Path(result).with_name("history-retry.json"), receipt())
 
 
 if __name__ == "__main__":

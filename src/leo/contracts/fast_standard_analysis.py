@@ -3,14 +3,16 @@ import math
 import re
 
 MODEL = 'algo07-causal-guarded-reassociation-v1'
+ALGO08 = 'algo08-two-scan-compact-v5-v1'
 PLOTS = ('ch1-4-all', 'ch5-8-all', 'ch1-4-unassociated', 'ch5-8-unassociated',
          'ch1-4-residuals', 'ch5-8-residuals', 'track-rms', 'position')
 
 
-def validate(document):
-    if (document.get('schema_version') != 1 or document.get('model_version') != MODEL
+def validate(document, *, model=MODEL):
+    version = {MODEL: 1, ALGO08: 2}[model]
+    if (document.get('schema_version') != version or document.get('model_version') != model
             or document.get('state') != 'complete' or document.get('reference_usage') != 'evaluation_only'):
-        raise ValueError('Invalid standard ALGO07 publication')
+        raise ValueError('Invalid standard analysis publication')
     for arm in ('c0', 'fitted_c'):
         row = document['arms'][arm]
         if not 0 <= row['associated_points'] <= document['glrt_points']:

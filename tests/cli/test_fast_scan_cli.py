@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from typer.testing import CliRunner
 
@@ -107,7 +108,7 @@ def test_automatic_failure_never_reports_complete(monkeypatch, tmp_path):
     store = FastScanStore(tmp_path / "bulk")
     with pytest.raises(ValueError, match="broken IQ"):
         process_automatic(tmp_path / "recording", store=store, database_url="unused",
-                          standard_command=[], glrt_lock=threading.Lock())
+                          standard_command=[], glrt_lock=threading.Lock(), standard_mode='algo07')
     assert store.automatic_status("recording")["state"] == "failed"
 
 
@@ -174,10 +175,29 @@ def test_automatic_glrt_worker_budget_is_explicit_and_bounded(monkeypatch,tmp_pa
     class Reader:
         def detail(self,run_id):return dict(state='pending')
     arguments=dict(store=store,database_url='unused',standard_command=[],
-                   glrt_lock=threading.Lock(),standard_reader=Reader())
+                   glrt_lock=threading.Lock(),standard_reader=Reader(),standard_mode='algo07')
     for budget in (0,33,True,1.5):
         with pytest.raises(ValueError,match='1..32'):
             process_automatic(tmp_path/'recording',glrt_workers=budget,**arguments)
     assert not calls
     process_automatic(tmp_path/'recording',glrt_workers=16,**arguments)
     assert calls[0]['workers']==16 and calls[0]['export_tracking_input'] is True
+
+
+@pytest.mark.parametrize("decision", ["complete", "withheld"])
+def test_new_recording_uses_algo08_release(monkeypatch, tmp_path, decision):
+    from threading import Lock
+    from subprocess import CompletedProcess
+    from leo.cli import fast_scan
+    from leo.storage.fast_scan import FastScanStore
+
+    store = FastScanStore(tmp_path)
+    def worker(command, **kwargs):
+        assert command == ["release/run", "--recording", str(tmp_path/"scan"), "--bulk-root", str(tmp_path)]
+        assert store.automatic_status("scan")["standard_algorithm"] == "ALGO08"
+        return CompletedProcess(command, 0, json.dumps(dict(decision=decision, run_id="algo08-example",
+                                session_id="fast-source", terminal_sha256="sha256:terminal")), "")
+    monkeypatch.setattr(fast_scan.subprocess, "run", worker)
+    result = fast_scan.process_automatic(tmp_path/"scan", store=store, database_url="", standard_command=[],
+                                         glrt_lock=Lock(), algo08_command=["release/run"])
+    assert (result["state"], result["decision"]) == ("complete", decision)

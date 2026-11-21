@@ -19,7 +19,7 @@ async function read<T>(url: string, signal: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-type Automatic = { recording_id: string; state: string; edge?: string; failure?: string;
+type Automatic = { recording_id: string; state: string; edge?: string; failure?: string; run_id?: string; standard_algorithm?: string;
   captured_windows?: number; session_id?: string };
 
 export function FastScanView({ renderTracking, recordingId }: {
@@ -34,7 +34,9 @@ export function FastScanView({ renderTracking, recordingId }: {
   const [automatic, setAutomatic] = useState<Automatic[]>([]);
   const [orbits, setOrbits] = useState<{ name: string }[]>([]);
   const [orbitError, setOrbitError] = useState("");
-  const selectedRun = recordingId ? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
+  const selectedJob = automatic.find(job => job.recording_id === recordingId);
+  const selectedRun = recordingId ? selectedJob?.run_id ?? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
+  const compact = selectedRun.startsWith("algo08-") || selectedJob?.standard_algorithm === "ALGO08";
   useEffect(() => {
     setOrbits([]);
     setOrbitError("");
@@ -75,7 +77,6 @@ export function FastScanView({ renderTracking, recordingId }: {
     const timer = setInterval(() => void refresh(), 10000);
     return () => { controller.abort(); clearInterval(timer); };
   }, []);
-  const selectedJob = automatic.find(job => job.recording_id === recordingId);
   useEffect(() => {
     setReport(null);
     if (!selectedRun) return;
@@ -126,12 +127,13 @@ export function FastScanView({ renderTracking, recordingId }: {
       <p>{current.window_count.toLocaleString()} visits: {current.counts.processed.toLocaleString()} processed,
         {" "}{current.counts.skipped_fast_score.toLocaleString()} skipped by fast score,
         {" "}{current.counts.invalid_capture.toLocaleString()} invalid.</p>
-      <p>Fast-score cutoff {current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.</p>
+      <p>{compact ? "The two-scan detector cancels the first pilot and searches the residual. Verified carriers feed compact v5 positioning." : `Fast-score cutoff ${current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.`}</p>
     </>}
     </section>
     {selectedRun && <FastStandardAnalysis runId={selectedRun} />}
+    {compact && !selectedRun && <p role="status">ALGO08 is processing the sealed recording.</p>}
     <details className="scanner-results-panel"><summary>Historical and experimental analyses</summary>
-    <p>These older methods are separate from the standard ALGO07 result above.</p>
+    <p>Historical tracking and positioning products for this recording.</p>
     {selectedRun && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">
       <h3>Selected satellite orbits and GLRT CFO</h3>
       {orbitError && <p role="alert">Orbit plots unavailable: {orbitError}</p>}

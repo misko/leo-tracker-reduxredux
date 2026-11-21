@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Stage this checkout at its final path. Service activation is a separate step.
+set -euo pipefail
+release=${1:?absolute new release directory}
+packages=${2:?qualified Python 3.12 site-packages directory}
+assets=${3:?directory containing the qualified pilot files, detector and tracks.json}
+test ! -e "$release"
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+api=/opt/leo-standard-fast/4cd629cef1e3bb35073d8c39f587ddf3d6d6ebf7
+py=/opt/leo-fast-auto/20261010-r1/python/bin/python3.12
+test -s web/dist/index.html
+install -d "$release"/{api,assets,tools,web}
+rsync -a --exclude __pycache__ src/ "$release/src/"
+rsync -a --exclude __pycache__ tools/pipeline_eval/ "$release/tools/pipeline_eval/"
+install -m 0644 tools/algo08_{scan,position}.py "$release/tools/"
+install -m 0755 deploy/scripts/run-algo08 "$release/run"
+install -m 0644 "$assets"/{lower.f32,upper.f32,cancellation-factors.so,tracks.json} "$release/assets/"
+"$py" -m venv --without-pip "$release/venv"
+rsync -a --exclude '*editable*' --exclude __pycache__ "$packages/" "$release/venv/lib/python3.12/site-packages/"
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1
+cd "$release"
+export PYTHONPATH="$release/src:$release"
+"$release/venv/bin/python" -Bs - <<'PY'
+from pathlib import Path
+from leo.analysis.localization_v4.backend import build_native
+from leo.contracts.digests import sha256_digest
+from tools.algo08_scan import PINS
+from tools.pipeline_eval.variants.orbit_projector import compile_kernel
+assets = Path("assets").resolve()
+for name, pin in PINS.items():
+    if sha256_digest((assets/name).read_bytes()) != "sha256:" + pin:
+        raise ValueError("Unqualified release input " + name)
+build_native(assets/"native")
+compile_kernel(assets/"projector.so")
+PY
+# Overlay the three reader modules on the existing production API composition.
+cp -a "$api/src" "$release/api/"
+for path in api/fast_standard_analysis.py contracts/fast_standard_analysis.py storage/fast_standard_analysis.py; do
+    install -m 0644 "$root/src/leo/$path" "$release/api/src/leo/$path"
+done
+cp -a "$root/web/dist" "$release/web/"

@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from time import perf_counter
 from unittest.mock import patch
+from contextlib import contextmanager
 
 import numpy as np
 
@@ -58,7 +59,8 @@ def propagation_times(original, extra):
     return np.sort(np.r_[extra, side[:3 - len(extra)]])
 
 
-def worker(request, result, library):
+@contextmanager
+def corner_support():
     from leo.analysis.localization_v3 import discovery, scan
     from leo.analysis.localization_v3.orbits import ecef_states
 
@@ -156,12 +158,17 @@ def worker(request, result, library):
         with patch.object(scan.ScanLikelihood, "shifted", shifted):
             return original_explore(context, state, anchor, method, *args, **kwargs)
 
-    try:
-        with (patch.object(localization_v3_inputs, "regional_bank", regional),
-              patch.object(discovery, "explore", explore)):
+    with (patch.object(localization_v3_inputs, "regional_bank", regional),
+          patch.object(discovery, "explore", explore)):
+        yield work
+
+
+def worker(request, result, library):
+    with corner_support() as work:
+        try:
             v5_secant_fit.worker(request, result, library, "secant")
-    finally:
-        save_json(Path(result).with_name("orbit-support.json"), work)
+        finally:
+            save_json(Path(result).with_name("orbit-support.json"), work)
     out = json.loads(Path(result).read_bytes())
     out["metrics"]["orbit_support"] = work
     save_json(Path(result), out)

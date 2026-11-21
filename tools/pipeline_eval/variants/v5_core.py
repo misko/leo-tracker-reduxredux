@@ -102,7 +102,7 @@ def scan_context(prepared, region, noise_digest, bound, previous):
     )
 
 
-def infer(prepared, region, bound, stage_s, *, select_initial=None):
+def infer(prepared, region, bound, stage_s, *, select_initial=None, selected_evidence=None):
     from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
     from leo.analysis.localization_v3.family_cavity import cavity_policy, nominate_families
     from leo.analysis.localization_v3.history_policy import history_policy
@@ -160,12 +160,15 @@ def infer(prepared, region, bound, stage_s, *, select_initial=None):
         f["best"] is not None and f["predictive_gain"] > 0 for f in nominations["families"]
     )
     arms = signed["arms"]
+    fit = None
     if offered:
         fit = cavity_policy(signed, nominations)
         if fit["status"] != "complete":
             raise ValueError(f"cavity fit failed: {fit.get('error')}")
         arms = fit["policy_arms"]
     stage_s["cavity"] = perf_counter() - start
+    if selected_evidence is not None:
+        selected_evidence(prepared, signed, fit)
     return dict(
         status="ok",
         boundary=BOUNDARY,

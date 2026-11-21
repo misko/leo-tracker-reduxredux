@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+release=$(dirname "$(readlink -f "$0")")
+export PYTHONPATH="$release/src:$release"
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+cd "$release"
+exec "$release/venv/bin/python" -Bs -m tools.algo08_scan --assets "$release/assets" \
+    --archive /var/lib/leo/tle --evaluation-reference 37.849061591561885 -122.48574968092912 "$@"

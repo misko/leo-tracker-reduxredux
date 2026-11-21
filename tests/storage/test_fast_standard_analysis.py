@@ -15,6 +15,24 @@ def publication():
     return doc,pngs
 
 
+def test_algo08_digests_identity_and_withheld_state(tmp_path):
+    from leo.contracts.fast_standard_analysis import ALGO08
+    store = FastStandardAnalysisStore(tmp_path)
+    doc, pngs = publication()
+    rid = "algo08-an-example"
+    doc.update(schema_version=2, model_version=ALGO08, run_id=rid)
+    manifest = store.publish(rid, doc, pngs)
+    assert store.detail(rid)["model_version"] == ALGO08
+    for a in manifest["artifacts"]:
+        assert store.artifact(rid, a["name"], a["sha256"]) == pngs[a["name"]]
+    assert store.detail("run")["state"] == "pending"
+    with pytest.raises(ValueError):
+        store.publish("historical", dict(doc, run_id="historical"), pngs)
+    assert store.withhold("algo08-weak", "no_active_curvature") == store.detail("algo08-weak")
+    with pytest.raises(FileNotFoundError):
+        store.artifact("algo08-weak", "position")
+
+
 def test_eight_figures_publish_atomically_and_reference_is_postfit_only(tmp_path):
     store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
     assert store.detail('run')['state']=='pending'

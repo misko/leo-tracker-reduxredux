@@ -115,7 +115,8 @@ class FastScanStore:
         candidate = self.root / namespace if name is None else self.root / namespace / name
         return confined_path(self.root, candidate, must_exist=False)
 
-    def ingest(self, recording):
+    def inventory(self, recording, *, verify_windows=True):
+        """Bind the sealed segment headers. A streaming consumer can verify each payload itself."""
         from leo.storage.short_window import ShortWindowReader
 
         recording = Path(recording).resolve(strict=True)
@@ -149,7 +150,8 @@ class FastScanStore:
                 "manifest_digest": reader.manifest_sha256,
                 "windows": reader.manifest.window_count,
             }
-            for w in FastSegmentSource(entry).windows():
+            segment = FastSegmentSource(entry)
+            for w in segment.windows() if verify_windows else ():
                 visit = w.acquisition["global_visit"]
                 current_generation = w.acquisition.get("generation")
                 if previous is not None and visit != previous + 1:
@@ -174,8 +176,17 @@ class FastScanStore:
         }
         digest = canonical_digest(inventory)
         session_id = "fast-" + digest.removeprefix("sha256:")[:32]
-        immutable_json(self._path("fast-scan-inputs", f"{session_id}.json"), inventory)
         return session_id, digest, inventory
+
+    def publish_inventory(self, session_id, inventory):
+        if session_id != "fast-" + canonical_digest(inventory)[7:39]:
+            raise ValueError("Source inventory identity mismatch")
+        immutable_json(self._path("fast-scan-inputs", f"{safe_id(session_id)}.json"), inventory)
+
+    def ingest(self, recording):
+        session, digest, inventory = self.inventory(recording)
+        self.publish_inventory(session, inventory)
+        return session, digest, inventory
 
     def source(self, session_id, digest):
         path = self._path("fast-scan-inputs", f"{safe_id(session_id)}.json")

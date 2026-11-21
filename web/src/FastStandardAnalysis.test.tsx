@@ -30,6 +30,23 @@ it("never presents an old or pending result as completed ALGO07",async()=>{
   expect(screen.queryByText("883.5 m")).not.toBeInTheDocument();
 });
 
+it("renders the eight ALGO08 figures with their own algorithm identity",async()=>{
+  vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({...result,schema_version:2,
+    model_version:"algo08-two-scan-compact-v5-v1",selected_model:"algo08-two-scan-compact-v5-v1"})})));
+  render(<FastStandardAnalysis runId="algo08-test"/>);
+  expect(await screen.findByText("Complete · two-scan cancellation and compact v5")).toBeInTheDocument();
+  expect(screen.getAllByRole("img")).toHaveLength(8);
+  expect(screen.getByRole("link",{name:"Download standard ALGO08 result"})).toBeInTheDocument();
+});
+
+it("explains a withheld ALGO08 position",async()=>{
+  vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({schema_version:2,
+    state:"withheld",model_version:"algo08-two-scan-compact-v5-v1",reason:"no_active_curvature"})})));
+  render(<FastStandardAnalysis runId="algo08-test"/>);
+  expect(await screen.findByText("Position withheld · no_active_curvature")).toBeInTheDocument();
+  expect(screen.queryAllByRole("img")).toHaveLength(0);
+});
+
 it("does not invent evaluation accuracy without a confirmed reference",async()=>{
   vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({...result,evaluation_reference:null,
     arms:{c0:{...arm,evaluation_error_m:null},fitted_c:{...arm,evaluation_error_m:null}}})})));

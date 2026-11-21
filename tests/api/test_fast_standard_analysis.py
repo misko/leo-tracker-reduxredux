@@ -23,3 +23,21 @@ def test_digest_bound_artifact_and_pending_routes():
     path=client.get('/api/v2/fast-scans/scan/standard-analysis/position-path.json')
     assert path.status_code==200 and path.json()['kind']=='recorded-position-path'
     assert client.get('/api/v2/fast-scans/missing/standard-analysis/position-path.json').status_code==404
+
+
+def test_comparison_requires_one_acquisition_and_both_models():
+    from leo.contracts.fast_standard_analysis import ALGO08, MODEL, PLOTS
+    class Reader:
+        def detail(self, rid):
+            return dict(run_id=rid, state='complete', model_version=ALGO08 if rid=='new' else MODEL,
+                        session_id='other' if rid=='wrong' else 's',
+                        artifacts=[dict(name=name, sha256='sha256:abc') for name in PLOTS])
+    app=FastAPI()
+    app.include_router(standard_analysis_router(Reader()))
+    client=TestClient(app)
+    base='/api/v2/fast-scans/new/standard-analysis/compare/'
+    gallery=client.get(base+'old')
+    assert gallery.status_code==200 and gallery.text.count('<img ')==16
+    assert gallery.text.index('ALGO07 position') < gallery.text.index('ALGO08 position')
+    assert client.get(base+'wrong').status_code==404
+    assert client.get(base+'new').status_code==404

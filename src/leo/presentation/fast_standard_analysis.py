@@ -37,8 +37,8 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
         draw_position_grid(figure,axis,
             ((p['east_km'],p['north_km'],p['scores']['fitted_c']) for p in position_grid['points']),
             score_label='Conditional fitted-c objective (lower is better)')
-    model='ALGO07'
-    if selected_model and not selected_model.startswith('algo07-'):
+    model='ALGO08' if selected_model and selected_model.startswith('algo08-') else 'ALGO07'
+    if model=='ALGO07' and selected_model and not selected_model.startswith('algo07-'):
         model+=' · retained '+selected_model.split('-')[0].upper()
     descriptions=[]
     errors=[]
@@ -146,11 +146,12 @@ def render_position(arms, *, title, selected_model=None, evaluation_reference=No
 
 
 def render(packet, *, title, evaluation_reference=None):
+    model='ALGO08' if packet.get('selected_model','').startswith('algo08-') else 'ALGO07'
     rows=packet['rows']['fitted_c'];raw={o['observation_id']:o for o in packet['observations']}
     numbers=sorted({r['norad'] for r in rows})
     colors={n:colormaps['tab20'](k%20) for k,n in enumerate(numbers)}
     products=render_fast_scan_orbits(packet['orbit_lanes'],title=title,alias_period_hz=PERIOD,
-        subtitle='ALGO07 selected result · fitted c · receiver calibration removed; shared phase/orbit corrections included')
+        subtitle=f'{model} selected result · fitted c · receiver calibration removed; shared phase/orbit corrections included')
     groups=defaultdict(list)
     for r in rows:groups[r['component']].append(r)
     def save(name,fig):
@@ -167,12 +168,12 @@ def render(packet, *, title, evaluation_reference=None):
                     ax.scatter([r['time_s'] for r in rr],[r['residual_hz'] for r in rr],s=5,c=[colors[n]])
                 ax.axhline(0,c='black',lw=.6);ax.set_ylabel('CFO residual (Hz)')
                 ax.set_title(f'RX{rx} CH{ch} · {len(owned)}/{len(lane)} associated');ax.set_xlabel('Time (s)');ax.set_xlim(0,300);ax.grid(alpha=.2)
-        fig.suptitle(f'{title}\nALGO07 selected result · conditional residuals · fitted c',fontsize=11)
+        fig.suptitle(f'{title}\n{model} selected result · conditional residuals · fitted c',fontsize=11)
         save(f'ch{first}-{last}-residuals',fig)
     fig=Figure(figsize=(16,6),layout='constrained');ax=fig.subplots()
     metrics=sorted([(key,float(np.sqrt(np.mean([r['residual_hz']**2 for r in rr]))),rr[0]['norad'],len(rr)) for key,rr in groups.items()],key=lambda a:-a[1])
     ax.bar(range(len(metrics)),[m[1] for m in metrics],color=[colors[m[2]] for m in metrics]);ax.set_xticks(range(len(metrics)),[f'{m[0]}\n{m[2]} · {m[3]} pts' for m in metrics],rotation=90,fontsize=5)
-    ax.set(ylabel='Replayed RMS (Hz)',title=f'{title} · ALGO07 · RMS for every associated polynomial fragment');ax.grid(axis='y',alpha=.2);save('track-rms',fig)
+    ax.set(ylabel='Replayed RMS (Hz)',title=f'{title} · {model} · RMS for every associated polynomial fragment');ax.grid(axis='y',alpha=.2);save('track-rms',fig)
     products['position']=render_position(packet['arms'],title=title,
         selected_model=packet.get('selected_model'),evaluation_reference=evaluation_reference,
         position_grid=packet.get('position_grid'),position_path=packet.get('position_path'))

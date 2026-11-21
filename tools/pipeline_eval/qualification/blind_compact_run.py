@@ -71,7 +71,7 @@ def build():
 
 
 @contextmanager
-def detector(method, edge):
+def detector(method, edge, *, binary=None, pilot=None):
     if method == "original":
         with portable_field.Detector(LIBS[method], edge) as original:
 
@@ -83,8 +83,8 @@ def detector(method, edge):
 
             yield factors
         return
-    asset = np.fromfile(TWO_WORK / "embedded" / (edge + ".f32"), dtype="<f4")
-    receiver = Native(LIBS[method], asset)
+    asset = np.fromfile(pilot or TWO_WORK / "embedded" / (edge + ".f32"), dtype="<f4")
+    receiver = Native(binary or LIBS[method], asset)
     template = np.ascontiguousarray(asset[-80000:]).ctypes.data_as(ct.c_void_p)
     fn = (
         receiver.lib.single_scan_factors
