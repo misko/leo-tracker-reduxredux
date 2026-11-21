@@ -72,6 +72,31 @@ def calibration_changes(rows):
     return changes
 
 
+def capture_deadlines(rows, pairs):
+    timed = {
+        p["case"]
+        for p in pairs
+        if p["calibration"] == "fitted_c" and p["end_to_end_speedup"] is not None
+    }
+    results = []
+    for group in ("complete", "incomplete"):
+        attempts = [
+            r
+            for r in rows
+            if r["calibration"] == "fitted_c" and r["case"] in timed and belongs(r, group)
+        ]
+        counts = [
+            sum(
+                r["fix"] and r["end_to_end_wall_s"] <= r["hardware_span_s"]
+                for r in attempts
+                if r["method"] == m
+            )
+            for m in METHODS
+        ]
+        results.append([GROUPS[group], len(attempts) // 2, *counts])
+    return results
+
+
 def report(rows, pairs, summaries, comparisons, repeated, folder=OUT):
     stats = {(s["group"], s["method"], s["calibration"]): s for s in summaries}
     fitted = "fitted_c"
@@ -194,6 +219,18 @@ def report(rows, pairs, summaries, comparisons, repeated, folder=OUT):
             matched_runtime(rows, pairs),
         ),
         "![Cumulative Gauss runtimes on matched recordings](runtime.png)",
+        "A recording meets its capture-duration deadline when the pipeline returns a fix within "
+        "the elapsed time covered by its hardware sample counters. Both pipelines were freshly "
+        "timed on every recording in this comparison.",
+        table(
+            [
+                "Recording state",
+                "Timed pairs",
+                "Original fixes within span",
+                "Compact fixes within span",
+            ],
+            capture_deadlines(rows, pairs),
+        ),
         "## Calibration",
         "Each pipeline uses the same receiver observations, orbit files, priors and search budgets "
         "in its two calibration fits. The RF residual describes agreement with that pipeline's own "

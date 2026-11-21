@@ -179,6 +179,10 @@ def test_full_comparison_keeps_missing_fixes_and_excludes_unmeasured_runtime(tmp
     runtime = ds30_full_report.matched_runtime(rows, pairs)
     assert [r[1] for r in runtime] == [3, 1, 0, 1]
     assert runtime[1][2:] == ["0.27", "0.27", "0.13", "0.13", "2.00"]
+    assert ds30_full_report.capture_deadlines(rows, pairs) == [
+        ["Complete captures", 0, 0, 0],
+        ["Interrupted captures", 1, 0, 1],
+    ]
     ds30_full_report.report(rows, pairs, summary, comparison, [], tmp_path)
     output = (tmp_path / "RESULTS.md").read_text()
     assert "All recordings | Compact | 2/3" in output
