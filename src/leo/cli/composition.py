@@ -161,7 +161,6 @@ from leo.radio import (
 from leo.radio.host_decision_release import HostDecisionRelease, load_host_decision_release
 from leo.radio.persistent_hop_iiod_lifecycle import attach_iiod_failure_diagnostics
 from leo.radio.pluto_adaptive_hop import PlutoAdaptiveHopRadio
-from leo.radio.pluto_host_adaptive import PlutoHostAdaptiveHopRadio
 from leo.radio.scanner_glrt_metadata import ScannerGlrtOptions
 from leo.scanner import (
     PersistentHopPlanV1,
@@ -3424,10 +3423,12 @@ class LocalAcquisitionBackend:
                 ExitCode.INVALID_CONFIGURATION,
             )
         factory = self.hooks.host_adaptive_hop_radio_factory
-        radio = (
-            factory(configuration)
-            if factory is not None
-            else PlutoHostAdaptiveHopRadio(
+        if factory is not None:
+            radio = factory(configuration)
+        else:
+            from leo.radio.pluto_host_adaptive import PlutoHostAdaptiveHopRadio
+
+            radio = PlutoHostAdaptiveHopRadio(
                 configuration.host,
                 expected_serial=configuration.serial,
                 radio_id=configuration.radio_id,
@@ -3436,7 +3437,6 @@ class LocalAcquisitionBackend:
                 iiod_port=self.settings.scanner_persistent_iiod_port,
                 read_ahead_visits=self.settings.scanner_persistent_read_ahead_visits,
             )
-        )
         if (
             radio.identity.radio_id != configuration.radio_id
             or radio.identity.serial != configuration.serial

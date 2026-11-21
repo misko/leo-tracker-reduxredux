@@ -1,5 +1,7 @@
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -88,6 +90,20 @@ def test_ds30_catalogue_is_bound_to_all_acquisitions():
     assert row["scans"] == row["scan_types"]["fast"] == len(manifest["members"]) == 455
     assert (manifest["counts"]["complete"], manifest["counts"]["incomplete"]) == (411, 44)
     assert manifest["counts"]["with_tracking_input"] == 387
+
+
+def test_catalogue_entry_point_runs_without_optional_radio_package():
+    code = """import sys
+sys.modules["pluto_plus"] = None
+from leo.cli import main
+sys.argv = ["leo", "datasets", "list", "-d", "DS30", "--json"]
+main()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    (row,) = json.loads(result.stdout)["datasets"]
+    assert row["dataset"] == "DS30" and row["scans"] == 455
 
 
 def test_all_revisions_are_separate_not_added_together():
