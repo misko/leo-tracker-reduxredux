@@ -116,7 +116,49 @@ def process_automatic(recording, *, store, database_url, standard_command, glrt_
         raise
 
 
-def discover_automatic(recording_root, store):
+def _sealed_capture(checkpoint):
+    terminal = checkpoint.device_terminal or {}
+    restoration = checkpoint.host_restoration or {}
+    return (checkpoint.state == "stopped" and not checkpoint.fault
+            and checkpoint.captured_windows > 0
+            and checkpoint.durable_windows == checkpoint.captured_windows
+            and terminal.get("state") == 1 and terminal.get("error") == 0
+            and restoration.get("fastlock_inactive"))
+
+
+def recover_archive_alias_failure(recording_root, staging_roots, checkpoint, store):
+    """Readmit only a sealed recording previously failed on its published alias."""
+    from leo.storage.continuous_window import run_path
+
+    previous = store.automatic_status(checkpoint.run_id) or {}
+    reconciliation = previous.get("reconciliation") or {}
+    if (previous.get("recording_id") != checkpoint.run_id or previous.get("state") != "failed"
+            or previous.get("discovery_warning") != "ValueError: continuous run must be one owned directory"
+            or previous.get("failure") != "Interrupted capture: no acquisition owner and stale checkpoint; retained IQ was not changed"
+            or reconciliation.get("acquisition_owner_absent") is not True
+            or any(key in previous for key in ("standard_algorithm", "run_id", "session_id",
+                                               "standard_terminal_sha256", "standard_stages"))
+            or not _sealed_capture(checkpoint)):
+        return False
+    recording = run_path(recording_root, checkpoint.run_id)
+    aliases = (root / checkpoint.run_id for root in staging_roots)
+    if not any(path.is_symlink() and path.resolve() == recording for path in aliases):
+        return False
+    modified = (recording / "run.json").stat().st_mtime_ns
+    if (reconciliation.get("checkpoint_updated_utc_ns") != modified
+            or reconciliation.get("checked_utc_ns", 0) <= modified):
+        return False
+    store.update_automatic(checkpoint.run_id, state="queued", failure=None,
+        discovery_warning=None, captured_windows=checkpoint.captured_windows,
+        edge=checkpoint.configuration["targets"][0].get("edge"),
+        archive_alias_recovery={"previous_failure": previous["failure"],
+            "previous_discovery_warning": previous["discovery_warning"],
+            "checkpoint_updated_utc_ns": checkpoint.updated_utc_ns,
+            "previous_status_updated_utc_ns": previous["updated_utc_ns"]})
+    return True
+
+
+def discover_automatic(recording_root, store, staging_roots=()):
     from leo.storage.continuous_window import list_checkpoints, run_path
 
     ready = []
@@ -130,6 +172,9 @@ def discover_automatic(recording_root, store):
         if previous and previous["state"] in {"glrt", "tracking", "complete", "failed"}:
             if previous["state"] in {"glrt", "tracking"}:
                 ready.append(run_path(recording_root, checkpoint.run_id))
+            elif previous["state"] == "failed" and recover_archive_alias_failure(
+                    recording_root, staging_roots, checkpoint, store):
+                ready.append(run_path(recording_root, checkpoint.run_id))
             continue
         state = "recording" if checkpoint.state != "stopped" else "queued"
         if checkpoint.state == "failed" or checkpoint.fault:
@@ -139,17 +184,25 @@ def discover_automatic(recording_root, store):
             discovery_warning=None,
             edge=checkpoint.configuration["targets"][0].get("edge"))
         if state == "queued":
-            terminal = checkpoint.device_terminal or {}
-            restoration = checkpoint.host_restoration or {}
-            if (checkpoint.captured_windows == 0
-                    or checkpoint.durable_windows != checkpoint.captured_windows
-                    or terminal.get("state") != 1 or terminal.get("error") != 0
-                    or not restoration.get("fastlock_inactive")):
+            if not _sealed_capture(checkpoint):
                 store.update_automatic(checkpoint.run_id, state="failed",
                                        failure="capture terminal or durability evidence is missing")
             else:
                 ready.append(run_path(recording_root, checkpoint.run_id))
     return ready
+
+
+def capture_health_by_id(roots):
+    from leo.storage.fast_capture_health import checkpoint_health
+
+    health = {}
+    for root in roots:
+        if root.is_dir():
+            for row in checkpoint_health(root):
+                identifier = row["run_id"]
+                if not (root / identifier).is_symlink():
+                    health.setdefault(identifier, row)
+    return health
 
 
 def watch_automatic(args):
@@ -158,7 +211,6 @@ def watch_automatic(args):
     from concurrent.futures import ThreadPoolExecutor
 
     from leo.storage.fast_scan import FastScanStore
-    from leo.storage.fast_capture_health import checkpoint_health
     from leo.application.reconcile_fast_capture import reconcile
     from leo.acquisition.authority import LocalCaptureAuthority,RadioResource
 
@@ -175,7 +227,7 @@ def watch_automatic(args):
             while True:
                 if authority and time.monotonic()-reconciliation_at>60:
                     roots=[args.recording_root,*args.staging_root]
-                    health={r['run_id']:r for root in roots if root.exists() for r in checkpoint_health(root)}
+                    health=capture_health_by_id(roots)
                     print(json.dumps(reconcile(authority,args.capture_serial,health.values(),store)),flush=True)
                     reconciliation_at=time.monotonic()
                 for identifier, future in list(active.items()):
@@ -186,7 +238,7 @@ def watch_automatic(args):
                             print(json.dumps({"recording_id": identifier, "failure": str(error)}),
                                   flush=True)
                         del active[identifier]
-                for recording in discover_automatic(args.recording_root, store):
+                for recording in discover_automatic(args.recording_root, store, args.staging_root):
                     if recording.name not in active:
                         active[recording.name] = pool.submit(process_automatic, recording,
                             store=store, database_url=os.environ["LEO_DATABASE_URL"],

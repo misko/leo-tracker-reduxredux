@@ -93,6 +93,66 @@ def test_auto_discovery_waits_for_terminal_and_does_not_repeat_completion(tmp_pa
     assert discover_automatic(raw, store) == []
 
 
+def test_published_alias_cannot_mask_owned_checkpoint_or_fail_healthy_capture(tmp_path):
+    from leo.cli.fast_scan import capture_health_by_id, discover_automatic
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.continuous_window import write_checkpoint
+    from leo.storage.fast_scan import FastScanStore
+    from tests.contracts.test_continuous_window_contracts import checkpoint
+
+    raid, staging = tmp_path / "raid", tmp_path / "staging"
+    recording = raid / "run"
+    recording.mkdir(parents=True)
+    staging.mkdir()
+    alias = staging / "run"
+    alias.symlink_to(recording)
+    store = FastScanStore(tmp_path / "bulk")
+    config = {"targets": [{"edge": "lower"}]}
+    cp = checkpoint().model_copy(update={"configuration": config,
+        "configuration_sha256": canonical_digest(config), "state": "stopped",
+        "captured_windows": 8, "durable_windows": 8,
+        "device_terminal": {"state": 1, "error": 0}, "host_restoration": {"fastlock_inactive": True}})
+    write_checkpoint(recording, cp)
+    original = (recording / "run.json").read_bytes()
+    assert capture_health_by_id([raid, staging])["run"]["state"] == "stopped"
+    assert capture_health_by_id([staging]) == {}
+    modified = (recording / "run.json").stat().st_mtime_ns
+    warning = "ValueError: continuous run must be one owned directory"
+    failure = "Interrupted capture: no acquisition owner and stale checkpoint; retained IQ was not changed"
+    evidence = dict(acquisition_owner_absent=True, checkpoint_updated_utc_ns=modified,
+                    checked_utc_ns=modified + 1)
+    original_status = dict(state="failed", failure=failure, discovery_warning=warning,
+                           reconciliation=evidence)
+    for changes in ({"failure": "analysis crashed"}, {"discovery_warning": "invalid JSON"},
+                    {"reconciliation": {**evidence, "checkpoint_updated_utc_ns": modified - 1}},
+                    {"reconciliation": {**evidence, "acquisition_owner_absent": False}}):
+        status = store.update_automatic("run", **{**original_status, **changes})
+        assert discover_automatic(raid, store, [staging]) == []
+        assert store.automatic_status("run") == status
+    status = store.update_automatic("run", **original_status)
+    assert discover_automatic(raid, store, []) == []
+    assert discover_automatic(raid, store, [staging]) == [recording]
+    admitted = store.automatic_status("run")
+    assert admitted["state"] == "queued" and admitted["captured_windows"] == 8
+    assert admitted["reconciliation"] == evidence
+    assert admitted["archive_alias_recovery"]["previous_status_updated_utc_ns"] == status["updated_utc_ns"]
+    assert (recording / "run.json").read_bytes() == original
+    for invalid in ({"durable_windows": 0}, {"device_terminal": {"state": 0, "error": 5}},
+                    {"host_restoration": {"fastlock_inactive": False}}):
+        write_checkpoint(recording, cp.model_copy(update=invalid))
+        changed = (recording / "run.json").stat().st_mtime_ns
+        invalid_status = store.update_automatic("run", **{**original_status, "reconciliation":
+            {**evidence, "checkpoint_updated_utc_ns": changed, "checked_utc_ns": changed + 1}})
+        assert discover_automatic(raid, store, [staging]) == []
+        assert store.automatic_status("run") == invalid_status
+    write_checkpoint(recording, cp)
+    modified = (recording / "run.json").stat().st_mtime_ns
+    original_status["reconciliation"].update(checkpoint_updated_utc_ns=modified, checked_utc_ns=modified + 1)
+    status = store.update_automatic("run", **original_status, standard_algorithm="ALGO08")
+    assert discover_automatic(raid, store, [staging]) == []
+    assert store.automatic_status("run") == status
+
+
 def test_automatic_failure_never_reports_complete(monkeypatch, tmp_path):
     import threading
 
