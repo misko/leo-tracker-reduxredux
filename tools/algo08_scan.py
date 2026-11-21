@@ -171,19 +171,31 @@ def analyze(recording, root, assets, archive, offer, reference=None, *, list_rep
                     terminal_sha256=result["terminal_sha256"])
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--recording", type=Path, required=True)
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--archive", type=Path, required=True)
-    parser.add_argument("--region", type=Path, default=os.getenv("ALGO08_REGION_FILE"),
-                        required=not os.getenv("ALGO08_REGION_FILE"),
+    parser.add_argument("--region", type=Path, required=not os.getenv("ALGO08_REGION_FILE"),
                         help="JSON with center [latitude, longitude], width_km and optional screen_center")
     parser.add_argument("--evaluation-reference", type=float, nargs=2, metavar=("LAT", "LON"))
     parser.add_argument("--comparison-only", action="store_true")
-    args = parser.parse_args()
-    ref = dict(zip(("latitude_deg", "longitude_deg"), args.evaluation_reference)) if args.evaluation_reference else None
-    offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
+    args = parser.parse_args(argv)
+    reference = args.evaluation_reference
+    # An explicit search offer replaces the station context, including its annotation.
+    if args.region is None and reference is None:
+        station = [os.getenv("ALGO08_EVALUATION_LATITUDE"), os.getenv("ALGO08_EVALUATION_LONGITUDE")]
+        if any(v is not None for v in station):
+            if None in station:
+                parser.error("Station scoring requires both evaluation coordinates")
+            reference = list(map(float, station))
+    ref = dict(zip(("latitude_deg", "longitude_deg"), reference)) if reference else None
+    region_path = args.region or Path(os.environ["ALGO08_REGION_FILE"])
+    offer = Algo08Region.parse(json.loads(region_path.read_bytes()))
     print(json.dumps(analyze(args.recording, args.bulk_root, args.assets, args.archive, offer, ref,
                              list_report=not args.comparison_only)))
+
+
+if __name__ == "__main__":
+    main()

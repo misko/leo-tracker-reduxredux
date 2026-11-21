@@ -78,3 +78,23 @@ def test_offers_and_annotated_publications_share_only_the_detector(tmp_path, mon
                 run((10, 25), screen=(10, 24))]
     assert len({r["run_id"] for r in receipts}) == 5
     assert called == [1] and all(r["decision"] == "withheld" for r in receipts)
+
+
+def test_cli_offer_override_drops_station_reference(tmp_path, monkeypatch):
+    station = tmp_path / "station.json"
+    station.write_text('{"center":[10,20],"width_km":25}')
+    alternate = tmp_path / "alternate.json"
+    alternate.write_text('{"center":[-20,-35],"width_km":40}')
+    monkeypatch.setenv("ALGO08_REGION_FILE", str(station))
+    monkeypatch.setenv("ALGO08_EVALUATION_LATITUDE", "10.01")
+    monkeypatch.setenv("ALGO08_EVALUATION_LONGITUDE", "20.01")
+    calls = []
+    monkeypatch.setattr(algo08_scan, "analyze", lambda *args, **kw: calls.append(args[4:6]))
+    args = [flag for option in ("--recording", "--bulk-root", "--assets", "--archive")
+            for flag in (option, str(tmp_path))]
+    algo08_scan.main(args)
+    algo08_scan.main(args + ["--region", str(alternate)])
+    algo08_scan.main(args + ["--region", str(alternate), "--evaluation-reference", "-20.01", "-35.01"])
+    assert [(r.center, ref) for r, ref in calls] == [
+        ((10., 20.), dict(latitude_deg=10.01, longitude_deg=20.01)),
+        ((-20., -35.), None), ((-20., -35.), dict(latitude_deg=-20.01, longitude_deg=-35.01))]
