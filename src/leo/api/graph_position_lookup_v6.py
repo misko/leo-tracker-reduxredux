@@ -21,6 +21,17 @@ class GraphPositionLookupV6:
 
     def detail(self, run_id):
         safe_id(run_id)
+        if run_id.startswith("algo08-"):
+            return dict(
+                run_id=run_id,
+                selected_model=MODEL_VERSION,
+                state="unavailable",
+                baseline=None,
+                selected=None,
+                position=None,
+                fallback=False,
+                reason="ALGO08 publishes its position in standard analysis.",
+            )
         terminal = self.lookup.completed_run(run_id)
         if terminal is not None:
             return completed_view(run_id, terminal)

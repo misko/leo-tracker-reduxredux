@@ -83,3 +83,26 @@ def test_missing_v6_calls_v5_public_lookup():
     assert "Awaiting qualified ALGO07" in view["reason"]
     with pytest.raises(ValueError):
         reader.detail("../escape")
+
+
+def test_compact_run_has_no_legacy_graph_position(tmp_path):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from leo.api.graph_position import graph_position_router
+
+    reader = GraphPositionLookupV6(tmp_path, MODEL_VERSION, lookup=object(), previous=object())
+    app = FastAPI()
+    app.include_router(graph_position_router(reader))
+    run_id = "algo08-" + "a" * 32
+    response = TestClient(app).get(f"/api/v2/fast-scans/{run_id}/graph-position")
+    assert response.status_code == 200
+    assert response.json() == {
+        "run_id": run_id,
+        "selected_model": MODEL_VERSION,
+        "state": "unavailable",
+        "baseline": None,
+        "selected": None,
+        "position": None,
+        "fallback": False,
+        "reason": "ALGO08 publishes its position in standard analysis.",
+    }
