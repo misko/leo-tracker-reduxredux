@@ -113,6 +113,7 @@ def verify(folder=OUT):
         "repeated-panel.csv",
         "position-error.png",
         "runtime.png",
+        "RESULTS.md",
     )
     checksums = {f: hashlib.sha256((folder / f).read_bytes()).hexdigest() for f in files}
     if (folder / "failures.csv").exists():

@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 
 from tools.pipeline_eval.qualification import ds30_full_inputs as inputs
+from tools.pipeline_eval.qualification import ds30_full_report
 from tools.pipeline_eval.qualification import ds30_full_score as score
 
 
@@ -133,7 +134,7 @@ def test_existing_source_inventory_is_verified_without_claiming_a_native_detecto
         inputs.index_timing(member)
 
 
-def test_full_comparison_keeps_missing_fixes_and_excludes_unmeasured_runtime():
+def test_full_comparison_keeps_missing_fixes_and_excludes_unmeasured_runtime(tmp_path):
     rows = []
     for arm in score.ARMS:
         for method in score.METHODS:
@@ -175,3 +176,10 @@ def test_full_comparison_keeps_missing_fixes_and_excludes_unmeasured_runtime():
     assert shared["actual_paired_end_to_end_n"] == 1
     assert shared["actual_paired_end_to_end_median_speedup"] == 2
     assert shared["actual_paired_solver_n"] == 3
+    runtime = ds30_full_report.matched_runtime(rows, pairs)
+    assert [r[1] for r in runtime] == [3, 1, 0, 1]
+    assert runtime[1][2:] == ["0.27", "0.27", "0.13", "0.13", "2.00"]
+    ds30_full_report.report(rows, pairs, summary, comparison, [], tmp_path)
+    output = (tmp_path / "RESULTS.md").read_text()
+    assert "All recordings | Compact | 2/3" in output
+    assert "Position solver · all | 3" in output

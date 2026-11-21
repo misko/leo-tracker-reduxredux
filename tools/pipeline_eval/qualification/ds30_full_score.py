@@ -441,12 +441,13 @@ def score():
     rows.sort(key=lambda r: (r["case"], METHODS.index(r["method"]), ARMS.index(r["calibration"])))
     pairs = paired(rows)
     metrics, comparisons = summarize(rows, pairs)
+    repeated = repeated_panel(rows)
     for filename, data in (
         ("recordings", rows),
         ("paired", pairs),
         ("summary", metrics),
         ("paired-summary", comparisons),
-        ("repeated-panel", repeated_panel(rows)),
+        ("repeated-panel", repeated),
     ):
         write_csv(OUT / (filename + ".csv"), data)
     failures = Counter(
@@ -462,9 +463,11 @@ def score():
         ],
     )
     from .ds30_full_figures import figures
+    from .ds30_full_report import report
     from .ds30_full_verify import verify
 
     figures(rows, pairs)
+    report(rows, pairs, metrics, comparisons, repeated)
     verify()
     print(
         "Scored", len(records), "pipeline outcomes and", len(rows), "calibration arms", flush=True

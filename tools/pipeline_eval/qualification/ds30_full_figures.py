@@ -66,11 +66,7 @@ def figures(rows, pairs):
     ):
         for j, (group, label) in enumerate(groups):
             ax = axes[i, j]
-            sample = [
-                r
-                for r in rows
-                if r["calibration"] == arm and r["reference_eligible"] and belongs(r, group)
-            ]
+            sample = [r for r in rows if r["calibration"] == arm and belongs(r, group)]
             curves = {m: [r["error_km"] for r in sample if r["method"] == m] for m in METHODS}
             ax.set_xscale("symlog", linthresh=0.5, linscale=0.45)
             ax.set_xticks(ticks, [f"{t:g}" for t in ticks])
