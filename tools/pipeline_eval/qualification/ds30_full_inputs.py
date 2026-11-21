@@ -273,6 +273,50 @@ def check_timing(rebuilt, published):
         raise ValueError("index opportunities differ from the published receiver headers")
 
 
+def audit_bindings(roster, parent_sha, bindings):
+    """Check whole-cohort readiness using only capture evidence."""
+    sessions, windows, valid = set(), 0, 0
+    rebuilt = {"complete": 0, "incomplete": 0}
+    evidence, parity = {}, []
+    for row in roster:
+        label = row["id"]
+        path = bindings / (label + ".json")
+        record = read(path)
+        case = record["case"]
+        usable = case["valid_visits"]
+        if (
+            case["id"] != label
+            or label in evidence
+            or case["session_id"] in sessions
+            or record["roster_sha256"] != parent_sha
+            or record["archived_original"] != row["archived_original"]
+            or record["index_parity"] != row["previous"]
+            or case["recording"]["window_count"] != row["windows"]
+            or not 0 <= usable <= row["windows"]
+        ):
+            raise ValueError("input audit differs from the committed recording: " + label)
+        if not record["archived_original"]:
+            rebuilt[row["recording_state"]] += 1
+        if record["index_parity"]:
+            parity.append(label)
+        windows += row["windows"]
+        valid += usable
+        sessions.add(case["session_id"])
+        evidence[label] = dict(binding_sha256=_sha(path), usable_visits=usable)
+    return dict(
+        roster_sha256=parent_sha,
+        recordings=len(sessions),
+        recorded_visits=windows,
+        usable_visits=valid,
+        excluded_visits=windows - valid,
+        antenna_opportunities=2 * valid,
+        archived_original=len(sessions) - sum(rebuilt.values()),
+        rebuilt_inputs=rebuilt,
+        reconstructed_timing_matched_published=sorted(parity),
+        bindings=evidence,
+    )
+
+
 def prepare():
     from leo.operations.tle_archive import TleArchiveReader
     from leo.storage.fast_scan import FastScanStore
@@ -394,6 +438,10 @@ def prepare():
         )
         os.replace(tmp, dest)
         print("prepared", label, case["valid_visits"], flush=True)
+    seal(
+        OUT / "input-audit.json",
+        audit_bindings(roster, _sha(OUT / "cohort.json"), WORK / "bindings"),
+    )
 
 
 if __name__ == "__main__":

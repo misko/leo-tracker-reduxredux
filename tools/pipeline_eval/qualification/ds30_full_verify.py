@@ -104,6 +104,7 @@ def verify(folder=OUT):
     files = (
         "cohort.json",
         "build.json",
+        "input-audit.json",
         "prediction-lock.json",
         "reference-audit.json",
         "recordings.csv",

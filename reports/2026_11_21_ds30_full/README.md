@@ -1,6 +1,8 @@
 # Full DS30 validation of algo07v5 and compact v5 with two-scan cancellation
 
-This evaluation assigns both pipelines to all 455 recordings in DS30 revision 1. It includes the 411 complete acquisitions and the recorded portion of each of the 44 incomplete acquisitions. The eight sessions used in the earlier detector comparison are identified in the roster. The other 447 recordings provide the independent extension of that comparison. [Frozen protocol](PROTOCOL.md) · [Recording roster](cohort.json) · [Dataset and earlier eight-session results](../2026_11_20_ds30_fast/README.md)
+This evaluation assigns both pipelines to all 455 recordings in DS30 revision 1. It includes 411 complete acquisitions and the recorded portion of each of the 44 interrupted acquisitions. Eight sessions appeared in the earlier detector comparison. The other 447 are new to this comparison.
+
+All 455 session identities are unique. The recorded clocks and capture-quality checks admit 2,581,792 of 2,878,757 visits, or 5,163,584 antenna opportunities. The 68 reconstructed inputs cover 24 complete and 44 interrupted captures. Reconstructing the inputs on the eight previously evaluated sessions reproduced every archived clock, quality exclusion and receiver header. [Input audit](input-audit.json) · [Frozen protocol](PROTOCOL.md) · [Recording roster](cohort.json) · [Earlier eight-session results](../2026_11_20_ds30_fast/README.md)
 
 | Pipeline | Signal measurements | Position solver |
 |---|---|---|
@@ -22,3 +24,5 @@ sudo -n -- env PYTHONPATH=.:src OPENBLAS_NUM_THREADS=1 .venv/bin/python -Bu -m t
 ```
 
 The work directory on Gauss is `/srv/bulk/leo-dev/ds30-full-20261121`. The two pipelines run serially on the same assigned CPU for each recording. The order rotates through the seeded roster. The run command resumes completed outcomes and acquisition receipts. The scoring command verifies the roster, signed input bindings, predictions, scientific settings and successful original-v5 archives. It reports solver elapsed time for archived detections and measures end-to-end time where both raw detection and solving ran.
+
+To verify the published tables from a checkout with the research dependencies, run `PYTHONPATH=.:src .venv/bin/python -m tools.pipeline_eval.qualification.ds30_full_verify`. This verifies each scored position using a second great-circle distance calculation, then checks the counts, error percentiles, timing medians and artifact hashes.

@@ -223,3 +223,29 @@ def test_calibration_pairs_residuals_and_position_independently():
     original, compact = ds30_full_report.calibration_changes(rows)
     assert original == ["Original", 1, "1.000", 2, "-30.00", 1, "1.00"]
     assert compact == ["Compact", 0, "—", 0, "—", 0, "—"]
+
+
+def test_readiness_audits_both_complete_and_interrupted_recordings(tmp_path):
+    roster = []
+    for label, archived, state in (("A", True, "complete"), ("B", False, "incomplete")):
+        item = dict(
+            id=label,
+            archived_original=archived,
+            previous=archived,
+            recording_state=state,
+            windows=6,
+        )
+        roster.append(item)
+        case = dict(id=label, recording={"window_count": 6}, valid_visits=4, session_id=label)
+        binding = dict(
+            case=case, roster_sha256="cohort", archived_original=archived, index_parity=archived
+        )
+        (tmp_path / (label + ".json")).write_text(json.dumps(binding))
+    audit = inputs.audit_bindings(roster, "cohort", tmp_path)
+    assert audit["recorded_visits"] == 12 and audit["antenna_opportunities"] == 16
+    assert audit["rebuilt_inputs"] == {"complete": 0, "incomplete": 1}
+    assert audit["reconstructed_timing_matched_published"] == ["A"]
+    assert audit["excluded_visits"] == 4 and set(audit["bindings"]) == {"A", "B"}
+    roster[1]["windows"] += 1
+    with pytest.raises(ValueError, match="input audit"):
+        inputs.audit_bindings(roster, "cohort", tmp_path)

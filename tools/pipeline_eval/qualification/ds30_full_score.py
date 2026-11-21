@@ -8,7 +8,15 @@ from ..scoring import ARMS, distance_km, distribution, validate_result
 from . import blind_compact_run, ds30_panel, original_v5
 from .blind_compact_roster import seal
 from .ds30_full import verified_bytes
-from .ds30_full_inputs import DS29, METHODS, OUT, WORK, checked_source, frozen_members
+from .ds30_full_inputs import (
+    DS29,
+    METHODS,
+    OUT,
+    WORK,
+    audit_bindings,
+    checked_source,
+    frozen_members,
+)
 from .full_v5_check import _sha
 from .reverse_glrt_reference import read_bound
 from .reverse_glrt_report import read, write_csv
@@ -53,6 +61,10 @@ def lock():
     build = read(OUT / "build.json")
     verified_bytes(OUT / "PROTOCOL.md", cohort["protocol_sha256"])
     verified_bytes(OUT / "cohort.json", build["roster_sha256"])
+    if audit_bindings(cohort["members"], build["roster_sha256"], WORK / "bindings") != read(
+        OUT / "input-audit.json"
+    ):
+        raise ValueError("prepared inputs differ from the full recording audit")
     for name in ("original", "cancellation"):
         verified_bytes(blind_compact_run.LIBS[name], build["libraries"][name])
     for edge, expected in build["assets"].items():
