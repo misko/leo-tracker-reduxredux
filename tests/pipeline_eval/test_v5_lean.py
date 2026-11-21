@@ -19,6 +19,15 @@ def roof_case(**fields):
     )
 
 
+def test_ds30_uses_existing_native_and_region_checks(tmp_path):
+    case = roof_case()
+    case["panel"] = "DS30"
+    result = v5_lean.run(case, tmp_path / "worker")
+    assert result["reason"] == "Native detector input is unavailable"
+    case["regions"] = [{"center": [0.0, 0.0]}]
+    assert "tile" in v5_lean.run(case, tmp_path / "worker")["reason"]
+
+
 @pytest.mark.parametrize(
     "regions",
     [[], [{"center": [37.91, -122.545]}], [{"center": [37.906, -122.545], "width_km": 10}]],

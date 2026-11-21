@@ -65,7 +65,7 @@ def run(case: dict, work_dir: Path) -> dict:
 
 
 def run_bound_worker(case: dict, work_dir: Path, script: Path, *, worker_args=()) -> dict:
-    if case.get("panel") not in ("DS26", "DS29"):
+    if case.get("panel") not in ("DS26", "DS29", "DS30"):
         return _no_fix("Frozen native v5 bindings are available only for roof recordings")
     regions = case["regions"]
     if (

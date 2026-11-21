@@ -26,14 +26,16 @@ def verified_request(case, original, bound, native):
     return digest.removeprefix("sha256:")
 
 
-def inventory():
-    roster = read(OUT / "roster.json")
-    builds = read(OUT / "build.json")
-    if roster["protocol_sha256"] != _sha(OUT / "PROTOCOL.md") or builds["roster_sha256"] != _sha(
-        OUT / "roster.json"
+def inventory(output=None, work=None):
+    output = OUT if output is None else output
+    work = WORK if work is None else work
+    roster = read(output / "roster.json")
+    builds = read(output / "build.json")
+    if roster["protocol_sha256"] != _sha(output / "PROTOCOL.md") or builds["roster_sha256"] != _sha(
+        output / "roster.json"
     ):
         raise ValueError("roster or protocol was altered")
-    library_lock = _sha(OUT / "build.json")
+    library_lock = _sha(output / "build.json")
     methods, predictions = {}, {}
     for row in roster["cases"]:
         case = row["case"]
@@ -41,7 +43,7 @@ def inventory():
         original = read_bound(case["request"])
         authority = None
         for method in METHODS:
-            result_path = WORK / "runs" / ident / method / "outcome.json"
+            result_path = work / "runs" / ident / method / "outcome.json"
             if not result_path.is_file():
                 raise ValueError(f"prediction still pending for {ident}, {method}")
             r = read(result_path)
@@ -118,7 +120,7 @@ def inventory():
             for k, r in methods.items()
         ],
     )
-    seal(OUT / "prediction-lock.json", lock)
+    seal(output / "prediction-lock.json", lock)
     return methods, predictions
 
 
@@ -198,10 +200,10 @@ def solver_failures(methods):
     return records
 
 
-def original_replay_parity(methods):
+def original_replay_parity(methods, output=None):
     """Check the reconstructed baseline against the archived detector after the blind lock."""
     rows = []
-    for assigned in read(OUT / "roster.json")["cases"]:
+    for assigned in read((OUT if output is None else output) / "roster.json")["cases"]:
         case = assigned["case"]
         document = read_bound(case["native"])
         source = document["source"]

@@ -212,15 +212,15 @@ def acquire(case, method, directory, bindings):
     )
 
 
-def arm(case, method, cpu, builds):
-    root = WORK / "runs" / case["id"] / method
+def arm(case, method, cpu, builds, *, work=WORK, output=OUT, solve=v5_secant_fit.run):
+    root = work / "runs" / case["id"] / method
     root.mkdir(parents=True, exist_ok=True)
     done = root / "outcome.json"
     if done.exists():
         prior = read(done)
         if (
             prior["roster_sha256"] != builds["roster_sha256"]
-            or prior["build_sha256"] != _sha(OUT / "build.json")
+            or prior["build_sha256"] != _sha(output / "build.json")
             or prior["prediction_sha256"] != _sha(Path(prior["prediction_path"]))
         ):
             raise ValueError("previous experiment inputs or predictions differ")
@@ -238,7 +238,7 @@ def arm(case, method, cpu, builds):
     binding = directory / "binding.json"
     recording_to_v5.save(binding, req)
     public["request_path"] = str(binding)
-    result = v5_secant_fit.run(public, directory / "solver", "secant")
+    result = solve(public, directory / "solver", "secant")
     prediction = directory / "prediction.json"
     recording_to_v5.save(prediction, result)
     end = perf_counter()
@@ -257,7 +257,7 @@ def arm(case, method, cpu, builds):
         binding_sha256=_sha(binding),
         **capture,
         roster_sha256=builds["roster_sha256"],
-        build_sha256=_sha(OUT / "build.json"),
+        build_sha256=_sha(output / "build.json"),
     )
     recording_to_v5.save(done, outcome)
     print(
