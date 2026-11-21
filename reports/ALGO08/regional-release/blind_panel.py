@@ -1,9 +1,9 @@
 """Generate opaque single-edge IQ recordings. Inference reads only public/."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import secrets
-import sys
 from unittest.mock import patch
 
 import numpy as np
@@ -18,7 +18,7 @@ def save(path, data):
     path.write_text(json.dumps(data, indent=2, allow_nan=False) + "\n")
 
 
-def generate(work):
+def generate(work, seed=None):
     public = work / "public"
     archive = public / "tle/archive/space-track"
     archive.mkdir(parents=True, exist_ok=True)
@@ -30,7 +30,9 @@ def generate(work):
     updated, later, _ = revised(received, hashlib.sha256(nominal).hexdigest())
     causal = model.orbit._constellation(nominal, received)
     frames = model.pulse_bank()
-    seed = secrets.token_bytes(32)
+    seed = secrets.token_bytes(32) if seed is None else bytes.fromhex(seed)
+    if len(seed) != 32:
+        raise ValueError("Expected a 32-byte seed")
     rng = np.random.default_rng(int.from_bytes(seed, "big"))
     answers, jobs = {}, []
     for index, (box, edge) in enumerate([((48., 15.), "lower"), ((-33., 20.), "upper")]):
@@ -78,4 +80,8 @@ def generate(work):
 
 
 if __name__ == "__main__":
-    generate(Path(sys.argv[1]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("workspace", type=Path)
+    parser.add_argument("--replay-seed", help="Recreate the sampled waveforms after unblinding")
+    args = parser.parse_args()
+    generate(args.workspace, args.replay_seed)

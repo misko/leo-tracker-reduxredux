@@ -4,6 +4,8 @@ ALGO08 takes a regional prior from the operator. On two blind simulated raw reco
 
 ## What changed
 
+The [audit of the earlier release](../location-audit/README.md) traced two fixed coordinates to the orbital screen and position prior, and reproduced a map-publication failure when the position frame moved.
+
 The station file supplies a square center and full side length. The sky builder uses the same center unless the station specifies a separate screening center. The position search, both calibration fits, objective grid, optimizer path, terminal receipt, eight PNGs and web result use this configuration. Moving the square, changing its width, or moving the screening center produces a distinct localization run. Site-independent two-scan detections can be reused. An optional reference creates a separately identified annotated publication and enters only after fitting. The historical Gauss profile preserves both of DS30's original centers. Previously published ALGO07 and ALGO08 results retain their original contracts. [Station profile](../../../deploy/gauss/algo08-region.json) · [Run instructions](../README.md)
 
 ## Blind raw-I/Q transfer
@@ -39,6 +41,23 @@ DS30-0003 supplied 6,769 raw visits, of which 6,714 passed capture checks. Its s
 | Translated square containing the roof | 40 km | 1,006 m | 900 m |
 | Square north of the roof | 25 km | 61.20 km | 61.15 km |
 
+Gauss also ran DS30-0003 through the packaged station launcher. The live API served the version 3 manifest, the grid and path in the declared frame and all eight original PNGs. Each image decoded and matched its published byte count and SHA-256. Historical ALGO07 version 1 and ALGO08 version 2 manifests remained readable. [Web verification](gauss-http.json) · [Gauss LAN result](http://gauss:8090/api/v2/fast-scans/algo08-8d0be51af6a22162c365fc5a778f4485/standard-analysis)
+
+The center controls the search origin and the width controls its full side length. This evaluation exercised 25 km and 40 km squares. Wider-area sky coverage, pole crossings and longitude wrap were outside the experiment.
+
+The automatic watcher switched to release `081ab0265` between child runs. It then completed the November 21 14:59 UTC upper-edge recording using the station profile. On the normal scan page, Chromium displayed the regional prior, decoded all eight figures and fetched each image by its verified digest. [Automatic scan on Gauss](http://gauss:8090/?scan_kind=fast&scan_id=fast8-auto-20261121-145902-25fac6de-1-upper) · [Browser verification](automatic-web.json)
+
+## Runtime check
+
+Timing began with decoded two-scan detections in memory. Each paired trial used the same CPU, a single numerical thread, identical source detections and identical orbit inputs. The fit includes the conditional diagnostic grid. All four fits evaluated the same 179 grid locations. The two paired trials reverse execution order. The original and regional installations had byte-identical detector, pilot, projector and native position kernel assets. [Timing harness](timing.py) · [Per-run CPU and elapsed measurements](timing.csv)
+
+| Recording | Fit CPU, original → regional | Figure CPU, original → regional | Fit and figures elapsed, original → regional |
+|---|---:|---:|---:|
+| DS30-0003 | 80.5 → 81.7 s | 8.5 → 8.4 s | 91.4 → 94.9 s |
+| DS30-0012 | 126.8 → 128.1 s | 7.8 → 7.5 s | 140.5 → 137.7 s |
+
+The table uses the matched pass with per-process transparent huge pages disabled on both installations. The initial pass encountered host paging and showed substantial elapsed-time variation. Both passes are in the CSV. Two recordings support a timing spot check only. No raw acquisition or embedded-device timing was measured in these pairs.
+
 ## Independent physical stations
 
 The compatible full-pipeline field evidence in this evaluation comes from Gauss. The StarLoc archive supplies selected single-channel tone tracks, the Watson archive supplies power spectra, and the Austin waveform excerpt supports short pilot timing checks. None supplies a compatible off-site sealed dual-receiver scan with the time/channel coverage used here. The two simulated sites test the complete software path and its response to a wrong prior. Physical relocation accuracy and false-publication rates remain unmeasured. [StarLoc measurement boundary](../../2026_11_18_blind_regional_receiver/README.md) · [Austin waveform excerpt](../../2026_11_19_receiver_screening/arrival-and-timing/austin-waveform/README.md) · [Watson spectra](../../2026_11_19_receiver_screening/receiver-deadline/external-spectrum/README.md)
@@ -48,6 +67,6 @@ The compatible full-pipeline field evidence in this evaluation comes from Gauss.
 Use the release's numerical environment and qualified native assets. From a source checkout, rebuild the native bound manifest at its actual location using the release staging script. Its source and wrapper paths are checked at startup. Set `ALGO08_ASSETS` to the corresponding asset directory for the DS30 replay.
 
 1. Run [ds30.py](ds30.py) with no arguments to authenticate the DS30 prediction lock and verify historical search/screen bindings. Pass a recording ID to rerun positioning on its original, digest-checked two-scan detections and capture-era orbit archive. The script checks both endpoints and their fitted frequency residuals.
-2. Make a fresh workspace with a world-traversable root, a public input directory, a `scorer` directory private to the generating account and an output directory writable by a separate inference account. Run [blind_panel.py](blind_panel.py) with the workspace path. It generates both raw recordings and commits the private key digest in the public panel.
+2. Make a fresh workspace with a world-traversable root, a public input directory, a `scorer` directory private to the generating account and an output directory writable by a separate inference account. Run [blind_panel.py](blind_panel.py) with the workspace path. It generates both raw recordings and commits the private key digest in the public panel. After unblinding, `--replay-seed` accepts the hex seed in the scoring key to regenerate the same radio samples. A newly sealed manifest has fresh creation timestamps.
 3. Under the inference account, run [run_panel.py](run_panel.py) with the public directory, output directory (`outputs/blind`) and release assets. It executes the normal ALGO08 CLI without a reference, checks grids and paths, decodes every published PNG and emits the SHA-256 of the locked predictions.
 4. Under the scoring account run [score_panel.py](score_panel.py) with the workspace, the independently recorded prediction digest and the report directory. It verifies the commitment, checks each inclusion label geometrically and joins truth only for scoring. The prediction digest for this panel is `46e8925aad5b047b89f57b95d22581a5eca4dfc52f3196790154c01bdc340549`.
