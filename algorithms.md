@@ -1,10 +1,10 @@
 # Receiver and positioning algorithms
 
-**Active development, November 20, 2026.** Use **algo07v5 fast, no repair** as the accuracy reference and **compact v5, five-refresh secant** as the smaller receiver under development. The four v5 configurations and compact v5 can all consume the same saved GLRT detections. The deployed fast-scan Standard path has its own production identity, **ALGO07**. [Original DS26 evaluation](docs/analysis/algo07v5-ds26-performance.md) · [Compact evaluation](reports/2026_11_19_receiver_screening/secant-full/README.md) · [Production release](reports/ALGO07/README.md)
+**Active development, November 21, 2026.** Use **algo07v5 fast, no repair** as the accuracy reference and **compact v5, five-refresh secant** as the smaller receiver under development. The four v5 configurations and compact v5 can all consume the same saved GLRT detections. The deployed fast-scan Standard path has its own production identity, **ALGO07**. [Original DS26 evaluation](docs/analysis/algo07v5-ds26-performance.md) · [Compact evaluation](reports/2026_11_19_receiver_screening/secant-full/README.md) · [Production release](reports/ALGO07/README.md)
 
 The November 20 progress report compares original GLRT, one scan and two-scan cancellation on Gauss and shows how each affected original and compact v5 position fixes. [Dated algorithm report](2026_11_20_algorithms.md)
 
-The full DS30 validation compares original GLRT + algo07v5 with two-scan cancellation + compact v5 on all 455 recordings, including interrupted captures. [Protocol, replay commands and results](reports/2026_11_21_ds30_full/README.md)
+On DS30, two-scan cancellation + compact v5 returned 439/455 fixes and original GLRT + algo07v5 returned 420/455. On 24 complete recordings timed from raw I/Q on the same Gauss core, compact's median paired speedup was 6.08×. [Full validation and replay commands](reports/2026_11_21_ds30_full/README.md) · [Plots and calibration comparisons](reports/2026_11_21_ds30_full/RESULTS.md)
 
 ## Active algo07 variants and compact v5
 
@@ -12,6 +12,7 @@ The full DS30 validation compares original GLRT + algo07v5 with two-scan cancell
 |---|---|---|---|
 | **algo07v5 fast, no repair** | **Active reference** | Forms tracks from native GLRT detections, matches causal satellite orbits and fits receiver position. Runs its late selection and produces the scientific archive and diagnostic figures. | `replay --role baseline` |
 | **Compact v5** | **Active development** | Shares the early satellite search across calibration fits, keeps five orbit updates, uses bounded secant position fits and publishes after checking the result with one satellite family left out at a time. | `run --variant v5_secant_fit` |
+| **Two-scan cancellation + compact v5** | **Active receiver prototype** | Finds a pilot, subtracts it, searches the residual and verifies the resulting measurements with GLRT before the compact position fit. | Matched Gauss replay with `python -m tools.pipeline_eval.qualification.ds30_full --cpus 0` |
 | algo07v5 selective gap | Active comparison option | Screens timing-gap fragments with the incumbent fit before paying for independent annotation and inclusion. | `replay --role selective-gap` |
 | algo07v5 one omitted track | Active comparison option | Proposes at most one previously unowned track for independent recovery. | `replay --role omitted-track-one` |
 | algo07v5 two omitted tracks | Active comparison option | Proposes up to two previously unowned tracks. Each can trigger further fits and admission checks. | `replay --role omitted-tracks` |

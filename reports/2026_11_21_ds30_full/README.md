@@ -2,6 +2,18 @@
 
 This evaluation assigns both pipelines to all 455 recordings in DS30 revision 1. It includes 411 complete acquisitions and the recorded portion of each of the 44 interrupted acquisitions. Eight sessions appeared in the earlier detector comparison. The other 447 are new to this comparison. [Full results](RESULTS.md) · [Cumulative position error](position-error.png) · [Paired runtime](runtime.png)
 
+## What the full panel shows
+
+**Compact v5 with two-scan cancellation returned 439 fixes to original algo07v5's 420.** With fitted calibration, 407 compact fixes and 375 original fixes landed within 2 km of the roof. Compact supplied 20 fixes where original returned none, and 19 of those 20 were within 2 km. Original supplied one fix where compact returned none, with 0.721 km error. On the 447 previously unreported sessions, compact returned 431 fixes and original returned 413. [Per-recording results](recordings.csv) · [Paired comparisons](paired.csv)
+
+Among the 419 recordings where both returned positions, compact was closer on 226 and original was closer on 193. The median paired change favored compact by 39 m. The 95% recording-bootstrap interval runs from 92 m closer to 4 m farther. The 95th-percentile error among all returned fixes fell from 2.700 km to 2.258 km. All measurements come from one roof with an operator-supplied position of unknown survey uncertainty. [Paired estimates](paired-summary.csv) · [Error distributions](position-error.png)
+
+Both pipelines ran from raw I/Q on the same single core on 68 recordings. On the 24 complete captures in that group, compact was faster on all 24. Median elapsed time fell from 35.97 to 5.44 minutes, with a median paired speedup of 6.08×. Median detector CPU time fell from 27.12 to 2.18 minutes. On the 22 shared fixes in this timing subset, original was closer on 14 and compact on 8. Across all 455 recordings, compact finished with a fix within the recorded capture duration on 93. That count was 9 of the 24 complete paired timings for compact and 0 of 24 for original. These are shared-host Gauss measurements. [Runtime distributions](runtime.png) · [Timing and calibration tables](RESULTS.md)
+
+On the 411 complete captures, original returned 394 fixes and compact returned 410. Original's most frequent complete-capture failure was a final orbit-propagation fallback on ten recordings. The one complete capture without a compact fix failed the refit stability check. Of the 44 interrupted captures, original returned 26 fixes and compact returned 29. Both pipelines reported insufficient Doppler curvature on the same 14 interrupted captures. An independent check recomputed all 1,718 scored distances across the two calibrations. [Failure reasons](failures.csv) · [Verification](verification.json)
+
+## Inputs and pipeline definitions
+
 All 455 session identities are unique. The recorded clocks and capture-quality checks admit 2,581,792 of 2,878,757 visits, or 5,163,584 antenna opportunities. The 68 reconstructed inputs cover 24 complete and 44 interrupted captures. Reconstructing the inputs on the eight previously evaluated sessions reproduced every archived clock, quality exclusion and receiver header. [Input audit](input-audit.json) · [Frozen protocol](PROTOCOL.md) · [Recording roster](cohort.json) · [Earlier eight-session results](../2026_11_20_ds30_fast/README.md)
 
 | Pipeline | Signal measurements | Position solver |
