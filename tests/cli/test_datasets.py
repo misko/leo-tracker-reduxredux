@@ -74,6 +74,22 @@ def test_adaptive_only_dataset_is_not_misrepresented_as_fast():
     assert row["membership_scans"] == 69
 
 
+def test_ds30_catalogue_is_bound_to_all_acquisitions():
+    result = invoke("--dataset", "DS30", "--json")
+    assert result.exit_code == 0, result.exception
+    (row,) = json.loads(result.stdout)["datasets"]
+    (source,) = row["sources"]
+    path = Path(__file__).resolve().parents[2] / source["path"]
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == source["sha256"]
+    manifest = json.loads(raw)
+    assert row["dataset"] == manifest["dataset_id"] == "DS30"
+    assert row["revision"] == "1"
+    assert row["scans"] == row["scan_types"]["fast"] == len(manifest["members"]) == 455
+    assert (manifest["counts"]["complete"], manifest["counts"]["incomplete"]) == (411, 44)
+    assert manifest["counts"]["with_tracking_input"] == 387
+
+
 def test_all_revisions_are_separate_not_added_together():
     result = invoke("-d", "DS24", "-d", "DS28", "--all-revisions", "--json")
     assert result.exit_code == 0, result.exception
