@@ -54,6 +54,24 @@ def matched_runtime(rows, pairs):
     return tables
 
 
+def calibration_changes(rows):
+    keyed = {(r["case"], r["method"], r["calibration"]): r for r in rows}
+    changes = []
+    for method in METHODS:
+        cells = [NAMES[method]]
+        for field, places in (("error_km", 3), ("frequency_rms_hz", 2), ("frequency_score", 2)):
+            deltas = []
+            for zero in rows:
+                if (zero["method"], zero["calibration"]) != (method, "c0"):
+                    continue
+                fit = keyed[zero["case"], method, "fitted_c"]
+                if zero[field] is not None and fit[field] is not None:
+                    deltas.append(fit[field] - zero[field])
+            cells.extend((len(deltas), number(median(deltas) if deltas else None, places)))
+        changes.append(cells)
+    return changes
+
+
 def report(rows, pairs, summaries, comparisons, repeated, folder=OUT):
     stats = {(s["group"], s["method"], s["calibration"]): s for s in summaries}
     fitted = "fitted_c"
@@ -99,6 +117,7 @@ def report(rows, pairs, summaries, comparisons, repeated, folder=OUT):
                 ]
             )
     audit = stats["all", METHODS[0], fitted]
+    compact = stats["all", METHODS[1], fitted]
     repeated_fixes = sum(r["old_fix"] == r["current_fix"] for r in repeated)
     differences = [
         r["endpoint_difference_km"] for r in repeated if r["endpoint_difference_km"] is not None
@@ -110,6 +129,12 @@ def report(rows, pairs, summaries, comparisons, repeated, folder=OUT):
         "cancellation and the five-refresh compact v5 solver. Both use the same 25 km region "
         "and capture-era orbit files. This comparison measures the combined effect of the detector "
         "and solver changes. [Protocol](PROTOCOL.md) · [Replay instructions](README.md)",
+        f"With fitted RF calibration, original returned **{audit['fixes']}/{audit['assigned']} "
+        f"fixes** and compact returned **{compact['fixes']}/{compact['assigned']}**. Their median "
+        f"horizontal errors among scored fixes were **{number(audit['p50_km'])} km** and "
+        f"**{number(compact['p50_km'])} km**. Across all assigned recordings, "
+        f"**{audit['within_1km']} original** fixes and **{compact['within_1km']} compact** fixes "
+        "landed within 1 km of the roof.",
         "## Position error",
         f"The operator's rooftop reference covers {audit['reference_eligible']} of "
         f"{audit['assigned']} recordings. Percentiles describe scored fixes. Each threshold counts "
@@ -185,6 +210,20 @@ def report(rows, pairs, summaries, comparisons, repeated, folder=OUT):
                 "Median reported score",
             ],
             calibration,
+        ),
+        "The following changes are the median of the fitted value minus the zero-calibration value "
+        "on recordings with both measurements. Each pair uses the same receiver input.",
+        table(
+            [
+                "Pipeline",
+                "Position pairs",
+                "Position change km",
+                "RF pairs",
+                "RMS change Hz",
+                "Score pairs",
+                "Score change",
+            ],
+            calibration_changes(rows),
         ),
         "## Replay of the earlier panel",
         f"On the previously published compact two-scan panel, {repeated_fixes}/{len(repeated)} "

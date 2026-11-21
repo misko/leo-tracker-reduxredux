@@ -183,3 +183,43 @@ def test_full_comparison_keeps_missing_fixes_and_excludes_unmeasured_runtime(tmp
     output = (tmp_path / "RESULTS.md").read_text()
     assert "All recordings | Compact | 2/3" in output
     assert "Position solver · all | 3" in output
+
+
+def test_calibration_pairs_residuals_and_position_independently():
+    rows = [
+        dict(
+            case="a",
+            method="algo07v5",
+            calibration="c0",
+            error_km=1,
+            frequency_rms_hz=100,
+            frequency_score=9,
+        ),
+        dict(
+            case="a",
+            method="algo07v5",
+            calibration="fitted_c",
+            error_km=2,
+            frequency_rms_hz=80,
+            frequency_score=10,
+        ),
+        dict(
+            case="b",
+            method="algo07v5",
+            calibration="c0",
+            error_km=None,
+            frequency_rms_hz=120,
+            frequency_score=None,
+        ),
+        dict(
+            case="b",
+            method="algo07v5",
+            calibration="fitted_c",
+            error_km=5,
+            frequency_rms_hz=80,
+            frequency_score=None,
+        ),
+    ]
+    original, compact = ds30_full_report.calibration_changes(rows)
+    assert original == ["Original", 1, "1.000", 2, "-30.00", 1, "1.00"]
+    assert compact == ["Compact", 0, "—", 0, "—", 0, "—"]
