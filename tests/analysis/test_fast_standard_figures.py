@@ -5,6 +5,21 @@ from leo.contracts.fast_standard_analysis import PLOTS
 from leo.presentation.orbit_plot import OrbitLane, OrbitPeak, OrbitCurve
 
 
+def test_algo08_uses_supplied_southern_hemisphere_frame_and_width():
+    from leo.contracts.fast_standard_analysis import ALGO08
+    from leo.presentation.fast_standard_analysis import position_figure
+    from leo.presentation.position_path import recorded_fit_path
+    arms = {a: dict(endpoint_latlon=[-32.97, 24.0]) for a in ('fitted_c', 'c0')}
+    path = recorded_fit_path([dict(model_version=ALGO08, arms=arms)], ALGO08,
+                             region_center=(-33., 24.), box_width_km=18., schema_version=2)
+    figure = position_figure(arms, title='Regional run', selected_model=ALGO08, position_path=path)
+    axis = figure.axes[0]
+    assert axis.get_xlim() == axis.get_ylim() == (-9., 9.)
+    point = next(line for line in axis.lines if line.get_label() == 'Fitted c selected estimate')
+    assert abs(point.get_ydata()[0] - 3.33) < 1e-8
+    assert '-33.00000°' in figure._supxlabel.get_text()
+
+
 def test_all_eight_figures_render_the_same_native_memberships():
     observations=[dict(observation_id='one',receiver=1,channel=1,time_s=1.,measured_cfo_hz=100.),
                   dict(observation_id='two',receiver=1,channel=1,time_s=2.,measured_cfo_hz=110.)]

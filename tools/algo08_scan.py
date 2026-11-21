@@ -1,13 +1,15 @@
-"""Analyze one sealed Gauss fast recording with the DS30 two-scan receiver."""
+"""Analyze one sealed fast recording using two-scan cancellation and a supplied search area."""
 
 import argparse
 import fcntl
 import json
+import os
 from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 
 from leo.contracts.digests import canonical_digest, sha256_digest
+from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.fast_scan_native import FastScanPolicyV2
 from leo.contracts.fast_standard_analysis import ALGO08
 from leo.operations.tle_archive import TleArchiveReader
@@ -104,18 +106,22 @@ def scan_report(recording, run_id, native):
                     invalid_capture=provenance["invalid_capture"], skipped_fast_score=0))
 
 
-def analyze(recording, root, assets, archive, reference=None, *, list_report=True):
+def analyze(recording, root, assets, archive, offer, reference=None, *, list_report=True):
+    if reference is not None:
+        lat, lon = reference["latitude_deg"], reference["longitude_deg"]
+        if not (-90 <= lat <= 90 and -180 <= lon < 180):
+            raise ValueError("Invalid evaluation reference")
     for name, pin in PINS.items():
         if sha256_digest((assets/name).read_bytes()) != "sha256:"+pin:
             raise ValueError(f"Unqualified ALGO08 asset {name}")
     store, standard = FastScanStore(root), FastStandardAnalysisStore(root)
     session, inventory_sha, inventory = store.inventory(recording, verify_windows=False)
-    run_id = "algo08-" + canonical_digest([ALGO08, inventory_sha])[7:39]
-    workspace = store.automatic_workspace(run_id)
-    with (workspace/"owner.lock").open("a") as lock:
+    detector_id = "algo08-" + canonical_digest([ALGO08, inventory_sha])[7:39]
+    run_id = "algo08-" + canonical_digest([ALGO08, inventory_sha, offer.document(), reference])[7:39]
+    detector_work = store.automatic_workspace(detector_id)
+    with (detector_work/"owner.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        result = standard.detail(run_id)
-        path = workspace/"detections.json"
+        path = detector_work/"detections.json"
         if not path.exists():
             immutable_json(path, acquire(session, inventory_sha, inventory, assets))
         native = json.loads(path.read_bytes())
@@ -127,20 +133,24 @@ def analyze(recording, root, assets, archive, reference=None, *, list_report=Tru
                 bound["raw_recording_authority_digest"], PINS["cancellation-factors.so"], bound["probes"]])):
             raise ValueError("Saved two-scan factors differ from the acquisition receipt")
         store.publish_inventory(session, inventory)
+    workspace = store.automatic_workspace(run_id)
+    with (workspace/"owner.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        result = standard.detail(run_id)
         if result["state"] == "pending":
-            prediction, packet, policy = solve(native, TleArchiveReader(archive), assets)
-            terminal = dict(model_version=ALGO08, session_id=session, orbit_policy=policy,
+            prediction, packet, policy = solve(native, TleArchiveReader(archive), assets, offer)
+            terminal = dict(model_version=ALGO08, session_id=session, orbit_policy=policy, region=offer.document(),
                             decision=prediction["status"], reason=prediction.get("reason"),
                             arms=prediction["arms"], native_sha256=canonical_digest(native))
             immutable_json(workspace/"terminal.json", terminal)
             binding = dict(session_id=session, input_sha256=terminal["native_sha256"],
                            raw_authority=native["source"]["raw_recording_authority_digest"],
-                           terminal_sha256=canonical_digest(terminal), orbit_policy=policy)
+                           terminal_sha256=canonical_digest(terminal), orbit_policy=policy, region=offer.document())
             if prediction["status"] == "withheld":
                 result = standard.withhold(run_id, prediction["reason"], **binding)
             elif prediction["status"] == "ok" and packet is not None:
                 pngs = render(packet, title=recording.name, evaluation_reference=reference)
-                doc = dict(**binding, run_id=run_id, schema_version=2, model_version=ALGO08,
+                doc = dict(**binding, run_id=run_id, schema_version=3, model_version=ALGO08,
                            state="complete", selected_model=ALGO08, figures_model=ALGO08,
                            reference_usage="evaluation_only", decision="compact_v5",
                            arms=packet["arms"], glrt_points=len(packet["observations"]),
@@ -157,7 +167,8 @@ def analyze(recording, root, assets, archive, reference=None, *, list_report=Tru
         if list_report:
             store.publish(run_id, report)
         return dict(run_id=run_id, session_id=session, window_count=report["window_count"],
-                    counts=report["counts"], decision=result["state"], terminal_sha256=result["terminal_sha256"])
+                    counts=report["counts"], region=offer.document(), decision=result["state"],
+                    terminal_sha256=result["terminal_sha256"])
 
 
 if __name__ == "__main__":
@@ -166,9 +177,13 @@ if __name__ == "__main__":
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--archive", type=Path, required=True)
+    parser.add_argument("--region", type=Path, default=os.getenv("ALGO08_REGION_FILE"),
+                        required=not os.getenv("ALGO08_REGION_FILE"),
+                        help="JSON with center [latitude, longitude], width_km and optional screen_center")
     parser.add_argument("--evaluation-reference", type=float, nargs=2, metavar=("LAT", "LON"))
     parser.add_argument("--comparison-only", action="store_true")
     args = parser.parse_args()
     ref = dict(zip(("latitude_deg", "longitude_deg"), args.evaluation_reference)) if args.evaluation_reference else None
-    print(json.dumps(analyze(args.recording, args.bulk_root, args.assets, args.archive, ref,
+    offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
+    print(json.dumps(analyze(args.recording, args.bulk_root, args.assets, args.archive, offer, ref,
                              list_report=not args.comparison_only)))

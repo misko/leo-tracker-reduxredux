@@ -1,0 +1,53 @@
+# ALGO08 with an explicit search region
+
+ALGO08 takes a regional prior from the operator. On two blind simulated raw recordings the fitted position errors were 0.71 km and 1.11 km when the search square contained the receiver. It also published four fixes from four squares that excluded the receiver. All four landed on the boundary. The supplied region is a scientific input, and an accepted local fix does not establish that the region is correct.
+
+## What changed
+
+The station file supplies a square center and full side length. The sky builder uses the same center unless the station specifies a separate screening center. The position search, both calibration fits, objective grid, optimizer path, terminal receipt, eight PNGs and web result use this configuration. Moving the square, changing its width, or moving the screening center produces a distinct localization run. Site-independent two-scan detections can be reused. An optional reference creates a separately identified annotated publication and enters only after fitting. The historical Gauss profile preserves both of DS30's original centers. Previously published ALGO07 and ALGO08 results retain their original contracts. [Station profile](../../../deploy/gauss/algo08-region.json) · [Run instructions](../README.md)
+
+## Blind raw-I/Q transfer
+
+Two fresh simulated stationary sites were drawn independently of DS30, one in central Europe and one in southern Africa. Each recording contained 1,200 native 20 ms dual-receiver CI16 windows at 10 MS/s over five minutes on eight channels. The generator used a lower-edge schedule for the northern site and an upper-edge schedule for the southern site. It synthesized pilot timing and Doppler from later orbital elements, along with noise, a tone, echoes, receiver offsets and drift. The inference account could read the sealed recordings, unlabeled regional offers and causal TLEs. Its filesystem permissions excluded the scoring key. Both sites and all six offers used the same detector, solver and acceptance settings.
+
+| Simulated recording | Offered 25 km square | Center error | Fitted position error | Fixed-zero error | Frequency RMS, fitted / zero |
+|---|---|---:|---:|---:|---:|
+| North | Contains receiver | 6.70 km | 0.71 km | 0.74 km | 5.17 / 5.38 Hz |
+| South | Contains receiver | 6.60 km | 1.11 km | 0.83 km | 6.39 / 6.50 Hz |
+| North | Receiver 1.5 km beyond edge | 13.98 km | 1.51 km | 1.54 km | 5.20 / 5.54 Hz |
+| South | Receiver 1.5 km beyond edge | 13.98 km | 2.57 km | 2.39 km | 6.53 / 6.64 Hz |
+| North | Receiver 52.5 km beyond edge | 64.93 km | 52.49 km | 52.46 km | 37.53 / 37.95 Hz |
+| South | Receiver 52.5 km beyond edge | 64.93 km | 53.58 km | 53.58 km | 6.47 / 6.47 Hz |
+
+The acceptance rule returned a position in every row. Changing only the offer on the southern recording increased fitted error from 1.11 km to 53.58 km, while its frequency RMS changed by just 0.08 Hz. A boundary hit identified these four false publications after scoring. The original 439 DS30 fitted and fixed-zero fixes all lay more than 100 m from their box edge. These counts describe this panel and this roof. A boundary-based withholding rule would need an independent test that includes valid sites close to a box edge.
+
+All six runs published eight digest-verified, decoded PNGs. The maps below are the actual estimator output, before the scorer knew which square contained the receiver. The receiver had no evaluation marker. [Scored offers](blind-scores.csv) · [Locked predictions](predictions.json) · [Revealed scoring key](scoring-key.json)
+
+| Supplied square | Northern site | Southern site |
+|---|---|---|
+| Contains receiver | [Position PNG](north-containing.png) | [Position PNG](south-containing.png) |
+| Near miss | [Position PNG](north-omitted.png) | [Position PNG](south-omitted.png) |
+| Far miss | [Position PNG](north-far.png) | [Position PNG](south-far.png) |
+
+## Measured Gauss recording from raw samples
+
+DS30-0003 supplied 6,769 raw visits, of which 6,714 passed capture checks. Its station profile reproduced the frozen fitted and fixed-zero coordinates and solver RMS exactly. Two further runs shared the same detections, changed the search and sky screen together, and had no evaluation reference until scoring. All three published valid path/grid sidecars and eight decodable PNGs apiece. The 40 km run exercises the renderer at a different width. [Recording-level publications and verification](gauss-raw.json) · [40 km position PNG](gauss-40km.png)
+
+| Offer | Width | Fitted error | Fixed-zero error |
+|---|---:|---:|---:|
+| Historical station profile | 25 km | 375 m | 373 m |
+| Translated square containing the roof | 40 km | 1,006 m | 900 m |
+| Square north of the roof | 25 km | 61.20 km | 61.15 km |
+
+## Independent physical stations
+
+The compatible full-pipeline field evidence in this evaluation comes from Gauss. The StarLoc archive supplies selected single-channel tone tracks, the Watson archive supplies power spectra, and the Austin waveform excerpt supports short pilot timing checks. None supplies a compatible off-site sealed dual-receiver scan with the time/channel coverage used here. The two simulated sites test the complete software path and its response to a wrong prior. Physical relocation accuracy and false-publication rates remain unmeasured. [StarLoc measurement boundary](../../2026_11_18_blind_regional_receiver/README.md) · [Austin waveform excerpt](../../2026_11_19_receiver_screening/arrival-and-timing/austin-waveform/README.md) · [Watson spectra](../../2026_11_19_receiver_screening/receiver-deadline/external-spectrum/README.md)
+
+## Reproduction
+
+Use the release's numerical environment and qualified native assets. From a source checkout, rebuild the native bound manifest at its actual location using the release staging script. Its source and wrapper paths are checked at startup. Set `ALGO08_ASSETS` to the corresponding asset directory for the DS30 replay.
+
+1. Run [ds30.py](ds30.py) with no arguments to authenticate the DS30 prediction lock and verify historical search/screen bindings. Pass a recording ID to rerun positioning on its original, digest-checked two-scan detections and capture-era orbit archive. The script checks both endpoints and their fitted frequency residuals.
+2. Make a fresh workspace with a world-traversable root, a public input directory, a `scorer` directory private to the generating account and an output directory writable by a separate inference account. Run [blind_panel.py](blind_panel.py) with the workspace path. It generates both raw recordings and commits the private key digest in the public panel.
+3. Under the inference account, run [run_panel.py](run_panel.py) with the public directory, output directory (`outputs/blind`) and release assets. It executes the normal ALGO08 CLI without a reference, checks grids and paths, decodes every published PNG and emits the SHA-256 of the locked predictions.
+4. Under the scoring account run [score_panel.py](score_panel.py) with the workspace, the independently recorded prediction digest and the report directory. It verifies the commitment, checks each inclusion label geometrically and joins truth only for scoring. The prediction digest for this panel is `46e8925aad5b047b89f57b95d22581a5eca4dfc52f3196790154c01bdc340549`.

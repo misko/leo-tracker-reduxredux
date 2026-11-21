@@ -41,8 +41,10 @@ On November 21 the first recording to finish under the new default was the 08:55
 To replay a saved fast recording manually, use the installed release with a writable local output root. The launcher supplies the Gauss regional configuration, read-only orbit archive and evaluation-only roof reference.
 
 ```sh
-/opt/leo-algo08/current/run --recording "$RECORDING" --bulk-root "$OUTPUT"
+/opt/leo-algo08/current/run --recording "$RECORDING" --bulk-root "$OUTPUT" --region "$REGION_JSON"
 ```
+
+In the regional release, supply a JSON file such as `{"center":[-33.0,20.0],"width_km":25}`. The center is latitude then longitude in degrees. The width is the full side of the square. Satellite screening uses the center unless the file supplies a separate `screen_center`. A station service can set `ALGO08_REGION_FILE`. A known position may be supplied separately with `--evaluation-reference LAT LON` for scoring and annotation after inference. Search squares crossing a pole or the longitude seam are unsupported. The historical DS30 profile is in [Gauss station configuration](../../deploy/gauss/algo08-region.json).
 
 The model ID is `algo08-two-scan-compact-v5-v1`. The web API serves its manifest at `/api/v2/fast-scans/{run_id}/standard-analysis`. Each named PNG accepts the manifest digest in the `sha256` query parameter. To rebuild the comparison images from the live server, pass the two run IDs in historical, then compact order.
 

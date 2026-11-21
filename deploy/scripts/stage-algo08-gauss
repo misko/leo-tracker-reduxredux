@@ -11,6 +11,7 @@ api=/opt/leo-standard-fast/4cd629cef1e3bb35073d8c39f587ddf3d6d6ebf7
 py=/opt/leo-fast-auto/20261010-r1/python/bin/python3.12
 test -s web/dist/index.html
 install -d "$release"/{api,assets,tools,web}
+install -D -m 0644 deploy/gauss/algo08-region.json "$release/station/region.json"
 rsync -a --exclude __pycache__ src/ "$release/src/"
 rsync -a --exclude __pycache__ tools/pipeline_eval/ "$release/tools/pipeline_eval/"
 install -m 0644 tools/algo08_{scan,position}.py "$release/tools/"
@@ -34,9 +35,9 @@ for name, pin in PINS.items():
 build_native(assets/"native")
 compile_kernel(assets/"projector.so")
 PY
-# Overlay the three reader modules on the existing production API composition.
+# Overlay the regional result reader and its contracts on the production API.
 cp -a "$api/src" "$release/api/"
-for path in api/fast_standard_analysis.py contracts/fast_standard_analysis.py storage/fast_standard_analysis.py; do
+for path in api/fast_standard_analysis.py contracts/{algo08_region,fast_standard_analysis,position_grid,position_path}.py storage/fast_standard_analysis.py; do
     install -m 0644 "$root/src/leo/$path" "$release/api/src/leo/$path"
 done
 cp -a "$root/web/dist" "$release/web/"

@@ -16,7 +16,15 @@ from leo.presentation.regional_position import draw_position_grid
 def position_figure(arms, *, title, selected_model=None, evaluation_reference=None, position_grid=None,
                     position_path=None):
     """Legacy diagnostic-map conventions over sealed ALGO07 endpoints."""
-    center=(37.906,-122.545)
+    frame = position_grid or position_path or {}
+    regional = bool(selected_model and selected_model.startswith('algo08-'))
+    if regional and not {'region_center', 'box_width_km'} <= frame.keys():
+        raise ValueError('ALGO08 position figures require the fitted regional frame')
+    center = frame.get('region_center', (37.906,-122.545))
+    width = frame.get('box_width_km', 25.)
+    if position_path and position_grid and (
+            position_path['region_center'] != center or position_path['box_width_km'] != width):
+        raise ValueError('Recorded path and objective grid have different regional frames')
     def project(latlon, origin=center):
         lat,lon=map(math.radians,latlon);a,b=map(math.radians,origin)
         h=math.sin((lat-a)/2)**2+math.cos(a)*math.cos(lat)*math.sin((lon-b)/2)**2
@@ -117,9 +125,9 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
                       va='top',fontsize=8)
     grid_summary='' if position_grid is None else (
         f" · {position_grid['evaluated_points']}/{position_grid['planned_points']} grid locations")
-    axis.set(title='25 × 25 km regional search'+grid_summary+'\n'+'\n'.join(descriptions),
+    axis.set(title=f'{width:g} × {width:g} km regional search'+grid_summary+'\n'+'\n'.join(descriptions),
         xlabel='East of prior centre (km)',ylabel='North of prior centre (km)',
-        xlim=(-12.5,12.5),ylim=(-12.5,12.5))
+        xlim=(-width/2,width/2),ylim=(-width/2,width/2))
     for ax in axes:
         ax.set_aspect('equal');ax.grid(alpha=.2)
         ax.set_xlabel('East of prior centre (km)');ax.set_ylabel('North of prior centre (km)')
@@ -130,9 +138,10 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
               'Matched grid for both c arms. '+('Complete grid.' if position_grid['complete'] else 'Partial grid: time budget reached.'))
     if position_path is not None:
         note=('Lines/markers: saved optimizer steps and phase rounds; separate fits are not connected.\n'
-              'Allowed area stays 25 × 25 km; right panel is a display zoom. '
+              f'Allowed area spans {width:g} × {width:g} km; right panel is a display zoom. '
               +('Coloured grid: post-fit conditional loss.' if position_grid else ''))
-    figure.supxlabel('Reference coordinates enter only this presentation stage.\n'+note,fontsize=8)
+    origin = f'Search centre ({center[0]:.5f}°, {center[1]:.5f}°). ' if regional else ''
+    figure.supxlabel(origin+'Reference coordinates enter only this presentation stage.\n'+note,fontsize=8)
     return figure
 
 
@@ -147,6 +156,10 @@ def render_position(arms, *, title, selected_model=None, evaluation_reference=No
 
 def render(packet, *, title, evaluation_reference=None):
     model='ALGO08' if packet.get('selected_model','').startswith('algo08-') else 'ALGO07'
+    if model == 'ALGO08':
+        frame = packet['position_grid']
+        lat, lon = frame['region_center']
+        title += f" · {frame['box_width_km']:g} km square at ({lat:.5f}°, {lon:.5f}°)"
     rows=packet['rows']['fitted_c'];raw={o['observation_id']:o for o in packet['observations']}
     numbers=sorted({r['norad'] for r in rows})
     colors={n:colormaps['tab20'](k%20) for k,n in enumerate(numbers)}

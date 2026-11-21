@@ -5,6 +5,7 @@ type Arm = { endpoint_latlon: number[]; associated_points: number; associated_pe
 type Analysis = { schema_version: number; state: string; model_version: string; selected_model: string;
   decision: string; reason?: string; glrt_points: number; arms: Record<"c0" | "fitted_c", Arm>;
   evaluation_reference?: { latitude_deg: number; longitude_deg: number } | null;
+  region?: { center: [number, number]; width_km: number; screen_center: [number, number] };
   artifacts: {name: string; sha256: string}[] };
 const labels: Record<string,string> = {"ch1-4-all":"CH1–4 · GLRT, satellite owners and fitted orbital curves",
   "ch5-8-all":"CH5–8 · GLRT, satellite owners and fitted orbital curves",
@@ -24,7 +25,7 @@ export function FastStandardAnalysis({runId}:{runId:string}) {
       const response=await fetch(base,{signal:controller.signal});
       if(!response.ok)throw new Error(`Standard analysis unavailable (${response.status})`);
       const value=await response.json() as Analysis;
-      if(value.schema_version!==(compact?2:1) || value.model_version!==(compact?"algo08-two-scan-compact-v5-v1":"algo07-causal-guarded-reassociation-v1"))throw new Error("Standard analysis belongs to another algorithm");
+      if(!(compact ? [2,3] : [1]).includes(value.schema_version) || value.model_version!==(compact?"algo08-two-scan-compact-v5-v1":"algo07-causal-guarded-reassociation-v1"))throw new Error("Standard analysis belongs to another algorithm");
       if(!controller.signal.aborted){setData(value);setError("");}
     }catch(e){if(!controller.signal.aborted)setError(String(e));}finally{busy=false;}};
     void refresh();const timer=setInterval(()=>void refresh(),10000);
@@ -36,6 +37,7 @@ export function FastStandardAnalysis({runId}:{runId:string}) {
     <p role="status">{data?.state==="withheld" ? `Position withheld · ${data.reason}` :
       complete ? (compact ? "Complete · two-scan cancellation and compact v5" : `Complete · ${data.selected_model===data.model_version ? "guarded reassociation accepted" : `retained ${data.selected_model.split("-")[0].toUpperCase()} solution`}`) : `Awaiting ${algorithm} localization and its verified figures`}</p>
     {error && <p role="alert">{error}</p>}
+    {data?.region && <p>Regional search · {data.region.width_km} km square centered at {data.region.center.join(", ")}°. Satellite screening center {data.region.screen_center.join(", ")}°. A returned position is conditional on this search area.</p>}
     {complete && <>
       <table className="scanner-table"><thead><tr><th>Calibration</th><th>Published position</th><th>Evaluation error</th><th>GLRT associated</th><th>Tracks / satellites</th><th>Residual RMS</th></tr></thead>
         <tbody>{(["fitted_c","c0"] as const).map(arm=>{const a=data.arms[arm];return <tr key={arm}>

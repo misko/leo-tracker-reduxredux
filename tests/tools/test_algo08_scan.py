@@ -9,7 +9,8 @@ from tools import algo08_scan
 
 def test_empty_observations_withhold_both_arms_without_orbits():
     from tools.algo08_position import solve
-    decision, packet, _ = solve({"source": {"probes": []}}, None, None)
+    from leo.contracts.algo08_region import Algo08Region
+    decision, packet, _ = solve({"source": {"probes": []}}, None, None, Algo08Region((1, 2), 25))
     assert decision["status"] == "withheld" and packet is None
     assert decision["arms"] == {"c0": {"latlon": None}, "fitted_c": {"latlon": None}}
 
@@ -45,3 +46,35 @@ def test_verified_windows_keep_their_capture_identity(monkeypatch):
     report = algo08_scan.scan_report("recording", "algo08-id", doc)
     assert report["counts"] == dict(processed=1, skipped_fast_score=0, invalid_capture=1)
     assert len(doc["source"]["probes"]) == 2
+
+
+def test_offers_and_annotated_publications_share_only_the_detector(tmp_path, monkeypatch):
+    from leo.contracts.algo08_region import Algo08Region
+    from leo.storage.fast_scan import FastScanStore
+    inv = dict(window_count=1)
+    sha = canonical_digest(inv)
+    session = "fast-" + sha[7:39]
+    monkeypatch.setattr(FastScanStore, "inventory", lambda *a, **k: (session, sha, inv))
+    monkeypatch.setattr(algo08_scan, "PINS", {"cancellation-factors.so": "dummy"})
+    (tmp_path / "cancellation-factors.so").write_bytes(b"binary")
+    monkeypatch.setattr(algo08_scan, "sha256_digest", lambda _: "sha256:dummy")
+    called = []
+    def acquire(*args):
+        called.append(1)
+        return dict(source=dict(session_id=session, input_manifest_sha256=sha,
+                    raw_recording_authority_digest="raw", probes=[],
+                    analysis_manifest_sha256=canonical_digest(["cancellation", "raw", "dummy", []])),
+                    provenance=dict(rf_mapping_authorities=[], window_count=1, processed_windows=0,
+                                    invalid_capture=1))
+    monkeypatch.setattr(algo08_scan, "acquire", acquire)
+    def run(center, width=25, screen=None, ref=None):
+        return algo08_scan.analyze(tmp_path / "sealed", tmp_path, tmp_path, tmp_path,
+                                   Algo08Region(center, width, screen), ref)
+    first = run((10, 25))
+    assert run((10., 25.), screen=(10, 25)) == first
+    other_reference = run((10, 25), ref=dict(latitude_deg=11., longitude_deg=26.))
+    assert other_reference["terminal_sha256"] == first["terminal_sha256"]
+    receipts = [first, other_reference, run((11, 25)), run((10, 25), width=26),
+                run((10, 25), screen=(10, 24))]
+    assert len({r["run_id"] for r in receipts}) == 5
+    assert called == [1] and all(r["decision"] == "withheld" for r in receipts)

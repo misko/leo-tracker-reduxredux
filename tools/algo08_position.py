@@ -33,13 +33,15 @@ def selected_packet(prepared, signed, fit):
     _, replayed = baseline_pair(ctx)
     owners = {k: v["owners"] for k, v in publication_support(arms, replayed).items()}
     stage = json.loads(json.dumps(dict(model_version=ALGO08, arms=arms), default=_json_value))
-    path = recorded_fit_path([stage], ALGO08)
+    region = signed["scan"].search_region
+    path = recorded_fit_path([stage], ALGO08, region_center=region.center,
+                             box_width_km=region.width_km, schema_version=2)
     tracks = prepared["tracks"]
     return prepare_packet(ctx, owners, arms, tracks["observations"], tracks["tracks"],
                           selected_model=ALGO08, position_path=path, grid_seconds=30)
 
 
-def solve(native, archive, assets):
+def solve(native, archive, assets, offer):
     from leo.analysis.localization_v4.backend import read_manifest, validate_manifest
     if not native["source"]["probes"]:
         return dict(status="withheld", reason="no valid receiver windows in the sealed recording",
@@ -47,7 +49,7 @@ def solve(native, archive, assets):
     manifest = validate_manifest(read_manifest(assets / "native/manifest.json"), check_provider=True)
     config = json.loads((assets / "tracks.json").read_bytes())["config"]
     projector = orbit_projector.Projector(assets / "projector.so")
-    region = SearchRegion((37.906, -122.545), width_km=25)
+    region = SearchRegion(offer.center, width_km=offer.width_km)
     packet = None
 
     def evidence(*args):
@@ -58,7 +60,7 @@ def solve(native, archive, assets):
         with support:
             prepared = _prepared_values(prepare_native_scan(
                 native, archive, TrackConfig(**config),
-                screen_latitude_deg=37.5, screen_longitude_deg=-122.0))
+                screen_latitude_deg=offer.screen_center[0], screen_longitude_deg=offer.screen_center[1]))
             with numerical_bindings(projector):
                 return v5_core.infer(prepared, region, NativeBound(manifest["binary"]), {},
                                      selected_evidence=evidence)

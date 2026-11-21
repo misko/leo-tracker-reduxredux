@@ -48,6 +48,38 @@ def test_eight_figures_publish_atomically_and_reference_is_postfit_only(tmp_path
         with pytest.raises(FileNotFoundError):store.artifact('run',a['name'],'sha256:stale')
 
 
+def test_regional_publication_binds_grid_path_and_endpoint(tmp_path):
+    from leo.contracts.algo08_region import Algo08Region
+    from leo.contracts.fast_standard_analysis import ALGO08
+    from leo.presentation.position_path import recorded_fit_path
+    store = FastStandardAnalysisStore(tmp_path)
+    doc, pngs = publication()
+    offer = Algo08Region((-33., 20.), 18.)
+    run = "algo08-regional"
+    doc.update(run_id=run, selected_model=ALGO08, model_version=ALGO08, schema_version=3,
+               terminal_sha256="terminal", input_sha256="input", region=offer.document())
+    for row in doc["arms"].values():
+        row.update(endpoint_latlon=list(offer.center), owner_sha256="owners")
+    path = recorded_fit_path([dict(model_version=ALGO08, arms=doc["arms"])], ALGO08,
+                             region_center=offer.center, box_width_km=18., schema_version=2)
+    point = dict(east_km=0., north_km=0., latlon=list(offer.center), scores=dict(c0=1., fitted_c=1.))
+    grid = dict(schema_version=1, kind='conditional-position-grid', matched_c_grid=True,
+                conditioning='published satellite ownership and phase linearization fixed',
+                endpoint_latlon={a: list(offer.center) for a in doc["arms"]}, points=[point],
+                box_width_km=18., region_center=list(offer.center), evaluated_points=1,
+                planned_points=1, complete=True)
+    for bad_grid, bad_path in [(dict(grid, box_width_km=25.), path),
+                               (dict(grid, points=[dict(point, latlon=[0., 0.])]), path),
+                               (grid, dict(path, region_center=[0., 0.])), (grid, None)]:
+        with pytest.raises(ValueError):
+            store.publish(run, doc, pngs, position_grid=bad_grid, position_path=bad_path)
+        assert store.detail(run)["state"] == "pending"
+    store.publish(run, doc, pngs, position_grid=grid, position_path=path)
+    assert store.position_path(run)["region_center"] == store.position_grid(run)["region_center"] == [-33., 20.]
+    no_fix = store.withhold("algo08-regional-empty", "no tracks", region=offer.document())
+    assert no_fix["schema_version"] == 3 and store.detail("algo08-regional-empty") == no_fix
+
+
 def test_corrupt_or_cross_scan_figures_fail_closed(tmp_path):
     store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
     with pytest.raises(ValueError,match='another scan'):store.publish('other',d,pngs)

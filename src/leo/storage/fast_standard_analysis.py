@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 from leo.contracts.fast_standard_analysis import validate, PLOTS, MODEL, ALGO08
+from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.position_grid import binding as grid_binding, validate as validate_grid
 from leo.contracts.position_path import validate as validate_path
 from leo.storage.fast_scan import immutable_json, safe_id
@@ -138,6 +139,8 @@ class FastStandardAnalysisStore:
         return self._write_publication(folder, run_id, document, pngs, position_grid, position_path)
 
     def _write_publication(self, folder, run_id, document, pngs, position_grid, position_path):
+        if document.get('schema_version') == 3 and (position_grid is None or position_path is None):
+            raise ValueError('Regional publication requires its objective grid and recorded path')
         folder.mkdir(parents=True, exist_ok=True)
         entries=[]
         for name in PLOTS:
@@ -169,7 +172,9 @@ class FastStandardAnalysisStore:
             raise ValueError("Expected a withheld ALGO08 decision and reason")
         if self.detail(run_id)['state'] == 'complete':
             raise ValueError("ALGO08 position already published")
-        value = dict(**provenance, schema_version=2, model_version=ALGO08, run_id=run_id,
+        if 'region' in provenance:
+            provenance['region'] = Algo08Region.parse(provenance['region']).document()
+        value = dict(**provenance, schema_version=3 if 'region' in provenance else 2, model_version=ALGO08, run_id=run_id,
                      state='withheld', reason=reason, arms={}, artifacts=[])
         immutable_json(self.folder(run_id)/'withheld.json', value)
         return value

@@ -4,6 +4,15 @@ import {FastStandardAnalysis} from "./FastStandardAnalysis";
 
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 const names=["ch1-4-all","ch5-8-all","ch1-4-unassociated","ch5-8-unassociated","ch1-4-residuals","ch5-8-residuals","track-rms","position"];
+
+it("displays the declared search area even when the receiver withholds",async()=>{
+  vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({schema_version:3,
+    model_version:"algo08-two-scan-compact-v5-v1",state:"withheld",reason:"no_active_curvature",
+    region:{center:[-33,20],width_km:18,screen_center:[-33,20]},artifacts:[]})})));
+  render(<FastStandardAnalysis runId="algo08-south"/>);
+  expect(await screen.findByText(/18 km square centered at -33, 20/)).toBeInTheDocument();
+  expect(screen.queryAllByRole("img")).toHaveLength(0);
+});
 const arm={endpoint_latlon:[37.842403850242285,-122.49124137019581],associated_points:3000,
   associated_percent:75,tracks:90,satellites:20,residual_rms_hz:115,evaluation_error_m:883.504916};
 const result={schema_version:1,state:"complete",model_version:"algo07-causal-guarded-reassociation-v1",

@@ -33,11 +33,11 @@ def recorded_position_path(terminal, selected_model):
     for stage in reversed(chain):
         rows=_accepted_rows(stage)
         if rows is not None:accepted.append(dict(model_version=stage['model_version'],arms=rows))
-    return recorded_fit_path(accepted, selected_model)
+    return recorded_fit_path(accepted, selected_model, region_center=(37.906, -122.545),
+                             box_width_km=25.)
 
 
-def recorded_fit_path(accepted, selected_model, *, region_center=(37.906,-122.545),
-                      box_width_km=25.):
+def recorded_fit_path(accepted, selected_model, *, region_center, box_width_km, schema_version=1):
     """Present accepted fit rows directly, without a legacy terminal chain."""
     if (len(region_center)!=2 or not all(math.isfinite(v) for v in region_center)
             or not math.isfinite(box_width_km) or box_width_km<=0):
@@ -75,7 +75,7 @@ def recorded_fit_path(accepted, selected_model, *, region_center=(37.906,-122.54
         stages.append(dict(model_version=stage['model_version'],arms=arms))
     if not stages or stages[-1]['model_version']!=selected_model:
         raise ValueError('Recorded path does not end at the selected published model')
-    return dict(schema_version=1,kind='recorded-position-path',selected_model=selected_model,
+    return dict(schema_version=schema_version,kind='recorded-position-path',selected_model=selected_model,
         region_center=list(region_center),box_width_km=box_width_km,
         semantics='recorded accepted fits; no inferred links between separate fits',
         stages=stages)

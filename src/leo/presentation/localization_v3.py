@@ -152,15 +152,16 @@ def prepare_packet(
         position_path=position_path,
     )
     if include_grid:
+        region = context["scan"].search_region
         grid = sample_position_grid(
             lambda arm, x: objective(context["problems"][arm][0], context, np.asarray(x)),
             {arm: list(x) for arm, (_, x) in context["problems"].items()},
             maximum_seconds=grid_seconds,
+            box_width_km=region.width_km,
             clock=clock,
             map_batches=map_grid_batches,
         )
         grid["endpoint_latlon"] = {a: r["endpoint_latlon"] for a, r in summaries.items()}
-        region = context["scan"].search_region
         grid["region_center"] = list(region.center)
         grid["endpoint_objective_replay"] = differences
         for point in grid["points"]:

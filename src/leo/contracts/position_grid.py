@@ -21,6 +21,9 @@ def validate(grid, publication):
         if grid['endpoint_latlon']!={a:publication['arms'][a]['endpoint_latlon'] for a in ARMS}:
             raise ValueError('Position grid uses different published endpoints')
         rows=grid['points'];width=grid['box_width_km']
+        if publication.get('schema_version') == 3 and (
+                grid['region_center'] != publication['region']['center'] or width != publication['region']['width_km']):
+            raise ValueError('Position grid uses a different search region')
         if (not finite(width) or width<=0 or not isinstance(rows,list)
                 or len(rows)!=grid['evaluated_points'] or not len(rows)<=grid['planned_points']
                 or grid['complete']!=(len(rows)==grid['planned_points'])):
@@ -34,6 +37,11 @@ def validate(grid, publication):
                     or any(v is not None and not finite(v) for v in p['scores'].values())):
                 raise ValueError('Position grid point or paired scores are invalid')
             seen.add(xy)
+            if publication.get('schema_version') == 3:
+                lat, lon = grid['region_center']
+                expected = (lat + xy[1]/111., lon + xy[0]/(111.32*math.cos(math.radians(lat))))
+                if any(abs(a-b) > 1e-9 for a,b in zip(expected, p['latlon'])):
+                    raise ValueError('Grid point coordinates differ from declared region')
         return grid
     except (KeyError,TypeError,IndexError) as error:
         raise ValueError('Malformed position grid') from error

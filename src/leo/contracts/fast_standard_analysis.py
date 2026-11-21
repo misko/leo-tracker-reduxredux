@@ -1,6 +1,7 @@
 """Independent presentation publication; scientific ALGO contracts stay immutable."""
 import math
 import re
+from leo.contracts.algo08_region import Algo08Region
 
 MODEL = 'algo07-causal-guarded-reassociation-v1'
 ALGO08 = 'algo08-two-scan-compact-v5-v1'
@@ -9,10 +10,12 @@ PLOTS = ('ch1-4-all', 'ch5-8-all', 'ch1-4-unassociated', 'ch5-8-unassociated',
 
 
 def validate(document, *, model=MODEL):
-    version = {MODEL: 1, ALGO08: 2}[model]
-    if (document.get('schema_version') != version or document.get('model_version') != model
+    versions = {MODEL: (1,), ALGO08: (2, 3)}[model]
+    if (document.get('schema_version') not in versions or document.get('model_version') != model
             or document.get('state') != 'complete' or document.get('reference_usage') != 'evaluation_only'):
         raise ValueError('Invalid standard analysis publication')
+    if document['schema_version'] == 3:
+        Algo08Region.parse(document.get('region'))
     for arm in ('c0', 'fitted_c'):
         row = document['arms'][arm]
         if not 0 <= row['associated_points'] <= document['glrt_points']:
