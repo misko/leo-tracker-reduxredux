@@ -4,6 +4,8 @@
 
 The November 20 progress report compares original GLRT, one scan and two-scan cancellation on Gauss and shows how each affected original and compact v5 position fixes. [Dated algorithm report](2026_11_20_algorithms.md)
 
+The full DS30 validation compares original GLRT + algo07v5 with two-scan cancellation + compact v5 on all 455 recordings, including interrupted captures. [Protocol, replay commands and results](reports/2026_11_21_ds30_full/README.md)
+
 ## Active algo07 variants and compact v5
 
 | Algorithm | Status | What it does | How to select it |

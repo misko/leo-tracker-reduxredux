@@ -138,7 +138,7 @@ def detector(method, edge):
         receiver.close()
 
 
-def acquire(case, method, directory, bindings):
+def acquire(case, method, directory, bindings, *, include_empty_visits=False):
     document = read_bound(case["native"])
     source = document["source"]
     metadata = {
@@ -151,7 +151,7 @@ def acquire(case, method, directory, bindings):
     detector_wall = detector_cpu = 0.0
     total = case["recording"]["window_count"]
     with detector(method, edge) as receiver:
-        for index, w in enumerate(raw_windows(case)):
+        for index, w in enumerate(raw_windows(case, include_empty_visits=include_empty_visits)):
             acq = w.acquisition
             retune = json.loads(acq["retune_receipt"])
             if (

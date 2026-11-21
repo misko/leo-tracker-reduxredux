@@ -137,6 +137,45 @@ def test_modified_iq_is_rejected_even_for_skipped_window(recording):
         load_windows(case, (0, 8))
 
 
+@pytest.mark.parametrize("complete", [False, True])
+def test_empty_visit_keeps_signed_identity_only_for_explicit_capture_failures(recording, complete):
+    case, _, directory = recording
+    path = directory / "manifest.json"
+    manifest = json.loads(path.read_text())
+    chunk = manifest["chunks"][0]
+    index = directory / chunk["index_relative_path"]
+    lines = index.read_text().splitlines()
+    row = json.loads(lines[-1])
+    raw = zstd.ZstdDecompressor().decompress((directory / "iq.zst").read_bytes())
+    raw = raw[: row["payload_offset_bytes"]]
+    row.update(sample_count=0, payload_bytes=0, iq_sha256=digest(b""))
+    row["acquisition"]["complete"] = complete
+    lines[-1] = json.dumps(row)
+    payload = zstd.ZstdCompressor().compress(raw)
+    (directory / "iq.zst").write_bytes(payload)
+    index.write_text("\n".join(lines) + "\n")
+    chunk.update(
+        index_bytes=index.stat().st_size,
+        index_sha256=digest(index.read_bytes()),
+        compressed_bytes=len(payload),
+        compressed_sha256=digest(payload),
+        uncompressed_bytes=len(raw),
+        uncompressed_sha256=digest(raw),
+    )
+    path.write_text(json.dumps(manifest))
+    case["recording_sha256"] = digest(path.read_bytes())
+    with pytest.raises(IQReadError, match="missing IQ"):
+        load_windows(case, (7, 8))
+    if complete:
+        with pytest.raises(IQReadError, match="missing IQ"):
+            load_windows(case, (7, 8), include_empty_visits=True)
+    else:
+        good, empty = load_windows(case, (7, 8), include_empty_visits=True)
+        assert good.samples.size > 0
+        assert empty.sequence == 8 and empty.iq_sha256 == digest(b"")
+        assert empty.samples.shape == (0, 2, 2)
+
+
 def test_manifest_binding_and_explicitly_missing_iq(recording):
     case, _, _ = recording
     with pytest.raises(IQReadError, match="manifest failed SHA-256 verification"):

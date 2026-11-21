@@ -163,7 +163,9 @@ def _chunk_member(root: Path, name: str) -> Path:
     return root / name
 
 
-def _read_plan(case: dict, sequences: Iterable[int], segment_index: int) -> IQReadPlan:
+def _read_plan(
+    case: dict, sequences: Iterable[int], segment_index: int, *, include_empty_visits: bool = False
+) -> IQReadPlan:
     requested = frozenset(sequences)
     if not requested or any(type(sequence) is not int or sequence < 0 for sequence in requested):
         raise IQReadError("IQ window selection requires nonnegative sequence numbers")
@@ -206,7 +208,11 @@ def _read_plan(case: dict, sequences: Iterable[int], segment_index: int) -> IQRe
                 or row.payload_offset_bytes != offset
                 or row.receiver_count != len(manifest.receiver_ids)
                 or row.sample_count > manifest.sample_rate_hz // 50
-                or (row.sequence in selected and row.sample_count == 0)
+                or (
+                    row.sequence in selected
+                    and row.sample_count == 0
+                    and not (include_empty_visits and row.acquisition.get("complete") is False)
+                )
             ):
                 raise IQReadError(f"missing IQ or invalid layout for sequence {sequence}")
             offset += row.payload_bytes
@@ -275,10 +281,12 @@ def load_windows(
     sequences: Iterable[int] = (0, 1),
     *,
     segment_index: int = 0,
+    include_empty_visits: bool = False,
 ) -> tuple[IQWindow, ...]:
-    """Decode authenticated segment-local windows in order as read-only CI16 arrays."""
+    """Decode authenticated CI16 windows, optionally retaining signed empty capture failures."""
     try:
-        return _decode(_read_plan(case, sequences, segment_index), materialize=False)[0]
+        plan = _read_plan(case, sequences, segment_index, include_empty_visits=include_empty_visits)
+        return _decode(plan, materialize=False)[0]
     except IQReadError:
         raise
     except (OSError, ValueError, KeyError, zstd.ZstdError) as error:

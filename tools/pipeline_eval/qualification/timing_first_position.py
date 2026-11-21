@@ -45,7 +45,7 @@ def compatible_factor(proposed, verify):
     ), "passed"
 
 
-def raw_windows(case):
+def raw_windows(case, *, include_empty_visits=False):
     for loc in case["recording"]["segments"]:
         manifest = BULK / loc["path"]
         data = iq_stream._read_prefix(manifest, 65537)
@@ -58,7 +58,9 @@ def raw_windows(case):
                 iq_stream, MAX_CHUNK_PREFIX=MAX_PREFIX, MAX_DECODE_BYTES=MAX_PREFIX
             ):
                 windows = iq_stream.load_windows(
-                    policy, range(first, first + chunk["window_count"])
+                    policy,
+                    range(first, first + chunk["window_count"]),
+                    include_empty_visits=include_empty_visits,
                 )
             yield from windows
 

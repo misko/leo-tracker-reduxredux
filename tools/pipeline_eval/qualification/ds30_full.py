@@ -38,7 +38,7 @@ def captured_input(case, method, root, build):
         return evidence, False
     directory = Path(tempfile.mkdtemp(prefix="raw-", dir=root))
     start = time.monotonic()
-    capture = blind_compact_run.acquire(case, method, directory, build)
+    capture = blind_compact_run.acquire(case, method, directory, build, include_empty_visits=True)
     elapsed = time.monotonic() - start
     if (
         capture["raw_authority"] != case["raw_authority"]
@@ -198,15 +198,15 @@ def run(cpus, only=None):
         verified_bytes(library, build["libraries"][name])
     for edge, digest in build["assets"].items():
         verified_bytes(blind_compact_run.TWO_WORK / "embedded" / (edge + ".f32"), digest)
-    roster = read(OUT / "cohort.json")["members"]
+    roster = list(enumerate(read(OUT / "cohort.json")["members"]))
     if only:
         ids = set(only)
-        roster = [r for r in roster if r["id"] in ids]
+        roster = [(i, r) for i, r in roster if r["id"] in ids]
         if len(roster) != len(ids):
             raise ValueError("unknown DS30 recording")
     pending = [
         (i, r)
-        for i, r in enumerate(roster)
+        for i, r in roster
         if not all((WORK / "runs" / r["id"] / m / "outcome.json").is_file() for m in METHODS)
     ]
     failed = []
