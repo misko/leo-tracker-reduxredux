@@ -1,14 +1,37 @@
-# Full DS30 validation of algo07v5 and compact v5 with two-scan cancellation
+# DS30 field report · algo07v5 and two-scan compact v5
 
-This evaluation assigns both pipelines to all 455 recordings in DS30 revision 1. It includes 411 complete acquisitions and the recorded portion of each of the 44 interrupted acquisitions. Eight sessions appeared in the earlier detector comparison. The other 447 are new to this comparison. [Full results](RESULTS.md) · [Cumulative position error](position-error.png) · [Paired runtime](runtime.png)
+**Two-scan cancellation with compact v5 delivered 19 more fixes and 32 more positions within 2 km on the same 455 recordings.** On the 24 complete recordings timed from raw I/Q on both pipelines, compact was faster on every recording. This is the DS30 configuration promoted as **ALGO08**. The benchmark reference is **algo07v5 fast, no repair**. The deployed ALGO07 chain has its own scientific identity. [Algorithm catalogue](../../algorithms.md)
 
-## What the full panel shows
+| Gauss roof · fitted RF calibration | Original GLRT + algo07v5 | Two-scan cancellation + compact v5 |
+|---|---:|---:|
+| Fixes / assigned | 420 / 455 (92.3%) | **439 / 455 (96.5%)** |
+| Position within 1 km / assigned | 248 / 455 | **274 / 455** |
+| Position within 2 km / assigned | 375 / 455 | **407 / 455** |
+| Median error among fixes | 859 m | **814 m** |
+| 95th-percentile error among fixes | 2.700 km | **2.258 km** |
+| Median raw-to-result time on 24 matched complete recordings | 35.97 min | **5.44 min** |
+
+## Where the positions landed
+
+![Cumulative horizontal position error for both receivers on DS30](position-error.png)
+
+Read the curves at a distance to see the fraction of **all assigned recordings** that returned a position within it. A withheld fix stays in the denominator. The benchmark covers 411 complete scans and 44 interrupted scans. Eight appeared in an earlier comparison, and 447 were previously unreported. [Recording-level data](recordings.csv)
+
+## Which recordings changed the result
+
+![Paired position errors for the same recordings and counts of fixes unique to each pipeline](paired-fixes.png)
+
+Each dot represents one recording with two fixes. Below the diagonal, compact landed closer to the roof. The bars also count recordings with just one fix or neither fix.
 
 **Compact v5 with two-scan cancellation returned 439 fixes to original algo07v5's 420.** With fitted calibration, 407 compact fixes and 375 original fixes landed within 2 km of the roof. Compact supplied 20 fixes where original returned none, and 19 of those 20 were within 2 km. Original supplied one fix where compact returned none, with 0.721 km error. On the 447 previously unreported sessions, compact returned 431 fixes and original returned 413. [Per-recording results](recordings.csv) · [Paired comparisons](paired.csv)
 
 Among the 419 recordings where both returned positions, compact was closer on 226 and original was closer on 193. The median paired change favored compact by 39 m. The 95% recording-bootstrap interval runs from 92 m closer to 4 m farther. The 95th-percentile error among all returned fixes fell from 2.700 km to 2.258 km. All measurements come from one roof with an operator-supplied position of unknown survey uncertainty. [Paired estimates](paired-summary.csv) · [Error distributions](position-error.png)
 
-Both pipelines ran from raw I/Q on the same single core on 68 recordings. On the 24 complete captures in that group, compact was faster on all 24. Median elapsed time fell from 35.97 to 5.44 minutes, with a median paired speedup of 6.08×. Median detector CPU time fell from 27.12 to 2.18 minutes. On the 22 shared fixes in this timing subset, original was closer on 14 and compact on 8. Across all 455 recordings, compact finished with a fix within the recorded capture duration on 93. That count was 9 of the 24 complete paired timings for compact and 0 of 24 for original. These are shared-host Gauss measurements. [Runtime distributions](runtime.png) · [Timing and calibration tables](RESULTS.md)
+## How long a fix took
+
+![Matched elapsed-time distributions on a single Gauss CPU per recording](runtime.png)
+
+Both pipelines ran from raw I/Q on the same single core on 68 recordings. On the 24 complete captures in that group, the median of the individual speedup ratios was **6.08×**. Median detector CPU time fell from 27.12 to 2.18 minutes. On the 22 shared fixes in this timing subset, original was closer on 14 and compact on 8. Compact returned a fix within the capture duration on 9 of these 24 complete recordings, compared with 0 for original. Across all 455 recordings, compact met that deadline on 93. The original timed run includes generating and validating its scientific archive. The compact benchmark ends at the solver decision, before deployment PNG rendering. [Timing and calibration tables](RESULTS.md)
 
 On the 411 complete captures, original returned 394 fixes and compact returned 410. Original's most frequent complete-capture failure was a final orbit-propagation fallback on ten recordings. The one complete capture without a compact fix failed the refit stability check. Of the 44 interrupted captures, original returned 26 fixes and compact returned 29. Both pipelines reported insufficient Doppler curvature on the same 14 interrupted captures. An independent check recomputed all 1,718 scored distances across the two calibrations. [Failure reasons](failures.csv) · [Verification](verification.json)
 
