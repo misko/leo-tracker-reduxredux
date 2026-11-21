@@ -1,6 +1,6 @@
 # Full DS30 validation of algo07v5 and compact v5 with two-scan cancellation
 
-This evaluation assigns both pipelines to all 455 recordings in DS30 revision 1. It includes 411 complete acquisitions and the recorded portion of each of the 44 interrupted acquisitions. Eight sessions appeared in the earlier detector comparison. The other 447 are new to this comparison.
+This evaluation assigns both pipelines to all 455 recordings in DS30 revision 1. It includes 411 complete acquisitions and the recorded portion of each of the 44 interrupted acquisitions. Eight sessions appeared in the earlier detector comparison. The other 447 are new to this comparison. [Full results](RESULTS.md) · [Cumulative position error](position-error.png) · [Paired runtime](runtime.png)
 
 All 455 session identities are unique. The recorded clocks and capture-quality checks admit 2,581,792 of 2,878,757 visits, or 5,163,584 antenna opportunities. The 68 reconstructed inputs cover 24 complete and 44 interrupted captures. Reconstructing the inputs on the eight previously evaluated sessions reproduced every archived clock, quality exclusion and receiver header. [Input audit](input-audit.json) · [Frozen protocol](PROTOCOL.md) · [Recording roster](cohort.json) · [Earlier eight-session results](../2026_11_20_ds30_fast/README.md)
 
