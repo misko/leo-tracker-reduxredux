@@ -5,7 +5,7 @@ import pytest
 
 from leo.contracts.fast_scan import FastScanPolicyV1, FastScanWindowResultV1
 from leo.processing.fast_scan import predictor_factory
-from leo.scanner.fast_scan_analysis import analyze_window
+from leo.scanner.fast_scan_analysis import analyze_window, valid_window_support
 from leo.storage.fast_scan import FastScanStore, FastSegmentSource
 from tests.fast_scan_support import Predictor, detector, recording
 
@@ -84,6 +84,12 @@ def test_native_window_disables_predictor_and_glrt_keeps_native_samples():
         return detector(value, receivers)
 
     result = analyze_window(window, (0, 1), Diagnostic(), FastScanPolicyV2(), native_detector)
+    assert valid_window_support(
+        acquisition, window.sample_rate_hz, samples.shape, (0, 1), FastScanPolicyV2()
+    )
+    assert not valid_window_support(
+        acquisition, window.sample_rate_hz, (199999, 2, 2), (0, 1), FastScanPolicyV2()
+    )
     assert result.status == "processed"
     assert not result.scores
     assert seen == [window]

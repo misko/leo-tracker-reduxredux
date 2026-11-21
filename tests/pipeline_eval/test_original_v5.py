@@ -15,6 +15,13 @@ def digest(value):
     return "sha256:" + hashlib.sha256(raw).hexdigest()
 
 
+def test_ds30_original_requires_the_same_frozen_roof_tile_and_native_input(tmp_path):
+    case = dict(panel="DS30", regions=[dict(center=original_v5.v5.ROOF_CENTER)])
+    assert "Native detector input" in original_v5.run(case, tmp_path, "baseline")["reason"]
+    case["regions"] = [dict(center=(0, 0))]
+    assert "25 km roof tile" in original_v5.run(case, tmp_path, "baseline")["reason"]
+
+
 @pytest.mark.parametrize("role", ROLES)
 def test_role_binding_preserves_scientific_inputs_without_mutating_baseline(role, tmp_path):
     case_id, session, native = "DS29-0082", "session-id", "sha256:native"

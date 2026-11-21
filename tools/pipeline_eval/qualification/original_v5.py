@@ -48,7 +48,7 @@ def run(case: dict, work_dir: Path, role: str) -> dict:
     """Run one original policy. Local outputs outside bulk use a private bulk staging directory."""
     if role not in ROLES:
         raise ValueError(f"Unknown original v5 role: {role}")
-    if case.get("panel") not in ("DS26", "DS29"):
+    if case.get("panel") not in ("DS26", "DS29", "DS30"):
         return _no_fix(role, "unavailable", "Frozen v5 bindings are scoped to roof recordings")
     regions = case["regions"]
     if (

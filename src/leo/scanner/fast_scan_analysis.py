@@ -97,6 +97,23 @@ def production_glrt(window, receivers):
     )
 
 
+def valid_window_support(acquisition, sample_rate_hz, shape, receiver_ids, policy):
+    """Check the recorded timing and geometry used by the full-rate capture gate."""
+    a = acquisition
+    return (
+        sample_rate_hz == policy.sample_rate_hz
+        and shape == (policy.window_samples, len(receiver_ids), 2)
+        and a.get("complete") is True
+        and a.get("validity_authority") == "provider_attested"
+        and a.get("validity_includes_guard") is True
+        and not a.get("quality_flags")
+        and a.get("actual_if_center_hz") is not None
+        and type(a.get("sample_start")) is int
+        and type(a.get("generation")) is int
+        and a.get("sample_end") == a["sample_start"] + policy.window_samples
+    )
+
+
 def analyze_window(window, receiver_ids, predictor, policy, detector=production_glrt):
     result_type = FastScanWindowResultV2 if policy.schema_version == 2 else FastScanWindowResultV1
     a = window.acquisition
@@ -115,17 +132,8 @@ def analyze_window(window, receiver_ids, predictor, policy, detector=production_
         lnb_reference_hz=t["lnb_lo_hz"],
         rf_mapping_authority=t.get("rf_mapping_authority", "unknown"),
     )
-    valid = (
-        window.sample_rate_hz == policy.sample_rate_hz
-        and window.samples.shape == (policy.window_samples, len(receiver_ids), 2)
-        and a.get("complete") is True
-        and a.get("validity_authority") == "provider_attested"
-        and a.get("validity_includes_guard") is True
-        and not a.get("quality_flags")
-        and a.get("actual_if_center_hz") is not None
-        and type(a.get("sample_start")) is int
-        and type(a.get("generation")) is int
-        and a.get("sample_end") == a["sample_start"] + policy.window_samples
+    valid = valid_window_support(
+        a, window.sample_rate_hz, window.samples.shape, receiver_ids, policy
     )
     if not valid:
         return result_type(
