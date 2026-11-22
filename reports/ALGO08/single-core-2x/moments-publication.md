@@ -30,6 +30,8 @@ Each end-to-end pair ran on the same saved recording, one pinned CPU, one numeri
 
 The first integrated northern attempt exposed a wrapper incompatibility. The reuse layer added an optional keyword the track-moment association method did not take. The launcher exited before producing a candidate fix. The wrapper now preserves the original call arguments and has a regression test. The table reports the subsequent fresh, successful pair. [Failed attempt](measurements/north-edge-moments-initial-failure.json) · [Association regression test](../../../tests/pipeline_eval/test_algo08_dense_discovery.py)
 
+Two additional experiments used saved inputs. On DS30-0374 an approximate proposal for the optimizer's first move saved just 26 ms inside the fits that it changed. A separate receiver policy that always performed the first scan and conditionally requested the second retained the physical fitted position but lost one selected measurement. Its full-pipeline speed remains unmeasured. Neither result contributes to the elapsed times above. [First-move experiment](solver-temporal-trust.md) · [Conditional residual scan](receiver-residual-schedule.md)
+
 ## Reproduction
 
 The two runs with receiver deferral used `f3a6c2dbb` and `--solver track-moments --schedule deferred --ingress compressed-buffer --rendering shared-pixels`. Both pair receipts carry identical pins for the 13 source files and the receiver binary. Run `python -m reports.ALGO08.single-core-2x.plot_shared_publication --trial moments` to rebuild the figure from the receipts and independent scoring references.
