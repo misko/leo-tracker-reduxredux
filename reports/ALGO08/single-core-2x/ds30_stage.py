@@ -30,6 +30,8 @@ BASELINE_SHA256 = "fd5e2cd3e220998a48219d7f8a7f0710c0b41269906da3b3c6ad0e49b6f92
 BASELINE_DETECTOR = "sha256:f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809"
 CONDITIONAL_RESIDUAL = "sha256:65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6"
 Q15_COLLAPSED_REPAIR = "sha256:a32a945a1e6d9e602f02fa636e83761d47e2992d7da4b0c4aa55eba6927cd9ca"
+FULL_PHASE_SIGNED = "sha256:50d30065095e5a354ec589c31b615a0d1d38194b72335864431e3f63be403879"
+APPROXIMATE_MODES = ("conditional-residual", "full-scan-signed")
 EVIDENCE_FIELDS = ("raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests")
 BUILDS = ("baseline", "candidate")
 
@@ -61,6 +63,10 @@ def file_sha(path):
 
 
 def comparison_mode(spec):
+    if spec.get("schedule") == "all" and spec.get("solver") == "collapsed-signed":
+        if canonical_digest(spec) != FULL_PHASE_SIGNED:
+            raise ValueError("Only the frozen full-scan signed candidate may use approximate comparison")
+        return "full-scan-signed"
     if spec.get("schedule") == "conditional-residual":
         if canonical_digest(spec) not in (CONDITIONAL_RESIDUAL, Q15_COLLAPSED_REPAIR):
             raise ValueError("Only the frozen conditional-residual candidates may use approximate comparison")
@@ -173,7 +179,7 @@ def verify_pair(path, assigned, candidate, spec, cpu):
     before, after = (data["runs"][label] for label in BUILDS)
     if data["elapsed_ratio"] != after["elapsed_s"] / before["elapsed_s"]:
         raise ValueError("Recorded pair elapsed ratio does not match its timings")
-    if mode == "conditional-residual":
+    if mode in APPROXIMATE_MODES:
         measured, summary = approximate_audit(path)
         actual_detectors = {name: measured[name]["detector_sha256"] for name in BUILDS}
     else:
@@ -194,7 +200,7 @@ def verify_pair(path, assigned, candidate, spec, cpu):
                     arms={k: v["arms"] for k, v in data["runs"].items()},
                     raw_authority=assigned.raw_authority, actual_order=data["order"],
                     expected_archive=str(assigned.archive))
-    if mode == "conditional-residual":
+    if mode in APPROXIMATE_MODES:
         evidence["region"] = assigned.region
     else:
         evidence["decision"] = before["receipt"]["decision"]
@@ -289,7 +295,7 @@ def local_quality(cases, refs):
 
 def score(stage):
     cases = stage["cases"]
-    approximate = stage.get("comparison") == "conditional-residual"
+    approximate = stage.get("comparison") in APPROXIMATE_MODES
     if len(stage["coverage"]["verified"]) != stage["assigned"]:
         result = dict(stage, elapsed_gates=None, position=None)
         if approximate:

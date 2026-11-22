@@ -33,10 +33,15 @@ def study(tmp_path):
                            region=region, spec=dict(detector_sha256="b" * 64))
 
 
-@pytest.fixture
-def conditional_study(study, monkeypatch):
-    study.spec["schedule"] = "conditional-residual"
-    monkeypatch.setattr(stage, "CONDITIONAL_RESIDUAL", canonical_digest(study.spec))
+@pytest.fixture(params=("conditional-residual", "full-scan-signed"))
+def conditional_study(study, monkeypatch, request):
+    if request.param == "conditional-residual":
+        study.spec["schedule"] = "conditional-residual"
+        pin = "CONDITIONAL_RESIDUAL"
+    else:
+        study.spec.update(schedule="all", solver="collapsed-signed")
+        pin = "FULL_PHASE_SIGNED"
+    monkeypatch.setattr(stage, pin, canonical_digest(study.spec))
     return study
 
 
