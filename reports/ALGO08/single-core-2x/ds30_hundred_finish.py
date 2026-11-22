@@ -40,13 +40,15 @@ def report(result, verdict):
     rows = [
         f'| {name} | {counts[method]["fixes"]}/100 | {metric(method, "elapsed_s")} | '
         f'{metric(method, "c0_error_km")} | {metric(method, "fitted_c_error_km")} |'
-        for method, name in (("baseline", "Deployed ALGO08v2"), ("candidate", "Frozen candidate"))
+        for method, name in (("baseline", "Deployed ALGO08v2"), ("candidate", "ALGO08v3"))
     ]
-    verdict_text = ("The frozen candidate met the versioning criteria on DS30." if
-                    verdict["qualifies"] else "The candidate missed the following DS30 versioning criteria: " +
+    verdict_text = ("ALGO08v3 met the original 2× qualification criteria on DS30." if
+                    verdict["qualifies"] else "ALGO08v3 missed the following original DS30 qualification criteria: " +
                     ", ".join(key for key, ok in verdict["gates"].items() if not ok) + ".")
     return "\n".join([
-        "# 100 DS30 recordings against deployed ALGO08v2", "", verdict_text, "",
+        "# ALGO08v3 and deployed ALGO08v2 on 100 DS30 recordings", "", verdict_text, "",
+        "The frozen candidate was named ALGO08v3 at the user's request during the panel. "
+        "The benchmark uses the original build, criteria and recordings throughout.", "",
         f'The median paired elapsed ratio was **{ratios["median_candidate_over_baseline"]:.5f}** and '
         f'the summed elapsed ratio was **{ratios["summed_candidate_over_baseline"]:.5f}**. '
         'Each compares candidate seconds with deployed seconds, with a 0.50 threshold.', "",
@@ -106,7 +108,7 @@ def finish(archive, destination):
         verify_preflight(stage.pinned(preflight, "5cf956997b108f180545988d0b191232f3490aa4ea8768e3bb729a5e3af617b4"))
         result["untimed_path_preflight"] = {"DS30-0447": stage.file_sha(preflight)}
         verdict = decision(result)
-        receipt = dict(candidate=stage.EXACT_CURVED_LOOKAHEAD, baseline=str(stage.pair.BASELINE),
+        receipt = dict(candidate=stage.EXACT_CURVED_LOOKAHEAD, candidate_name="ALGO08v3", baseline=str(stage.pair.BASELINE),
                        order_sha256=study.ORDER_SHA256, result=result, **verdict,
                        pair_sha256={r["case"]: r["pair_sha256"] for r in rows})
         if destination.exists():
@@ -117,7 +119,7 @@ def finish(archive, destination):
         with TemporaryDirectory(dir=destination.parent) as work:
             folder = Path(work) / "report"
             folder.mkdir()
-            study.write_report(rows, refs, folder)
+            study.write_report(rows, refs, folder, candidate_label="ALGO08v3")
             (folder / "decision.json").write_text(json.dumps(receipt, indent=2, allow_nan=False) + "\n")
             (folder / "README.md").write_text(report(result, verdict))
             folder.rename(destination)

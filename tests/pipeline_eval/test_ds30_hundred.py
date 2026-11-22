@@ -60,7 +60,7 @@ def test_histograms_retain_withholding_in_fix_counts_and_runtime(tmp_path):
     assert summary["builds"]["candidate"]["fitted_c_error_km"]["n"] == 0
     assert summary["builds"]["candidate"]["fixes"] == 0
     assert summary["timing"]["all_verified"]["elapsed_s"]["summed_candidate_over_baseline"] == .45
-    study.write_report([row], refs, tmp_path)
+    study.write_report([row], refs, tmp_path, candidate_label="ALGO08v3")
     assert study.stage.read(tmp_path / "progress.json") == summary
     for name in ("runtime", "position-error"):
         assert (tmp_path / (name + ".png")).read_bytes().startswith(b"\x89PNG")

@@ -59,7 +59,7 @@ def summarize(rows, refs):
     return details, dict(assigned=COUNT, verified=len(rows), builds=metrics, timing=timing)
 
 
-def write_report(rows, refs, output):
+def write_report(rows, refs, output, *, candidate_label="Candidate"):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -86,7 +86,7 @@ def write_report(rows, refs, output):
             bins = np.linspace(0, max(values, default=1.) * 1.025 or 1., 13)
             for build, name, color, style in (
                 ("baseline", "ALGO08v2", "#354b70", "-"),
-                ("candidate", "Candidate", "#00816c", "--"),
+                ("candidate", candidate_label, "#00816c", "--"),
             ):
                 samples = [r[field] for r in details if r["build"] == build and r[field] is not None]
                 counts, _ = np.histogram(samples, bins=bins)
