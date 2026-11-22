@@ -1,0 +1,20 @@
+# Exact workspace reuse in all-catalogue discovery
+
+Reusing white-noise profile arrays saved **0.240 CPU seconds** in the physical DS30-0374 rank and **0.008 seconds** in the northern containing simulation. With identical association calls already reused, the measured changes were 0.056 seconds faster and 0.042 seconds slower. The new array reuse is too small and inconsistent to advance. The duplicate-call control saved 0.860 and 0.088 seconds while retaining every candidate's score. [Implementation](../../../tools/pipeline_eval/variants/algo08_dense_discovery.py)
+
+The original profile creates dense arrays for every satellite and track-time pair. The experiment keeps the same alias rounding, diagonal whitening, Gaussian bias prior, residual scale, and candidate order. It reuses one bounded workspace for the bias product and square reductions, and keeps separate result arrays where callers retain them. The stock innovation reduction is C-contiguous, and the stock residual reduction follows the layout of the input differences. Changing either order can change scores at the last few bits. The component tests cover both layouts, exact ties, values near an alias boundary, full diagnostics, and fallback outside the diagonal or workspace budget. [Component tests](../../../tests/pipeline_eval/test_algo08_dense_discovery.py)
+
+The duplicate-call control reuses the output of the two identical calls inside each `explore` invocation. It requires the same state and base projection instances and equal point, method and track mode. The frozen call site does not mutate these arguments between calls. This duplicate was identified earlier in a variant that also compacted the above-horizon rows. Here the first call computes the full catalogue, including the terms for rows below the horizon, and the second receives that same complete result. The four centre hypotheses, their exploratory updates, the four region corners, and the original stable ranking remain in use. [Earlier experiment](../../../tools/pipeline_eval/variants/v5_shared_search.py)
+
+## Saved-input comparisons
+
+Both comparisons used one low-priority pinned CPU, the frozen release likelihood, the same preparation within each case, and saved detections only. DS30 ran in table-column order. The northern case reversed that order. Timings exclude scientific hashing and the separate fit checks. These are single trials with short one-core CPU measurements. [Trial runner](solver_discovery_trial.py)
+
+| Saved input | Catalogue size | Curved tracks | Stock ranking CPU (s) | Scratch only (s) | Identical calls reused (s) | Both (s) |
+|---|---:|---:|---:|---:|---:|---:|
+| DS30-0374 | 1,407 | 66 | 4.210 | 3.971 | 3.350 | 3.294 |
+| North containing | 1,569 | 15 | 0.461 | 0.453 | 0.373 | 0.415 |
+
+With all 28 associations evaluated for the byte comparison, every candidate's alias, bias, cost, RMS, pass bit, residual and innovation matched. This covered 2,600,136 candidate/track evaluations on DS30-0374 and 658,980 on north containing. Each duplicate-call arm reused 12 of the 28 calls. All four arms returned the same ordered initial assignments, aliases, row data and cold ranking scores. The combined candidate also reproduced the stock `c = 0` initial selection and a separate fitted-`c` refresh of its winning node in both cases. North containing had an exact cold-score tie and kept the same order. These checks cover the initial likelihood through branch selection.
+
+On DS30-0374 the earlier instrumented control attributed 2.19 seconds of a 5.19-second rank to broad associations, with 1.02 seconds inside curve profiling. Even removing the entire broad ranking would leave 2.50 measured CPU seconds for the initial `c = 0` three-branch refreshed fit, plus preparation, recovery, two-arm evidence and the grid. The distinct scratch gain does not address that fit or materially move the CPU budget, so DS30-0008 was not rerun. A higher-ceiling solver route would need to reduce changing-geometry or robust-fit work shared across the regional optimizer and final evidence evaluations. [Whole-solver costs](cost-checks.md)
