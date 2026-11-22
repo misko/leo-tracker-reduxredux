@@ -131,7 +131,7 @@ def outcome(runs):
                 delta_b_minus_a_samples2=b**2 - a**2)
 
 
-def infer(site, site_spec, pairs, document, configuration, archive):
+def geometry(site_spec, pairs, document, configuration, archive):
     arcs = paired_arcs(site_spec, pairs, document, configuration)
     orbit_ids = sorted({arc.owner for arc in arcs})
     if len(orbit_ids) < 2:
@@ -156,6 +156,18 @@ def infer(site, site_spec, pairs, document, configuration, archive):
     delays["negative_A"] = [-row for row in delays["u0.0"]]
     delays["negative_B"] = [-row for row in delays["u1.0"]]
     delays["null"] = [np.zeros(len(arc.time_s)) for arc in arcs]
+    return arcs, rate, orbit_ids, snapshots, positions, delays
+
+
+def arc_summary(arcs):
+    return [dict(norad=arc.owner, rf_hz=arc.rf_hz, duration_s=float(np.ptp(arc.time_s)),
+                 train=int(arc.train.sum()), held=int((~arc.train).sum())) for arc in arcs]
+
+
+def infer(site, site_spec, pairs, document, configuration, archive):
+    arcs, rate, orbit_ids, snapshots, positions, delays = geometry(
+        site_spec, pairs, document, configuration, archive,
+    )
     runs = evaluate(arcs, delays, rate)
     loo = {}
     for owner in orbit_ids:
@@ -172,8 +184,7 @@ def infer(site, site_spec, pairs, document, configuration, archive):
         site=site, causal_snapshots=snapshots, native_sha256=site_spec["native_sha256"],
         positions=positions, results=runs, outcome=outcome(runs), leave_one_satellite_out=loo,
         carrier=diagnostic, held_geometric_separation=held(arcs, separation),
-        arcs=[dict(norad=arc.owner, rf_hz=arc.rf_hz, duration_s=float(np.ptp(arc.time_s)),
-                   train=int(arc.train.sum()), held=int((~arc.train).sum())) for arc in arcs],
+        arcs=arc_summary(arcs),
     )
 
 
@@ -186,7 +197,7 @@ SNAPSHOT_PINS = (
 )
 
 
-def predict(native, archive, config):
+def predict(native, archive, config, *, model=infer):
     prediction = curves()
     locked = study.inputs.MEASUREMENTS / "mirrored-noise-lock.json.gz"
     raw = gzip.decompress(locked.read_bytes())
@@ -205,7 +216,7 @@ def predict(native, archive, config):
         if design["native_sha256"] != pairing["native_sha256"]:
             raise ValueError("Pairing is bound to a different native waveform")
         document = study.inputs.verified(native[site], design["native_sha256"])
-        results[site] = infer(site, design, pairing, document, TrackConfig(**cfg), archive)
+        results[site] = model(site, design, pairing, document, TrackConfig(**cfg), archive)
     return dict(causal_curves_sha256=CURVES_SHA256, pairs_sha256=PAIRS_SHA256,
                 generator_sha256=WAVEFORM_SOURCE_SHA256, sites=results)
 
