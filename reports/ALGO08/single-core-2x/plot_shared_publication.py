@@ -25,6 +25,7 @@ def main():
         raise ValueError("Physical recording lacks an eligible survey")
     roof_truth = [roof["reference"][k] for k in ("latitude_deg", "longitude_deg")]
     fig, axes = plt.subplots(3, 2, figsize=(9, 8.2), layout="constrained")
+    longest_publication = 0
     for row, (key, site) in enumerate((("DS30-0016", "DS30-0016 · physical"),
                                        ("south", "Southern site · simulation"),
                                        ("north-far", "Northern simulation · true region missing"))):
@@ -47,7 +48,7 @@ def main():
                                 textcoords="offset points", va="center", fontsize=9)
         duration.set_yticks([1, 0], ["Elapsed", "CPU"])
         errors.set_yticks([1, 0], ["Fixed zero", "Fitted"])
-        duration.set_xlim(0, max(36, max(run["elapsed_s"] for run in pair["runs"].values()) * 1.2))
+        longest_publication = max(longest_publication, *(run["elapsed_s"] for run in pair["runs"].values()))
         errors.set_xlim(0, 62 if key == "north-far" else 2)
         errors.set_title("Published false fix · expanded distance scale" if key == "north-far"
                          else "Position error on the same recording", loc="left", fontsize=11)
@@ -56,6 +57,8 @@ def main():
             ax.set_axisbelow(True)
             ax.grid(axis="x", alpha=.15)
             ax.spines[["top", "right", "left"]].set_visible(False)
+    for duration in axes[:, 0]:
+        duration.set_xlim(0, longest_publication * 1.16)
     axes[-1, 0].set_xlabel("Time from sealed I/Q to web publication (s)")
     axes[-1, 1].set_xlabel("Horizontal error (km)")
     axes[0, 0].legend(loc="upper center", bbox_to_anchor=(.56, 1.49), ncol=2, frameon=False)
