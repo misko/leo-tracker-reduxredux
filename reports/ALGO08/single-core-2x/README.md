@@ -1,6 +1,6 @@
 # ALGO08v2 single-core experiments
 
-The latest integrated candidate cut raw-I/Q-to-publication time on the short physical recording **DS30-0016 from 24.56 to 16.02 seconds (1.53×)**. On a southern simulated recording the speedup was **1.09× elapsed and 1.46× on CPU**. Every ordered detector row, both positions and all eight PNGs matched on each case. Full-pipeline testing at a second physical station and the 2× target remain open. [Matched report and figure](shared-publication.md) · [Geographic qualification protocol](PROTOCOL.md)
+The latest integrated candidate cut raw-I/Q-to-publication time on the short physical recording **DS30-0016 from 24.56 to 16.02 seconds (1.53×)**. On a southern simulated recording the speedup was **1.09× elapsed and 1.46× on CPU**. On the northern simulation, an incorrect region again produced a false fix **52.49 km** from truth, at 1.42× elapsed speedup. Every ordered detector row, both positions and all eight PNGs matched on each case. Full-pipeline testing at a second physical station and the 2× target remain open. [Matched report and figure](shared-publication.md) · [Geographic qualification protocol](PROTOCOL.md)
 
 ## Earlier build on a longer physical recording
 
