@@ -28,6 +28,8 @@ The largest solver saving measured so far came from collapsing several fits into
 
 Restoring predictive observations brought the physical errors down to 2.005 and 2.098 km, still above the control's 1.855 and 1.935 km. Trying to recover the remaining fragments in a single joint step failed the track-quality checks. On the receiver side, rechecking a short candidate list cut roughly 7% of native CPU but replaced a verified carrier on saved physical data. None qualified for a larger panel. [Predictive recovery](solver-linear-addback.md) · [Single recovery pass](solver-salvage-addback.md) · [Receiver shortlist](receiver-shortlist.md)
 
+The complete physical detection file took about 55 ms of CPU to hand off, including validation and sealing. The paired 40-visit traces place caller overhead near 2% of acquisition CPU. Even removing this work entirely projects about 1.3% off the integrated candidate's CPU for DS30-0374. [Archive-to-detections measurements](receiver-boundary.md)
+
 ## One full recording, both run orders
 
 The input comprised 1,200 sealed dual-antenna windows at the northern simulated site. Each invocation read the raw I/Q and started with a fresh output directory. The clock covered the receiver, both calibration fits, diagnostic grid, optimizer path, eight PNGs and standard report. The candidate combined detector `ab7b4765` with scan-scoped orbit parsing and the revised coarse salvage calculation. It ran on the same pinned CPU as the deployed baseline. [Candidate-first receipt](measurements/north-candidate-first.json) · [Baseline-first receipt](measurements/north-baseline-first.json)

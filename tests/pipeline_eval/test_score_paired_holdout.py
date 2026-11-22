@@ -33,6 +33,7 @@ def test_inherited_false_fixes_count_even_when_relative_gates_pass():
     assert result["relative_quality_preserved"] and result["summed_elapsed_ratio"] == pytest.approx(2/7)
     assert not result["passed"]  # One geographic site cannot qualify a two-site confirmation.
     assert {s["false_fixes"] for s in result["by_site"] if s["condition"]=="far"} == {1}
+    assert result["missing_region"]["candidate"] == dict(assigned=1, false_fixes=1, withheld=0, failed=0)
     assert all(s["within_km_count"]["1"] == 0 for s in result["by_site"] if s["condition"]=="far")
     data["cases"][1]["result"]["runs"]["baseline"] = run(withheld=True, near=False)
     assert not score(data, key)["relative_quality_preserved"]
@@ -109,6 +110,7 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
             data["cases"].append(dict(job=job, result=dict(runs=runs)))
     result = score(data, key)
     assert result["passed"] and result["assigned"] == 8
+    assert result["missing_region"]["candidate"] == dict(assigned=4, false_fixes=0, withheld=4, failed=0)
     assert all(s["false_fixes"] == 0 for s in result["by_site"])
     case = next(c for c in data["cases"] if c["job"]["offer"] == "bedge-containing")
     lost = case["result"]["runs"]["candidate"]

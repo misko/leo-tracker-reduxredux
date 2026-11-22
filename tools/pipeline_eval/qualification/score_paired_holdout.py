@@ -114,7 +114,17 @@ def score(locked, truth):
             controls = [s for s in summaries if s["site"] == site and s["arm"] == "baseline"]
             coverage &= {s["condition"] for s in controls} == EDGE_CASES
             coverage &= all(s["fixes"] > 0 for s in controls if s["condition"] in CONTAINING)
+    omission = {}
+    for arm in ("baseline", "candidate"):
+        # Publication is a single decision shared by both calibration fits.
+        omitted = [r for r in rows if r["arm"] == arm and r["calibration"] == "c0"
+                   and r["condition"] not in CONTAINING]
+        omission[arm] = dict(assigned=len(omitted),
+                             false_fixes=sum(r["decision"] == "complete" for r in omitted),
+                             withheld=sum(r["decision"] == "withheld" for r in omitted),
+                             failed=sum(r["decision"] == "failed" for r in omitted))
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
+                missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
                 geographic_confirmation_coverage=coverage,
                 relative_quality_preserved=quality and not failures,
