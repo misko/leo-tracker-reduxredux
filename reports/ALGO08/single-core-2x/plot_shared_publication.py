@@ -67,6 +67,8 @@ def main(trial):
     if trial == "screened-stock":
         cases = (("screened-stock-north-inside", "Northern simulation · candidate first"),
                  ("screened-stock-south-inside", "Southern simulation · deployed first"))
+    if trial == "packed-graph":
+        cases = (("packed-graph-north-inside", "Northern simulation · 100 m inside"),)
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -103,7 +105,7 @@ def main(trial):
         errors.set_yticks([1, 0], ["Fixed zero", "Fitted"])
         longest_publication = max(longest_publication, *(run["elapsed_s"] for run in pair["runs"].values()))
         distance_limit = 62 if key == "north-far-shared" else 2
-        if trial == "balanced":
+        if trial in ("balanced", "packed-graph"):
             distance_limit = max(.1, errors.dataLim.xmax * 1.3)
         if trial in ("upper-edge", "full-search", "batch", "covariance"):
             distance_limit = max(distance_limit, errors.dataLim.xmax * 1.2)
@@ -130,6 +132,6 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional", "compiler", "signed", "balanced", "covariance", "screened-stock"),
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional", "compiler", "signed", "balanced", "covariance", "screened-stock", "packed-graph"),
                         default="shared")
     main(parser.parse_args().trial)

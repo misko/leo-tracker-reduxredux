@@ -10,6 +10,8 @@ On DS30-0008, the frozen graph solver reproduced the deployed fix exactly on dep
 
 The deployed-measurement crossover took 55.53 CPU seconds and matched both deployed coordinates, owner hashes and residuals exactly. The candidate-measurement solve took 61.58 CPU seconds. Both had 7,016 selected measurements at the same opportunities and ranks. Three primary carrier estimates changed by up to 17.63 microhertz. Earlier testing localized a change in track membership to two nearly tied polynomial proposals. Small input changes can therefore affect which observations reach the final position fit. The previous covariance solver scored 1.331 / 1.308 km on the same candidate measurements and lost accuracy on the southern African containing case. The stronger roof score alone was insufficient to select that solver. [Candidate measurements](measurements/screened-graph-dense.json) · [Deployed-measurement crossover](measurements/screened-graph-dense-deployed.json) · [Track arbitration](graph-native-path.md#source-of-the-dense-membership-change) · [Southern transfer](portable-south-solver-attribution.md)
 
+A third solve combined the original candidate's continuous scores with the deployed carrier estimates and fractional epochs at each matching opportunity. Only three measured pairs required replacement. This recovered **all 4,472 deployed assignments** and brought both returned positions within **0.027 mm** of deployment. The fitted error increased by 0.011 mm relative to deployment. This counterfactual isolates an upstream correction to pursue. In a separate trial, changing downstream handling of duplicate polynomial fits recovered roughly 12 m but still missed deployment by 6.6–6.8 m. [Three-measurement crossover](measurements/screened-graph-dense-cfo-time.json) · [Polynomial trial](screened-graph-alias.md)
+
 For the distant southern omission, the deployed solver issued two fixes 89.79 km from truth. The guarded graph solver withheld both with reason `both_receivers_support_far_exterior` in 59.32 CPU seconds. The prior screened recovery withheld on the same offer in 89.59 CPU seconds with extra tracing. Each clock is one observation. The distant result and the earlier Indian false fix at 1.5 km outside are separate operational cases. [Southern omission](measurements/screened-graph-south-far.json) · [India omission](screened-tiled-publication.md#evidence-by-solver-version)
 
 ## Frozen checks
@@ -34,4 +36,5 @@ replay() {
 replay dense "$bench" "$bench/dense-next.json" --pair "$pair"
 replay omitted "$bench" "$bench/far-next.json"
 replay dense "$bench" "$bench/dense-deployed-next.json" --pair "$pair" --deployed-detections
+replay dense "$bench" "$bench/dense-restored-next.json" --pair "$pair" --restore-cfo-time
 ```

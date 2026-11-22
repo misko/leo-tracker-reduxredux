@@ -5,9 +5,9 @@ from pathlib import Path
 
 from leo.contracts.digests import canonical_digest
 from tools.pipeline_eval.qualification.freeze_publication import NATIVE_LIBRARIES, freeze
+
 from .screened_stock_salvage_trial import digest, read, require_spec
 from .screened_tiled_graph_trial import HERE, MEASUREMENTS, write
-
 
 LIBRARIES = (*NATIVE_LIBRARIES, "paired_sha256")
 

@@ -9,6 +9,7 @@ from tools.pipeline_eval.scoring import distance_km
 
 from . import covariance_transfer_trial as transfer
 from .complete_family_cavity_trial import verify_archive
+from .cross_factor_fields import SCORES, crossed_document
 from .residual_attribution_trial import saved_native
 from .saved_solver_budget import outer_options
 from .screened_stock_salvage_trial import ARMS, digest, read, require_spec
@@ -42,6 +43,9 @@ def dense(bench, frozen, pair_path, source):
         raise ValueError("Archived detector and publication settings differ from the new build")
     if source == "baseline":
         native = saved_native(pair_path, source, pair["runs"][source])
+    elif source == "restored-cfo-time":
+        deployed = saved_native(pair_path, "baseline", pair["runs"]["baseline"])
+        native = crossed_document(deployed, native, SCORES)
     result = compact(solve(frozen, native, offer, archive))
     if archive_identity(archive) != pair["archive"]:
         raise ValueError("Orbit archive changed during replay")
@@ -83,7 +87,10 @@ if __name__ == "__main__":
     for field in ("bench", "output"):
         parser.add_argument(field, type=Path)
     parser.add_argument("--pair", type=Path)
-    parser.add_argument("--deployed-detections", action="store_true")
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument("--deployed-detections", action="store_true")
+    inputs.add_argument("--restore-cfo-time", action="store_true",
+                        help="Retain candidate scores with deployed measured frequency and timing")
     args = parser.parse_args()
     freeze = read(MEASUREMENTS / "screened-tiled-graph-freeze.json")
     frozen = args.bench / "integration-screened-tiled-graph"
@@ -91,10 +98,12 @@ if __name__ == "__main__":
     if args.case == "dense" and args.pair is None:
         parser.error("the dense control requires --pair")
     if args.case == "dense":
-        row = dense(args.bench, frozen, args.pair,
-                    "baseline" if args.deployed_detections else "candidate")
+        source = "baseline" if args.deployed_detections else "candidate"
+        if args.restore_cfo_time:
+            source = "restored-cfo-time"
+        row = dense(args.bench, frozen, args.pair, source)
     else:
-        if args.deployed_detections:
+        if args.deployed_detections or args.restore_cfo_time:
             parser.error("the omitted control has a single detection document")
         row = omitted(args.bench, frozen)
     write(args.output, dict(row, specification=freeze["specification"]))

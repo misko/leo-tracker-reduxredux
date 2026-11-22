@@ -28,6 +28,19 @@ def mix(left, right, fields):
     return rows
 
 
+def crossed_document(baseline, candidate, fields):
+    """Copy selected fields from the candidate into matching baseline factors."""
+    source = candidate["source"]
+    raw = source["raw_recording_authority_digest"]
+    if baseline["source"]["raw_recording_authority_digest"] != raw:
+        raise ValueError("Different raw recording for crossed factors")
+    rows = mix(baseline["source"]["probes"], source["probes"], fields)
+    detector = candidate["provenance"]["detector_sha256"].removeprefix("sha256:")
+    digest = canonical_digest(["cancellation", raw, detector, rows])
+    return candidate | {"source": source | {"probes": rows, "analysis_manifest_sha256": digest},
+                        "provenance": candidate["provenance"] | {"run_id": "blind-compact-" + digest[7:39]}}
+
+
 def prepare(pair, output):
     if output.exists():
         raise FileExistsError(output)
@@ -37,13 +50,9 @@ def prepare(pair, output):
     if (left["source"]["raw_recording_authority_digest"] != source["raw_recording_authority_digest"]
             or runs["baseline"]["receipt"]["region"] != runs["candidate"]["receipt"]["region"]):
         raise ValueError("Different raw or region")
-    detector = right["provenance"]["detector_sha256"].removeprefix("sha256:")
     output.mkdir()
     for name, changed in (("candidate-scores", SCORES), ("candidate-cfo-time", MEASURED)):
-        rows = mix(left["source"]["probes"], source["probes"], changed)
-        digest = canonical_digest(["cancellation", source["raw_recording_authority_digest"], detector, rows])
-        native = right | {"source": source | {"probes": rows, "analysis_manifest_sha256": digest},
-                          "provenance": right["provenance"] | {"run_id": "blind-compact-" + digest[7:39]}}
+        native = crossed_document(left, right, changed)
         (output / (name + ".json")).write_text(json.dumps(native, allow_nan=False))
 
 
