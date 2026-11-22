@@ -1,16 +1,15 @@
 """Replay exact-score demand against complete pre-selection RF ledgers."""
 
 import argparse
-from collections import Counter
 import gzip
-from hashlib import sha256
 import json
+from collections import Counter
+from hashlib import sha256
 from pathlib import Path
 
 from leo.contracts.digests import canonical_digest
 from tools.pipeline_eval.variants.carrier_continuation import Continuation
 from tools.pipeline_eval.variants.experimental.vote_score_recovery import retained_factor
-
 
 INPUTS = {
     "ledger-DS30-0016.json.gz": "1ef554faa2a490590a13a0de0478baf11036c5292eaabaa0b725b87fa1103336",
@@ -24,18 +23,18 @@ def replay(ledger, *, reverse):
     for row in ledger["rows"]:
         exact = list(reversed(row["candidates"])) if reverse else row["candidates"]
         # Present an ordering and margins unrelated to the exact winner.
-        approximate = [dict(factor, fractional_margin=-factor["fractional_margin"]) for factor in exact]
+        approximate = [
+            dict(factor, fractional_margin=-factor["fractional_margin"]) for factor in exact
+        ]
         _, _, votes = history.select(dict(row, candidates=approximate))
-        requested = []
 
-        def recover(index):
-            requested.append(index)
-            return exact[index]
+        def recover(index, factors=exact):
+            counts["requested"] += 1
+            return factors[index]
 
         retained = retained_factor(votes, recover)
         published.append(dict(row, candidates=[retained] if retained is not None else []))
         counts["always_repair_pairs"] += 2 if len(votes) == 2 else int(retained is not None)
-        counts["requested"] += len(requested)
         counts["two_factor_lanes"] += int(len(votes) == 2)
         counts["retained"] += int(retained is not None)
     digest = canonical_digest(published)

@@ -15,15 +15,24 @@ def compare_grid_samples(before, after):
     """Compare scores only where the published coordinate sequence matches."""
     grids = (before, after)
     keys = set(before) | set(after)
-    result = dict(points=[len(grid["points"]) for grid in grids],
-                  metadata_changed=sorted(k for k in keys - {"binding", "elapsed_seconds", "points"}
-                                          if before.get(k) != after.get(k)))
-    positions = [[(point["east_km"], point["north_km"], point["latlon"]) for point in grid["points"]]
-                 for grid in grids]
+    result = dict(
+        points=[len(grid["points"]) for grid in grids],
+        metadata_changed=sorted(
+            k
+            for k in keys - {"binding", "elapsed_seconds", "points"}
+            if before.get(k) != after.get(k)
+        ),
+    )
+    positions = [
+        [(point["east_km"], point["north_km"], point["latlon"]) for point in grid["points"]]
+        for grid in grids
+    ]
     result["same_positions_in_order"] = positions[0] == positions[1]
     if result["same_positions_in_order"]:
         points = list(zip(before["points"], after["points"], strict=True))
-        result["failure_maps_changed"] = sum(p.get("failures") != q.get("failures") for p, q in points)
+        result["failure_maps_changed"] = sum(
+            p.get("failures") != q.get("failures") for p, q in points
+        )
         result["arms"] = {}
         for arm in stage.ARMS:
             values = [(p["scores"][arm], q["scores"][arm]) for p, q in points]
@@ -31,12 +40,16 @@ def compare_grid_samples(before, after):
             minima = []
             for side in range(2):
                 best = min((pair[side] for pair in values if pair[side] is not None), default=None)
-                minima.append([i for i, pair in enumerate(values) if best is not None and pair[side] == best])
-            result["arms"][arm] = dict(scored_by_both=len(deltas),
-                                       validity_changed=sum((a is None) != (b is None) for a, b in values),
-                                       scores_changed=sum(delta != 0 for delta in deltas),
-                                       minimum_indices=dict(zip(stage.BUILDS, minima, strict=True)),
-                                       max_abs_delta=max(deltas, default=None))
+                minima.append(
+                    [i for i, pair in enumerate(values) if best is not None and pair[side] == best]
+                )
+            result["arms"][arm] = dict(
+                scored_by_both=len(deltas),
+                validity_changed=sum((a is None) != (b is None) for a, b in values),
+                scores_changed=sum(delta != 0 for delta in deltas),
+                minimum_indices=dict(zip(stage.BUILDS, minima, strict=True)),
+                max_abs_delta=max(deltas, default=None),
+            )
     return result
 
 
@@ -48,7 +61,10 @@ def audit_pair(inventory, path):
     row = rows[0]
     spec = inventory["candidate_specification_digest"]
     receipt = stage.read(path)
-    if stage.file_sha(path) != row["pair_sha256"] or receipt["candidate_specification_digest"] != spec:
+    if (
+        stage.file_sha(path) != row["pair_sha256"]
+        or receipt["candidate_specification_digest"] != spec
+    ):
         raise ValueError("Pair receipt or candidate differs from the stage inventory")
     measured = compare(path, stage_clocks=True)
     if row["raw_authority"] != measured["raw_authority"] or (
@@ -58,13 +74,22 @@ def audit_pair(inventory, path):
     truth = stage.pinned(stage.OUT / "reference-audit.json", stage.REFERENCE_SHA256)
     predictions = stage.pinned(stage.OUT / "prediction-lock.json", stage.LOCK_SHA256)["predictions"]
     authorities = {p["raw_authority"] for p in predictions if p["case"] == case}
-    if truth["prediction_lock_sha256"] != stage.LOCK_SHA256 or authorities != {measured["raw_authority"]}:
+    if truth["prediction_lock_sha256"] != stage.LOCK_SHA256 or authorities != {
+        measured["raw_authority"]
+    }:
         raise ValueError("Case label or recording differs from the frozen evaluation reference")
-    refs = {r["dataset_label"]: (r["reference"]["latitude_deg"], r["reference"]["longitude_deg"])
-            for r in truth["cases"] if r["authority_eligible"]}
+    refs = {
+        r["dataset_label"]: (r["reference"]["latitude_deg"], r["reference"]["longitude_deg"])
+        for r in truth["cases"]
+        if r["authority_eligible"]
+    }
     # Compute position and timing from the reopened publications.
-    verified = dict(row, region=measured["region"], arms={name: measured[name]["arms"] for name in stage.BUILDS},
-                    elapsed_s={name: measured[name]["elapsed_s"] for name in stage.BUILDS})
+    verified = dict(
+        row,
+        region=measured["region"],
+        arms={name: measured[name]["arms"] for name in stage.BUILDS},
+        elapsed_s={name: measured[name]["elapsed_s"] for name in stage.BUILDS},
+    )
     selected = selected_changes.compare(path, summary=True)
     grid_comparison = None
     if all(measured[name]["decision"] == "complete" for name in stage.BUILDS):
@@ -79,9 +104,15 @@ def audit_pair(inventory, path):
         grid_comparison = compare_grid_samples(*grids)
     if stage.file_sha(path) != row["pair_sha256"]:
         raise ValueError("Pair receipt changed during audit")
-    return dict(measured, case=case, candidate_specification_digest=spec, pair_sha256=row["pair_sha256"],
-                selected_fields=selected, grid_comparison=grid_comparison,
-                verified_subset_quality=stage.local_quality([verified], refs))
+    return dict(
+        measured,
+        case=case,
+        candidate_specification_digest=spec,
+        pair_sha256=row["pair_sha256"],
+        selected_fields=selected,
+        grid_comparison=grid_comparison,
+        verified_subset_quality=stage.local_quality([verified], refs),
+    )
 
 
 if __name__ == "__main__":
