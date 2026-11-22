@@ -1,6 +1,7 @@
 """Experimental receiver/solver composition for an isolated full publication."""
 import argparse
 from contextlib import ExitStack, nullcontext
+from dataclasses import asdict
 from functools import partial, wraps
 from hashlib import sha256
 from importlib import import_module, util
@@ -51,6 +52,9 @@ FRACTIONAL_SELECTION_SOURCE = Path(FRACTIONAL_SELECTION_MODULE.replace(".", "/")
 CURVED_DESIGN_MODULE = "tools.pipeline_eval.variants.algo08_curved_design"
 CURVED_DESIGN_SOURCE = Path(CURVED_DESIGN_MODULE.replace(".", "/") + ".py")
 CURVED_DESIGN_SHA256 = "8b24f19af9f2e73ee54ca25c3432875ee25e06cd5c0ee260cbd696c6042c6ff4"
+MEMBER_LOOKAHEAD_MODULE = "tools.pipeline_eval.variants.experimental.receiver_member_lookahead"
+MEMBER_LOOKAHEAD_SOURCE = Path(MEMBER_LOOKAHEAD_MODULE.replace(".", "/") + ".py")
+MEMBER_LOOKAHEAD_SHA256 = "a458ed896c22ae74462ab8f06e82fa2f71d0c689bb37d1fd4d14845e58bdb86a"
 
 
 def _checked_graph_path(specification):
@@ -155,6 +159,39 @@ def _with_curved_design(solve, measure, counts):
     return scoped
 
 
+def _member_lookahead_enabled(specification):
+    enabled = specification.get("member_lookahead", False)
+    if type(enabled) is not bool:
+        raise ValueError("Expected a Boolean member lookahead selection")
+    if enabled and specification.get("ingress") != "paired-sha256":
+        raise ValueError("Member lookahead requires paired SHA-256 ingress")
+    return enabled
+
+
+def _checked_member_lookahead(specification):
+    root = Path(__file__).resolve().parents[3]
+    source = root / MEMBER_LOOKAHEAD_SOURCE
+    pins = specification.get("sources", {})
+    module = util.find_spec(MEMBER_LOOKAHEAD_MODULE)
+    if (module is None or module.origin is None or Path(module.origin).resolve() != source
+            or not isinstance(pins, dict)
+            or pins.get(str(MEMBER_LOOKAHEAD_SOURCE)) != MEMBER_LOOKAHEAD_SHA256
+            or sha256(source.read_bytes()).hexdigest() != MEMBER_LOOKAHEAD_SHA256):
+        raise ValueError("Member lookahead requires the reviewed source in the candidate bundle")
+    return import_module(MEMBER_LOOKAHEAD_MODULE).compressed_member_lookahead
+
+
+def _with_member_lookahead(acquire, lookahead, counts):
+    @wraps(acquire)
+    def scoped(*args, **kwargs):
+        with lookahead() as hints:
+            result = acquire(*args, **kwargs)
+        counts.update(asdict(hints))
+        return result
+
+    return scoped
+
+
 def run(args, specification):
     root = args.bulk_root.resolve(strict=True)
     if not root.is_dir() or any(root.iterdir()):
@@ -190,6 +227,7 @@ def run(args, specification):
     ingress = specification.get("ingress", "stock")
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
+    member_lookahead = _member_lookahead_enabled(specification)
     schedule = specification.get("schedule", "all")
     if schedule not in SCHEDULE_MODES:
         raise ValueError("Unknown receiver schedule")
@@ -293,6 +331,11 @@ def run(args, specification):
                 library.write_bytes(native)
                 hash_windows = partial(paired_decoded_hashes, library)
             acquire = algo08_scan.acquire
+            if member_lookahead:
+                lookahead_counts = {}
+                lookahead = _checked_member_lookahead(specification)
+                acquire = _with_member_lookahead(acquire, lookahead, lookahead_counts)
+
             def buffered(*args, **kwargs):
                 with compressed_input_buffer(), hash_windows():
                     return acquire(*args, **kwargs)
@@ -478,6 +521,8 @@ def run(args, specification):
             result["recovery_reuse"] = recovery_counts
         if curved_design:
             result["curved_design"] = curved_counts
+        if member_lookahead:
+            result["member_lookahead"] = lookahead_counts
         if posterior_bytes is not None:
             result["posterior_grid_handoff"] = dict(arithmetic=POSTERIOR_GRID_ARITHMETIC, **posterior_counts)
         return result

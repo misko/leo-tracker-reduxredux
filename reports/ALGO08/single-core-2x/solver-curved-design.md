@@ -52,9 +52,10 @@ flock -x "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 \
   "$bench/deployed-margin-saved-cross/$case" "$bench/$freeze/spec.json" "$output"
 ```
 
-To reproduce the bundle verification using the same checked sources, give the freezer fresh bundle and receipt paths. The destination path enters its specification digest.
+To reproduce this earlier bundle from a newer checkout, give the freezer the launcher bytes from `81ce543a5` or from the earlier verified bundle. Give it fresh bundle and receipt paths. The destination path enters its specification digest.
 
 ```sh
 PYTHONPATH=src:. python -BPs -m reports.ALGO08.single-core-2x.freeze_curved_design \
-  "$bench/integration-fractional-absolute-selected-v3" "$new_bundle" "$new_receipt"
+  "$bench/integration-fractional-absolute-selected-v3" "$new_bundle" "$new_receipt" \
+  --launcher-source "$old_launcher_source"
 ```
