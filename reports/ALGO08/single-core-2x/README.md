@@ -1,5 +1,7 @@
 # ALGO08v2 single-core experiments
 
+On new north–south search faces that disclose neither receiver coordinate, both deployment and the candidate retained both valid fixes and published both 100 m omissions. The northern valid fixed-zero error moved from 106 to 745 m and the southern from 817 to 470 m when the offered square changed. The I/Q, orbit archive and observation assignments stayed fixed within each site. [Prespecified geometry, full refits and residuals](north-south-faces.md)
+
 On its first physical recording the wrapped-longitude spectral build reached **1.96× elapsed and 2.06× single-core CPU**. It returned both fixes and all eight figures. Restoring the original selected detector margins in saved-input replays recovered both deployed positions and the complete optimizer paths exactly on the sparse and dense physical cases. [Matched physical publication and plot](wrapped-spectral-physical.md) · [Noise-model crossover](solver-deployed-margin-recovery.md)
 
 The saved captures contain relative pilot timing. The transmitter's unknown frame phase absorbs the absolute delay change in a 200 m boundary comparison. The co-located simulated receiver lanes also have an electronic delay. A separate public orbit audit found that applying even the later constellation-wide median yaw left both tested boundary errors intact. [Timing authority and known-phase control](absolute-timing-authority.md) · [Causal and later catalogue rotations](mirrored-yaw.md)
