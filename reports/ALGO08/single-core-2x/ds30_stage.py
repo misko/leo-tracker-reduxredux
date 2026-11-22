@@ -1,13 +1,13 @@
 """Run or verify one nested DS30 single-core qualification stage."""
 
 import argparse
+from collections import defaultdict
 from dataclasses import dataclass
 from hashlib import sha256
 from importlib import import_module
 import json
 from math import isfinite
 from pathlib import Path
-from statistics import median
 from types import SimpleNamespace
 
 from leo.contracts.algo08_region import Algo08Region
@@ -15,10 +15,11 @@ from leo.contracts.digests import canonical_digest
 from tools.pipeline_eval.qualification import paired_publication as pair
 from tools.pipeline_eval.qualification.ds30_full_inputs import BULK, INPUTS, OUT, WORK
 from tools.pipeline_eval.qualification.reverse_glrt_reference import read_bound
-from tools.pipeline_eval.qualification.score_paired_holdout import pinned
+from tools.pipeline_eval.qualification.score_paired_holdout import elapsed_ratios, face_clearance_km, pinned
 from tools.pipeline_eval.scoring import ARMS, distance_km, distribution, thresholds
 
 from .audit_shared_publication import audit
+from .compare_publications import compare
 
 
 PANEL = Path(__file__).resolve().parents[1] / "ds30-optimized/panel.json"
@@ -27,7 +28,9 @@ LOCK_SHA256 = "932f149caf053c835d80057d74489089d63476fcbd0511ababf18d8b562769c4"
 REFERENCE_SHA256 = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
 BASELINE_SHA256 = "fd5e2cd3e220998a48219d7f8a7f0710c0b41269906da3b3c6ad0e49b6f92370"
 BASELINE_DETECTOR = "sha256:f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809"
+CONDITIONAL_RESIDUAL = "sha256:65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6"
 EVIDENCE_FIELDS = ("raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests")
+BUILDS = ("baseline", "candidate")
 
 
 @dataclass(frozen=True)
@@ -54,6 +57,14 @@ def read(path):
 
 def file_sha(path):
     return sha256(path.read_bytes()).hexdigest()
+
+
+def comparison_mode(spec):
+    if spec.get("schedule") == "conditional-residual":
+        if canonical_digest(spec) != CONDITIONAL_RESIDUAL:
+            raise ValueError("Only the frozen conditional-residual candidate may use approximate comparison")
+        return "conditional-residual"
+    return "exact"
 
 
 def frozen_assignments(size, station):
@@ -92,6 +103,7 @@ def verify_build(candidate, config, expected):
     spec = read(config)
     if canonical_digest(spec).removeprefix("sha256:") != expected.removeprefix("sha256:"):
         raise ValueError("Candidate specification differs from its supplied digest")
+    comparison_mode(spec)
     if file_sha(pair.BASELINE) != BASELINE_SHA256:
         raise ValueError("Pinned baseline launcher changed")
     pair.verify_sources(candidate, spec["sources"])
@@ -105,11 +117,32 @@ def verify_build(candidate, config, expected):
     return spec
 
 
+def approximate_audit(path):
+    measured = compare(path)
+    before, after = (measured[name] for name in BUILDS)
+    baseline_figures, candidate_figures = set(before["figures"]), set(after["figures"])
+    return measured, dict(
+        probe_rows={name: measured[name]["probe_rows"] for name in BUILDS},
+        selected={key: measured[key] for key in ("selected_common", "selected_lost", "selected_added")},
+        decisions={name: measured[name]["decision"] for name in BUILDS},
+        reasons={name: measured[name]["reason"] for name in BUILDS},
+        owners_equal={arm: before["owners"].get(arm) == after["owners"].get(arm) for arm in ARMS},
+        scientific_evidence_equal={key: before["scientific_digests"].get(key) == after["scientific_digests"].get(key)
+                                   for key in ("grid", "path")},
+        figures_changed=sorted(name for name in baseline_figures & candidate_figures
+                               if not measured["same_rendered_figures"][name]),
+        figures_added=sorted(candidate_figures - baseline_figures),
+        figures_lost=sorted(baseline_figures - candidate_figures),
+        displacement_km=measured["displacement_km"],
+    )
+
+
 def verify_pair(path, assigned, candidate, spec, cpu):
     original = path.read_bytes()
     data = json.loads(original)
     if "failure" in data:
         return dict(state="failed", reason=data["failure"])
+    mode = comparison_mode(spec)
     digest = canonical_digest(spec)
     if (data["candidate_specification_digest"] != digest or data["candidate_specification"] != spec
             or read(path.parent / "candidate-config.json") != spec):
@@ -118,8 +151,8 @@ def verify_pair(path, assigned, candidate, spec, cpu):
             or data["recording"] != str(assigned.recording.resolve())
             or Algo08Region.parse(read(Path(data["region"]))).document() != assigned.region):
         raise ValueError("CPU, pair order, recording or offer differs from its assignment")
-    if set(data["runs"]) != {"baseline", "candidate"}:
-        raise ValueError("Pair must contain exactly one run for each arm")
+    if set(data["runs"]) != set(BUILDS):
+        raise ValueError("Pair must contain exactly one run for each build")
     for label, launcher in (("baseline", pair.BASELINE), ("candidate", candidate)):
         run = data["runs"][label]
         receipt = run["receipt"]
@@ -132,28 +165,38 @@ def verify_pair(path, assigned, candidate, spec, cpu):
         if any(type(run[metric]) not in (int, float) or not isfinite(run[metric]) or run[metric] <= 0
                for metric in ("elapsed_s", "cpu_s")):
             raise ValueError(f"Invalid positive timings for {label}")
-        restored = pair.evidence(path.parent / label, receipt, 0, read_only=True)
-        if any(restored[key] != run[key] for key in EVIDENCE_FIELDS):
-            raise ValueError(f"{label} pair receipt differs from its persisted publication")
-    before, after = (data["runs"][label] for label in ("baseline", "candidate"))
+        if mode == "exact":
+            restored = pair.evidence(path.parent / label, receipt, 0, read_only=True)
+            if any(restored[key] != run[key] for key in EVIDENCE_FIELDS):
+                raise ValueError(f"{label} pair receipt differs from its persisted publication")
+    before, after = (data["runs"][label] for label in BUILDS)
     if data["elapsed_ratio"] != after["elapsed_s"] / before["elapsed_s"]:
         raise ValueError("Recorded pair elapsed ratio does not match its timings")
-    measured = audit(path, lossless_png=spec.get("rendering") == "lossless-raster", read_only=True, bind_native=True)
+    if mode == "conditional-residual":
+        measured, summary = approximate_audit(path)
+        actual_detectors = {name: measured[name]["detector_sha256"] for name in BUILDS}
+    else:
+        measured = audit(path, lossless_png=spec.get("rendering") == "lossless-raster", read_only=True, bind_native=True)
+        actual_detectors = measured["detector_sha256"]
+        summary = dict(probe_rows=measured["probe_rows"], selected=measured["selected"],
+                       figures=len(measured["image_dimensions"]))
     detectors = dict(baseline=BASELINE_DETECTOR, candidate="sha256:" + spec["detector_sha256"])
-    if measured["session"] != assigned.session or measured["detector_sha256"] != detectors:
+    if measured["session"] != assigned.session or actual_detectors != detectors:
         raise ValueError("Audit consumed the wrong session or detector build")
     if path.read_bytes() != original:
         raise ValueError("Pair receipt changed during its artifact audit")
     audit_digest = canonical_digest(dict(pair_sha256=sha256(original).hexdigest(), audit=measured))
     evidence = dict(audit_sha256=audit_digest, pair_sha256=sha256(original).hexdigest(),
-                    audit=dict(probe_rows=measured["probe_rows"], selected=measured["selected"],
-                               figures=len(measured["image_dimensions"])),
-                    decision=before["receipt"]["decision"],
+                    audit=summary,
                     elapsed_s={k: v["elapsed_s"] for k, v in data["runs"].items()},
                     cpu_s={k: v["cpu_s"] for k, v in data["runs"].items()},
                     arms={k: v["arms"] for k, v in data["runs"].items()},
                     raw_authority=assigned.raw_authority, actual_order=data["order"],
                     expected_archive=str(assigned.archive))
+    if mode == "conditional-residual":
+        evidence["region"] = assigned.region
+    else:
+        evidence["decision"] = before["receipt"]["decision"]
     if "archive" not in data:
         return dict(evidence, state="development", reason="Pair lacks recorded causal archive identity")
     expected_archive = dict(root=str(assigned.archive.resolve()), snapshots_sha256=assigned.snapshots_sha256)
@@ -163,6 +206,7 @@ def verify_pair(path, assigned, candidate, spec, cpu):
 
 
 def inventory(workspace, assignments, candidate, spec, cpu):
+    mode = comparison_mode(spec)
     cases = []
     for assigned in assignments:
         directory = workspace / assigned.name
@@ -180,7 +224,7 @@ def inventory(workspace, assignments, candidate, spec, cpu):
     coverage = {state: [row["case"] for row in cases if row["state"] == state]
                 for state in ("verified", "missing", "failed", "invalid", "development")}
     return dict(assigned=len(cases), candidate_specification_digest=canonical_digest(spec), cpu=cpu,
-                coverage=coverage, cases=cases)
+                coverage=coverage, cases=cases, comparison=mode, geographic_confirmation=False)
 
 
 def next_case(stage, requested):
@@ -205,18 +249,58 @@ def run_next(workspace, assignments, stage, requested, candidate, config, region
                                   cpu=stage["cpu"], timeout=1200))
 
 
+def local_quality(cases, refs):
+    sites = defaultdict(list)
+    for row in cases:
+        sites[refs[row["case"]]].append(row)
+    summaries = []
+    for site, rows in sorted(sites.items()):
+        times = [(r["elapsed_s"]["baseline"], r["elapsed_s"]["candidate"]) for r in rows]
+        paired, summed = elapsed_ratios(times)
+        summary = dict(site=site, assigned=len(rows), median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
+                       arms={})
+        containing = {r["case"] for r in rows if face_clearance_km(r["region"], site) >= 0}
+        for arm in ARMS:
+            errors = {r["case"]: tuple(distance_km(r["arms"][name][arm]["latlon"], site) for name in BUILDS)
+                      for r in rows}
+            fixes = {name: {case for case, value in errors.items() if value[i] is not None}
+                     for i, name in enumerate(BUILDS)}
+            lost, added = fixes["baseline"] - fixes["candidate"], fixes["candidate"] - fixes["baseline"]
+            retained = fixes["baseline"] & fixes["candidate"]
+            lost_containing, added_false = sorted(lost & containing), sorted(added - containing)
+            stats = {name: distribution([errors[case][i] for case in containing])
+                     for i, name in enumerate(BUILDS)}
+            control, candidate = (stats[name] for name in BUILDS)
+            no_worse = {k: not control["n"] or bool(candidate["n"] and candidate[k] <= control[k])
+                        for k in ("p50", "p90")}
+            summary["arms"][arm] = dict(
+                matched_fixes=sorted(retained), lost_fixes=sorted(lost), added_fixes=sorted(added),
+                both_withheld=sorted(errors.keys() - (fixes["baseline"] | fixes["candidate"])),
+                lost_containing_fixes=lost_containing, additional_false_fixes=added_false,
+                false_fixes={name: sorted(fixed_cases - containing) for name, fixed_cases in fixes.items()},
+                containing_error_km=stats, no_worse=no_worse,
+                error_by_case_km={case: dict(zip(BUILDS, value, strict=True)) for case, value in errors.items()},
+                preserved=not lost_containing and not added_false and all(no_worse.values()))
+        summaries.append(summary)
+    return dict(by_site=summaries,
+                preserved=all(arm["preserved"] for site in summaries for arm in site["arms"].values()))
+
+
 def score(stage):
     cases = stage["cases"]
+    approximate = stage.get("comparison") == "conditional-residual"
     if len(stage["coverage"]["verified"]) != stage["assigned"]:
-        return dict(stage, elapsed_gates=None, position=None)
+        result = dict(stage, elapsed_gates=None, position=None)
+        if approximate:
+            result["quality"] = None
+        return result
     times = [(row["elapsed_s"]["baseline"], row["elapsed_s"]["candidate"]) for row in cases]
-    paired = median(after / before for before, after in times)
-    summed = sum(after for _, after in times) / sum(before for before, _ in times)
+    paired, summed = elapsed_ratios(times)
     truth = pinned(OUT / "reference-audit.json", REFERENCE_SHA256)["cases"]
     refs = {r["dataset_label"]: (r["reference"]["latitude_deg"], r["reference"]["longitude_deg"])
             for r in truth if r["authority_eligible"]}
     position = {}
-    for label in ("baseline", "candidate"):
+    for label in BUILDS:
         position[label] = {}
         for arm in ARMS:
             errors = [distance_km(row["arms"][label][arm]["latlon"], refs[row["case"]]) for row in cases]
@@ -224,7 +308,10 @@ def score(stage):
                                         assigned=len(cases))
     gates = dict(median_candidate_over_baseline=paired, summed_candidate_over_baseline=summed,
                  median_pass=paired <= .5, summed_pass=summed <= .5, passed=max(paired, summed) <= .5)
-    return dict(stage, elapsed_gates=gates, position=position)
+    result = dict(stage, elapsed_gates=gates, position=position)
+    if approximate:
+        result["quality"] = local_quality(cases, refs)
+    return result
 
 
 def main():

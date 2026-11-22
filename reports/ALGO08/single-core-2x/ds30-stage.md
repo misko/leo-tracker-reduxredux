@@ -4,7 +4,13 @@ The stage runner uses the first four or first sixteen entries in the frozen DS30
 
 The runner checks the locked case binding, physical recording, offer, capture identity and admitted visit counts. It checks the immutable candidate specification, source and native library digests, and the recorded baseline and candidate launchers. A new pair records the assigned archive path and the digest of its snapshot inventory. The receipt binds the same inventory before and after the timed processes. The release verifies the contents of each TLE object it reads. Archive inventory checks remain outside the timed boundary. [Original DS30 input bindings](../../../tools/pipeline_eval/qualification/ds30_full_inputs.py)
 
-`inventory` reopens the actual terminal, detector outputs, grid, path and figures as applicable. It verifies their bindings and exact science across the pair. The lossless renderer also checks the decoded pixels and non-image PNG chunks. The audit digest binds the checked result to the original pair bytes. Withheld results count if both arms reproduce the same reason and evidence. `score` reports the paired-median and summed candidate-to-baseline elapsed ratios only when every assigned pair verifies. Both must be at most 0.50. It then reports fixed-zero and fitted-calibration position errors using the original DS30 reference authority. No additional journal is needed. [Artifact audit](audit_shared_publication.py) · [Timing and quality protocol](PROTOCOL.md)
+`inventory` reopens the actual terminal, detector outputs, grid, path and figures as applicable. For exact candidates it verifies identical science across the pair. The exact lossless renderer audit also checks the decoded pixels and non-image PNG chunks. Withheld results count if both builds reproduce the same reason and evidence. The audit digest binds the checked result to the original pair bytes. `score` reports the paired-median and summed candidate-to-baseline elapsed ratios only when every assigned pair verifies. Both must be at most 0.50. It then reports fixed-zero and fitted-calibration position errors using the original DS30 reference authority. [Artifact audit](audit_shared_publication.py) · [Timing and quality protocol](PROTOCOL.md)
+
+## Frozen conditional-residual candidate
+
+The runner selects approximate comparison only for the reviewed conditional-residual specification at canonical SHA-256 `65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6`. Inventory verifies the same assigned raw authority, region, causal archive, builds and timing boundary. It independently checks each detector against its terminal and each terminal against the standard publication, including both calibration endpoints, grid and path when fixed, and all eight expected decodable PNGs. It records differences in selections, owners, path, grid, decoded figures and terminal decisions. Valid differences count toward completion. [Publication comparison](compare_publications.py) · [Frozen receiver and development results](receiver-residual-prefix-192.md#complete-physical-and-simulated-publications)
+
+At full coverage, the score reports matched and unmatched fixes, error for every assignment, and returned-error P50 and P90 at each historical reference site in both calibration arms. Quality requires retaining every baseline fix on containing offers and avoiding worse P50 or P90 at each site. It counts newly issued fixes separately. Both the elapsed and quality results are reported if either gate fails. DS30 is a single physical development site, and the stage always reports `geographic_confirmation: false`.
 
 ## Read-only check of the existing lead case
 
@@ -31,6 +37,17 @@ stage() {
     "$build/spec.json" "$spec_digest" "$@"
 }
 
+stage inventory --size 4
+stage run --size 4 --case DS30-0374
+stage score --size 4
+```
+
+For the conditional-residual build, use the same function with these settings and a separate workspace.
+
+```sh
+build=/tmp/leo-algo08v2-2x-bench/integration-conditional-residual-reviewed
+workspace=/tmp/ds30-v2-stage-65b664
+spec_digest=65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6
 stage inventory --size 4
 stage run --size 4 --case DS30-0374
 stage score --size 4

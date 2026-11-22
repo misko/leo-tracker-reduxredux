@@ -4,6 +4,7 @@ from collections import Counter
 from hashlib import sha256
 from io import BytesIO
 import json
+from math import isfinite
 from pathlib import Path
 
 from PIL import Image
@@ -12,7 +13,7 @@ from leo.contracts.digests import canonical_digest
 from leo.storage.fast_scan import FastScanStore
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from tools.pipeline_eval.qualification.paired_publication import evidence
-from tools.pipeline_eval.scoring import ARMS, distance_km
+from tools.pipeline_eval.scoring import ARMS, coordinate, distance_km
 from .audit_shared_publication import _png_scaffold
 
 
@@ -39,18 +40,40 @@ def verified(root, run):
             raise ValueError(f"Stored pair disagrees with published {key}")
     run_id = receipt["run_id"]
     workspace = FastScanStore(root).automatic_workspace(run_id, create=False)
-    terminal = json.loads((workspace / "terminal.json").read_bytes())
+    terminal_path = workspace / "terminal.json"
+    terminal = json.loads(terminal_path.read_bytes())
     native_path, = (root / "fast-scan-automatic-work").glob("*/detections.json")
     native = json.loads(native_path.read_bytes())
+    detector_to_terminal = (terminal_path.stat().st_mtime_ns - native_path.stat().st_mtime_ns) / 1e9
+    terminal_elapsed = run["terminal_file_s"]
+    if not isfinite(terminal_elapsed) or not 0 <= detector_to_terminal <= terminal_elapsed <= run["elapsed_s"]:
+        raise ValueError("Published file timestamps disagree with the launch clock")
+    source = native["source"]
     if (canonical_digest(native) != terminal["native_sha256"]
-            or native["source"]["raw_recording_authority_digest"] != run["raw_authority"]):
+            or source["raw_recording_authority_digest"] != run["raw_authority"]):
         raise ValueError("Detection inventory does not match the sealed raw input and terminal")
     store = FastStandardAnalysisStore(root)
+    publication = store.detail(run_id)
+    session = receipt["session_id"]
+    if (terminal["session_id"] != session or source["session_id"] != session
+            or publication["session_id"] != session or publication["run_id"] != run_id
+            or publication["input_sha256"] != terminal["native_sha256"]):
+        raise ValueError("Session or detector digest differs between the terminal and publication")
+    fixed = receipt["decision"] == "complete"
+    if (terminal["decision"] != ("ok" if fixed else "withheld") or set(terminal["arms"]) != set(ARMS)
+            or any((coordinate(terminal["arms"][arm]["latlon"]) is not None) != fixed for arm in ARMS)):
+        raise ValueError("The terminal must supply both calibration arms for its decision")
+    if fixed:
+        if any(publication["arms"][arm]["endpoint_latlon"] != terminal["arms"][arm]["latlon"] for arm in ARMS):
+            raise ValueError("Published endpoints differ from the bound terminal")
+    elif publication["reason"] != terminal["reason"]:
+        raise ValueError("Published withholding reason differs from the bound terminal")
     figures = {item["name"]: image_receipt(store.artifact(run_id, item["name"], item["sha256"]))
                for item in run["artifacts"]}
-    probes = native["source"]["probes"]
+    probes = source["probes"]
     result = dict(
-        probe_rows=len(probes), figures=figures, decision=receipt["decision"], counts=receipt["counts"],
+        probe_rows=len(probes), figures=figures, decision=receipt["decision"], reason=run["reason"],
+        detector_sha256=native["provenance"]["detector_sha256"], counts=receipt["counts"],
         arms=run["arms"], owners=run["owners"], scientific_digests=run["scientific_digests"],
         elapsed_s=run["elapsed_s"], cpu_s=run["cpu_s"],
     )

@@ -1,10 +1,13 @@
 from importlib import import_module
+from io import BytesIO
 import json
 from types import SimpleNamespace
 
 import pytest
+from PIL import Image
 
 from leo.contracts.digests import canonical_digest
+from leo.contracts.fast_standard_analysis import ALGO08V2, PLOTS
 
 
 stage = import_module("reports.ALGO08.single-core-2x.ds30_stage")
@@ -25,12 +28,45 @@ def study(tmp_path):
         case = f"DS30-{index:04d}"
         corpus.append(stage.Assignment(case, index, tmp_path / f"wave-{index}", REGION, archive,
                                        pair.archive_identity(archive)["snapshots_sha256"], f"session-{index}",
-                                       canonical_digest(index), 1, 0))
+                                       canonical_digest(index), 1, 1))
     return SimpleNamespace(runs=tmp_path / "runs", assignments=corpus, candidate=candidate,
                            region=region, spec=dict(detector_sha256="b" * 64))
 
 
-def seal_pair(study, entry, elapsed=(4., 1.), *, archived=True):
+@pytest.fixture
+def conditional_study(study, monkeypatch):
+    study.spec["schedule"] = "conditional-residual"
+    monkeypatch.setattr(stage, "CONDITIONAL_RESIDUAL", canonical_digest(study.spec))
+    return study
+
+
+def publish_fix(publications, run, binding, endpoints, offsets, factor_count):
+    def png(pixel):
+        output = BytesIO()
+        Image.new("RGBA", (1, 1), (pixel, 0, 0, 255)).save(output, format="PNG")
+        return output.getvalue()
+
+    region = binding["region"]
+    center = region["center"]
+    frame = dict(region_center=center, box_width_km=region["width_km"])
+    grid = dict(frame, schema_version=1, kind="conditional-position-grid", matched_c_grid=True,
+                conditioning="published satellite ownership and phase linearization fixed",
+                endpoint_latlon=endpoints, evaluated_points=1, planned_points=1, complete=True,
+                points=[dict(east_km=0, north_km=0, latlon=center,
+                             scores={arm: factor_count for arm in ARMS})])
+    path = dict(frame, schema_version=2, kind="recorded-position-path", selected_model=ALGO08V2,
+                stages=[dict(model_version=ALGO08V2, arms={arm: dict(endpoint=[0, offsets[arm]],
+                            history_available=False, rounds=[]) for arm in ARMS})])
+    manifest = dict(binding, run_id=run, schema_version=3, model_version=ALGO08V2, state="complete",
+                    selected_model=ALGO08V2, reference_usage="evaluation_only", glrt_points=factor_count,
+                    arms={arm: dict(endpoint_latlon=point, associated_points=factor_count,
+                                    owner_sha256=canonical_digest(point)) for arm, point in endpoints.items()})
+    images = dict.fromkeys(PLOTS, png(1))
+    images["position"] = png(factor_count)
+    publications.publish(run, manifest, images, position_grid=grid, position_path=path)
+
+
+def seal_pair(study, entry, elapsed=(4., 1.), *, archived=True, fixes=None):
     directory = study.runs / entry.name
     directory.mkdir(parents=True)
     data = dict(order=entry.order, cpu=2, recording=str(entry.recording), region=str(study.region),
@@ -47,18 +83,36 @@ def seal_pair(study, entry, elapsed=(4., 1.), *, archived=True):
         scans = pair.FastScanStore(root)
         publications = pair.FastStandardAnalysisStore(root)
         run = "algo08-v2-" + entry.name.lower()
-        native = dict(source=dict(probes=[], raw_recording_authority_digest=entry.raw_authority),
+        offsets = (fixes or {}).get(label)
+        probes = []
+        if offsets is not None:
+            factors = [{"cfo_hz": 10}] if label == "candidate" else [{"cfo_hz": 10}, {"cfo_hz": 20}]
+            probes = [dict(visit_index=0, receiver_id=0, channel=1, actual_rf_hz=10_000_000_000,
+                           valid_start_counter=1000, candidates=factors)]
+        native = dict(source=dict(probes=probes, session_id=entry.session,
+                                  raw_recording_authority_digest=entry.raw_authority),
                       provenance=dict(detector_sha256=detector))
         pair.immutable_json(scans.automatic_workspace("detector") / "detections.json", native)
-        terminal = dict(region=REGION, reason="no probes", arms=ARMS, native_sha256=canonical_digest(native))
+        lat, lon = entry.region["center"]
+        endpoints = {arm: None if offsets is None else [lat+offsets[arm]/111, lon] for arm in ARMS}
+        terminal = dict(region=entry.region, reason="no probes" if offsets is None else None,
+                        arms={arm: dict(latlon=point) for arm, point in endpoints.items()},
+                        decision="withheld" if offsets is None else "ok", session_id=entry.session,
+                        native_sha256=canonical_digest(native))
         terminal_sha = canonical_digest(terminal)
         pair.immutable_json(scans.automatic_workspace(run) / "terminal.json", terminal)
         scans.publish(run, dict(session_id=entry.session, points=[]))
-        publications.withhold(run, terminal["reason"], terminal_sha256=terminal_sha,
-                              region=REGION, raw_authority=entry.raw_authority)
+        binding = dict(terminal_sha256=terminal_sha, region=entry.region, raw_authority=entry.raw_authority,
+                       session_id=entry.session, input_sha256=terminal["native_sha256"])
+        if offsets is None:
+            publications.withhold(run, terminal["reason"], **binding)
+        else:
+            publish_fix(publications, run, binding, endpoints, offsets, len(factors))
         receipt = dict(run_id=run, session_id=entry.session, window_count=entry.windows,
-                       counts=dict(processed=0, invalid_capture=1, skipped_fast_score=0),
-                       region=REGION, decision="withheld", terminal_sha256=terminal_sha)
+                       counts=dict(processed=entry.visits, invalid_capture=entry.windows-entry.visits,
+                                   skipped_fast_score=0),
+                       region=entry.region, decision="withheld" if offsets is None else "complete",
+                       terminal_sha256=terminal_sha)
         measured = pair.evidence(root, receipt, 0)
         measured["terminal_file_s"] = timing / 2
         data["runs"][label] = dict(measured, launcher=str(launcher), elapsed_s=timing, cpu_s=timing)
@@ -246,3 +300,78 @@ def test_full_stage_only_scores_both_elapsed_gates_and_keeps_withholds(study, mo
     assert not result["elapsed_gates"]["summed_pass"] and not result["elapsed_gates"]["passed"]
     assert result["position"]["candidate"]["c0"]["assigned"] == 4
     assert result["position"]["candidate"]["c0"]["error_km"]["n"] == 0
+
+
+def test_only_the_frozen_conditional_receipt_can_allow_science_changes(study):
+    first = study.assignments[0]
+    offsets = dict(c0=1, fitted_c=1)
+    seal_pair(study, first, fixes=dict.fromkeys(("baseline", "candidate"), offsets))
+    result = inventory(study)
+    assert result["comparison"] == "exact"
+    assert result["coverage"]["invalid"] == [first.name]
+    with pytest.raises(ValueError, match="Only the frozen"):
+        stage.comparison_mode(dict(study.spec, schedule="conditional-residual"))
+
+
+def test_approximate_stage_scores_changed_evidence_and_negative_results(conditional_study, monkeypatch):
+    study = conditional_study
+    first, second, third, fourth = study.assignments
+    lat, lon = REGION["center"]
+    monkeypatch.setattr(stage, "pinned", lambda *args: dict(cases=[
+        dict(dataset_label=a.name, authority_eligible=True, reference=dict(latitude_deg=lat, longitude_deg=lon))
+        for a in study.assignments]))
+
+    seal_pair(study, first, (4., 3.), fixes=dict(baseline=dict(c0=1, fitted_c=1),
+                                               candidate=dict(c0=3, fitted_c=1)))
+    lead = inventory(study)
+    change = lead["cases"][0]["audit"]
+    assert lead["coverage"]["verified"] == [first.name]
+    assert change["selected"] == dict(selected_common=1, selected_lost=1, selected_added=0)
+    assert change["figures_changed"] == ["position"]
+    assert change["owners_equal"] == dict(c0=False, fitted_c=True)
+    assert change["scientific_evidence_equal"] == dict(grid=False, path=False)
+    assert stage.next_case(lead, None) == second.name
+    assert stage.score(lead)["quality"] is None
+
+    seal_pair(study, second, (4., 3.), fixes=dict(baseline=dict(c0=1, fitted_c=1)))
+    reached = inventory(study)
+    assert reached["cases"][1]["audit"]["figures_lost"] == sorted(PLOTS)
+    assert stage.next_case(reached, None) == third.name
+    seal_pair(study, third, (4., 3.), fixes=dict(candidate=dict(c0=2, fitted_c=1)))
+    seal_pair(study, fourth, (4., 3.))
+
+    result = stage.score(inventory(study))
+    assert result["coverage"]["verified"] == [a.name for a in study.assignments]
+    assert not result["elapsed_gates"]["passed"]
+    assert not result["quality"]["preserved"] and not result["geographic_confirmation"]
+    site, = result["quality"]["by_site"]
+    assert site["median_elapsed_ratio"] == site["summed_elapsed_ratio"] == .75
+    for arm in ARMS:
+        scored = site["arms"][arm]
+        assert scored["matched_fixes"] == [first.name]
+        assert scored["lost_containing_fixes"] == [second.name]
+        assert scored["added_fixes"] == [third.name]
+        assert scored["both_withheld"] == [fourth.name]
+        assert scored["no_worse"] == dict.fromkeys(("p50", "p90"), arm == "fitted_c")
+        assert not scored["preserved"]
+
+
+@pytest.mark.parametrize("kind", ["terminal", "figure", "grid", "session", "native"])
+def test_approximate_receipts_still_reject_unbound_evidence(conditional_study, kind):
+    study = conditional_study
+    first = study.assignments[0]
+    path = seal_pair(study, first, fixes=dict(candidate=dict(c0=1, fitted_c=1)))
+    root = path.parent / "candidate"
+    run = stage.read(path)["runs"]["candidate"]["receipt"]["run_id"]
+    manifest = pair.FastStandardAnalysisStore(root).folder(run) / "manifest.json"
+    if kind == "session":
+        manifest.write_text(json.dumps(dict(stage.read(manifest), session_id="another session")))
+    else:
+        targets = {"terminal": pair.FastScanStore(root).automatic_workspace(run) / "terminal.json",
+                   "figure": next(manifest.parent.glob("*.png")),
+                   "grid": manifest.parent / "position-grid.json",
+                   "native": pair.FastScanStore(root).automatic_workspace("detector") / "detections.json"}
+        targets[kind].write_text("{}")
+    result = inventory(study)
+    assert result["coverage"]["invalid"] == [first.name]
+    assert stage.score(result)["quality"] is None
