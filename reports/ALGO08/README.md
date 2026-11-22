@@ -1,8 +1,8 @@
 # ALGO08 · Gauss fast-scan positioning
 
-ALGO08 is the default Standard analysis for new Gauss fast scans. It reads sealed dual-antenna 10 MS/s I/Q, searches for a pilot, subtracts it, and searches the residual. A fractional GLRT verifies the carriers and a causal rule selects measurements across visits. Compact v5 associates those measurements with capture-era satellites and fits the receiver position in the configured 25 km region. It runs both fitted RF calibration and a fixed-zero control. The release includes the two orbit-support retries qualified on DS30. [Full DS30 comparison with the standalone algo07v5 benchmark](../2026_11_21_ds30_full/README.md)
+ALGO08v2 is the default Standard analysis for new Gauss fast scans. It reads sealed dual-antenna 10 MS/s I/Q, searches for a pilot, subtracts it, and searches the residual. A fractional GLRT verifies the carriers and a causal rule selects measurements across visits. Compact v5 associates those measurements with capture-era satellites and fits the receiver position in the configured 25 km region. It runs both fitted RF calibration and a fixed-zero control. The release includes the two orbit-support retries qualified on DS30. [Full DS30 comparison with the standalone algo07v5 benchmark](../2026_11_21_ds30_full/README.md)
 
-The [optimized two-scan triage report](ds30-optimized/README.md) compares the experimental receiver with deployed ALGO08 from sealed I/Q through position on 16 paired DS30 recordings. The replay tool defaults to four recordings on one worker.
+The [optimized two-scan triage report](ds30-optimized/README.md) compares the receiver promoted to ALGO08v2 with the previous deployed ALGO08v1 from sealed I/Q through position on 16 paired DS30 recordings. The replay tool defaults to four recordings on one worker.
 
 ## One recording through both deployed algorithms
 
@@ -56,4 +56,4 @@ PYTHONPATH=.:src .venv/bin/python tools/compare_algo08_web.py http://gauss:8090 
   "$OUTPUT/gallery"
 ```
 
-The Gauss staging script accepts a new absolute release directory, the qualified CPython 3.12 numerical environment’s site-packages directory, and the four DS30-pinned assets. Build the web app before staging. It builds the native position kernels at the release path and keeps the read-only API and analysis worker in separate environments. The systemd templates bind both services to that release. [Staging script](../../deploy/scripts/stage-algo08-gauss) · [Analysis service](../../deploy/systemd/leo-fast-scan-standard-algo08.conf) · [Web service](../../deploy/web/algo08-standard-api.conf)
+The Gauss staging script accepts a new absolute release directory, the qualified CPython 3.12 numerical environment’s site-packages directory, and the qualified pilot and track assets. It builds the v2 detector from its versioned C sources and checks the binary digest. Build the web app before staging. It builds the native position kernels at the release path and keeps the read-only API and analysis worker in separate environments. The systemd templates bind both services to that release. [Staging script](../../deploy/scripts/stage-algo08-gauss) · [Analysis service](../../deploy/systemd/leo-fast-scan-standard-algo08.conf) · [Web service](../../deploy/web/algo08-standard-api.conf)

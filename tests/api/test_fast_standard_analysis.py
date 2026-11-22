@@ -26,10 +26,10 @@ def test_digest_bound_artifact_and_pending_routes():
 
 
 def test_comparison_requires_one_acquisition_and_both_models():
-    from leo.contracts.fast_standard_analysis import ALGO08, MODEL, PLOTS
+    from leo.contracts.fast_standard_analysis import ALGO08, ALGO08V2, MODEL, PLOTS
     class Reader:
         def detail(self, rid):
-            return dict(run_id=rid, state='complete', model_version=ALGO08 if rid=='new' else MODEL,
+            return dict(run_id=rid, state='complete', model_version={'new':ALGO08,'v2':ALGO08V2}.get(rid, MODEL),
                         session_id='other' if rid=='wrong' else 's',
                         artifacts=[dict(name=name, sha256='sha256:abc') for name in PLOTS])
     app=FastAPI()
@@ -39,5 +39,7 @@ def test_comparison_requires_one_acquisition_and_both_models():
     gallery=client.get(base+'old')
     assert gallery.status_code==200 and gallery.text.count('<img ')==16
     assert gallery.text.index('ALGO07 position') < gallery.text.index('ALGO08 position')
+    v2=client.get('/api/v2/fast-scans/old/standard-analysis/compare/v2')
+    assert v2.status_code==200 and v2.text.count('ALGO08v2 position')==1
     assert client.get(base+'wrong').status_code==404
     assert client.get(base+'new').status_code==404

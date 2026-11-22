@@ -6,7 +6,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from leo.contracts.fast_standard_analysis import validate, PLOTS, MODEL, ALGO08
+from leo.contracts.fast_standard_analysis import validate, PLOTS, ALGO08V2, COMPACT_MODELS, standard_model
 from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.position_grid import binding as grid_binding, validate as validate_grid
 from leo.contracts.position_path import validate as validate_path
@@ -22,7 +22,7 @@ def digest(data):
 
 class FastStandardAnalysisStore:
     def model(self, run_id):
-        return ALGO08 if run_id.startswith('algo08-') else MODEL
+        return standard_model(run_id)
 
     def __init__(self, root, *, revision=RENDER_REVISION):
         self.root = Path(root).resolve()
@@ -33,7 +33,7 @@ class FastStandardAnalysisStore:
         self.revision=revision
 
     def base_folder(self, run_id):
-        namespace = 'fast-scan-standard-v2' if self.model(run_id) == ALGO08 else 'fast-scan-standard-v1'
+        namespace = 'fast-scan-standard-v2' if self.model(run_id) in COMPACT_MODELS else 'fast-scan-standard-v1'
         return confined_path(self.root, self.root/namespace/safe_id(run_id), must_exist=False)
 
     def folder(self, run_id):
@@ -41,7 +41,7 @@ class FastStandardAnalysisStore:
 
     def publication_folders(self, run_id):
         base=self.base_folder(run_id)
-        if self.model(run_id) == ALGO08:
+        if self.model(run_id) in COMPACT_MODELS:
             return (self.folder(run_id),)
         revisions=(RENDER_REVISION,*PREVIOUS_RENDER_REVISIONS)
         return (*(confined_path(self.root,base/revision,must_exist=False)
@@ -53,9 +53,12 @@ class FastStandardAnalysisStore:
                    if (folder/'manifest.json').exists()),None)
         if path is None:
             withheld = self.folder(run_id)/'withheld.json'
-            if model == ALGO08 and withheld.is_file():
-                return json.loads(withheld.read_bytes())
-            return dict(schema_version=2 if model == ALGO08 else 1, run_id=run_id, model_version=model,
+            if model in COMPACT_MODELS and withheld.is_file():
+                result = json.loads(withheld.read_bytes())
+                if result.get('model_version') != model or result.get('run_id') != run_id:
+                    raise ValueError('Withholding receipt belongs to another run')
+                return result
+            return dict(schema_version=3 if model == ALGO08V2 else (2 if model in COMPACT_MODELS else 1), run_id=run_id, model_version=model,
                         state='pending', artifacts=[])
         result=validate(json.loads(path.read_text()), model=model)
         ref_path=self.base_folder(run_id)/'evaluation-reference.json'
@@ -124,7 +127,7 @@ class FastStandardAnalysisStore:
         if set(pngs) != set(PLOTS):
             raise ValueError('All standard figures required atomically')
         folder = self.folder(run_id)
-        if self.model(run_id) == ALGO08:
+        if self.model(run_id) in COMPACT_MODELS:
             folder.parent.mkdir(parents=True, exist_ok=True)
             if folder.exists():
                 old = self.detail(run_id)
@@ -168,13 +171,15 @@ class FastStandardAnalysisStore:
         return value
 
     def withhold(self, run_id, reason, **provenance):
-        if self.model(run_id) != ALGO08 or not reason:
+        if self.model(run_id) not in COMPACT_MODELS or not reason:
             raise ValueError("Expected a withheld ALGO08 decision and reason")
         if self.detail(run_id)['state'] == 'complete':
             raise ValueError("ALGO08 position already published")
+        if self.model(run_id) == ALGO08V2 and 'region' not in provenance:
+            raise ValueError("ALGO08v2 requires a search region")
         if 'region' in provenance:
             provenance['region'] = Algo08Region.parse(provenance['region']).document()
-        value = dict(**provenance, schema_version=3 if 'region' in provenance else 2, model_version=ALGO08, run_id=run_id,
+        value = dict(**provenance, schema_version=3 if 'region' in provenance else 2, model_version=self.model(run_id), run_id=run_id,
                      state='withheld', reason=reason, arms={}, artifacts=[])
         immutable_json(self.folder(run_id)/'withheld.json', value)
         return value

@@ -72,6 +72,10 @@ def test_offers_and_annotated_publications_share_only_the_detector(tmp_path, mon
                                    Algo08Region(center, width, screen), ref)
     first = run((10, 25))
     assert run((10., 25.), screen=(10, 25)) == first
+    assert first["run_id"].startswith("algo08-v2-")
+    from leo.contracts.fast_standard_analysis import ALGO08V2
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    assert FastStandardAnalysisStore(tmp_path).detail(first["run_id"])["model_version"] == ALGO08V2
     other_reference = run((10, 25), ref=dict(latitude_deg=11., longitude_deg=26.))
     assert other_reference["terminal_sha256"] == first["terminal_sha256"]
     receipts = [first, other_reference, run((11, 25)), run((10, 25), width=26),

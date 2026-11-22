@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.fast_scan_native import FastScanPolicyV2
-from leo.contracts.fast_standard_analysis import ALGO08
+from leo.contracts.fast_standard_analysis import ALGO08V2
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.fast_standard_analysis import render
 from leo.scanner.fast_scan_analysis import valid_window_support
@@ -22,7 +22,7 @@ from tools.pipeline_eval.qualification.blind_compact_run import detector
 
 # Qualified x86-64 Gauss release, including both possible pilot edges.
 PINS = {
-    "cancellation-factors.so": "98d094c9541d22a94396df9ce00778c20030fcf88ac52257bd975b304b916cb5",
+    "cancellation-factors.so": "f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809",
     "lower.f32": "1b98937cbd87fd5f27b82e4d535512ca5ee12b33a64a6bae90e07ec041368adb",
     "upper.f32": "eef7b89526adb80fc64cd0be61f35b7cc5edceb3eb293d72066378e751b4467c",
     "tracks.json": "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a",
@@ -98,7 +98,7 @@ def scan_report(recording, run_id, native):
                                cfo_hz=c["fractional_tracking_cfo_hz"], margin=margin,
                                time_s=(p["valid_start_counter"]-native["clock_anchor"]["sample_counter"])
                                       / policy.sample_rate_hz))
-    return dict(schema_version=1, kind="fast-scan.report", model_version=ALGO08, run_id=run_id,
+    return dict(schema_version=1, kind="fast-scan.report", model_version=ALGO08V2, run_id=run_id,
                 recording_name=recording, session_id=source["session_id"], policy=policy.model_dump(),
                 rf_mapping_authorities=provenance["rf_mapping_authorities"], time_basis="relative sample counter",
                 qualified_tracking=True, channels=[channels[k] for k in sorted(channels)], points=points,
@@ -116,8 +116,8 @@ def analyze(recording, root, assets, archive, offer, reference=None, *, list_rep
             raise ValueError(f"Unqualified ALGO08 asset {name}")
     store, standard = FastScanStore(root), FastStandardAnalysisStore(root)
     session, inventory_sha, inventory = store.inventory(recording, verify_windows=False)
-    detector_id = "algo08-" + canonical_digest([ALGO08, inventory_sha])[7:39]
-    run_id = "algo08-" + canonical_digest([ALGO08, inventory_sha, offer.document(), reference])[7:39]
+    detector_id = "algo08-v2-" + canonical_digest([ALGO08V2, inventory_sha])[7:39]
+    run_id = "algo08-v2-" + canonical_digest([ALGO08V2, inventory_sha, offer.document(), reference])[7:39]
     detector_work = store.automatic_workspace(detector_id)
     with (detector_work/"owner.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -139,7 +139,7 @@ def analyze(recording, root, assets, archive, offer, reference=None, *, list_rep
         result = standard.detail(run_id)
         if result["state"] == "pending":
             prediction, packet, policy = solve(native, TleArchiveReader(archive), assets, offer)
-            terminal = dict(model_version=ALGO08, session_id=session, orbit_policy=policy, region=offer.document(),
+            terminal = dict(model_version=ALGO08V2, session_id=session, orbit_policy=policy, region=offer.document(),
                             decision=prediction["status"], reason=prediction.get("reason"),
                             arms=prediction["arms"], native_sha256=canonical_digest(native))
             immutable_json(workspace/"terminal.json", terminal)
@@ -150,8 +150,8 @@ def analyze(recording, root, assets, archive, offer, reference=None, *, list_rep
                 result = standard.withhold(run_id, prediction["reason"], **binding)
             elif prediction["status"] == "ok" and packet is not None:
                 pngs = render(packet, title=recording.name, evaluation_reference=reference)
-                doc = dict(**binding, run_id=run_id, schema_version=3, model_version=ALGO08,
-                           state="complete", selected_model=ALGO08, figures_model=ALGO08,
+                doc = dict(**binding, run_id=run_id, schema_version=3, model_version=ALGO08V2,
+                           state="complete", selected_model=ALGO08V2, figures_model=ALGO08V2,
                            reference_usage="evaluation_only", decision="compact_v5",
                            arms=packet["arms"], glrt_points=len(packet["observations"]),
                            objective_replay=packet["objective_replay"])

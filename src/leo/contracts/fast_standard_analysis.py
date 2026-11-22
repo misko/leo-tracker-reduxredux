@@ -5,12 +5,26 @@ from leo.contracts.algo08_region import Algo08Region
 
 MODEL = 'algo07-causal-guarded-reassociation-v1'
 ALGO08 = 'algo08-two-scan-compact-v5-v1'
+ALGO08V2 = 'algo08-two-scan-compact-v5-v2'
+COMPACT_MODELS = (ALGO08, ALGO08V2)
+
+
+def standard_model(run_id):
+    if run_id.startswith('algo08-v2-'):
+        return ALGO08V2
+    return ALGO08 if run_id.startswith('algo08-') else MODEL
+
+
+def standard_label(model):
+    return {ALGO08: 'ALGO08', ALGO08V2: 'ALGO08v2'}.get(model, 'ALGO07')
+
+
 PLOTS = ('ch1-4-all', 'ch5-8-all', 'ch1-4-unassociated', 'ch5-8-unassociated',
          'ch1-4-residuals', 'ch5-8-residuals', 'track-rms', 'position')
 
 
 def validate(document, *, model=MODEL):
-    versions = {MODEL: (1,), ALGO08: (2, 3)}[model]
+    versions = {MODEL: (1,), ALGO08: (2, 3), ALGO08V2: (3,)}[model]
     if (document.get('schema_version') not in versions or document.get('model_version') != model
             or document.get('state') != 'complete' or document.get('reference_usage') != 'evaluation_only'):
         raise ValueError('Invalid standard analysis publication')

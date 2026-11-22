@@ -12,7 +12,7 @@ from leo.analysis.localization_v4.native_bound import NativeBound
 from leo.analysis.polynomial_tracklets import TrackConfig
 from leo.application.localization_v3 import prepare_native_scan
 from leo.application.localization_v3_engine import _json_value, _prepared_values
-from leo.contracts.fast_standard_analysis import ALGO08
+from leo.contracts.fast_standard_analysis import ALGO08V2
 from leo.presentation.localization_v3 import prepare_packet
 from leo.presentation.position_path import recorded_fit_path
 from tools.pipeline_eval.qualification.compact_history_replay import history_support
@@ -32,13 +32,13 @@ def selected_packet(prepared, signed, fit):
     arms = fit["policy_arms"]
     _, replayed = baseline_pair(ctx)
     owners = {k: v["owners"] for k, v in publication_support(arms, replayed).items()}
-    stage = json.loads(json.dumps(dict(model_version=ALGO08, arms=arms), default=_json_value))
+    stage = json.loads(json.dumps(dict(model_version=ALGO08V2, arms=arms), default=_json_value))
     region = signed["scan"].search_region
-    path = recorded_fit_path([stage], ALGO08, region_center=region.center,
+    path = recorded_fit_path([stage], ALGO08V2, region_center=region.center,
                              box_width_km=region.width_km, schema_version=2)
     tracks = prepared["tracks"]
     return prepare_packet(ctx, owners, arms, tracks["observations"], tracks["tracks"],
-                          selected_model=ALGO08, position_path=path, grid_seconds=30)
+                          selected_model=ALGO08V2, position_path=path, grid_seconds=30)
 
 
 def solve(native, archive, assets, offer):

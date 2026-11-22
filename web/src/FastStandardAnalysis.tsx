@@ -16,7 +16,9 @@ const labels: Record<string,string> = {"ch1-4-all":"CH1–4 · GLRT, satellite o
 
 export function FastStandardAnalysis({runId}:{runId:string}) {
   const compact=runId.startsWith("algo08-");
-  const algorithm=compact?"ALGO08":"ALGO07";
+  const v2=runId.startsWith("algo08-v2-");
+  const algorithm=v2?"ALGO08v2":compact?"ALGO08":"ALGO07";
+  const expectedModel=v2?"algo08-two-scan-compact-v5-v2":compact?"algo08-two-scan-compact-v5-v1":"algo07-causal-guarded-reassociation-v1";
   const [data,setData]=useState<Analysis|null>(null);const [error,setError]=useState("");
   const base=`/api/v2/fast-scans/${encodeURIComponent(runId)}/standard-analysis`;
   useEffect(()=>{
@@ -25,12 +27,12 @@ export function FastStandardAnalysis({runId}:{runId:string}) {
       const response=await fetch(base,{signal:controller.signal});
       if(!response.ok)throw new Error(`Standard analysis unavailable (${response.status})`);
       const value=await response.json() as Analysis;
-      if(!(compact ? [2,3] : [1]).includes(value.schema_version) || value.model_version!==(compact?"algo08-two-scan-compact-v5-v1":"algo07-causal-guarded-reassociation-v1"))throw new Error("Standard analysis belongs to another algorithm");
+      if(!(v2 ? [3] : compact ? [2,3] : [1]).includes(value.schema_version) || value.model_version!==expectedModel)throw new Error("Standard analysis belongs to another algorithm");
       if(!controller.signal.aborted){setData(value);setError("");}
     }catch(e){if(!controller.signal.aborted)setError(String(e));}finally{busy=false;}};
     void refresh();const timer=setInterval(()=>void refresh(),10000);
     return()=>{controller.abort();clearInterval(timer);};
-  },[base,compact]);
+  },[base,compact,v2,expectedModel]);
   const complete=data?.state==="complete";
   return <section className="scanner-results-panel" aria-label={`Standard ${algorithm} analysis`}>
     <h3>Standard analysis · {algorithm}</h3>

@@ -8,6 +8,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib import colormaps
 
+from leo.contracts.fast_standard_analysis import standard_label
 from leo.analysis.research.retained_track_likelihood import PERIOD
 from leo.presentation.fast_scan_orbits import render_fast_scan_orbits
 from leo.presentation.regional_position import draw_position_grid
@@ -45,7 +46,7 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
         draw_position_grid(figure,axis,
             ((p['east_km'],p['north_km'],p['scores']['fitted_c']) for p in position_grid['points']),
             score_label='Conditional fitted-c objective (lower is better)')
-    model='ALGO08' if selected_model and selected_model.startswith('algo08-') else 'ALGO07'
+    model=standard_label(selected_model)
     if model=='ALGO07' and selected_model and not selected_model.startswith('algo07-'):
         model+=' · retained '+selected_model.split('-')[0].upper()
     descriptions=[]
@@ -155,8 +156,8 @@ def render_position(arms, *, title, selected_model=None, evaluation_reference=No
 
 
 def render(packet, *, title, evaluation_reference=None):
-    model='ALGO08' if packet.get('selected_model','').startswith('algo08-') else 'ALGO07'
-    if model == 'ALGO08':
+    model=standard_label(packet.get('selected_model'))
+    if model in ('ALGO08', 'ALGO08v2'):
         frame = packet['position_grid']
         lat, lon = frame['region_center']
         title += f" · {frame['box_width_km']:g} km square at ({lat:.5f}°, {lon:.5f}°)"

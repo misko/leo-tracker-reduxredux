@@ -5,6 +5,17 @@ import {FastStandardAnalysis} from "./FastStandardAnalysis";
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 const names=["ch1-4-all","ch5-8-all","ch1-4-unassociated","ch5-8-unassociated","ch1-4-residuals","ch5-8-residuals","track-rms","position"];
 
+it("reads v2 by its own model and rejects a v1 receipt under a v2 run",async()=>{
+  let model="algo08-two-scan-compact-v5-v2";
+  vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({schema_version:3,
+    model_version:model,state:"withheld",reason:"no_active_curvature",artifacts:[]})})));
+  const view=render(<FastStandardAnalysis runId="algo08-v2-first"/>);
+  expect(await screen.findByText(/Position withheld/)).toBeInTheDocument();
+  model="algo08-two-scan-compact-v5-v1";
+  view.rerender(<FastStandardAnalysis runId="algo08-v2-second"/>);
+  expect(await screen.findByRole("alert")).toHaveTextContent("another algorithm");
+});
+
 it("displays the declared search area even when the receiver withholds",async()=>{
   vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({schema_version:3,
     model_version:"algo08-two-scan-compact-v5-v1",state:"withheld",reason:"no_active_curvature",

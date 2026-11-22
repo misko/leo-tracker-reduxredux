@@ -10,7 +10,7 @@ from urllib.request import urlopen
 
 from PIL import Image, ImageDraw, ImageFont
 
-from leo.contracts.fast_standard_analysis import ALGO08, MODEL, PLOTS
+from leo.contracts.fast_standard_analysis import COMPACT_MODELS, MODEL, PLOTS, standard_label
 
 
 def gallery(origin, original, compact, out):
@@ -20,7 +20,7 @@ def gallery(origin, original, compact, out):
 
     roots = [f"/api/v2/fast-scans/{quote(rid, safe='')}/standard-analysis" for rid in (original, compact)]
     docs = [json.loads(fetch(root)[0]) for root in roots]
-    if ([d["model_version"] for d in docs] != [MODEL, ALGO08]
+    if (docs[0]["model_version"] != MODEL or docs[1]["model_version"] not in COMPACT_MODELS
             or docs[0]["session_id"] != docs[1]["session_id"]
             or [d["run_id"] for d in docs] != [original, compact]
             or any(d["state"] != "complete" or [a["name"] for a in d["artifacts"]] != list(PLOTS)
@@ -48,7 +48,7 @@ def gallery(origin, original, compact, out):
         width = max(im.width for im in pair)
         canvas = Image.new("RGB", (width*2+24, max(im.height for im in pair)+60), "white")
         pen = ImageDraw.Draw(canvas)
-        for i, (label, page) in enumerate(zip(("ALGO07", "ALGO08"), pair, strict=True)):
+        for i, (label, page) in enumerate(zip((standard_label(doc["model_version"]) for doc in docs), pair, strict=True)):
             x = (width+24)*i
             pen.text((x+20, 9), label, font=font, fill="#192f3c")
             canvas.paste(page, (x+(width-page.width)//2, 60))

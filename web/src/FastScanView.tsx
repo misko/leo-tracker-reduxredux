@@ -36,7 +36,7 @@ export function FastScanView({ renderTracking, recordingId }: {
   const [orbitError, setOrbitError] = useState("");
   const selectedJob = automatic.find(job => job.recording_id === recordingId);
   const selectedRun = recordingId ? selectedJob?.run_id ?? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
-  const compact = selectedRun.startsWith("algo08-") || selectedJob?.standard_algorithm === "ALGO08";
+  const compact = selectedRun.startsWith("algo08-") || ["ALGO08","ALGO08v2"].includes(selectedJob?.standard_algorithm ?? "");
   useEffect(() => {
     setOrbits([]);
     setOrbitError("");
@@ -131,7 +131,7 @@ export function FastScanView({ renderTracking, recordingId }: {
     </>}
     </section>
     {selectedRun && <FastStandardAnalysis runId={selectedRun} />}
-    {compact && !selectedRun && <p role="status">ALGO08 is processing the sealed recording.</p>}
+    {compact && !selectedRun && <p role="status">{selectedJob?.standard_algorithm} is processing the sealed recording.</p>}
     <details className="scanner-results-panel"><summary>Historical and experimental analyses</summary>
     <p>Historical tracking and positioning products for this recording.</p>
     {selectedRun && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">

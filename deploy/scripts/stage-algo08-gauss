@@ -3,7 +3,7 @@
 set -euo pipefail
 release=${1:?absolute new release directory}
 packages=${2:?qualified Python 3.12 site-packages directory}
-assets=${3:?directory containing the qualified pilot files, detector and tracks.json}
+assets=${3:?directory containing the qualified pilot files and tracks.json}
 test ! -e "$release"
 root=$(git rev-parse --show-toplevel)
 cd "$root"
@@ -16,7 +16,8 @@ rsync -a --exclude __pycache__ src/ "$release/src/"
 rsync -a --exclude __pycache__ tools/pipeline_eval/ "$release/tools/pipeline_eval/"
 install -m 0644 tools/algo08_{scan,position}.py "$release/tools/"
 install -m 0755 deploy/scripts/run-algo08 "$release/run"
-install -m 0644 "$assets"/{lower.f32,upper.f32,cancellation-factors.so,tracks.json} "$release/assets/"
+install -m 0644 "$assets"/{lower.f32,upper.f32,tracks.json} "$release/assets/"
+"$py" native/algo08v2/build.py "$release/assets/cancellation-factors.so"
 "$py" -m venv --without-pip "$release/venv"
 rsync -a --exclude '*editable*' --exclude __pycache__ "$packages/" "$release/venv/lib/python3.12/site-packages/"
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1

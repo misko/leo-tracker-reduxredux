@@ -214,3 +214,14 @@ def test_path_cannot_end_at_a_position_other_than_the_published_one(tmp_path):
     store=FastStandardAnalysisStore(tmp_path)
     with pytest.raises(ValueError,match='published coordinates'):store.publish('run',d,pngs,position_path=path)
     assert store.detail('run')['state']=='pending'
+def test_compact_versions_keep_distinct_terminal_receipts(tmp_path):
+    from leo.contracts.fast_standard_analysis import ALGO08, ALGO08V2
+    store = FastStandardAnalysisStore(tmp_path)
+    v1, v2 = "algo08-test", "algo08-v2-test"
+    assert store.withhold(v1, "no carriers")["model_version"] == ALGO08
+    assert store.detail(v2)["state"] == "pending"
+    with pytest.raises(ValueError, match="search region"):
+        store.withhold(v2, "no carriers")
+    region = {"center": [0, 2], "width_km": 25}
+    assert store.withhold(v2, "no carriers", region=region)["model_version"] == ALGO08V2
+    assert store.detail(v1)["model_version"] == ALGO08
