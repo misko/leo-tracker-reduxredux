@@ -1,0 +1,169 @@
+{
+  "assigned": 4,
+  "candidate_specification_digest": "sha256:a32a945a1e6d9e602f02fa636e83761d47e2992d7da4b0c4aa55eba6927cd9ca",
+  "cpu": 2,
+  "coverage": {
+    "verified": [
+      "DS30-0374"
+    ],
+    "missing": [
+      "DS30-0008",
+      "DS30-0155",
+      "DS30-0001"
+    ],
+    "failed": [],
+    "invalid": [],
+    "development": []
+  },
+  "cases": [
+    {
+      "case": "DS30-0374",
+      "rank": 1,
+      "expected_order": [
+        "candidate",
+        "baseline"
+      ],
+      "audit_sha256": "sha256:0aeb15ed7753c6c0299569906910f198f2b50aabcac7743960e8eef195f21081",
+      "pair_sha256": "62b33046cd943678548b7cabdc7331811ccf13bea8fb69a96b351e7c1f42af6c",
+      "audit": {
+        "probe_rows": {
+          "baseline": 9288,
+          "candidate": 9288
+        },
+        "selected": {
+          "selected_common": 4128,
+          "selected_lost": 29,
+          "selected_added": 6
+        },
+        "decisions": {
+          "baseline": "complete",
+          "candidate": "complete"
+        },
+        "reasons": {
+          "baseline": null,
+          "candidate": null
+        },
+        "owners_equal": {
+          "c0": false,
+          "fitted_c": false
+        },
+        "scientific_evidence_equal": {
+          "grid": false,
+          "path": false
+        },
+        "figures_changed": [
+          "ch1-4-all",
+          "ch1-4-residuals",
+          "ch1-4-unassociated",
+          "ch5-8-all",
+          "ch5-8-residuals",
+          "ch5-8-unassociated",
+          "position",
+          "track-rms"
+        ],
+        "figures_added": [],
+        "figures_lost": [],
+        "displacement_km": {
+          "c0": 0.09142826051159991,
+          "fitted_c": 0.05163256556463813
+        }
+      },
+      "elapsed_s": {
+        "baseline": 129.23757362551987,
+        "candidate": 81.69469235185534
+      },
+      "cpu_s": {
+        "baseline": 126.70047699999999,
+        "candidate": 68.869223
+      },
+      "arms": {
+        "baseline": {
+          "c0": {
+            "latlon": [
+              37.849624957021575,
+              -122.46463521588952
+            ],
+            "rf_rms_hz": 101.53591275629088
+          },
+          "fitted_c": {
+            "latlon": [
+              37.85068163204372,
+              -122.46380878477721
+            ],
+            "rf_rms_hz": 101.51980285094695
+          }
+        },
+        "candidate": {
+          "c0": {
+            "latlon": [
+              37.84944949815835,
+              -122.46565252687789
+            ],
+            "rf_rms_hz": 101.16786064668625
+          },
+          "fitted_c": {
+            "latlon": [
+              37.85057890697923,
+              -122.46438227685336
+            ],
+            "rf_rms_hz": 101.15518202445683
+          }
+        }
+      },
+      "raw_authority": "sha256:4c30ea3bf9589b092bfe5bc38968a2ec5aca39565c9428416f164191ee017265",
+      "actual_order": [
+        "candidate",
+        "baseline"
+      ],
+      "expected_archive": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0374/tle",
+      "region": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "width_km": 25.0,
+        "screen_center": [
+          37.5,
+          -122.0
+        ]
+      },
+      "state": "verified",
+      "archive": {
+        "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0374/tle",
+        "snapshots_sha256": "sha256:da3e9917ce3152f30f1f204efdf7770eb64793360e7fa536dc747d9d8aff3ef4"
+      }
+    },
+    {
+      "case": "DS30-0008",
+      "rank": 2,
+      "expected_order": [
+        "baseline",
+        "candidate"
+      ],
+      "state": "missing"
+    },
+    {
+      "case": "DS30-0155",
+      "rank": 3,
+      "expected_order": [
+        "candidate",
+        "baseline"
+      ],
+      "state": "missing"
+    },
+    {
+      "case": "DS30-0001",
+      "rank": 4,
+      "expected_order": [
+        "baseline",
+        "candidate"
+      ],
+      "state": "missing"
+    }
+  ],
+  "comparison": "conditional-residual",
+  "geographic_confirmation": false,
+  "elapsed_gates": null,
+  "position": null,
+  "quality": null
+}

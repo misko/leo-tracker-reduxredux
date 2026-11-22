@@ -313,6 +313,14 @@ def test_only_the_frozen_conditional_receipt_can_allow_science_changes(study):
         stage.comparison_mode(dict(study.spec, schedule="conditional-residual"))
 
 
+def test_combined_receiver_solver_pin_is_specific_to_the_entire_spec(study, monkeypatch):
+    spec = dict(study.spec, schedule="conditional-residual", solver="collapsed-repair")
+    monkeypatch.setattr(stage, "Q15_COLLAPSED_REPAIR", canonical_digest(spec))
+    assert stage.comparison_mode(spec) == "conditional-residual"
+    with pytest.raises(ValueError, match="Only the frozen"):
+        stage.comparison_mode(dict(spec, regional_veto=False))
+
+
 def test_approximate_stage_scores_changed_evidence_and_negative_results(conditional_study, monkeypatch):
     study = conditional_study
     first, second, third, fourth = study.assignments

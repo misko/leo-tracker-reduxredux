@@ -29,6 +29,7 @@ REFERENCE_SHA256 = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea326378
 BASELINE_SHA256 = "fd5e2cd3e220998a48219d7f8a7f0710c0b41269906da3b3c6ad0e49b6f92370"
 BASELINE_DETECTOR = "sha256:f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809"
 CONDITIONAL_RESIDUAL = "sha256:65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6"
+Q15_COLLAPSED_REPAIR = "sha256:a32a945a1e6d9e602f02fa636e83761d47e2992d7da4b0c4aa55eba6927cd9ca"
 EVIDENCE_FIELDS = ("raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests")
 BUILDS = ("baseline", "candidate")
 
@@ -61,8 +62,8 @@ def file_sha(path):
 
 def comparison_mode(spec):
     if spec.get("schedule") == "conditional-residual":
-        if canonical_digest(spec) != CONDITIONAL_RESIDUAL:
-            raise ValueError("Only the frozen conditional-residual candidate may use approximate comparison")
+        if canonical_digest(spec) not in (CONDITIONAL_RESIDUAL, Q15_COLLAPSED_REPAIR):
+            raise ValueError("Only the frozen conditional-residual candidates may use approximate comparison")
         return "conditional-residual"
     return "exact"
 
