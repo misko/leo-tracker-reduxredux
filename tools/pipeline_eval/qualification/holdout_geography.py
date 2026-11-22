@@ -1,7 +1,12 @@
 """Scorer-side geographic sampling for the ALGO08 single-core confirmation."""
 
+from math import cos, radians
+
 from tools.pipeline_eval.scoring import distance_km
 
+EDGE_PROTOCOL = "paired-region-edges-v1"
+CONTAINING = {"containing", "edge-containing"}
+EDGE_CASES = CONTAINING | {"edge-omitted", "far"}
 
 # Centers of earlier development simulations and the real DS26/29/30 station.
 # The scene generator adds at most two degrees in each coordinate to a center.
@@ -36,12 +41,23 @@ def fresh_layout(rng, additional_centers=()):
 
 
 def fresh_offers(rng, site):
-    from .compact_blind_generator import regional_offer
-
+    """Vary both coordinates and challenge the same face from either side."""
     width = float(rng.uniform(18, 40))
-    cases = {}
-    for condition, bounds in [("containing", (.15, .97)), ("omitted", (1.04, 1.35)), ("far", (2.5, 5.5))]:
-        axis, sign = int(rng.integers(2)), int(rng.choice([-1, 1]))
-        distance = width / 2 * rng.uniform(*bounds)
-        cases[condition] = regional_offer(site, axis, sign, distance)
-    return width, cases
+    half = width / 2
+
+    def offer(axis, sign, distance):
+        along = float(rng.uniform(-.75, .75)) * half
+        east, north = (sign * distance, along) if axis == 0 else (along, sign * distance)
+        lat = site[0] - north / 111.
+        return [lat, site[1] - east / (111.32 * cos(radians(lat)))]
+
+    def face():
+        return int(rng.integers(2)), int(rng.choice([-1, 1]))
+
+    edge = face()
+    return width, {
+        "containing": offer(*face(), half * rng.uniform(.15, .8)),
+        "edge-containing": offer(*edge, half - rng.uniform(.05, .25)),
+        "edge-omitted": offer(*edge, half + rng.uniform(.05, .25)),
+        "far": offer(*face(), half * rng.uniform(2.5, 5.5)),
+    }

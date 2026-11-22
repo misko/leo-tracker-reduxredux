@@ -1,7 +1,7 @@
 import numpy as np
 
 from tools.pipeline_eval.qualification.compact_blind_generator import local_offset
-from tools.pipeline_eval.qualification.holdout_geography import DEVELOPMENT_CENTERS, fresh_layout, fresh_offers
+from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, DEVELOPMENT_CENTERS, EDGE_CASES, fresh_layout, fresh_offers
 from tools.pipeline_eval.scoring import distance_km
 
 
@@ -27,7 +27,16 @@ def test_offer_labels_match_the_search_square_across_widths_and_hemispheres():
         for site, _edge in fresh_layout(rng):
             width, offers = fresh_offers(rng, site)
             assert 18 <= width <= 40
+            assert set(offers) == EDGE_CASES
+            edge_faces = []
             for name, center in offers.items():
-                offset = max(map(abs, local_offset(site, center)))
-                assert (offset < width / 2) == (name == "containing")
+                east_north = local_offset(site, center)
+                axis = int(np.argmax(np.abs(east_north)))
+                offset = abs(east_north[axis])
+                assert all(abs(x) > 0 for x in east_north)
+                assert (offset < width / 2) == (name in CONTAINING)
                 assert (offset > width) == (name == "far")
+                if name.startswith("edge-"):
+                    assert .05 <= abs(offset - width / 2) <= .25
+                    edge_faces.append((axis, np.sign(east_north[axis])))
+            assert len(set(edge_faces)) == 1

@@ -46,7 +46,7 @@ def generate(work, seed=None, fresh=False):
     inputs = {"offers": {}, "recordings": {}}
     layout = [((48., 15.), "lower"), ((-33., 20.), "upper")]
     if fresh:
-        from tools.pipeline_eval.qualification.holdout_geography import fresh_layout, fresh_offers
+        from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_layout, fresh_offers
         layout = fresh_layout(rng)
     for index, (box, edge) in enumerate(layout):
         anchor = received + (3740 + 360 * index) * 10**9
@@ -101,6 +101,7 @@ def generate(work, seed=None, fresh=False):
         # The archive names bind collection timestamps and the object digests.
         inputs["tle_objects"] = sorted(p.relative_to(public / "tle").as_posix() for p in archive.glob("*.tle"))
         panel["inputs"] = inputs
+        panel["geography_protocol"] = EDGE_PROTOCOL
     save(public / "panel.json", panel)
 
 

@@ -3,7 +3,9 @@ import hashlib
 import json
 
 import pytest
+import numpy as np
 
+from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_offers
 from tools.pipeline_eval.qualification.score_paired_holdout import lock, pinned, score
 
 
@@ -86,3 +88,34 @@ def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_pat
         lock(path,digest,"spec",tmp_path)
     with pytest.raises(ValueError, match="Changed"):
         pinned(path, "00")
+
+
+def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_edge_fixes():
+    rng = np.random.default_rng(991)
+    data = dict(cases=[], geography_protocol=EDGE_PROTOCOL)
+    key = dict(answers={})
+    for recording, site in [("a", (16., 30.)), ("b", (-38., 40.))]:
+        width, offers = fresh_offers(rng, site)
+        for condition, center in offers.items():
+            job = dict(recording=recording, offer=recording + condition)
+            key["answers"][job["offer"]] = dict(recording=recording, condition=condition, truth=site)
+            contained = condition in {"containing", "edge-containing"}
+            runs = {label: run(elapsed=seconds, withheld=not contained)
+                    for label, seconds in [("baseline", 4.), ("candidate", 1.)]}
+            for result in runs.values():
+                result["receipt"]["region"] = dict(center=center, width_km=width)
+                for arm in result["arms"].values():
+                    arm["latlon"] = list(site) if contained else None
+            data["cases"].append(dict(job=job, result=dict(runs=runs)))
+    result = score(data, key)
+    assert result["passed"] and result["assigned"] == 8
+    assert all(s["false_fixes"] == 0 for s in result["by_site"])
+    case = next(c for c in data["cases"] if c["job"]["offer"] == "bedge-containing")
+    lost = case["result"]["runs"]["candidate"]
+    lost["receipt"]["decision"] = "withheld"
+    for arm in lost["arms"].values():
+        arm["latlon"] = None
+    assert not score(data, key)["relative_quality_preserved"]
+    data["cases"].remove(case)
+    del key["answers"]["bedge-containing"]
+    assert not score(data, key)["geographic_confirmation_coverage"]

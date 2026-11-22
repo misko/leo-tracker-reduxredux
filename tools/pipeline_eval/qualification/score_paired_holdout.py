@@ -8,6 +8,7 @@ from pathlib import Path
 from statistics import median
 
 from leo.storage.fast_scan import immutable_json
+from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, EDGE_CASES, EDGE_PROTOCOL
 from tools.pipeline_eval.scoring import ARMS, distance_km, distribution, thresholds
 
 
@@ -34,7 +35,10 @@ def lock(panel_path, panel_sha, spec_digest, runs):
         else:
             result = {"failure": "Missing paired run"}
         cases.append(dict(job=job, result=result))
-    return dict(panel_sha256=panel_sha, truth_commitment=panel["commitment"],
+    protocol = panel.get("geography_protocol")
+    if protocol not in (None, EDGE_PROTOCOL):
+        raise ValueError("Unknown geographic confirmation protocol")
+    return dict(panel_sha256=panel_sha, truth_commitment=panel["commitment"], geography_protocol=protocol,
                 candidate_specification_digest=spec_digest, cases=cases)
 
 
@@ -70,8 +74,11 @@ def score(locked, truth):
                     region = receipt["region"]
                     lat, lon = region["center"]
                     offset = max(abs((site[0]-lat)*111), abs((site[1]-lon)*111.32*cos(radians(lat))))
-                    if (offset <= region["width_km"]/2) != (condition == "containing"):
+                    clearance = region["width_km"]/2 - offset
+                    if (clearance >= 0) != (condition in CONTAINING):
                         raise ValueError("Offered square disagrees with the scoring condition")
+                    if condition in ("edge-containing", "edge-omitted") and not .05 - 1e-8 <= abs(clearance) <= .25 + 1e-8:
+                        raise ValueError("Edge offer outside specified distance from the face")
                     if (position is not None) != (receipt["decision"] == "complete"):
                         raise ValueError("Position disagrees with its terminal decision")
                 groups[site, condition, calibration, arm].append(error)
@@ -79,18 +86,18 @@ def score(locked, truth):
                                  arm=arm, decision=receipt.get("decision", "failed"), error_km=error,
                                  frequency_rms_hz=prediction.get("rf_rms_hz"), elapsed_s=run.get("elapsed_s"),
                                  cpu_s=run.get("cpu_s"), pair_failure=result.get("failure")))
-            if condition == "containing" and errors[0] is not None and errors[1] is None:
+            if condition in CONTAINING and errors[0] is not None and errors[1] is None:
                 quality = False
-            if condition != "containing" and errors[0] is None and errors[1] is not None:
+            if condition not in CONTAINING and errors[0] is None and errors[1] is not None:
                 quality = False
     summaries = []
     for (site, condition, calibration, arm), errors in groups.items():
         stats = distribution(errors)
         summaries.append(dict(site=site, condition=condition, calibration=calibration, arm=arm,
                               assigned=len(errors), fixes=stats["n"], error_km=stats,
-                              false_fixes=stats["n"] if condition != "containing" else 0,
+                              false_fixes=stats["n"] if condition not in CONTAINING else 0,
                               within_km_count=thresholds(errors)))
-        if arm == "candidate" and condition == "containing":
+        if arm == "candidate" and condition in CONTAINING:
             base = distribution(groups[site, condition, calibration, "baseline"])
             if base["n"] and (not stats["n"] or any(stats[k] > base[k] for k in ("p50", "p90"))):
                 quality = False
@@ -101,7 +108,12 @@ def score(locked, truth):
     tested_sites = {tuple(s["site"]) for s in summaries if s["condition"] == "containing"
                     and s["arm"] == "baseline" and s["fixes"] > 0}
     coverage = len(sites) >= 2 and tested_sites == sites and all(
-        any(s["site"] == site and s["condition"] != "containing" for s in summaries) for site in sites)
+        any(s["site"] == site and s["condition"] not in CONTAINING for s in summaries) for site in sites)
+    if locked.get("geography_protocol") == EDGE_PROTOCOL:
+        for site in sites:
+            controls = [s for s in summaries if s["site"] == site and s["arm"] == "baseline"]
+            coverage &= {s["condition"] for s in controls} == EDGE_CASES
+            coverage &= all(s["fixes"] > 0 for s in controls if s["condition"] in CONTAINING)
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
                 geographic_confirmation_coverage=coverage,

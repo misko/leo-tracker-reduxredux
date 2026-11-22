@@ -17,3 +17,9 @@ Treat all previously published regional trials as development regressions. The t
 5. For exact refactors compare per-recording decisions, owners, coordinates and published evidence. For approximate proposals our starting gate is conservative: on containing offers, preserve each baseline fix and avoid worse median or P90 position error per site and per calibration arm. Count newly issued fixes on withheld cases separately. On omitted offers allow withholding in place of a wrong baseline fix, require no additional false fixes, and report all remaining false fixes. Do not claim geographic reliability from a small or single-site panel. A design that misses the agreed gate stays experimental.
 
 Production changes are outside this study. Each stage stops for review; 64 or a full replay requires an unresolved question.
+
+### Blind search-region boundaries
+
+Fresh panels assign four unlabeled offers to each simulated recording. One contains the receiver well inside the square. Two place it 50–250 m inside or outside the same face, with independent offsets along that face. The fourth puts the receiver far outside. Both center coordinates vary. Only the scorer sees the relationship to truth. Inference runs each offer independently and receives its own square. Reusing the waveform across offers holds signal quality and satellite visibility fixed. The two locations each require a separate recording.
+
+The scorer reports each location, offer type and calibration arm separately. A lost valid boundary fix fails the quality check even when interior cases succeed. It also counts false fixes inherited from the baseline. Fresh validation requires coverage of all four offer types at each site. The public northern near-edge example motivated these controls and remains a development case. [Boundary experiment](edge-trial.md)
