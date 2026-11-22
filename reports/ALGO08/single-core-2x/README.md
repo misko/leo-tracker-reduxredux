@@ -30,6 +30,10 @@ Restoring predictive observations brought the physical errors down to 2.005 and 
 
 The complete physical detection file took about 55 ms of CPU to hand off, including validation and sealing. The paired 40-visit traces place caller overhead near 2% of acquisition CPU. Even removing this work entirely projects about 1.3% off the integrated candidate's CPU for DS30-0374. [Archive-to-detections measurements](receiver-boundary.md)
 
+Keeping only the first and last quarters of a scan cut the long physical solve from 28.69 to 13.68 CPU seconds. The fitted position error rose from 1.94 to 6.33 km. Applying that same schedule at the two public simulated sites improved fitted error in the north and more than doubled it in the south. An alternative that sampled observations only for early ranking and restored all observations for final fits reduced the physical solver to 26.70 CPU seconds and improved both physical errors. Its existing false fix on a far northern offer moved another 3 km away. [Receiver schedules and error curves](channel-schedules.md) · [Sampled initial solver](solver-sampled-initial.md)
+
+A shorter detector aperture retained every verified factor on one simulated prefix while losing 13 of 25 on the other. Halving the nominal scout rate also folds distinct legal carrier offsets into the same band. [Aperture results](receiver-aperture.md) · [Pilot bandwidth and sampling rate](receiver-rate.md) · [Exact discovery timing](solver-discovery.md)
+
 ## One full recording, both run orders
 
 The input comprised 1,200 sealed dual-antenna windows at the northern simulated site. Each invocation read the raw I/Q and started with a fresh output directory. The clock covered the receiver, both calibration fits, diagnostic grid, optimizer path, eight PNGs and standard report. The candidate combined detector `ab7b4765` with scan-scoped orbit parsing and the revised coarse salvage calculation. It ran on the same pinned CPU as the deployed baseline. [Candidate-first receipt](measurements/north-candidate-first.json) · [Baseline-first receipt](measurements/north-baseline-first.json)
