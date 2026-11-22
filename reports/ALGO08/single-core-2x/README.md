@@ -1,6 +1,26 @@
 # ALGO08v2 single-core experiments
 
-The first integrated candidate preserved both fixes and all eight PNGs on a previously published simulated recording away from Gauss. Its single-core CPU saving was 18–22%. End-to-end elapsed time varied substantially with run order. The 2× elapsed-time target remains open. [Qualification protocol](PROTOCOL.md)
+The latest integrated candidate cut raw-I/Q-to-publication time on physical recording **DS30-0374 from 130.64 to 104.56 seconds (1.25×)**. Single-core CPU fell from 129.42 to 93.40 seconds (1.39×). All 9,288 detector probe records, both positions and all eight PNGs matched. On a southern geographic simulation the repeat with both runs near CPU time took 30.32 versus 22.58 seconds (1.34×). The 2× target remains open. [Qualification protocol](PROTOCOL.md)
+
+## Physical and geographic checks of the updated candidate
+
+The build combines receiver `107909cc`, a single compressed input buffer, causal orbital parsing and coarse salvage statistics. The run traverses the same sealed recording in each arm. The physical recording is the first entry in the frozen DS30 order. It has 6,770 windows, of which 4,644 passed the existing capture-quality checks. The southern simulation has 1,200 valid windows. Both builds returned identical owners, optimizer paths, numerical grid values, frequency residuals and eight PNGs on each recording.
+
+| Recording and run order | Elapsed seconds, baseline → candidate | CPU seconds, baseline → candidate | Position error, fixed zero / fitted |
+|---|---:|---:|---:|
+| DS30-0374 · candidate first | 130.64 → 104.56 | 129.42 → 93.40 | 1.855 / 1.935 km |
+| Southern simulation · baseline first | 85.25 → 22.71 | 32.33 → 22.60 | 0.826 / 1.109 km |
+| Same southern recording · candidate first, repeat | 30.32 → 22.58 | 30.30 → 22.29 | 0.826 / 1.109 km |
+
+The first southern timing has a 53-second elapsed-minus-CPU gap for the baseline. On the physical recording the kernel reported 16,314,480 input blocks for the candidate and zero for the subsequent baseline. The first southern pair alone would cross the elapsed target. Its reversed-order repeat and the physical result show why that observation cannot establish a 2× speedup. [Physical receipt](measurements/DS30-0374.json) · [Southern baseline-first receipt](measurements/south-baseline-first.json) · [Southern candidate-first receipt](measurements/south-candidate-first.json)
+
+On DS30-0374, elapsed time to the detection-file timestamp was 88.93 → 69.30 seconds. From there through the terminal decision and diagnostic grid took 36.06 → 29.62 seconds. Finishing publication took 5.65 → 5.64 seconds. Halving the baseline on this recording would require another 39.24 seconds elapsed, or 28.69 seconds using CPU time as a separate design budget. Further changes must address acquisition and inference together. The four- and sixteen-recording panels remain reserved for a stronger candidate.
+
+![Time ratios for the physical recording, the repeated southern simulation and a burst sampling experiment that lost the fix.](triage-runtime.png)
+
+![Cumulative position errors by recording and calibration setting. The exact curves coincide on the southern and DS30 cases. Burst sampling withheld both positions in the northern simulation.](triage-position-error.png)
+
+The northern burst result used a separate experimental schedule. It discarded 576 valid visits and lost the baseline fix. Its shorter runtime includes the resulting withholding path. The error plot keeps that recording in the denominator. [Burst experiment](cadence.md) · [Plot generator](plot_triage.py)
 
 ## One full recording, both run orders
 
@@ -31,20 +51,22 @@ The inference launcher passes only the offered region, raw recording and capture
 
 ## Component results
 
-The later detector `107909cc` ran **1.74–1.77×** faster in native calls on the first saved 160 lanes. Across four small waveform panels, including prefixes from both simulated locations, 484 lane comparisons reproduced the exported factors. This detector differs from the `ab7b4765` receiver in the end-to-end table. The solver changes produced **1.14×** on the larger of two saved DS30 solver inputs and **1.32–1.33×** on the two containing regional simulations. [Receiver measurements and build flags](receiver.md) · [Solver measurements and checks](solver.md)
+The later detector `107909cc` ran **1.74–1.77×** faster in native calls on the first saved 160 lanes. Across four small waveform panels, including prefixes from both simulated locations, 484 lane comparisons reproduced the exported factors. Single-allocation compressed input reduced reader CPU by 25–26% on two short sealed prefixes. The solver changes produced **1.14×** on the larger of two saved DS30 solver inputs and **1.32–1.33×** on the two containing regional simulations. [Receiver and build flags](receiver.md) · [Compressed input](receiver-ingress.md) · [Solver results](solver.md) · [Guarded residual statistics](solver-statistics.md) · [Sparse solver prototype](solver-schur.md)
 
 ## Reproduce a pair on Gauss
 
-Build the receiver following the receiver report. Use the pinned release and a checkout of this research branch, including its matching `tools` package. In a copy of the candidate specification from either receipt, replace `detector` with the absolute path to the matching library and keep its SHA-256. Supply one saved recording and its public search offer per command.
+Build the receiver following the receiver report. Freeze a runner against the pinned release with `python -m tools.pipeline_eval.qualification.freeze_publication "$bundle" "$detector" "$detector_sha256" --solver combined --ingress compressed-buffer` using the Python and path settings below. Set `candidate_spec="$bundle/spec.json"`. For the southern and DS30 timings the measured runner and freeze script are at commit `464d79150` and the buffered reader source is at `345093401`. The earlier northern pair used the runner at `7bd42c2fa`. The candidate source hashes are in each receipt. The current runner scopes the input buffer to acquisition. Supply one saved recording and its public search offer per command.
 
 ```sh
 release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
 export PYTHONPATH="$PWD:$release/src:$release"
 "$release/venv/bin/python" -BPs -m tools.pipeline_eval.qualification.paired_publication \
-  "$recording" "$offer" "$tle_archive" "$PWD/reports/ALGO08/single-core-2x/run-candidate" \
+  "$recording" "$offer" "$tle_archive" "$bundle/reports/ALGO08/single-core-2x/run-candidate" \
   "$new_output_dir" --candidate-config "$candidate_spec" --first baseline
 ```
 
 Use a separate new output directory and `--first candidate` for reverse order. The harness serializes work with the shared Gauss lock and records the run order, CPU and elapsed seconds, decisions, both calibration arms and verified publication evidence. [Paired benchmark](../../../tools/pipeline_eval/qualification/paired_publication.py)
 
 For fresh confirmation, generate the public panel under the scorer account. Record its SHA-256 and the candidate source and binary pins before inference. Under the separate inference account, supply `--blind-panel "$public/panel.json" "$panel_sha256"` on each assigned pair. This checks the manifest digest, matching recording and offer, truth commitment, and effective isolation from the scoring key. Keep both runs on the same public inputs and lock every result before releasing the scoring key.
+
+Store each assigned pair under `$runs/<offer>/pair.json`. Use `python -m tools.pipeline_eval.qualification.score_paired_holdout lock "$public/panel.json" "$panel_sha256" "$candidate_spec_digest" "$runs" "$locked"` to seal all assignments and record the printed SHA-256 independently. Then use `score "$locked" "$locked_sha256" "$scoring_key" "$summary"` on the same module under the scorer account. Missing cases remain in the denominator and prevent qualification. The summary includes both timing gates, errors and false fixes by site and calibration arm. A relative pass can still reproduce a known baseline false fix.

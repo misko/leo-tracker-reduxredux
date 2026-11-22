@@ -1,0 +1,88 @@
+from copy import deepcopy
+import hashlib
+import json
+
+import pytest
+
+from tools.pipeline_eval.qualification.score_paired_holdout import lock, pinned, score
+
+
+def run(latitude=10., elapsed=1., withheld=False, near=True):
+    center = [10., 30.] if near else [20., 30.]
+    arms = {c: dict(latlon=None if withheld else [latitude, 30.], rf_rms_hz=1.1)
+            for c in ("c0", "fitted_c")}
+    return dict(receipt=dict(region=dict(center=center, width_km=20),
+                             decision="withheld" if withheld else "complete"),
+                arms=arms, elapsed_s=elapsed, cpu_s=elapsed)
+
+
+def cases():
+    def make(offer, baseline, candidate):
+        return dict(job=dict(offer=offer, recording="r"), result=dict(runs=dict(baseline=baseline, candidate=candidate)))
+    key = {"answers": {k: dict(recording="r", truth=[10., 30.], condition=k) for k in ("containing", "far")}}
+    data = dict(cases=[make("containing", run(elapsed=4.), run()), make("far", run(20., 3., near=False),
+                                                                      run(20., 1., near=False))])
+    return data, key
+
+
+def test_inherited_false_fixes_count_even_when_relative_gates_pass():
+    data, key = cases()
+    result = score(data, key)
+    assert result["relative_quality_preserved"] and result["summed_elapsed_ratio"] == pytest.approx(2/7)
+    assert not result["passed"]  # One geographic site cannot qualify a two-site confirmation.
+    assert {s["false_fixes"] for s in result["by_site"] if s["condition"]=="far"} == {1}
+    assert all(s["within_km_count"]["1"] == 0 for s in result["by_site"] if s["condition"]=="far")
+    data["cases"][1]["result"]["runs"]["baseline"] = run(withheld=True, near=False)
+    assert not score(data, key)["relative_quality_preserved"]
+
+
+def test_two_site_confirmation_requires_both_median_and_total_ratios():
+    data, key = cases()
+    another = deepcopy(data["cases"])
+    for c in another:
+        condition = c["job"]["offer"]
+        c["job"].update(offer="second-"+condition, recording="s")
+        key["answers"][c["job"]["offer"]] = dict(recording="s", condition=condition, truth=[-22., 30.])
+        for r in c["result"]["runs"].values():
+            r["receipt"]["region"]["center"][0] -= 32
+            for arm in r["arms"].values():
+                arm["latlon"][0] -= 32
+    data["cases"].extend(another)
+    assert score(data,key)["passed"]
+    another[0]["result"]["runs"]["candidate"]["elapsed_s"] = 100.
+    result = score(data,key)
+    assert result["median_elapsed_ratio"] <= .5 and result["summed_elapsed_ratio"] > .5
+    assert not result["passed"]
+
+
+def test_lost_fix_missing_pair_worse_error_and_summed_latency_cannot_pass():
+    initial, key = cases()
+    for bad in (run(withheld=True), run(latitude=10.05)):
+        data = deepcopy(initial)
+        data["cases"][0]["result"]["runs"]["candidate"] = bad
+        assert not score(data,key)["passed"]
+    data = deepcopy(initial)
+    data["cases"][0]["result"] = dict(failure="missing")
+    result = score(data,key)
+    assert not result["passed"] and result["assigned"] == 2 and result["summed_elapsed_ratio"] is None
+    assert len(result["rows"]) == 8
+    data = deepcopy(initial)
+    data["cases"][1]["result"]["runs"]["candidate"]["elapsed_s"] = 2.8
+    assert not score(data,key)["passed"]
+
+
+def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_path):
+    jobs = [dict(offer="a",recording="r"),dict(offer="b",recording="r")]
+    path = tmp_path/"panel.json"
+    path.write_text(json.dumps(dict(jobs=jobs,commitment="c"*64)))
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    locked = lock(path,digest,"spec",tmp_path)
+    assert [r["result"]["failure"] for r in locked["cases"]] == ["Missing paired run"]*2
+    (tmp_path/"a").mkdir()
+    pair = dict(candidate_specification_digest="different",
+                blind_assignment=dict(job=jobs[0], panel_sha256=digest, truth_commitment="c"*64))
+    (tmp_path/"a/pair.json").write_text(json.dumps(pair))
+    with pytest.raises(ValueError, match="frozen assignment"):
+        lock(path,digest,"spec",tmp_path)
+    with pytest.raises(ValueError, match="Changed"):
+        pinned(path, "00")

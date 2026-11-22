@@ -63,9 +63,11 @@ def blind_assignment(panel_path, expected_sha256, recording, region, archive):
     return dict(job=job, panel_sha256=digest, truth_commitment=panel["commitment"])
 
 
-def child_cpu():
+def child_usage():
     usage = resource.getrusage(resource.RUSAGE_CHILDREN)
-    return usage.ru_utime + usage.ru_stime
+    return dict(cpu_s=usage.ru_utime + usage.ru_stime, input_blocks=usage.ru_inblock,
+                output_blocks=usage.ru_oublock, major_faults=usage.ru_majflt,
+                voluntary_switches=usage.ru_nvcsw, involuntary_switches=usage.ru_nivcsw)
 
 
 def evidence(root, receipt, started_ns):
@@ -117,13 +119,14 @@ def measure(launcher, root, args, specification=None):
                "--region", str(args.region.resolve()), "--archive", str(args.archive.resolve()),
                "--bulk-root", str(root.resolve())]
     start_ns = time.time_ns()
-    before_cpu, before_wall = child_cpu(), time.monotonic()
+    before, before_wall = child_usage(), time.monotonic()
     result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=args.timeout)
-    wall, cpu = time.monotonic()-before_wall, child_cpu()-before_cpu
+    wall = time.monotonic() - before_wall
+    usage = {k: value - before[k] for k, value in child_usage().items()}
     if result.returncode:
         raise RuntimeError(f"Launcher exited {result.returncode}: {result.stderr[-1500:]}")
     summary = evidence(root, json.loads(result.stdout.splitlines()[-1]), start_ns)
-    return dict(launcher=command[0], elapsed_s=wall, cpu_s=cpu, **summary)
+    return dict(launcher=command[0], elapsed_s=wall, **usage, **summary)
 
 
 def run_pair(args):
@@ -133,7 +136,8 @@ def run_pair(args):
     os.setpriority(os.PRIO_PROCESS, 0, max(15, os.getpriority(os.PRIO_PROCESS, 0)))
     subprocess.run(["ionice", "-c2", "-n7", "-p", str(os.getpid())], check=True)
     LOCK.parent.mkdir(exist_ok=True)
-    with LOCK.open("a") as lock:
+    # Shared readers use the same inode from separate inference accounts on Gauss.
+    with LOCK.open("rb" if LOCK.exists() else "a+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         args.output.mkdir(parents=True, exist_ok=False)
         runs = {}
