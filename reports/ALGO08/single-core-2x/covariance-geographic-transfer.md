@@ -34,6 +34,12 @@ Both portable estimates stayed much closer to truth than the containing offer ce
 
 In the portable southern omission both covariance arms reached a face and triggered the guard. Each receiver agreed on a point 50 km beyond a face with positive gain. The guard withheld both arms. Deployment returned the same coordinate for both arms, 89.786 km from the reference. All eight solves completed within their limit. [Guard details and final decisions](measurements/covariance-geographic-transfer.json)
 
+## How satellite reassignment moved the southern fix
+
+On the southern containing offer, the deployed solver reconsidered whether two receiver tracks belonged to a different satellite. It reassigned 443 observations and its fitted position moved from 2.110 km to 0.583 km from the receiver. The optimized build published its previous fit at 1.339 km. The figure uses the public reference only to score positions after the solves. Both axes are distances in the supplied search frame. [Solver trace and earlier differences in track selection](portable-south-solver-attribution.md) · [Figure source](plot_portable_south_trace.py)
+
+![Two panels show the deployed solver's satellite reassignment moving the fixed-zero and fitted positions closer to the simulated receiver.](portable-south-reassignment.png)
+
 ## Boundary exercised
 
 Both schema-v1 documents entered the installed `algo08_position.solve` boundary for paired fixed-zero and fitted `c`. The two builds received the same factors, archive and offer on each query. The replay used the same solver assets, candidate composition and exterior guard as the frozen covariance measurements. It used local copies of only the published past TLE objects after verifying their digests and collection times. The scoring process opened the published references after reading all results. [Replay and scoring runner](covariance_transfer_trial.py)

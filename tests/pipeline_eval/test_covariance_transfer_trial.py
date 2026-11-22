@@ -1,4 +1,5 @@
 import json
+from importlib import import_module
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
@@ -83,3 +84,19 @@ def test_score_reads_complete_predictions_before_reference(trial, monkeypatch, t
     assert [a["horizontal_error_km"] for a in row["builds"]["covariance"]["arms"].values()] == [
         None, None,
     ]
+
+
+def test_geographic_figure_requires_the_same_solver_input_and_region(tmp_path):
+    plot = import_module("reports.ALGO08.single-core-2x.plot_portable_south_trace").plot
+    plan = dict(case="recording", mode="matched-tile", offer={"center": [-11., 23.]},
+                document_sha256="original")
+    fit = dict(arms={arm: {"endpoint": [1.1, -1.2]} for arm in ("c0", "fitted_c")})
+    trace = dict(plan=plan, results=dict(installed={"stages": {"signed": fit, "cavity": fit}},
+                                         covariance={"stages": {"signed": fit}}))
+    scored = dict(rows=[dict(plan, reference_east_north_km=[-2., 5.])])
+    target = tmp_path / "geo.png"
+    plot(trace, scored, target)
+    assert target.read_bytes().startswith(b"\x89PNG")
+    scored["rows"][0]["document_sha256"] = "different"
+    with pytest.raises(ValueError, match="same detections and region"):
+        plot(trace, scored, target)
