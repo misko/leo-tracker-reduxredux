@@ -41,27 +41,22 @@ def causal_catalogue(reader, cutoff_utc_ns, *, maximum_age_s=172800.0, provider=
                 continue
             key = (epoch, snapshot.collected_utc_ns, snapshot.sha256)
             if number not in chosen or key > chosen[number][0]:
-                chosen[number] = (
-                    key,
-                    name,
-                    satellite,
-                    dict(
-                        norad=number,
-                        name=name,
-                        element_epoch_utc_ns=epoch,
-                        collected_utc_ns=snapshot.collected_utc_ns,
-                        snapshot_digest=snapshot.digest,
-                        provider=snapshot.provider,
-                        age_s=(cutoff_utc_ns - epoch) / 1e9,
-                    ),
-                )
+                chosen[number] = key, name, satellite, snapshot
     if not chosen:
         raise ValueError("no eligible past Starlink elements")
     numbers = tuple(sorted(chosen))
+    provenance = []
+    for number in numbers:
+        (epoch, _, _), name, _, snapshot = chosen[number]
+        provenance.append(dict(
+            norad=number, name=name, element_epoch_utc_ns=epoch,
+            collected_utc_ns=snapshot.collected_utc_ns, snapshot_digest=snapshot.digest,
+            provider=snapshot.provider, age_s=(cutoff_utc_ns - epoch) / 1e9,
+        ))
     return CausalCatalogue(
         ElementSetCatalogue(
             tuple(chosen[n][1] for n in numbers), numbers, tuple(chosen[n][2] for n in numbers)
         ),
-        tuple(chosen[n][3] for n in numbers),
+        tuple(provenance),
         len(snapshots),
     )

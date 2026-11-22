@@ -1,5 +1,18 @@
 # What still costs time in the single-core pipeline
 
+## Building provenance once per selected orbit
+
+The causal catalogue code recorded a new provenance dictionary, including age and snapshot digest, every time a newer set of elements became the incumbent for a satellite. The research refactor retains the winning snapshot reference and builds that dictionary once per satellite after scanning the eligible rows. Reads, epoch and collection cutoffs, tie ordering, output order and the satellite objects stay the same. The selector never receives receiver coordinates.
+
+| Saved archive | Age window | Snapshots | Selected satellites | Median selector CPU, deployed → deferred |
+|---|---:|---:|---:|---:|
+| DS30-0374 | 48 h | 32 | 11,085 | 141 → 62 ms |
+| DS30-0374 | 72 h | 47 | 11,190 | 253 → 125 ms |
+| Southern simulation | 48 h | 23 | 10,937 | 84 → 46 ms |
+| Southern simulation | 72 h | 35 | 11,189 | 152 → 69 ms |
+
+The two implementations returned exactly the same satellite objects, names, numbers and provenance on all 24 timed calls. Digest-checked archive reads and parsing were performed before timing. Savings apply per invocation of the indicated window. Actual end-to-end gains depend on which catalogue policies a scan invokes. The frozen raw-to-web pairs in this report use the released selector. [Measurements](measurements/catalogue-winners.json) · [Reproduction harness](catalogue_winners_trial.py) · [Causal selection](../../../src/leo/operations/causal_tle_catalogue.py)
+
 The second recording in the fixed DS30 order has a more expensive position solve than the first. We used its saved two-scan detections to measure that difference without reading the recording again. Stock solver CPU was **80.77 s on DS30-0008**, versus **34.01 s on DS30-0374**. Causal parsing and coarse salvage statistics reduced DS30-0008 to **72.66 s (1.11×)**. Both positions, ownership summaries, optimizer paths and all numerical grid values matched. Causal preparation fell from 7.79 to 5.03 CPU seconds and salvage from 12.04 to 7.11. Initial assignment still took 22.83 elapsed seconds, conservative recovery 17.20, family selection 8.64, signed evidence 2.51, cavity work 6.40 and final grid/evidence 10.37. These clocks begin at saved detections. [Receipts for both solvers](measurements/solver-costs.json.gz) · [Trial runner](solver_trial.py)
 
 ## Cheap periodicity test before running the receiver
