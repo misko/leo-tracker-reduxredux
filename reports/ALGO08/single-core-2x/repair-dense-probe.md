@@ -1,0 +1,7 @@
+# Collapsed solver with one paired repair on the dense conditional input
+
+The next single-recording probe uses the saved conditional receiver output from DS30-0008, the dense second case of the already-open four-recording development stage. Both builds use all the same observations, the same assigned search square, the same capture-time archive, the same calibration arms and the same grid budget. The two builds run consecutively on one low-priority core. The challenger runs first. All native I/Q acquisition and PNG rendering are outside this timing boundary.
+
+Freeze the post-fit repair implementation at `ba830dcc3`. When a proposed paired fit fails, this version removes exactly the union of tracks rejected by the two calibration arms, refreshes their shared support and attempts one more paired fit with the existing gates. It preserved all stock observation owners on the earlier DS30-0374 check. The alternative that drops tracks before that first fit lost 25 stock observations there. Use the post-fit version for this probe before inspecting its result. No station identity, location reference or DS30-specific threshold enters either solver.
+
+Require the replayed shared-tables control to reproduce both published endpoints, both owner digests and the full grid and path on this recording. Lock both fits before scoring position error. A lost fix or worse horizontal error in either arm is evidence against escalation. A pass here would still require a matched end-to-end trial with a sufficiently fast integrated receiver.

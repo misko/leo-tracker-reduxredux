@@ -98,7 +98,7 @@ def saved_native(pair_path, method, row):
     return native
 
 
-def worker(native_path, spec_path, archive, region, output):
+def worker(native_path, spec_path, archive, region, output, *, include_evidence=False):
     # The worker imports tools from the original freezer output. Install the
     # matched startup hook before importing its ordinary solver or storage.
     from tools.pipeline_eval.qualification import experimental_publication
@@ -138,6 +138,9 @@ def worker(native_path, spec_path, archive, region, output):
                 result["owners"] = {arm: packet["arms"][arm]["owner_sha256"] for arm in ARMS}
                 result["associated"] = {arm: packet["arms"][arm]["associated_points"]
                                         for arm in ARMS}
+                if include_evidence:
+                    result["evidence"] = {k: packet[k] for k in (
+                        "position_grid", "position_path", "objective_replay")}
             return result
 
         args = SimpleNamespace(recording=root / "no-recording", bulk_root=root,
@@ -279,9 +282,12 @@ def main():
         command = actions.add_parser(action)
         for field in fields:
             command.add_argument(field, type=Path)
+        if action == "worker":
+            command.add_argument("--evidence", action="store_true")
     args = parser.parse_args()
     operation, fields = commands[args.action]
-    result = operation(*(getattr(args, field) for field in fields))
+    options = dict(include_evidence=args.evidence) if args.action == "worker" else {}
+    result = operation(*(getattr(args, field) for field in fields), **options)
     if args.action == "score":
         print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
 

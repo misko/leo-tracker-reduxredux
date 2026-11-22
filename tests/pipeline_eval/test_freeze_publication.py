@@ -12,6 +12,7 @@ from tools.pipeline_eval.variants.experimental import residual_receiver
     ("stock", "individual", "all"), ("combined-shared-discovery", "shared-orbits", "all"),
     ("shared-tables", "shared-pixels", "all"), ("track-moments", "shared-pixels", "all"),
     ("track-moments", "shared-pixels", "deferred"),
+    ("collapsed-repair", "raster-layout", "all"),
     ("shared-tables", "raster-layout", "deferred"), ("stock", "raster-layout", "all")])
 def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solver, rendering, schedule):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
@@ -26,11 +27,14 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
         selected.append(bundle.VARIANTS / "experimental/shared_orbit_figures.py")
     if rendering == "raster-layout":
         selected.append(bundle.VARIANTS / "experimental/raster_layout.py")
-    if solver in ("shared-tables", "track-moments"):
+    if solver in ("shared-tables", "track-moments", "collapsed-repair"):
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_table.py", "algo08_cavity_projection.py", "algo08_salvage_bound.py"))
     if solver == "track-moments":
         selected.append(bundle.VARIANTS / "algo08_track_moments.py")
+    if solver == "collapsed-repair":
+        selected.extend(bundle.VARIANTS / name for name in ("algo08_collapsed.py", "algo08_collapsed_linear.py",
+                        "algo08_collapsed_salvage.py", "algo08_collapsed_repair.py"))
     if schedule == "deferred":
         selected.extend(bundle.VARIANTS / "experimental" / name for name in
                         ("deferred_continuation.py", "deferred_receiver.py"))
@@ -110,8 +114,9 @@ def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path, endpoint_r
         verify_sources(output / bundle.LAUNCHER, spec["sources"])
 
 
+@pytest.mark.parametrize("native_pin", ["DETECTOR_SHA256", "Q15_DETECTOR_SHA256"])
 def test_freeze_conditional_residual_pins_the_reviewed_pair_of_native_entries_and_rule(
-    tmp_path, monkeypatch,
+    tmp_path, monkeypatch, native_pin,
 ):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
     (release / "tools").mkdir(parents=True)
@@ -124,9 +129,9 @@ def test_freeze_conditional_residual_pins_the_reviewed_pair_of_native_entries_an
     binary.write_bytes(b"reviewed native full and primary API")
     digest = hashlib.sha256(binary.read_bytes()).hexdigest()
     args = (checkout, output, binary, digest, "stock", "stock", release)
-    with pytest.raises(ValueError, match="reviewed exact fractional"):
+    with pytest.raises(ValueError, match="reviewed native detector"):
         bundle.freeze(*args, schedule="conditional-residual")
-    monkeypatch.setattr(residual_receiver, "DETECTOR_SHA256", digest)
+    monkeypatch.setattr(residual_receiver, native_pin, digest)
     with pytest.raises(ValueError, match="frozen residual schedule changed"):
         bundle.freeze(*args, schedule="conditional-residual")
     assert not output.exists()
@@ -139,6 +144,10 @@ def test_freeze_conditional_residual_pins_the_reviewed_pair_of_native_entries_an
     assert set(spec["sources"]) == {str(bundle.ENTRY), str(bundle.LAUNCHER), str(rule),
                                     str(adapter), "receiver.so"}
     verify_sources(output / bundle.LAUNCHER, spec["sources"])
+    binary.write_bytes(b"changed before freezing")
+    with pytest.raises(ValueError, match="differs from its reviewed build"):
+        bundle.freeze(checkout, tmp_path / "tampered", binary, digest, "stock", "stock", release,
+                      schedule="conditional-residual")
     (output / "receiver.so").write_bytes(b"changed after freezing")
     with pytest.raises(ValueError, match="source changed"):
         verify_sources(output / bundle.LAUNCHER, spec["sources"])
