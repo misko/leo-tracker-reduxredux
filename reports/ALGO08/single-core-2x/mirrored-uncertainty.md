@@ -12,6 +12,10 @@ Report the face-normal scale `σ` from each arm's covariance and the 200 m face 
 
 ## The saved observations leave both mirrored pairs unresolved
 
+![Perpendicular distance to the boundary for both calibration arms at the two simulated sites, showing the known receiver and projected local uncertainty ellipse](mirrored-uncertainty.png)
+
+Positive clearance puts a position inside the offered face. The diamond marks the known receiver. Each line projects the two-dimensional local curvature ellipse onto that face's perpendicular axis. Coverage is conditional on the selected satellite assignments and the local shape of the fit. [Per-offer numerical receipts](measurements/mirrored-uncertainty.json)
+
 The `64ecfbcaf` rule retained both original containing controls. It withheld all four mirrored offers for each calibration arm and for paired publication. This withheld **2 of 2 valid boundary offers**, issued **0 of 2 false fixes**, and established exterior support for **0 of 2 omissions**. The offered-face threshold crossed an ellipse in every mirrored case. The original far-exterior veto kept both valid boundary fixes and both near omissions. [Earlier bound-gated outcomes](regional-bound-guard.md)
 
 | Public site | Original containing control | Truth 100 m inside | Truth 100 m outside |

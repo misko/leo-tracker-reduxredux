@@ -1,7 +1,9 @@
 from importlib import import_module
+from pathlib import Path
 
 import numpy as np
 import pytest
+from PIL import Image
 
 
 trial = import_module("reports.ALGO08.single-core-2x.mirrored_uncertainty_trial")
@@ -45,3 +47,11 @@ def test_profile_probes_match_known_quadratic_and_remove_baseline_gradient():
 def test_invalid_curvature_produces_no_covariance(loss):
     result = trial.curvature(loss, np.zeros(2))
     assert all("covariance_km2" not in row for row in result.values())
+
+
+def test_plot_from_public_scored_receipts(tmp_path):
+    chart = import_module("reports.ALGO08.single-core-2x.plot_mirrored_uncertainty")
+    path = tmp_path / "comparison.png"
+    chart.plot(Path(chart.__file__).parent / "measurements", path)
+    with Image.open(path) as image:
+        assert image.format == "PNG" and image.width > 1000
