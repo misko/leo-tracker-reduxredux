@@ -27,6 +27,9 @@ def run(args, specification):
     mode = specification["solver"]
     if mode not in ("stock", "causal-reuse", "combined"):
         raise ValueError("Unknown experimental solver")
+    ingress = specification.get("ingress", "stock")
+    if ingress not in ("stock", "compressed-buffer"):
+        raise ValueError("Unknown experimental I/Q reader")
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
         for name in (*algo08_scan.PINS, "native", "projector.so"):
@@ -34,6 +37,9 @@ def run(args, specification):
             (assets/name).symlink_to(source)
         # The normal publication path checks these pins before it opens the I/Q.
         stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
+        if ingress == "compressed-buffer":
+            from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
+            stack.enter_context(compressed_input_buffer())
         if mode in ("causal-reuse", "combined"):
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
