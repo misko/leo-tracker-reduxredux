@@ -25,6 +25,8 @@ On DS30-0374, time from sealed I/Q to web figures fell **133.77 → 75.91 second
 
 Fixed-zero horizontal error was **1.855 → 1.848 km** and fitted error was **1.935 → 1.928 km**. Frequency RMS fell **101.536 → 101.496 Hz** and **101.520 → 101.482 Hz**, respectively. Both builds produced all eight images. Their numerical endpoints and images differ from deployment. Compared with the previous four-pair research candidate on this very same input, the receiver reproduced all 4,157 selected measurements including scores, both position endpoints and owner maps matched, and the eight output PNG files were byte-identical. Three recordings remain unmeasured in this build's four-case stage. [Cross-build checks and stage times](measurements/covariance-physical-science.json) · [Earlier four-pair build](full-phase-ds30-stage.md)
 
+The sealed manifest accounts for 8.41 GB of compressed I/Q. The candidate's charged reads correspond to 2,058,867 pages, against 2,058,708 pages for one pass through all recording members. Source inspection confirms that each reader traverses each compressed member once. Matching the earlier run's elapsed-minus-CPU gap would still leave this candidate about one second over half the current baseline's elapsed time. That is a sensitivity calculation. An actual run under those conditions remains unmeasured. [Storage accounting and assumptions](storage-io-accounting.md)
+
 ## Where the region decision fails
 
 | Offered boundary | North, fixed-zero / fitted | South, fixed-zero / fitted |
