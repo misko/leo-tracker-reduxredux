@@ -28,6 +28,21 @@ The deployed coarse salvage loop reads only phase costs. Its fine loop reads eve
 
 These are medians of four alternating timings of the frozen release’s numerical kernel and the component prototype on Gauss CPU 2. The fixed synthetic shapes reflect the profiled catalogue and representative support lengths. Every score was bit-identical on those shapes. The fine check also matched the original residual samples, alias, bias and RMS. Five component tests cover layouts, whitening and ties. The fraction of solve time removable by this change depends on the actual dimensions and data layout of each profile and on integration cost. [Component runner](salvage_profile_readout_trial.py) · [Component timings](measurements/salvage-profile-readout.json)
 
+## Scoped saved solve
+
+The optional readout scopes deferred fields to the original released conservative salvage loop, matching the stock salvage and profile source digests. That loop still computes each phase cost and uses its original visibility mask, phase penalty, ordering, eligibility, and gates. A whole-array request, an unsupported input signature or a layout requiring the original reduction invokes the released full calculation. Other track consumers use the regular profile. [Scoped binding](../../../tools/pipeline_eval/variants/algo08_deferred_salvage_readout.py)
+
+One unprofiled southern containing replay with the opt-in took **49.487 solver CPU seconds** against **50.885** in the existing screened-stock receipt, a reduction of **1.398 seconds (2.75%)**. Elapsed time was 54.054 seconds against 55.125 in that receipt. The five archived trim nominations and twenty-two logged alternative scores matched exactly. Both endpoints, RMS values and 4,149-owner maps agreed in both calibration arms. [Unprofiled comparison receipt](measurements/screened-stock-deferred-salvage.json) · [Archived trim and owner reference](portable-south-solver-attribution.md)
+
+| Measured boundary inside the deferred solve | Calls | CPU seconds |
+|---|---:|---:|
+| Deployed salvage loop with deferred readout | 1 | 24.225 |
+| All original phase scores, inside salvage | 65,410 | 13.324 |
+| Winning-row residual and RMS, inside salvage | 65,375 | 0.387 |
+| Full-array fallback or unsupported profile | 0 | 0 |
+
+One additional test confirms scalar residual and RMS share the same selected row and full-array access replays the released computation once. The saved solve measures the deferred readout in isolation. Other salvage optimizations and full-pipeline performance are separate comparisons. [Readout tests](../../../tests/pipeline_eval/test_salvage_profile_readout_trial.py)
+
 ## Reproduction
 
 The solver profiling command performs one saved solve and writes `solver.prof`, its terminal receipt and the checked summary. Use the staged inputs from the geographic replay and a fresh output directory. The component command uses synthetic numbers and the release interpreter with no solver call.
@@ -45,3 +60,5 @@ flock "$bench/gauss.lock" nice -n 15 ionice -c2 -n7 taskset -c 2 \
   "$release/venv/bin/python" -BPs reports/ALGO08/single-core-2x/salvage_profile_readout_trial.py \
   "$bench/salvage-readout-new.json"
 ```
+
+To run one unprofiled solve with deferred readout, substitute `run-lazy` and a fresh output directory in the first command.

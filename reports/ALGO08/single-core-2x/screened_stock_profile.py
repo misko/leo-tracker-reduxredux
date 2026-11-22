@@ -2,12 +2,13 @@
 
 import argparse
 import cProfile
+import gzip
 import json
 import os
 import pstats
 import runpy
 import subprocess
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import perf_counter, process_time
@@ -16,9 +17,10 @@ from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 MEASUREMENTS = HERE / "measurements"
+LAZY_SOURCE = HERE.parents[2] / "tools/pipeline_eval/variants/algo08_deferred_salvage_readout.py"
 
 
-def worker(site, frozen, output):
+def worker(site, frozen, output, *, lazy=False):
     from tools.pipeline_eval.qualification import experimental_publication as publication
     from tools.pipeline_eval.variants.experimental import lean_startup
 
@@ -28,7 +30,7 @@ def worker(site, frozen, output):
         raise ValueError("Expected the fresh frozen publication entry point with lazy startup")
     native = json.loads((site / "native.json").read_bytes())
     diagnostics = {}
-    profile = cProfile.Profile(timer=process_time)
+    profile = nullcontext() if lazy else cProfile.Profile(timer=process_time)
 
     def from_saved(recording, _root, assets, archive, offer):
         from leo.operations.tle_archive import TleArchiveReader
@@ -36,8 +38,13 @@ def worker(site, frozen, output):
 
         if recording.name != "no-recording" or archive != site / "tle" or diagnostics:
             raise ValueError("Expected one saved detector callback")
+        readout = nullcontext()
+        if lazy:
+            trial = runpy.run_path(str(HERE / "salvage_profile_readout_trial.py"))
+            replacement = runpy.run_path(str(LAZY_SOURCE))["defer_readout"]
+            readout = replacement(trial["score_rows"], trial["winning_readout"])
         cpu, wall = process_time(), perf_counter()
-        with profile:
+        with profile, readout as lazy_metrics:
             decision, packet, policy = algo08_position.solve(
                 native, TleArchiveReader(archive), assets, offer,
             )
@@ -45,6 +52,8 @@ def worker(site, frozen, output):
             solver_cpu_s=process_time() - cpu, solver_wall_s=perf_counter() - wall,
             stage_wall_s=decision["metrics"]["stage_s"], orbit_policy=policy,
         )
+        if lazy:
+            diagnostics["deferred_salvage_readout"] = lazy_metrics
         if packet is None:
             raise ValueError(f"Expected the released containing fit: {decision['status']}")
         return dict(status=decision["status"], arms=decision["arms"],
@@ -65,7 +74,8 @@ def worker(site, frozen, output):
         args = SimpleNamespace(recording=root / "no-recording", bulk_root=root,
                                archive=site / "tle", region=site / "matched-tile.json")
         result = publication.run(args, specification)
-    profile.dump_stats(output / "solver.prof")
+    if not lazy:
+        profile.dump_stats(output / "solver.prof")
     payload = dict(result=result, timing=diagnostics)
     (output / "terminal.json").write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
 
@@ -112,7 +122,7 @@ def profile_readout(path):
                 subgroups=subgroups, self_time_top=records)
 
 
-def run(scratch, frozen, output):
+def run(scratch, frozen, output, *, lazy=False):
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.__main__ import THREAD_ENV
     from tools.pipeline_eval.qualification.paired_publication import verify_sources
@@ -134,7 +144,8 @@ def run(scratch, frozen, output):
     audit["verify_archive"](transfer, row, site)
     release = transfer["RELEASE"]
     env = dict(os.environ, PYTHONPATH=f"{frozen}:{release / 'src'}:{release}", **THREAD_ENV)
-    command = [str(release / "venv/bin/python"), "-BPs", str(Path(__file__).resolve()), "worker"]
+    command = [str(release / "venv/bin/python"), "-BPs", str(Path(__file__).resolve()),
+               "worker-lazy" if lazy else "worker"]
     output.mkdir(parents=True, exist_ok=False)
     subprocess.run([*command, *map(str, (site, frozen, output))], env=env, timeout=200, check=True)
     profiled = json.loads((output / "terminal.json").read_bytes())
@@ -144,23 +155,37 @@ def run(scratch, frozen, output):
                      for k, v in prior["arms"].items()}
     if (outcome["arms"] != expected_arms
             or any(outcome[k] != prior[k] for k in ("status", "owners", "associated"))):
-        raise ValueError("Profiled solve differs from the stored screened-stock result")
-    source = output / "solver.prof"
-    transfer["write"](output / "summary.json", dict(
+        raise ValueError("Solve differs from the stored screened-stock result")
+    summary = dict(
         specification_sha256=freeze["specification"], native_sha256=row["document_sha256"],
         history_sha256=row["history_sha256"], status_and_both_arms_and_owners_equal=True,
         offer=row["offer"], stock_solver_cpu_s=row["builds"]["installed"]["solver_cpu_s"],
-        prior_screened_solver_cpu_s=prior["solver_cpu_s"], profile_sha256=transfer["digest"](
-            source.read_bytes(),
-        ), profiler=profile_readout(source), **profiled,
-    ))
+        prior_screened_solver_cpu_s=prior["solver_cpu_s"], **profiled,
+    )
+    if lazy:
+        path = MEASUREMENTS / "portable-south-solver-attribution.json.gz"
+        trace = json.loads(gzip.decompress(path.read_bytes()))["results"]["installed"]["stages"]
+        expected = [row for call in trace["salvage"] for row in call["selected"]]
+        metrics = profiled["timing"]["deferred_salvage_readout"]
+        if (not metrics["enabled"] or json.dumps(metrics["trims"], sort_keys=True)
+                != json.dumps(expected, sort_keys=True)):
+            raise ValueError("Deferred result lost a deployed trim or its exact shortlist scores")
+        summary.update(variant_sha256=transfer["digest"](LAZY_SOURCE.read_bytes()),
+                       trim_reference_sha256=transfer["digest"](path.read_bytes()),
+                       exact_saved_trim_and_alternative_scores=True)
+    else:
+        source = output / "solver.prof"
+        summary.update(profile_sha256=transfer["digest"](source.read_bytes()),
+                       profiler=profile_readout(source))
+    transfer["write"](output / "summary.json", summary)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("run", "worker"))
+    parser.add_argument("action", choices=("run", "worker", "run-lazy", "worker-lazy"))
     parser.add_argument("inputs", type=Path)
     parser.add_argument("frozen", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    (run if args.action == "run" else worker)(args.inputs, args.frozen, args.output)
+    operation = run if args.action.startswith("run") else worker
+    operation(args.inputs, args.frozen, args.output, lazy=args.action.endswith("-lazy"))

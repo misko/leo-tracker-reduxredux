@@ -4,7 +4,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from leo.analysis.research.retained_track_likelihood import PERIOD
+from leo.analysis.research.retained_track_likelihood import PERIOD, profile
+from tools.pipeline_eval.variants.algo08_deferred_salvage_readout import (
+    DeferredDiagnostic,
+    ProfileRows,
+)
 
 
 @pytest.fixture(scope="module")
@@ -40,3 +44,29 @@ def test_preserves_aligned_alias_and_phase_ties(trial):
     visible = np.array([False, True, False])
     assert trial.winner(fields["cost"], np.zeros(3), visible) == 1
     trial.compare(y, f, inverse, np.zeros(3), visible)
+
+
+def test_scalar_readout_reuses_the_winner_and_falls_back_for_a_full_array(trial):
+    y = np.arange(13.0)
+    f = np.arange(26.0).reshape(2, 13)
+    inverse = np.eye(13)
+    stock = profile(y, f, inverse)
+    readings = []
+    counts = dict(winning_rows=0, winning_readout_cpu_s=0.0,
+                  full_array_requests=0, full_array_cpu_s=0.0)
+
+    def fallback():
+        readings.append("complete")
+        return stock
+
+    staged = ProfileRows(trial.score_rows(y, f, inverse), trial.winning_readout, fallback, counts)
+    residual = DeferredDiagnostic(staged, "residual")
+    rms = DeferredDiagnostic(staged, "rms")
+    assert residual[1].tobytes() == stock["residual"][1].tobytes()
+    assert rms[1].tobytes() == stock["rms"][1].tobytes()
+    assert counts["winning_rows"] == 1
+    assert readings == []
+    np.testing.assert_array_equal(np.asarray(residual), stock["residual"])
+    np.testing.assert_array_equal(rms[:], stock["rms"])
+    assert readings == ["complete"]
+    assert counts["full_array_requests"] == 1
