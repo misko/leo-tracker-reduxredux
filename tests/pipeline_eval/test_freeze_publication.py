@@ -27,6 +27,8 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
     if schedule == "deferred":
         selected.extend(bundle.VARIANTS / "experimental" / name for name in
                         ("deferred_continuation.py", "deferred_receiver.py"))
+        selected.append(bundle.VARIANTS / "experimental/lean_startup.py")
+    startup = "lazy-exports" if schedule == "deferred" else "stock"
     for path in selected:
         (checkout / path).parent.mkdir(parents=True, exist_ok=True)
         (checkout / path).write_text(str(path))
@@ -37,8 +39,9 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
         bundle.freeze(checkout, output, binary, "wrong", "stock", "compressed-buffer", release)
     assert not output.exists()
     spec = bundle.freeze(checkout, output, binary, digest, solver, "compressed-buffer", release,
-                         rendering=rendering, schedule=schedule)
+                         rendering=rendering, schedule=schedule, startup=startup)
     assert spec.get("rendering", "individual") == rendering
+    assert spec.get("startup", "stock") == startup
     (checkout / bundle.ENTRY).write_text("edited after freeze")
     verify_sources(output / bundle.LAUNCHER, spec["sources"])
     assert (output / "receiver.so").read_bytes() == b"reviewed"

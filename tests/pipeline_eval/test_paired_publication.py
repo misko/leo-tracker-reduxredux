@@ -138,15 +138,16 @@ def test_comparison_rejects_a_grid_published_in_another_site_frame(tmp_path, mon
 
 
 def test_experimental_entry_passes_each_offer_without_a_station_reference(tmp_path, monkeypatch):
+    from tools import algo08_scan
     from tools.pipeline_eval.qualification import experimental_publication as trial
     offers = []
 
     def analyze(recording, root, assets, archive, offer):
         offers.append(offer.document())
-        assert trial.algo08_scan.PINS["cancellation-factors.so"] == "c"*64
+        assert algo08_scan.PINS["cancellation-factors.so"] == "c"*64
         return {"decision":"withheld"}
 
-    monkeypatch.setattr(trial.algo08_scan, "analyze", analyze)
+    monkeypatch.setattr(algo08_scan, "analyze", analyze)
     root=tmp_path/"output"
     root.mkdir()
     detector=tmp_path/"receiver.so"
@@ -154,12 +155,12 @@ def test_experimental_entry_passes_each_offer_without_a_station_reference(tmp_pa
     spec={"solver":"stock", "detector":str(detector), "detector_sha256":"c"*64}
     args=SimpleNamespace(recording=tmp_path/"opaque", bulk_root=root,
                          archive=tmp_path/"tle", region=tmp_path/"offer.json")
-    pin=trial.algo08_scan.PINS["cancellation-factors.so"]
+    pin=algo08_scan.PINS["cancellation-factors.so"]
     for center in ([46,13],[-28,116]):
         args.region.write_text(json.dumps({"center":center,"width_km":30}))
         trial.run(args,spec)
     assert [item["screen_center"] for item in offers]==[[46,13],[-28,116]]
-    assert trial.algo08_scan.PINS["cancellation-factors.so"]==pin
+    assert algo08_scan.PINS["cancellation-factors.so"]==pin
     (root/"prior-result").touch()
     with pytest.raises(ValueError, match="empty output root"):
         trial.run(args,spec)

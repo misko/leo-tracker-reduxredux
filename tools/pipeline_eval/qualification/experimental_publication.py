@@ -9,10 +9,6 @@ import re
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from leo.contracts.algo08_region import Algo08Region
-from tools import algo08_position, algo08_scan
-
-
 RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
 TABLE_MODES = ("shared-tables", "track-moments")
 DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
@@ -40,6 +36,15 @@ def run(args, specification):
     schedule = specification.get("schedule", "all")
     if schedule not in ("all", "bursts", "alternate", "deferred"):
         raise ValueError("Unknown receiver schedule")
+    startup = specification.get("startup", "stock")
+    if startup not in ("stock", "lazy-exports"):
+        raise ValueError("Unknown package startup mode")
+    if startup == "lazy-exports":
+        from tools.pipeline_eval.variants.experimental.lean_startup import install
+        install()
+    from leo.contracts.algo08_region import Algo08Region
+    from tools import algo08_position, algo08_scan
+
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
         for name in (*algo08_scan.PINS, "native", "projector.so"):
