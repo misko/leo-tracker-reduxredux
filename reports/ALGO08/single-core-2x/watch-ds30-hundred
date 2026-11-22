@@ -1,0 +1,77 @@
+#!/bin/bash
+# Run in a dedicated worktree. The benchmark owns the recordings and the Gauss slot.
+set -euo pipefail
+archive=/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac
+release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
+bundle=/tmp/leo-algo08v2-2x-bench/integration-exact-curved-lookahead
+unit=leo-research-ds30-hundred-6cdbac.service
+branch=refs/heads/codex/ds30-100-result
+report=reports/ALGO08/single-core-2x/ds30-100-result
+cd "$(git rev-parse --show-toplevel)"
+last=-1
+while true; do
+    count=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["verified"])' "$archive/progress.json")
+    if [[ $count != "$last" ]]; then
+        printf '%s/100 verified\n' "$count"
+        last=$count
+    fi
+    if [[ $count == 100 ]]; then break; fi
+    if ! systemctl is-active --quiet "$unit"; then
+        printf 'Benchmark stopped at %s/100. Inspect %s and the last pair receipt.\n' "$count" "$unit" >&2
+        exit 1
+    fi
+    sleep 50
+done
+
+sudo -n -u leo -- env PYTHONPATH="$PWD:$PWD/src:$release:$release/src" OPENBLAS_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 MPLCONFIGDIR="$archive/mplconfig" \
+    "$release/venv/bin/python" -BPs -m reports.ALGO08.single-core-2x.ds30_hundred_finish \
+    "$archive" "$archive/final"
+mkdir -p "$report"
+cp -- "$archive/final/"{README.md,decision.json,position-error.png,runtime.png,progress.json,recordings.csv} "$report/"
+passed=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["qualifies"])' "$report/decision.json")
+if [[ $passed == True ]]; then
+    # Keep the exact path-bound bundle for restoration on Gauss. Keep binary artifacts out of Git.
+    bundle_file="$archive/final/ALGO08v3-bundle.tar.gz"
+    if ! test -f "$bundle_file"; then
+        tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
+            -C "$bundle" -czf - . | sudo -n -u leo -- tee "$bundle_file.partial" >/dev/null
+        sudo -n -u leo -- mv -T "$bundle_file.partial" "$bundle_file"
+    fi
+    sha256sum "$bundle_file" > "$report/ALGO08v3-bundle.sha256"
+    cp -- "$bundle/spec.json" "$report/ALGO08v3-spec.json"
+    cat > "$report/ALGO08v3.md" <<'EOF'
+# ALGO08v3
+
+This research version names the exact candidate that passed the 100-pair DS30 timing,
+fix and accuracy tests. The annotated Git tag is `algo08v3`. The Gauss launcher uses the
+frozen specification `sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f`.
+The version has one-site physical validation. The two public simulated near omissions produced false fixes.
+Its saved result documents use the ALGO08v2 scientific schema and require a separate empty output root.
+
+```sh
+bundle=/tmp/leo-algo08v2-2x-bench/integration-exact-curved-lookahead
+ALGO08_EXPERIMENT_CONFIG="$bundle/spec.json" "$bundle/reports/ALGO08/single-core-2x/run-candidate" \
+  --recording "$RECORDING" --archive "$TLE_ARCHIVE" --region "$REGION_JSON" --bulk-root "$EMPTY_OUTPUT"
+```
+
+The [bundle checksum](ALGO08v3-bundle.sha256) identifies the durable Gauss archive.
+To restore the path-bound specification, unpack that archive at the bundle path above.
+The runner requires the pinned Gauss ALGO08v2 numerical environment. [Final measurements](README.md)
+EOF
+fi
+git add -- "$report"
+if ! git diff --cached --quiet -- "$report"; then
+    git commit --only -m 'Publish the final 100-pair DS30 runtime, accuracy and version decision' -- "$report"
+fi
+refs=("HEAD:$branch")
+if [[ $passed == True ]]; then
+    if ! git show-ref --verify --quiet refs/tags/algo08v3; then
+        git tag -a algo08v3 -m 'ALGO08v3: DS30-qualified single-core two-scan and compact v5 research release' HEAD
+    fi
+    test "$(git rev-parse 'algo08v3^{}')" = "$(git rev-parse HEAD)"
+    refs+=(refs/tags/algo08v3)
+fi
+git push --atomic origin "${refs[@]}"
+test "$(git ls-remote --heads origin "$branch" | cut -f1)" = "$(git rev-parse HEAD)"
+printf 'Published final comparison. Version criteria passed: %s\n' "$passed"

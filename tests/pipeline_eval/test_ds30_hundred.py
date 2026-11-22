@@ -5,6 +5,22 @@ from types import SimpleNamespace
 
 import pytest
 
+
+@pytest.mark.parametrize(("median", "summed", "fixes", "preserved", "qualifies"), [
+    (.5, .5, 97, True, True), (.500001, .45, 97, True, False),
+    (.45, .500001, 97, True, False), (.45, .45, 96, True, False),
+    (.45, .45, 97, False, False),
+])
+def test_final_version_requires_both_raw_timing_gates_and_quality(median, summed, fixes, preserved, qualifies):
+    finish = import_module("reports.ALGO08.single-core-2x.ds30_hundred_finish")
+    result = dict(verified=100, quality=dict(preserved=preserved),
+                  builds=dict(baseline=dict(fixes=97), candidate=dict(fixes=fixes)),
+                  timing=dict(all_verified=dict(elapsed_s=dict(median_candidate_over_baseline=median,
+                                                               summed_candidate_over_baseline=summed))))
+    assert finish.decision(result)["qualifies"] is qualifies
+    with pytest.raises(ValueError, match="100 verified"):
+        finish.decision(dict(result, verified=99))
+
 study = import_module("reports.ALGO08.single-core-2x.ds30_hundred")
 
 
