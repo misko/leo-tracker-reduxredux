@@ -26,6 +26,7 @@ SHA256 = {
 FACTOR = Struct("<ii4d")
 FIELDS = ("rank", "integer_epoch", "fractional_epoch", "signed_cfo_hz", "exact_score", "control_score")
 WEAK_IQ_SHA256 = "d3005a6496d2ca650ad9853bd5f307332ec79b53f976193a5efec9f31ca106e5"
+COMPARISONS = (("packed", "restored"), ("deployed", "restored"), ("deployed", "packed"))
 
 
 def inputs(weak, archive, source_audit, wide_reference):
@@ -85,40 +86,39 @@ def compare(rows, reference, candidate):
     return dict(counts=counts, maximum_absolute_delta=maximum, changed_cfo=changed_cfo)
 
 
-def measure(group, radios):
-    orders = tuple(permutations(SHA256))
+def measure(group, radios, arms=tuple(SHA256), comparisons=COMPARISONS, cycles=2):
+    orders = tuple(permutations(arms))
     all_times = []
     canonical = None
-    for repeat in range(2 * len(orders)):
-        elapsed = dict.fromkeys(SHA256, 0)
-        histories = {arm: defaultdict(Continuation) for arm in SHA256}
+    for repeat in range(cycles * len(orders)):
+        elapsed = dict.fromkeys(arms, 0)
+        histories = {arm: defaultdict(Continuation) for arm in arms}
         measured = []
         for index, (case, key, edge, center, authority, meta, samples) in enumerate(group):
-            arms = {}
+            readouts = {}
             for arm in orders[(index + repeat) % len(orders)]:
                 radio = radios[edge, arm]
                 factors, cpu, _ = radio.timed(samples, meta["receiver_id"], center)
                 continuation = histories[arm][case].select(
                     dict(meta, candidates=[radio.criteria(*factor) for factor in factors]),
                 )
-                arms[arm] = dict(factors=factors, factor_sha256=digest(factor_bytes(factors)),
-                                 continuation=continuation)
+                readouts[arm] = dict(factors=factors, factor_sha256=digest(factor_bytes(factors)),
+                                     continuation=continuation)
                 elapsed[arm] += cpu
             measured.append(dict(key=key, edge=edge, center_hz=center, iq_sha256=authority,
-                                 receiver_id=meta["receiver_id"], arms=arms))
+                                 receiver_id=meta["receiver_id"], arms=readouts))
         if canonical is None:
             canonical = measured
         elif canonical != measured:
             raise ValueError("A native factor or continuation result changed between repeats")
         all_times.append(elapsed)
-    pairs = (("packed", "restored"), ("deployed", "restored"), ("deployed", "packed"))
     return dict(
         lane_configurations=len(group), cpu_ns=all_times, rows=canonical,
-        median_cpu_ns={arm: median(t[arm] for t in all_times) for arm in SHA256},
+        median_cpu_ns={arm: median(t[arm] for t in all_times) for arm in arms},
         paired={f"{a}_to_{b}": dict(compare(canonical, a, b),
                                    median_cpu_change=median(t[b] / t[a] - 1 for t in all_times),
                                    median_delta_cpu_ns=median(t[b] - t[a] for t in all_times))
-                for a, b in pairs},
+                for a, b in comparisons},
     )
 
 

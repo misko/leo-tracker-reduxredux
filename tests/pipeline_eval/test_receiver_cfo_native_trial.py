@@ -40,3 +40,27 @@ def test_removed_factor_and_signed_cfo_are_reported_independently(trial):
     assert result["maximum_absolute_delta"]["fractional_epoch"] == .25
     assert result["maximum_absolute_delta"]["control_score"] == 0.
     assert result["changed_cfo"][0]["delta_hz"] == .5
+
+
+def test_two_arm_measurement_reverses_call_order(trial):
+    calls = []
+
+    class Radio:
+        def __init__(self, name, cpu):
+            self.name, self.cpu = name, cpu
+
+        def timed(self, samples, lane, center):
+            calls.append(self.name)
+            return (), self.cpu, self.cpu
+
+    lane = dict(receiver_id=0, channel=1, actual_rf_hz=10., valid_start_counter=0)
+    rows = [("label", "key", "lower", 0., "digest", lane, None)]
+    radios = {("lower", "reference"): Radio("reference", 10),
+              ("lower", "candidate"): Radio("candidate", 8)}
+    result = trial.measure(rows, radios, ("reference", "candidate"),
+                           (("reference", "candidate"),), cycles=1)
+    assert calls == ["reference", "candidate", "candidate", "reference"]
+    comparison = result["paired"]["reference_to_candidate"]
+    assert comparison["counts"]["lanes_changed"] == 0
+    assert comparison["counts"]["continuation_changed"] == 0
+    assert comparison["median_delta_cpu_ns"] == -2
