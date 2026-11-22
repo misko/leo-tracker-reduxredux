@@ -41,6 +41,10 @@ def main(trial):
     if trial == "lossless":
         cases = (("DS30-0016-lossless", "DS30-0016 · physical"),
                  ("north-edge-lossless", "Northern site · simulated boundary"))
+    if trial == "batch":
+        cases = (("DS30-0374-batch", "DS30-0374 · first fixed-order physical"),
+                 ("north-edge-batch", "Northern simulation · baseline first"),
+                 ("north-edge-batch-reverse", "Same simulation · candidate first"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -77,7 +81,7 @@ def main(trial):
         errors.set_yticks([1, 0], ["Fixed zero", "Fitted"])
         longest_publication = max(longest_publication, *(run["elapsed_s"] for run in pair["runs"].values()))
         distance_limit = 62 if key == "north-far-shared" else 2
-        if trial in ("upper-edge", "full-search"):
+        if trial in ("upper-edge", "full-search", "batch"):
             distance_limit = max(distance_limit, errors.dataLim.xmax * 1.2)
         errors.set_xlim(0, distance_limit)
         errors.set_title("Published false fix · expanded distance scale" if key == "north-far-shared"
@@ -102,6 +106,6 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless"),
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch"),
                         default="shared")
     main(parser.parse_args().trial)
