@@ -15,7 +15,8 @@ from tools.pipeline_eval.qualification.paired_publication import verify_sources
 from tools.pipeline_eval.variants import algo08_posterior_handoff
 
 
-def test_screened_stock_launcher_keeps_deployed_salvage_and_original_inference(tmp_path, monkeypatch):
+@pytest.mark.parametrize("solver", ["screened-stock-finish", "screened-tiled-finish"])
+def test_screened_launcher_uses_selected_salvage_and_original_inference(tmp_path, monkeypatch, solver):
     from leo.analysis.localization_v3 import conservative_recovery
     from tools.pipeline_eval.variants import v5_core, v5_screen_winner
 
@@ -26,7 +27,7 @@ def test_screened_stock_launcher_keeps_deployed_salvage_and_original_inference(t
     detector = tmp_path / "detector.so"
     detector.write_bytes(b"reviewed")
     spec = dict(detector=str(detector), detector_sha256=sha256(detector.read_bytes()).hexdigest(),
-                solver="screened-stock-finish")
+                solver=solver)
     args = SimpleNamespace(recording=tmp_path / "capture", bulk_root=output, archive=tmp_path / "tle", region=region)
     old_salvage, old_infer, old_selection = conservative_recovery.salvage, v5_core.infer, v5_core.initial_selection
 
@@ -35,7 +36,8 @@ def test_screened_stock_launcher_keeps_deployed_salvage_and_original_inference(t
         return ranked[1], len(ranked)
 
     def analyze(*unused):
-        assert conservative_recovery.salvage is old_salvage and v5_core.infer is old_infer
+        assert (conservative_recovery.salvage is old_salvage) == (solver == "screened-stock-finish")
+        assert v5_core.infer is old_infer
         with monkeypatch.context() as patches:
             patches.setattr(v5_core, "ranked_initial_nodes", lambda _: [3, 4, 5])
             assert v5_core.initial_selection(None) == (4, 3)
@@ -44,10 +46,10 @@ def test_screened_stock_launcher_keeps_deployed_salvage_and_original_inference(t
     monkeypatch.setattr(v5_screen_winner, "screen_nodes", screen)
     monkeypatch.setattr(algo08_scan, "analyze", analyze)
     assert launcher.run(args, spec)["screened_nomination"] == {"winning_rank": 1}
-    assert v5_core.initial_selection is old_selection
+    assert v5_core.initial_selection is old_selection and conservative_recovery.salvage is old_salvage
 
 
-@pytest.mark.parametrize("solver", ["collapsed-signed", "screened-stock-finish"])
+@pytest.mark.parametrize("solver", ["collapsed-signed", "screened-stock-finish", "screened-tiled-finish"])
 def test_freezer_only_copies_explicit_reviewed_handoff(tmp_path, solver):
     checkout = Path(__file__).resolve().parents[2]
     release = tmp_path / "release"
@@ -74,10 +76,12 @@ def test_freezer_only_copies_explicit_reviewed_handoff(tmp_path, solver):
         freeze(bundle, solver, posterior_grid_handoff=(library, "0" * 64))
     assert not bundle.exists()
     spec = freeze(bundle, solver, posterior_grid_handoff=(library, digest))
-    if solver == "screened-stock-finish":
+    if solver in ("screened-stock-finish", "screened-tiled-finish"):
         modules = {Path(name).stem for name in spec["sources"]}
         assert {"algo08_stock_finish", "v5_screen_winner", "algo08_causal_table"} <= modules
-        assert modules.isdisjoint({"algo08_salvage_statistics", "algo08_salvage_bound", "algo08_collapsed_repair"})
+        assert "algo08_collapsed_repair" not in modules
+        for tile_module in ("algo08_salvage_statistics", "algo08_salvage_bound"):
+            assert (tile_module in modules) == (solver == "screened-tiled-finish")
     binary = bundle / launcher.POSTERIOR_GRID_LIBRARY
     assert spec["posterior_grid_handoff"] == dict(library=str(binary), sha256=digest)
     assert binary.read_bytes() == library.read_bytes()

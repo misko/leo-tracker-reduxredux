@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from .experimental_publication import (
     CAUSAL_MODES, DISCOVERY_MODES, GRAPH_PATH_LIBRARY, GRAPH_PATH_SOURCES, INGRESS_MODES,
     PNG_LIBRARIES, POSTERIOR_GRID_LIBRARY, POSTERIOR_MODES,
-    RELEASE, RENDERING_MODES, SALVAGE_MODES, SCHEDULE_MODES, SCREENED_STOCK, TABLE_MODES,
+    RELEASE, RENDERING_MODES, SALVAGE_MODES, SCHEDULE_MODES, SCREENED_MODES, TABLE_MODES,
 )
 
 
@@ -30,7 +30,7 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     if any((pin is not None) != (rendering == "lossless-raster") for pin in png_pins.values()):
         raise ValueError("Lossless raster rendering requires both reviewed PNG library pins")
     if posterior_grid_handoff is not None and solver not in POSTERIOR_MODES:
-        raise ValueError("Posterior grid handoff requires the collapsed-signed or screened-stock-finish solver")
+        raise ValueError("Posterior grid handoff requires the collapsed-signed or a screened-finish solver")
     libraries = {}
     for name, pin in {**png_pins, "tle_parser": tle_parser,
                       "posterior_grid_handoff": posterior_grid_handoff, "graph_path": graph_path}.items():
@@ -84,7 +84,7 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         sources.extend(VARIANTS / name for name in ("algo08_causal_table.py", "algo08_cavity_projection.py"))
         if solver in SALVAGE_MODES:
             sources.append(VARIANTS / "algo08_salvage_bound.py")
-    if solver == SCREENED_STOCK:
+    if solver in SCREENED_MODES:
         sources.extend(VARIANTS / name for name in ("algo08_stock_finish.py", "v5_screen_winner.py"))
     if solver == "track-moments":
         sources.append(VARIANTS / "algo08_track_moments.py")
