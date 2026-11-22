@@ -48,9 +48,17 @@ def compare(path, detection_path, capacity):
     total_cpu = sum(costs) / 1e9
     saved_cpu = sum(costs[i] for i in skipped) / 1e9
     published_cpu = sum(cost for cost, result in zip(costs, selected, strict=True) if result) / 1e9
+    # Both antenna callbacks from one visit share the same stereo array. Count
+    # its lifetime in a separate replay, outside the measured planner clock.
+    retention = DeferredContinuation(capacity)
+    peak_windows = 0
+    for index, probe in enumerate(probe_metadata):
+        retention.select(probe, lambda i=index: rows[i]["candidates"])
+        peak_windows = max(peak_windows, len({past.counter for past in retention.pending}))
     return dict(ledger_sha256=sha256(ledger_bytes).hexdigest(), detector_sha256=ledger["detector_sha256"],
                 raw_authority=ledger["raw_authority"], pending_budget=capacity, rows=len(rows),
-                selections=sum(bool(result) for result in selected),
+                selections=sum(bool(result) for result in selected), peak_pending_stereo_windows=peak_windows,
+                pending_stereo_bytes_at_peak=peak_windows * 200_000 * 2 * 2 * 2,
                 unqueried_lanes=len(skipped), unqueried_verified_factors=sum(len(rows[i]["candidates"]) for i in skipped),
                 total_native_cpu_s=total_cpu, unqueried_native_cpu_s=saved_cpu,
                 native_cpu_s_on_published_lanes=published_cpu,
