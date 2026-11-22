@@ -74,7 +74,7 @@ def inject_trace(source):
     return source.replace(end, "    ++carrier_bound_scans;\n" + end)
 
 
-def build_trace(archive, work):
+def build_trace(archive, work, *, instrument=inject_trace):
     manifest = json.loads((archive / "build.json").read_bytes())
     link = manifest["commands"][-1]
     work.mkdir()
@@ -87,7 +87,7 @@ def build_trace(archive, work):
     if digest(stock) != TIMING_SOURCE_SHA:
         raise ValueError("unexpected archived timing source")
     source = work / "timing_first_receiver.c"
-    source.write_text(inject_trace(stock.decode()))
+    source.write_text(instrument(stock.decode()))
     traces = source.with_suffix(".o")
     compiler = manifest["commands"][-2]
     subprocess.run([*compiler[:-4], "-c", source, "-o", traces], cwd=manifest["cwd"], check=True)
