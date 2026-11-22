@@ -16,6 +16,14 @@ REGION = dict(center=[37.906, -122.545], screen_center=[37.5, -122.0], width_km=
 ARMS = {arm: {"latlon": None} for arm in ("c0", "fitted_c")}
 
 
+def test_only_reviewed_covariance_build_uses_full_scan_comparison():
+    path = stage.PANEL.parents[1] / "single-core-2x/measurements/covariance-posterior-freeze.json"
+    spec = stage.read(path)["spec"]
+    assert stage.comparison_mode(spec) == "full-scan-signed"
+    with pytest.raises(ValueError, match="frozen full-scan"):
+        stage.comparison_mode(dict(spec, regional_veto=False))
+
+
 @pytest.fixture
 def study(tmp_path):
     archive = tmp_path / "tle"

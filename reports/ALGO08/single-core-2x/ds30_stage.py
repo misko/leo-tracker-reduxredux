@@ -31,6 +31,7 @@ BASELINE_DETECTOR = "sha256:f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac89
 CONDITIONAL_RESIDUAL = "sha256:65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6"
 Q15_COLLAPSED_REPAIR = "sha256:a32a945a1e6d9e602f02fa636e83761d47e2992d7da4b0c4aa55eba6927cd9ca"
 FULL_PHASE_SIGNED = "sha256:50d30065095e5a354ec589c31b615a0d1d38194b72335864431e3f63be403879"
+COVARIANCE_POSTERIOR = "sha256:375895c3afda3abd3a916f90bbd63248b5e792f70c78a0e4f136c9bf1a79d423"
 APPROXIMATE_MODES = ("conditional-residual", "full-scan-signed")
 EVIDENCE_FIELDS = ("raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests")
 BUILDS = ("baseline", "candidate")
@@ -64,7 +65,7 @@ def file_sha(path):
 
 def comparison_mode(spec):
     if spec.get("schedule") == "all" and spec.get("solver") == "collapsed-signed":
-        if canonical_digest(spec) != FULL_PHASE_SIGNED:
+        if canonical_digest(spec) not in (FULL_PHASE_SIGNED, COVARIANCE_POSTERIOR):
             raise ValueError("Only the frozen full-scan signed candidate may use approximate comparison")
         return "full-scan-signed"
     if spec.get("schedule") == "conditional-residual":

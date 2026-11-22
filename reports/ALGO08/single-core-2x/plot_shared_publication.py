@@ -60,6 +60,10 @@ def main(trial):
                  ("south-edge-full-signed", "Southern simulation · full second scans"))
     if trial == "balanced":
         cases = (("north-balanced-full-pair", "Northern simulation · 100 m inside"),)
+    if trial == "covariance":
+        cases = (("covariance-north-inside", "Northern simulation · deployed first"),
+                 ("covariance-south-inside", "Southern simulation · candidate first"),
+                 ("DS30-0374-covariance", "DS30-0374 · physical · candidate first"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -98,7 +102,7 @@ def main(trial):
         distance_limit = 62 if key == "north-far-shared" else 2
         if trial == "balanced":
             distance_limit = max(.1, errors.dataLim.xmax * 1.3)
-        if trial in ("upper-edge", "full-search", "batch"):
+        if trial in ("upper-edge", "full-search", "batch", "covariance"):
             distance_limit = max(distance_limit, errors.dataLim.xmax * 1.2)
         errors.set_xlim(0, distance_limit)
         errors.set_title("Published false fix · expanded distance scale" if key == "north-far-shared"
@@ -123,6 +127,6 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional", "compiler", "signed", "balanced"),
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional", "compiler", "signed", "balanced", "covariance"),
                         default="shared")
     main(parser.parse_args().trial)

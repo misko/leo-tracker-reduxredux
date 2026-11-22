@@ -79,7 +79,7 @@ def worker(mode, native, spec, archive, offer, output):
     helper["write"](output, dict(result, likelihood_timing=clock))
 
 
-def saved_inputs(receipt_path, frozen, single_root):
+def saved_inputs(receipt_path, frozen, single_root, *, expected_spec=SPEC_SHA256):
     from leo.contracts.algo08_region import Algo08Region
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.qualification.paired_publication import archive_identity, verify_sources
@@ -99,7 +99,7 @@ def saved_inputs(receipt_path, frozen, single_root):
         root = single_root
         original_spec = publication["spec"]
         region = stock["receipt"]["region"]
-    if canonical_digest(spec) != SPEC_SHA256 or original_spec != SPEC_SHA256 or "failure" in publication:
+    if canonical_digest(spec) != expected_spec or original_spec != expected_spec or "failure" in publication:
         raise ValueError("Expected a completed measurement from the frozen collapsed-signed build")
     verify_sources(frozen / "reports/ALGO08/single-core-2x/run-candidate", spec["sources"])
     archive = Path(publication["archive"]["root"])
