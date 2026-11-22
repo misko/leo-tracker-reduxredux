@@ -10,7 +10,7 @@ The runner checks the locked case binding, physical recording, offer, capture id
 
 The saved DS30-0374 batch pair verified the original raw authority, candidate and baseline pins, both calibrated endpoints and owner maps, grid and path, all 9,288 detector rows and all eight PNGs. It used the live archive `/var/lib/leo/tle` with capture-time cutoffs. Its legacy pair receipt omits the archive argument. The terminal and publication record an orbit policy, but the saved detector, terminal, manifest and sidecar bindings do not name a selected TLE object inventory. The outputs therefore establish raw, regional and scientific equality without establishing equivalence to the frozen per-case archive. The lead remains a development measurement. The other three assignments are missing, and both elapsed gates remain unreported. The check did not launch a benchmark. [Read-only stage result](measurements/ds30-stage-read-only.json) · [Lead measurement](batch-publication.md)
 
-Fifty component tests passed, including qualification with synthetic withheld receipts, one-case pacing, missing or swapped assignments, prior attempt failures, archive changes and decoded PNG integrity. [Stage tests](../../../tests/pipeline_eval/test_ds30_stage.py)
+Fifty-eight component tests passed, covering read-only storage, qualification with synthetic withheld receipts, one-case pacing, missing or swapped assignments, interrupted-stage recovery, archive changes and decoded PNG integrity. [Storage tests](../../../tests/storage/test_fast_scan.py) · [Stage tests](../../../tests/pipeline_eval/test_ds30_stage.py)
 
 ## Commands
 
@@ -37,3 +37,7 @@ stage score --size 4
 ```
 
 To reproduce the historical read-only check, point `workspace` at a separate view that contains a `DS30-0374` symlink to `/tmp/leo-algo08v2-2x-bench/physical-endpoint-paired/DS30-0374-batch`, then run `stage score --size 4` only. Use a new qualification workspace for timed cases.
+
+## Recovering an interrupted stage
+
+Keep the original workspace and report its `inventory` result, including the failed or incomplete assignment. For a subsequent attempt with the same frozen build and inputs, set `workspace` to a new directory. Link the original case directories for the contiguous verified prefix into that directory under their same DS30 IDs. `inventory` rechecks those receipts and `run` resumes at the first missing assignment in the original order. This preserves any completed timings and the failed attempt. Record the original and new workspace paths with the recovery reason. For a changed build or input, start at rank one in a new workspace.

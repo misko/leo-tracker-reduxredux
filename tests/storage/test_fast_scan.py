@@ -75,6 +75,17 @@ def test_automatic_progress_is_separate_from_immutable_results(tmp_path):
         store.update_automatic("../escape", state="complete")
 
 
+def test_read_only_automatic_workspace_does_not_create_directories(tmp_path):
+    store = FastScanStore(tmp_path)
+    path = store.automatic_workspace("capture", create=False)
+    assert not path.exists()
+    assert not path.parent.exists()
+
+    assert store.automatic_workspace("capture") == path
+    assert path.is_dir()
+    assert store.automatic_workspace("capture", create=False) == path
+
+
 def test_orbit_publication_is_immutable_and_verifies_png_integrity(tmp_path):
     from leo.presentation.fast_scan_orbits import PLOT_NAMES
 

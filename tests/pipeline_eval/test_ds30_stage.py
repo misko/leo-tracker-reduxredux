@@ -144,6 +144,25 @@ def test_failed_or_incomplete_attempts_cannot_be_skipped(study):
         stage.next_case(state, None)
 
 
+def test_separate_workspace_can_preserve_verified_prefix_on_recovery(study):
+    first, second, *_ = study.assignments
+    seal_pair(study, first)
+    failed_directory = study.runs / second.name
+    failed_directory.mkdir()
+    (failed_directory / "pair.json").write_text('{"failure":"timeout during solve"}')
+    original = inventory(study)
+
+    retry_workspace = study.runs.with_name("retry")
+    retry_workspace.mkdir()
+    (retry_workspace / first.name).symlink_to(study.runs / first.name, target_is_directory=True)
+    retry = stage.inventory(retry_workspace, study.assignments, study.candidate, study.spec, 2)
+
+    assert original["coverage"]["failed"] == [second.name]
+    assert retry["cases"][0] == original["cases"][0]
+    assert stage.next_case(retry, None) == second.name
+    assert inventory(study) == original
+
+
 def test_read_only_verifier_does_not_recreate_missing_terminal_workspace(study):
     first = study.assignments[0]
     path = seal_pair(study, first)
