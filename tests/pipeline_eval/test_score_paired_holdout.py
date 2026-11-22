@@ -52,6 +52,7 @@ def test_two_site_confirmation_requires_both_median_and_total_ratios():
                 arm["latlon"][0] -= 32
     data["cases"].extend(another)
     assert score(data,key)["passed"]
+    assert not score(data,key)["passed_geographic_holdout"]
     assert not score(data,key)["candidate_correct_on_all_region_decisions"]
     another[0]["result"]["runs"]["candidate"]["elapsed_s"] = 100.
     result = score(data,key)
@@ -118,10 +119,20 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
             data["cases"].append(dict(job=job, result=dict(runs=runs)))
     result = score(data, key)
     assert result["passed"] and result["assigned"] == 8
+    assert result["passed_geographic_holdout"]
     assert result["candidate_correct_on_all_region_decisions"]
     assert result["geography_protocol"] == EDGE_PROTOCOL
     assert result["missing_region"]["candidate"] == dict(assigned=4, false_fixes=0, withheld=4, failed=0)
     assert all(s["false_fixes"] == 0 for s in result["by_site"])
+    inherited = deepcopy(data)
+    omitted = next(c for c in inherited["cases"] if c["job"]["offer"] == "aedge-omitted")
+    for arm in omitted["result"]["runs"].values():
+        arm["receipt"]["decision"] = "complete"
+        for prediction in arm["arms"].values():
+            prediction["latlon"] = arm["receipt"]["region"]["center"]
+    inherited_result = score(inherited, key)
+    assert inherited_result["passed"] and not inherited_result["passed_geographic_holdout"]
+    assert not score(dict(data, geography_protocol=None), key)["passed_geographic_holdout"]
     moved = deepcopy(data)
     moved_key = deepcopy(key)
     moved["cases"][0]["job"]["recording"] = "third-waveform"

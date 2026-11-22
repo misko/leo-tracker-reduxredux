@@ -134,13 +134,15 @@ def score(locked, truth):
     candidate_regions_correct = bool(coverage and not failures and all(
         r["decision"] == ("complete" if r["condition"] in CONTAINING else "withheld")
         for r in rows if r["arm"] == "candidate" and r["calibration"] == "c0"))
+    relative_pass = bool(quality and coverage and paired is not None and max(paired, summed) <= .5)
+    geographic_pass = relative_pass and candidate_regions_correct and locked.get("geography_protocol") == EDGE_PROTOCOL
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
                 geography_protocol=locked.get("geography_protocol"), missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
                 geographic_confirmation_coverage=coverage,
                 candidate_correct_on_all_region_decisions=candidate_regions_correct,
                 relative_quality_preserved=quality and not failures,
-                passed=bool(quality and coverage and paired is not None and max(paired, summed) <= .5))
+                passed=relative_pass, passed_geographic_holdout=geographic_pass)
 
 
 def main():
