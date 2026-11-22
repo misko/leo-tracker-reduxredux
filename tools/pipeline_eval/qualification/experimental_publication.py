@@ -19,6 +19,8 @@ RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layou
 INGRESS_MODES = ("stock", "compressed-buffer", "paired-sha256")
 SCHEDULE_MODES = ("all", "bursts", "alternate", "deferred", "conditional-residual")
 PNG_LIBRARIES = {"png_filter": "png-filter.so", "png_deflate": "png-deflate.so"}
+POSTERIOR_GRID_LIBRARY = "posterior-grid-handoff.so"
+POSTERIOR_GRID_ARITHMETIC = "permuted native posterior factor"
 
 
 def run(args, specification):
@@ -32,6 +34,19 @@ def run(args, specification):
     mode = specification["solver"]
     if mode not in ("stock", *CAUSAL_MODES):
         raise ValueError("Unknown experimental solver")
+    posterior_pin = specification.get("posterior_grid_handoff")
+    posterior_bytes = None
+    if posterior_pin is not None:
+        if mode != "collapsed-signed":
+            raise ValueError("Posterior grid handoff requires the collapsed-signed solver")
+        if (not isinstance(posterior_pin, dict) or set(posterior_pin) != {"library", "sha256"}
+                or not isinstance(posterior_pin["library"], str)
+                or not isinstance(posterior_pin["sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", posterior_pin["sha256"])):
+            raise ValueError("Expected a pinned posterior grid handoff library")
+        posterior_bytes = Path(posterior_pin["library"]).read_bytes()
+        if sha256(posterior_bytes).hexdigest() != posterior_pin["sha256"]:
+            raise ValueError("Posterior grid handoff library differs from its reviewed build")
     rendering = specification.get("rendering", "individual")
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
@@ -195,6 +210,29 @@ def run(args, specification):
         if recovery_reuse:
             from tools.pipeline_eval.variants.algo08_recovery_reuse import stable_recovery
             recovery_counts = stack.enter_context(stable_recovery())
+        if posterior_bytes is not None:
+            from leo.presentation import localization_v3
+            from tools.pipeline_eval.variants.algo08_posterior_handoff import grid_handoff
+
+            library = assets / POSTERIOR_GRID_LIBRARY
+            library.write_bytes(posterior_bytes)
+            in_grid = False
+            posterior_counts = stack.enter_context(grid_handoff(algo08_position, library, lambda: in_grid))
+            stock_grid = localization_v3.sample_position_grid
+
+            def posterior_grid(*args, **kwargs):
+                nonlocal in_grid
+                in_grid = True
+                before = posterior_counts.get("factor_calls", 0)
+                try:
+                    grid = stock_grid(*args, **kwargs)
+                finally:
+                    in_grid = False
+                if posterior_counts.get("factor_calls", 0) > before:
+                    grid["nuisance_model"] = f"unchanged marginal likelihood, research {POSTERIOR_GRID_ARITHMETIC}"
+                return grid
+
+            stack.enter_context(patch.object(localization_v3, "sample_position_grid", posterior_grid))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if specification.get("tle_parser"):
@@ -210,6 +248,8 @@ def run(args, specification):
             result["endpoint_reuse"] = endpoint_counts
         if recovery_reuse:
             result["recovery_reuse"] = recovery_counts
+        if posterior_bytes is not None:
+            result["posterior_grid_handoff"] = dict(arithmetic=POSTERIOR_GRID_ARITHMETIC, **posterior_counts)
         return result
 
 

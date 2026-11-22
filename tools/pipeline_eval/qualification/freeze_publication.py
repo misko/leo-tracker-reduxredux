@@ -6,27 +6,32 @@ from pathlib import Path
 import shutil
 
 from .experimental_publication import (
-    CAUSAL_MODES, DISCOVERY_MODES, INGRESS_MODES, PNG_LIBRARIES, RELEASE, RENDERING_MODES,
-    SALVAGE_MODES, SCHEDULE_MODES, TABLE_MODES,
+    CAUSAL_MODES, DISCOVERY_MODES, INGRESS_MODES, PNG_LIBRARIES, POSTERIOR_GRID_LIBRARY,
+    RELEASE, RENDERING_MODES, SALVAGE_MODES, SCHEDULE_MODES, TABLE_MODES,
 )
 
 
 LAUNCHER = Path("reports/ALGO08/single-core-2x/run-candidate")
 ENTRY = Path("tools/pipeline_eval/qualification/experimental_publication.py")
 VARIANTS = Path("tools/pipeline_eval/variants")
+NATIVE_LIBRARIES = {**PNG_LIBRARIES, "tle_parser": "_leo_tle_records.so",
+                    "posterior_grid_handoff": POSTERIOR_GRID_LIBRARY}
 
 
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
            rendering="individual", startup="stock", paired_sha256=None, endpoint_reuse=False,
            png_filter=None, png_deflate=None, recovery_reuse=False, tle_parser=None,
-           defer_preparation_gc=False, regional_veto=False):
+           defer_preparation_gc=False, regional_veto=False, posterior_grid_handoff=None):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     png_pins = dict(png_filter=png_filter, png_deflate=png_deflate)
     if any((pin is not None) != (rendering == "lossless-raster") for pin in png_pins.values()):
         raise ValueError("Lossless raster rendering requires both reviewed PNG library pins")
+    if posterior_grid_handoff is not None and solver != "collapsed-signed":
+        raise ValueError("Posterior grid handoff requires the collapsed-signed solver")
     libraries = {}
-    for name, pin in {**png_pins, "tle_parser": tle_parser}.items():
+    for name, pin in {**png_pins, "tle_parser": tle_parser,
+                      "posterior_grid_handoff": posterior_grid_handoff}.items():
         if pin is not None:
             library, digest = pin
             content = library.read_bytes()
@@ -76,6 +81,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
                        "algo08_collapsed_salvage.py", "algo08_collapsed_repair.py"))
     if solver == "collapsed-signed":
         sources.append(VARIANTS / "algo08_collapsed_signed_finish.py")
+    if posterior_grid_handoff is not None:
+        sources.extend(VARIANTS / f"algo08_posterior_handoff.{extension}" for extension in ("py", "h"))
     if endpoint_reuse:
         sources.append(VARIANTS / "algo08_endpoint_readout.py")
     if recovery_reuse:
@@ -131,9 +138,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         digests[library.name] = library_sha256
     if rendering != "individual":
         spec["rendering"] = rendering
-    filenames = {**PNG_LIBRARIES, "tle_parser": "_leo_tle_records.so"}
     for name, (content, digest) in libraries.items():
-        library = output / filenames[name]
+        library = output / NATIVE_LIBRARIES[name]
         library.write_bytes(content)
         spec[name] = dict(library=str(library.resolve()), sha256=digest)
         digests[library.name] = digest
@@ -164,6 +170,8 @@ if __name__ == "__main__":
     parser.add_argument("--png-filter", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
     parser.add_argument("--png-deflate", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
     parser.add_argument("--tle-parser", nargs=2, metavar=("LIBRARY", "SHA256"))
+    parser.add_argument("--posterior-grid-handoff", nargs=2, metavar=("LIBRARY", "SHA256"),
+                        help="Reuse the checked native posterior in the research predictive grid")
     parser.add_argument("--startup", choices=("stock", "lazy-exports"), default="stock")
     parser.add_argument("--endpoint-reuse", action="store_true")
     parser.add_argument("--recovery-reuse", action="store_true")
@@ -172,7 +180,7 @@ if __name__ == "__main__":
                         help="Withhold a boundary fix when both receivers independently favor the far exterior")
     args = parser.parse_args()
     paired = None if args.paired_sha256 is None else (Path(args.paired_sha256[0]), args.paired_sha256[1])
-    native_libraries = {name: (Path(pin[0]), pin[1]) for name in (*PNG_LIBRARIES, "tle_parser")
+    native_libraries = {name: (Path(pin[0]), pin[1]) for name in NATIVE_LIBRARIES
            if (pin := getattr(args, name)) is not None}
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,
            args.solver, args.ingress, schedule=args.schedule, rendering=args.rendering,
