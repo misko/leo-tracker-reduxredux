@@ -101,7 +101,26 @@ def compare(pair):
                                  for k in ARMS})
 
 
+def score_public_waveform(pair, scoring_key):
+    from . import selected_changes
+
+    result = compare(pair)
+    recording = Path(json.loads(pair.read_bytes())["recording"]).name
+    answers = json.loads(scoring_key.read_bytes())["answers"]
+    sites = {tuple(row["truth"]) for row in answers.values() if row["recording"] == recording}
+    if len(sites) != 1:
+        raise ValueError("Expected one public reference for the measured recording")
+    site, = sites
+    result.update(selected_fields=selected_changes.compare(pair, summary=True), reference_latlon=list(site),
+                  error_km={method: {arm: distance_km(result[method]["arms"][arm]["latlon"], site)
+                                     for arm in ARMS} for method in ("baseline", "candidate")})
+    return result
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("pair", type=Path)
-    print(json.dumps(compare(cli.parse_args().pair), indent=2, allow_nan=False))
+    cli.add_argument("--public-scoring-key", type=Path, help="Score an already published simulation by recording")
+    args = cli.parse_args()
+    result = score_public_waveform(args.pair, args.public_scoring_key) if args.public_scoring_key else compare(args.pair)
+    print(json.dumps(result, indent=2, allow_nan=False))

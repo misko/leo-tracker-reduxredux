@@ -39,3 +39,20 @@ def test_different_offers_cannot_be_compared_as_a_matched_pair(tmp_path):
     path.write_text(json.dumps(dict(runs=dict(baseline=left, candidate=right))))
     with pytest.raises(ValueError, match="different raw inputs or offers"):
         comparison.compare(path)
+
+
+def test_public_score_uses_one_reference_per_waveform_and_preserves_withholding(tmp_path, monkeypatch):
+    pair, key = tmp_path / "pair.json", tmp_path / "key.json"
+    pair.write_text(json.dumps(dict(recording="/data/wave")))
+    arms = {"c0": {"latlon": [2., 3.]}, "fitted_c": {"latlon": None}}
+    monkeypatch.setattr(comparison, "compare", lambda _: {k: {"arms": arms} for k in ("baseline", "candidate")})
+    selections = import_module("reports.ALGO08.single-core-2x.selected_changes")
+    monkeypatch.setattr(selections, "compare", lambda *_args, **_kwargs: {"changed": 0})
+    answers = {label: dict(recording="wave", truth=[2., 3.]) for label in ("inside", "outside")}
+    key.write_text(json.dumps({"answers": answers}))
+    scored = comparison.score_public_waveform(pair, key)
+    assert scored["error_km"]["candidate"] == {"c0": 0., "fitted_c": None}
+    answers["outside"]["truth"] = [-2., 3.]
+    key.write_text(json.dumps({"answers": answers}))
+    with pytest.raises(ValueError, match="one public reference"):
+        comparison.score_public_waveform(pair, key)
