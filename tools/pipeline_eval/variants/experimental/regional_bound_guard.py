@@ -30,24 +30,25 @@ def bound_arms(endpoints, width_km):
     return active
 
 
-def inspect_boundary(endpoints, width_km, score):
+def inspect_boundary(endpoints, width_km, score, *, terminal_only=False):
     active = bound_arms(endpoints, width_km)
     result = dict(bound_arms=active, evaluated=False, would_withhold=False)
     if not active:
         return result
     try:
-        points = score()
+        scored = score()
     except (OSError, ValueError) as error:
         return dict(result, diagnostic_error=str(error))
-    return dict(result, **evaluate(points, width_km), evaluated=True)
+    diagnostic = scored if terminal_only else evaluate(scored, width_km)
+    return dict(result, **diagnostic, evaluated=True)
 
 
-def causal_probes(prepared_tracks, archive, region, *, catalogue=None):
+def causal_probes(prepared_tracks, archive, region, *, catalogue=None, terminal_only=False):
     """Use the original causal catalogue and exactly the saved all-track score."""
     from leo.analysis.localization_v3.elements import ElementParser
     from leo.operations.causal_tle_catalogue import causal_catalogue
     from leo.operations.tle_archive import TleArchiveError
-    from tools.pipeline_eval.variants.experimental.regional_reassignment import evaluate as score
+    from tools.pipeline_eval.variants.experimental import regional_reassignment
 
     if catalogue is None:
         cutoff = prepared_tracks["metadata"]["causal_cutoff_utc_ns"]
@@ -55,12 +56,14 @@ def causal_probes(prepared_tracks, archive, region, *, catalogue=None):
             catalogue = causal_catalogue(archive, cutoff, element_parser=ElementParser())
         except TleArchiveError as error:
             raise ValueError("Causal archive unavailable for exterior diagnostic") from error
+    score = (regional_reassignment.evaluate_veto if terminal_only
+             else regional_reassignment.evaluate)
     result = score(prepared_tracks, catalogue.catalogue, region)
     result["snapshots"] = sorted({row["snapshot_digest"] for row in catalogue.provenance})
     return result
 
 
-def guard_inference(infer, score):
+def guard_inference(infer, score, *, terminal_only=False):
     @wraps(infer)
     def guarded(prepared, region, bound, stage_s, *, selected_evidence=None, **options):
         diagnostic = None
@@ -71,6 +74,7 @@ def guard_inference(infer, score):
             endpoints = {arm: row.get("endpoint_east_north_km") for arm, row in selected.items()}
             diagnostic = inspect_boundary(
                 endpoints, region.width_km, lambda: score(ready["tracks"], region),
+                terminal_only=terminal_only,
             )
             if selected_evidence is not None and not diagnostic["would_withhold"]:
                 selected_evidence(ready, signed, fit)
@@ -88,7 +92,7 @@ def guard_inference(infer, score):
 
 
 @contextmanager
-def bound_exterior_veto(archive):
+def bound_exterior_veto(archive, *, terminal_only=False):
     """Opt in within one dedicated experimental solver process."""
     from sgp4.api import accelerated
 
@@ -98,14 +102,17 @@ def bound_exterior_veto(archive):
     from tools.pipeline_eval.variants import v5_core
 
     captured = None
+    options = {"terminal_only": True} if terminal_only else {}
 
     def score(tracks, region):
         if (captured is not None and captured[0] is tracks
                 and captured[1] == tracks["metadata"]["causal_cutoff_utc_ns"]):
-            return causal_probes(tracks, archive, region, catalogue=captured[2])["points"]
-        return causal_probes(tracks, archive, region)["points"]
+            scored = causal_probes(tracks, archive, region, catalogue=captured[2], **options)
+        else:
+            scored = causal_probes(tracks, archive, region, **options)
+        return scored if terminal_only else scored["points"]
 
-    guarded = guard_inference(v5_core.infer, score)
+    guarded = guard_inference(v5_core.infer, score, terminal_only=terminal_only)
     if not accelerated or type(archive) is not TleArchiveReader:
         with patch.object(v5_core, "infer", guarded):
             yield

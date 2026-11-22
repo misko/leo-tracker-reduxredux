@@ -1,16 +1,24 @@
 from functools import partial
+from hashlib import sha256
 from math import inf, nextafter
+from types import SimpleNamespace
 
 import pytest
 
 from leo.analysis.localization_v3.region import SearchRegion
 from leo.operations.tle_archive import TleArchiveError, TleArchiveReader
+from tools.pipeline_eval.qualification import experimental_publication
 from tools.pipeline_eval.variants import v5_core
 from tools.pipeline_eval.variants.experimental.regional_bound_guard import (
-    ARMS, bound_arms, bound_exterior_veto, causal_probes, guard_inference, inspect_boundary,
+    ARMS,
+    bound_arms,
+    bound_exterior_veto,
+    causal_probes,
+    guard_inference,
+    inspect_boundary,
 )
 from tools.pipeline_eval.variants.experimental.regional_reassignment import probes
-
+from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal
 
 WIDTH = 25.
 HALF = WIDTH / 2
@@ -33,7 +41,8 @@ def test_skips_unavailable_pair_before_touching_score():
 @pytest.mark.parametrize(("fit", "scenario"), (
     (False, "interior"), (False, "far"), (True, "far"), (True, "near"), (True, "failure"),
 ))
-def test_guard_checks_selected_fit_and_preserves_nonveto_publication(fit, scenario):
+@pytest.mark.parametrize("terminal_only", [False, True])
+def test_guard_checks_selected_fit_and_preserves_nonveto_publication(fit, scenario, terminal_only):
     region = SearchRegion((32., 114.), WIDTH)
     prepared = {"tracks": object()}
     publications, score_calls = [], []
@@ -65,9 +74,11 @@ def test_guard_checks_selected_fit_and_preserves_nonveto_publication(fit, scenar
         for row in rows:
             value = 2. if row["xy_km"] == winner else 1. if row["side"] == "inside" else 0.
             row["receiver_scores"] = {"1": value, "2": value}
+        if terminal_only:
+            return evaluate_terminal(rows, WIDTH, lambda point: point["receiver_scores"])
         return rows
 
-    result = guard_inference(infer, score)(
+    result = guard_inference(infer, score, terminal_only=terminal_only)(
         prepared, region, None, {}, selected_evidence=lambda *args: publications.append(args),
     )
     assert bool(score_calls) == bounded
@@ -84,6 +95,12 @@ def test_guard_checks_selected_fit_and_preserves_nonveto_publication(fit, scenar
     assert diagnostic["bound_arms"] == (["fitted_c"] if bounded else [])
     if scenario == "failure":
         assert diagnostic["diagnostic_error"] == "no past TLE"
+    if scenario == "near":
+        assert diagnostic["complete"] is not terminal_only
+        assert ("receivers" in diagnostic) is not terminal_only
+    if scenario == "far":
+        assert diagnostic["complete"]
+        assert diagnostic["receivers"]["1"]["gain"] == 1.
 
 
 def test_scope_restores_inference_on_exception():
@@ -129,7 +146,10 @@ def test_archive_read_failure_keeps_a_boundary_fix():
     assert decision["diagnostic_error"] == "Causal archive unavailable for exterior diagnostic"
 
 
-def test_catalogue_handoff_binds_the_archive_cutoff_and_prepared_scan(monkeypatch, tmp_path):
+@pytest.mark.parametrize("use_terminal", [False, True])
+def test_catalogue_handoff_binds_the_archive_cutoff_and_prepared_scan(
+    monkeypatch, tmp_path, use_terminal,
+):
     from sgp4 import api
 
     from leo.operations import localization_v3_inputs
@@ -152,8 +172,12 @@ def test_catalogue_handoff_binds_the_archive_cutoff_and_prepared_scan(monkeypatc
         return dict(status="inputs_prepared", sky={"bank": None},
                     tracks={"metadata": {"causal_cutoff_utc_ns": cutoff}})
 
-    def score(tracks, reader, region, *, catalogue=None):
+    def score(tracks, reader, region, *, catalogue=None, terminal_only=False):
+        assert terminal_only is use_terminal
         scored.append((tracks, reader, region, catalogue))
+        if terminal_only:
+            return dict(would_withhold=False, complete=False, probes_evaluated=0,
+                        stop="no_eligible_exterior")
         return {"points": []}
 
     def infer(prepared, region, bound, stages, *, selected_evidence):
@@ -174,7 +198,7 @@ def test_catalogue_handoff_binds_the_archive_cutoff_and_prepared_scan(monkeypatc
         v5_core.infer(ready, region, None, {})
         return ready
 
-    with bound_exterior_veto(archive):
+    with bound_exterior_veto(archive, terminal_only=use_terminal):
         first = run(TleArchiveReader(archive.root), northern, cutoff=1)
         second = run(TleArchiveReader(archive.root), southern, cutoff=2)
         v5_core.infer(first, southern, None, {})
@@ -195,3 +219,31 @@ def test_catalogue_handoff_binds_the_archive_cutoff_and_prepared_scan(monkeypatc
     ]
     assert algo08_position.prepare_native_scan is prepare
     assert v5_core.infer is infer
+
+
+def test_terminal_publication_requires_active_guard_and_pins_loaded_sources(tmp_path, monkeypatch):
+    trial = experimental_publication
+    entry = tmp_path / "tools/pipeline_eval/qualification/experimental_publication.py"
+    monkeypatch.setattr(trial, "__file__", str(entry))
+    detector = tmp_path / "receiver.so"
+    detector.touch()
+    output = tmp_path / "output"
+    output.mkdir()
+    spec = dict(detector=str(detector), detector_sha256=sha256(b"").hexdigest(),
+                solver="stock", regional_veto_terminal_only=True)
+    with pytest.raises(ValueError, match="requires the regional guard"):
+        trial.run(SimpleNamespace(bulk_root=output), spec)
+
+    modules = []
+    spec["sources"] = {}
+    for path in trial.TERMINAL_VETO_SOURCES:
+        imported = tmp_path / path
+        imported.parent.mkdir(parents=True, exist_ok=True)
+        content = path.as_posix().encode()
+        imported.write_bytes(content)
+        modules.append(SimpleNamespace(__file__=str(imported)))
+        spec["sources"][str(path)] = sha256(content).hexdigest()
+    trial._check_terminal_veto(spec, modules)
+    (tmp_path / trial.TERMINAL_VETO_SOURCES[-1]).write_bytes(b"changed scorer")
+    with pytest.raises(ValueError, match="regional_veto_short_circuit.py"):
+        trial._check_terminal_veto(spec, modules)

@@ -111,7 +111,7 @@ def write(path, value):
         stream.write("\n")
 
 
-def solve(frozen, native, offer, archive):
+def solve(frozen, native, offer, archive, *, guard_evidence=False):
     env = dict(os.environ, PYTHONPATH=f"{frozen}:{RELEASE / 'src'}:{RELEASE}",
                OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1", OMP_NUM_THREADS="1")
     for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE",
@@ -125,6 +125,8 @@ def solve(frozen, native, offer, archive):
         worker_args = (detections, frozen / "spec.json", archive, region, output)
         command = [str(RELEASE / "venv/bin/python"), "-BPs", str(HELPER), "worker",
                    *map(str, worker_args), "--evidence"]
+        if guard_evidence:
+            command.append("--guard-evidence")
         subprocess.run(command, env=env, timeout=90, check=True)
         return read(output)
 

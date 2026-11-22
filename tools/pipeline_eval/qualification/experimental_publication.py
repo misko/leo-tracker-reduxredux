@@ -36,6 +36,13 @@ SPARSE_RANK_SOURCES = tuple(Path(name) for name in (
     "tools/pipeline_eval/variants/v5_direct_cavity.py",
     "tools/pipeline_eval/variants/algo08_sparse_rank_projection.py",
 ))
+TERMINAL_VETO_SOURCES = tuple(
+    Path(f"tools/pipeline_eval/variants/experimental/{name}.py")
+    for name in (
+        "regional_bound_guard", "regional_reassignment", "regional_exterior_veto",
+        "regional_veto_short_circuit",
+    )
+)
 
 
 def _checked_graph_path(specification):
@@ -72,6 +79,16 @@ def _checked_sparse_rank(specification, detector, mode):
         if sha256((root / source).read_bytes()).hexdigest() != source_pins.get(str(source)):
             raise ValueError(f"Sparse ranking runtime source changed: {source}")
     return pin
+
+
+def _check_terminal_veto(specification, modules):
+    root = Path(__file__).resolve().parents[3]
+    sources = specification.get("sources", {})
+    for module, source in zip(modules, TERMINAL_VETO_SOURCES, strict=True):
+        imported = Path(module.__file__).resolve()
+        if (imported != root / source
+                or sha256(imported.read_bytes()).hexdigest() != sources.get(str(source))):
+            raise ValueError(f"Terminal veto imported an unpinned module: {source}")
 
 
 def run(args, specification):
@@ -136,6 +153,9 @@ def run(args, specification):
     regional_veto = specification.get("regional_veto", False)
     if type(regional_veto) is not bool:
         raise ValueError("Expected a Boolean regional veto selection")
+    terminal_veto = specification.get("regional_veto_terminal_only", False)
+    if type(terminal_veto) is not bool or (terminal_veto and not regional_veto):
+        raise ValueError("Terminal veto requires the regional guard")
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
@@ -280,8 +300,22 @@ def run(args, specification):
             stack.enter_context(signed_finish())
         if regional_veto:
             from leo.operations.tle_archive import TleArchiveReader
-            from tools.pipeline_eval.variants.experimental.regional_bound_guard import bound_exterior_veto
-            stack.enter_context(bound_exterior_veto(TleArchiveReader(args.archive)))
+            from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+            if terminal_veto:
+                from tools.pipeline_eval.variants.experimental import (
+                    regional_exterior_veto,
+                    regional_reassignment,
+                    regional_veto_short_circuit,
+                )
+
+                _check_terminal_veto(specification, (
+                    regional_bound_guard, regional_reassignment, regional_exterior_veto,
+                    regional_veto_short_circuit,
+                ))
+            stack.enter_context(regional_bound_guard.bound_exterior_veto(
+                TleArchiveReader(args.archive), terminal_only=terminal_veto,
+            ))
         if endpoint_reuse:
             from tools.pipeline_eval.variants import algo08_endpoint_readout, v5_direct_cavity
             endpoint_counts = stack.enter_context(

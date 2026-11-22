@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 from collections import Counter
+from contextlib import ExitStack
 from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -98,7 +99,8 @@ def saved_native(pair_path, method, row):
     return native
 
 
-def worker(native_path, spec_path, archive, region, output, *, include_evidence=False):
+def worker(native_path, spec_path, archive, region, output, *, include_evidence=False,
+           guard_evidence=False):
     # The worker imports tools from the original freezer output. Install the
     # matched startup hook before importing its ordinary solver or storage.
     from tools.pipeline_eval.qualification import experimental_publication
@@ -121,6 +123,7 @@ def worker(native_path, spec_path, archive, region, output, *, include_evidence=
     solver_only.update(schedule="all", rendering="individual", ingress="stock", startup="stock")
     with TemporaryDirectory() as temp:
         root = Path(temp)
+        guard_times = []
 
         def from_saved(recording, _root, assets, causal_archive, offer):
             if recording != root / "no-recording":
@@ -134,6 +137,11 @@ def worker(native_path, spec_path, archive, region, output, *, include_evidence=
                 orbit_policy=policy, solver_cpu_s=process_time() - start_cpu,
                 solver_wall_s=perf_counter() - start_wall,
             )
+            if guard_evidence:
+                result["regional_bound_guard"] = decision.get("metrics", {}).get(
+                    "regional_bound_guard"
+                )
+                result["guard_timings"] = guard_times
             if packet is not None:
                 result["owners"] = {arm: packet["arms"][arm]["owner_sha256"] for arm in ARMS}
                 result["associated"] = {arm: packet["arms"][arm]["associated_points"]
@@ -145,7 +153,23 @@ def worker(native_path, spec_path, archive, region, output, *, include_evidence=
 
         args = SimpleNamespace(recording=root / "no-recording", bulk_root=root,
                                archive=archive, region=region)
-        with patch.object(algo08_scan, "analyze", from_saved):
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(algo08_scan, "analyze", from_saved))
+            if guard_evidence:
+                from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+                inspect = regional_bound_guard.inspect_boundary
+
+                def timed_inspection(*args, **kwargs):
+                    cpu, wall = process_time(), perf_counter()
+                    result = inspect(*args, **kwargs)
+                    guard_times.append(dict(cpu_s=process_time() - cpu,
+                                            wall_s=perf_counter() - wall))
+                    return result
+
+                stack.enter_context(patch.object(
+                    regional_bound_guard, "inspect_boundary", timed_inspection,
+                ))
             result = experimental_publication.run(args, solver_only)
     write(output, json.loads(json.dumps(result, default=_json_value, allow_nan=False)))
 
@@ -284,9 +308,11 @@ def main():
             command.add_argument(field, type=Path)
         if action == "worker":
             command.add_argument("--evidence", action="store_true")
+            command.add_argument("--guard-evidence", action="store_true")
     args = parser.parse_args()
     operation, fields = commands[args.action]
-    options = dict(include_evidence=args.evidence) if args.action == "worker" else {}
+    options = (dict(include_evidence=args.evidence, guard_evidence=args.guard_evidence)
+               if args.action == "worker" else {})
     result = operation(*(getattr(args, field) for field in fields), **options)
     if args.action == "score":
         print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
