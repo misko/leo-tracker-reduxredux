@@ -15,6 +15,10 @@ Neither sparse rank materialized a full plane or fell back. The India run revers
 
 The 1.331-second measured ranking reduction accounts for about 5% of the dense pair’s 27.507-second detection-to-decision half-time deficit if it transfers directly. The profiled dense recovery ran two paired gates and reused neither, and its 8.192-second gate boundary and 6.241-second salvage boundary remain separate costs. This result supports one local ranking optimization on identical evidence. A reduction that closes the measured dense gap requires substantial work in the fit and recovery stages. [Dense cost accounting](restored-scout-0008-solver-profile.md)
 
+## Distant omitted southern offer
+
+The southern portable input reused the released detections and capture-time archive with the offer that puts the reference 57.026 km beyond its closest face. Both ranks screened 1,669 sky objects and 25 curved tracks, evaluating 667,600 candidate curve profiles in total per arm. They produced identical full-time sightline decisions, costs, biases, aliases, RMS and gate bits. All twelve recorded squared residuals and all eight ordered node records matched exactly. Ranking CPU fell from **6.185 to 5.512 seconds**, with 1.762 GB of avoided full-plane copies and zero fallbacks. This control ends at the ranking boundary. The terminal decision on this offer was measured separately. [Omitted rank receipt](measurements/sparse-rank-projection-omitted.json) · [Earlier terminal comparison](screened-stock-recovery.md#omitted-offers)
+
 ## Reproduction
 
 Use the already staged DS30-0008 profile inputs and the published India containing packet. The runner verifies the frozen specification, both saved documents and both causal archives before starting the rankings. Use a fresh local output directory.
@@ -26,3 +30,5 @@ flock "$bench/gauss.lock" nice -n 15 ionice -c2 -n7 taskset -c 2 \
   .venv/bin/python -BPs -m reports.ALGO08.single-core-2x.sparse_rank_projection_trial \
   "$bench" "$bench/sparse-rank-projection-new"
 ```
+
+Add `--southern-omitted` and use a fresh output directory to run just the omitted southern ranking.

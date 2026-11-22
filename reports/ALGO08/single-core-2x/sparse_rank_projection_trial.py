@@ -128,7 +128,7 @@ def worker(native, archive, offer, frozen, output, first):
     output.write_text(json.dumps(dict(order=order, results=result), indent=2))
 
 
-def run(bench, output):
+def run(bench, output, *, southern_omitted=False):
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.qualification.paired_publication import archive_identity
 
@@ -140,27 +140,37 @@ def run(bench, output):
     frozen = bench / "integration-restored-scout-graph"
     previous = read(MEASURE / "restored-scout-0008-solver-profile.json")
     require_spec(frozen, previous["specification"])
-    dense = bench / "restored-graph-profile-0008"
-    native, offer = dense / "native.json", dense / "offer.json"
-    archive = Path(previous["archive"]["root"])
-    if (canonical_digest(read(native)) != previous["native_sha256"]
-            or read(offer) != previous["offer"]
-            or archive_identity(archive) != previous["archive"]):
-        raise ValueError("Dense saved input differs from the measured ad417 profile")
-    public = read(MEASURE / "covariance-geographic-transfer.json")
-    india = next(r for r in public["rows"] if r["case"] == transfer.INDIA
-                 and r["mode"] == "matched-tile")
-    site = bench / "portable-v5-geodiverse" / transfer.INDIA
-    verify_archive(vars(transfer), india, site)
-    if (transfer.digest((site / "native.json").read_bytes()) != india["document_sha256"]
-            or read(site / "matched-tile.json") != india["offer"]):
-        raise ValueError("India saved input differs from the published control")
+    def released_case(case, offer_mode, order):
+        public = read(MEASURE / "covariance-geographic-transfer.json")
+        row = next(r for r in public["rows"] if r["case"] == case and r["mode"] == offer_mode)
+        site = bench / "portable-v5-geodiverse" / case
+        document, region = site / "native.json", site / (offer_mode + ".json")
+        verify_archive(vars(transfer), row, site)
+        if (transfer.digest(document.read_bytes()) != row["document_sha256"]
+                or read(region) != row["offer"]):
+            raise ValueError("Saved input differs from the published control")
+        return row, (document, site / "tle", region, order)
+
+    if southern_omitted:
+        row, control = released_case(transfer.SOUTH, "omitted-tile", "dense")
+        controls = {"Portable south omitted": control}
+        inputs = dict(native_sha256=row["document_sha256"], history_sha256=row["history_sha256"],
+                      offer=row["offer"], reference_clearance_km=row["reference_clearance_km"])
+    else:
+        dense = bench / "restored-graph-profile-0008"
+        native, offer = dense / "native.json", dense / "offer.json"
+        archive = Path(previous["archive"]["root"])
+        if (canonical_digest(read(native)) != previous["native_sha256"]
+                or read(offer) != previous["offer"]
+                or archive_identity(archive) != previous["archive"]):
+            raise ValueError("Dense saved input differs from the measured ad417 profile")
+        india, control = released_case(transfer.INDIA, "matched-tile", "sparse")
+        controls = {"DS30-0008": (native, archive, offer, "dense"), "India": control}
+        inputs = dict(dense_native=previous["native_sha256"], india_native=india["document_sha256"])
     env = dict(os.environ, PYTHONPATH=f"{frozen}:{RELEASE / 'src'}:{RELEASE}",
                OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")
     command = [str(RELEASE / "venv/bin/python"), "-BPs", str(Path(__file__).resolve())]
     output.mkdir(parents=True, exist_ok=False)
-    controls = {"DS30-0008": (native, archive, offer, "dense"),
-                "India": (site / "native.json", site / "tle", site / "matched-tile.json", "sparse")}
     results = {}
     for case, (document, tle, region, order) in controls.items():
         path = output / (case + ".json")
@@ -168,18 +178,19 @@ def run(bench, output):
                        env=env, check=True, timeout=100)
         results[case] = read(path)
     transfer.write(output / "summary.json", dict(
-        specification=previous["specification"], dense_native=previous["native_sha256"],
-        india_native=india["document_sha256"], variant_sha256=transfer.digest(SOURCE.read_bytes()),
-        results=results,
+        specification=previous["specification"],
+        variant_sha256=transfer.digest(SOURCE.read_bytes()),
+        results=results, **inputs,
     ))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="+")
-    args = parser.parse_args().paths
-    if len(args) == 2:
-        run(*map(Path, args))
+    parser.add_argument("--southern-omitted", action="store_true")
+    args = parser.parse_args()
+    if len(args.paths) == 2:
+        run(*map(Path, args.paths), southern_omitted=args.southern_omitted)
     else:
-        native, archive, offer, frozen, output, first = args
+        native, archive, offer, frozen, output, first = args.paths
         worker(*map(Path, (native, archive, offer, frozen, output)), first)
