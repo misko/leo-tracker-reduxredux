@@ -3,8 +3,10 @@ from hashlib import sha256
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from leo.analysis.localization_v3 import scan as kernel
+from tools.pipeline_eval.qualification import experimental_publication
 from tools.pipeline_eval.variants.algo08_sparse_rank_projection import (
     ProjectedRows,
     sparse_rank_projection,
@@ -68,3 +70,32 @@ def test_native_projection_uses_the_same_sky_rows_phases_and_site(monkeypatch):
         assert counts["column_requests"] == 3
         assert counts["materialized_bytes"] == 0
     assert scan.shifted.__func__ is kernel.ScanLikelihood.shifted
+
+
+def test_publication_requires_frozen_detector_and_actual_rank_sources(tmp_path, monkeypatch):
+    entry = tmp_path / "tools/pipeline_eval/qualification/experimental_publication.py"
+    monkeypatch.setattr(experimental_publication, "__file__", str(entry))
+    detector = tmp_path / "receiver.so"
+    detector.write_bytes(b"reviewed receiver")
+    paths = experimental_publication.SPARSE_RANK_SOURCES
+    for path in paths:
+        target = tmp_path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(path.as_posix().encode())
+    pins = {str(path): sha256((tmp_path / path).read_bytes()).hexdigest() for path in paths}
+    pins[detector.name] = sha256(detector.read_bytes()).hexdigest()
+    scan = sha256(Path(kernel.__file__).read_bytes()).hexdigest()
+    spec = {"sparse_rank_projection": scan, "detector_sha256": pins[detector.name], "sources": pins}
+    check = experimental_publication._checked_sparse_rank
+    assert check(spec, detector, "screened-tiled-finish") == scan
+    with pytest.raises(ValueError, match="supported solver"):
+        check(spec, detector, "stock")
+    with pytest.raises(ValueError, match="frozen detector"):
+        check(spec, tmp_path / "outside.so", "screened-tiled-finish")
+    detector.write_bytes(b"changed receiver")
+    with pytest.raises(ValueError, match="frozen detector"):
+        check(spec, detector, "screened-tiled-finish")
+    detector.write_bytes(b"reviewed receiver")
+    (tmp_path / paths[1]).write_bytes(b"changed core")
+    with pytest.raises(ValueError, match="v5_core.py"):
+        check(spec, detector, "screened-tiled-finish")

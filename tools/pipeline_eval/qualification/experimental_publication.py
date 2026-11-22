@@ -30,6 +30,12 @@ GRAPH_PATH_SOURCES = tuple(
     Path(f"tools/pipeline_eval/variants/experimental/graph_path.{extension}")
     for extension in ("c", "py")
 )
+SPARSE_RANK_SOURCES = tuple(Path(name) for name in (
+    "tools/algo08_position.py",
+    "tools/pipeline_eval/variants/v5_core.py",
+    "tools/pipeline_eval/variants/v5_direct_cavity.py",
+    "tools/pipeline_eval/variants/algo08_sparse_rank_projection.py",
+))
 
 
 def _checked_graph_path(specification):
@@ -51,6 +57,23 @@ def _checked_graph_path(specification):
     return content
 
 
+def _checked_sparse_rank(specification, detector, mode):
+    pin = specification["sparse_rank_projection"]
+    if (mode not in DISCOVERY_MODES or not isinstance(pin, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", pin)):
+        raise ValueError("Sparse ranking requires a supported solver and a released scan source pin")
+    source_pins = specification.get("sources", {})
+    root = Path(__file__).resolve().parents[3]
+    if (detector != root / "receiver.so"
+            or specification["detector_sha256"] != source_pins.get(detector.name)
+            or sha256(detector.read_bytes()).hexdigest() != source_pins.get(detector.name)):
+        raise ValueError("Sparse ranking requires its frozen detector")
+    for source in SPARSE_RANK_SOURCES:
+        if sha256((root / source).read_bytes()).hexdigest() != source_pins.get(str(source)):
+            raise ValueError(f"Sparse ranking runtime source changed: {source}")
+    return pin
+
+
 def run(args, specification):
     root = args.bulk_root.resolve(strict=True)
     if not root.is_dir() or any(root.iterdir()):
@@ -62,6 +85,8 @@ def run(args, specification):
     mode = specification["solver"]
     if mode not in ("stock", *CAUSAL_MODES):
         raise ValueError("Unknown experimental solver")
+    sparse_pin = (_checked_sparse_rank(specification, detector, mode)
+                  if "sparse_rank_projection" in specification else None)
     graph_path_bytes = _checked_graph_path(specification) if "graph_path" in specification else None
     posterior_pin = specification.get("posterior_grid_handoff")
     posterior_bytes = None
@@ -209,9 +234,26 @@ def run(args, specification):
             from tools.pipeline_eval.variants import v5_core
             from tools.pipeline_eval.variants.algo08_dense_discovery import dense_discovery
             rank = v5_core.ranked_initial_nodes
+            if sparse_pin is not None:
+                from tools.pipeline_eval.variants import algo08_sparse_rank_projection, v5_direct_cavity
+
+                runtime = (algo08_position, v5_core, v5_direct_cavity, algo08_sparse_rank_projection)
+                bundle = Path(__file__).resolve().parents[3]
+                for module, source in zip(runtime, SPARSE_RANK_SOURCES, strict=True):
+                    if Path(module.__file__).resolve() != bundle / source:
+                        raise ValueError(f"Sparse ranking imported an unpinned module: {source}")
+                sparse_counts = []
+
             def shared_rank(scan):
-                with dense_discovery(scan, reuse_associations=True):
-                    return rank(scan)
+                projection = (algo08_sparse_rank_projection.sparse_rank_projection(
+                    scan, expected_source_sha256=sparse_pin,
+                ) if sparse_pin is not None else nullcontext())
+                with dense_discovery(scan, reuse_associations=True), projection as counts:
+                    result = rank(scan)
+                if sparse_pin is not None:
+                    sparse_counts.append(counts)
+                return result
+
             stack.enter_context(patch.object(v5_core, "ranked_initial_nodes", shared_rank))
         if mode in TABLE_MODES:
             from tools.pipeline_eval.variants.algo08_causal_table import causal_table
@@ -275,6 +317,8 @@ def run(args, specification):
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if mode in SCREENED_MODES:
             result["screened_nomination"] = nomination
+        if sparse_pin is not None:
+            result["sparse_rank_projection"] = sparse_counts
         if graph_path_bytes is not None:
             result["graph_path"] = graph_path_counts
         if specification.get("tle_parser"):
