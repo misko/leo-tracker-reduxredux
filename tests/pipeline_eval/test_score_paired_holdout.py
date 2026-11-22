@@ -177,6 +177,20 @@ def test_geographic_confirmation_requires_the_drawn_pilot_edge_at_each_site(fres
     assert not result["fresh_pilot_edges_verified"] and not result["passed_geographic_holdout"]
 
 
+@pytest.mark.parametrize("screen", ["offered", "truth", "unrelated"])
+def test_fresh_confirmation_uses_only_the_offered_center_for_screening(fresh_panel, screen):
+    data, key = fresh_panel
+    case = data["cases"][0]
+    site = key["answers"][case["job"]["offer"]]["truth"]
+    for run_data in case["result"]["runs"].values():
+        region = run_data["receipt"]["region"]
+        region["screen_center"] = {"offered": region["center"], "truth": list(site),
+                                   "unrelated": [13.3, 45.6]}[screen]
+    result = score(data, key)
+    assert result["geographic_confirmation_coverage"] == (screen == "offered")
+    assert result["passed_geographic_holdout"] == (screen == "offered")
+
+
 @pytest.mark.parametrize("mutation", ["opposite_face", "perpendicular_face", "barely_outside",
                                       "different_width", "duplicate_offer", "different_paired_regions",
                                       "revealed_coordinate"])

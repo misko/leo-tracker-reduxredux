@@ -82,6 +82,9 @@ def matches_edge_design(site, offers):
               "edge-containing": (half-.25, half-.05), "edge-omitted": (half+.05, half+.25)}
     edge_faces = set()
     for label, region in regions.items():
+        # The fresh panel gives inference a search square without a separate sky prior.
+        if region.get("screen_center", region["center"]) != region["center"]:
+            return False
         east, north = offset_km(region, site)
         if east == 0 or north == 0:
             return False  # The offer would disclose one exact receiver coordinate.
