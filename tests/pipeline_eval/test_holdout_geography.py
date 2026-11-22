@@ -67,8 +67,10 @@ def test_austin_receiver_area_is_excluded_from_selection_and_final_scoring(monke
     independent_sites = holdout_geography.seeded_centers(independent)
     austin_sites = [(29.8, -98.1), independent_sites[1]]
     # Inject draws to check both consumers without touching a real confirmation seed.
-    monkeypatch.setattr(holdout_geography, "seeded_centers",
-                        {overlap: austin_sites, independent: independent_sites}.__getitem__)
+    monkeypatch.setattr(holdout_geography, "seeded_layout", {
+        seed: list(zip(sites, ("lower", "upper"), strict=True))
+        for seed, sites in [(overlap, austin_sites), (independent, independent_sites)]
+    }.__getitem__)
     seeds = iter([overlap, independent])
     monkeypatch.setattr(holdout_geography.secrets, "token_bytes", lambda _n: next(seeds))
     assert holdout_geography.new_confirmation_seed() == independent

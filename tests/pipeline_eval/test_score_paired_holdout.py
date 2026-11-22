@@ -6,6 +6,7 @@ from math import cos, radians
 import pytest
 import numpy as np
 
+from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_layout, fresh_offers
 from tools.pipeline_eval.qualification.score_paired_holdout import lock, pinned, score
 
@@ -114,12 +115,37 @@ def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_pat
         pinned(path, "00")
 
 
+@pytest.mark.parametrize("edges", [("upper", "upper"), ("upper", "lower")])
+def test_lock_reads_pilot_edges_from_the_pinned_recording(tmp_path, edges):
+    writer = ShortWindowWriter(tmp_path, "wave", configuration={"targets": [{"edge": e} for e in edges]},
+                               radio={}, receiver_ids=(0,))
+    sealed = writer.finish(stop_reason="fixture")
+    digest = ShortWindowReader(sealed).manifest_sha256
+    panel = dict(jobs=[dict(offer="offer", recording="wave")], commitment="0"*64,
+                 geography_protocol=EDGE_PROTOCOL, inputs=dict(recordings={"wave": digest}))
+    path = tmp_path / "panel.json"
+
+    def freeze():
+        path.write_text(json.dumps(panel))
+        return lock(path, hashlib.sha256(path.read_bytes()).hexdigest(), "spec", tmp_path)
+
+    if edges[0] == edges[1]:
+        assert freeze()["recording_pilot_edges"] == {"wave": "upper"}
+    else:
+        with pytest.raises(ValueError, match="one pilot edge"):
+            freeze()
+    panel["inputs"]["recordings"]["wave"] = "sha256:" + "0"*64
+    with pytest.raises(ValueError, match="manifest changed"):
+        freeze()
+
+
 @pytest.fixture
 def fresh_panel():
     rng = np.random.default_rng(45)
-    data = dict(cases=[], geography_protocol=EDGE_PROTOCOL)
+    data = dict(cases=[], geography_protocol=EDGE_PROTOCOL, recording_pilot_edges={})
     key = dict(answers={}, seed=(45).to_bytes(32, "big").hex())
-    for recording, (site, _edge) in zip(("a", "b"), fresh_layout(rng), strict=True):
+    for recording, (site, edge) in zip(("a", "b"), fresh_layout(rng), strict=True):
+        data["recording_pilot_edges"][recording] = edge
         width, offers = fresh_offers(rng, site)
         for condition, center in offers.items():
             job = dict(recording=recording, offer=recording + condition)
@@ -133,6 +159,22 @@ def fresh_panel():
                     arm["latlon"] = list(site) if contained else None
             data["cases"].append(dict(job=job, result=dict(runs=runs)))
     return data, key
+
+
+@pytest.mark.parametrize("mutation", ["same", "swapped", "missing"])
+def test_geographic_confirmation_requires_the_drawn_pilot_edge_at_each_site(fresh_panel, mutation):
+    data, key = fresh_panel
+    assert score(data, key)["fresh_pilot_edges_verified"]
+    edges = data["recording_pilot_edges"]
+    if mutation == "same":
+        edges["a"] = edges["b"]
+    elif mutation == "swapped":
+        edges["a"], edges["b"] = edges["b"], edges["a"]
+    else:
+        del data["recording_pilot_edges"]
+    result = score(data, key)
+    assert result["passed"] and result["fresh_site_draw_verified"]
+    assert not result["fresh_pilot_edges_verified"] and not result["passed_geographic_holdout"]
 
 
 @pytest.mark.parametrize("mutation", ["opposite_face", "perpendicular_face", "barely_outside",

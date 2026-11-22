@@ -52,8 +52,13 @@ def metadata_only(monkeypatch, tmp_path):
             return self.path
 
     monkeypatch.setattr(panel, "ShortWindowWriter", Writer)
-    monkeypatch.setattr(panel, "ShortWindowReader", lambda path: SimpleNamespace(
-        manifest_sha256=hashlib.sha256((path / "manifest.json").read_bytes()).hexdigest()))
+    def reader(path):
+        payload = (path / "manifest.json").read_bytes()
+        return SimpleNamespace(manifest_sha256=hashlib.sha256(payload).hexdigest(),
+                               manifest=SimpleNamespace(**json.loads(payload)))
+
+    monkeypatch.setattr(panel, "ShortWindowReader", reader)
+    monkeypatch.setattr("tools.pipeline_eval.qualification.score_paired_holdout.ShortWindowReader", reader)
     return observed
 
 

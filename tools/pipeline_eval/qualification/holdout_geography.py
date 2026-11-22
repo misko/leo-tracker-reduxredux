@@ -47,10 +47,14 @@ def fresh_layout(rng, additional_centers=()):
     return list(zip(points, edges, strict=True))
 
 
-def seeded_centers(seed):
+def seeded_layout(seed):
     import numpy as np
 
-    return [center for center, _ in fresh_layout(np.random.default_rng(int.from_bytes(seed, "big")))]
+    return fresh_layout(np.random.default_rng(int.from_bytes(seed, "big")))
+
+
+def seeded_centers(seed):
+    return [center for center, _ in seeded_layout(seed)]
 
 
 def independent_of_later_trials(centers):
@@ -66,20 +70,25 @@ def new_confirmation_seed():
             return seed
 
 
-def verifies_drawn_sites(seed_hex, sites):
-    """Recreate the private draw and check the actual sites against its two boxes."""
+def drawn_pilot_edges(seed_hex, sites):
+    """Match both revealed sites to the independently drawn boxes and pilot edges."""
     try:
         seed = bytes.fromhex(seed_hex)
     except (TypeError, ValueError):
-        return False
+        return {}
     if len(seed) != 32:
-        return False
-    centers = seeded_centers(seed)
-    if len(sites) != len(centers) or not independent_of_later_trials(centers):
-        return False
+        return {}
+    layout = seeded_layout(seed)
+    if len(sites) != len(layout) or not independent_of_later_trials([center for center, _ in layout]):
+        return {}
     # make_scene jitters each coordinate independently by at most two degrees.
-    return all(any(abs(lat - center[0]) <= 2 and abs(lon - center[1]) <= 2
-                   for lat, lon in sites) for center in centers)
+    expected = {tuple(site): edge for center, edge in layout for site in sites
+                if abs(site[0] - center[0]) <= 2 and abs(site[1] - center[1]) <= 2}
+    return expected if set(expected.values()) == {"lower", "upper"} else {}
+
+
+def verifies_drawn_sites(seed_hex, sites):
+    return bool(drawn_pilot_edges(seed_hex, sites))
 
 
 def fresh_offers(rng, site):

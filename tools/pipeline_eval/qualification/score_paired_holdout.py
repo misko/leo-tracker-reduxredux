@@ -8,7 +8,8 @@ from pathlib import Path
 from statistics import median
 
 from leo.storage.fast_scan import immutable_json
-from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, EDGE_CASES, EDGE_PROTOCOL, verifies_drawn_sites
+from leo.storage.short_window import ShortWindowReader
+from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, EDGE_CASES, EDGE_PROTOCOL, drawn_pilot_edges
 from tools.pipeline_eval.scoring import ARMS, distance_km, distribution, thresholds
 
 
@@ -38,8 +39,20 @@ def lock(panel_path, panel_sha, spec_digest, runs):
     protocol = panel.get("geography_protocol")
     if protocol not in (None, EDGE_PROTOCOL):
         raise ValueError("Unknown geographic confirmation protocol")
+    pilot_edges = {}
+    if protocol == EDGE_PROTOCOL:
+        for recording in sorted({job["recording"] for job in panel["jobs"]}):
+            if Path(recording).name != recording or recording in ("", ".", ".."):
+                raise ValueError("Expected a local recording name")
+            reader = ShortWindowReader(panel_path.parent / recording)
+            if reader.manifest_sha256 != panel["inputs"]["recordings"][recording]:
+                raise ValueError("Recording manifest changed after freezing")
+            edges = {target.get("edge") for target in reader.manifest.configuration["targets"]}
+            if edges not in ({"upper"}, {"lower"}):
+                raise ValueError("Fresh confirmation expects one pilot edge per recording")
+            pilot_edges[recording], = edges
     return dict(panel_sha256=panel_sha, truth_commitment=panel["commitment"], geography_protocol=protocol,
-                candidate_specification_digest=spec_digest, cases=cases)
+                candidate_specification_digest=spec_digest, cases=cases, recording_pilot_edges=pilot_edges)
 
 
 def offset_km(region, point):
@@ -205,9 +218,12 @@ def score(locked, truth):
         r["decision"] == ("complete" if r["condition"] in CONTAINING else "withheld")
         for r in rows if r["arm"] == "candidate" and r["calibration"] == "c0"))
     relative_pass = bool(quality and coverage and paired is not None and max(paired, summed) <= .5)
-    verified_draw = (locked.get("geography_protocol") == EDGE_PROTOCOL
-                     and verifies_drawn_sites(truth.get("seed"), sites))
-    geographic_pass = relative_pass and candidate_regions_correct and verified_draw
+    expected_edges = (drawn_pilot_edges(truth.get("seed"), sites)
+                      if locked.get("geography_protocol") == EDGE_PROTOCOL else {})
+    observed_edges = locked.get("recording_pilot_edges", {})
+    verified_edges = bool(expected_edges and observed_edges == {
+        recording: expected_edges[site] for recording, site in recording_sites.items()})
+    geographic_pass = relative_pass and candidate_regions_correct and verified_edges
     site_runtimes = []
     for site, assigned in sorted(times_by_site.items()):
         regional_median, regional_total = elapsed_ratios(assigned)
@@ -217,7 +233,8 @@ def score(locked, truth):
                 runtime_by_site=site_runtimes,
                 geography_protocol=locked.get("geography_protocol"), missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
-                geographic_confirmation_coverage=coverage, fresh_site_draw_verified=verified_draw,
+                geographic_confirmation_coverage=coverage, fresh_site_draw_verified=bool(expected_edges),
+                recording_pilot_edges=observed_edges, fresh_pilot_edges_verified=verified_edges,
                 candidate_correct_on_all_region_decisions=candidate_regions_correct,
                 relative_quality_preserved=quality and not failures,
                 passed=relative_pass, passed_geographic_holdout=geographic_pass)
