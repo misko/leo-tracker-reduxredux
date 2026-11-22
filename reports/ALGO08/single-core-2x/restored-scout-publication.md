@@ -1,5 +1,29 @@
 # Packed cancellation with original carrier refinement
 
+**The dense-recording position regression is fixed. Across the first two physical recordings, complete publication is 1.74× faster.** The corrected receiver preserved the measured frequencies, fractional epochs and ranks of all 11,173 selected observations. Both builds returned both calibration fixes on each recording and produced all 16 figures. Fourteen decoded images matched exactly. The position maps differed at 46 and five of 1,612,800 pixels. Both pairs used a single low-priority Gauss core, with all compressed input pages resident before every run and zero filesystem input blocks. [Stage inventory and cache measurements](measurements/restored-scout-ds30-stage.json) · [Position scores and map pixels](measurements/restored-scout-position-audit.json)
+
+![Two matched Gauss recordings, showing raw-to-web elapsed time, CPU time, and cumulative position errors under both calibration settings](restored-scout-ds30-stage.png)
+
+| Recording | Elapsed, deployed → corrected | Elapsed speedup | CPU, deployed → corrected | Error with fixed-zero / fitted calibration, both builds |
+|---|---:|---:|---:|---:|
+| DS30-0374 | 132.90 → 66.00 s | 2.01× | 126.83 → 64.70 s | 1.855 / 1.935 km |
+| DS30-0008 | 214.34 → 133.55 s | 1.60× | 210.65 → 126.75 s | 1.639 / 1.512 km |
+| **Both** | **347.25 → 199.55 s** | **1.74×** | **337.48 → 191.44 s** | **4/4 calibration fixes per build** |
+
+On these two recordings the median paired elapsed ratio was 0.560 and the summed ratio was 0.575 against a target of 0.500. The sum exceeded half-time by 25.93 s. CPU speedup was 1.76× across the two. The ordered four-recording stage remains incomplete. The current result combines two recordings from one physical roof.
+
+The geographic errors above are rounded to metres. At full precision the fitted errors increased by 0.044 mm on DS30-0374 and 0.0075 mm on DS30-0008. The protocol compares per-site median and P90 errors without rounding. Both fitted statistics are therefore numerically higher on this partial sample. The final quality and timing verdicts are unscored until a complete stage is available.
+
+| DS30-0008 elapsed stage | Deployed | Corrected | Corrected minus half deployed |
+|---|---:|---:|---:|
+| Launch through saved detections | 127.41 s | 62.33 s | −1.37 s |
+| Saved detections through position decision | 80.57 s | 67.79 s | **+27.51 s** |
+| Position decision through completed publication | 6.37 s | 3.42 s | +0.24 s |
+
+The dense receiver kept the original measurements in the three windows that previously shifted the final fix by about 19 m. The full pipeline recovered both owner maps and agreed with the deployed coordinates within 0.032 mm. Its continuous receiver scores still had differences up to 2.34 × 10⁻¹³. Numerical grid and optimizer path digests differed. The stage clocks favor returning to dense saved-solver profiling before another physical recording. [Dense factor and artifact audit](measurements/restored-scout-0008-audit.json) · [Earlier saved crossover](screened-graph-transfer.md)
+
+A separate build restored the original arithmetic only for refinement windows that wrap around the waveform period. It matched the full-object restoration on the three diagnostic visits and recovered 2.45% receiver CPU on the weak-carrier slice. The physical clocks above use the full-object restoration. The wrapped-only variant has no measured raw-to-publication time. [Wrapped refinement trial](receiver-cfo-wrap.md)
+
 The first matched pair reached **2.014× elapsed** on DS30-0374, from 132.90 to 66.00 s. CPU fell from 126.83 to 64.70 s, **1.960×**. All 4,157 selected carrier frequencies, epochs and ranks matched. Both positions agreed within 0.052 mm and both arms retained every deployed observation owner. Both publications contained the eight required PNGs. Seven decoded images matched. The position plot, grid digest and path digest differed. Both arms began with all 106 compressed files cached and registered zero filesystem input blocks. [First-pair artifact audit](measurements/restored-scout-0374-audit.json)
 
 ## Second physical assignment
@@ -39,5 +63,6 @@ stage() {
     ad417aaa51a49edf1a36aca571683bbc0479317c06b821030373656461a28acd "$@"
 }
 stage run --case DS30-0374 --cache-library "$bench/ds30-cache-residency.so"
+stage run --case DS30-0008 --cache-library "$bench/ds30-cache-residency.so"
 stage score
 ```
