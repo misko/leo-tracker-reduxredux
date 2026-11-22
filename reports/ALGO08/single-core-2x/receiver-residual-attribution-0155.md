@@ -23,6 +23,28 @@ The attribution concerns the selection differences presented to the solver. In t
 
 The four saved solves used 95.67 CPU seconds in total. The test and scoring runs did not invoke additional solves. Four targeted component tests cover the rank partition, preserved probe metadata, exact endpoint control check and reference gate.
 
+## Raw trace of the first two lost primaries
+
+We replayed visits 0 through 69 of the same sealed physical recording. We chose this prefix because it ends at the second observed loss. All 128 admitted antenna-lane selections matched their respective saved publications in both builds. At visits 68 and 69, the two binaries found identical factors on the current window. The conditional receiver had already skipped the residual scan on one earlier window in each lane. That missing measurement reduced the primary's continuation support from three votes to two. [Raw trace and binary identities](measurements/DS30-0155-primary-donor-prefix.json)
+
+| Current visit | Antenna and channel | Missing donor visit | Age of donor | Primary votes with and without donor | Selection after restoring that donor |
+|---|---|---:|---:|---|---|
+| 68 | RX0, channel 5 | 20 | 2.124 s | 3 → 2 | Original primary |
+| 69 | RX0, channel 6 | 21 | 2.125 s | 3 → 2 | Original primary |
+
+The current windows both received full two-scan processing. Restoring the measured frequencies from just the indicated historical window was sufficient in each case. This experiment identifies the mechanism for two of the 17 lost primary observations. The earlier solver intervention restored the whole primary-only group, so the change in position error cannot be apportioned to these two observations. A separate site-independent rescue prototype measured the cost of searching for missing donors prospectively on a different Gauss recording and a southern simulation. [Cost and transfer comparison](receiver-primary-rescue.md)
+
+To reproduce the raw trace, run the following from the research worktree using the pinned release's Python and assets. The account must have read access to the sealed recording.
+
+~~~bash
+release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
+trial=reports/ALGO08/single-core-2x
+flock -x /tmp/leo-algo08v2-2x-bench/gauss.lock sudo -n -u leo \
+  ionice -c2 -n7 nice -n15 taskset -c 2 env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  PYTHONPATH="$PWD/src:$PWD:$PWD/$trial" "$release/venv/bin/python" -BPs "$trial/primary_donor_trace.py" \
+  /tmp/ds30-v2-stage-65b664/DS30-0155/pair.json "$release/assets" 70
+~~~
+
 ## Reproduce
 
 Run on the research worktree. The assignable pair path points to its original verified local publication, which holds the saved detections and terminal files. The code checks that the archive's inventory hash equals the assigned capture-time hash and the one recorded in the pair.

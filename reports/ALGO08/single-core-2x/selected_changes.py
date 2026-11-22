@@ -8,7 +8,7 @@ from leo.contracts.digests import canonical_digest
 from leo.storage.fast_scan import FastScanStore
 
 
-def bound_rows(root, run):
+def bound_native(root, run):
     receipt = run["receipt"]
     workspace = FastScanStore(root).automatic_workspace(receipt["run_id"], create=False)
     terminal = json.loads((workspace / "terminal.json").read_bytes())
@@ -20,7 +20,11 @@ def bound_rows(root, run):
             or native["source"]["session_id"] != receipt["session_id"]
             or native["source"]["raw_recording_authority_digest"] != run["raw_authority"]):
         raise ValueError("Different terminal or native input")
-    return native["source"]["probes"]
+    return native
+
+
+def bound_rows(root, run):
+    return bound_native(root, run)["source"]["probes"]
 
 
 def selection(row):
