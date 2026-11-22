@@ -47,6 +47,8 @@ def score(locked, truth):
     if set(labels) != {c["job"]["offer"] for c in locked["cases"]}:
         raise ValueError("Scoring key and locked cases differ")
     groups = defaultdict(list)
+    recording_sites = {}
+    conditions_by_recording = defaultdict(set)
     rows, times = [], []
     failures = 0
     quality = True
@@ -56,6 +58,10 @@ def score(locked, truth):
         if label["recording"] != job["recording"]:
             raise ValueError("Scoring key references another recording")
         site, condition = tuple(label["truth"]), label["condition"]
+        # Replaying a waveform under another offer cannot create a second site.
+        if recording_sites.setdefault(job["recording"], site) != site:
+            raise ValueError("One recording is assigned multiple receiver locations")
+        conditions_by_recording[job["recording"]].add(condition)
         runs = result.get("runs", {})
         failed = "failure" in result or set(runs) != {"baseline", "candidate"}
         failures += int(failed)
@@ -110,6 +116,8 @@ def score(locked, truth):
     coverage = len(sites) >= 2 and tested_sites == sites and all(
         any(s["site"] == site and s["condition"] not in CONTAINING for s in summaries) for site in sites)
     if locked.get("geography_protocol") == EDGE_PROTOCOL:
+        # Vary only the offered region within each four-way comparison.
+        coverage &= all(conditions == EDGE_CASES for conditions in conditions_by_recording.values())
         for site in sites:
             controls = [s for s in summaries if s["site"] == site and s["arm"] == "baseline"]
             coverage &= {s["condition"] for s in controls} == EDGE_CASES
@@ -123,10 +131,14 @@ def score(locked, truth):
                              false_fixes=sum(r["decision"] == "complete" for r in omitted),
                              withheld=sum(r["decision"] == "withheld" for r in omitted),
                              failed=sum(r["decision"] == "failed" for r in omitted))
+    candidate_regions_correct = bool(coverage and not failures and all(
+        r["decision"] == ("complete" if r["condition"] in CONTAINING else "withheld")
+        for r in rows if r["arm"] == "candidate" and r["calibration"] == "c0"))
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
                 geography_protocol=locked.get("geography_protocol"), missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
                 geographic_confirmation_coverage=coverage,
+                candidate_correct_on_all_region_decisions=candidate_regions_correct,
                 relative_quality_preserved=quality and not failures,
                 passed=bool(quality and coverage and paired is not None and max(paired, summed) <= .5))
 

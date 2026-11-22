@@ -52,10 +52,18 @@ def test_two_site_confirmation_requires_both_median_and_total_ratios():
                 arm["latlon"][0] -= 32
     data["cases"].extend(another)
     assert score(data,key)["passed"]
+    assert not score(data,key)["candidate_correct_on_all_region_decisions"]
     another[0]["result"]["runs"]["candidate"]["elapsed_s"] = 100.
     result = score(data,key)
     assert result["median_elapsed_ratio"] <= .5 and result["summed_elapsed_ratio"] > .5
     assert not result["passed"]
+
+
+def test_relabeling_one_recording_cannot_create_a_second_location():
+    data, key = cases()
+    key["answers"]["far"]["truth"][0] = -22.
+    with pytest.raises(ValueError, match="multiple receiver locations"):
+        score(data, key)
 
 
 def test_lost_fix_missing_pair_worse_error_and_summed_latency_cannot_pass():
@@ -110,9 +118,15 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
             data["cases"].append(dict(job=job, result=dict(runs=runs)))
     result = score(data, key)
     assert result["passed"] and result["assigned"] == 8
+    assert result["candidate_correct_on_all_region_decisions"]
     assert result["geography_protocol"] == EDGE_PROTOCOL
     assert result["missing_region"]["candidate"] == dict(assigned=4, false_fixes=0, withheld=4, failed=0)
     assert all(s["false_fixes"] == 0 for s in result["by_site"])
+    moved = deepcopy(data)
+    moved_key = deepcopy(key)
+    moved["cases"][0]["job"]["recording"] = "third-waveform"
+    moved_key["answers"][moved["cases"][0]["job"]["offer"]]["recording"] = "third-waveform"
+    assert not score(moved, moved_key)["geographic_confirmation_coverage"]
     case = next(c for c in data["cases"] if c["job"]["offer"] == "bedge-containing")
     lost = case["result"]["runs"]["candidate"]
     lost["receipt"]["decision"] = "withheld"

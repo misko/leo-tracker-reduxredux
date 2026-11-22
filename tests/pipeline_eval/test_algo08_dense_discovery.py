@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from leo.analysis.localization_v3 import discovery
+from leo.analysis.localization_v3.region import SearchRegion
 from leo.analysis.research.retained_track_likelihood import PERIOD, profile, whitening
 from tools.pipeline_eval.variants.algo08_dense_discovery import DenseWhiteProfile, dense_discovery
 
@@ -74,3 +75,32 @@ def test_association_reuse_scoped_to_explore_and_matching_objects(monkeypatch):
     assert scan.association is associate
     assert counts["association_reused"] == 2
     assert len(calls) == 4
+
+
+def test_association_reuse_keeps_search_positions_and_scan_regions_distinct(monkeypatch):
+    state, base = {}, object()
+    center, edge = (0., 0.), (15., 0.)
+    northern = SearchRegion((52., 12.), 30.)
+    southern = SearchRegion((-36., 145.), 30.)
+    calls = []
+
+    def scan_for(region):
+        def associate(state, base, point, method, *, all_tracks=False):
+            coordinates = region.latlon(point)
+            calls.append(coordinates)
+            return coordinates
+
+        return SimpleNamespace(association=associate)
+
+    def explore(scan):
+        return [scan.association(state, base, point, "receiver_smooth")
+                for point in (center, center, edge)]
+
+    first, second = scan_for(northern), scan_for(southern)
+    monkeypatch.setattr(discovery, "explore", explore)
+    with dense_discovery(first, reuse_associations=True) as counts:
+        assert discovery.explore(first) == [northern.center, northern.center, northern.latlon(edge)]
+        assert discovery.explore(second) == [southern.center, southern.center, southern.latlon(edge)]
+    assert counts["association_reused"] == 1
+    assert calls == [northern.center, northern.latlon(edge), southern.center,
+                     southern.center, southern.latlon(edge)]
