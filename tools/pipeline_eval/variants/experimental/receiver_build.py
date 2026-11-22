@@ -162,11 +162,13 @@ def profile_source(text, signatures):
 
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
           pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False,
-          short_aperture=False):
+          short_aperture=False, adjacent_primary=False):
     if (avx2 or fma) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
-    if sum((tracking, projection, shortlist_audit, short_aperture)) > 1:
+    if sum((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)) > 1:
         raise ValueError("build each experimental scout or audit separately")
+    if adjacent_primary and not fftw:
+        raise ValueError("the historical adjacent-symbol scout requires FFTW")
     recipe = json.loads((PINNED / "build.json").read_bytes())
     for name, expected in recipe["source_digests"].items():
         if hashlib.sha256((PINNED / name).read_bytes()).hexdigest() != expected:
@@ -185,13 +187,19 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
         from .receiver_shortlist_overlay import measure_overlay, timing_overlay
     if short_aperture:
         from .receiver_aperture_overlay import kernel_overlay, timing_overlay
-    overlay = tracking or projection or shortlist_audit
+    if adjacent_primary:
+        from .receiver_adjacent_overlay import fold_overlay, measure_overlay, timing_overlay
+
+        source_paths.append(HERE.parent / "differential_runtime_fft.c")
+    overlay = tracking or projection or shortlist_audit or adjacent_primary
     with TemporaryDirectory(dir=output.parent) as work:
         scratch = Path(work)
         objects = []
         for path in source_paths:
             options = []
             source = path.read_text()
+            if adjacent_primary and path.name == "differential_runtime_fft.c":
+                source = fold_overlay(source)
             if path.name == "timing_first_receiver.c":
                 if fftw:
                     source = fftw_timing(source, crop)
@@ -254,11 +262,13 @@ def main():
     parser.add_argument("--projection", action="store_true")
     parser.add_argument("--shortlist-audit", action="store_true")
     parser.add_argument("--short-aperture", action="store_true")
+    parser.add_argument("--adjacent-primary", action="store_true")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
           profile=args.profile, tracking=args.tracking, projection=args.projection,
-          shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture)
+          shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture,
+          adjacent_primary=args.adjacent_primary)
 
 
 if __name__ == "__main__":
