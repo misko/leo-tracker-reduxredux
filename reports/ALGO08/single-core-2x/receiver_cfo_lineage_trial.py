@@ -250,9 +250,10 @@ def main():
         parser.add_argument(arg, type=Path)
     parser.add_argument("--correction", type=Path)
     parser.add_argument("--refinement-probe", type=Path)
+    parser.add_argument("--wrapped", type=Path)
     args = parser.parse_args()
-    if args.refinement_probe is not None and args.correction is None:
-        parser.error("The native probe requires --correction to select refinement-bank builds")
+    if (args.refinement_probe is not None or args.wrapped is not None) and args.correction is None:
+        parser.error("The native probe and wrapped build require --correction")
     batch = json.loads(args.pair.read_bytes())
     saved = {arm: saved_rows(getattr(args, arm), arm, batch) for arm in DETECTION_PINS}
     for key, left in saved["baseline"].items():
@@ -273,14 +274,25 @@ def main():
             ("restored-delay-product", args.correction / "restored.so",
              correction["corrected_sha256"]),
         ]
+    wrapped = None
+    if args.wrapped is not None:
+        wrapped = json.loads((args.wrapped / "build.json").read_bytes())
+        if (wrapped["packed_sha256"] != correction["packed_sha256"] or
+                wrapped["full_restoration_sha256"] != correction["corrected_sha256"]):
+            raise ValueError("The wrapped candidate and full restoration must share their inputs")
+        builds.append(("wrapped-delay-refinement", args.wrapped / "wrapped.so",
+                       wrapped["library_sha256"]))
     raw = pin(args.assets / "lower.f32", algo08_scan.PINS["lower.f32"])
     asset = np.frombuffer(raw, dtype="<f4")
     samples = load_samples(args.binding, args.bulk, batch, saved["baseline"])
     probe = None if args.refinement_probe is None else RefinementProbe(args.refinement_probe)
     with ExitStack() as stack:
         evidence = compare(samples, builds, asset, saved, stack, probe)
-    print(json.dumps(dict(plan=plan, plan_digest=canonical_digest(plan), correction=correction,
-                          detections=DETECTION_PINS, rows=evidence), indent=2, allow_nan=False))
+    receipt = dict(plan=plan, plan_digest=canonical_digest(plan), correction=correction,
+                   detections=DETECTION_PINS, rows=evidence)
+    if wrapped is not None:
+        receipt["wrapped"] = wrapped
+    print(json.dumps(receipt, indent=2, allow_nan=False))
 
 
 if __name__ == "__main__":
