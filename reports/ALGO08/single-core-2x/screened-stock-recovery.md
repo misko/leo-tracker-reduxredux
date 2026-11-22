@@ -21,6 +21,17 @@ The southern conservative stage retained the same fragments as deployment. Its t
 
 Compared with the cavity-only variant, screened stock recovery added 16.194 measured solver CPU seconds south and 0.429 in India. Its southern conservative stage took 31.58 elapsed seconds, including the recovery trace readout. Both runs were on Gauss core 2 with one numerical thread and low scheduling priority. The CPU columns compare separate saved-solver invocations. [Cavity-only comparison](measurements/complete-family-cavity.json)
 
+## Omitted offers
+
+After both containing controls matched, the same solver replayed the two original omissions with their published regions and the same detector evidence. [Omission evidence](measurements/screened-stock-recovery-omitted.json)
+
+| Saved case | Deployed | Frozen covariance | Screened stock recovery | Deployed / frozen covariance / screened stock solver CPU |
+|---|---|---|---|---:|
+| Portable south, 57.026 km outside | False fix · 89.786 / 89.786 km | Withheld both | Withheld both | 84.653 / 55.776 / 89.591 s |
+| India, 1.500 km outside | False fix · 1.580 / 1.534 km | False fix · 1.580 / 1.534 km | False fix · 1.580 / 1.534 km | 9.477 / 5.394 / 6.430 s |
+
+Both omission runs reproduced the full frozen regional guard diagnostics. In the southern case both receivers supported the same point 50 km beyond a face, and both arms were withheld with `both_receivers_support_far_exterior`. The screened stock solve used 4.938 more CPU seconds than deployment on this input. The India guard’s two receivers preferred a point 3.125 km beyond the face, below its existing 25 km clearance requirement. It kept both false fixes with the same endpoints, RMS and owner digests as deployment and frozen covariance. [Omission evidence](measurements/screened-stock-recovery-omitted.json)
+
 ## Reproduction
 
 Use the staged released geographical inputs and a fresh local output directory. The runner verifies the frozen specification and the historical screen source. It measures saved solver execution through the selected evidence packet.
@@ -33,3 +44,5 @@ flock "$bench/gauss.lock" nice -n 15 ionice -c2 -n7 taskset -c 2 \
   .venv/bin/python -BPs "$trial" run "$bench/portable-v5-geodiverse" \
   "$bench/integration-covariance-posterior" "$bench/screened-stock-containing-new" matched-tile
 ```
+
+Use `omitted-tile` and a fresh output directory to replay the omission pair.
