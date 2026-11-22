@@ -51,6 +51,7 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
                          rendering=rendering, schedule=schedule, startup=startup)
     assert spec.get("rendering", "individual") == rendering
     assert spec.get("startup", "stock") == startup
+    assert "endpoint_reuse" not in spec
     (checkout / bundle.ENTRY).write_text("edited after freeze")
     verify_sources(output / bundle.LAUNCHER, spec["sources"])
     assert (output / "receiver.so").read_bytes() == b"reviewed"
@@ -60,12 +61,20 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
         bundle.freeze(checkout, output, binary, digest, "stock", "compressed-buffer", release)
 
 
-def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path):
+@pytest.mark.parametrize("endpoint_reuse", [False, True])
+def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path, endpoint_reuse):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
     (release / "tools").mkdir(parents=True)
     selected = [bundle.ENTRY, bundle.LAUNCHER]
     selected.extend(bundle.VARIANTS / "experimental" / name for name in
                     ("receiver_ingress.py", "paired_sha256.py", "paired_sha256.c"))
+    solver = "shared-tables" if endpoint_reuse else "stock"
+    if endpoint_reuse:
+        selected.extend(bundle.VARIANTS / name for name in (
+            "algo08_causal_reuse.py", "algo08_salvage_statistics.py",
+            "algo08_dense_discovery.py", "algo08_causal_table.py", "algo08_cavity_projection.py",
+            "algo08_salvage_bound.py", "algo08_endpoint_readout.py",
+        ))
     for path in selected:
         (checkout / path).parent.mkdir(parents=True, exist_ok=True)
         (checkout / path).write_text(str(path))
@@ -75,14 +84,15 @@ def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path):
     detector_digest = hashlib.sha256(detector.read_bytes()).hexdigest()
     library_digest = hashlib.sha256(library.read_bytes()).hexdigest()
 
-    args = (checkout, output, detector, detector_digest, "stock", "paired-sha256", release)
+    args = (checkout, output, detector, detector_digest, solver, "paired-sha256", release)
     with pytest.raises(ValueError, match="library pin"):
         bundle.freeze(*args)
     with pytest.raises(ValueError, match="library differs"):
         bundle.freeze(*args, paired_sha256=(library, "0" * 64))
     assert not output.exists()
-    spec = bundle.freeze(*args, paired_sha256=(library, library_digest))
+    spec = bundle.freeze(*args, paired_sha256=(library, library_digest), endpoint_reuse=endpoint_reuse)
     assert spec["ingress"] == "paired-sha256"
+    assert spec.get("endpoint_reuse", False) == endpoint_reuse
     copied = output / "paired-sha256.so"
     assert spec["paired_sha256"] == dict(library=str(copied), sha256=library_digest)
     assert set(spec["sources"]) == {str(path) for path in selected} | {copied.name}

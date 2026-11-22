@@ -203,21 +203,25 @@ def test_experimental_entry_scopes_the_selected_publication_renderer(tmp_path, m
 
 
 @pytest.mark.parametrize("supported", [True, False])
+@pytest.mark.parametrize("endpoint_reuse", [False, True])
 def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallback(
-    tmp_path, monkeypatch, supported,
+    tmp_path, monkeypatch, supported, endpoint_reuse,
 ):
     from leo.storage.short_window import ShortWindowReader
     from tools import algo08_scan
     from tools.pipeline_eval.qualification import experimental_publication as trial
+    from tools.pipeline_eval.variants import v5_direct_cavity
     from tools.pipeline_eval.variants.experimental import paired_sha256
 
     stock = ShortWindowReader.windows
+    optimizer = v5_direct_cavity.bounded_secant
     def acquire():
         assert (ShortWindowReader.windows is not stock) == supported
         return {"decision": "withheld"}
 
     def analyze(*args):
         assert ShortWindowReader.windows is stock
+        assert (v5_direct_cavity.bounded_secant is not optimizer) == endpoint_reuse
         result = algo08_scan.acquire()
         assert ShortWindowReader.windows is stock
         return result
@@ -240,9 +244,13 @@ def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallbac
     args = SimpleNamespace(recording=tmp_path / "opaque", bulk_root=output,
                            archive=tmp_path / "tle", region=region)
     pin = dict(library=str(library), sha256=hashlib.sha256(library.read_bytes()).hexdigest())
-    spec = dict(solver="stock", ingress="paired-sha256", detector=str(detector),
-                detector_sha256="c" * 64, paired_sha256=pin)
-    assert trial.run(args, spec) == {"decision": "withheld"}
+    spec = dict(solver="shared-tables" if endpoint_reuse else "stock",
+                ingress="paired-sha256", detector=str(detector),
+                detector_sha256="c" * 64, paired_sha256=pin, endpoint_reuse=endpoint_reuse)
+    result = trial.run(args, spec)
+    assert result["decision"] == "withheld"
+    assert ("endpoint_reuse" in result) == endpoint_reuse
+    assert v5_direct_cavity.bounded_secant is optimizer
     library.write_bytes(b"substituted")
     with pytest.raises(ValueError, match="library differs"):
         trial.run(args, spec)

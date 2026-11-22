@@ -42,6 +42,9 @@ def run(args, specification):
     startup = specification.get("startup", "stock")
     if startup not in ("stock", "lazy-exports"):
         raise ValueError("Unknown package startup mode")
+    endpoint_reuse = specification.get("endpoint_reuse", False)
+    if type(endpoint_reuse) is not bool:
+        raise ValueError("Expected a Boolean endpoint reuse selection")
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
@@ -119,6 +122,11 @@ def run(args, specification):
             select = partial(algo08_track_moments.select, detail={})
             stack.enter_context(patch.object(v5_core, "scan_context", context))
             stack.enter_context(patch.object(v5_core, "infer", partial(v5_core.infer, select_initial=select)))
+        if endpoint_reuse:
+            from tools.pipeline_eval.variants import algo08_endpoint_readout, v5_direct_cavity
+            endpoint_counts = stack.enter_context(
+                algo08_endpoint_readout.measured_readout(v5_direct_cavity, reuse=True)
+            )
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if schedule in ("alternate", "bursts"):
@@ -126,6 +134,8 @@ def run(args, specification):
         if schedule == "deferred":
             result["deferred_continuation"] = dict(pending_lane_budget=64, native_calls=deferred.native_calls,
                                                    query_cpu_ns=deferred.query_cpu_ns, **deferred.planner.counts)
+        if endpoint_reuse:
+            result["endpoint_reuse"] = endpoint_counts
         return result
 
 

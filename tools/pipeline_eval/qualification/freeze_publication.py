@@ -16,11 +16,13 @@ VARIANTS = Path("tools/pipeline_eval/variants")
 
 
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
-           rendering="individual", startup="stock", paired_sha256=None):
+           rendering="individual", startup="stock", paired_sha256=None, endpoint_reuse=False):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
+    if type(endpoint_reuse) is not bool:
+        raise ValueError("Expected a Boolean endpoint reuse selection")
     if (paired_sha256 is not None) != (ingress == "paired-sha256"):
         raise ValueError("Paired SHA-256 ingress requires exactly one reviewed library pin")
     if paired_sha256 is not None:
@@ -45,6 +47,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
                                                      "algo08_salvage_bound.py"))
     if solver == "track-moments":
         sources.append(VARIANTS / "algo08_track_moments.py")
+    if endpoint_reuse:
+        sources.append(VARIANTS / "algo08_endpoint_readout.py")
     if rendering in ("shared-orbits", "shared-pixels", "raster-layout"):
         sources.append(VARIANTS / "experimental/shared_orbit_figures.py")
     if rendering == "raster-layout":
@@ -80,6 +84,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         spec["rendering"] = rendering
     if startup != "stock":
         spec["startup"] = startup
+    if endpoint_reuse:
+        spec["endpoint_reuse"] = True
     (output / "spec.json").write_text(json.dumps(spec, indent=2) + "\n")
     return spec
 
@@ -95,8 +101,9 @@ if __name__ == "__main__":
     parser.add_argument("--schedule", choices=("all", "bursts", "alternate", "deferred"), default="all")
     parser.add_argument("--rendering", choices=RENDERING_MODES, default="individual")
     parser.add_argument("--startup", choices=("stock", "lazy-exports"), default="stock")
+    parser.add_argument("--endpoint-reuse", action="store_true")
     args = parser.parse_args()
     paired = None if args.paired_sha256 is None else (Path(args.paired_sha256[0]), args.paired_sha256[1])
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,
            args.solver, args.ingress, schedule=args.schedule, rendering=args.rendering,
-           startup=args.startup, paired_sha256=paired)
+           startup=args.startup, paired_sha256=paired, endpoint_reuse=args.endpoint_reuse)
