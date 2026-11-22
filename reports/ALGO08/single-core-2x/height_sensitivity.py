@@ -12,6 +12,15 @@ from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km, look_angles
 from leo.sky.propagation import parse_element_sets
 
 
+def height_gradient(position, velocity, observer, up, rf_hz):
+    """Doppler sensitivity in Hz per km of observer displacement along local up."""
+    delta = position - observer
+    distance = np.linalg.norm(delta, axis=-1)
+    sight = delta / distance[..., None]
+    radial_speed = np.sum(sight * velocity, axis=-1)
+    return rf_hz / 299792.458 * (velocity @ up - radial_speed * (sight @ up)) / distance
+
+
 def measure(snapshot):
     raw = snapshot.read_bytes()
     stamp, digest = snapshot.stem.split("-", 1)
@@ -32,6 +41,8 @@ def measure(snapshot):
         selected = usable & (elevation.min(axis=1) >= 10)
         if not np.any(selected):
             raise ValueError("No satellites stayed above ten degrees for the full interval")
+        gradient = height_gradient(position[selected], velocity[selected],
+                                   geodetic_to_ecef_km(*site, 0.), rotation[2], 11.5e9)
         centered_time = times - times.mean()
         for height in (100., 1000., 2000.):
             _, other = projection(height)
@@ -39,7 +50,8 @@ def measure(snapshot):
             centered = delta - delta.mean(axis=1, keepdims=True)
             slope = (centered @ centered_time) / (centered_time @ centered_time)
             curved = centered - slope[:, None] * centered_time
-            terms = {"raw": delta, "after_constant": centered, "after_affine": curved}
+            terms = {"raw": delta, "after_constant": centered, "after_affine": curved,
+                     "after_known_linear_height": delta - gradient * (height / 1000.)}
             rows.append(dict(latitude=site[0], longitude=site[1], height_m=height,
                              satellites=int(selected.sum()), median_track_rms_hz={
                                  name: float(np.median(np.sqrt(np.mean(values**2, axis=1))))
