@@ -2,6 +2,26 @@
 
 The fresh-site scorer now reconstructs the two geographic areas from the private seed after all predictions are locked. Both revealed site coordinates must fall in the corresponding independent draw, allowing the generator's two-degree jitter per coordinate. Reordering sites is harmless. Two recordings near the same drawn center, a training-station substitution, an absent seed, or a different draw cannot qualify. This closes a scorer gap where any two distinct coordinate pairs could satisfy the site-count check if the offers and predictions were self-consistent. The new tests use disposable artificial seeds. No reserved waveform or held-out answer was opened. [Scorer](../../../tools/pipeline_eval/qualification/score_paired_holdout.py) · [Geographic regression tests](../../../tests/pipeline_eval/test_holdout_geography.py)
 
+## How much position information did the waveform add?
+
+Returning the center of the offered 25 km square gives a reference that uses no radio measurements. The following distances use the published reference coordinates and great-circle distance. Each row uses deployed ALGO08v2 and the matching speed candidate identified by its receipt. Both builds returned the same position within each calibration arm. These rows span three development sites, two of them simulated. Repeated offers at one simulated site use the same waveform. [Physical scoring authority](../../2026_11_21_ds30_full/reference-audit.json) · [Public simulation references](../regional-release/scoring-key.json)
+
+| Site and search offer | Error if returning center | Error with fixed-zero calibration | Error with fitted calibration | Decision |
+|---|---:|---:|---:|---|
+| DS30-0016, physical, inside | 8.193 km | 1.644 km | 1.661 km | Valid fix [receipt](measurements/DS30-0016-gc.json) |
+| DS30-0374, same station, inside | 8.193 km | 1.855 km | 1.935 km | Valid fix [receipt](measurements/DS30-0374-batch.json) |
+| Northern simulation, 100 m inside | 12.386 km | 0.106 km | 0.141 km | Valid fix [receipt](measurements/north-edge-batch.json) |
+| Northern simulation, distant omitted offer | 64.927 km | 52.455 km | 52.491 km | False fix [receipt](measurements/north-far-shared.json) |
+| Southern simulation, inside | 6.601 km | 0.826 km | 1.109 km | Valid fix [receipt](measurements/south-shared.json) |
+| Southern simulation, 100 m inside | 12.386 km | 0.817 km | 1.101 km | Valid fix [receipt](measurements/south-edge-endpoint.json) |
+| Southern simulation, 100 m outside | 12.586 km | 0.817 km | 1.102 km | False fix [receipt](measurements/south-outside-endpoint.json) |
+
+The solution improves on the center at each containing offer. The southern boundary pair shows why the same comparison alone cannot certify a fix. Shifting the square by 200 m across the receiver barely changed the horizontal error, yet the outside offer required withholding. Fresh-site scoring records the center error on every verified offer, the improvement for each returned position, and the separate decision counts for missing regions. [Distance calculation](../../../tools/pipeline_eval/scoring.py) · [Paired holdout scorer](../../../tools/pipeline_eval/qualification/score_paired_holdout.py)
+
+A fixed exclusion distance from the boundary cannot separate these cases. In the northern valid offer the fitted estimate landed on the face. In the southern invalid offer the fitted estimate was **183 m inside** the face, while the receiver was **100 m outside**. A rule that accepts the northern estimate based solely on distance inside the square would also accept the southern false fix. The scorer records signed clearance for both the reference and the returned position in the solver's local coordinate frame. [Northern valid fix](measurements/north-edge-batch.json) · [Southern false fix](measurements/south-outside-endpoint.json)
+
+## Geographic inputs along the pipeline
+
 The search is two-dimensional. The orbital screen and phase projection use zero receiver height above the reference ellipsoid. At three geographic control points, increasing height by 1 km changed median predicted Doppler by 115–119 Hz. Horizontal position accuracy at elevated physical sites remains unverified. [Height sensitivity and saved orbital evidence](height-sensitivity.md)
 
 We independently exercised a geographic symmetry of the optimized Doppler projection. We reflected the synthetic receiver and all satellite states across the equator and rotated them 90° in longitude. Relative range rate and elevation must stay the same on the reference ellipsoid. The cached projection preserved Doppler within 0.1 microhertz absolute plus a relative tolerance of one part in a trillion, and elevation within 1e−10 degrees, for satellites above and below the horizon. All eight component tests passed. This tests the projection in isolation. The current public input contract accepts local squares that stay clear of the poles and the longitude seam. [Symmetry test](../../../tests/pipeline_eval/test_algo08_cavity_projection.py) · [Accepted region domain](../../../src/leo/contracts/algo08_region.py)

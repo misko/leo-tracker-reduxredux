@@ -136,6 +136,14 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
     assert result["geography_protocol"] == EDGE_PROTOCOL
     assert result["missing_region"]["candidate"] == dict(assigned=4, false_fixes=0, withheld=4, failed=0)
     assert all(s["false_fixes"] == 0 for s in result["by_site"])
+    for row in result["rows"]:
+        assert row["offered_center_error_km"] > 0
+        if row["decision"] == "complete":
+            assert row["improvement_over_center_km"] == row["offered_center_error_km"]
+            assert row["prediction_face_clearance_km"] == row["truth_face_clearance_km"] > 0
+        else:
+            assert row["improvement_over_center_km"] is None
+            assert row["truth_face_clearance_km"] < 0 and row["prediction_face_clearance_km"] is None
     inherited = deepcopy(data)
     omitted = next(c for c in inherited["cases"] if c["job"]["offer"] == "aedge-omitted")
     for arm in omitted["result"]["runs"].values():

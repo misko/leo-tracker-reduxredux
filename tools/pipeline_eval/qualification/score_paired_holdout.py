@@ -42,6 +42,13 @@ def lock(panel_path, panel_sha, spec_digest, runs):
                 candidate_specification_digest=spec_digest, cases=cases)
 
 
+def face_clearance_km(region, point):
+    """Distance to the nearest face in the solver frame, negative outside."""
+    lat, lon = region["center"]
+    offset = max(abs((point[0]-lat)*111), abs((point[1]-lon)*111.32*cos(radians(lat))))
+    return region["width_km"]/2 - offset
+
+
 def score(locked, truth):
     labels = truth["answers"]
     if set(labels) != {c["job"]["offer"] for c in locked["cases"]}:
@@ -83,11 +90,13 @@ def score(locked, truth):
                 position = prediction.get("latlon")
                 error = distance_km(position, site)
                 errors.append(error)
+                center_error = clearance = prediction_clearance = None
                 if receipt:
                     region = receipt["region"]
-                    lat, lon = region["center"]
-                    offset = max(abs((site[0]-lat)*111), abs((site[1]-lon)*111.32*cos(radians(lat))))
-                    clearance = region["width_km"]/2 - offset
+                    center_error = distance_km(region["center"], site)
+                    clearance = face_clearance_km(region, site)
+                    if position is not None:
+                        prediction_clearance = face_clearance_km(region, position)
                     if (clearance >= 0) != (condition in CONTAINING):
                         raise ValueError("Offered square disagrees with the scoring condition")
                     if condition in ("edge-containing", "edge-omitted") and not .05 - 1e-8 <= abs(clearance) <= .25 + 1e-8:
@@ -97,6 +106,11 @@ def score(locked, truth):
                 groups[site, condition, calibration, arm].append(error)
                 rows.append(dict(**job, site=site, condition=condition, calibration=calibration,
                                  arm=arm, decision=receipt.get("decision", "failed"), error_km=error,
+                                 offered_center_error_km=center_error,
+                                 truth_face_clearance_km=clearance,
+                                 prediction_face_clearance_km=prediction_clearance,
+                                 improvement_over_center_km=(center_error - error
+                                                             if center_error is not None and error is not None else None),
                                  frequency_rms_hz=prediction.get("rf_rms_hz"), elapsed_s=run.get("elapsed_s"),
                                  cpu_s=run.get("cpu_s"), pair_failure=result.get("failure"), **height_field))
             if condition in CONTAINING and errors[0] is not None and errors[1] is None:
