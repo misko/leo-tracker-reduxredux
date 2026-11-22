@@ -15,8 +15,9 @@ TABLE_MODES = ("shared-tables", "track-moments")
 DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
 SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
 CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
-RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layout")
+RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layout", "lossless-raster")
 INGRESS_MODES = ("stock", "compressed-buffer", "paired-sha256")
+PNG_LIBRARIES = {"png_filter": "png-filter.so", "png_deflate": "png-deflate.so"}
 
 
 def run(args, specification):
@@ -33,6 +34,8 @@ def run(args, specification):
     rendering = specification.get("rendering", "individual")
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
+    if any(bool(specification.get(name)) != (rendering == "lossless-raster") for name in PNG_LIBRARIES):
+        raise ValueError("Lossless raster rendering requires both reviewed PNG library pins")
     ingress = specification.get("ingress", "stock")
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
@@ -94,6 +97,21 @@ def run(args, specification):
         if rendering == "raster-layout":
             from tools.pipeline_eval.variants.experimental.raster_layout import render_layout
             stack.enter_context(patch.object(algo08_scan, "render", render_layout))
+        if rendering == "lossless-raster":
+            from tools.pipeline_eval.variants.experimental.lossless_png import (
+                LosslessPng, render_lossless_png,
+            )
+            for name, filename in PNG_LIBRARIES.items():
+                pin = specification[name]
+                binary = Path(pin["library"]).read_bytes()
+                if sha256(binary).hexdigest() != pin["sha256"]:
+                    raise ValueError(f"{name} library differs from its reviewed build")
+                # Load the bytes checked by this process from its private directory.
+                (assets / filename).write_bytes(binary)
+            encoder = LosslessPng(assets / PNG_LIBRARIES["png_filter"],
+                                  deflate_library=assets / PNG_LIBRARIES["png_deflate"])
+            renderer = partial(render_lossless_png, encoder=encoder)
+            stack.enter_context(patch.object(algo08_scan, "render", renderer))
         if mode != "stock":
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
