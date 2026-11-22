@@ -1,0 +1,59 @@
+{
+  "geometry": "balancing the signed latitude face and tangent offset across the two pre-existing waveform labels",
+  "width_km": 25.0,
+  "latitude_scale_km_per_degree": 111,
+  "tangent_offset_fraction_of_width": 0.125,
+  "planned_truth_clearance_km": [
+    0.1,
+    -0.1
+  ],
+  "truth_source_sha256": "0bda865a20e62852220a9ab8df63895a449bf203a2deb5370920dc3ce215d37d",
+  "cases": {
+    "north": {
+      "waveform": "0abe7b4514be674d9f5388e3",
+      "tested_face": "north",
+      "tangent_center_offset_km": 3.125,
+      "offers": {
+        "inside": {
+          "file": "north-inside.json",
+          "digest": "sha256:271fca9009047dd831c363a22ae3e194e9e2f5f304e724629ea51d473b46f415"
+        },
+        "omitted": {
+          "file": "north-omitted.json",
+          "digest": "sha256:c6e89af7200fafc40a570f356bf44fe2cc2cbd36f5461b562dccab8ad25bb44f"
+        }
+      },
+      "publication_sha256": "3387f1edc78ab4a70376c9d1218a5f446e6c768b5e2f9ea36ce7b9259fb74d3b"
+    },
+    "south": {
+      "waveform": "6bd1f26bfa0bedfcf3f100f8",
+      "tested_face": "south",
+      "tangent_center_offset_km": -3.125,
+      "offers": {
+        "inside": {
+          "file": "south-inside.json",
+          "digest": "sha256:fdf9cf643fbdf177804669d3c136478c685f84c3d454cc34a699adf8c26cdc4b"
+        },
+        "omitted": {
+          "file": "south-omitted.json",
+          "digest": "sha256:df68b0a25b2a8a9a2388c06425625729fe42c02ac1029df3c2671074b8e2796c"
+        }
+      },
+      "publication_sha256": "39edda550f41e5e72d1df437a94469421f2528e411788d60c1385ad9cadac2d7"
+    }
+  },
+  "replay_order": [
+    "north baseline",
+    "north candidate",
+    "south candidate",
+    "south baseline"
+  ],
+  "offer_order": [
+    "published anchor",
+    "inside",
+    "omitted"
+  ],
+  "candidate_specification_digest": "sha256:375895c3afda3abd3a916f90bbd63248b5e792f70c78a0e4f136c9bf1a79d423",
+  "deployed_release": "bdb869682a2ea63af4b198a920b763a4c6a78c4c",
+  "causal_archive_snapshots_sha256": "sha256:7aa06cab0502bcac70645a41a219bb6d53f1077f329e6f7ed79eb59a8794feec"
+}
