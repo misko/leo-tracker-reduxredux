@@ -65,6 +65,16 @@ def test_common_horizon_bound_cannot_exclude_an_explicitly_visible_orbit():
     assert not np.all(possible_horizon(p, region.center, locations))
 
 
+def test_equal_visible_scores_keep_first_catalogue_candidate():
+    observed = np.array([0., 47., 30., 80.])
+    predicted = np.repeat(observed[None, :], 2, axis=0)
+    elevation = np.ones_like(predicted)
+    phase = np.zeros_like(predicted)
+    for labels in (np.array([91, 83]), np.array([83, 91])):
+        evidence, owner = score_track(observed, predicted, elevation, phase, labels, len(labels))
+        assert evidence > 0 and owner == labels[0]
+
+
 def test_all_native_observations_stay_in_the_denominator_when_owners_change(monkeypatch):
     region = SearchRegion((12, 14), 25)
     y = np.array([0, 100, 300], float)
