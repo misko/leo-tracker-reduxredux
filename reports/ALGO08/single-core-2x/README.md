@@ -22,6 +22,8 @@ On DS30-0374, elapsed time to the detection-file timestamp was 88.93 → 69.30 s
 
 The northern burst result used a separate experimental schedule. It discarded 576 valid visits and lost the baseline fix. Its shorter runtime includes the resulting withholding path. The error plot keeps that recording in the denominator. [Burst experiment](cadence.md) · [Plot generator](plot_triage.py)
 
+A second shortcut kept every valid visit and used recent measurements on the same RF lane to propose timing and carrier frequency. On a chronological DS30-0016 prefix, it reduced receiver CPU by 17% relative to the optimized exact detector, but lost 30 of 152 verified factors and 9 of 53 causal selections. The experiment stops at receiver triage. [Causal tracking experiment](receiver-tracking.md)
+
 ## One full recording, both run orders
 
 The input comprised 1,200 sealed dual-antenna windows at the northern simulated site. Each invocation read the raw I/Q and started with a fresh output directory. The clock covered the receiver, both calibration fits, diagnostic grid, optimizer path, eight PNGs and standard report. The candidate combined detector `ab7b4765` with scan-scoped orbit parsing and the revised coarse salvage calculation. It ran on the same pinned CPU as the deployed baseline. [Candidate-first receipt](measurements/north-candidate-first.json) · [Baseline-first receipt](measurements/north-baseline-first.json)
