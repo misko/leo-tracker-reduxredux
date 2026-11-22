@@ -83,6 +83,8 @@ def matches_edge_design(site, offers):
     edge_faces = set()
     for label, region in regions.items():
         east, north = offset_km(region, site)
+        if east == 0 or north == 0:
+            return False  # The offer would disclose one exact receiver coordinate.
         axis, normal, along = ("east", east, north) if abs(east) >= abs(north) else ("north", north, east)
         lo, hi = limits[label]
         if not (lo-tolerance <= abs(normal) <= hi+tolerance and abs(along) <= .75*half+tolerance):

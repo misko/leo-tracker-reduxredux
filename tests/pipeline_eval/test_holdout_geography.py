@@ -53,6 +53,32 @@ def test_actual_sites_must_cover_both_private_boxes_even_with_distinct_recording
     assert not verifies_drawn_sites(None, jittered)
 
 
+def test_offers_redraw_an_along_face_offset_that_rounds_onto_the_receiver():
+    class Draw:
+        def __init__(self):
+            self.rng = np.random.default_rng(17)
+            self.along_draws = 0
+
+        def uniform(self, low, high):
+            if (low, high) == (-.75, .75):
+                self.along_draws += 1
+                if self.along_draws == 1:
+                    return 1e-18
+            return self.rng.uniform(low, high)
+
+        def integers(self, high):
+            return self.rng.integers(high)
+
+        def choice(self, values):
+            return self.rng.choice(values)
+
+    draw = Draw()
+    site = (-41., 33.)
+    _, offers = fresh_offers(draw, site)
+    assert draw.along_draws == 5
+    assert all(lat != site[0] and lon != site[1] for lat, lon in offers.values())
+
+
 def test_draw_discards_a_height_development_area_before_creating_waveforms(monkeypatch):
     overlaps, independent = (v.to_bytes(32, "big") for v in (9, 45))
     assert not verifies_drawn_sites(overlaps.hex(), holdout_geography.seeded_centers(overlaps))

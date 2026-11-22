@@ -178,7 +178,8 @@ def test_geographic_confirmation_requires_the_drawn_pilot_edge_at_each_site(fres
 
 
 @pytest.mark.parametrize("mutation", ["opposite_face", "perpendicular_face", "barely_outside",
-                                      "different_width", "duplicate_offer", "different_paired_regions"])
+                                      "different_width", "duplicate_offer", "different_paired_regions",
+                                      "revealed_coordinate"])
 def test_fresh_panel_rejects_mismatched_boundary_design(fresh_panel, mutation):
     data, key = fresh_panel
     label = "far" if mutation in {"barely_outside", "different_width", "different_paired_regions"} else "edge-omitted"
@@ -205,6 +206,8 @@ def test_fresh_panel_rejects_mismatched_boundary_design(fresh_panel, mutation):
                 east, north = north, east
             elif mutation == "barely_outside":
                 east, north = region["width_km"]/2 + .1, 0.
+            elif mutation == "revealed_coordinate":
+                east, north = (east, 0.) if abs(east) > abs(north) else (0., north)
             else:
                 region["width_km"] += .1
             lat = site[0]-north/111

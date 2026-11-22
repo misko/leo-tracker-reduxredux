@@ -97,10 +97,14 @@ def fresh_offers(rng, site):
     half = width / 2
 
     def offer(axis, sign, distance):
-        along = float(rng.uniform(-.75, .75)) * half
-        east, north = (sign * distance, along) if axis == 0 else (along, sign * distance)
-        lat = site[0] - north / 111.
-        return [lat, site[1] - east / (111.32 * cos(radians(lat)))]
+        for _ in range(1000):
+            along = float(rng.uniform(-.75, .75)) * half
+            east, north = (sign * distance, along) if axis == 0 else (along, sign * distance)
+            lat = site[0] - north / 111.
+            lon = site[1] - east / (111.32 * cos(radians(lat)))
+            if lat != site[0] and lon != site[1]:
+                return [lat, lon]
+        raise ValueError("Could not draw an offer that varies both receiver coordinates")
 
     def face():
         return int(rng.integers(2)), int(rng.choice([-1, 1]))
