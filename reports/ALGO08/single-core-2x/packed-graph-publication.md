@@ -40,6 +40,6 @@ id=0abe7b4514be674d9f5388e3
   --archive-inventory-sha256 sha256:7aa06cab0502bcac70645a41a219bb6d53f1077f329e6f7ed79eb59a8794feec
 "$py" -BPs -m reports.ALGO08.single-core-2x.compare_publications \
   "$bench/packed-graph-north-inside/pair.json" \
-  --public-scoring-key reports/ALGO08/regional-release/scoring-key.json
+  --stage-clocks --public-scoring-key reports/ALGO08/regional-release/scoring-key.json
 "$py" -BPs -m reports.ALGO08.single-core-2x.plot_shared_publication --trial packed-graph
 ```

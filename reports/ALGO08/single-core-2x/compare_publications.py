@@ -32,7 +32,15 @@ def image_receipt(data):
         return dict(size=list(image.size), rgba_sha256=sha256(image.convert("RGBA").tobytes()).hexdigest())
 
 
-def verified(root, run):
+def elapsed_stages(detector_to_terminal, terminal_elapsed, elapsed):
+    if (not all(isfinite(value) for value in (detector_to_terminal, terminal_elapsed, elapsed))
+            or not 0 <= detector_to_terminal <= terminal_elapsed <= elapsed):
+        raise ValueError("Published file timestamps disagree with the launch clock")
+    return dict(launch_to_detections=terminal_elapsed - detector_to_terminal,
+                detections_to_terminal=detector_to_terminal, terminal_to_exit=elapsed - terminal_elapsed)
+
+
+def verified(root, run, *, stage_clocks=False):
     receipt = run["receipt"]
     restored = evidence(root, receipt, 0, read_only=True)
     for key in ("receipt", "raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests"):
@@ -46,8 +54,7 @@ def verified(root, run):
     native = json.loads(native_path.read_bytes())
     detector_to_terminal = (terminal_path.stat().st_mtime_ns - native_path.stat().st_mtime_ns) / 1e9
     terminal_elapsed = run["terminal_file_s"]
-    if not isfinite(terminal_elapsed) or not 0 <= detector_to_terminal <= terminal_elapsed <= run["elapsed_s"]:
-        raise ValueError("Published file timestamps disagree with the launch clock")
+    timings = elapsed_stages(detector_to_terminal, terminal_elapsed, run["elapsed_s"])
     source = native["source"]
     if (canonical_digest(native) != terminal["native_sha256"]
             or source["raw_recording_authority_digest"] != run["raw_authority"]):
@@ -77,10 +84,12 @@ def verified(root, run):
         arms=run["arms"], owners=run["owners"], scientific_digests=run["scientific_digests"],
         elapsed_s=run["elapsed_s"], cpu_s=run["cpu_s"],
     )
+    if stage_clocks:
+        result["elapsed_stages_s"] = timings
     return selected_factors(probes), result
 
 
-def compare(pair):
+def compare(pair, *, stage_clocks=False):
     data = json.loads(pair.read_bytes())
     if "failure" in data:
         raise ValueError("Pair failed before both publications could be verified")
@@ -88,8 +97,8 @@ def compare(pair):
     if (baseline["raw_authority"] != candidate["raw_authority"] or
             any(baseline["receipt"][k] != candidate["receipt"][k] for k in ("region", "session_id", "window_count"))):
         raise ValueError("Compared publications use different raw inputs or offers")
-    before, control = verified(pair.parent / "baseline", baseline)
-    after, changed = verified(pair.parent / "candidate", candidate)
+    before, control = verified(pair.parent / "baseline", baseline, stage_clocks=stage_clocks)
+    after, changed = verified(pair.parent / "candidate", candidate, stage_clocks=stage_clocks)
     names = set(control["figures"]) | set(changed["figures"])
     return dict(session=baseline["receipt"]["session_id"], raw_authority=baseline["raw_authority"],
                 region=baseline["receipt"]["region"], baseline=control, candidate=changed,
@@ -101,10 +110,10 @@ def compare(pair):
                                  for k in ARMS})
 
 
-def score_public_waveform(pair, scoring_key):
+def score_public_waveform(pair, scoring_key, *, stage_clocks=False):
     from . import selected_changes
 
-    result = compare(pair)
+    result = compare(pair, stage_clocks=stage_clocks)
     recording = Path(json.loads(pair.read_bytes())["recording"]).name
     answers = json.loads(scoring_key.read_bytes())["answers"]
     sites = {tuple(row["truth"]) for row in answers.values() if row["recording"] == recording}
@@ -121,6 +130,11 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("pair", type=Path)
     cli.add_argument("--public-scoring-key", type=Path, help="Score an already published simulation by recording")
+    cli.add_argument("--stage-clocks", action="store_true",
+                     help="Include the three elapsed stages verified against the publication files")
     args = cli.parse_args()
-    result = score_public_waveform(args.pair, args.public_scoring_key) if args.public_scoring_key else compare(args.pair)
+    if args.public_scoring_key:
+        result = score_public_waveform(args.pair, args.public_scoring_key, stage_clocks=args.stage_clocks)
+    else:
+        result = compare(args.pair, stage_clocks=args.stage_clocks)
     print(json.dumps(result, indent=2, allow_nan=False))

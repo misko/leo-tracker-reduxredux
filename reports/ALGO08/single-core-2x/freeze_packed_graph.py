@@ -23,7 +23,8 @@ def run(parent, binary, output, receipt, restored_scout_build=None):
         reference = read(MEASUREMENTS / "screened-tiled-graph-freeze.json")
         receiver = read(MEASUREMENTS / "receiver-packed-cancellation.json")["builds"]["candidate"]
         expected = [receiver["reference_sha256"], receiver["candidate_sha256"]]
-        if expected != read(MEASUREMENTS / "receiver-packed-cancellation-austin.json")["binary_sha256"]:
+        austin = read(MEASUREMENTS / "receiver-packed-cancellation-austin.json")
+        if expected != austin["binary_sha256"]:
             raise ValueError("Native and Austin receiver trials disagree on their binaries")
     else:
         reference = read(MEASUREMENTS / "packed-graph-freeze.json")
