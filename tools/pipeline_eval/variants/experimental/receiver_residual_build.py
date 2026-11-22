@@ -41,7 +41,7 @@ int cancellation_primary_factors(TwoCarrierReceiver *r, const int16_t *iq, int l
 """
 
 
-def build(output, *, fractional_batch=False, profile=False):
+def build(output, *, fractional_batch=False, profile=False, integer_fir=False):
     """Reproduce the chosen frozen kernel before adding the optional entry."""
     output = Path(output).resolve()
     read_text = Path.read_text
@@ -60,7 +60,7 @@ def build(output, *, fractional_batch=False, profile=False):
             raise ValueError("Packed build recipe did not reproduce the frozen receiver")
         # The build validates source bytes via read_bytes before reading its text.
         with patch.object(Path, "read_text", source):
-            receiver_build.build(output, profile=profile, **recipe)
+            receiver_build.build(output, profile=profile, integer_fir=integer_fir, **recipe)
 
 
 if __name__ == "__main__":
@@ -68,5 +68,7 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("--fractional-batch", action="store_true")
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument("--integer-fir", action="store_true")
     args = parser.parse_args()
-    build(args.output, fractional_batch=args.fractional_batch, profile=args.profile)
+    build(args.output, fractional_batch=args.fractional_batch, profile=args.profile,
+          integer_fir=args.integer_fir)

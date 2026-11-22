@@ -163,8 +163,8 @@ def profile_source(text, signatures):
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
           pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False,
           short_aperture=False, adjacent_primary=False, pack_stencil=False, phase_free=False,
-          batch_refine=False, fractional_batch=False):
-    if (avx2 or fma or pack_stencil or fractional_batch) and platform.machine() != "x86_64":
+          batch_refine=False, fractional_batch=False, integer_fir=False):
+    if (avx2 or fma or pack_stencil or fractional_batch or integer_fir) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
     if sum((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)) > 1:
         raise ValueError("build each experimental scout or audit separately")
@@ -174,6 +174,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
         raise ValueError("the refinement bank requires the packed x86 refinement backend")
     if batch_refine and any((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)):
         raise ValueError("the refinement bank expects the unchanged timing scout")
+    if integer_fir and any((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)):
+        raise ValueError("the integer FIR expects the unchanged timing scout")
     recipe = json.loads((PINNED / "build.json").read_bytes())
     for name, expected in recipe["source_digests"].items():
         if hashlib.sha256((PINNED / name).read_bytes()).hexdigest() != expected:
@@ -220,6 +222,13 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = timing_overlay(source)
                 if batch_refine:
                     source = bank_timing(source)
+                if integer_fir:
+                    source = replace(source,
+                                     "int delay_decimate(const float *, const float *, int, int, float *);",
+                                     "int delay_decimate_integer(const float *, const float *, int, int, "
+                                     "int, float *);")
+                    source = replace(source, "delay_decimate((float *)w->data, w->fir, 81, 4,",
+                                     "delay_decimate_integer((float *)w->data, w->fir, 81, 4, center != 0.,")
             if overlay and path.name == "two_carrier_receiver.c":
                 source = measure_overlay(source)
             if reuse:
@@ -256,6 +265,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                 options.append("-mavx2")
             if short_aperture and path.name == "delay_product_kernel.c":
                 source = kernel_overlay(source)
+            if integer_fir and path.name == "delay_product_kernel.c":
+                source += '\n#include "receiver_integer_fir.inc"\n'
             if path.name == "refine_bank.c" and fma:
                 options.append("-mfma")
             if path.name == "receiver_profile.c":
@@ -266,6 +277,10 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     signatures = [*signatures[:1], ("int delay_refine_bank(", "REFINE")]
                     source = source.replace('#include "receiver_refine_batch.inc"',
                                             (HERE / "receiver_refine_batch.inc").read_text())
+                if integer_fir and path.name == "delay_product_kernel.c":
+                    signatures = [("int delay_decimate_integer(", "DECIMATE"), *signatures[1:]]
+                    source = source.replace('#include "receiver_integer_fir.inc"',
+                                            (HERE / "receiver_integer_fir.inc").read_text())
                 source = profile_source(source, signatures)
             copy = scratch / path.name
             copy.write_text(source)
@@ -304,6 +319,8 @@ def main():
     parser.add_argument("--phase-free", action="store_true")
     parser.add_argument("--batch-refine", action="store_true")
     parser.add_argument("--fractional-batch", action="store_true")
+    parser.add_argument("--integer-fir", action="store_true",
+                        help="use an experimental Q15 FIR for the quarter-rate scout")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
@@ -311,7 +328,7 @@ def main():
           shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture,
           adjacent_primary=args.adjacent_primary, pack_stencil=args.pack_stencil,
           phase_free=args.phase_free, batch_refine=args.batch_refine,
-          fractional_batch=args.fractional_batch)
+          fractional_batch=args.fractional_batch, integer_fir=args.integer_fir)
 
 
 if __name__ == "__main__":
