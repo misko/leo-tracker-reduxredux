@@ -1,14 +1,12 @@
-"""Compare the likelihood kernel or replay one frozen ALGO08v3 saved solve."""
+"""Compare the released and contiguous likelihood kernels on saved inputs."""
 
 import argparse
 import ctypes
 import json
 import runpy
-from contextlib import ExitStack
 from pathlib import Path
 from statistics import median
 from time import process_time_ns
-from unittest.mock import patch
 
 
 def kernel(stock_binary, candidate_binary, captures):
@@ -45,45 +43,12 @@ def kernel(stock_binary, candidate_binary, captures):
     return results
 
 
-def saved(native, spec, archive, offer, output, build):
-    from tools.pipeline_eval.variants.experimental import lean_startup
-
-    source = Path(__file__).resolve()
-    variant = source.parents[3] / "tools/pipeline_eval/variants/algo08_column_norms.py"
-    helpers = runpy.run_path(str(source.with_name("residual_attribution_trial.py")))
-    if helpers["read"](spec).get("startup") != "lazy-exports":
-        raise ValueError("Expected the frozen ALGO08v3 startup")
-    install = lean_startup.install
-    with ExitStack() as stack:
-        def install_with_overlay():
-            install()
-            if build is not None:
-                column_norms = runpy.run_path(str(variant))["column_norms"]
-                stack.enter_context(column_norms(
-                    build / "column-norms-bound.so", build / "column-norms-grid.so",
-                ))
-
-        stack.enter_context(patch.object(lean_startup, "install", install_with_overlay))
-        helpers["worker"](native, spec, archive, offer, output, include_evidence=True)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(required=True, dest="mode")
-    comparison = subparsers.add_parser("kernel")
     for name in ("stock_binary", "candidate_binary", "output"):
-        comparison.add_argument(name, type=Path)
-    comparison.add_argument("captures", type=Path, nargs="+")
-    comparison = subparsers.add_parser("saved")
-    for name in ("native", "spec", "archive", "offer", "output"):
-        comparison.add_argument(name, type=Path)
-    comparison.add_argument("--build", type=Path)
-    arguments = vars(parser.parse_args())
-    mode = arguments.pop("mode")
-    if mode == "kernel":
-        output = arguments.pop("output")
-        result = kernel(**arguments)
-        with output.open("x") as stream:
-            print(json.dumps(result, indent=2, allow_nan=False), file=stream)
-    else:
-        saved(**arguments)
+        parser.add_argument(name, type=Path)
+    parser.add_argument("captures", type=Path, nargs="+")
+    args = parser.parse_args()
+    result = kernel(args.stock_binary, args.candidate_binary, args.captures)
+    with args.output.open("x") as stream:
+        print(json.dumps(result, indent=2, allow_nan=False), file=stream)
