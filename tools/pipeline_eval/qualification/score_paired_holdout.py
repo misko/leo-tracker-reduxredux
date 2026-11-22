@@ -124,7 +124,7 @@ def score(locked, truth):
                              withheld=sum(r["decision"] == "withheld" for r in omitted),
                              failed=sum(r["decision"] == "failed" for r in omitted))
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
-                missing_region=omission,
+                geography_protocol=locked.get("geography_protocol"), missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
                 geographic_confirmation_coverage=coverage,
                 relative_quality_preserved=quality and not failures,

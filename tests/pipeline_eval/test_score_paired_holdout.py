@@ -110,6 +110,7 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
             data["cases"].append(dict(job=job, result=dict(runs=runs)))
     result = score(data, key)
     assert result["passed"] and result["assigned"] == 8
+    assert result["geography_protocol"] == EDGE_PROTOCOL
     assert result["missing_region"]["candidate"] == dict(assigned=4, false_fixes=0, withheld=4, failed=0)
     assert all(s["false_fixes"] == 0 for s in result["by_site"])
     case = next(c for c in data["cases"] if c["job"]["offer"] == "bedge-containing")
