@@ -1,5 +1,6 @@
 import numpy as np
 
+from tools.pipeline_eval.qualification import holdout_geography
 from tools.pipeline_eval.qualification.compact_blind_generator import local_offset
 from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, DEVELOPMENT_CENTERS, EDGE_CASES, fresh_layout, fresh_offers, verifies_drawn_sites
 from tools.pipeline_eval.scoring import distance_km
@@ -50,3 +51,12 @@ def test_actual_sites_must_cover_both_private_boxes_even_with_distinct_recording
     assert not verifies_drawn_sites(seed, [a, jittered[0]])
     assert not verifies_drawn_sites(seed, [a, DEVELOPMENT_CENTERS[0]])
     assert not verifies_drawn_sites(None, jittered)
+
+
+def test_draw_discards_a_height_development_area_before_creating_waveforms(monkeypatch):
+    overlaps, independent = (v.to_bytes(32, "big") for v in (9, 45))
+    assert not verifies_drawn_sites(overlaps.hex(), holdout_geography.seeded_centers(overlaps))
+    assert verifies_drawn_sites(independent.hex(), holdout_geography.seeded_centers(independent))
+    seeds = iter([overlaps, independent])
+    monkeypatch.setattr(holdout_geography.secrets, "token_bytes", lambda _n: next(seeds))
+    assert holdout_geography.new_confirmation_seed() == independent

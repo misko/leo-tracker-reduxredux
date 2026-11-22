@@ -1,12 +1,14 @@
 """Scorer-side geographic sampling for the ALGO08 single-core confirmation."""
 
 from math import cos, radians
+import secrets
 
 from tools.pipeline_eval.scoring import distance_km
 
 EDGE_PROTOCOL = "paired-region-edges-v1"
 CONTAINING = {"containing", "edge-containing"}
 EDGE_CASES = CONTAINING | {"edge-omitted", "far"}
+MIN_CENTER_SEPARATION_KM = 1600
 
 # Centers of earlier development simulations and the real DS26/29/30 station.
 # The scene generator adds at most two degrees in each coordinate to a center.
@@ -21,6 +23,9 @@ DEVELOPMENT_CENTERS = (
     (35, 138), (-29, -70), (7, -2), (35, 55), (-15, -63), (33, 138), (-41, -72),
 )
 
+# These solver experiments followed the original seeded waveform generator.
+HEIGHT_TRIAL_CENTERS = ((15., 75.), (-25., -65.), (65., 120.))
+
 
 def fresh_layout(rng, additional_centers=()):
     """Draw two sites independently of solver outputs, assigning each a pilot edge."""
@@ -30,7 +35,7 @@ def fresh_layout(rng, additional_centers=()):
     for direction, band in [(sign, (8, 26)), (-sign, (34, 54))]:
         for _ in range(1000):
             point = (direction * float(rng.uniform(*band)), float(rng.uniform(-172, 172)))
-            if all(distance_km(point, old) >= 1600 for old in excluded):
+            if all(distance_km(point, old) >= MIN_CENTER_SEPARATION_KM for old in excluded):
                 points.append(point)
                 excluded.append(point)
                 break
@@ -40,22 +45,39 @@ def fresh_layout(rng, additional_centers=()):
     return list(zip(points, edges, strict=True))
 
 
-def verifies_drawn_sites(seed_hex, sites):
-    """Recreate the private draw and check the actual sites against its two boxes."""
+def seeded_centers(seed):
     import numpy as np
 
+    return [center for center, _ in fresh_layout(np.random.default_rng(int.from_bytes(seed, "big")))]
+
+
+def independent_of_height_trials(centers):
+    return all(distance_km(center, used) >= MIN_CENTER_SEPARATION_KM
+               for center in centers for used in HEIGHT_TRIAL_CENTERS)
+
+
+def new_confirmation_seed():
+    """Draw before synthesizing any signals. Explicit replay seeds stay reproducible."""
+    while True:
+        seed = secrets.token_bytes(32)
+        if independent_of_height_trials(seeded_centers(seed)):
+            return seed
+
+
+def verifies_drawn_sites(seed_hex, sites):
+    """Recreate the private draw and check the actual sites against its two boxes."""
     try:
         seed = bytes.fromhex(seed_hex)
     except (TypeError, ValueError):
         return False
     if len(seed) != 32:
         return False
-    layout = fresh_layout(np.random.default_rng(int.from_bytes(seed, "big")))
-    if len(sites) != len(layout):
+    centers = seeded_centers(seed)
+    if len(sites) != len(centers) or not independent_of_height_trials(centers):
         return False
     # make_scene jitters each coordinate independently by at most two degrees.
     return all(any(abs(lat - center[0]) <= 2 and abs(lon - center[1]) <= 2
-                   for lat, lon in sites) for center, _edge in layout)
+                   for lat, lon in sites) for center in centers)
 
 
 def fresh_offers(rng, site):

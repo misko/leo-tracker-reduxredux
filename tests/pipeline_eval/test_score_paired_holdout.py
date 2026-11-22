@@ -109,9 +109,9 @@ def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_pat
 
 
 def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_edge_fixes():
-    rng = np.random.default_rng(991)
+    rng = np.random.default_rng(45)
     data = dict(cases=[], geography_protocol=EDGE_PROTOCOL)
-    key = dict(answers={}, seed=(991).to_bytes(32, "big").hex())
+    key = dict(answers={}, seed=(45).to_bytes(32, "big").hex())
     for recording, (site, _edge) in zip(("a", "b"), fresh_layout(rng), strict=True):
         width, offers = fresh_offers(rng, site)
         for condition, center in offers.items():

@@ -47,7 +47,14 @@ def generate(work, seed=None, fresh=False, *, mixed_height=False):
     updated, later, _ = revised(received, hashlib.sha256(nominal).hexdigest())
     causal = model.orbit._constellation(nominal, received)
     frames = model.pulse_bank()
-    seed = secrets.token_bytes(32) if seed is None else bytes.fromhex(seed)
+    if fresh:
+        from tools.pipeline_eval.qualification.holdout_geography import (
+            EDGE_PROTOCOL, fresh_layout, fresh_offers, new_confirmation_seed,
+        )
+    if seed is None:
+        seed = new_confirmation_seed() if fresh else secrets.token_bytes(32)
+    else:
+        seed = bytes.fromhex(seed)
     if len(seed) != 32:
         raise ValueError("Expected a 32-byte seed")
     rng = np.random.default_rng(int.from_bytes(seed, "big"))
@@ -55,7 +62,6 @@ def generate(work, seed=None, fresh=False, *, mixed_height=False):
     inputs = {"offers": {}, "recordings": {}}
     layout = [((48., 15.), "lower"), ((-33., 20.), "upper")]
     if fresh:
-        from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_layout, fresh_offers
         layout = fresh_layout(rng)
     height_ranges = mixed_height_ranges(seed) if mixed_height else None
     for index, (box, edge) in enumerate(layout):
