@@ -9,6 +9,7 @@ from collections import Counter, defaultdict
 from contextlib import ExitStack
 from math import ceil
 from pathlib import Path
+from struct import Struct
 
 import numpy as np
 
@@ -21,6 +22,7 @@ PROSPECTIVE = {"DS29-0082", "DS29-0174", "DS29-0519"}
 ARMS = ("frozen", "control", "primary", "residual")
 SEED = 30261991
 NULL_DRAWS = 256
+FACTOR = Struct("<ii4d")
 
 
 class Covariance(ct.Structure):
@@ -108,25 +110,31 @@ def continuation(probe, history, factors):
     return (None if selected is None else factors[selected], votes)
 
 
+def factor_bytes(factor):
+    return None if factor is None else FACTOR.pack(*factor)
+
+
 def compare(frozen, candidate):
-    old, new = frozen["factors"], candidate["factors"]
-    missed = Counter(row[0] for row in (Counter(old) - Counter(new)).elements())
-    extra = Counter(row[0] for row in (Counter(new) - Counter(old)).elements())
+    old = tuple((row[0], factor_bytes(row)) for row in frozen["factors"])
+    new = tuple((row[0], factor_bytes(row)) for row in candidate["factors"])
+    missed = Counter(rank for rank, _ in (Counter(old) - Counter(new)).elements())
+    extra = Counter(rank for rank, _ in (Counter(new) - Counter(old)).elements())
     return dict(changed_lanes=old != new, lost_primary=missed[0], lost_residual=missed[1],
                 added_primary=extra[0], added_residual=extra[1],
                 selected=frozen["selected"] is not None,
                 candidate_selected=candidate["selected"] is not None,
-                selected_changed=frozen["selected"] != candidate["selected"],
+                selected_changed=factor_bytes(frozen["selected"]) !=
+                factor_bytes(candidate["selected"]),
                 votes_changed=frozen["votes"] != candidate["votes"],
                 skipped_passes=sum(row["skipped"] for row in candidate["passes"]))
 
 
-def trial(rows, stock, receivers, calibration):
+def trial(rows, stock, receivers, calibration, *, arms=ARMS):
     runs = []
     evidence = []
     for repeat in range(2):
-        metrics = {arm: Counter() for arm in ARMS}
-        counts = {arm: Counter() for arm in ARMS[1:]}
+        metrics = {arm: Counter() for arm in arms}
+        counts = {arm: Counter() for arm in arms[1:]}
         histories = defaultdict(Continuation)
         for index, (row, samples) in enumerate(rows):
             target, acq = row["target"], row["acquisition"]
@@ -135,8 +143,8 @@ def trial(rows, stock, receivers, calibration):
             for lane in (0, 1):
                 probe = dict(receiver_id=lane, channel=target["channel"], actual_rf_hz=rf,
                              valid_start_counter=acq["sample_start"])
-                first = (index + lane + repeat) % len(ARMS)
-                order = ARMS[first:] + ARMS[:first]
+                first = (index + lane + repeat) % len(arms)
+                order = arms[first:] + arms[:first]
                 if repeat:
                     order = order[::-1]
                 results = {}
@@ -164,10 +172,11 @@ def trial(rows, stock, receivers, calibration):
                             f"{pass_id}_prefix_ns": observed["prefix_ns"],
                             f"{pass_id}_covariance_ns": observed["covariance_ns"],
                         })
-                for arm in ARMS[1:]:
+                for arm in arms[1:]:
                     counts[arm].update(compare(results["frozen"], results[arm]))
                 if not repeat:
-                    evidence.append(dict(key=row["key"], lane=lane, edge=row["edge"], arms=results))
+                    evidence.append(dict(key=row["key"], lane=lane, edge=row["edge"],
+                                         visit=row["visit"], probe=probe, arms=results))
         control = counts["control"]
         if any(control[key] for key in ("changed_lanes", "selected_changed", "votes_changed")):
             raise ValueError("Instrumentation differs from the frozen receiver")

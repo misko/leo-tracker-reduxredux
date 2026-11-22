@@ -1,6 +1,6 @@
 # A frame covariance gate for the primary receiver pass
 
-The prespecified primary gate passed the initial triage. It skipped 17 of 60 prospective physical lanes and saved **8.5–10.1% native CPU** there. Both gate arms reproduced all **146 ordered factor tuples** across 256 lanes, including all 43 residual factors. The residual gate skipped six residual searches and fell short of the 5% prospective CPU requirement. The primary result supports a bounded independent confirmation with the same thresholds. Its qualification remains limited to the saved panels. [Prespecified test](receiver-covariance-protocol.md) · [Per-lane results and timings](measurements/receiver-covariance.json.gz)
+The prespecified primary gate passed the initial triage. It skipped 17 of 60 prospective physical lanes and saved **8.5–10.1% native CPU** there. Both gate arms reproduced all **146 ordered factor tuples** across 256 lanes, including all 43 residual factors. The residual gate skipped six residual searches and fell short of the 5% prospective CPU requirement. **A later independent confirmation lost a verified factor at the same thresholds and rejected the primary gate.** [Prespecified test](receiver-covariance-protocol.md) · [Per-lane results and timings](measurements/receiver-covariance.json.gz) · [Independent confirmation](receiver-covariance-confirmation.md)
 
 | Saved panel | Lanes | Frozen factors, primary / residual | Primary skips / calls | Primary CPU saved | Residual skips / calls | Residual CPU saved |
 |---|---:|---:|---:|---:|---:|---:|
