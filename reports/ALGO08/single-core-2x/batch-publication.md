@@ -29,3 +29,18 @@ All 9,288 physical lane rows and 4,157 selected measurements, and all 2,400 nort
 The receiver evaluates four neighboring fractional pilot interpolations together while preserving each one's original arithmetic and wrapped-phase fallback. The orbital reader validates standard element records in a native pass and retains the original reader for other formats. Relative to the preceding frozen build, these two changes require neither the station's surveyed position nor a local satellite list. The matching science on one physical and one simulated site does not establish physical transfer. The proposed altitude fit has been tested separately, and the earlier missed-region false fix remains a qualification issue. [Receiver and component results](receiver-fractional-batch.md) · [Orbital parser](tle-records.md) · [Height observability](height-position.md) · [Wrong-region replay](full-search-publication.md#same-recording-with-the-receiver-outside-the-search-square)
 
 Reproduce with research commit `2e71cb967` over release `bdb869682`. Use the preceding lossless build flags with receiver `c5fca3e24` and additional `--tle-parser PATH SHA256` for library `4bdfbfd24`. The full pins appear in every receipt under candidate spec digest `e40942b4f8ef6581b14c2ad7d49baf73c2519afa17a00f78339c92b7731cbb6a`. Run the paired publisher, then `audit_shared_publication.py --lossless-png PATH/pair.json`. Regenerate the figure with `python -m reports.ALGO08.single-core-2x.plot_shared_publication --trial batch`. [Preceding build recipe](lossless-publication.md#reproduction)
+
+## Short physical repeat with deferred collection
+
+The successor adds a faster checksum for canonical orbit exports and defers cyclic garbage collection during solver preparation. Both changes apply at any offered location. Research commit `678232312` adds the freezer option `--defer-preparation-gc`. The frozen specification digest is `27c54db6c798fcb41a7fa0632c0ed3933db384180b13e1b25cb68699aa965449`. [Solver preparation experiment](solver-gc.md)
+
+| DS30-0016 run order | Deployed → candidate elapsed | Elapsed speedup | Deployed → candidate CPU | CPU speedup |
+|---|---:|---:|---:|---:|
+| Candidate first | 24.54 → 15.82 s | 1.55× | 24.03 → 12.15 s | 1.98× |
+| Baseline first | 25.49 → 12.03 s | 2.12× | 25.03 → 11.77 s | 2.13× |
+
+The candidate spent 3.67 seconds more in elapsed time than on CPU when run first, versus 0.25 seconds when run second. Its launch-to-detections interval fell from 10.68 to 6.96 seconds across the repeats. Both orders recorded zero filesystem input blocks. These counters do not isolate the cause of the difference. The two orders describe one recording at one physical station. The longer DS30-0374 measurement above used the preceding build. [Candidate-first timing](measurements/DS30-0016-gc.json) · [Baseline-first timing](measurements/DS30-0016-gc-reverse.json)
+
+Both orders reproduced all 1,426 lane rows, 440 selected measurements, both calibration results, the numerical grid and all eight figures' decoded pixels. Reproduce the plot with `--trial gc`. [Candidate-first audit](measurements/DS30-0016-gc-audit.json) · [Baseline-first audit](measurements/DS30-0016-gc-reverse-audit.json)
+
+![Run-order comparison of complete publication time, CPU and horizontal position error on the same short physical recording](gc-publication.png)
