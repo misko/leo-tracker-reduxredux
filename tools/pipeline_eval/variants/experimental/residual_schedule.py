@@ -11,11 +11,10 @@ RESIDUAL_HORIZON = 80_000_000  # The released 8-second horizon on the 10 MS/s de
 
 
 class Replay:
-    def __init__(self, mode, *, initialize_donors=False):
+    def __init__(self, mode):
         if mode not in MODES:
             raise ValueError("Unknown residual schedule")
         self.mode = mode
-        self.initialize_donors = initialize_donors
         self.opportunities = Counter()
         self.last_residual = {}
         self.continuation = Continuation()
@@ -37,20 +36,15 @@ class Replay:
                 reason, use_residual = "activity", True
             else:
                 reason = "skip"
-        # Before there are three historical opportunities, no current factor
-        # can pass continuation. Measure these slots for future votes only.
-        bootstrap = self.initialize_donors and reason == "skip" and offset < 3
-        full = use_residual or bootstrap
-        factors = list(measure(full))
+        factors = list(measure(use_residual))
         ranks = {f["candidate_rank"] for f in factors}
         if ranks - {0, 1} or len(ranks) != len(factors):
             raise ValueError("Expected distinct factors at the original native ranks")
         if 1 in ranks:
-            if not full:
+            if not use_residual:
                 raise ValueError("A skipped residual was exposed to the continuation")
-            if use_residual:
-                self.last_residual[lane] = now
-        self.reasons["bootstrap" if bootstrap else reason] += 1
+            self.last_residual[lane] = now
+        self.reasons[reason] += 1
         _, selected, _ = self.continuation.select(dict(metadata, candidates=factors))
         admitted = [] if selected is None else [factors[selected]]
-        return full, factors, admitted
+        return use_residual, factors, admitted
