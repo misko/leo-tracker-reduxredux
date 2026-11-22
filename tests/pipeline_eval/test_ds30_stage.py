@@ -160,11 +160,25 @@ def test_one_pair_audit_binds_publication_and_only_scores_that_recording(conditi
     assert result["case"] == first.name
     assert result["verified_subset_quality"]["by_site"][0]["assigned"] == 1
     assert result["selected_fields"]["changed"] == 0
+    assert result["grid_comparison"] is None
     with pytest.raises(ValueError, match="verified recording"):
         audit(snapshot, study.runs / second.name / "pair.json")
     path.write_bytes(path.read_bytes() + b" ")
     with pytest.raises(ValueError, match="receipt or candidate"):
         audit(snapshot, path)
+
+
+def test_grid_scores_only_compared_at_matching_published_locations():
+    compare = import_module("reports.ALGO08.single-core-2x.physical_pair_audit").compare_grid_samples
+    p = dict(east_km=1., north_km=2., latlon=[-2., 170.], scores={"c0": 1., "fitted_c": None})
+    q = dict(p, scores={"c0": 1.25, "fitted_c": 0.})
+    a, b = dict(points=[p], nuisance_model="control"), dict(points=[q], nuisance_model="trial")
+    diff = compare(a, b)
+    assert diff["metadata_changed"] == ["nuisance_model"]
+    assert diff["arms"]["c0"] == dict(scored_by_both=1, validity_changed=0, scores_changed=1, max_abs_delta=.25)
+    assert diff["arms"]["fitted_c"]["validity_changed"] == 1
+    assert diff["arms"]["fitted_c"]["max_abs_delta"] is None
+    assert "arms" not in compare(a, dict(b, points=[dict(q, latlon=[-2., 169.])]))
 
 
 def test_timing_diagnostics_keep_missing_counters_out_of_the_zero_read_subset():
