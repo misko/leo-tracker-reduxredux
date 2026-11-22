@@ -25,8 +25,11 @@ def run(args, specification):
     if not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise ValueError("Expected a pinned detector SHA-256")
     mode = specification["solver"]
-    if mode not in ("stock", "causal-reuse", "combined"):
+    if mode not in ("stock", "causal-reuse", "combined", "combined-shared-discovery"):
         raise ValueError("Unknown experimental solver")
+    rendering = specification.get("rendering", "individual")
+    if rendering not in ("individual", "shared-orbits"):
+        raise ValueError("Unknown orbit renderer")
     ingress = specification.get("ingress", "stock")
     if ingress not in ("stock", "compressed-buffer"):
         raise ValueError("Unknown experimental I/Q reader")
@@ -51,13 +54,25 @@ def run(args, specification):
             from tools.pipeline_eval.variants.experimental.receiver_cadence import AlternatingCadence, BurstCadence
             cadence = AlternatingCadence() if schedule == "alternate" else BurstCadence()
             stack.enter_context(patch.object(algo08_scan, "detector", cadence.wrap(algo08_scan.detector)))
-        if mode in ("causal-reuse", "combined"):
+        if rendering == "shared-orbits":
+            from leo.presentation import fast_standard_analysis
+            from tools.pipeline_eval.variants.experimental.shared_orbit_figures import render_shared
+            stack.enter_context(patch.object(fast_standard_analysis, "render_fast_scan_orbits", render_shared))
+        if mode != "stock":
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
             stack.enter_context(patch.object(algo08_position, "prepare_native_scan", scoped))
-        if mode == "combined":
+        if mode in ("combined", "combined-shared-discovery"):
             from tools.pipeline_eval.variants.algo08_salvage_statistics import salvage_statistics
             stack.enter_context(salvage_statistics())
+        if mode == "combined-shared-discovery":
+            from tools.pipeline_eval.variants import v5_core
+            from tools.pipeline_eval.variants.algo08_dense_discovery import dense_discovery
+            rank = v5_core.ranked_initial_nodes
+            def shared_rank(scan):
+                with dense_discovery(scan, reuse_associations=True):
+                    return rank(scan)
+            stack.enter_context(patch.object(v5_core, "ranked_initial_nodes", shared_rank))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if schedule != "all":
