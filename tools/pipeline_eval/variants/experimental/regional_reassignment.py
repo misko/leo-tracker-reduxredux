@@ -96,8 +96,7 @@ def score_track(observed, predicted, elevation, phase_derivative, labels, catalo
     return float(np.logaddexp(0, log_odds)), owner
 
 
-def evaluate(prepared, catalogue, region):
-    """Rank new associations at each position with no fitted labels or scoring key."""
+def _prepare_probe_scores(prepared, catalogue, region):
     rows, tracks = prepared["observations"], prepared["tracks"]
     identities = {row["observation_id"]: row["receiver"] for row in rows}
     graph_ids = [i for track in tracks for i in track["observation_ids"]]
@@ -115,7 +114,8 @@ def evaluate(prepared, catalogue, region):
                                        region.center, locations)
     catalogue_size = len(catalogue.satellite_numbers)
     indexes = [np.searchsorted(times, track["times"]) for track in tracks]
-    for point in points:
+
+    def score(point):
         sums = dict.fromkeys(groups, 0.)
         owners = dict.fromkeys(t["key"] for t in tracks)
         if geometry is not None:
@@ -128,9 +128,27 @@ def evaluate(prepared, catalogue, region):
                 owners[track["key"]] = owner
         point.update(score=sum(sums.values()) / len(rows),
                      receiver_scores={str(r): sums[r] / counts[r] for r in groups}, owners=owners)
-    return dict(points=points, catalogue_orbits=catalogue_size, potentially_visible_orbits=len(labels),
+        return point
+
+    meta = dict(catalogue_orbits=catalogue_size, potentially_visible_orbits=len(labels),
                 track_count=len(tracks), graph_points=len(graph_ids), original_points=len(rows),
                 receiver_points=counts)
+    return points, score, meta
+
+
+def evaluate(prepared, catalogue, region):
+    """Rank new associations at each position with no fitted labels or scoring key."""
+    points, score, meta = _prepare_probe_scores(prepared, catalogue, region)
+    return dict(points=[score(point) for point in points], **meta)
+
+
+def evaluate_veto(prepared, catalogue, region):
+    """Opt in to the terminal veto on the original all-location geometry."""
+    from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal
+
+    points, score, meta = _prepare_probe_scores(prepared, catalogue, region)
+    decision = evaluate_terminal(points, region.width_km, lambda point: score(point)["receiver_scores"])
+    return dict(decision, **meta)
 
 
 def summarize(points):
