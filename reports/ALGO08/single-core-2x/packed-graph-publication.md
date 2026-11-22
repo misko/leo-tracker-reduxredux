@@ -1,0 +1,7 @@
+# Packed cancellation and native graph search through web publication
+
+## Frozen development trial
+
+Combine the exact packed cancellation build tested on the Gauss weak-carrier archive and Austin waveform with the guarded screened solver and native graph search. The solver, orbit preparation, region guard, and web rendering match the frozen graph experiment. The receiver binary is the only replaced component. Its training used generated waveforms. [Frozen combination](measurements/packed-graph-freeze.json) · [Receiver comparison](receiver-packed-cancellation.md) · [Solver comparison](screened-tiled-graph.md)
+
+Measure one short public development waveform, the northern lower-edge recording with the receiver 100 m inside its 25 km offer. Previous screened recovery preserved this valid fix but missed half-time by 1.28 elapsed seconds. Run deployment first, reversing the order of its prior screened-stock comparison. Use the same sealed recording, offer and causal orbital inventory. Measure launch to complete publication on the shared low-priority core. Compare all selected factors field by field, both position errors, owner digests, grids, optimizer path and all eight decoded figures. Record CPU and filesystem input blocks. This probe on 1,200 scheduled visits tests the integrated receiver and solver at a public simulated location. The dense physical receiver discrepancy remains under investigation.
