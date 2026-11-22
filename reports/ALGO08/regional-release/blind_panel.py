@@ -18,7 +18,16 @@ def save(path, data):
     path.write_text(json.dumps(data, indent=2, allow_nan=False) + "\n")
 
 
-def generate(work, seed=None, fresh=False):
+def mixed_height_ranges(seed):
+    """Use a separate seed-derived bit for the height-band order."""
+    low, elevated = model.LOW_HEIGHT_RANGE_M, (1000.0, 2500.0)
+    assignment = hashlib.sha256(b"algo08/blind-mixed-height/v1\0" + seed).digest()[0] & 1
+    return (low, elevated) if assignment else (elevated, low)
+
+
+def generate(work, seed=None, fresh=False, *, mixed_height=False):
+    if mixed_height and not fresh:
+        raise ValueError("Mixed heights require a fresh-site panel")
     public = work / "public"
     if fresh and public.exists() and any(public.iterdir()):
         raise ValueError("Fresh confirmation requires an unused public directory")
@@ -48,6 +57,7 @@ def generate(work, seed=None, fresh=False):
     if fresh:
         from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_layout, fresh_offers
         layout = fresh_layout(rng)
+    height_ranges = mixed_height_ranges(seed) if mixed_height else None
     for index, (box, edge) in enumerate(layout):
         anchor = received + (3740 + 360 * index) * 10**9
         bank = clock_transfer_inputs._true_bank(nominal, updated, anchor, later)
@@ -55,8 +65,9 @@ def generate(work, seed=None, fresh=False):
         for row in schedule:
             offset = model.EDGE_HZ if edge == "upper" else -model.EDGE_HZ
             row.update(edge=edge, rf_hz=int(model.orbit.CHANNELS[row["channel"] - 1] + offset))
+        scene_options = {"height_range_m": height_ranges[index]} if mixed_height else {}
         with patch.object(model, "SITE_BOX", box), patch.object(model, "schedule", lambda: schedule):
-            scan, scene = model.make_scene(bank, causal, anchor, rng)
+            scan, scene = model.make_scene(bank, causal, anchor, rng, **scene_options)
         recording = rng.bytes(12).hex()
         width = 25.
         if fresh:
@@ -69,6 +80,8 @@ def generate(work, seed=None, fresh=False):
             if fresh:
                 inputs["offers"][key] = hashlib.sha256((public / (key + ".json")).read_bytes()).hexdigest()
             answers[key] = dict(recording=recording, truth=scene["coordinate"], condition=condition)
+            if mixed_height:
+                answers[key]["height_m"] = scene["height_m"]
             jobs.append(dict(recording=recording, offer=key))
         targets = [dict(target_id=str(r["channel"]), channel=r["channel"], edge=edge,
                         rf_center_hz=r["rf_hz"], lnb_lo_hz=9750000000,
@@ -110,5 +123,6 @@ if __name__ == "__main__":
     parser.add_argument("workspace", type=Path)
     parser.add_argument("--replay-seed", help="Recreate the sampled waveforms after unblinding")
     parser.add_argument("--fresh-sites", action="store_true", help="Sample new geographic areas for confirmation")
+    parser.add_argument("--mixed-height", action="store_true", help="Use one low and one elevated fresh site")
     args = parser.parse_args()
-    generate(args.workspace, args.replay_seed, args.fresh_sites)
+    generate(args.workspace, args.replay_seed, args.fresh_sites, mixed_height=args.mixed_height)

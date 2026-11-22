@@ -67,6 +67,14 @@ def test_relabeling_one_recording_cannot_create_a_second_location():
         score(data, key)
 
 
+def test_revealed_height_must_agree_across_offers_for_the_same_site():
+    data, key = cases()
+    key["answers"]["containing"]["height_m"] = 85.0
+    key["answers"]["far"]["height_m"] = 1800.0
+    with pytest.raises(ValueError, match="multiple heights"):
+        score(data, key)
+
+
 def test_lost_fix_missing_pair_worse_error_and_summed_latency_cannot_pass():
     initial, key = cases()
     for bad in (run(withheld=True), run(latitude=10.05)):

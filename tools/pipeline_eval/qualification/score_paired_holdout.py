@@ -3,7 +3,7 @@ import argparse
 from collections import defaultdict
 import hashlib
 import json
-from math import cos, radians
+from math import cos, isfinite, radians
 from pathlib import Path
 from statistics import median
 
@@ -48,6 +48,7 @@ def score(locked, truth):
         raise ValueError("Scoring key and locked cases differ")
     groups = defaultdict(list)
     recording_sites = {}
+    heights = {}
     conditions_by_recording = defaultdict(set)
     rows, times = [], []
     failures = 0
@@ -61,6 +62,12 @@ def score(locked, truth):
         # Replaying a waveform under another offer cannot create a second site.
         if recording_sites.setdefault(job["recording"], site) != site:
             raise ValueError("One recording is assigned multiple receiver locations")
+        height = label.get("height_m")
+        if "height_m" in label and (type(height) not in (int, float) or not isfinite(height)):
+            raise ValueError("Expected a finite receiver height in the scoring key")
+        if heights.setdefault(site, height) != height:
+            raise ValueError("One receiver location is assigned multiple heights")
+        height_field = {} if height is None else {"height_m": height}
         conditions_by_recording[job["recording"]].add(condition)
         runs = result.get("runs", {})
         failed = "failure" in result or set(runs) != {"baseline", "candidate"}
@@ -91,7 +98,7 @@ def score(locked, truth):
                 rows.append(dict(**job, site=site, condition=condition, calibration=calibration,
                                  arm=arm, decision=receipt.get("decision", "failed"), error_km=error,
                                  frequency_rms_hz=prediction.get("rf_rms_hz"), elapsed_s=run.get("elapsed_s"),
-                                 cpu_s=run.get("cpu_s"), pair_failure=result.get("failure")))
+                                 cpu_s=run.get("cpu_s"), pair_failure=result.get("failure"), **height_field))
             if condition in CONTAINING and errors[0] is not None and errors[1] is None:
                 quality = False
             if condition not in CONTAINING and errors[0] is None and errors[1] is not None:
@@ -103,6 +110,8 @@ def score(locked, truth):
                               assigned=len(errors), fixes=stats["n"], error_km=stats,
                               false_fixes=stats["n"] if condition not in CONTAINING else 0,
                               within_km_count=thresholds(errors)))
+        if heights[site] is not None:
+            summaries[-1]["height_m"] = heights[site]
         if arm == "candidate" and condition in CONTAINING:
             base = distribution(groups[site, condition, calibration, "baseline"])
             if base["n"] and (not stats["n"] or any(stats[k] > base[k] for k in ("p50", "p90"))):

@@ -9,6 +9,7 @@ from . import cold_scenes as orbit
 from .compact_blind_generator import EDGE_HZ, SCHEDULE, regional_offer
 
 SITE_BOX = (9.5, 76.5)
+LOW_HEIGHT_RANGE_M = (25.0, 110.0)
 SWEEPS = 150
 DWELL = 20
 STRIDE_MS = 44
@@ -81,9 +82,9 @@ def iq(record, profile, frame):
     return out
 
 
-def make_scene(bank, causal, anchor, rng):
+def make_scene(bank, causal, anchor, rng, *, height_range_m=LOW_HEIGHT_RANGE_M):
     site = (np.asarray(SITE_BOX) + rng.uniform(-2.0, 2.0, 2)).tolist()
-    height = float(rng.uniform(25.0, 110.0))
+    height = float(rng.uniform(*height_range_m))
     xyz = geodetic_to_ecef_km(*site, height)
     emitters = orbit._emitters(bank, anchor, xyz, ecef_to_enu_matrix(*site), rng)
     scan = schedule()
