@@ -149,6 +149,23 @@ def inventory(study):
     return stage.inventory(study.runs, study.assignments, study.candidate, study.spec, 2)
 
 
+def test_one_pair_audit_binds_publication_and_only_scores_that_recording(conditional_study):
+    audit = import_module("reports.ALGO08.single-core-2x.physical_pair_audit").audit_pair
+    study = conditional_study
+    first, second, *_ = study.assignments
+    path = seal_pair(study, first)
+    snapshot = inventory(study)
+    result = audit(snapshot, path)
+    assert result["case"] == first.name
+    assert result["verified_subset_quality"]["by_site"][0]["assigned"] == 1
+    assert result["selected_fields"]["changed"] == 0
+    with pytest.raises(ValueError, match="verified recording"):
+        audit(snapshot, study.runs / second.name / "pair.json")
+    path.write_bytes(path.read_bytes() + b" ")
+    with pytest.raises(ValueError, match="receipt or candidate"):
+        audit(snapshot, path)
+
+
 def test_timing_diagnostics_keep_missing_counters_out_of_the_zero_read_subset():
     times = {"elapsed_s": {"baseline": 12., "candidate": 3.},
              "cpu_s": {"baseline": 8., "candidate": 4.}, "state": "verified"}
