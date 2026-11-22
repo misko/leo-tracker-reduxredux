@@ -115,6 +115,14 @@ def run(args, specification):
                                   deflate_library=assets / PNG_LIBRARIES["png_deflate"])
             renderer = partial(render_lossless_png, encoder=encoder)
             stack.enter_context(patch.object(algo08_scan, "render", renderer))
+        if pin := specification.get("tle_parser"):
+            from tools.pipeline_eval.variants.experimental.tle_records import batch_records
+            content = Path(pin["library"]).read_bytes()
+            if sha256(content).hexdigest() != pin["sha256"]:
+                raise ValueError("tle_parser library differs from its reviewed build")
+            parser_library = assets / "_leo_tle_records.so"
+            parser_library.write_bytes(content)
+            record_counts = stack.enter_context(batch_records(parser_library))
         if mode != "stock":
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
@@ -153,6 +161,8 @@ def run(args, specification):
             recovery_counts = stack.enter_context(stable_recovery())
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+        if specification.get("tle_parser"):
+            result["tle_records"] = record_counts
         if schedule in ("alternate", "bursts"):
             result["research_sampling"] = cadence.receipt(result)
         if schedule == "deferred":

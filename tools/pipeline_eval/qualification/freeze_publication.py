@@ -18,20 +18,20 @@ VARIANTS = Path("tools/pipeline_eval/variants")
 
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
            rendering="individual", startup="stock", paired_sha256=None, endpoint_reuse=False,
-           png_filter=None, png_deflate=None, recovery_reuse=False):
+           png_filter=None, png_deflate=None, recovery_reuse=False, tle_parser=None):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     png_pins = dict(png_filter=png_filter, png_deflate=png_deflate)
     if any((pin is not None) != (rendering == "lossless-raster") for pin in png_pins.values()):
         raise ValueError("Lossless raster rendering requires both reviewed PNG library pins")
-    png_libraries = {}
-    for name, pin in png_pins.items():
+    libraries = {}
+    for name, pin in {**png_pins, "tle_parser": tle_parser}.items():
         if pin is not None:
             library, digest = pin
             content = library.read_bytes()
             if hashlib.sha256(content).hexdigest() != digest:
                 raise ValueError(f"{name} library differs from its reviewed build")
-            png_libraries[name] = (content, digest)
+            libraries[name] = (content, digest)
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
     if type(endpoint_reuse) is not bool:
@@ -51,8 +51,10 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     sources = [LAUNCHER, ENTRY]
     if startup == "lazy-exports":
         sources.append(VARIANTS / "experimental/lean_startup.py")
-    if solver in CAUSAL_MODES:
+    if solver in CAUSAL_MODES or tle_parser is not None:
         sources.append(VARIANTS / "algo08_causal_reuse.py")
+    if tle_parser is not None:
+        sources.extend(VARIANTS / "experimental" / name for name in ("tle_records.py", "tle_records.c"))
     if solver in SALVAGE_MODES:
         sources.append(VARIANTS / "algo08_salvage_statistics.py")
     if solver in DISCOVERY_MODES:
@@ -102,8 +104,9 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         digests[library.name] = library_sha256
     if rendering != "individual":
         spec["rendering"] = rendering
-    for name, (content, digest) in png_libraries.items():
-        library = output / PNG_LIBRARIES[name]
+    filenames = {**PNG_LIBRARIES, "tle_parser": "_leo_tle_records.so"}
+    for name, (content, digest) in libraries.items():
+        library = output / filenames[name]
         library.write_bytes(content)
         spec[name] = dict(library=str(library.resolve()), sha256=digest)
         digests[library.name] = digest
@@ -129,14 +132,15 @@ if __name__ == "__main__":
     parser.add_argument("--rendering", choices=RENDERING_MODES, default="individual")
     parser.add_argument("--png-filter", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
     parser.add_argument("--png-deflate", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
+    parser.add_argument("--tle-parser", nargs=2, metavar=("LIBRARY", "SHA256"))
     parser.add_argument("--startup", choices=("stock", "lazy-exports"), default="stock")
     parser.add_argument("--endpoint-reuse", action="store_true")
     parser.add_argument("--recovery-reuse", action="store_true")
     args = parser.parse_args()
     paired = None if args.paired_sha256 is None else (Path(args.paired_sha256[0]), args.paired_sha256[1])
-    png = {name: (Path(pin[0]), pin[1]) for name in PNG_LIBRARIES
+    native_libraries = {name: (Path(pin[0]), pin[1]) for name in (*PNG_LIBRARIES, "tle_parser")
            if (pin := getattr(args, name)) is not None}
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,
            args.solver, args.ingress, schedule=args.schedule, rendering=args.rendering,
            startup=args.startup, paired_sha256=paired, endpoint_reuse=args.endpoint_reuse,
-           recovery_reuse=args.recovery_reuse, **png)
+           recovery_reuse=args.recovery_reuse, **native_libraries)
