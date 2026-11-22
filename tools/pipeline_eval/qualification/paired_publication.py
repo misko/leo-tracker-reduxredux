@@ -120,6 +120,32 @@ def evidence(root, receipt, started_ns, *, read_only=False):
                 terminal_file_s=(terminal_path.stat().st_mtime_ns-started_ns)/1e9)
 
 
+def orbit_solver_failure(stderr):
+    return ('orbit_projector.py", line ' in stderr and
+            stderr.rstrip().endswith("ValueError: orbit phase interpolation never extrapolates"))
+
+
+def failed_solver_evidence(root, region, failure):
+    """Recover the sealed acquisition when the orbit solver exits before publication."""
+    if failure["exit_code"] != 1 or not orbit_solver_failure(failure["stderr"]):
+        raise ValueError("Unrecognized failed-solver evidence")
+    workspace = root / "fast-scan-automatic-work"
+    if any(workspace.glob("*/terminal.json")) or any(root.glob("fast-scan-standard-*/*/*/manifest.json")):
+        raise ValueError("A pre-publication solver failure cannot have a published terminal")
+    native_path, = workspace.glob("*/detections.json")
+    native = json.loads(native_path.read_bytes())
+    source, provenance = native["source"], native["provenance"]
+    receipt = dict(decision="solver_failed", region=region, region_source="launch_argument",
+                   session_id=source["session_id"], window_count=provenance["window_count"],
+                   counts=dict(processed=provenance["processed_windows"], invalid_capture=provenance["invalid_capture"],
+                               skipped_fast_score=provenance["skipped_fast_score"]))
+    return dict(receipt=receipt, raw_authority=source["raw_recording_authority_digest"],
+                failure_observation=failure, native_sha256=canonical_digest(native),
+                arms={arm: {"latlon": None, "rf_rms_hz": None} for arm in ("c0", "fitted_c")},
+                artifacts=[], scientific_digests={}, owners={},
+                reason="ValueError: orbit phase interpolation never extrapolates")
+
+
 def measure(launcher, root, args, specification=None, *, before_launch=None):
     root.mkdir()  # Every arm starts without a detection, solver or publication cache.
     assigned_region = Algo08Region.parse(json.loads(args.region.read_bytes())).document()
@@ -146,6 +172,9 @@ def measure(launcher, root, args, specification=None, *, before_launch=None):
     wall = time.monotonic() - before_wall
     usage = {k: value - before[k] for k, value in child_usage().items()}
     if result.returncode:
+        if getattr(args, "record_solver_failure", False) and result.returncode == 1 and orbit_solver_failure(result.stderr):
+            failed = failed_solver_evidence(root, assigned_region, dict(exit_code=1, stderr=result.stderr))
+            return dict(launcher=command[0], elapsed_s=wall, **usage, **failed)
         raise RuntimeError(f"Launcher exited {result.returncode}: {result.stderr[-1500:]}")
     receipt = json.loads(result.stdout.splitlines()[-1])
     if receipt.get("region") != assigned_region:

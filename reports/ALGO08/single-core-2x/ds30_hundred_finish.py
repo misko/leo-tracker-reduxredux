@@ -15,10 +15,13 @@ def decision(result):
         raise ValueError("A version decision requires all 100 verified recording pairs")
     elapsed = result["timing"]["all_verified"]["elapsed_s"]
     total = result["builds"]
+    failures = result["solver_failures"]
+    prior = result.get("prior_candidate_failures", {})
     gates = dict(median_time=elapsed["median_candidate_over_baseline"] <= .5,
                  summed_time=elapsed["summed_candidate_over_baseline"] <= .5,
                  fix_rate=total["candidate"]["fixes"] >= total["baseline"]["fixes"],
-                 accuracy_and_decisions=result["quality"]["preserved"])
+                 accuracy_and_decisions=result["quality"]["preserved"],
+                 no_new_solver_failures=not ((set(failures["candidate"]) | set(prior)) - set(failures["baseline"])))
     return dict(gates=gates, qualifies=all(gates.values()))
 
 
@@ -33,7 +36,7 @@ def report(result, verdict):
         f'{metric(method, "c0_error_km")} | {metric(method, "fitted_c_error_km")} |'
         for method, name in (("baseline", "Deployed ALGO08v2"), ("candidate", "Frozen candidate"))
     ]
-    verdict_text = ("The frozen candidate met all four versioning criteria on DS30." if
+    verdict_text = ("The frozen candidate met the versioning criteria on DS30." if
                     verdict["qualifies"] else "The candidate missed the following DS30 versioning criteria: " +
                     ", ".join(key for key, ok in verdict["gates"].items() if not ok) + ".")
     return "\n".join([
@@ -44,7 +47,12 @@ def report(result, verdict):
         "| Build | Fixes | Elapsed median / P90 (s) | Fixed-zero error median / P90 (km) | Fitted error median / P90 (km) |",
         "|---|---:|---:|---:|---:|", *rows, "",
         "Both runs started from the same sealed I/Q on one low-priority Gauss core and ended after "
-        "publication. Run order alternated. Runtime includes withholds. Error histograms count returned fixes.",
+        "publication or an observed solver exit. Run order alternated. Error histograms count returned fixes.",
+        "", "Solver failures retained in the 100 assigned pairs: " +
+        ", ".join(f"{label} {len(names)} ({', '.join(names) or 'none'})"
+                  for label, names in result["solver_failures"].items()) + ".",
+        "DS30-0022 first stopped before the original timing harness recorded elapsed time. "
+        "The archived first attempt remains in the decision audit. The timed recovery pair counts once.",
         "", "![Runtime distributions](runtime.png)", "",
         "![Horizontal position-error distributions](position-error.png)", "",
         "All 100 recordings came from one roof. Both algorithms previously returned false fixes when the "
@@ -79,6 +87,12 @@ def finish(archive, destination):
         if rebuilt != progress:
             raise ValueError("The final aggregate changed when recalculated from the archived publications")
         result = reviewer.describe(rows, refs)
+        first = archive / "attempts/DS30-0022-01/pair.json"
+        original_attempt = stage.pinned(first, "5618c40b162600443fb523a5967b2ded1c8b7a512af8e71712525c5780516684")
+        if (original_attempt["order"][0] != "candidate" or original_attempt["runs"] or
+                not stage.pair.orbit_solver_failure(original_attempt["failure"])):
+            raise ValueError("Unexpected first DS30-0022 failure receipt")
+        result["prior_candidate_failures"] = {"DS30-0022": stage.file_sha(first)}
         verdict = decision(result)
         receipt = dict(candidate=stage.EXACT_CURVED_LOOKAHEAD, baseline=str(stage.pair.BASELINE),
                        order_sha256=study.ORDER_SHA256, result=result, **verdict,

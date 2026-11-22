@@ -96,6 +96,8 @@ def write_report(rows, refs, output):
             ax.spines[["top", "right"]].set_visible(False)
             ax.grid(axis="y", alpha=.18)
             ax.legend(frameon=False)
+        if file == "runtime" and any(d["decision"] == "solver_failed" for d in details):
+            title = "Time from raw I/Q through publication or solver failure"
         fig.suptitle(f"{title} · {len(rows)}/{COUNT} DS30 pairs verified")
         temp = output / (file + ".tmp")
         fig.savefig(temp, format="png", dpi=150)
@@ -123,7 +125,7 @@ def run(workspace, archive):
                 inventory = stage.inventory(location, [assigned], LAUNCHER, spec, cpu=2)
             if inventory["coverage"]["missing"]:
                 stage.run_next(workspace, [assigned], inventory, assigned.name, LAUNCHER, CONFIG, OFFER,
-                               cache_library=BENCH / "ds30-cache-residency.so")
+                               cache_library=BENCH / "ds30-cache-residency.so", record_solver_failure=True)
             elif not inventory["coverage"]["verified"]:
                 raise ValueError(f"Inspect the existing attempt for {assigned.name}: {inventory['cases']}")
             with stage.pair.single_core_slot(2):

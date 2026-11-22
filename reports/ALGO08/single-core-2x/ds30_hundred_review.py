@@ -50,6 +50,8 @@ def describe(rows, refs):
     return dict(
         verified=len(rows), builds=summary["builds"], timing=summary["timing"],
         passed_elapsed=max(timing.values()) <= .5, quality=stage.local_quality(rows, refs),
+        solver_failures={name: [r["case"] for r in rows if r["audit"]["decisions"][name] == "solver_failed"]
+                         for name in stage.BUILDS},
         by_first_build={
             label: stage.observed_timing([r for r in rows if r["actual_order"][0] == label])
             for label in stage.BUILDS

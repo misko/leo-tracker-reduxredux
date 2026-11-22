@@ -12,7 +12,7 @@ from PIL import Image
 from leo.contracts.digests import canonical_digest
 from leo.storage.fast_scan import FastScanStore
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
-from tools.pipeline_eval.qualification.paired_publication import evidence
+from tools.pipeline_eval.qualification.paired_publication import evidence, failed_solver_evidence
 from tools.pipeline_eval.scoring import ARMS, coordinate, distance_km
 from .audit_shared_publication import _png_scaffold
 
@@ -42,6 +42,19 @@ def elapsed_stages(detector_to_terminal, terminal_elapsed, elapsed):
 
 def verified(root, run, *, stage_clocks=False):
     receipt = run["receipt"]
+    if "failure_observation" in run:
+        restored = failed_solver_evidence(root, receipt["region"], run["failure_observation"])
+        if any(value != run.get(key) for key, value in restored.items()):
+            raise ValueError("Failed solver receipt differs from its persisted acquisition")
+        path, = (root / "fast-scan-automatic-work").glob("*/detections.json")
+        native = json.loads(path.read_bytes())
+        if canonical_digest(native) != run["native_sha256"]:
+            raise ValueError("Failed acquisition changed during verification")
+        probes = native["source"]["probes"]
+        return selected_factors(probes), dict(
+            probe_rows=len(probes), figures={}, decision=receipt["decision"], reason=run["reason"],
+            detector_sha256=native["provenance"]["detector_sha256"], counts=receipt["counts"],
+            arms=run["arms"], owners={}, scientific_digests={}, elapsed_s=run["elapsed_s"], cpu_s=run["cpu_s"])
     restored = evidence(root, receipt, 0, read_only=True)
     for key in ("receipt", "raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests"):
         if restored[key] != run[key]:

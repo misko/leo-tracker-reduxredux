@@ -380,3 +380,19 @@ def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallbac
     library.write_bytes(b"substituted")
     with pytest.raises(ValueError, match="library differs"):
         trial.run(args, spec)
+def test_failed_orbit_attempt_preserves_acquisition_and_stops_on_unrelated_failures(tmp_path):
+    error = dict(exit_code=1, stderr='File "/experiment/orbit_projector.py", line 66, in prepare\n'
+                                     'ValueError: orbit phase interpolation never extrapolates\n')
+    folder = tmp_path / "fast-scan-automatic-work/native"
+    folder.mkdir(parents=True)
+    native = dict(source=dict(session_id="test", raw_recording_authority_digest="raw"),
+                  provenance=dict(window_count=12, processed_windows=9, invalid_capture=3, skipped_fast_score=0))
+    (folder / "detections.json").write_text(json.dumps(native))
+    evidence = bench.failed_solver_evidence(tmp_path, {"center": [0, 0]}, error)
+    assert evidence["receipt"]["decision"] == "solver_failed" and evidence["artifacts"] == []
+    assert evidence["raw_authority"] == "raw" and evidence["arms"]["c0"]["latlon"] is None
+    with pytest.raises(ValueError, match="Unrecognized"):
+        bench.failed_solver_evidence(tmp_path, {}, dict(exit_code=1, stderr="FileNotFoundError"))
+    (folder / "terminal.json").write_text("{}")
+    with pytest.raises(ValueError, match="published terminal"):
+        bench.failed_solver_evidence(tmp_path, {}, error)

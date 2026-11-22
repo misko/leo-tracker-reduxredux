@@ -273,7 +273,7 @@ def next_case(stage, requested):
 
 
 def run_next(workspace, assignments, stage, requested, candidate, config, region_file,
-             *, cache_library=None):
+             *, cache_library=None, record_solver_failure=False):
     name = next_case(stage, requested)
     assigned = next(case for case in assignments if case.name == name)
     pair.run_pair(SimpleNamespace(recording=assigned.recording, region=region_file,
@@ -281,7 +281,7 @@ def run_next(workspace, assignments, stage, requested, candidate, config, region
                                   output=workspace / name, baseline=pair.BASELINE, candidate=candidate,
                                   candidate_config=config, blind_panel=None, first=assigned.order[0],
                                   cache_library=cache_library, cache_manifests=assigned.segment_manifests,
-                                  cpu=stage["cpu"], timeout=1200))
+                                  cpu=stage["cpu"], timeout=1200, record_solver_failure=record_solver_failure))
 
 
 def local_quality(cases, refs):
