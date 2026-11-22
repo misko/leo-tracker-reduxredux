@@ -9,10 +9,11 @@ from tools.pipeline_eval.qualification import experimental_publication
 from tools.pipeline_eval.variants.experimental import residual_receiver
 
 
-def test_conditional_publications_have_two_reviewed_native_pins():
+def test_conditional_publications_admit_reviewed_native_pins():
     for digest in (
         "1b4c43dc1f2edc64ead9c4b9c0f4d724f79f623e04a13f40812a1d4bb40345a5",
         "c34c55748bd9b5feac6f1736e27acb78b4a1caa97f0d13a50b604cffd61d2d70",
+        "2773de4a4887a82f05361aa059304803fa8781fcf2230375b750542226a28695",
     ):
         residual_receiver.require_native_pin(digest)
     with pytest.raises(ValueError, match="reviewed native detector"):

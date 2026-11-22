@@ -61,7 +61,7 @@ def austin_windows(archive, source_audit, wide_reference):
                 yield panel, edge, start, value, samples
 
 
-def austin_benchmark(binaries, panels, assets, repeats):
+def austin_benchmark(binaries, panels, assets, repeats, *, counter_reader=parity_counters):
     result = {}
     with ExitStack() as stack:
         receivers = {}
@@ -77,7 +77,7 @@ def austin_benchmark(binaries, panels, assets, repeats):
         for panel in ("physical", "null"):
             windows = [(edge, start, value, samples) for group, edge, start, value, samples in panels
                        if group == panel]
-            read_counts = parity_counters(binaries[1])
+            read_counts = counter_reader(binaries[1]) if counter_reader is not None else None
             times, changed = [], set()
             ranks, inputs = Counter(), {}
             for repeat in range(repeats):
@@ -97,8 +97,10 @@ def austin_benchmark(binaries, panels, assets, repeats):
                 times.append([value / 1e9 for value in elapsed])
             result[panel] = dict(
                 total_cpu_s=times, median_total_cpu_s=[median(col) for col in zip(*times, strict=True)],
-                old_ranks=ranks, changed_lanes=sorted(changed), counters=read_counts(), input_sha256=inputs,
+                old_ranks=ranks, changed_lanes=sorted(changed), input_sha256=inputs,
             )
+            if read_counts is not None:
+                result[panel]["counters"] = read_counts()
     return result
 
 
