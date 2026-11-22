@@ -12,6 +12,16 @@ The physical and northern baseline ran first. Both processes reported zero files
 
 ![Matched baseline and candidate measurements of elapsed time, CPU time and position error for each site](shared-publication.png)
 
+The file timestamps give three elapsed intervals. Launch through detections includes input reads and process startup. Detections through the terminal decision includes regional inference and its diagnostics. The last interval includes rendering, publication and process exit. Each cell shows baseline → candidate seconds.
+
+| Recording | Launch through detections | Detections through terminal decision | Terminal decision through exit |
+|---|---:|---:|---:|
+| DS30-0016 | 12.99 → 8.38 | 7.73 → 4.48 | 3.84 → 3.16 |
+| Southern simulation | 17.55 → 18.41 | 9.11 → 6.57 | 4.30 → 3.42 |
+| Northern simulation, receiver outside offer | 19.08 → 11.51 | 14.33 → 11.55 | 4.17 → 3.42 |
+
+On the northern case, inference alone took about as long as acquisition in the new build. The southern candidate's additional input reads fall in the first interval. Independent trials of direct decompression and reusable decoded-window buffers preserved the receiver evidence but added CPU on both physical prefixes. Sharing orbital projections across satellite families reduced complete saved-detection-to-grid CPU by 0.46 s on DS30-0374 and 0.09 s on the northern wrong-region case. Those changes were tested separately. [Stage measurements](measurements/shared-publication-audit.json) · [Decoded input trials](receiver-decoded-ingress.md) · [Shared orbital projections](solver-cavity-projection.md)
+
 ## What the prototype shares
 
 The receiver computes four adjacent timing correlations together and examines every valid visit. A bounded compressed-input buffer reduces copies. The position solver shares causal parsing, coarse salvage calculations and repeated full-catalogue discovery calls with identical inputs. The renderer builds one figure per channel group and derives its unassociated view by hiding the assigned observations. Each group still has both published views. The timing includes detection, fitting, diagnostics, rendering and storage. [Receiver](receiver-stencil.md) · [Catalogue discovery](solver-discovery.md) · [Figure implementation](../../../tools/pipeline_eval/variants/experimental/shared_orbit_figures.py)

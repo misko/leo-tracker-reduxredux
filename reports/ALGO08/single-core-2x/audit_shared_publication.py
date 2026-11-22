@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from PIL import Image
+from leo.storage.fast_scan import FastScanStore
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 
 
@@ -18,7 +19,7 @@ def audit(pair):
     for key in ("arms", "owners", "scientific_digests", "artifacts"):
         if before[key] != after[key]:
             raise ValueError(f"Different published {key}")
-    probes, figures = {}, {}
+    probes, figures, timings = {}, {}, {}
     for method, row in data["runs"].items():
         root = pair.parent / method
         files = list((root / "fast-scan-automatic-work").glob("*/detections.json"))
@@ -26,6 +27,13 @@ def audit(pair):
             raise ValueError("Expected one sealed receiver output")
         doc = json.loads(files[0].read_bytes())
         probes[method] = doc["source"]["probes"]
+        workspace = FastScanStore(root).automatic_workspace(row["receipt"]["run_id"])
+        delta = ((workspace / "terminal.json").stat().st_mtime_ns - files[0].stat().st_mtime_ns) / 1e9
+        timings[method] = dict(launch_to_detections=row["terminal_file_s"] - delta,
+                               detections_to_terminal=delta,
+                               terminal_to_exit=row["elapsed_s"] - row["terminal_file_s"])
+        if min(timings[method].values()) < 0:
+            raise ValueError("Published file timestamps disagree with the launch clock")
         store = FastStandardAnalysisStore(root)
         for item in row["artifacts"]:
             image = store.artifact(row["receipt"]["run_id"], item["name"], item["sha256"])
@@ -39,7 +47,7 @@ def audit(pair):
     packed = json.dumps(probes["baseline"], sort_keys=True, separators=(",", ":")).encode()
     return dict(session=before["receipt"]["session_id"], probe_rows=len(probes["baseline"]),
                 selected=sum(len(r["candidates"]) for r in probes["baseline"]),
-                probe_rows_sha256=sha256(packed).hexdigest(), image_dimensions=figures,
+                probe_rows_sha256=sha256(packed).hexdigest(), image_dimensions=figures, elapsed_stages_s=timings,
                 elapsed_speedup=before["elapsed_s"]/after["elapsed_s"],
                 cpu_speedup=before["cpu_s"]/after["cpu_s"])
 
