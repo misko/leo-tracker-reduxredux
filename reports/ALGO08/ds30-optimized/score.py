@@ -10,7 +10,7 @@ import zipfile
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.ticker import PercentFormatter
+from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter, PercentFormatter
 import numpy as np
 from tools.pipeline_eval.scoring import distance_km
 from panels import PANEL_SIZES, select_panel
@@ -137,6 +137,9 @@ def plots(out,times,positions):
         vals=[r[mode+"_total_wall_s"] for r in times]
         ecdf(a,vals,len(times),"-",color,label)
     a.set(xscale="log",title="Raw I/Q through position",xlabel="Elapsed seconds per recording",ylabel="Fraction of all recordings")
+    a.xaxis.set_major_locator(LogLocator(subs=(1,2,3,5)))
+    a.xaxis.set_major_formatter(FuncFormatter(lambda value,_: f"{value:g}"))
+    a.xaxis.set_minor_formatter(NullFormatter())
     stage_labels=("Read and detect","Fit and grid","End to end")
     for i,(stage,name) in enumerate(zip(STAGES,stage_labels)):
         ratios=[r[stage+"_wall_speedup"] for r in times]
@@ -161,6 +164,9 @@ def plots(out,times,positions):
             ecdf(ax,x,len(rows),style,color,label)
         ax.yaxis.set_major_formatter(PercentFormatter(1))
         ax.set(xscale="log",ylim=(0,1.02),title=title,xlabel="Horizontal position error (km)")
+        ax.xaxis.set_major_locator(LogLocator(subs=(1,2,5)))
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda value,_: f"{value:g}"))
+        ax.xaxis.set_minor_formatter(NullFormatter())
         ax.spines[["top","right"]].set_visible(False)
         ax.grid(alpha=.18)
         ax.legend(frameon=False)
@@ -176,9 +182,9 @@ def report(out,times,pos,panel):
     fix_counts=[sum(r[m+"_status"]=="ok" for r in fitted) for m in MODES]
     same=sum(r["deployed_status"]==r["optimized_status"] and r["identical_position"] for r in fitted)
     visits=sum(r["eligible_visits"] for r in times)
-    timing_change="shorter" if wall_ratio<=1 else "longer"
+    timing_change="less" if wall_ratio<=1 else "more"
     md=[f"# Optimized two-scan versus deployed ALGO08 · DS30 {panel} panel ({n}/455)","",
-        f"On Gauss the optimized pipeline took **{abs(1-wall_ratio):.1%} {timing_change} end to end** at the median of the {n} recording pairs. Deployed ALGO08 returned **{fix_counts[0]}/{n} fixes** and the optimized pipeline returned **{fix_counts[1]}/{n}**. Their fitted-calibration decisions and coordinates agreed on **{same}/{n}** recordings, counting a shared withholding or solver failure as a matching decision.","",
+        f"On Gauss the optimized pipeline took **{abs(1-wall_ratio):.1%} {timing_change} elapsed time end to end** at the median of the {n} recording pairs. Deployed ALGO08 returned **{fix_counts[0]}/{n} fixes** and the optimized pipeline returned **{fix_counts[1]}/{n}**. Their fitted-calibration decisions and coordinates agreed on **{same}/{n}** recordings, counting a shared withholding or solver failure as a matching decision.","",
         f"The panel contains the first {n} recordings in the frozen DS30 prediction order. Panel membership is independent of completion order, timing and position error. See the [measurement protocol](PROTOCOL.md) for the worker count and timing conditions.","",
         f"Each pipeline independently read the sealed I/Q and processed {visits:,} eligible dual-antenna visits. Both used the installed regional compact v5 solver, the station profile and the same capture-era TLE archive. The only implementation change was the two-scan receiver library.","",
         "The optimized receiver reuses the list of eligible frequency bins, stores FFT coefficients in stage order, and returns the verified factors directly. It keeps both searches and the final exact-pilot versus control test.","",

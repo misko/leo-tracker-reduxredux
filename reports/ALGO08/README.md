@@ -2,6 +2,8 @@
 
 ALGO08 is the default Standard analysis for new Gauss fast scans. It reads sealed dual-antenna 10 MS/s I/Q, searches for a pilot, subtracts it, and searches the residual. A fractional GLRT verifies the carriers and a causal rule selects measurements across visits. Compact v5 associates those measurements with capture-era satellites and fits the receiver position in the configured 25 km region. It runs both fitted RF calibration and a fixed-zero control. The release includes the two orbit-support retries qualified on DS30. [Full DS30 comparison with the standalone algo07v5 benchmark](../2026_11_21_ds30_full/README.md)
 
+The [optimized two-scan triage report](ds30-optimized/README.md) compares the experimental receiver with deployed ALGO08 from sealed I/Q through position on 16 paired DS30 recordings. The replay tool defaults to four recordings on one worker.
+
 ## One recording through both deployed algorithms
 
 **DS30-0003** is a five-minute upper-edge roof recording with 6,769 visits. The receiver admitted 6,714 visits and excluded 55 on capture quality. The raw-I/Q replay reproduced the frozen DS30 detection digest and both compact position estimates. The historical production ALGO07 chain retained its ALGO02 incumbent on this scan.
