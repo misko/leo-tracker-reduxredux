@@ -23,6 +23,8 @@ All 16 new PNGs have different encoded hashes from their corresponding deployed 
 
 ## Geographic evidence
 
+The two-dimensional solver assumes zero height above the WGS84 ellipsoid. On three separate modeled sites, a 1 km height change shifted predicted Doppler by roughly 115–119 Hz. A single linear height term represented that shift to about 0.04 Hz when supplied the true height change. Its ability to recover unknown height or improve horizontal positions has not been established. [Geographic height sensitivity](height-sensitivity.md)
+
 The receiver works from I/Q and the waveform definition. The solver and plots receive the operator's search and screening centers. Both tested offers contained the receiver. The northern recording was an already published simulation. Independent physical off-site performance and the fresh whole-site holdout remain unverified. On the preceding build the same southern waveform produced a fix with its true position both inside and outside the offered region. The separate experimental withholding rule also missed an outside fix in the north and suppressed a valid fix in the south. This candidate includes no new withholding rule. The statistical receiver screen that lost a physical factor in disjoint confirmation was also excluded. [Geographic audit](geographic-input-audit.md) · [Southern wrong-region replay](full-search-publication.md#same-recording-with-the-receiver-outside-the-search-square) · [Mirrored offers](mirrored-regions.md) · [Receiver counterexample](receiver-covariance-confirmation.md)
 
 ## Reproduction
