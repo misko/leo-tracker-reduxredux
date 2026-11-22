@@ -1,8 +1,8 @@
 # ALGO08v2 single-core experiments
 
-The latest integrated candidate cut raw-I/Q-to-publication time on physical recording **DS30-0374 from 130.64 to 104.56 seconds (1.25×)**. Single-core CPU fell from 129.42 to 93.40 seconds (1.39×). All 9,288 detector probe records, both positions and all eight PNGs matched. On a southern geographic simulation the repeat with both runs near CPU time took 30.32 versus 22.58 seconds (1.34×). The 2× target remains open. [Qualification protocol](PROTOCOL.md)
+The latest integrated candidate cut raw-I/Q-to-publication time on the short physical recording **DS30-0016 from 24.56 to 16.02 seconds (1.53×)**. On a southern simulated recording the speedup was **1.09× elapsed and 1.46× on CPU**. Every ordered detector row, both positions and all eight PNGs matched on each case. Full-pipeline testing at a second physical station and the 2× target remain open. [Matched report and figure](shared-publication.md) · [Geographic qualification protocol](PROTOCOL.md)
 
-## Physical and geographic checks of the updated candidate
+## Earlier build on a longer physical recording
 
 The build combines receiver `107909cc`, a single compressed input buffer, causal orbital parsing and coarse salvage statistics. The run traverses the same sealed recording in each arm. The physical recording is the first entry in the frozen DS30 order. It has 6,770 windows, of which 4,644 passed the existing capture-quality checks. The southern simulation has 1,200 valid windows. Both builds returned identical owners, optimizer paths, numerical grid values, frequency residuals and eight PNGs on each recording.
 

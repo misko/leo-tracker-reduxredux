@@ -24,7 +24,8 @@ def main():
         parser.add_argument(name, type=Path)
     parser.add_argument("digest")
     parser.add_argument("title")
-    parser.add_argument("--first", choices=("individual", "shared"), required=True)
+    parser.add_argument("--first", choices=("individual", "shared", "pixels"), required=True)
+    parser.add_argument("--second", choices=("individual", "shared", "pixels"))
     args = parser.parse_args()
     raw = args.native.read_bytes()
     if sha256(raw).hexdigest() != args.digest:
@@ -45,12 +46,16 @@ def main():
     packet, = packets
     individual = plots.render_fast_scan_orbits
     rows = []
-    modes = ["individual", "shared"] if args.first == "individual" else ["shared", "individual"]
+    second = args.second or ("shared" if args.first == "individual" else "individual")
+    if args.first == second:
+        raise ValueError("Select two different renderers")
+    modes = [args.first, second]
     for mode in modes + modes[::-1]:
         orbit = {}
         def timed(*args, **kwargs):
             start = process_time()
-            images = (individual if mode == "individual" else render_shared)(*args, **kwargs)
+            images = (individual(*args, **kwargs) if mode == "individual" else
+                      render_shared(*args, reuse_pixels=mode == "pixels", **kwargs))
             orbit["cpu_s"] = process_time() - start
             return images
         with patch.object(plots, "render_fast_scan_orbits", timed):

@@ -12,3 +12,4 @@ def test_both_orbit_views_match_the_individual_pngs_including_empty_lanes():
     options = dict(title="Test · site (-27.12°, 108.8°)", alias_period_hz=1200., subtitle="Test receiver")
     individual = render_fast_scan_orbits(lanes, **options)
     assert render_shared(lanes, **options) == individual
+    assert render_shared(lanes, reuse_pixels=True, **options) == individual
