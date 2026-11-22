@@ -32,6 +32,9 @@ def main(trial):
     if trial == "upper-edge":
         cases = (("DS30-0161-lean", "DS30-0161 · baseline first"),
                  ("DS30-0161-lean-reverse", "Same recording · candidate first"))
+    if trial == "full-search":
+        cases = (("DS30-0374-full-search", "DS30-0374 · physical"),
+                 ("north-edge-full-search", "Northern site · simulated boundary"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1), layout="constrained")
     longest_publication = 0
     for row, (key, site) in enumerate(cases):
@@ -67,7 +70,7 @@ def main(trial):
         errors.set_yticks([1, 0], ["Fixed zero", "Fitted"])
         longest_publication = max(longest_publication, *(run["elapsed_s"] for run in pair["runs"].values()))
         distance_limit = 62 if key == "north-far-shared" else 2
-        if trial == "upper-edge":
+        if trial in ("upper-edge", "full-search"):
             distance_limit = max(distance_limit, errors.dataLim.xmax * 1.2)
         errors.set_xlim(0, distance_limit)
         errors.set_title("Published false fix · expanded distance scale" if key == "north-far-shared"
@@ -88,5 +91,5 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge"), default="shared")
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search"), default="shared")
     main(parser.parse_args().trial)
