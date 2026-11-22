@@ -82,6 +82,33 @@ def main():
     fig.tight_layout()
     fig.savefig(HERE/"time-arcs.png", dpi=155)
     plt.close(fig)
+    plot_raw_alternation()
+
+
+def plot_raw_alternation():
+    pair = json.loads((HERE/"measurements/DS30-0016-alternate.json").read_bytes())
+    audit = json.loads((HERE.parents[1]/"2026_11_21_ds30_full/reference-audit.json").read_bytes())
+    ref = next(r["reference"] for r in audit["cases"] if r["dataset_label"] == "DS30-0016")
+    truth = (ref["latitude_deg"], ref["longitude_deg"])
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3.4))
+    for i, (label, mode, color) in enumerate([("ALGO08v2", "baseline", "#253964"),
+                                               ("Alternate visits", "candidate", "#00766c")]):
+        run = pair["runs"][mode]
+        errors = [distance_km(run["arms"][a]["latlon"], truth) for a in ARMS]
+        for ax, values in zip(axes, ([run["elapsed_s"], run["cpu_s"]], errors), strict=True):
+            bars = ax.bar(np.arange(2)+(i-.5)*.37, values, width=.37, label=label, color=color)
+            ax.bar_label(bars, fmt="%.2f", fontsize=9, padding=2)
+    for ax, labels, unit in zip(axes, (["Elapsed", "Single-core CPU"], ["Fixed zero", "Fitted calibration"]),
+                                ["Raw I/Q through eight PNGs (s)", "Horizontal error (km)"], strict=True):
+        ax.set_xticks([0, 1], labels=labels)
+        ax.set_ylabel(unit)
+        ax.margins(y=.15)
+        ax.spines[["top","right"]].set_visible(False)
+    axes[0].legend(frameon=False, ncol=2, loc="lower left", bbox_to_anchor=(0, 1.01), fontsize=9)
+    fig.suptitle("DS30-0016  ·  one physical recording, both algorithms returned a fix", fontsize=12)
+    fig.tight_layout(rect=(0, 0, 1, .95))
+    fig.savefig(HERE/"alternate-visits.png", dpi=155)
+    plt.close(fig)
 
 
 if __name__ == "__main__":

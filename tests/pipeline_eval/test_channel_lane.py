@@ -46,6 +46,15 @@ def test_alternate_channels_preserve_both_antennas_and_entire_history():
         assert result["provenance"]["processed_windows"] == 6
 
 
+def test_alternate_visits_hold_radio_history_fixed_and_thin_independently_per_rf():
+    native = sample()
+    for row in native["source"]["probes"]:
+        if row["visit_index"] == 4:
+            row["actual_rf_hz"] = 440.
+    kept = project(native, 0, "alternate-visits-full-history")
+    assert [r["visit_index"] for r in kept["source"]["probes"][::2]] == [0, 1, 4, 5, 6, 9, 10]
+
+
 def test_time_arcs_include_start_end_and_charge_unpublished_history():
     native = sample()
     native.update(clock_anchor={"sample_counter": 9000}, last_sample_counter=120_009_000)

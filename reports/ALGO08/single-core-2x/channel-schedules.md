@@ -17,6 +17,8 @@ The solver returned three of four fixes. The short physical recording withheld w
 
 The long physical recording shows what changed in the fit. The published solution went from 81 tracks across 20 satellites to 29 tracks across eight satellites. Associated observations fell from 2,905 to 962. The solver's fitted-calibration frequency RMS improved from 101.52 to 98.04 Hz on this reduced support even as horizontal error rose. On the southern simulation the fitted frequency RMS was 6.39 Hz in both cases, while the fitted position error more than doubled. Frequency agreement alone would miss both regressions.
 
+On DS30-0374 the measured solver saving is 15.01 CPU seconds. Subtracting it from the full candidate's earlier 93.40 CPU seconds would still leave about 13.69 seconds to reach half the baseline CPU time. To close that gap by skipping 48.1% of antenna searches, those searches would have to save at least 13.69 seconds in aggregate. A raw replay of this schedule would not resolve its measured position regression, so no end-to-end speedup is claimed.
+
 ![Paired saved-detection runtimes and cumulative horizontal error with every assigned recording in the denominator.](time-arcs.png)
 
 ## Keeping continuous histories on fewer antennas or channels

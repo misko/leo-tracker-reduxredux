@@ -24,7 +24,7 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         sources.append(VARIANTS / "algo08_salvage_statistics.py")
     if ingress == "compressed-buffer":
         sources.append(VARIANTS / "experimental/receiver_ingress.py")
-    if schedule == "bursts":
+    if schedule in ("alternate", "bursts"):
         sources.append(VARIANTS / "experimental/receiver_cadence.py")
     output.mkdir(parents=True, exist_ok=False)
     shutil.copytree(release / "tools", output / "tools", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser.add_argument("detector_sha256")
     parser.add_argument("--solver", choices=("stock", "causal-reuse", "combined"), required=True)
     parser.add_argument("--ingress", choices=("stock", "compressed-buffer"), required=True)
-    parser.add_argument("--schedule", choices=("all", "bursts"), default="all")
+    parser.add_argument("--schedule", choices=("all", "bursts", "alternate"), default="all")
     args = parser.parse_args()
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,
            args.solver, args.ingress, schedule=args.schedule)

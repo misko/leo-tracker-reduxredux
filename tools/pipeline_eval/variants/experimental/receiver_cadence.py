@@ -10,15 +10,22 @@ class BurstCadence:
         self.visits = Counter()
         self.skipped = Counter()
 
+    policy = "8-on-8-off-per-rf"
+    block = 8
+
+    def key(self, window, rf):
+        return rf
+
     def wrap(self, detector):
         @contextmanager
         def open_receiver(*args, **kwargs):
             with detector(*args, **kwargs) as detect:
                 def visit(window):
                     rf = window.acquisition["actual_if_center_hz"] + window.target["lnb_lo_hz"]
-                    index = self.visits[rf]
-                    self.visits[rf] += 1
-                    if index % 16 >= 8:
+                    key = self.key(window, rf)
+                    index = self.visits[key]
+                    self.visits[key] += 1
+                    if index // self.block % 2:
                         self.skipped[window.target["channel"]] += 1
                         return []
                     return detect(window)
@@ -30,5 +37,14 @@ class BurstCadence:
         counts = result["counts"]
         if counts["processed"] + counts["invalid_capture"] + skipped != result["window_count"]:
             raise ValueError("Scheduled receiver visits do not reconcile with the recording")
-        return dict(policy="8-on-8-off-per-rf", skipped_valid_visits=skipped,
+        return dict(policy=self.policy, skipped_valid_visits=skipped,
                     skipped_by_channel=dict(self.skipped))
+
+
+class AlternatingCadence(BurstCadence):
+    """Run independent native detection and continuation on alternate valid visits."""
+    policy = "alternate-visits-per-channel-and-rf"
+    block = 1
+
+    def key(self, window, rf):
+        return window.target["channel"], rf

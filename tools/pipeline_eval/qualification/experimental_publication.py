@@ -31,7 +31,7 @@ def run(args, specification):
     if ingress not in ("stock", "compressed-buffer"):
         raise ValueError("Unknown experimental I/Q reader")
     schedule = specification.get("schedule", "all")
-    if schedule not in ("all", "bursts"):
+    if schedule not in ("all", "bursts", "alternate"):
         raise ValueError("Unknown receiver schedule")
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
@@ -47,9 +47,9 @@ def run(args, specification):
                 with compressed_input_buffer():
                     return acquire(*args, **kwargs)
             stack.enter_context(patch.object(algo08_scan, "acquire", buffered))
-        if schedule == "bursts":
-            from tools.pipeline_eval.variants.experimental.receiver_cadence import BurstCadence
-            cadence = BurstCadence()
+        if schedule != "all":
+            from tools.pipeline_eval.variants.experimental.receiver_cadence import AlternatingCadence, BurstCadence
+            cadence = AlternatingCadence() if schedule == "alternate" else BurstCadence()
             stack.enter_context(patch.object(algo08_scan, "detector", cadence.wrap(algo08_scan.detector)))
         if mode in ("causal-reuse", "combined"):
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
@@ -60,7 +60,7 @@ def run(args, specification):
             stack.enter_context(salvage_statistics())
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
-        if schedule == "bursts":
+        if schedule != "all":
             result["research_sampling"] = cadence.receipt(result)
         return result
 

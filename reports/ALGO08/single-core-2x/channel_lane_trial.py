@@ -21,7 +21,8 @@ def main():
     parser.add_argument("digest")
     parser.add_argument("flip", type=int, choices=(0, 1))
     parser.add_argument("--policy", default="one-antenna-per-channel",
-                        choices=("all", "one-antenna-per-channel", "stereo-alternate-channels", "first-last-quarters"))
+                        choices=("all", "one-antenna-per-channel", "stereo-alternate-channels",
+                                 "first-last-quarters", "alternate-visits-full-history"))
     args = parser.parse_args()
     raw = args.native.read_bytes()
     if sha256(raw).hexdigest() != args.digest.removeprefix("sha256:"):

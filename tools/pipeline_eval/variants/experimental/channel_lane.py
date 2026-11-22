@@ -1,4 +1,6 @@
-"""Evaluate one uninterrupted receiver history per channel on saved detections."""
+"""Project saved receiver evidence onto fixed antenna, channel and time schedules."""
+
+from collections import Counter
 
 from leo.contracts.digests import canonical_digest
 
@@ -32,16 +34,17 @@ def time_arcs(native):
 
 
 def project(native, flip, policy="one-antenna-per-channel"):
-    """Build a research input whose retained receiver/RF histories are complete."""
+    """Keep full-history selections. Alternating visits requires a separate raw check."""
     if flip not in (0, 1):
         raise ValueError("Expected one of two antenna assignments")
-    if policy not in ("one-antenna-per-channel", "stereo-alternate-channels"):
+    if policy not in ("one-antenna-per-channel", "stereo-alternate-channels", "alternate-visits-full-history"):
         raise ValueError("Unknown channel policy")
     source = native["source"]
     pairs = source["probes"]
     if len(pairs) % 2:
         raise ValueError("Expected complete dual-antenna visits")
     selected = []
+    visits = Counter()
     for first, second in zip(pairs[::2], pairs[1::2], strict=True):
         if ({first["receiver_id"], second["receiver_id"]} != {0, 1} or
                 any(first[k] != second[k] for k in ("visit_index", "channel", "actual_rf_hz", "valid_start_counter"))):
@@ -49,6 +52,11 @@ def project(native, flip, policy="one-antenna-per-channel"):
         lane = (int(first["channel"]) + flip) % 2
         if policy == "one-antenna-per-channel":
             selected.append(first if first["receiver_id"] == lane else second)
+        elif policy == "alternate-visits-full-history":
+            key = first["channel"], first["actual_rf_hz"]
+            if visits[key] % 2 == flip:
+                selected.extend((first, second))
+            visits[key] += 1
         elif lane == 0:
             selected.extend((first, second))
     digest = canonical_digest([policy, flip, source["analysis_manifest_sha256"], selected])

@@ -34,6 +34,8 @@ Keeping only the first and last quarters of a scan cut the long physical solve f
 
 A shorter detector aperture retained every verified factor on one simulated prefix while losing 13 of 25 on the other. Halving the nominal scout rate also folds distinct legal carrier offsets into the same band. [Aperture results](receiver-aperture.md) · [Pilot bandwidth and sampling rate](receiver-rate.md) · [Exact discovery timing](solver-discovery.md)
 
+On a short physical recording, actually skipping alternate RF visits cut raw-to-PNG elapsed time from 24.85 to 19.70 seconds and CPU from 24.48 to 13.71 seconds. Both pipelines published all eight figures, but fitted position error increased from 1.66 to 3.02 km. Skipping visits changed carrier selections even on visits that the candidate kept. [End-to-end comparison and plot](alternate-visits.md)
+
 ## One full recording, both run orders
 
 The input comprised 1,200 sealed dual-antenna windows at the northern simulated site. Each invocation read the raw I/Q and started with a fresh output directory. The clock covered the receiver, both calibration fits, diagnostic grid, optimizer path, eight PNGs and standard report. The candidate combined detector `ab7b4765` with scan-scoped orbit parsing and the revised coarse salvage calculation. It ran on the same pinned CPU as the deployed baseline. [Candidate-first receipt](measurements/north-candidate-first.json) · [Baseline-first receipt](measurements/north-baseline-first.json)
