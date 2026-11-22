@@ -27,6 +27,8 @@ The experimental receiver batches arithmetic around the scout FFTs. It retains t
 
 The two public recordings use different simulated locations and pilot edges. Both receivers are 100 m inside their assigned square for timing. The reference for speed is deployed ALGO08v2. Timed runs read saved I/Q on one low-priority Gauss core and end after the web publication. The southern run used the candidate first. The northern run used deployment first. All location scoring follows inference. The two sites and their answers were previously used in development. They supply a transfer check before blind qualification.
 
+The public mirrored squares shift east–west and share latitude with the simulated receiver. They offer weak evidence about latitude recovery. Each site also uses only one pilot edge, so site and edge effects cannot be separated in this pair. The reserved geographic trial draws new centers, varies both coordinates of the offers, and scores only after predictions are locked. DS26, DS29 and DS30 all represent the same physical station. A second surveyed physical site remains an independent evidence gap. [Sampling and geographic audit](geographic-input-audit.md) · [Confirmation protocol](PROTOCOL.md)
+
 ## Reproduction
 
 Use the original public I/Q and frozen bundle from the Gauss experiments. Each pair needs a new output root. The paired launcher manages the common benchmark lock for both timed arms. The subsequent replays reuse the candidate's native detections and causal orbit archive. The shifted-offer driver checks the original search and screening centers against the designated site's published offer.
