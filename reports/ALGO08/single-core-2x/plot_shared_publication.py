@@ -75,6 +75,9 @@ def main(trial):
         cases = (("terminal-veto-north-inside", "Northern simulation · 100 m inside"),
                  ("DS30-0374-terminal-veto", "DS30-0374 · physical"),
                  ("DS30-0008-terminal-veto", "DS30-0008 · same physical station"))
+    if trial == "spectral":
+        cases = (("spectral-terminal-north-inside", "Northern simulation · lower pilot edge"),
+                 ("spectral-terminal-south-inside", "Southern simulation · upper pilot edge"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -111,7 +114,7 @@ def main(trial):
         errors.set_yticks([1, 0], ["Fixed zero", "Fitted"])
         longest_publication = max(longest_publication, *(run["elapsed_s"] for run in pair["runs"].values()))
         distance_limit = 62 if key == "north-far-shared" else 2
-        if trial in ("balanced", "packed-graph", "frame-plane", "terminal-guard"):
+        if trial in ("balanced", "packed-graph", "frame-plane", "terminal-guard", "spectral"):
             distance_limit = max(.1, errors.dataLim.xmax * 1.3)
         if trial in ("upper-edge", "full-search", "batch", "covariance"):
             distance_limit = max(distance_limit, errors.dataLim.xmax * 1.2)
@@ -140,6 +143,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search",
                         "endpoint", "lossless", "batch", "gc", "conditional", "compiler", "signed",
-                        "balanced", "covariance", "screened-stock", "packed-graph", "frame-plane", "terminal-guard"),
+                        "balanced", "covariance", "screened-stock", "packed-graph", "frame-plane", "terminal-guard",
+                        "spectral"),
                         default="shared")
     main(parser.parse_args().trial)

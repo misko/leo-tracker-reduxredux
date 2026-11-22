@@ -1,8 +1,9 @@
-"""Move the public northern search offer with its new raw receiver output held fixed."""
+"""Move a public search offer with its raw receiver output held fixed."""
 
 import argparse
 from pathlib import Path
 
+from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.digests import canonical_digest
 from tools.pipeline_eval.qualification.paired_publication import archive_identity
 from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
@@ -14,7 +15,15 @@ from .screened_stock_salvage_trial import digest, read, require_spec
 from .screened_tiled_graph_trial import KEYS, evidence_digests, solve, write
 
 
-def run(pair_path, bundle, scoring_key):
+def shifted_offers(site, original, offers):
+    if site not in ("north", "south"):
+        raise ValueError("Expected a public northern or southern development site")
+    if Algo08Region.parse(original) != Algo08Region.parse(offers[f"{site}-edge"]["offer"]):
+        raise ValueError("Recorded search and screening regions differ from the public near-inside offer")
+    return {name: offers[name]["offer"] for name in (f"{site}-mirror-outside", f"{site}-far")}
+
+
+def run(pair_path, bundle, scoring_key, site="north"):
     pair = read(pair_path)
     spec = pair["candidate_specification_digest"]
     require_spec(bundle, spec)
@@ -22,15 +31,12 @@ def run(pair_path, bundle, scoring_key):
         raise ValueError("Saved publication uses another solver or receiver")
     native = saved_native(pair_path, "candidate", pair["runs"]["candidate"])
     archive = Path(pair["archive"]["root"])
-    offers = saved_offers()
     original = pair["runs"]["candidate"]["receipt"]["region"]
-    if any(original[k] != offers["north-edge"]["offer"][k] for k in ("center", "width_km")):
-        raise ValueError("Expected the recorded northern near-inside offer")
+    offers = shifted_offers(site, original, saved_offers())
     if archive_identity(archive) != pair["archive"]:
         raise ValueError("Orbit catalogue differs from the raw publication")
     results = {}
-    for name in ("north-mirror-outside", "north-far"):
-        offer = offers[name]["offer"]
+    for name, offer in offers.items():
         result = solve(bundle, native, offer, archive)
         results[name] = {k: result.get(k) for k in (*KEYS, "solver_cpu_s", "solver_wall_s")}
         results[name].update(offer=offer, science=evidence_digests(result))
@@ -53,5 +59,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ("pair", "bundle", "key", "output"):
         parser.add_argument(key, type=Path)
+    parser.add_argument("--site", choices=("north", "south"), default="north")
     args = parser.parse_args()
-    write(args.output, run(args.pair, args.bundle, args.key))
+    write(args.output, run(args.pair, args.bundle, args.key, args.site))
