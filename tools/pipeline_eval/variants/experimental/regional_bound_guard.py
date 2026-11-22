@@ -42,18 +42,19 @@ def inspect_boundary(endpoints, width_km, score):
     return dict(result, **evaluate(points, width_km), evaluated=True)
 
 
-def causal_probes(prepared_tracks, archive, region):
+def causal_probes(prepared_tracks, archive, region, *, catalogue=None):
     """Use the original causal catalogue and exactly the saved all-track score."""
     from leo.analysis.localization_v3.elements import ElementParser
     from leo.operations.causal_tle_catalogue import causal_catalogue
     from leo.operations.tle_archive import TleArchiveError
     from tools.pipeline_eval.variants.experimental.regional_reassignment import evaluate as score
 
-    cutoff = prepared_tracks["metadata"]["causal_cutoff_utc_ns"]
-    try:
-        catalogue = causal_catalogue(archive, cutoff, element_parser=ElementParser())
-    except TleArchiveError as error:
-        raise ValueError("Causal archive unavailable for exterior diagnostic") from error
+    if catalogue is None:
+        cutoff = prepared_tracks["metadata"]["causal_cutoff_utc_ns"]
+        try:
+            catalogue = causal_catalogue(archive, cutoff, element_parser=ElementParser())
+        except TleArchiveError as error:
+            raise ValueError("Causal archive unavailable for exterior diagnostic") from error
     result = score(prepared_tracks, catalogue.catalogue, region)
     result["snapshots"] = sorted({row["snapshot_digest"] for row in catalogue.provenance})
     return result
@@ -89,10 +90,74 @@ def guard_inference(infer, score):
 @contextmanager
 def bound_exterior_veto(archive):
     """Opt in within one dedicated experimental solver process."""
+    from sgp4.api import accelerated
+
+    from leo.operations import localization_v3_inputs
+    from leo.operations.tle_archive import TleArchiveReader
+    from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
 
+    captured = None
+
     def score(tracks, region):
+        if (captured is not None and captured[0] is tracks
+                and captured[1] == tracks["metadata"]["causal_cutoff_utc_ns"]):
+            return causal_probes(tracks, archive, region, catalogue=captured[2])["points"]
         return causal_probes(tracks, archive, region)["points"]
 
-    with patch.object(v5_core, "infer", guard_inference(v5_core.infer, score)):
+    guarded = guard_inference(v5_core.infer, score)
+    if not accelerated or type(archive) is not TleArchiveReader:
+        with patch.object(v5_core, "infer", guarded):
+            yield
+        return
+
+    prepare_native = algo08_position.prepare_native_scan
+    normalize_values = algo08_position._prepared_values
+
+    @wraps(prepare_native)
+    def prepare(native, reader, *args, **kwargs):
+        nonlocal captured
+        captured = None
+        if type(reader) is not TleArchiveReader or reader.root != archive.root:
+            return prepare_native(native, reader, *args, **kwargs)
+        catalogue = None
+        build_catalogue = localization_v3_inputs.causal_catalogue
+
+        def capture(recent, cutoff, **options):
+            nonlocal catalogue
+            result = build_catalogue(recent, cutoff, **options)
+            if options.keys() <= {"element_parser"}:
+                catalogue = cutoff, result
+            return result
+
+        # Initial sky construction builds the same full causal catalogue before
+        # screening it. Accelerated SGP4 propagation copies the retained records.
+        with patch.object(localization_v3_inputs, "causal_catalogue", capture):
+            prepared = prepare_native(native, reader, *args, **kwargs)
+        if (catalogue is not None and prepared["status"] == "inputs_prepared"
+                and catalogue[0] == prepared["tracks"]["metadata"]["causal_cutoff_utc_ns"]):
+            captured = prepared, *catalogue
+        return prepared
+
+    @wraps(normalize_values)
+    def normalize(prepared):
+        nonlocal captured
+        pending, captured = captured, None
+        ready = normalize_values(prepared)
+        # Bind the handoff to the exact tracks object after JSON normalization.
+        if pending is not None and pending[0] is prepared:
+            captured = ready["tracks"], *pending[1:]
+        return ready
+
+    @wraps(guarded)
+    def infer(*args, **kwargs):
+        nonlocal captured
+        try:
+            return guarded(*args, **kwargs)
+        finally:
+            captured = None
+
+    with (patch.object(algo08_position, "prepare_native_scan", prepare),
+          patch.object(algo08_position, "_prepared_values", normalize),
+          patch.object(v5_core, "infer", infer)):
         yield

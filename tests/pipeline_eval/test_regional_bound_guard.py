@@ -4,7 +4,7 @@ from math import inf, nextafter
 import pytest
 
 from leo.analysis.localization_v3.region import SearchRegion
-from leo.operations.tle_archive import TleArchiveError
+from leo.operations.tle_archive import TleArchiveError, TleArchiveReader
 from tools.pipeline_eval.variants import v5_core
 from tools.pipeline_eval.variants.experimental.regional_bound_guard import (
     ARMS, bound_arms, bound_exterior_veto, causal_probes, guard_inference, inspect_boundary,
@@ -127,3 +127,71 @@ def test_archive_read_failure_keeps_a_boundary_fix():
     assert decision["bound_arms"] == ["c0"]
     assert not decision["would_withhold"]
     assert decision["diagnostic_error"] == "Causal archive unavailable for exterior diagnostic"
+
+
+def test_catalogue_handoff_binds_the_archive_cutoff_and_prepared_scan(monkeypatch, tmp_path):
+    from sgp4 import api
+
+    from leo.operations import localization_v3_inputs
+    from tools import algo08_position
+    from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+    archive = TleArchiveReader(tmp_path / "archive")
+    other = TleArchiveReader(tmp_path / "other")
+    materialized, scored = [], []
+
+    def build(reader, cutoff, *, element_parser):
+        catalogue = object()
+        materialized.append((reader.root, cutoff, catalogue))
+        return catalogue
+
+    def prepare(native, reader):
+        cutoff = native["cutoff"]
+        localization_v3_inputs.causal_catalogue(reader, native.get("catalogue_cutoff", cutoff),
+                                                element_parser=object())
+        return dict(status="inputs_prepared", sky={"bank": None},
+                    tracks={"metadata": {"causal_cutoff_utc_ns": cutoff}})
+
+    def score(tracks, reader, region, *, catalogue=None):
+        scored.append((tracks, reader, region, catalogue))
+        return {"points": []}
+
+    def infer(prepared, region, bound, stages, *, selected_evidence):
+        arms = {arm: {"endpoint_east_north_km": [HALF, 0.]} for arm in ARMS}
+        selected_evidence(prepared, {"arms": arms}, None)
+        return dict(status="ok", metrics={})
+
+    monkeypatch.setattr(api, "accelerated", True)
+    monkeypatch.setattr(localization_v3_inputs, "causal_catalogue", build)
+    monkeypatch.setattr(algo08_position, "prepare_native_scan", prepare)
+    monkeypatch.setattr(regional_bound_guard, "causal_probes", score)
+    monkeypatch.setattr(v5_core, "infer", infer)
+    northern = SearchRegion((52., 12.), WIDTH)
+    southern = SearchRegion((-36., 145.), WIDTH)
+
+    def run(reader, region, **native):
+        ready = algo08_position._prepared_values(algo08_position.prepare_native_scan(native, reader))
+        v5_core.infer(ready, region, None, {})
+        return ready
+
+    with bound_exterior_veto(archive):
+        first = run(TleArchiveReader(archive.root), northern, cutoff=1)
+        second = run(TleArchiveReader(archive.root), southern, cutoff=2)
+        v5_core.infer(first, southern, None, {})
+        different_archive = run(other, northern, cutoff=2)
+        different_cutoff = run(archive, northern, cutoff=3, catalogue_cutoff=2)
+        prepared = algo08_position.prepare_native_scan({"cutoff": 4}, archive)
+        changed = algo08_position._prepared_values(prepared)
+        changed["tracks"]["metadata"]["causal_cutoff_utc_ns"] = 5
+        v5_core.infer(changed, northern, None, {})
+
+    assert scored == [
+        (first["tracks"], archive, northern, materialized[0][2]),
+        (second["tracks"], archive, southern, materialized[1][2]),
+        (first["tracks"], archive, southern, None),
+        (different_archive["tracks"], archive, northern, None),
+        (different_cutoff["tracks"], archive, northern, None),
+        (changed["tracks"], archive, northern, None),
+    ]
+    assert algo08_position.prepare_native_scan is prepare
+    assert v5_core.infer is infer

@@ -17,7 +17,7 @@ The optional saved-solver guard dispatches the far-exterior diagnostic only if a
 
 The selected signed pair or accepted cavity pair supplies its original `endpoint_east_north_km` values before figure packet creation. A coordinate activates the check if it lies at the signed box limit or one representable binary64 step inward. This allows for one rounding step in the box update. The gate uses neither rendered coordinates nor a geographic margin. Missing, malformed, or out-of-box endpoint pairs cannot activate the diagnostic. [Compact optimizer](../../../tools/pipeline_eval/variants/compact_cavity_optimizer.py)
 
-After activation, the guard takes the same Graph tracks and reads the past-only TLE catalogue using the capture cutoff. It scores the original four inside radii and four exterior radii for both receiver groups with the same visibility and contrast likelihood. The frozen two-receiver rule determines whether to withhold both arms before building the figure packet. When the diagnostic is unavailable, incomplete, or does not vote to withhold, the original figure packet receives the selected pair. [Frozen veto geometry](regional-exterior-veto-protocol.md) · [All-track score](regional-reassignment.md)
+After activation, the guard takes the same Graph tracks and uses the full past-only TLE catalogue from the same preparation when available. It scores the original four inside radii and four exterior radii for both receiver groups with the same visibility and contrast likelihood. The frozen two-receiver rule determines whether to withhold both arms before building the figure packet. When the diagnostic is unavailable, incomplete, or does not vote to withhold, the original figure packet receives the selected pair. [Frozen veto geometry](regional-exterior-veto-protocol.md) · [All-track score](regional-reassignment.md)
 
 ## Saved-path audit
 
@@ -48,6 +48,17 @@ The northern near-edge and far offers used the same digest-verified saved detect
 | Far omitted | 0.126 | 2.775 |
 
 The solver hook already has the Graph tracks, so activation adds the catalogue and probe cost. An interior pair bypasses that work. These measurements rebuild only the diagnostic, without a new position fit or publication. The component tests cover representable optimizer limits, signed and cavity pair selection, fallback on missing evidence and archive errors, unchanged nonvetoed packet creation, and restoration when the experimental scope exits. [Component tests](../../../tests/pipeline_eval/test_regional_bound_guard.py)
+
+## Reusing the causal catalogue
+
+The solver prepares the complete catalogue before its regional sky screen. The guard takes that catalogue for the same normalized track packet, archive root and capture cutoff. The handoff lasts one inference attempt. The guard computes visibility and scores at all 96 probes for the current offer, with the full catalogue count as the mixture denominator. Scalar SGP4 and standalone diagnostic calls use the original catalogue construction. [Guard implementation](../../../tools/pipeline_eval/variants/experimental/regional_bound_guard.py)
+
+Two compact-solver replays on the archived northern detections timed both scorers within each activated guard call. The head-to-head timing covers the diagnostic only. Scorer order was reversed between offers. The 100 m inside offer kept both fixes and the far omitted offer withheld both arms. All point coordinates, pooled and receiver scores, owners, catalogue counts and snapshot digests matched both the original scorer and the saved probe archive. [Saved probe archive](measurements/regional-reassignment.json.gz)
+
+| Northern offer | Guard CPU, fresh → reused | Guard elapsed, fresh → reused |
+|---|---:|---:|
+| 100 m inside | 3.162 → 1.469 s | 3.202 → 1.485 s |
+| Far omitted | 3.224 → 1.369 s | 3.303 → 1.428 s |
 
 The experiment opts in by wrapping one saved solve in `bound_exterior_veto(archive)`. To repeat the independent audit and scorer measurement, use the original public publication root, the existing southern mirrored publication, and the northern saved detections already pinned in the probe packet. [Replay inputs and thresholds](regional-exterior-veto-protocol.md)
 
