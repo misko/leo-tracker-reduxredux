@@ -1,0 +1,650 @@
+{
+  "cases": {
+    "DS30-0008": {
+      "displacement_km_vs_deployed": {
+        "c0": 0.0,
+        "fitted_c": 0.0
+      },
+      "grid_locations": 179,
+      "grid_maximum_absolute_score_delta_vs_deployed": {
+        "c0": 7.275957614183426e-12,
+        "fitted_c": 7.275957614183426e-12
+      },
+      "observations": 7016,
+      "order": [
+        "stock",
+        "direct"
+      ],
+      "runs": {
+        "direct": {
+          "archive": {
+            "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0008/tle",
+            "snapshots_sha256": "sha256:0c9bdf4a80768161252ce2c28b4e96991276b6dc64ed3d6ff44d613a78b00ea2"
+          },
+          "as_written_receipt_sha256": "459a0ff5b3ce67bacc4e156a1a2d606a8c14b648c1fa409edf6b9fbad9b6c402",
+          "case": "DS30-0008",
+          "checks_against_margin_control": {
+            "arms": true,
+            "associated": true,
+            "both_arms_equal_deployed": true,
+            "endpoint_reuse_counts": true,
+            "objective_replay": true,
+            "orbit_policy": true,
+            "owners": true,
+            "position_grid": true,
+            "position_path": true,
+            "posterior_grid_handoff_counts": true,
+            "reason": true,
+            "status": true
+          },
+          "control_terminal_sha256": "aeb35242d24891c3c5db3ccc2fa8b1707f7cc8f08711ee17caa0a168894f0f75",
+          "mode": "direct",
+          "native": {
+            "baseline": "sha256:a84e1396dbe60ebd49f6ee28687b22c189270fd2cc6a492455914c286e9bf2bc",
+            "candidate": "sha256:635db6d0488a48a94208c1cd5d984d952e9034fd8d7d616bcf6759fe0f808558"
+          },
+          "offer": {
+            "center": [
+              37.906,
+              -122.545
+            ],
+            "screen_center": [
+              37.5,
+              -122.0
+            ],
+            "width_km": 25.0
+          },
+          "overlay_sha256": "8b24f19af9f2e73ee54ca25c3432875ee25e06cd5c0ee260cbd696c6042c6ff4",
+          "results": {
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.83571506807406,
+                  -122.47781954637544
+                ],
+                "rf_rms_hz": 129.70304006320353
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.83643124344206,
+                  -122.4793608859441
+                ],
+                "rf_rms_hz": 129.66293138224458
+              }
+            },
+            "associated": {
+              "c0": 4472,
+              "fitted_c": 4472
+            },
+            "endpoint_reuse": {
+              "context_rebuilds": 0,
+              "endpoint_calculations": 44,
+              "endpoint_cpu_s": 1.4847362350000033,
+              "models": 44,
+              "other_coordinate_calls": 0,
+              "repeated_endpoint_calls": 90,
+              "unsupported_context_calls": 0
+            },
+            "graph_path": {
+              "native_paths": 201,
+              "pack_ns": 3300480,
+              "packed_lanes": 16,
+              "search_ns": 20244415
+            },
+            "orbit_policy": "stock",
+            "owners": {
+              "c0": "sha256:289801ddaff95adc3b9926ab2987a0f8538815399a448eeb04186560fe0b155d",
+              "fitted_c": "sha256:289801ddaff95adc3b9926ab2987a0f8538815399a448eeb04186560fe0b155d"
+            },
+            "posterior_grid_handoff": {
+              "arithmetic": "permuted native posterior factor",
+              "curved_cpu_ns": 3699760695,
+              "factor_calls": 356,
+              "gram_or_check_cpu_ns": 20975408,
+              "prediction_calls": 356,
+              "predictive_kernel_cpu_ns": 1837599095
+            },
+            "reason": null,
+            "recovery_reuse": {
+              "executed_gates": 2,
+              "reused_pairs": 0
+            },
+            "screened_nomination": {
+              "completed_c0_score": 30653.16773963962,
+              "early_fits": 6,
+              "fallback": false,
+              "finish_fits": 3,
+              "initial_phase_fits": 9,
+              "initial_screen_cpu_s": 9.024466397,
+              "ranks": [
+                0,
+                1,
+                2
+              ],
+              "screen_c0_scores": [
+                30650.176771507708,
+                31365.68832195176,
+                31640.28282162212
+              ],
+              "winning_rank": 0
+            },
+            "solver_cpu_s": 53.637404654,
+            "solver_wall_s": 57.7829280430451,
+            "sparse_rank_projection": [
+              {
+                "active_rows": 588,
+                "calls": 16,
+                "catalogue_rows": 23616,
+                "column_requests": 3552,
+                "fallbacks": 0,
+                "materialized_bytes": 0,
+                "previous_full_copy_bytes": 2311911936,
+                "replacement_cells": 5317872,
+                "shifted_cpu_s": 0.14570714900000237
+              }
+            ],
+            "status": "ok",
+            "tle_records": {
+              "catalogues": 22,
+              "fallback": 0,
+              "records": 226875
+            }
+          },
+          "science": {
+            "objective_replay": "sha256:340263e5ab3bb60befcdef1e9aa2783dd345edb1301189ee0b3acd916f7d59c6",
+            "position_grid": "sha256:92071f64439f464a2a7d497f3cc8af6eb9048d603c2f0b44e042f60fcb46f6fd",
+            "position_path": "sha256:6b9a1bb2b085f80a28518dcfd152362094b07bc95cb3fb2c0a4c0de2da7a41d4"
+          },
+          "specification": "sha256:977e7dd61c23622cc05365f0a7743a0042a7edd590d88173faeace8590ca8fe3",
+          "timings": {
+            "direct_assembly_calls": 1466,
+            "direct_assembly_ns": 1665158760,
+            "history_selection_calls": 1022,
+            "history_selection_direct": 1022,
+            "history_selection_ns": 931061897,
+            "normal_selection_calls": 428,
+            "normal_selection_direct": 428,
+            "normal_selection_ns": 459448545
+          }
+        },
+        "stock": {
+          "archive": {
+            "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0008/tle",
+            "snapshots_sha256": "sha256:0c9bdf4a80768161252ce2c28b4e96991276b6dc64ed3d6ff44d613a78b00ea2"
+          },
+          "as_written_receipt_sha256": "c0f1d4ce18fe4f3fdecdd3f614bacbbab31c1cf5fb8dea29860ec4cf169e20fd",
+          "case": "DS30-0008",
+          "checks_against_margin_control": {
+            "arms": true,
+            "associated": true,
+            "both_arms_equal_deployed": true,
+            "endpoint_reuse_counts": true,
+            "objective_replay": true,
+            "orbit_policy": true,
+            "owners": true,
+            "position_grid": true,
+            "position_path": true,
+            "posterior_grid_handoff_counts": true,
+            "reason": true,
+            "status": true
+          },
+          "control_terminal_sha256": "aeb35242d24891c3c5db3ccc2fa8b1707f7cc8f08711ee17caa0a168894f0f75",
+          "mode": "stock",
+          "native": {
+            "baseline": "sha256:a84e1396dbe60ebd49f6ee28687b22c189270fd2cc6a492455914c286e9bf2bc",
+            "candidate": "sha256:635db6d0488a48a94208c1cd5d984d952e9034fd8d7d616bcf6759fe0f808558"
+          },
+          "offer": {
+            "center": [
+              37.906,
+              -122.545
+            ],
+            "screen_center": [
+              37.5,
+              -122.0
+            ],
+            "width_km": 25.0
+          },
+          "overlay_sha256": "8b24f19af9f2e73ee54ca25c3432875ee25e06cd5c0ee260cbd696c6042c6ff4",
+          "results": {
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.83571506807406,
+                  -122.47781954637544
+                ],
+                "rf_rms_hz": 129.70304006320353
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.83643124344206,
+                  -122.4793608859441
+                ],
+                "rf_rms_hz": 129.66293138224458
+              }
+            },
+            "associated": {
+              "c0": 4472,
+              "fitted_c": 4472
+            },
+            "endpoint_reuse": {
+              "context_rebuilds": 0,
+              "endpoint_calculations": 44,
+              "endpoint_cpu_s": 1.5365211710000057,
+              "models": 44,
+              "other_coordinate_calls": 0,
+              "repeated_endpoint_calls": 90,
+              "unsupported_context_calls": 0
+            },
+            "graph_path": {
+              "native_paths": 201,
+              "pack_ns": 3033411,
+              "packed_lanes": 16,
+              "search_ns": 19171621
+            },
+            "orbit_policy": "stock",
+            "owners": {
+              "c0": "sha256:289801ddaff95adc3b9926ab2987a0f8538815399a448eeb04186560fe0b155d",
+              "fitted_c": "sha256:289801ddaff95adc3b9926ab2987a0f8538815399a448eeb04186560fe0b155d"
+            },
+            "posterior_grid_handoff": {
+              "arithmetic": "permuted native posterior factor",
+              "curved_cpu_ns": 3851722217,
+              "factor_calls": 356,
+              "gram_or_check_cpu_ns": 19885540,
+              "prediction_calls": 356,
+              "predictive_kernel_cpu_ns": 1733993852
+            },
+            "reason": null,
+            "recovery_reuse": {
+              "executed_gates": 2,
+              "reused_pairs": 0
+            },
+            "screened_nomination": {
+              "completed_c0_score": 30653.16773963962,
+              "early_fits": 6,
+              "fallback": false,
+              "finish_fits": 3,
+              "initial_phase_fits": 9,
+              "initial_screen_cpu_s": 9.140483871999999,
+              "ranks": [
+                0,
+                1,
+                2
+              ],
+              "screen_c0_scores": [
+                30650.176771507708,
+                31365.68832195176,
+                31640.28282162212
+              ],
+              "winning_rank": 0
+            },
+            "solver_cpu_s": 56.159698878,
+            "solver_wall_s": 57.02830843348056,
+            "sparse_rank_projection": [
+              {
+                "active_rows": 588,
+                "calls": 16,
+                "catalogue_rows": 23616,
+                "column_requests": 3552,
+                "fallbacks": 0,
+                "materialized_bytes": 0,
+                "previous_full_copy_bytes": 2311911936,
+                "replacement_cells": 5317872,
+                "shifted_cpu_s": 0.15011634000000207
+              }
+            ],
+            "status": "ok",
+            "tle_records": {
+              "catalogues": 22,
+              "fallback": 0,
+              "records": 226875
+            }
+          },
+          "science": {
+            "objective_replay": "sha256:340263e5ab3bb60befcdef1e9aa2783dd345edb1301189ee0b3acd916f7d59c6",
+            "position_grid": "sha256:92071f64439f464a2a7d497f3cc8af6eb9048d603c2f0b44e042f60fcb46f6fd",
+            "position_path": "sha256:6b9a1bb2b085f80a28518dcfd152362094b07bc95cb3fb2c0a4c0de2da7a41d4"
+          },
+          "specification": "sha256:977e7dd61c23622cc05365f0a7743a0042a7edd590d88173faeace8590ca8fe3",
+          "timings": {
+            "history_selection_calls": 1022,
+            "history_selection_direct": 0,
+            "history_selection_ns": 2092330062,
+            "normal_selection_calls": 428,
+            "normal_selection_direct": 0,
+            "normal_selection_ns": 596500824,
+            "released_assembly_calls": 1466,
+            "released_assembly_ns": 2613365525
+          }
+        }
+      },
+      "site_reference_used": false,
+      "targeted_cpu_ns": {
+        "direct": 3055669202,
+        "stock": 5302196411
+      },
+      "targeted_saving_cpu_ns": 2246527209
+    },
+    "south": {
+      "displacement_km_vs_deployed": {
+        "c0": 0.0,
+        "fitted_c": 0.0
+      },
+      "grid_locations": 137,
+      "grid_maximum_absolute_score_delta_vs_deployed": {
+        "c0": 0.0,
+        "fitted_c": 0.0
+      },
+      "observations": 456,
+      "order": [
+        "direct",
+        "stock"
+      ],
+      "runs": {
+        "direct": {
+          "archive": {
+            "root": "/tmp/leo-regional-qZJKBw4W/public/tle",
+            "snapshots_sha256": "sha256:7aa06cab0502bcac70645a41a219bb6d53f1077f329e6f7ed79eb59a8794feec"
+          },
+          "as_written_receipt_sha256": "b4706eddb51df6286b10299f9eabc3946e8a798db02817c6305d5ce32af8f6b8",
+          "case": "south",
+          "checks_against_margin_control": {
+            "arms": true,
+            "associated": true,
+            "both_arms_equal_deployed": true,
+            "endpoint_reuse_counts": true,
+            "objective_replay": true,
+            "orbit_policy": true,
+            "owners": true,
+            "position_grid": true,
+            "position_path": true,
+            "posterior_grid_handoff_counts": true,
+            "reason": true,
+            "status": true
+          },
+          "control_terminal_sha256": "61977e87b119dfbbdf7afcf78c5a4bc6c681218ea2a78bd8f9310dfec724ee77",
+          "mode": "direct",
+          "native": {
+            "baseline": "sha256:9ead12e735906a95066b77dfcaca54e9bdf68dc0a2c816a95fa3bca3419a3d49",
+            "candidate": "sha256:55af05c3c689e9b98a09bcd9db133cca16b916982badb31aa3e8912848882435"
+          },
+          "offer": {
+            "center": [
+              -32.95111322641392,
+              21.335901440239976
+            ],
+            "screen_center": [
+              -32.95111322641392,
+              21.335901440239976
+            ],
+            "width_km": 25.0
+          },
+          "overlay_sha256": "8b24f19af9f2e73ee54ca25c3432875ee25e06cd5c0ee260cbd696c6042c6ff4",
+          "results": {
+            "arms": {
+              "c0": {
+                "latlon": [
+                  -32.95778219631239,
+                  21.464976263256396
+                ],
+                "rf_rms_hz": 6.502298681897521
+              },
+              "fitted_c": {
+                "latlon": [
+                  -32.96068686749378,
+                  21.465617335003238
+                ],
+                "rf_rms_hz": 6.391939882727272
+              }
+            },
+            "associated": {
+              "c0": 266,
+              "fitted_c": 266
+            },
+            "endpoint_reuse": {
+              "context_rebuilds": 0,
+              "endpoint_calculations": 19,
+              "endpoint_cpu_s": 0.01732650099999944,
+              "models": 19,
+              "other_coordinate_calls": 0,
+              "repeated_endpoint_calls": 36,
+              "unsupported_context_calls": 0
+            },
+            "graph_path": {
+              "native_paths": 40,
+              "pack_ns": 995490,
+              "packed_lanes": 16,
+              "search_ns": 1223806
+            },
+            "orbit_policy": "stock",
+            "owners": {
+              "c0": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "fitted_c": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038"
+            },
+            "posterior_grid_handoff": {
+              "arithmetic": "permuted native posterior factor"
+            },
+            "reason": null,
+            "recovery_reuse": {
+              "executed_gates": 1,
+              "reused_pairs": 0
+            },
+            "screened_nomination": {
+              "completed_c0_score": 377.5661956813403,
+              "early_fits": 6,
+              "fallback": false,
+              "finish_fits": 3,
+              "initial_phase_fits": 9,
+              "initial_screen_cpu_s": 0.09810359499999999,
+              "ranks": [
+                0,
+                1,
+                2
+              ],
+              "screen_c0_scores": [
+                377.5665269723655,
+                454.4396736104227,
+                578.1894758189178
+              ],
+              "winning_rank": 0
+            },
+            "solver_cpu_s": 4.428369943,
+            "solver_wall_s": 4.4981114668771625,
+            "sparse_rank_projection": [
+              {
+                "active_rows": 114,
+                "calls": 16,
+                "catalogue_rows": 25888,
+                "column_requests": 448,
+                "fallbacks": 0,
+                "materialized_bytes": 0,
+                "previous_full_copy_bytes": 133582080,
+                "replacement_cells": 60648,
+                "shifted_cpu_s": 0.0048013899999999055
+              }
+            ],
+            "status": "ok",
+            "tle_records": {
+              "catalogues": 25,
+              "fallback": 0,
+              "records": 260676
+            }
+          },
+          "science": {
+            "objective_replay": "sha256:340263e5ab3bb60befcdef1e9aa2783dd345edb1301189ee0b3acd916f7d59c6",
+            "position_grid": "sha256:76de7b4a7a5a5936acdb40ed39e6f79c426353467d8f8315fb991b7fc2c97d1d",
+            "position_path": "sha256:99c4344561f19ae26ce4ae03bb7a6ae98b4ad9295ccc60192e183e48473fc494"
+          },
+          "specification": "sha256:445744b4401d14d42a62130dca85882fd9062eb32627a9046e62205650dddb28",
+          "timings": {
+            "direct_assembly_calls": 731,
+            "direct_assembly_ns": 44428845,
+            "history_selection_calls": 565,
+            "history_selection_direct": 565,
+            "history_selection_ns": 9691632,
+            "normal_selection_calls": 150,
+            "normal_selection_direct": 150,
+            "normal_selection_ns": 2279963
+          }
+        },
+        "stock": {
+          "archive": {
+            "root": "/tmp/leo-regional-qZJKBw4W/public/tle",
+            "snapshots_sha256": "sha256:7aa06cab0502bcac70645a41a219bb6d53f1077f329e6f7ed79eb59a8794feec"
+          },
+          "as_written_receipt_sha256": "ca163f764e4d08694da7152b01e73f0160e48202d4110a48b0237e475f24a925",
+          "case": "south",
+          "checks_against_margin_control": {
+            "arms": true,
+            "associated": true,
+            "both_arms_equal_deployed": true,
+            "endpoint_reuse_counts": true,
+            "objective_replay": true,
+            "orbit_policy": true,
+            "owners": true,
+            "position_grid": true,
+            "position_path": true,
+            "posterior_grid_handoff_counts": true,
+            "reason": true,
+            "status": true
+          },
+          "control_terminal_sha256": "61977e87b119dfbbdf7afcf78c5a4bc6c681218ea2a78bd8f9310dfec724ee77",
+          "mode": "stock",
+          "native": {
+            "baseline": "sha256:9ead12e735906a95066b77dfcaca54e9bdf68dc0a2c816a95fa3bca3419a3d49",
+            "candidate": "sha256:55af05c3c689e9b98a09bcd9db133cca16b916982badb31aa3e8912848882435"
+          },
+          "offer": {
+            "center": [
+              -32.95111322641392,
+              21.335901440239976
+            ],
+            "screen_center": [
+              -32.95111322641392,
+              21.335901440239976
+            ],
+            "width_km": 25.0
+          },
+          "overlay_sha256": "8b24f19af9f2e73ee54ca25c3432875ee25e06cd5c0ee260cbd696c6042c6ff4",
+          "results": {
+            "arms": {
+              "c0": {
+                "latlon": [
+                  -32.95778219631239,
+                  21.464976263256396
+                ],
+                "rf_rms_hz": 6.502298681897521
+              },
+              "fitted_c": {
+                "latlon": [
+                  -32.96068686749378,
+                  21.465617335003238
+                ],
+                "rf_rms_hz": 6.391939882727272
+              }
+            },
+            "associated": {
+              "c0": 266,
+              "fitted_c": 266
+            },
+            "endpoint_reuse": {
+              "context_rebuilds": 0,
+              "endpoint_calculations": 19,
+              "endpoint_cpu_s": 0.01773926599999953,
+              "models": 19,
+              "other_coordinate_calls": 0,
+              "repeated_endpoint_calls": 36,
+              "unsupported_context_calls": 0
+            },
+            "graph_path": {
+              "native_paths": 40,
+              "pack_ns": 1001432,
+              "packed_lanes": 16,
+              "search_ns": 1271157
+            },
+            "orbit_policy": "stock",
+            "owners": {
+              "c0": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "fitted_c": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038"
+            },
+            "posterior_grid_handoff": {
+              "arithmetic": "permuted native posterior factor"
+            },
+            "reason": null,
+            "recovery_reuse": {
+              "executed_gates": 1,
+              "reused_pairs": 0
+            },
+            "screened_nomination": {
+              "completed_c0_score": 377.5661956813403,
+              "early_fits": 6,
+              "fallback": false,
+              "finish_fits": 3,
+              "initial_phase_fits": 9,
+              "initial_screen_cpu_s": 0.09820530799999982,
+              "ranks": [
+                0,
+                1,
+                2
+              ],
+              "screen_c0_scores": [
+                377.5665269723655,
+                454.4396736104227,
+                578.1894758189178
+              ],
+              "winning_rank": 0
+            },
+            "solver_cpu_s": 4.473486849,
+            "solver_wall_s": 4.553690610453486,
+            "sparse_rank_projection": [
+              {
+                "active_rows": 114,
+                "calls": 16,
+                "catalogue_rows": 25888,
+                "column_requests": 448,
+                "fallbacks": 0,
+                "materialized_bytes": 0,
+                "previous_full_copy_bytes": 133582080,
+                "replacement_cells": 60648,
+                "shifted_cpu_s": 0.004692845000001888
+              }
+            ],
+            "status": "ok",
+            "tle_records": {
+              "catalogues": 25,
+              "fallback": 0,
+              "records": 260676
+            }
+          },
+          "science": {
+            "objective_replay": "sha256:340263e5ab3bb60befcdef1e9aa2783dd345edb1301189ee0b3acd916f7d59c6",
+            "position_grid": "sha256:76de7b4a7a5a5936acdb40ed39e6f79c426353467d8f8315fb991b7fc2c97d1d",
+            "position_path": "sha256:99c4344561f19ae26ce4ae03bb7a6ae98b4ad9295ccc60192e183e48473fc494"
+          },
+          "specification": "sha256:445744b4401d14d42a62130dca85882fd9062eb32627a9046e62205650dddb28",
+          "timings": {
+            "history_selection_calls": 565,
+            "history_selection_direct": 0,
+            "history_selection_ns": 11830036,
+            "normal_selection_calls": 150,
+            "normal_selection_direct": 0,
+            "normal_selection_ns": 2521248,
+            "released_assembly_calls": 731,
+            "released_assembly_ns": 54493184
+          }
+        }
+      },
+      "site_reference_used": false,
+      "targeted_cpu_ns": {
+        "direct": 56400440,
+        "stock": 68844468
+      },
+      "targeted_saving_cpu_ns": 12444028
+    }
+  },
+  "margin_receipt_sha256": "c3c181e9dbf3890c1158b3d16554cc38edcdfbdadae622c4abafa5b7f92b38b6",
+  "runner_sha256": "7ac4c6441760a65d22a490abf90ef40ec7f444b7902ad8670bfd1d476d74d554",
+  "timing_scope": "Complete saved detection to evidence packet, pinned Gauss CPU 2",
+  "validation": "Endpoint and handoff elapsed counters were removed from parity checks; no science fields removed beyond evidence binding and elapsed time."
+}
