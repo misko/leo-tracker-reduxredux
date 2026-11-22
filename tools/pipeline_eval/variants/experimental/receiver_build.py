@@ -161,7 +161,7 @@ def profile_source(text, signatures):
 
 
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
-          pack_refine=True, profile=False):
+          pack_refine=True, profile=False, tracking=False):
     if (avx2 or fma) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
     recipe = json.loads((PINNED / "build.json").read_bytes())
@@ -174,6 +174,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
     source_paths = [PINNED / arg for arg in args[first_source:] if arg.endswith(".c")]
     if profile:
         source_paths.append(HERE / "receiver_profile.c")
+    if tracking:
+        from .receiver_tracking_overlay import measure_overlay, timing_overlay
     with TemporaryDirectory(dir=output.parent) as work:
         scratch = Path(work)
         objects = []
@@ -185,6 +187,10 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = fftw_timing(source, crop)
                 if early_gate:
                     source = group_gate(source)
+                if tracking:
+                    source = timing_overlay(source)
+            if tracking and path.name == "two_carrier_receiver.c":
+                source = measure_overlay(source)
             if reuse:
                 if path.name == "delay_product_kernel.c" and platform.machine() == "x86_64":
                     source = paired_fir(source)
@@ -232,10 +238,11 @@ def main():
     parser.add_argument("--pack-refine", action=argparse.BooleanOptionalAction, default=True,
                         help="pack coarse carrier refinement accumulators while retaining the released order")
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument("--tracking", action="store_true")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
-          profile=args.profile)
+          profile=args.profile, tracking=args.tracking)
 
 
 if __name__ == "__main__":
