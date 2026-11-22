@@ -2,10 +2,10 @@
 
 import json
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from time import perf_counter
 from unittest.mock import patch
-from contextlib import contextmanager
 
 import numpy as np
 
@@ -63,13 +63,11 @@ def propagation_times(original, extra):
 def corner_support():
     from leo.analysis.localization_v3 import discovery, scan
     from leo.analysis.localization_v3.orbits import ecef_states
-
     from leo.operations import localization_v3_inputs
     from leo.sky.propagation import ElementSetCatalogue
 
     original_bank = localization_v3_inputs.regional_bank
     original_explore = discovery.explore
-    original_shifted = scan.ScanLikelihood.shifted
     nominal = {}
     work = dict(corner_projections_extended=0, sgp4_calls=0, sgp4_state_count=0, new_state_count=0,
                 support_wall_s=0.0, max_augmented_bank_bytes=0, added_knots_s=[])
@@ -85,10 +83,11 @@ def corner_support():
         ):
             return original_explore(context, state, anchor, method, *args, **kwargs)
         states = {}
+        original_shifted = context.shifted
 
-        def shifted(owner, base, phases, point, extra=None):
-            if owner is not context or extra is not None:
-                return original_shifted(owner, base, phases, point, extra)
+        def shifted(base, phases, point, extra=None):
+            if extra is not None:
+                return original_shifted(base, phases, point, extra)
             original_prepare = scan.prepare_phase_geometry
 
             def prepare(bank, times, active_phases, *, derivative_step_s=DERIVATIVE_STEP_S):
@@ -153,9 +152,10 @@ def corner_support():
                 return stencil
 
             with patch.object(scan, "prepare_phase_geometry", prepare):
-                return original_shifted(owner, base, phases, point, extra)
+                return original_shifted(base, phases, point, extra)
 
-        with patch.object(scan.ScanLikelihood, "shifted", shifted):
+        # Sparse ranking installs its own shifted method on this instance.
+        with patch.object(context, "shifted", shifted):
             return original_explore(context, state, anchor, method, *args, **kwargs)
 
     with (patch.object(localization_v3_inputs, "regional_bank", regional),
