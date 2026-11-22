@@ -13,7 +13,7 @@ from leo.storage.errors import BundleCorruptionError
 from leo.storage.scanner import ScannerIqStore
 
 
-def read_regular(path, maximum_bytes):
+def read_regular(path, maximum_bytes, *, hash_block=None):
     descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
     try:
         before = os.fstat(descriptor)
@@ -24,9 +24,12 @@ def read_regular(path, maximum_bytes):
         view = memoryview(np.empty(before.st_size, dtype=np.uint8))
         offset = 0
         while offset < len(view):
-            count = os.readv(descriptor, [view[offset:]])
+            block = view[offset:] if hash_block is None else view[offset:offset + 256 * 1024]
+            count = os.readv(descriptor, [block])
             if not count:
                 raise BundleCorruptionError("scanner IQ bundle member ended while reading")
+            if hash_block is not None:
+                hash_block(block[:count])
             offset += count
         extra = os.read(descriptor, 1)
         after = os.fstat(descriptor)
