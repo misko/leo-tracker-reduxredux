@@ -17,6 +17,7 @@ SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
 CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
 RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layout", "lossless-raster")
 INGRESS_MODES = ("stock", "compressed-buffer", "paired-sha256")
+SCHEDULE_MODES = ("all", "bursts", "alternate", "deferred", "conditional-residual")
 PNG_LIBRARIES = {"png_filter": "png-filter.so", "png_deflate": "png-deflate.so"}
 
 
@@ -40,8 +41,16 @@ def run(args, specification):
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
     schedule = specification.get("schedule", "all")
-    if schedule not in ("all", "bursts", "alternate", "deferred"):
+    if schedule not in SCHEDULE_MODES:
         raise ValueError("Unknown receiver schedule")
+    conditional_detector = None
+    if schedule == "conditional-residual":
+        from tools.pipeline_eval.variants.experimental.residual_receiver import (
+            ResidualReceiver, require_native_pin,
+        )
+        require_native_pin(digest)
+        conditional_detector = detector.read_bytes()
+        require_native_pin(sha256(conditional_detector).hexdigest())
     startup = specification.get("startup", "stock")
     if startup not in ("stock", "lazy-exports"):
         raise ValueError("Unknown package startup mode")
@@ -63,6 +72,9 @@ def run(args, specification):
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
         for name in (*algo08_scan.PINS, "native", "projector.so"):
+            if name == "cancellation-factors.so" and conditional_detector is not None:
+                (assets / name).write_bytes(conditional_detector)
+                continue
             source = detector if name == "cancellation-factors.so" else RELEASE/"assets"/name
             (assets/name).symlink_to(source)
         # The normal publication path checks these pins before it opens the I/Q.
@@ -95,6 +107,9 @@ def run(args, specification):
             from tools.pipeline_eval.variants.experimental.deferred_receiver import DeferredReceiver
             deferred = DeferredReceiver(max_pending=64)
             stack.enter_context(patch.object(algo08_scan, "detector", deferred.wrap(algo08_scan.detector)))
+        if schedule == "conditional-residual":
+            receiver = ResidualReceiver()
+            stack.enter_context(patch.object(algo08_scan, "detector", receiver.detector))
         if rendering in ("shared-orbits", "shared-pixels"):
             from leo.presentation import fast_standard_analysis
             from tools.pipeline_eval.variants.experimental.shared_orbit_figures import render_shared
@@ -175,6 +190,8 @@ def run(args, specification):
         if schedule == "deferred":
             result["deferred_continuation"] = dict(pending_lane_budget=64, native_calls=deferred.native_calls,
                                                    query_cpu_ns=deferred.query_cpu_ns, **deferred.planner.counts)
+        if schedule == "conditional-residual":
+            result["conditional_residual"] = receiver.receipt()
         if endpoint_reuse:
             result["endpoint_reuse"] = endpoint_counts
         if recovery_reuse:

@@ -7,7 +7,7 @@ import shutil
 
 from .experimental_publication import (
     CAUSAL_MODES, DISCOVERY_MODES, INGRESS_MODES, PNG_LIBRARIES, RELEASE, RENDERING_MODES,
-    SALVAGE_MODES, TABLE_MODES,
+    SALVAGE_MODES, SCHEDULE_MODES, TABLE_MODES,
 )
 
 
@@ -35,6 +35,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
             libraries[name] = (content, digest)
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
+    if schedule not in SCHEDULE_MODES:
+        raise ValueError("Unknown receiver schedule")
     if type(endpoint_reuse) is not bool:
         raise ValueError("Expected a Boolean endpoint reuse selection")
     if type(recovery_reuse) is not bool:
@@ -90,6 +92,13 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     if schedule == "deferred":
         sources.extend(VARIANTS / "experimental" / name for name in
                        ("deferred_continuation.py", "deferred_receiver.py"))
+    if schedule == "conditional-residual":
+        from ..variants.experimental.residual_receiver import require_native_pin, verify_schedule
+
+        require_native_pin(expected_sha256)
+        rule = VARIANTS / "experimental/residual_schedule.py"
+        verify_schedule(checkout / rule)
+        sources.extend((rule, VARIANTS / "experimental/residual_receiver.py"))
     output.mkdir(parents=True, exist_ok=False)
     shutil.copytree(release / "tools", output / "tools", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     digests = {}
@@ -100,6 +109,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         digests[str(name)] = hashlib.sha256(dest.read_bytes()).hexdigest()
     binary = output / "receiver.so"
     binary.write_bytes(detector_bytes)
+    if schedule == "conditional-residual":
+        digests[binary.name] = expected_sha256
     spec = dict(detector=str(binary.resolve()), detector_sha256=expected_sha256,
                 solver=solver, ingress=ingress, schedule=schedule, sources=digests)
     if paired_sha256 is not None:
@@ -135,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("--solver", choices=("stock", *CAUSAL_MODES), required=True)
     parser.add_argument("--ingress", choices=INGRESS_MODES, required=True)
     parser.add_argument("--paired-sha256", nargs=2, metavar=("LIBRARY", "SHA256"))
-    parser.add_argument("--schedule", choices=("all", "bursts", "alternate", "deferred"), default="all")
+    parser.add_argument("--schedule", choices=SCHEDULE_MODES, default="all")
     parser.add_argument("--rendering", choices=RENDERING_MODES, default="individual")
     parser.add_argument("--png-filter", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
     parser.add_argument("--png-deflate", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
