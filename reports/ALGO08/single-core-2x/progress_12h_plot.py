@@ -108,6 +108,28 @@ def load_groups(report=HERE, selected=None):
     return physical, simulations
 
 
+def november_22_1611_groups(report=HERE):
+    receipts = report / "measurements"
+    physical, _ = load_groups(report, selected=receipts / "fractional-selected-four-stage.json")
+    # Compare the three builds that finished the same four physical recordings.
+    labels = {
+        "Conditional residual scans": "Conditional second scan",
+        "Full scans + collapsed solver": "Two scans + collapsed solver",
+        "Selected exact fractional": "Two scans + exact scores",
+    }
+    complete = [Group(labels[group.label], group.digest, group.assigned, group.pairs)
+                for group in physical if group.label in labels and len(group.pairs) == 4]
+    sides = [simulated_group(
+        side, read(receipts / f"exact-curved-lookahead-{side}-inside.json"),
+        read(receipts / f"exact-curved-lookahead-{side}-audit.json"),
+    ) for side in ("north", "south")]
+    if sides[0].digest != sides[1].digest:
+        raise ValueError("A combined distribution requires the same frozen candidate")
+    public = Group("Exact scores + direct solver", sides[0].digest, 2,
+                   tuple(side.pairs[0] for side in sides))
+    return complete, [public]
+
+
 def ecdf(group, method, arm, limit):
     """Treat a missing fix as missing mass at every finite error, not as zero."""
     values = [row.errors[method][arm] for row in group.pairs]
@@ -209,7 +231,8 @@ def error_figure(physical, simulations, output):
     max_value = max(valid_errors, default=0.)
     limit = max(.5, ceil((max_value + .05) * 2) / 2)
     fig, axes = plt.subplots(len(groups), 2, figsize=(13.3, 2.0 + 1.35 * len(groups)), sharex=True)
-    fig.subplots_adjust(left=.268, right=.97, top=.866, bottom=.102, hspace=.47, wspace=.2)
+    fig.subplots_adjust(left=.268, right=.97, top=.847 if len(groups) <= 4 else .866,
+                        bottom=.102, hspace=.47, wspace=.2)
     heading(fig, "Horizontal position error",
             "Share of matched recordings at or below each error. Near-equal curves overlap.",
             error=True)
@@ -248,7 +271,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--selected-inventory", type=Path)
     parser.add_argument("--output-dir", type=Path, default=HERE)
+    parser.add_argument("--snapshot", choices=("1532", "1611"), default="1532")
     args = parser.parse_args()
-    physical_groups, simulation_groups = load_groups(selected=args.selected_inventory)
-    timing_figure(physical_groups, simulation_groups, args.output_dir / "progress_12h_timing.png")
-    error_figure(physical_groups, simulation_groups, args.output_dir / "progress_12h_error.png")
+    if args.snapshot == "1611":
+        if args.selected_inventory:
+            parser.error("The 16:11 snapshot uses the archived four-case inventory")
+        physical_groups, simulation_groups = november_22_1611_groups()
+        stem = "progress_1611"
+    else:
+        physical_groups, simulation_groups = load_groups(selected=args.selected_inventory)
+        stem = "progress_12h"
+    timing_figure(physical_groups, simulation_groups, args.output_dir / f"{stem}_timing.png")
+    error_figure(physical_groups, simulation_groups, args.output_dir / f"{stem}_error.png")

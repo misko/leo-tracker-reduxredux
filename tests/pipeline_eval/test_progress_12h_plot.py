@@ -34,3 +34,16 @@ def test_mismatched_inventory_coverage_is_rejected():
              "coverage": {"verified": ["A"]}}
     with pytest.raises(ValueError, match="verified recording count"):
         PLOT["physical_group"]("test", stage, {})
+
+
+def test_1611_snapshot_pairs_same_roof_ids_and_separates_public_signals():
+    physical, (public,) = PLOT["november_22_1611_groups"]()
+    assert len(physical) == 3
+    for group in physical:
+        assert [pair.label for pair in group.pairs] == [
+            "DS30-0374", "DS30-0008", "DS30-0155", "DS30-0001",
+        ]
+    assert [pair.label for pair in public.pairs] == ["North simulation", "South simulation"]
+    assert physical[-1].digest != public.digest
+    for pair in (*physical[-1].pairs, *public.pairs):
+        assert pair.errors["baseline"] == pair.errors["candidate"]
