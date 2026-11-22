@@ -163,8 +163,8 @@ def profile_source(text, signatures):
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
           pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False,
           short_aperture=False, adjacent_primary=False, pack_stencil=False, phase_free=False,
-          batch_refine=False):
-    if (avx2 or fma or pack_stencil) and platform.machine() != "x86_64":
+          batch_refine=False, fractional_batch=False):
+    if (avx2 or fma or pack_stencil or fractional_batch) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
     if sum((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)) > 1:
         raise ValueError("build each experimental scout or audit separately")
@@ -244,6 +244,10 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = verifier_overlay(source)
             if phase_free and path.name == "refine_bank.c":
                 source += '\n#include "receiver_phase_free_kernel.inc"\n'
+            if fractional_batch and path.name == "refine_bank.c":
+                source = replace(source, 'void correlated_fractional(',
+                                 'static void correlated_fractional_reference(')
+                source += '\n#include "receiver_fractional_batch.inc"\n'
             if phase_free and path.name == "portable_verifier.c":
                 source = phase_free_overlay(source)
             if phase_free and path.name == "two_carrier_receiver.c":
@@ -299,13 +303,15 @@ def main():
     parser.add_argument("--pack-stencil", action="store_true")
     parser.add_argument("--phase-free", action="store_true")
     parser.add_argument("--batch-refine", action="store_true")
+    parser.add_argument("--fractional-batch", action="store_true")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
           profile=args.profile, tracking=args.tracking, projection=args.projection,
           shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture,
           adjacent_primary=args.adjacent_primary, pack_stencil=args.pack_stencil,
-          phase_free=args.phase_free, batch_refine=args.batch_refine)
+          phase_free=args.phase_free, batch_refine=args.batch_refine,
+          fractional_batch=args.fractional_batch)
 
 
 if __name__ == "__main__":
