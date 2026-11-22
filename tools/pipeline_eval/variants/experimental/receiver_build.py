@@ -161,11 +161,11 @@ def profile_source(text, signatures):
 
 
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
-          pack_refine=True, profile=False, tracking=False, projection=False):
+          pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False):
     if (avx2 or fma) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
-    if tracking and projection:
-        raise ValueError("build the two experimental scouts separately")
+    if sum((tracking, projection, shortlist_audit)) > 1:
+        raise ValueError("build each experimental scout or audit separately")
     recipe = json.loads((PINNED / "build.json").read_bytes())
     for name, expected in recipe["source_digests"].items():
         if hashlib.sha256((PINNED / name).read_bytes()).hexdigest() != expected:
@@ -180,6 +180,9 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
         from .receiver_tracking_overlay import measure_overlay, timing_overlay
     if projection:
         from .receiver_projection_overlay import measure_overlay, timing_overlay
+    if shortlist_audit:
+        from .receiver_shortlist_overlay import measure_overlay, timing_overlay
+    overlay = tracking or projection or shortlist_audit
     with TemporaryDirectory(dir=output.parent) as work:
         scratch = Path(work)
         objects = []
@@ -191,9 +194,9 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = fftw_timing(source, crop)
                 if early_gate:
                     source = group_gate(source)
-                if tracking or projection:
+                if overlay:
                     source = timing_overlay(source)
-            if (tracking or projection) and path.name == "two_carrier_receiver.c":
+            if overlay and path.name == "two_carrier_receiver.c":
                 source = measure_overlay(source)
             if reuse:
                 if path.name == "delay_product_kernel.c" and platform.machine() == "x86_64":
@@ -244,10 +247,12 @@ def main():
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--tracking", action="store_true")
     parser.add_argument("--projection", action="store_true")
+    parser.add_argument("--shortlist-audit", action="store_true")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
-          profile=args.profile, tracking=args.tracking, projection=args.projection)
+          profile=args.profile, tracking=args.tracking, projection=args.projection,
+          shortlist_audit=args.shortlist_audit)
 
 
 if __name__ == "__main__":
