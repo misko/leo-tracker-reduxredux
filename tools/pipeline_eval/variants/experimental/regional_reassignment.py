@@ -131,3 +131,18 @@ def evaluate(prepared, catalogue, region):
     return dict(points=points, catalogue_orbits=catalogue_size, potentially_visible_orbits=len(labels),
                 track_count=len(tracks), graph_points=len(graph_ids), original_points=len(rows),
                 receiver_points=counts)
+
+
+def summarize(points):
+    """Use the sign of the pooled gain. Receiver-specific maxima are descriptive."""
+    inside, exterior = ([point for point in points if point["side"] == side] for side in RADII)
+
+    def compare(score):
+        best_inside = max(inside, key=score)
+        best_exterior = max(exterior, key=score)
+        gain = score(best_exterior) - score(best_inside)
+        return dict(gain=gain, inside=best_inside["xy_km"], exterior=best_exterior["xy_km"])
+
+    pooled = compare(lambda point: point["score"])
+    receivers = {r: compare(lambda point: point["receiver_scores"][r]) for r in points[0]["receiver_scores"]}
+    return dict(pooled=pooled, receivers=receivers, would_withhold=pooled["gain"] > 0)

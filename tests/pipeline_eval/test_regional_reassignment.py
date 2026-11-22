@@ -95,3 +95,13 @@ def test_all_native_observations_stay_in_the_denominator_when_owners_change(monk
                            np.zeros((2, 3)), labels, len(labels))
     assert positive["score"] == pytest.approx(2 * ratio / 8)
     assert negative["receiver_scores"] == pytest.approx({"1": ratio / 4, "2": ratio / 4})
+
+
+def test_only_a_strictly_positive_pooled_gain_would_withhold():
+    inside = dict(side="inside", xy_km=[1, 0], score=2., receiver_scores={"1": 1., "2": 3.})
+    outside = dict(side="exterior", xy_km=[5, 0], score=2., receiver_scores={"1": 2., "2": 2.})
+    tied = study.summarize([inside, outside])
+    assert not tied["would_withhold"]
+    assert tied["receivers"]["1"]["gain"] > 0 and tied["receivers"]["2"]["gain"] < 0
+    assert study.summarize([inside, dict(outside, score=3.)])["would_withhold"]
+    assert not study.summarize([inside, dict(outside, score=1.)])["would_withhold"]

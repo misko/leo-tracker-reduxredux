@@ -13,7 +13,7 @@ from leo.analysis.polynomial_tracklets import TrackConfig
 from leo.contracts.algo08_region import Algo08Region
 from leo.operations.causal_tle_catalogue import causal_catalogue
 from leo.operations.tle_archive import TleArchiveReader
-from tools.pipeline_eval.variants.experimental.regional_reassignment import evaluate
+from tools.pipeline_eval.variants.experimental.regional_reassignment import evaluate, summarize
 
 
 def main():
@@ -37,7 +37,7 @@ def main():
     catalogue_cpu = process_time() - began
     began = process_time()
     result = evaluate(tracks, catalogue.catalogue, region)
-    result.update(offer=offer.document(), native_sha256=digest,
+    result.update(offer=offer.document(), native_sha256=digest, verdict=summarize(result["points"]),
                   snapshots=sorted({row["snapshot_digest"] for row in catalogue.provenance}),
                   cpu_s=dict(graph=tracks_cpu, catalogue=catalogue_cpu, probes=process_time() - began))
     print(json.dumps(result, allow_nan=False))

@@ -1,0 +1,23 @@
+# All-track regional evidence with location-specific satellite assignments
+
+The pooled score favored the offered square for the valid northern near-edge offer and favored the exterior for both far-omission controls. Both disjoint receiver groups agreed on those three signs. The valid near-edge margin was only **0.000545 log score per original observation**. The simple sign was frozen before checking the remaining public development offers.
+
+## Matched observations and causal alternatives
+
+The trial starts from the exact saved detections and builds the same native Graph tracks. Every complete track enters the diagnostic, including tracks the production fit left unassociated. Each point uses the same original observation denominator. Observations outside all Graph tracks contribute the fixed outlier baseline. The number of observations or possible owners never renormalizes a probe score. The observations are also partitioned by physical receiver and scored independently. The partitions share the capture and orbital hypotheses.
+
+Each point can assign a different causal catalogue satellite to each track. The full original causal catalogue supplies a common prior denominator. Every visible alternative is marginalized with equal catalogue weight and the same prior odds against a uniform native-period contrast null. A geometric upper bound on elevation at the first time of each track excludes only orbits that cannot be visible at any probe. The retained orbits are projected from capture-time SGP4 states, and track likelihoods require visibility throughout the track. A phase-tangent Gaussian integrates the same nominal one-second phase prior and uses the native white noise scale. The within-track differences remove any constant additive term on that track's fixed RF, including `c`. The diagnostic consequently gives identical fixed-zero and fitted-`c` scores by construction. It has no estimate of either calibration arm's position. [Model](../../../tools/pipeline_eval/variants/experimental/regional_reassignment.py) · [Saved-detection runner](regional_reassignment_trial.py)
+
+The 48 inside and 48 exterior positions use the same four face normals and the same three lateral offsets, `−1/5`, `0` and `1/5` of the offered width. Inside radii are `1/8`, `1/4`, `3/8` and `1/2 − 1/256` widths. Exterior radii are `1/2 + 1/256`, `5/8`, `3/2` and `5/2` widths. The frozen diagnostic subtracts the highest inside pooled score from the highest exterior pooled score. A strictly positive gain would withhold a published fix. Zero and negative gains retain it. The receiver-specific maxima are descriptive. This is a retrospective comparison with the existing simulation publications and does not alter any decision.
+
+The preceding exterior-profile trial fixed the publication's assignments and could therefore retain an implausible owner at a better location. Earlier regional methods include disjoint-orbit fits, a score from eight sampled points on selected tracks with shuffled-time controls, and forecasts on reciprocal held blocks. The present comparison uses each complete Graph track and a common per-observation denominator while resumming orbital alternatives at every probe. [Fixed-owner experiment](exterior-profile.md) · [Orbit split](../../../tools/pipeline_eval/variants/region_halo.py) · [Track-time null](../../../tools/pipeline_eval/variants/region_null.py) · [Held extrapolation](../../../tools/pipeline_eval/variants/outside_predictive.py)
+
+## Initial public controls
+
+| Simulated offer | Original / Graph observations | Pooled gain | RX1 gain | RX2 gain | Frozen sign outcome |
+|---|---:|---:|---:|---:|---|
+| North, 100 m inside | 456 / 450 | −0.000545 | −0.000638 | −0.000451 | Retains valid fix |
+| North, far omission | 456 / 450 | +1.276956 | +1.421316 | +1.132595 | Correctly withholds |
+| South, far omission | 456 / 423 | +0.812992 | +0.808568 | +0.817415 | Correctly withholds |
+
+All three paired probes used 228 observations per receiver. The best pooled inside and exterior probes switch the highest supported satellite on 18 tracks in each far-omission case. Two more southern tracks favor the satellite mixture over the null only at the best exterior probe. The near-edge comparison changed no reported track owner. The model's two best exterior probes on the far-omission controls lie 2.50 km from the actual receivers, compared with 52.79–52.80 km for the best inside probes. These are probe locations on a coarse grid. The original production locations and errors come from the separately scored publications. [Prior publications](../regional-release/README.md) · [Near-edge construction](edge-trial.md)
