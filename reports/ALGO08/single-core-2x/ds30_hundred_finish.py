@@ -25,6 +25,12 @@ def decision(result):
     return dict(gates=gates, qualifies=all(gates.values()))
 
 
+def verify_preflight(receipt):
+    if (receipt["runs"] or receipt["cache_observation"]["arms"] or
+            receipt.get("failure") != "ValueError: Cache observation recording differs from its assigned sealed manifests"):
+        raise ValueError("Expected a path preflight stop before either timed launch")
+
+
 def report(result, verdict):
     counts = result["builds"]
     ratios = result["timing"]["all_verified"]["elapsed_s"]
@@ -53,6 +59,9 @@ def report(result, verdict):
                   for label, names in result["solver_failures"].items()) + ".",
         "DS30-0022 first stopped before the original timing harness recorded elapsed time. "
         "The archived first attempt remains in the decision audit. The timed recovery pair counts once.",
+        "For DS30-0447, a private read-only mount gave the archived recording its original path. "
+        "The session identity and all 14 ordered segment manifest digests matched. "
+        "The first path check stopped before either timer started.",
         "", "![Runtime distributions](runtime.png)", "",
         "![Horizontal position-error distributions](position-error.png)", "",
         "All 100 recordings came from one roof. Both algorithms previously returned false fixes when the "
@@ -93,6 +102,9 @@ def finish(archive, destination):
                 not stage.pair.orbit_solver_failure(original_attempt["failure"])):
             raise ValueError("Unexpected first DS30-0022 failure receipt")
         result["prior_candidate_failures"] = {"DS30-0022": stage.file_sha(first)}
+        preflight = archive / "attempts/DS30-0447-path-preflight/pair.json"
+        verify_preflight(stage.pinned(preflight, "5cf956997b108f180545988d0b191232f3490aa4ea8768e3bb729a5e3af617b4"))
+        result["untimed_path_preflight"] = {"DS30-0447": stage.file_sha(preflight)}
         verdict = decision(result)
         receipt = dict(candidate=stage.EXACT_CURVED_LOOKAHEAD, baseline=str(stage.pair.BASELINE),
                        order_sha256=study.ORDER_SHA256, result=result, **verdict,

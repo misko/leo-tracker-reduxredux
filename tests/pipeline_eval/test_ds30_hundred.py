@@ -25,6 +25,17 @@ def test_final_version_requires_both_raw_timing_gates_and_quality(median, summed
 study = import_module("reports.ALGO08.single-core-2x.ds30_hundred")
 
 
+def test_path_preflight_rejects_an_attempt_that_already_started_measurement():
+    finish = import_module("reports.ALGO08.single-core-2x.ds30_hundred_finish")
+    value = dict(runs={}, cache_observation=dict(arms={}),
+                 failure="ValueError: Cache observation recording differs from its assigned sealed manifests")
+    finish.verify_preflight(value)
+    for change in (dict(runs={"baseline": {}}), dict(cache_observation={"arms": {"candidate": {}}}),
+                   dict(failure="Unexpected I/O error")):
+        with pytest.raises(ValueError, match="before either timed launch"):
+            finish.verify_preflight(dict(value, **change))
+
+
 def test_frozen_roster_is_the_first_hundred_distinct_recordings_and_binds_order():
     predictions = study.stage.pinned(study.stage.OUT / "prediction-lock.json", study.stage.LOCK_SHA256)
     names = [r["case"] for r in predictions["predictions"] if r["method"] == "compact_two_scan"][:100]

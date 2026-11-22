@@ -23,8 +23,12 @@ while true; do
     sleep 50
 done
 
-sudo -n -u leo -- env PYTHONPATH="$PWD:$PWD/src:$release:$release/src" OPENBLAS_NUM_THREADS=1 \
-    OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 MPLCONFIGDIR="$archive/mplconfig" \
+sudo -n systemd-run --quiet --wait --pipe --collect --working-directory="$PWD" \
+    -p User=leo -p Group=leo -p Nice=15 -p CPUAffinity=2 -p IOSchedulingClass=best-effort \
+    -p IOSchedulingPriority=7 \
+    -p BindReadOnlyPaths=/srv/bulk/leo/fast-scan-recordings:/srv/postgres-nvme/fast-scan-recordings \
+    --setenv="PYTHONPATH=$PWD:$PWD/src:$release:$release/src" --setenv=OPENBLAS_NUM_THREADS=1 \
+    --setenv=OMP_NUM_THREADS=1 --setenv=MKL_NUM_THREADS=1 --setenv="MPLCONFIGDIR=$archive/mplconfig" \
     "$release/venv/bin/python" -BPs -m reports.ALGO08.single-core-2x.ds30_hundred_finish \
     "$archive" "$archive/final"
 mkdir -p "$report"
