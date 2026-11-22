@@ -48,6 +48,26 @@ A separately frozen build added paired SHA-256 verification and reuse of the las
 
 Both builds issued the valid fix. The fixed-zero and fitted horizontal errors were **0.817 km and 1.101 km**, respectively. The receiver produced 2,400 identical ordered lane rows with 456 selected measurements. Both owner maps, calibration positions and RF residuals, grid, path and eight PNG files matched. The candidate reused 39 endpoint calculations across 25 fixed models. The elapsed measurements alone do not isolate the contribution of either change. [File and figure audit](measurements/south-edge-endpoint-audit.json) · [Guarded endpoint measurements](solver-fixed-gram.md)
 
-![Time and both calibration errors of the successor on the southern near-edge simulation](endpoint-publication.png)
+We then ran the identical source and binary pins on a short physical development recording, DS30-0016. The candidate ran first. Both processes reported zero filesystem input blocks. The 1,426 ordered lane rows, 440 selected measurements, both sets of satellite owners, RF residuals, positions, numerical grids, paths and eight PNGs matched. The single-core elapsed shortfall was **1.26 seconds**. [Physical receipt](measurements/DS30-0016-endpoint.json) · [File and figure audit](measurements/DS30-0016-endpoint-audit.json)
+
+| Matched recording | ALGO08v2 → candidate elapsed | ALGO08v2 → candidate CPU | Horizontal errors in both builds, fixed zero / fitted |
+|---|---:|---:|---:|
+| DS30-0016, physical | 24.91 → 13.71 s | 24.36 → 13.40 s | 1.644 / 1.661 km |
+| Southern simulation, 100 m inside | 30.64 → 16.22 s | 30.06 → 15.92 s | 0.817 / 1.101 km |
+
+The median paired elapsed ratio was **0.540** and the summed elapsed ratio was **0.539**. The target is **0.500** for each on the eventual held-out panel. Both short development recordings received valid containing offers. They provide no new evidence about withholding on wrong offers. DS26, DS29 and DS30 share a physical station. In DS29's manifest, all 612 complete fast recordings exceeded 5,000 durable windows, so none met this iteration's 501–1,500-window selection rule. No DS29 raw replay was needed to determine this.
+
+![Matched elapsed time, single-core CPU and both position errors on DS30-0016 and the southern near-edge simulation](endpoint-publication.png)
 
 Reproduce with `df08d5f22`, the same release, receiver, solver, schedule, startup and renderer as above, plus `--endpoint-reuse --ingress paired-sha256 --paired-sha256 LIBRARY SHA256`. The receipt pins the library, its source and the complete research launcher. Rebuild the plot with `python -m reports.ALGO08.single-core-2x.plot_shared_publication --trial endpoint`. The proposed missing-region diagnostic stayed disabled for this run. [Reader build and hardware fallback](paired-sha256.md)
+
+## Same recording with the receiver outside the search square
+
+The southern boundary control changed just the offer. Moving the square 200 m put its true receiver 100 m outside the same face. **Both builds still published a fix.** The fixed-zero and fitted errors barely changed. A comparison of published positions alone would miss the wrong-region failure.
+
+| Southern offer | Correct decision | Deployed / candidate decision | Fixed-zero / fitted error, both builds | Deployed → candidate elapsed |
+|---|---|---|---:|---:|
+| 100 m inside | Publish | Publish / publish | 0.817 / 1.101 km | 30.64 → 16.22 s |
+| 100 m outside | Withhold | Publish / publish | 0.817 / 1.102 km | 31.88 → 16.20 s |
+
+The same frozen candidate ran first on the outside offer. It used 15.74 CPU seconds versus 31.00 for the baseline. Both reported zero filesystem input blocks and agreed on all lane rows, both calibrated solutions, satellite owners, optimizer grid and path, and all eight PNGs within the offer. This repeated waveform is excluded from the two-recording runtime aggregate above. Neither development site nor its boundary cases qualify as a fresh location holdout. [Outside receipt](measurements/south-outside-endpoint.json) · [File and figure audit](measurements/south-outside-endpoint-audit.json) · [Results of the separate experimental withholding rule](mirrored-regions.md)

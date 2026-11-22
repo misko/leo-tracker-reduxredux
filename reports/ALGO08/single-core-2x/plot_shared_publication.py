@@ -36,7 +36,8 @@ def main(trial):
         cases = (("DS30-0374-full-search", "DS30-0374 · physical"),
                  ("north-edge-full-search", "Northern site · simulated boundary"))
     if trial == "endpoint":
-        cases = (("south-edge-endpoint", "Southern site · simulated boundary"),)
+        cases = (("DS30-0016-endpoint", "DS30-0016 · physical"),
+                 ("south-edge-endpoint", "Southern site · simulated boundary"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
