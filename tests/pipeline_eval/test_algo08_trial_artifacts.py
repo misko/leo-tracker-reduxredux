@@ -1,5 +1,6 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from io import BytesIO
+from math import cos, radians
 from pathlib import Path
 
 from PIL import Image, PngImagePlugin
@@ -33,3 +34,18 @@ def test_png_trial_checks_pixels_and_text_and_density():
     rows = trial.compare([(raw.getvalue(),image)])
     assert len(rows)==6
     assert all(row["pixels_and_metadata_matched"]==1 for row in rows)
+
+
+@pytest.mark.parametrize("site", [(47., 16.), (-32., 21.)])
+def test_mirrored_offers_bracket_same_face_with_signed_clearance(site):
+    trial = report("edge_trial")
+    for recording in ("first", "second", "third", "fourth"):
+        inside, outside = [trial.near_offer(recording, site, 25., outside=flag) for flag in (False, True)]
+        offsets = []
+        for offer in (inside, outside):
+            lat, lon = offer["center"]
+            offsets.append(((lat-site[0])*111., (lon-site[1])*111.32*cos(radians(lat))))
+        axis = max(range(2), key=lambda i: abs(offsets[0][i]))
+        assert offsets[0][axis] * offsets[1][axis] > 0
+        assert [abs(delta[axis]) for delta in offsets] == pytest.approx([12.4, 12.6])
+        assert all(delta[1-axis] == 0 for delta in offsets)

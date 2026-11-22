@@ -1,5 +1,7 @@
 # All-track regional evidence with location-specific satellite assignments
 
+**Follow-up on a matched pair of search regions.** On two further offers with the receiver 100 m outside, the frozen diagnostic missed the northern omission and correctly flagged the southern one. Moving the offered square by just 200 m across the actual receiver left the decision unchanged at both sites. [Mirrored boundary comparison](mirrored-regions.md)
+
 On eight public offers for two simulated sites, the frozen sign would have withheld all four wrong-region fixes and **one valid fix**. The incorrect withholding occurs with the southern receiver 100 m inside its offer. The pooled score is slightly higher outside, and the two receiver groups disagree. The sign was frozen after the northern near-edge and two far-omission cases and before checking the other five offers.
 
 ## Matched observations and causal alternatives

@@ -23,13 +23,14 @@ def on_face(point, offer):
     return gap <= tolerance
 
 
-def near_offer(recording, truth, width):
+def near_offer(recording, truth, width, *, outside=False):
     # Select the face before looking at either solver result.
     tag = hashlib.sha256(recording.encode()).digest()[0]
     axis, sign = tag % 2, (1 if tag & 2 else -1)
     center = list(truth)
     scale = 111. if axis == 0 else 111.32 * cos(radians(truth[0]))
-    center[axis] += sign * (width/2 - .1) / scale
+    distance = width/2 + .1 if outside else width/2 - .1
+    center[axis] += sign * distance / scale
     return dict(center=center, width_km=width)
 
 
@@ -81,6 +82,7 @@ def main():
     parser.add_argument("station_offer", type=Path, nargs="?")
     parser.add_argument("output", type=Path, nargs="?")
     parser.add_argument("--plot", type=Path, help="Plot the saved and scored regional results")
+    parser.add_argument("--outside", action="store_true", help="Place each public receiver 100 m outside the same face")
     args = parser.parse_args()
     if args.plot:
         plot(args.plot)
@@ -104,7 +106,8 @@ def main():
                           clipped={arm:on_face(r["arms"][arm]["latlon"],offer) for arm in ARMS}))
         if label["condition"] == "containing":
             (args.output/(r["recording"]+".json")).write_text(
-                json.dumps(near_offer(r["recording"], label["truth"], offer["width_km"])) + "\n")
+                json.dumps(near_offer(r["recording"], label["truth"], offer["width_km"],
+                                      outside=args.outside)) + "\n")
     fixed = [arms for arms in physical.values() if all(arms.get(a) is not None for a in ARMS)]
     print(json.dumps(dict(assigned=len(physical), fixed=len(fixed), any_face=sum(any(s.values()) for s in fixed),
                           both_faces=sum(all(s.values()) for s in fixed), public_regressions=cases), indent=2))
