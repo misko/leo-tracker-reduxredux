@@ -18,8 +18,14 @@ def save(path, data):
     path.write_text(json.dumps(data, indent=2, allow_nan=False) + "\n")
 
 
-def generate(work, seed=None):
+def generate(work, seed=None, fresh=False):
     public = work / "public"
+    if fresh and public.exists() and any(public.iterdir()):
+        raise ValueError("Fresh confirmation requires an unused public directory")
+    private = work / "scorer/answers.json"
+    private.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    if fresh and private.exists():
+        raise FileExistsError(private)
     archive = public / "tle/archive/space-track"
     archive.mkdir(parents=True, exist_ok=True)
     received, nominal, history, objects = authentic_history()
@@ -35,7 +41,11 @@ def generate(work, seed=None):
         raise ValueError("Expected a 32-byte seed")
     rng = np.random.default_rng(int.from_bytes(seed, "big"))
     answers, jobs = {}, []
-    for index, (box, edge) in enumerate([((48., 15.), "lower"), ((-33., 20.), "upper")]):
+    layout = [((48., 15.), "lower"), ((-33., 20.), "upper")]
+    if fresh:
+        from tools.pipeline_eval.qualification.holdout_geography import fresh_layout
+        layout = fresh_layout(rng)
+    for index, (box, edge) in enumerate(layout):
         anchor = received + (3740 + 360 * index) * 10**9
         bank = clock_transfer_inputs._true_bank(nominal, updated, anchor, later)
         schedule = model.schedule()
@@ -74,7 +84,6 @@ def generate(work, seed=None):
                 samples=model.iq(r, scene, frames[edge]), powers=({}, {}))
         writer.finish(stop_reason="simulation schedule completed")
     rng.shuffle(jobs)
-    private = work / "scorer/answers.json"
     save(private, dict(seed=seed.hex(), answers=answers))
     save(public / "panel.json", dict(jobs=jobs, commitment=hashlib.sha256(private.read_bytes()).hexdigest()))
 
@@ -83,5 +92,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("workspace", type=Path)
     parser.add_argument("--replay-seed", help="Recreate the sampled waveforms after unblinding")
+    parser.add_argument("--fresh-sites", action="store_true", help="Sample new geographic areas for confirmation")
     args = parser.parse_args()
-    generate(args.workspace, args.replay_seed)
+    generate(args.workspace, args.replay_seed, args.fresh_sites)

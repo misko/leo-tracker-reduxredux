@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+repo=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)
+release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
+export PYTHONPATH="$repo:$release/src:$release"
+export OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_NUM_THREADS=1
+exec "$release/venv/bin/python" -BPs -m tools.pipeline_eval.qualification.experimental_publication "$@"

@@ -38,24 +38,36 @@ def evidence(root, receipt, started_ns):
         raise ValueError("Published recording, region or decision differs from the timed invocation")
     state = detail["state"]
     names = [p["name"] for p in detail["artifacts"]]
+    science = {}
     if state == "complete":
-        if names != list(PLOTS) or publication.position_path(run) is None or publication.position_grid(run) is None:
+        path, grid = publication.position_path(run), publication.position_grid(run)
+        if names != list(PLOTS) or path is None or grid is None:
             raise ValueError("Completed fix has incomplete evidence")
+        for name, document in (("path", path), ("grid", grid)):
+            if (document["region_center"] != receipt["region"]["center"]
+                    or document["box_width_km"] != receipt["region"]["width_km"]):
+                raise ValueError("Published position evidence uses a different search region")
+            # The binding includes the build-specific detector and terminal digests.
+            science[name] = canonical_digest({k: v for k, v in document.items()
+                                               if k not in ("binding", "elapsed_seconds")})
         for p in detail["artifacts"]:
             publication.artifact(run, p["name"], p["sha256"])
     elif state != "withheld" or names or not terminal.get("reason"):
         raise ValueError("Invalid terminal state")
     return dict(receipt=receipt, raw_authority=detail["raw_authority"], arms=terminal["arms"],
                 owners={a: x["owner_sha256"] for a, x in detail["arms"].items()},
-                reason=terminal.get("reason"), artifacts=detail["artifacts"],
+                reason=terminal.get("reason"), artifacts=detail["artifacts"], scientific_digests=science,
                 terminal_file_s=(terminal_path.stat().st_mtime_ns-started_ns)/1e9)
 
 
-def measure(launcher, root, args):
+def measure(launcher, root, args, specification=None):
     root.mkdir()  # Every arm starts without a detection, solver or publication cache.
     env = os.environ | dict(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1")
     for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE"):
         env.pop(key, None)
+    env.pop("ALGO08_EXPERIMENT_CONFIG", None)
+    if specification is not None:
+        env["ALGO08_EXPERIMENT_CONFIG"] = str(specification.resolve())
     command = [str(launcher.resolve()), "--recording", str(args.recording.resolve()),
                "--region", str(args.region.resolve()), "--archive", str(args.archive.resolve()),
                "--bulk-root", str(root.resolve())]
@@ -83,9 +95,17 @@ def run_pair(args):
         order = ("baseline", "candidate") if args.first == "baseline" else ("candidate", "baseline")
         result = dict(order=order, cpu=args.cpu, recording=str(args.recording.resolve()),
                       region=str(args.region.resolve()), runs=runs)
+        pinned_config = None
+        if args.candidate_config:
+            spec = json.loads(args.candidate_config.read_bytes())
+            result["candidate_specification"] = spec
+            result["candidate_specification_digest"] = canonical_digest(spec)
+            pinned_config = args.output/"candidate-config.json"
+            immutable_json(pinned_config, spec)
         try:
             for name in order:
-                runs[name] = measure(getattr(args, name), args.output/name, args)
+                runs[name] = measure(getattr(args, name), args.output/name, args,
+                                     pinned_config if name == "candidate" else None)
             a, b = runs["baseline"], runs["candidate"]
             if a["raw_authority"] != b["raw_authority"] or any(
                     a["receipt"][k] != b["receipt"][k] for k in ("region","session_id","window_count")):
@@ -103,6 +123,7 @@ if __name__ == "__main__":
     for name in ("recording", "region", "archive", "candidate", "output"):
         p.add_argument(name, type=Path)
     p.add_argument("--baseline", type=Path, default=BASELINE)
+    p.add_argument("--candidate-config", type=Path, help="Pinned experimental receiver and solver options")
     p.add_argument("--first", choices=("baseline","candidate"), required=True)
     p.add_argument("--cpu", type=int, default=2)
     p.add_argument("--timeout", type=int, default=1200)

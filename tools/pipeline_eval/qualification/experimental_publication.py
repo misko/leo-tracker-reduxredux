@@ -1,0 +1,54 @@
+"""Experimental receiver/solver composition for an isolated full publication."""
+import argparse
+from contextlib import ExitStack
+from functools import partial
+import json
+import os
+from pathlib import Path
+import re
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+
+from leo.contracts.algo08_region import Algo08Region
+from tools import algo08_position, algo08_scan
+
+
+RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
+
+
+def run(args, specification):
+    root = args.bulk_root.resolve(strict=True)
+    if not root.is_dir() or any(root.iterdir()):
+        raise ValueError("Research publication requires a new, empty output root")
+    detector = Path(specification["detector"]).resolve(strict=True)
+    digest = specification["detector_sha256"]
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise ValueError("Expected a pinned detector SHA-256")
+    mode = specification["solver"]
+    if mode not in ("stock", "causal-reuse", "combined"):
+        raise ValueError("Unknown experimental solver")
+    with TemporaryDirectory() as scratch, ExitStack() as stack:
+        assets = Path(scratch)
+        for name in (*algo08_scan.PINS, "native", "projector.so"):
+            source = detector if name == "cancellation-factors.so" else RELEASE/"assets"/name
+            (assets/name).symlink_to(source)
+        # The normal publication path checks these pins before it opens the I/Q.
+        stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
+        if mode in ("causal-reuse", "combined"):
+            from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
+            scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
+            stack.enter_context(patch.object(algo08_position, "prepare_native_scan", scoped))
+        if mode == "combined":
+            from tools.pipeline_eval.variants.algo08_salvage_statistics import salvage_statistics
+            stack.enter_context(salvage_statistics())
+        offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
+        return algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    for field in ("recording", "bulk-root", "archive", "region"):
+        parser.add_argument("--"+field, type=Path, required=True)
+    args = parser.parse_args()
+    config = Path(os.environ["ALGO08_EXPERIMENT_CONFIG"])
+    print(json.dumps(run(args, json.loads(config.read_bytes()))))

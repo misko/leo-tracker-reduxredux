@@ -10,11 +10,12 @@ from tools.pipeline_eval.qualification import paired_publication as bench
 def test_pair_uses_empty_outputs_and_only_credits_same_recording(tmp_path, monkeypatch, mismatch):
     args = SimpleNamespace(cpu=2, first="candidate", recording=tmp_path/"recording",
                            region=tmp_path/"region", output=tmp_path/"results",
-                           baseline="baseline", candidate="candidate")
+                           baseline="baseline", candidate="candidate", candidate_config=None)
     calls = []
 
-    def measure(launcher, root, _args):
+    def measure(launcher, root, _args, specification):
         assert not root.exists()
+        assert specification is None
         root.mkdir()
         calls.append(launcher)
         return dict(elapsed_s=4 if launcher=="baseline" else 2,
@@ -56,3 +57,55 @@ def test_verified_withholding_counts_as_a_terminal_publication(tmp_path):
     receipt=dict(run_id=rid,session_id="s",region=region,decision="withheld",terminal_sha256=digest)
     result=bench.evidence(tmp_path,receipt,0)
     assert result["arms"]==arms and result["reason"]=="no probes" and result["artifacts"]==[]
+
+
+def test_comparison_rejects_a_grid_published_in_another_site_frame(tmp_path, monkeypatch):
+    run = "algo08-v2-trial"
+    region = dict(center=[-32., 95.], width_km=25., screen_center=[-32., 95.])
+    terminal = {"arms": {}}
+    receipt = dict(run_id=run, session_id="s", region=region, decision="complete",
+                   terminal_sha256=bench.canonical_digest(terminal))
+    scans = bench.FastScanStore(tmp_path)
+    bench.immutable_json(scans.automatic_workspace(run)/"terminal.json", terminal)
+    scans.publish(run, dict(session_id="s", points=[]))
+    detail = dict(terminal_sha256=receipt["terminal_sha256"], state="complete", region=region,
+                  raw_authority="raw", arms={}, artifacts=[{"name": n, "sha256": n} for n in bench.PLOTS])
+    path = dict(region_center=region["center"], box_width_km=25., binding={"build": "A"})
+    grid = dict(path, elapsed_seconds=1)
+    store = SimpleNamespace(detail=lambda _: detail, position_path=lambda _: path,
+                            position_grid=lambda _: grid, artifact=lambda *args: b"")
+    monkeypatch.setattr(bench, "FastStandardAnalysisStore", lambda _: store)
+    evidence = bench.evidence(tmp_path, receipt, 0)
+    grid.update(elapsed_seconds=3, binding={"build": "B"})
+    assert bench.evidence(tmp_path, receipt, 0)["scientific_digests"] == evidence["scientific_digests"]
+    grid["region_center"] = [36., -122.]
+    with pytest.raises(ValueError, match="different search region"):
+        bench.evidence(tmp_path, receipt, 0)
+
+
+def test_experimental_entry_passes_each_offer_without_a_station_reference(tmp_path, monkeypatch):
+    from tools.pipeline_eval.qualification import experimental_publication as trial
+    offers = []
+
+    def analyze(recording, root, assets, archive, offer):
+        offers.append(offer.document())
+        assert trial.algo08_scan.PINS["cancellation-factors.so"] == "c"*64
+        return {"decision":"withheld"}
+
+    monkeypatch.setattr(trial.algo08_scan, "analyze", analyze)
+    root=tmp_path/"output"
+    root.mkdir()
+    detector=tmp_path/"receiver.so"
+    detector.touch()
+    spec={"solver":"stock", "detector":str(detector), "detector_sha256":"c"*64}
+    args=SimpleNamespace(recording=tmp_path/"opaque", bulk_root=root,
+                         archive=tmp_path/"tle", region=tmp_path/"offer.json")
+    pin=trial.algo08_scan.PINS["cancellation-factors.so"]
+    for center in ([46,13],[-28,116]):
+        args.region.write_text(json.dumps({"center":center,"width_km":30}))
+        trial.run(args,spec)
+    assert [item["screen_center"] for item in offers]==[[46,13],[-28,116]]
+    assert trial.algo08_scan.PINS["cancellation-factors.so"]==pin
+    (root/"prior-result").touch()
+    with pytest.raises(ValueError, match="empty output root"):
+        trial.run(args,spec)
