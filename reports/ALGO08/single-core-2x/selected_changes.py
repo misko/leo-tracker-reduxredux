@@ -54,17 +54,43 @@ def changes(before, after):
                 changes_by_channel=dict(channels), rows=changed)
 
 
-def compare(pair):
+def selection_summary(before, after):
+    """Separate missing or changed winning ranks from numerical field changes."""
+    delta = changes(before, after)
+    field_counts, maximum = Counter(), Counter()
+    for row in delta["rows"]:
+        left, right = row["baseline"], row["candidate"]
+        if not left or not right or left[0]["candidate_rank"] != right[0]["candidate_rank"]:
+            continue
+        a, b = left[0], right[0]
+        if a.keys() != b.keys():
+            raise ValueError("Selected factors have different fields")
+        for name, value in a.items():
+            if value != b[name]:
+                field_counts[name] += 1
+                if type(value) in (float, int) and type(b[name]) in (float, int):
+                    maximum[name] = max(maximum[name], abs(value - b[name]))
+    return dict(opportunities=delta["opportunities"], changed=delta["changed"],
+                selections={key: sum(len(r["candidates"]) for r in rows)
+                            for key, rows in (("baseline", before), ("candidate", after))},
+                transitions_on_changed_rows=delta["transitions"],
+                same_rank_field_counts=dict(field_counts), same_rank_max_abs_delta=dict(maximum))
+
+
+def compare(pair, *, summary=False):
     doc = json.loads(pair.read_bytes())
     before, after = (doc["runs"][name] for name in ("baseline", "candidate"))
     if (before["raw_authority"] != after["raw_authority"]
             or before["receipt"]["region"] != after["receipt"]["region"]):
         raise ValueError("Expected one sealed recording and the same regional offer")
-    return changes(bound_rows(pair.parent / "baseline", before),
-                   bound_rows(pair.parent / "candidate", after))
+    evaluate = selection_summary if summary else changes
+    return evaluate(bound_rows(pair.parent / "baseline", before),
+                    bound_rows(pair.parent / "candidate", after))
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("pair", type=Path)
-    print(json.dumps(compare(cli.parse_args().pair), indent=2, allow_nan=False))
+    cli.add_argument("--summary", action="store_true", help="Count field changes among same-rank selections")
+    args = cli.parse_args()
+    print(json.dumps(compare(args.pair, summary=args.summary), indent=2, allow_nan=False))

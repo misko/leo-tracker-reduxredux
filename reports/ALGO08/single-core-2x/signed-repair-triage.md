@@ -59,4 +59,53 @@ The two receivers agreed on all 9,288 opportunities about whether to return a me
 
 ![Matched elapsed time, CPU time and both position error curves on the first DS30 pair](full-phase-lead.png)
 
-DS30-0374 belongs to the Gauss development site. The other three assigned pairs, the 16-recording panel and fresh-site confirmation remain unopened for this build. Qualification requires the same frozen algorithm at geographically withheld sites, including containing and omitted offers. The existing Austin waveform exercises the receiver only. Independent physical positioning still requires an off-site capture with a survey, time and orbital archive. [Geographic protocol and physical data inventory](geographic-input-audit.md)
+DS30-0374 belongs to the Gauss development site. Qualification requires the same frozen algorithm at geographically withheld sites, including containing and omitted offers. The existing Austin waveform exercises the receiver only. Independent physical positioning still requires an off-site capture with a survey, time and orbital archive. [Geographic protocol and physical data inventory](geographic-input-audit.md)
+
+## Holding the receiver fixed on two physical recordings
+
+The frozen candidate solver was run on the **deployed receiver's saved detections** and the same regional offer and capture-era orbital snapshots. Only the solver changed relative to the deployed position. The CPU clock below begins at the solver call and includes the numerical position evidence. It excludes acquisition and PNG rendering. [Input digests, archive pins, owner maps and outputs](measurements/crossed-signed-fixed-inputs.json)
+
+| Recording | Saved observations | Deployed error, fixed-zero / fitted | Candidate solver error, fixed-zero / fitted | Deployed → candidate solver fitted frequency RMS | Candidate solver CPU |
+|---|---:|---:|---:|---:|---:|
+| DS30-0374 | 4,157 | 1.855 / 1.935 km | 1.848 / 1.928 km | 101.520 → 101.482 Hz | 19.47 s |
+| DS30-0008 | 7,016 | 1.639 / 1.512 km | 1.306 / 1.284 km | 129.663 → 125.770 Hz | 39.62 s |
+
+On DS30-0374 the candidate solver assigned the same observations to the same satellites with either receiver input. Its fitted endpoints were **0.24 mm** apart. The 8.9 m difference from deployment and the changed assignment therefore persisted when the receiver was held fixed. On DS30-0008 the candidate solver selected a different owner map from deployment and reduced fitted error by 228 m on the deployed factors. Both recordings come from one physical roof.
+
+Use `residual_attribution_trial.py worker NATIVE SPEC ARCHIVE REGION OUTPUT --evidence` with the frozen candidate first on the release Python path to reproduce a saved solve. To distinguish substitutions of a winning rank from numerical changes within the same rank in a complete paired run, use `python -m reports.ALGO08.single-core-2x.selected_changes PAIR_JSON --summary`. It checks both saved native digests against their terminals before matching the ordered opportunities.
+
+## Second matched recording with the frozen full-scan build
+
+On DS30-0008 both runs completed both calibrations and rendered all eight figures. Fitted horizontal error fell **1.512 → 1.308 km**, and fixed-zero error fell **1.639 → 1.331 km**. Frequency RMS fell **129.663 → 125.820 Hz** (fitted) and **129.703 → 125.892 Hz** (fixed zero). Both runs selected the same 7,016 opportunities at the same ranks and integer epochs. Scores differed on 6,692 complete factor records. Only three winning fractional times or CFOs changed, by at most 0.0000000021 samples or 0.000018 Hz. The end-to-end build selected different owner maps from deployment and from the candidate solver running on deployed factors. All eight figures changed pixels, and the numerical grid and path also changed. [Matched execution](measurements/DS30-0008-full-phase.json) · [Sealed factor comparison](measurements/full-phase-0008-selections.json)
+
+| Raw I/Q through all web artifacts | Deployed elapsed | Candidate elapsed | Deployed CPU | Candidate CPU | Deployed / candidate filesystem input blocks |
+|---|---:|---:|---:|---:|---:|
+| DS30-0374, candidate first | 136.14 s | 70.69 s | 129.15 s | 65.82 s | 0 / 0 |
+| DS30-0008, deployed first | 302.94 s | 111.24 s | 209.88 s | 104.98 s | 16,017,368 / 0 |
+
+The second recording ran **2.72× faster by elapsed time** and **1.9992× by CPU**. The disk-read imbalance favors the second recording's candidate elapsed time. Across the two verified pairs the median paired elapsed ratio is **0.443** and the summed elapsed ratio is **0.414**. The corresponding CPU ratios are **0.505** and **0.504**. These describe two known recordings at one station. The four-recording stage gates are unset, and the 16-recording and geographic confirmation panels remain sealed. [Partial stage inventory](measurements/full-phase-two-inventory.json)
+
+![Single-core elapsed and CPU time and cumulative position error on the two verified DS30 pairs](full-phase-two.png)
+
+### Which receiver fields changed the DS30-0008 fix?
+
+On DS30-0008 the candidate solver using deployed detector output had a fitted error of 1.284 km. With the candidate detector that error was 1.308 km. Two crossed replays isolate the cause. Each uses the same frozen solver, region, capture-era orbital archive, winning ranks and fixed set of 7,016 observations. [Crossed inputs and output digests](measurements/full-phase-0008-crossed-fields.json)
+
+| Score fields | Measured CFO and fractional timing | Associated points per arm | Fixed-zero / fitted error | Fitted frequency RMS |
+|---|---|---:|---:|---:|
+| Deployed | Deployed | 3,094 | 1.306 / 1.284 km | 125.770 Hz |
+| Candidate | Deployed | 3,094 | 1.306 / 1.284 km | 125.770 Hz |
+| Deployed | Candidate | 3,092 | 1.331 / 1.308 km | 125.820 Hz |
+| Candidate | Candidate | 3,092 | 1.331 / 1.308 km | 125.820 Hz |
+
+Changing scores alone kept the owner maps. Changing the three measured CFO/timing pairs reproduced the full candidate's owner maps, and each endpoint was within 0.03 mm of its matching control. The position solver's track adapter uses the winning CFO. Its time coordinate comes from the sample counter, independently of the fractional pilot epoch. The small input differences amplified during inference. The two-by-two result identifies their effect on this recording and gives no basis for rounding frequencies or adjusting a global threshold. [Input constructor](cross_factor_fields.py) · [Track preparation](../../../src/leo/analysis/localization_v3/tracks.py)
+
+The difference was already visible in Graph track construction. Both inputs yielded 236 tracks with the same curved track keys. The deployed input assigned 6,456 points and the candidate input assigned 6,454. Both noise fits selected the model with variance dependent on signal strength. The constant-model comparison gave 124.784 and 124.807 Hz respectively. [Track membership and noise fit](measurements/full-phase-0008-graph.json)
+
+## Full two-scan receiver with balanced synthetic training at the northern site
+
+The successor keeps the first scan's deinterleaved lane samples for cancellation and caches the eligible Fourier bins for the actual frequency bounds. Training included symmetric and shifted mixer settings. On short saved samples this avoided the nonzero-center slowdown of developing exclusively on symmetric bands. Freeze the balanced build with the same scientific solver and all other source and library pins as the two-case DS30 candidate. Its specification is `sha256:ed2a4e285c0f94b44e052a8bbbc1e7db1a163200a129635b41c1af86874e95e9`. [Receiver comparisons including shifted bands](receiver-resident-cancel.md)
+
+On the public northern 100 m inside recording, full raw-to-web elapsed time fell **33.80 → 17.88 s (1.89×)** and CPU fell **32.70 → 17.24 s (1.90×)**. Both runs had zero filesystem input blocks. All 456 selections matched by opportunity, rank, integer/fractional time and CFO. Some score fields changed by at most 2 × 10⁻¹⁴. Both fixes, both satellite owner maps, frequency RMS, scientific grid, path and all eight decoded web images were identical. Fixed-zero error was **106 m** and fitted error **141 m**. This comparison fell 0.97 s short of half the deployed elapsed time. [Paired run](measurements/north-balanced-full-pair.json) · [Detailed audit](measurements/north-balanced-full-audit.json)
+
+On the same saved detections and causal archive the successor withheld the distant omitted square. It still published the square with the receiver 100 m outside, with fitted error 118 m. An independent held pilot-arrival test on the northern and southern recordings slightly favored the wrong face at both sites. Leaving out one satellite reversed either preference. These development results keep geographic qualification open. [Matched offers and verdicts](measurements/north-balanced-full-audit.json) · [Held arrival test and control models](mirrored-arrival.md)

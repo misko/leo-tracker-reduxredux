@@ -33,3 +33,34 @@ def test_partial_stage_plot_handles_withholding_and_keeps_unmeasured_cases_out(t
     plot(dict(assigned=2, cases=[row, missing]), tmp_path / "plot.png")
     with Image.open(tmp_path / "plot.png") as image:
         assert image.format == "PNG" and image.width > 1000
+
+
+def test_summary_distinguishes_missing_selections_rank_substitution_and_numerical_changes():
+    left = [row(0, 0), row(1, 1), row(2), row(3, 1), row(4, 0)]
+    right = [row(0), row(1, 0), row(2, 1), row(3, 1), row(4, 0)]
+    left[-1]["candidates"][0].update(passed=True)
+    right[-1]["candidates"][0].update(passed=False, cfo=3.125)
+    result = audit.selection_summary(left, right)
+    assert result["opportunities"] == 5 and result["changed"] == 4
+    assert result["selections"] == {"baseline": 4, "candidate": 4}
+    assert result["transitions_on_changed_rows"] == {
+        "primary_to_none": 1, "residual_to_primary": 1, "none_to_residual": 1, "primary_to_primary": 1}
+    assert result["same_rank_field_counts"] == {"cfo": 1, "passed": 1}
+    assert result["same_rank_max_abs_delta"] == {"cfo": .125}
+    right[-1]["candidates"][0].pop("passed")
+    with pytest.raises(ValueError, match="different fields"):
+        audit.selection_summary(left, right)
+
+
+def test_crossing_scores_keeps_measured_fields_and_rejects_different_selections():
+    cross = import_module("reports.ALGO08.single-core-2x.cross_factor_fields")
+    left = [row(12, 1)]
+    right = [row(12, 1)]
+    for collection, value in ((left, 1.), (right, 2.)):
+        collection[0]["candidates"][0].update(dict.fromkeys(cross.SCORES | cross.MEASURED, value))
+    for fields in (cross.SCORES, cross.MEASURED):
+        mixed, = cross.mix(left, right, fields)[0]["candidates"]
+        assert all(mixed[key] == (2. if key in fields else 1.) for key in cross.SCORES | cross.MEASURED)
+    right[0]["candidates"][0]["candidate_rank"] = 0
+    with pytest.raises(ValueError, match="winning rank"):
+        cross.mix(left, right, cross.SCORES)
