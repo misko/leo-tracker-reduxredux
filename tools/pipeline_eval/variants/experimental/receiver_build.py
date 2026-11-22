@@ -161,10 +161,11 @@ def profile_source(text, signatures):
 
 
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
-          pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False):
+          pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False,
+          short_aperture=False):
     if (avx2 or fma) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
-    if sum((tracking, projection, shortlist_audit)) > 1:
+    if sum((tracking, projection, shortlist_audit, short_aperture)) > 1:
         raise ValueError("build each experimental scout or audit separately")
     recipe = json.loads((PINNED / "build.json").read_bytes())
     for name, expected in recipe["source_digests"].items():
@@ -182,6 +183,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
         from .receiver_projection_overlay import measure_overlay, timing_overlay
     if shortlist_audit:
         from .receiver_shortlist_overlay import measure_overlay, timing_overlay
+    if short_aperture:
+        from .receiver_aperture_overlay import kernel_overlay, timing_overlay
     overlay = tracking or projection or shortlist_audit
     with TemporaryDirectory(dir=output.parent) as work:
         scratch = Path(work)
@@ -194,7 +197,7 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = fftw_timing(source, crop)
                 if early_gate:
                     source = group_gate(source)
-                if overlay:
+                if overlay or short_aperture:
                     source = timing_overlay(source)
             if overlay and path.name == "two_carrier_receiver.c":
                 source = measure_overlay(source)
@@ -211,6 +214,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = omit_integer_control(source)
             if path.name in ("timing_first_receiver.c", "delay_product_kernel.c") and avx2:
                 options.append("-mavx2")
+            if short_aperture and path.name == "delay_product_kernel.c":
+                source = kernel_overlay(source)
             if path.name == "refine_bank.c" and fma:
                 options.append("-mfma")
             if path.name == "receiver_profile.c":
@@ -248,11 +253,12 @@ def main():
     parser.add_argument("--tracking", action="store_true")
     parser.add_argument("--projection", action="store_true")
     parser.add_argument("--shortlist-audit", action="store_true")
+    parser.add_argument("--short-aperture", action="store_true")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
           profile=args.profile, tracking=args.tracking, projection=args.projection,
-          shortlist_audit=args.shortlist_audit)
+          shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture)
 
 
 if __name__ == "__main__":
