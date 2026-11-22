@@ -1,5 +1,7 @@
 # ALGO08v2 single-core experiments
 
+The 100-recording DS30 comparison uses deployed **ALGO08v2** as the baseline. Its first physical pair took 131.03 → 84.85 seconds elapsed and 128.70 → 64.40 seconds CPU. The candidate reproduced both positions and all eight figures. On the southern simulated near omission, substituting generator orbit states improved fitted error from 1,102 m to 397 m but still produced a false fix. [100-recording protocol and histogram runner](ds30-hundred.md) · [Physical pair](exact-curved-physical-triage.md) · [Full-solver orbit experiment](oracle-orbit-solve.md)
+
 The simpler all-factor receiver with direct solver assembly achieved **2.10× summed CPU speedup and 1.89× elapsed speedup** at the two public simulated sites, with identical positions and all 16 figures. It returned two false near-boundary fixes and withheld both distant omissions. [Raw timings, position errors and shifted offers](exact-curved-public-sites.md)
 
 The exact-score receiver reproduced both deployed positions for all four assigned DS30 recordings and all 32 web figures pixel for pixel. Total elapsed fell from **839.85 to 412.76 s**. The summed time ratio passed at **0.4915** and the median paired ratio missed at **0.5166**. Total CPU speedup was **1.95×**. These are four recordings from one roof. [Four-recording runtime and error distributions](fractional-selected-four.md) · [Earlier twelve-hour comparison](2026-11-22-progress.md)

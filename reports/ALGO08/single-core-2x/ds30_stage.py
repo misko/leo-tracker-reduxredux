@@ -92,8 +92,8 @@ def frozen_assignments(size, station):
     panel = pinned(PANEL, PANEL_SHA256)["cases"]
     lock = pinned(OUT / "prediction-lock.json", LOCK_SHA256)
     select = import_module("reports.ALGO08.ds30-optimized.panels").select_panel
-    roster = select(lock["predictions"], "triage")
-    if [row["case"] for row in roster] != panel:
+    roster = select(lock["predictions"], "full")
+    if [row["case"] for row in roster[:len(panel)]] != panel or size > len(roster):
         raise ValueError("Nested panel differs from the frozen DS30 order")
     assignments = []
     for rank, row in enumerate(roster[:size], 1):

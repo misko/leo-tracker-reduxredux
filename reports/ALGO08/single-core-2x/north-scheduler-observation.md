@@ -43,3 +43,5 @@ env PYTHONPATH="$PWD:$PWD/src:$release" OPENBLAS_NUM_THREADS=1 \
   --archive-inventory-sha256 sha256:7aa06cab0502bcac70645a41a219bb6d53f1077f329e6f7ed79eb59a8794feec \
   --observe-scheduler
 ```
+
+The candidate-first repeat finished in 16.051 s elapsed and 15.779 s CPU. Deployment finished in 32.985 s elapsed and 32.442 s CPU. The scheduler measured 0.272 s and 0.542 s of runnable wait respectively, accounting for over 99% of each wall-minus-CPU gap in this repeat. Both arms charged zero input blocks and major faults. The parent observed pipe EOF and process exit within 21 µs of each other, and finished timing within 0.2 ms of the exit observation. Across orders, all 2,400 rows, 456 selected factors, both solutions and eight decoded PNGs agreed for each build. The earlier 3.595 s gap did not recur. Its cause remains unresolved. This repeat contributes no additional recording to the original two-site distribution. [Reverse-order receipt](measurements/exact-curved-lookahead-north-scheduler-reverse.json) · [Accounting and cross-order audit](measurements/north-scheduler-observation-audit.json)
