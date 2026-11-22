@@ -30,6 +30,19 @@ def native(ranks):
                 clock_anchor={"counter": 0})
 
 
+def test_saved_solver_retains_regional_geometry_and_drops_raw_reader_dependencies(trial):
+    spec = dict(ingress="paired-sha256", paired_sha256={"library": "pinned"}, member_lookahead=True,
+                fractional_score_selection=True, curved_design=True, longitude_chart=True,
+                detector_sha256="original", sources={"solver": "pinned"}, regional_veto=True)
+    before = deepcopy(spec)
+    replay = trial.saved_solver_options(spec)
+    assert replay["ingress"] == "stock"
+    assert not {"member_lookahead", "paired_sha256", "fractional_score_selection"} & replay.keys()
+    for key in ("curved_design", "longitude_chart", "detector_sha256", "sources", "regional_veto"):
+        assert replay[key] == spec[key]
+    assert spec == before
+
+
 def test_partition_depends_only_on_either_native_rank_and_preserves_order(trial):
     before = native([0, None, 1, None, 0, 1, 1, 0])
     after = native([None, 0, None, 1, 1, 0, 1, 0])

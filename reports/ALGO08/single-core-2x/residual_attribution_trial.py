@@ -99,6 +99,16 @@ def saved_native(pair_path, method, row):
     return native
 
 
+def saved_solver_options(spec):
+    # The input already contains the verified detector rows. Keep all solver
+    # and regional bindings while bypassing raw acquisition and rendering.
+    omitted = {"png_filter", "png_deflate", "paired_sha256", "member_lookahead",
+               "fractional_score_selection"}
+    result = {k: v for k, v in spec.items() if k not in omitted}
+    result.update(schedule="all", rendering="individual", ingress="stock", startup="stock")
+    return result
+
+
 def worker(native_path, spec_path, archive, region, output, *, include_evidence=False,
            guard_evidence=False):
     # The worker imports tools from the original freezer output. Install the
@@ -114,13 +124,7 @@ def worker(native_path, spec_path, archive, region, output, *, include_evidence=
     from leo.operations.tle_archive import TleArchiveReader
     from tools import algo08_position, algo08_scan
 
-    # The shims are for stages the trial never calls. All solver options,
-    # data caches and numerical backend bindings come from the same freezer.
-    solver_only = {
-        k: v for k, v in spec.items()
-        if k not in ("png_filter", "png_deflate", "paired_sha256")
-    }
-    solver_only.update(schedule="all", rendering="individual", ingress="stock", startup="stock")
+    solver_only = saved_solver_options(spec)
     with TemporaryDirectory() as temp:
         root = Path(temp)
         guard_times = []
