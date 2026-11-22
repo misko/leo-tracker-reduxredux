@@ -163,7 +163,7 @@ def profile_source(text, signatures):
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
           pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False,
           short_aperture=False, adjacent_primary=False, pack_stencil=False, phase_free=False,
-          batch_refine=False, fractional_batch=False, integer_fir=False):
+          batch_refine=False, fractional_batch=False, integer_fir=False, refine_parity=False):
     if (avx2 or fma or pack_stencil or fractional_batch or integer_fir) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
     if sum((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)) > 1:
@@ -174,6 +174,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
         raise ValueError("the refinement bank requires the packed x86 refinement backend")
     if batch_refine and any((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)):
         raise ValueError("the refinement bank expects the unchanged timing scout")
+    if refine_parity and not batch_refine:
+        raise ValueError("the parity bound requires the packed refinement bank")
     if integer_fir and any((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)):
         raise ValueError("the integer FIR expects the unchanged timing scout")
     recipe = json.loads((PINNED / "build.json").read_bytes())
@@ -204,6 +206,9 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
     if batch_refine:
         from .receiver_refine_batch_overlay import kernel_overlay as bank_kernel
         from .receiver_refine_batch_overlay import timing_overlay as bank_timing
+    if refine_parity:
+        from .receiver_refine_parity_overlay import kernel_overlay as parity_kernel
+        from .receiver_refine_parity_overlay import timing_overlay as parity_timing
     overlay = tracking or projection or shortlist_audit or adjacent_primary
     with TemporaryDirectory(dir=output.parent) as work:
         scratch = Path(work)
@@ -222,6 +227,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = timing_overlay(source)
                 if batch_refine:
                     source = bank_timing(source)
+                if refine_parity:
+                    source = parity_timing(source)
                 if integer_fir:
                     source = replace(source,
                                      "int delay_decimate(const float *, const float *, int, int, float *);",
@@ -238,6 +245,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                         source = paired_refine(source)
                     if batch_refine:
                         source = bank_kernel(source)
+                    if refine_parity:
+                        source = parity_kernel(source)
                 if path.name == "pilot_cancel.c":
                     source = clamp_residual(source)
                 if path.name == "refine_bank.c":
@@ -281,6 +290,8 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     signatures = [("int delay_decimate_integer(", "DECIMATE"), *signatures[1:]]
                     source = source.replace('#include "receiver_integer_fir.inc"',
                                             (HERE / "receiver_integer_fir.inc").read_text())
+                if refine_parity and path.name == "delay_product_kernel.c":
+                    signatures = [*signatures, ("int delay_refine_parity(", "REFINE")]
                 source = profile_source(source, signatures)
             copy = scratch / path.name
             copy.write_text(source)
@@ -321,6 +332,8 @@ def main():
     parser.add_argument("--fractional-batch", action="store_true")
     parser.add_argument("--integer-fir", action="store_true",
                         help="use an experimental Q15 FIR for the quarter-rate scout")
+    parser.add_argument("--refine-parity", action="store_true",
+                        help="certify coarse losers using the even-frame refinement score")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
@@ -328,7 +341,8 @@ def main():
           shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture,
           adjacent_primary=args.adjacent_primary, pack_stencil=args.pack_stencil,
           phase_free=args.phase_free, batch_refine=args.batch_refine,
-          fractional_batch=args.fractional_batch, integer_fir=args.integer_fir)
+          fractional_batch=args.fractional_batch, integer_fir=args.integer_fir,
+          refine_parity=args.refine_parity)
 
 
 if __name__ == "__main__":
