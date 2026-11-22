@@ -22,6 +22,30 @@ def test_each_timed_launcher_must_return_its_actual_assigned_region(tmp_path, mo
         bench.measure(tmp_path/"launcher", tmp_path/"output", args)
 
 
+def test_opt_in_pid_diagnostics_are_saved_with_unchanged_cpu_and_wall_markers(tmp_path, monkeypatch):
+    args = SimpleNamespace(region=tmp_path / "offer.json", recording=tmp_path / "r",
+                           archive=tmp_path / "tle", timeout=5, observe_scheduler=True)
+    region = {"center": [-31., 129.], "width_km": 25., "screen_center": [-31., 129.]}
+    args.region.write_text(json.dumps(region))
+    elapsed = iter((10.0, 12.0))
+    cpu = iter((3.0, 4.0))
+    events = []
+
+    def observed(command, *, env, timeout, started):
+        assert started == 10.0 and timeout == 5
+        assert events == ["prelaunch"]
+        return SimpleNamespace(returncode=0, stdout="noise\n" + json.dumps({"region": region})), {"pid": 123}
+
+    monkeypatch.setattr(bench.time, "monotonic", lambda: next(elapsed))
+    monkeypatch.setattr(bench, "child_usage", lambda: {"cpu_s": next(cpu)})
+    monkeypatch.setattr(bench.launcher_observation, "run", observed)
+    monkeypatch.setattr(bench, "evidence", lambda *a: {"raw_authority": "sample"})
+    row = bench.measure(tmp_path / "run", tmp_path / "output", args,
+                        before_launch=lambda: events.append("prelaunch"))
+    assert row["elapsed_s"] == 2.0 and row["cpu_s"] == 1.0
+    assert row["scheduler_observation"] == {"pid": 123}
+
+
 def test_source_pins_bind_the_measured_launcher_to_the_reviewed_variant(tmp_path):
     runner = tmp_path/"run"
     variant = tmp_path/"solver.py"

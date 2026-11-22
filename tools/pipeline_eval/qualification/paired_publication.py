@@ -18,7 +18,7 @@ from leo.operations.tle_archive import TleArchiveReader
 from leo.storage.fast_scan import FastScanStore, immutable_json
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from leo.storage.short_window import ShortWindowReader
-from tools.pipeline_eval.qualification import cache_residency
+from tools.pipeline_eval.qualification import cache_residency, launcher_observation
 
 
 LOCK = Path("/tmp/leo-algo08v2-2x-bench/gauss.lock")
@@ -136,7 +136,13 @@ def measure(launcher, root, args, specification=None, *, before_launch=None):
         before_launch()
     start_ns = time.time_ns()
     before, before_wall = child_usage(), time.monotonic()
-    result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=args.timeout)
+    if getattr(args, "observe_scheduler", False):
+        result, observation = launcher_observation.run(
+            command, env=env, timeout=args.timeout, started=before_wall,
+        )
+    else:
+        result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=args.timeout)
+        observation = None
     wall = time.monotonic() - before_wall
     usage = {k: value - before[k] for k, value in child_usage().items()}
     if result.returncode:
@@ -145,6 +151,8 @@ def measure(launcher, root, args, specification=None, *, before_launch=None):
     if receipt.get("region") != assigned_region:
         raise ValueError("Launcher used a different region from the assigned offer")
     summary = evidence(root, receipt, start_ns)
+    if observation is not None:
+        summary["scheduler_observation"] = observation
     return dict(launcher=command[0], elapsed_s=wall, **usage, **summary)
 
 
@@ -239,4 +247,6 @@ if __name__ == "__main__":
     p.add_argument("--first", choices=("baseline","candidate"), required=True)
     p.add_argument("--cpu", type=int, default=2)
     p.add_argument("--timeout", type=int, default=1200)
+    p.add_argument("--observe-scheduler", action="store_true",
+                   help="Observe the timed Linux leader's runnable wait and output drain")
     run_pair(p.parse_args())
