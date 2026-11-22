@@ -64,3 +64,9 @@ read -r graph_sha256 _ < <(sha256sum "$graph_library")
 ```
 
 The earlier timing receipt used the same recurrence before the ABI version export was added. Rebuild older Graph libraries for the frozen launcher.
+
+## Inside the covariance receiver's frozen solver
+
+The successor bundle adds the native path implementation to the covariance receiver and predictive solver. It keeps the parent's receiver binary, orbital policies, calibration arms and renderer. On the candidate detections from the DS30-0374 raw-to-web pair, the native recurrence handled 131 path searches. The saved position solve, including its numerical grid, took **17.78 CPU seconds**, against **18.80 s** for the same solver using Python. On the northern public recording it handled 40 searches and took **6.17 versus 5.95 s**. There is one measurement per build per site with opposite run orders. They establish a dense-recording saving in this run and leave any repeatable whole-solver gain on the shorter simulation unresolved.
+
+Both versions reproduced the measured raw publication's frequency RMS, positions, satellite owners and numerical grid and path digests on each recording. The endpoint objective replay also matched between versions. These timings exclude the receiver and PNG output. The frozen successor's raw-to-web speed is unmeasured. [Combined bundle and source pins](measurements/covariance-graph-freeze.json) · [Matched outputs and clocks](measurements/covariance-graph-saved.json)
