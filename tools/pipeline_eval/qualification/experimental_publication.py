@@ -46,6 +46,8 @@ TERMINAL_VETO_SOURCES = tuple(
 )
 LONGITUDE_CHART_MODULE = "tools.pipeline_eval.variants.experimental.longitude_chart"
 LONGITUDE_CHART_SOURCE = Path(LONGITUDE_CHART_MODULE.replace(".", "/") + ".py")
+FRACTIONAL_SELECTION_MODULE = "tools.pipeline_eval.variants.experimental.fractional_score_selection"
+FRACTIONAL_SELECTION_SOURCE = Path(FRACTIONAL_SELECTION_MODULE.replace(".", "/") + ".py")
 
 
 def _checked_graph_path(specification):
@@ -106,6 +108,26 @@ def _checked_longitude_chart(specification):
     return import_module(LONGITUDE_CHART_MODULE).longitude_chart
 
 
+def _checked_fractional_score_selection(specification, detector):
+    root = Path(__file__).resolve().parents[3]
+    source = root / FRACTIONAL_SELECTION_SOURCE
+    sources = specification.get("sources", {})
+    module = util.find_spec(FRACTIONAL_SELECTION_MODULE)
+    if (module is None or module.origin is None or Path(module.origin).resolve() != source
+            or not isinstance(sources, dict)
+            or sha256(source.read_bytes()).hexdigest() != sources.get(str(FRACTIONAL_SELECTION_SOURCE))):
+        raise ValueError("Selected score verification requires its pinned bundle source")
+    selection = import_module(FRACTIONAL_SELECTION_MODULE)
+    pin = specification["detector_sha256"]
+    if (detector != root / "receiver.so" or pin != selection.LIBRARY_SHA256
+            or pin != sources.get(detector.name)):
+        raise ValueError("Selected score verification requires its reviewed receiver")
+    library = detector.read_bytes()
+    if sha256(library).hexdigest() != pin:
+        raise ValueError("Selected score receiver differs from the reviewed build")
+    return selection.detector, library
+
+
 def run(args, specification):
     root = args.bulk_root.resolve(strict=True)
     if not root.is_dir() or any(root.iterdir()):
@@ -144,6 +166,9 @@ def run(args, specification):
     schedule = specification.get("schedule", "all")
     if schedule not in SCHEDULE_MODES:
         raise ValueError("Unknown receiver schedule")
+    fractional_selection = specification.get("fractional_score_selection", False)
+    if type(fractional_selection) is not bool or (fractional_selection and schedule != "all"):
+        raise ValueError("Selected score verification requires all visits in the released schedule")
     conditional_detector = None
     if schedule == "conditional-residual":
         from tools.pipeline_eval.variants.experimental.residual_receiver import (
@@ -177,19 +202,32 @@ def run(args, specification):
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
+    selected_detector = (_checked_fractional_score_selection(specification, detector)
+                         if fractional_selection else None)
     from leo.contracts.algo08_region import Algo08Region
     from tools import algo08_position, algo08_scan
 
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
         for name in (*algo08_scan.PINS, "native", "projector.so"):
-            if name == "cancellation-factors.so" and conditional_detector is not None:
-                (assets / name).write_bytes(conditional_detector)
-                continue
+            if name == "cancellation-factors.so":
+                if selected_detector is not None:
+                    (assets / name).write_bytes(selected_detector[1])
+                    continue
+                if conditional_detector is not None:
+                    (assets / name).write_bytes(conditional_detector)
+                    continue
             source = detector if name == "cancellation-factors.so" else RELEASE/"assets"/name
             (assets/name).symlink_to(source)
         # The normal publication path checks these pins before it opens the I/Q.
         stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
+        if selected_detector is not None:
+            verified = (assets / "cancellation-factors.so").resolve(strict=True)
+            score_counts = dict(two_factor_lanes=0, two_factor_repairs=0,
+                                retained_single_repairs=0, already_exact=0)
+            stack.enter_context(patch.object(algo08_scan, "detector",
+                                            partial(selected_detector[0], verified_library=verified,
+                                                    counts=score_counts)))
         if wrapped_longitude:
             chart = _checked_longitude_chart(specification)
 
@@ -381,6 +419,8 @@ def run(args, specification):
             stack.enter_context(patch.object(localization_v3, "sample_position_grid", posterior_grid))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+        if selected_detector is not None:
+            result["fractional_score_selection"] = score_counts
         if mode in SCREENED_MODES:
             result["screened_nomination"] = nomination
         if sparse_pin is not None:
