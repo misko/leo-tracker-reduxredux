@@ -35,7 +35,10 @@ def main(trial):
     if trial == "full-search":
         cases = (("DS30-0374-full-search", "DS30-0374 · physical"),
                  ("north-edge-full-search", "Northern site · simulated boundary"))
-    fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1), layout="constrained")
+    if trial == "endpoint":
+        cases = (("south-edge-endpoint", "Southern site · simulated boundary"),)
+    fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
+                             layout="constrained", squeeze=False)
     longest_publication = 0
     for row, (key, site) in enumerate(cases):
         pair = read(HERE / "measurements" / f"{key}.json")
@@ -84,12 +87,17 @@ def main(trial):
         duration.set_xlim(0, longest_publication * 1.16)
     axes[-1, 0].set_xlabel("Time from sealed I/Q to web publication (s)")
     axes[-1, 1].set_xlabel("Horizontal error (km)")
-    axes[0, 0].legend(loc="upper center", bbox_to_anchor=(.56, 1.49), ncol=2, frameon=False)
+    if len(cases) == 1:
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc="outside upper center", ncol=2, frameon=False)
+    else:
+        axes[0, 0].legend(loc="upper center", bbox_to_anchor=(.56, 1.49), ncol=2, frameon=False)
     fig.savefig(HERE / f"{trial}-publication.png", dpi=160)
     plt.close(fig)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search"), default="shared")
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint"),
+                        default="shared")
     main(parser.parse_args().trial)
