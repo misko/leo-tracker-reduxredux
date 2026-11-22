@@ -10,7 +10,7 @@ Treat all previously published regional trials as development regressions. The t
 
 ## Escalation and qualification
 
-Every location used to develop a receiver or solver change counts as a development site, including the three height-study regions. The generator excludes those areas along with the existing physical and simulated development centers before synthesizing signals. The scorer reconstructs the geographic draw after locking predictions. [Geographic evidence and eligibility](geographic-input-audit.md)
+Every location used to develop a receiver or solver change counts as a development site, including the three height-study regions and the Austin area used for independent receiver timing. Austin supplies a city-level exclusion because the antenna lacks surveyed coordinates. The generator excludes those areas along with the existing physical and simulated development centers before synthesizing signals. The scorer reconstructs the geographic draw after locking predictions. [Geographic evidence and eligibility](geographic-input-audit.md) · [Austin receiver checks](austin-receiver.md)
 
 Read the median paired and summed elapsed ratios for each site alongside the full-panel ratios. Each runtime row counts every assigned offer once across the two calibration fits. A site with an incomplete pair reports its coverage and leaves both ratios unset. This makes a site-specific slowdown visible while retaining the prespecified overall timing gates.
 

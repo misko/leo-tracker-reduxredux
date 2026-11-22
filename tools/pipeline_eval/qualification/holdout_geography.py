@@ -23,8 +23,10 @@ DEVELOPMENT_CENTERS = (
     (35, 138), (-29, -70), (7, -2), (35, 55), (-15, -63), (33, 138), (-41, -72),
 )
 
-# These solver experiments followed the original seeded waveform generator.
+# These experiments followed the original seeded waveform generator.
 HEIGHT_TRIAL_CENTERS = ((15., 75.), (-25., -65.), (65., 120.))
+# City-level exclusion for the UT Austin receiver study, not a surveyed antenna position.
+AUSTIN_RECEIVER_AREA = (30.3, -97.7)
 
 
 def fresh_layout(rng, additional_centers=()):
@@ -51,16 +53,16 @@ def seeded_centers(seed):
     return [center for center, _ in fresh_layout(np.random.default_rng(int.from_bytes(seed, "big")))]
 
 
-def independent_of_height_trials(centers):
+def independent_of_later_trials(centers):
     return all(distance_km(center, used) >= MIN_CENTER_SEPARATION_KM
-               for center in centers for used in HEIGHT_TRIAL_CENTERS)
+               for center in centers for used in (*HEIGHT_TRIAL_CENTERS, AUSTIN_RECEIVER_AREA))
 
 
 def new_confirmation_seed():
     """Draw before synthesizing any signals. Explicit replay seeds stay reproducible."""
     while True:
         seed = secrets.token_bytes(32)
-        if independent_of_height_trials(seeded_centers(seed)):
+        if independent_of_later_trials(seeded_centers(seed)):
             return seed
 
 
@@ -73,7 +75,7 @@ def verifies_drawn_sites(seed_hex, sites):
     if len(seed) != 32:
         return False
     centers = seeded_centers(seed)
-    if len(sites) != len(centers) or not independent_of_height_trials(centers):
+    if len(sites) != len(centers) or not independent_of_later_trials(centers):
         return False
     # make_scene jitters each coordinate independently by at most two degrees.
     return all(any(abs(lat - center[0]) <= 2 and abs(lon - center[1]) <= 2
