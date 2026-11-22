@@ -1,0 +1,115 @@
+{
+  "assigned": 4,
+  "candidate_specification_digest": "sha256:e40942b4f8ef6581b14c2ad7d49baf73c2519afa17a00f78339c92b7731cbb6a",
+  "cpu": 2,
+  "coverage": {
+    "verified": [],
+    "missing": [
+      "DS30-0008",
+      "DS30-0155",
+      "DS30-0001"
+    ],
+    "failed": [],
+    "invalid": [],
+    "development": [
+      "DS30-0374"
+    ]
+  },
+  "cases": [
+    {
+      "case": "DS30-0374",
+      "rank": 1,
+      "expected_order": [
+        "candidate",
+        "baseline"
+      ],
+      "audit_sha256": "sha256:c3933a430063d8e425f56ebe3e74d53c31f065f4ae25f363e4c664cc11493952",
+      "pair_sha256": "56a07157c1e389380d2a0e1e7835ea44ec5bbfe98918555f357459023a6e3af2",
+      "audit": {
+        "probe_rows": 9288,
+        "selected": 4157,
+        "figures": 8
+      },
+      "decision": "complete",
+      "elapsed_s": {
+        "baseline": 133.50223092269152,
+        "candidate": 86.17252021096647
+      },
+      "cpu_s": {
+        "baseline": 127.93728999999999,
+        "candidate": 76.54462199999999
+      },
+      "arms": {
+        "baseline": {
+          "c0": {
+            "latlon": [
+              37.849624957021575,
+              -122.46463521588952
+            ],
+            "rf_rms_hz": 101.53591275629088
+          },
+          "fitted_c": {
+            "latlon": [
+              37.85068163204372,
+              -122.46380878477721
+            ],
+            "rf_rms_hz": 101.51980285094695
+          }
+        },
+        "candidate": {
+          "c0": {
+            "latlon": [
+              37.849624957021575,
+              -122.46463521588952
+            ],
+            "rf_rms_hz": 101.53591275629088
+          },
+          "fitted_c": {
+            "latlon": [
+              37.85068163204372,
+              -122.46380878477721
+            ],
+            "rf_rms_hz": 101.51980285094695
+          }
+        }
+      },
+      "raw_authority": "sha256:4c30ea3bf9589b092bfe5bc38968a2ec5aca39565c9428416f164191ee017265",
+      "actual_order": [
+        "candidate",
+        "baseline"
+      ],
+      "expected_archive": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0374/tle",
+      "state": "development",
+      "reason": "Pair lacks recorded causal archive identity"
+    },
+    {
+      "case": "DS30-0008",
+      "rank": 2,
+      "expected_order": [
+        "baseline",
+        "candidate"
+      ],
+      "state": "missing"
+    },
+    {
+      "case": "DS30-0155",
+      "rank": 3,
+      "expected_order": [
+        "candidate",
+        "baseline"
+      ],
+      "state": "missing"
+    },
+    {
+      "case": "DS30-0001",
+      "rank": 4,
+      "expected_order": [
+        "baseline",
+        "candidate"
+      ],
+      "state": "missing"
+    }
+  ],
+  "elapsed_gates": null,
+  "position": null
+}

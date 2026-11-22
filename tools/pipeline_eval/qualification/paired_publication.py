@@ -13,6 +13,7 @@ import time
 from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.digests import canonical_digest
 from leo.contracts.fast_standard_analysis import PLOTS
+from leo.operations.tle_archive import TleArchiveReader
 from leo.storage.fast_scan import FastScanStore, immutable_json
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from leo.storage.short_window import ShortWindowReader
@@ -35,6 +36,12 @@ def verify_sources(launcher, sources):
         actual = hashlib.sha256((roots[0] / name).read_bytes()).hexdigest()
         if actual != expected:
             raise ValueError(f"Candidate source changed: {name}")
+
+
+def archive_identity(path):
+    root = path.resolve(strict=True)
+    snapshots = {ref.path.name: ref.sha256 for ref in TleArchiveReader(root).list_snapshots("space-track")}
+    return dict(root=str(root), snapshots_sha256=canonical_digest(snapshots))
 
 
 def blind_assignment(panel_path, expected_sha256, recording, region, archive):
@@ -71,12 +78,13 @@ def child_usage():
                 voluntary_switches=usage.ru_nvcsw, involuntary_switches=usage.ru_nivcsw)
 
 
-def evidence(root, receipt, started_ns):
+def evidence(root, receipt, started_ns, *, read_only=False):
     run = receipt["run_id"]
     scans = FastScanStore(root)
     publication = FastStandardAnalysisStore(root)
     detail = publication.detail(run)
-    terminal_path = scans.automatic_workspace(run) / "terminal.json"
+    workspace = scans.automatic_workspace(run, create=False) if read_only else scans.automatic_workspace(run)
+    terminal_path = workspace / "terminal.json"
     terminal = json.loads(terminal_path.read_bytes())
     if canonical_digest(terminal) != receipt["terminal_sha256"] or detail["terminal_sha256"] != receipt["terminal_sha256"]:
         raise ValueError("Terminal receipt failed digest verification")
@@ -153,6 +161,11 @@ def run_pair(args):
                       region=str(args.region.resolve()), runs=runs)
         pinned_config = None
         try:
+            expected_archive = getattr(args, "archive_inventory_sha256", None)
+            if expected_archive is not None:
+                result["archive"] = archive_identity(args.archive)
+                if result["archive"]["snapshots_sha256"] != expected_archive:
+                    raise ValueError("Causal archive differs from the frozen assignment")
             if args.blind_panel:
                 panel, digest = args.blind_panel
                 result["blind_assignment"] = blind_assignment(Path(panel), digest, args.recording, args.region, args.archive)
@@ -170,6 +183,8 @@ def run_pair(args):
             if a["raw_authority"] != b["raw_authority"] or any(
                     a["receipt"][k] != b["receipt"][k] for k in ("region","session_id","window_count")):
                 raise ValueError("Pair used different waveform support or geography")
+            if expected_archive is not None and archive_identity(args.archive) != result["archive"]:
+                raise ValueError("Causal archive changed during the pair")
             result["elapsed_ratio"] = b["elapsed_s"]/a["elapsed_s"]
         except Exception as exc:
             result["failure"] = f"{type(exc).__name__}: {exc}"
@@ -184,6 +199,7 @@ if __name__ == "__main__":
         p.add_argument(name, type=Path)
     p.add_argument("--baseline", type=Path, default=BASELINE)
     p.add_argument("--candidate-config", type=Path, help="Pinned experimental receiver and solver options")
+    p.add_argument("--archive-inventory-sha256", help="Verify and record the assigned causal archive inventory")
     p.add_argument("--blind-panel", nargs=2, metavar=("MANIFEST", "SHA256"),
                    help="Verify an assigned opaque pair using a scorer-isolated account")
     p.add_argument("--first", choices=("baseline","candidate"), required=True)

@@ -10,6 +10,7 @@ from struct import unpack_from
 
 from PIL import Image
 
+from leo.contracts.digests import canonical_digest
 from leo.contracts.fast_standard_analysis import PLOTS
 from leo.storage.fast_scan import FastScanStore
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -125,17 +126,22 @@ def _compare_png(left, right, *, name, lossless_png):
         return list(control.size)
 
 
-def audit(pair, *, lossless_png=False):
+def audit(pair, *, lossless_png=False, read_only=False, bind_native=False):
     data = json.loads(pair.read_bytes())
     if "failure" in data:
         raise ValueError("Cannot audit a failed pair as an exact success")
     before, after = (data["runs"][method] for method in ("baseline", "candidate"))
+    state = before["receipt"].get("decision", "complete")
+    if state != after["receipt"].get("decision", "complete") or before.get("reason") != after.get("reason"):
+        raise ValueError("Different terminal decisions or reasons")
+    if state not in ("complete", "withheld"):
+        raise ValueError("Expected a completed publication or withholding")
     for key in ("arms", "owners", "scientific_digests"):
         if before[key] != after[key]:
             raise ValueError(f"Different published {key}")
     if not lossless_png and before["artifacts"] != after["artifacts"]:
         raise ValueError("Different published artifacts")
-    probes, timings, stores = {}, {}, {}
+    probes, timings, stores, detectors = {}, {}, {}, {}
     for method, row in (("baseline", before), ("candidate", after)):
         root = pair.parent / method
         files = list((root / "fast-scan-automatic-work").glob("*/detections.json"))
@@ -143,8 +149,16 @@ def audit(pair, *, lossless_png=False):
             raise ValueError("Expected one sealed receiver output")
         doc = json.loads(files[0].read_bytes())
         probes[method] = doc["source"]["probes"]
-        workspace = FastScanStore(root).automatic_workspace(row["receipt"]["run_id"])
-        terminal_ns = (workspace / "terminal.json").stat().st_mtime_ns
+        scans = FastScanStore(root)
+        run_id = row["receipt"]["run_id"]
+        workspace = scans.automatic_workspace(run_id, create=False) if read_only else scans.automatic_workspace(run_id)
+        terminal = workspace / "terminal.json"
+        if bind_native:
+            if (canonical_digest(doc) != json.loads(terminal.read_bytes())["native_sha256"]
+                    or doc["source"]["raw_recording_authority_digest"] != row["raw_authority"]):
+                raise ValueError(f"Detector output differs from the {method} terminal binding")
+            detectors[method] = doc["provenance"]["detector_sha256"]
+        terminal_ns = terminal.stat().st_mtime_ns
         delta = (terminal_ns - files[0].stat().st_mtime_ns) / 1e9
         timings[method] = dict(launch_to_detections=row["terminal_file_s"] - delta,
                                detections_to_terminal=delta,
@@ -152,11 +166,13 @@ def audit(pair, *, lossless_png=False):
         if min(timings[method].values()) < 0:
             raise ValueError("Published file timestamps disagree with the launch clock")
         store = FastStandardAnalysisStore(root)
-        run_id = row["receipt"]["run_id"]
         manifest = store.detail(run_id)
-        if (manifest["state"] != "complete" or manifest["artifacts"] != row["artifacts"]
-                or tuple(item["name"] for item in manifest["artifacts"]) != PLOTS):
-            raise ValueError(f"Expected all eight ordered figures in the {method} publication")
+        expected = PLOTS if state == "complete" else ()
+        if (manifest["state"] != state or manifest["artifacts"] != row["artifacts"]
+                or tuple(item["name"] for item in manifest["artifacts"]) != expected):
+            if state == "complete":
+                raise ValueError(f"Expected all eight ordered figures in the {method} publication")
+            raise ValueError(f"Unexpected figures in the {method} withholding")
         stores[method] = (store, run_id)
     if probes["baseline"] != probes["candidate"]:
         raise ValueError("Receiver output changed")
@@ -180,6 +196,8 @@ def audit(pair, *, lossless_png=False):
     )
     if lossless_png:
         result.update(image_comparison="lossless-png", encoded_images_equal=encoded_matches)
+    if bind_native:
+        result["detector_sha256"] = detectors
     return result
 
 

@@ -336,9 +336,10 @@ class FastScanStore:
         )[:limit]
         return {"items": [self.automatic_status(p.stem) for p in paths]}
 
-    def automatic_workspace(self, recording_id):
+    def automatic_workspace(self, recording_id, *, create=True):
         path = self._path("fast-scan-automatic-work", safe_id(recording_id))
-        path.mkdir(parents=True, exist_ok=True)
+        if create:
+            path.mkdir(parents=True, exist_ok=True)
         return path
 
     def tracking_input_path(self, run_id):
