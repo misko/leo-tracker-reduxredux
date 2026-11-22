@@ -46,10 +46,14 @@ def causal_probes(prepared_tracks, archive, region):
     """Use the original causal catalogue and exactly the saved all-track score."""
     from leo.analysis.localization_v3.elements import ElementParser
     from leo.operations.causal_tle_catalogue import causal_catalogue
+    from leo.operations.tle_archive import TleArchiveError
     from tools.pipeline_eval.variants.experimental.regional_reassignment import evaluate as score
 
     cutoff = prepared_tracks["metadata"]["causal_cutoff_utc_ns"]
-    catalogue = causal_catalogue(archive, cutoff, element_parser=ElementParser())
+    try:
+        catalogue = causal_catalogue(archive, cutoff, element_parser=ElementParser())
+    except TleArchiveError as error:
+        raise ValueError("Causal archive unavailable for exterior diagnostic") from error
     result = score(prepared_tracks, catalogue.catalogue, region)
     result["snapshots"] = sorted({row["snapshot_digest"] for row in catalogue.provenance})
     return result

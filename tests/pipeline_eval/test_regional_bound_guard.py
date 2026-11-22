@@ -4,9 +4,10 @@ from math import inf, nextafter
 import pytest
 
 from leo.analysis.localization_v3.region import SearchRegion
+from leo.operations.tle_archive import TleArchiveError
 from tools.pipeline_eval.variants import v5_core
 from tools.pipeline_eval.variants.experimental.regional_bound_guard import (
-    ARMS, bound_arms, bound_exterior_veto, guard_inference, inspect_boundary,
+    ARMS, bound_arms, bound_exterior_veto, causal_probes, guard_inference, inspect_boundary,
 )
 from tools.pipeline_eval.variants.experimental.regional_reassignment import probes
 
@@ -112,3 +113,17 @@ def test_guard_preserves_a_bound_initial_selector():
 
     guarded = guard_inference(partial(infer, select_initial=selector), lambda *_: pytest.fail("score"))
     assert guarded({}, region, None, {}) is withheld
+
+
+def test_archive_read_failure_keeps_a_boundary_fix():
+    class Unreadable:
+        def list_snapshots(self, provider):
+            raise TleArchiveError("unreadable")
+
+    region = SearchRegion((32., 114.), WIDTH)
+    tracks = {"metadata": {"causal_cutoff_utc_ns": 1}}
+    endpoints = {"c0": [HALF, 0.], "fitted_c": [0., 0.]}
+    decision = inspect_boundary(endpoints, WIDTH, lambda: causal_probes(tracks, Unreadable(), region))
+    assert decision["bound_arms"] == ["c0"]
+    assert not decision["would_withhold"]
+    assert decision["diagnostic_error"] == "Causal archive unavailable for exterior diagnostic"
