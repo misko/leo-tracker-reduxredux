@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from leo.analysis.localization_v3.region import SearchRegion
+from tools.pipeline_eval.variants import algo08_family_profile as profile
 from tools.pipeline_eval.variants.algo08_family_profile import (
     BIAS_SIGMA_HZ,
     FamilyProfile,
@@ -54,3 +55,34 @@ def test_grid_refines_both_arms_on_disjoint_family_scores():
         for arm, (point, _, gap) in enumerate(paired):
             assert point == pytest.approx(endpoints[part, arm], abs=.1)
             assert gap > 30.
+
+
+def test_boundary_ambiguous_owners_and_independent_split_trigger_stock(monkeypatch):
+    times = np.arange(0., 50., 10.)
+    tracks = [dict(times=times, values=10. * times**2) for _ in range(6)]
+    prepared = dict(status="inputs_prepared", tracks={"tracks": tracks},
+                    sky={"bank": {"norad": np.arange(6)}},
+                    noise={"constant_radio_sigma_hz": 150.})
+    monkeypatch.setattr(profile, "nominate", lambda *args: [
+        (track, index, 0, 2. if index < 2 else 12.) for index, track in enumerate(tracks)
+    ])
+
+    class WeakFit:
+        cache = {}
+
+        def __init__(self, *args):
+            pass
+
+        def minimize(self):
+            return [[(np.array(point), 10., 12.)] * 2
+                    for point in ((12.5, 0.), (-2., 0.), (2., 0.))]
+
+        def at(self, point):
+            return dict(phases=[1., 0.], rms=[1., 0.])
+
+    monkeypatch.setattr(profile, "FamilyProfile", WeakFit)
+    result = propose(prepared, SearchRegion((20., 0.)))
+    assert set(result["fallback"]) == {
+        "ambiguous_or_unmatched_ownership", "c0_split_disagreement", "c0_boundary",
+        "fitted_c_split_disagreement", "fitted_c_boundary",
+    }

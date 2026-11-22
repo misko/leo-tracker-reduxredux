@@ -11,7 +11,7 @@ from unittest.mock import patch
 SPECIFICATION = "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
 
 
-def trial(pair_path, frozen, output):
+def trial(pair_path, frozen, native, terminal_path, output, *, verify_only=False):
     from tools.pipeline_eval.variants.experimental import lean_startup
 
     source = Path(__file__).resolve()
@@ -21,7 +21,6 @@ def trial(pair_path, frozen, output):
     archived = pair["runs"]["candidate"]
     spec = frozen / "spec.json"
     offer, archive = Path(pair["region"]), Path(pair["archive"]["root"])
-    native, = (pair_path.parent / "candidate/fast-scan-automatic-work").glob("*/detections.json")
     install = lean_startup.install
     details = {}
 
@@ -29,22 +28,27 @@ def trial(pair_path, frozen, output):
         def install_profile():
             install()
             from leo.analysis.localization_v3.region import SearchRegion
+            from leo.contracts.algo08_region import Algo08Region
             from leo.contracts.digests import canonical_digest
-            from tools.pipeline_eval.qualification.paired_publication import (
-                archive_identity,
-                verify_sources,
-            )
+            from leo.operations.tle_archive import TleArchiveReader
             from tools.pipeline_eval.variants import v5_core
 
-            expected = read(spec)
-            if (canonical_digest(expected) != SPECIFICATION
-                    or pair["candidate_specification_digest"] != SPECIFICATION
-                    or archive_identity(archive) != pair["archive"]
-                    or read(offer) != archived["receipt"]["region"]):
+            launcher = source.parents[1] / "v3/run"
+            runpy.run_path(str(launcher))["checked_spec"](frozen)
+            snapshots = {ref.path.name: ref.sha256
+                         for ref in TleArchiveReader(archive).list_snapshots("space-track")}
+            if (pair["candidate_specification_digest"] != SPECIFICATION
+                    or canonical_digest(snapshots) != pair["archive"]["snapshots_sha256"]
+                    or Algo08Region.parse(read(offer)).document() != archived["receipt"]["region"]):
                 raise ValueError("Expected the unchanged causal ALGO08v3 comparison inputs")
-            verify_sources(frozen / "reports/ALGO08/single-core-2x/run-candidate",
-                           expected["sources"])
-            helpers["saved_native"](pair_path, "candidate", archived)
+            receipt = archived["receipt"]
+            terminal = read(terminal_path)
+            detections = read(native)
+            if (canonical_digest(terminal) != receipt["terminal_sha256"]
+                    or canonical_digest(detections) != terminal["native_sha256"]
+                    or detections["source"]["session_id"] != receipt["session_id"]
+                    or terminal["region"] != receipt["region"]):
+                raise ValueError("Expected the detector packet sealed by the archived run")
             variant = source.parents[3] / "tools/pipeline_eval/variants/algo08_family_profile.py"
             propose = runpy.run_path(str(variant))["propose"]
             stock = v5_core.infer
@@ -65,6 +69,9 @@ def trial(pair_path, frozen, output):
 
             stack.enter_context(patch.object(v5_core, "infer", infer))
 
+        if verify_only:
+            install_profile()
+            return
         work = Path(tmp) / "saved-solve.json"
         stack.enter_context(patch.object(lean_startup, "install", install_profile))
         helpers["worker"](native, spec, archive, offer, work, include_evidence=True)
@@ -80,6 +87,7 @@ def trial(pair_path, frozen, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("pair_path", "frozen", "output"):
+    for name in ("pair_path", "frozen", "native", "terminal_path", "output"):
         parser.add_argument(name, type=Path)
+    parser.add_argument("--verify-only", action="store_true")
     trial(**vars(parser.parse_args()))
