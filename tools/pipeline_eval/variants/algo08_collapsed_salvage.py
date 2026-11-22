@@ -9,7 +9,7 @@ import numpy as np
 from tools.pipeline_eval.variants import algo08_collapsed, algo08_collapsed_linear, v5_core
 
 
-def recover(signed, half_width_km):
+def recover(signed, half_width_km, *, repair=None, prefit=None):
     from leo.analysis.localization_v3 import conservative_recovery
     from leo.analysis.localization_v3.event_position import make_event_problem, refit
     from leo.analysis.localization_v3.family_weighting import confidence_for, family_weights
@@ -63,20 +63,35 @@ def recover(signed, half_width_km):
     entries = select_entries(nomination, point, gates)
     info["linear"] = dict(offered_tracks=len(entries), offered_points=sum(e["points"] for e in entries),
                           accepted=False)
+    proposal = dict(signed, node=replacement, keep=following, entries=entries, means=new_means,
+                    powers=powers)
+    if prefit is not None:
+        selected, info["prefit"] = prefit(signed, proposal, half_width_km)
+        if selected is None:
+            return signed, info
+        info["accepted"] = True
+        info["linear"]["accepted"] = bool(selected["entries"])
+        return selected, info
     pair = {arm: refit(scan, replacement, following, arm, powers, new_means, model, [], entries)
             for arm in algo08_collapsed.ARMS}
     info["phase_change_s"] = {arm: row["final_phase_change_s"] for arm, row in pair.items()}
     info["failed_tracks"] = {arm: sorted(t["component"] for t in r["gates"]["tracks"] + r["linear_gates"]
                                          if not t["compatible"]) for arm, r in pair.items()}
     info["accepted"] = pair_passes(pair, include_linear=bool(entries), half_width_km=half_width_km)
+    proposal["arms"] = pair
     if not info["accepted"]:
-        return signed, info
-    info["linear"]["accepted"] = bool(entries)
-    return dict(signed, node=replacement, keep=following, entries=entries, means=new_means,
-                powers=powers, arms=pair), info
+        if repair is None:
+            return signed, info
+        proposal, info["repair"] = repair(proposal, half_width_km)
+        if proposal is None:
+            return signed, info
+        info["accepted"] = True
+    info["linear"]["accepted"] = bool(proposal["entries"])
+    return proposal, info
 
 
-def inference(record_curved, prepared, region, bound, stages, *, selected_evidence=None):
+def inference(record_curved, prepared, region, bound, stages, *, selected_evidence=None, repair=None,
+              prefit=None):
     final, metadata = None, None
 
     def evidence(prepared, signed, fit):
@@ -86,7 +101,7 @@ def inference(record_curved, prepared, region, bound, stages, *, selected_eviden
         if record_curved is not None:
             record_curved(signed)
         began = perf_counter()
-        final, metadata = recover(signed, region.half_width_km)
+        final, metadata = recover(signed, region.half_width_km, repair=repair, prefit=prefit)
         stages["single_salvage_and_predictive"] = perf_counter() - began
         if selected_evidence is not None:
             selected_evidence(prepared, final, None)
@@ -100,5 +115,5 @@ def inference(record_curved, prepared, region, bound, stages, *, selected_eviden
     return result
 
 
-def binding(record_curved=None):
-    return patch.object(v5_core, "infer", partial(inference, record_curved))
+def binding(record_curved=None, *, repair=None, prefit=None):
+    return patch.object(v5_core, "infer", partial(inference, record_curved, repair=repair, prefit=prefit))
