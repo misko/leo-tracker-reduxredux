@@ -1,5 +1,6 @@
 """Time one matched, single-core raw-I/Q-to-publication pair on Gauss."""
 import argparse
+from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
@@ -147,16 +148,22 @@ def measure(launcher, root, args, specification=None, *, before_launch=None):
     return dict(launcher=command[0], elapsed_s=wall, **usage, **summary)
 
 
-def run_pair(args):
-    if args.cpu not in os.sched_getaffinity(0):
+@contextmanager
+def single_core_slot(cpu):
+    if cpu not in os.sched_getaffinity(0):
         raise ValueError("Selected CPU is outside the scheduling affinity")
-    os.sched_setaffinity(0, {args.cpu})
+    os.sched_setaffinity(0, {cpu})
     os.setpriority(os.PRIO_PROCESS, 0, max(15, os.getpriority(os.PRIO_PROCESS, 0)))
     subprocess.run(["ionice", "-c2", "-n7", "-p", str(os.getpid())], check=True)
     LOCK.parent.mkdir(exist_ok=True)
     # Shared readers use the same inode from separate inference accounts on Gauss.
     with LOCK.open("rb" if LOCK.exists() else "a+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def run_pair(args):
+    with single_core_slot(args.cpu):
         args.output.mkdir(parents=True, exist_ok=False)
         runs = {}
         order = ("baseline", "candidate") if args.first == "baseline" else ("candidate", "baseline")

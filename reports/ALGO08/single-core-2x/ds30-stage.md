@@ -48,6 +48,11 @@ stage run --size 4 --case DS30-0374
 stage score --size 4
 ```
 
+Invoke the stage command directly on Gauss. Inventory and scoring reopen publications, hash detections
+and decode figures. The command reserves the same low-priority single-core slot for those audits
+and releases it before the timed pair reserves its own slot. An external lock around this command
+would attempt to acquire the same slot twice.
+
 For an authorized pair where cache state matters, add `--cache-library` to `stage run`.
 The runner checks the current sealed manifest roster against that case's frozen binding and
 queries only its compressed members. Each observation runs under the same Gauss lock immediately

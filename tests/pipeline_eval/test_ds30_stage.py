@@ -1,4 +1,5 @@
 from importlib import import_module
+from contextlib import contextmanager
 from dataclasses import replace
 from io import BytesIO
 import json
@@ -148,6 +149,41 @@ def seal_pair(study, entry, elapsed=(4., 1.), *, archived=True, fixes=None):
 
 def inventory(study):
     return stage.inventory(study.runs, study.assignments, study.candidate, study.spec, 2)
+
+
+@pytest.mark.parametrize("action", ["run", "inventory", "score"])
+def test_cli_serializes_publication_audits_separately_from_timed_pairs(study, monkeypatch, action):
+    import sys
+
+    events = []
+
+    @contextmanager
+    def slot(cpu):
+        assert cpu == 2
+        events.append("acquired")
+        yield
+        events.append("released")
+
+    def inspect(*args, **kwargs):
+        assert events[-1] == "acquired"
+        events.append("audit")
+        return {}
+
+    def launch(*args, **kwargs):
+        assert events[-1] == "released"
+        events.append("pair")
+
+    monkeypatch.setattr(sys, "argv", ["stage", action, "/work", "/candidate", "/spec", "digest"])
+    monkeypatch.setattr(pair, "single_core_slot", slot)
+    monkeypatch.setattr(stage, "verify_build", lambda *args: study.spec)
+    monkeypatch.setattr(stage, "read", lambda _: REGION)
+    monkeypatch.setattr(stage, "frozen_assignments", lambda *_: study.assignments)
+    monkeypatch.setattr(stage, "inventory", inspect)
+    monkeypatch.setattr(stage, "run_next", launch)
+    monkeypatch.setattr(stage, "score", lambda s: s)
+    stage.main()
+    audit = ["acquired", "audit", "released"]
+    assert events == (audit + ["pair"] + audit if action == "run" else audit)
 
 
 def test_one_pair_audit_binds_publication_and_only_scores_that_recording(conditional_study, monkeypatch):

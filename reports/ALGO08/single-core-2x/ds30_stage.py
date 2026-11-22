@@ -379,14 +379,16 @@ def main():
         parser.error("--case applies to run")
     if args.cache_library is not None and args.action != "run":
         parser.error("--cache-library applies to run")
-    spec = verify_build(args.candidate, args.config, args.spec_digest)
     region_file = pair.BASELINE.parent / "station/region.json"
-    assignments = frozen_assignments(args.size, Algo08Region.parse(read(region_file)).document())
-    stage = inventory(args.workspace, assignments, args.candidate, spec, cpu=2)
+    with pair.single_core_slot(2):
+        spec = verify_build(args.candidate, args.config, args.spec_digest)
+        assignments = frozen_assignments(args.size, Algo08Region.parse(read(region_file)).document())
+        stage = inventory(args.workspace, assignments, args.candidate, spec, cpu=2)
     if args.action == "run":
         run_next(args.workspace, assignments, stage, args.case, args.candidate, args.config,
                  region_file, cache_library=args.cache_library)
-        stage = inventory(args.workspace, assignments, args.candidate, spec, cpu=2)
+        with pair.single_core_slot(2):
+            stage = inventory(args.workspace, assignments, args.candidate, spec, cpu=2)
     print(json.dumps(score(stage) if args.action == "score" else stage, indent=2, allow_nan=False))
 
 
