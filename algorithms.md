@@ -1,5 +1,7 @@
 # Receiver and positioning algorithms
 
+**ALGO08v3 is the active single-core research version.** It names the frozen two-scan and compact v5 build tested on the matched DS30 panel. Run it explicitly on Gauss with `/opt/leo-algo08/algo08v3/run`. [Release, known failures and replay commands](reports/ALGO08/v3/README.md)
+
 **ALGO08v2 is the standard analysis for new Gauss fast scans.** It combines two-scan pilot cancellation, final fractional GLRT verification, causal carrier selection and compact v5 positioning with five refreshes. Its production identity is `algo08-two-scan-compact-v5-v2`. It uses the qualified optimized receiver. Version 1 remains readable and has its own pinned launcher. [Matched v1–v2 timings and position errors](reports/ALGO08/ds30-optimized/README.md) · [Single-core design proposals](reports/ALGO08/single-core-directions.md) The previous production ALGO07 chain remains the reader and explicit replay option for historical runs. **algo07v5 fast, no repair** is the standalone accuracy reference used in the DS30 study. [DS30 field report with PNGs](reports/2026_11_21_ds30_full/README.md) · [ALGO07 release](reports/ALGO07/README.md)
 
 The November 20 progress report compares original GLRT, one scan and two-scan cancellation on Gauss and shows how each affected original and compact v5 position fixes. [Dated algorithm report](2026_11_20_algorithms.md)
