@@ -48,6 +48,9 @@ LONGITUDE_CHART_MODULE = "tools.pipeline_eval.variants.experimental.longitude_ch
 LONGITUDE_CHART_SOURCE = Path(LONGITUDE_CHART_MODULE.replace(".", "/") + ".py")
 FRACTIONAL_SELECTION_MODULE = "tools.pipeline_eval.variants.experimental.fractional_score_selection"
 FRACTIONAL_SELECTION_SOURCE = Path(FRACTIONAL_SELECTION_MODULE.replace(".", "/") + ".py")
+CURVED_DESIGN_MODULE = "tools.pipeline_eval.variants.algo08_curved_design"
+CURVED_DESIGN_SOURCE = Path(CURVED_DESIGN_MODULE.replace(".", "/") + ".py")
+CURVED_DESIGN_SHA256 = "8b24f19af9f2e73ee54ca25c3432875ee25e06cd5c0ee260cbd696c6042c6ff4"
 
 
 def _checked_graph_path(specification):
@@ -128,6 +131,30 @@ def _checked_fractional_score_selection(specification, detector):
     return selection.detector, library
 
 
+def _checked_curved_design(specification):
+    root = Path(__file__).resolve().parents[3]
+    source = root / CURVED_DESIGN_SOURCE
+    sources = specification.get("sources", {})
+    module = util.find_spec(CURVED_DESIGN_MODULE)
+    if (module is None or module.origin is None or Path(module.origin).resolve() != source
+            or not isinstance(sources, dict)
+            or sources.get(str(CURVED_DESIGN_SOURCE)) != CURVED_DESIGN_SHA256
+            or sha256(source.read_bytes()).hexdigest() != CURVED_DESIGN_SHA256):
+        raise ValueError("Curved design requires the measured source in the candidate bundle")
+    return import_module(CURVED_DESIGN_MODULE).measured_curved_design
+
+
+def _with_curved_design(solve, measure, counts):
+    @wraps(solve)
+    def scoped(*args, **kwargs):
+        with measure(enabled=True) as measured:
+            result = solve(*args, **kwargs)
+        counts.update(measured)
+        return result
+
+    return scoped
+
+
 def run(args, specification):
     root = args.bulk_root.resolve(strict=True)
     if not root.is_dir() or any(root.iterdir()):
@@ -187,6 +214,9 @@ def run(args, specification):
     recovery_reuse = specification.get("recovery_reuse", False)
     if type(recovery_reuse) is not bool:
         raise ValueError("Expected a Boolean recovery reuse selection")
+    curved_design = specification.get("curved_design", False)
+    if type(curved_design) is not bool or (curved_design and mode != "screened-tiled-finish"):
+        raise ValueError("Curved design requires Boolean opt-in and the screened tiled solver")
     defer_preparation_gc = specification.get("defer_preparation_gc", False)
     if type(defer_preparation_gc) is not bool:
         raise ValueError("Expected a Boolean preparation GC selection")
@@ -417,6 +447,12 @@ def run(args, specification):
                 return grid
 
             stack.enter_context(patch.object(localization_v3, "sample_position_grid", posterior_grid))
+        if curved_design:
+            measure = _checked_curved_design(specification)
+            curved_counts = {}
+            for entry in (algo08_scan, algo08_position):
+                solve = _with_curved_design(entry.solve, measure, curved_counts)
+                stack.enter_context(patch.object(entry, "solve", solve))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if selected_detector is not None:
@@ -440,6 +476,8 @@ def run(args, specification):
             result["endpoint_reuse"] = endpoint_counts
         if recovery_reuse:
             result["recovery_reuse"] = recovery_counts
+        if curved_design:
+            result["curved_design"] = curved_counts
         if posterior_bytes is not None:
             result["posterior_grid_handoff"] = dict(arithmetic=POSTERIOR_GRID_ARITHMETIC, **posterior_counts)
         return result

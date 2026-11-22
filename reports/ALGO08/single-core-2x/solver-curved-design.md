@@ -31,6 +31,12 @@ An initial southern run and the measured dense stock control passed every scient
 
 Six component tests cover both calibration widths, current values and supported slots, released fallback for duplicate slots, independent result ownership, trimmed and untrimmed masks, the two original scale vectors, signed zero and subnormal values. [Component tests](../../../tests/pipeline_eval/test_algo08_curved_design.py)
 
+## Frozen selected-score successor
+
+The opt-in successor has specification `sha256:e2180d3217abf8841c4799e8aeb3b758d43a8965a1e6e6e3bcf5c463b7da247a` in `/tmp/leo-algo08v2-2x-bench/integration-fractional-selected-curved-design/spec.json`. It inherits the selected-exact fractional receiver from `e819d4…`, the supplied-offer screening policy, wrapped longitude, terminal regional veto and both calibration arms. The freezer verifies the parent source and binary manifests, the original physical and southern saved comparisons, and the three installed solver sources used by the measured overlay. The receiver and native libraries retain their original digests. A complete file comparison permits changes only to the manifest, experimental launcher and measured overlay. [Successor manifest](measurements/fractional-selected-curved-design-freeze.json) · [Parent manifest](measurements/fractional-absolute-selected-v3-freeze.json)
+
+`curved_design: true` scopes the measured assembly to the solver callback after the launcher sets its other hooks. Enabled runs report assembly and masked-selection counts. Earlier bundles omit the option and retain their original behavior. The freeze and four integration component tests check provenance, runtime module origin, scope and library relocation. The saved-solver comparisons above supply the numerical timing for the overlay. This successor has yet to run a paired raw publication. [Freezer](freeze_curved_design.py) · [Integration tests](../../../tests/pipeline_eval/test_freeze_curved_design.py)
+
 ## Reproduction
 
 Use `case=DS30-0008` with `freeze=integration-frame-plane-terminal-veto`, or `case=south` with `freeze=integration-spectral-vectors-wrapped-longitude`. Run each mode once, in the order stated above. Output paths must be fresh.
@@ -44,4 +50,11 @@ flock -x "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 \
   timeout 89 "$release/venv/bin/python" -BPs \
   reports/ALGO08/single-core-2x/solver_curved_design_trial.py "$case" "$mode" \
   "$bench/deployed-margin-saved-cross/$case" "$bench/$freeze/spec.json" "$output"
+```
+
+To reproduce the bundle verification using the same checked sources, give the freezer fresh bundle and receipt paths. The destination path enters its specification digest.
+
+```sh
+PYTHONPATH=src:. python -BPs -m reports.ALGO08.single-core-2x.freeze_curved_design \
+  "$bench/integration-fractional-absolute-selected-v3" "$new_bundle" "$new_receipt"
 ```
