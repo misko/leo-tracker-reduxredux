@@ -1,5 +1,7 @@
 # ALGO08v2 single-core experiments
 
+The simpler all-factor receiver with direct solver assembly achieved **2.10× summed CPU speedup and 1.89× elapsed speedup** at the two public simulated sites, with identical positions and all 16 figures. It returned two false near-boundary fixes and withheld both distant omissions. [Raw timings, position errors and shifted offers](exact-curved-public-sites.md)
+
 The exact-score receiver reproduced both deployed positions for all four assigned DS30 recordings and all 32 web figures pixel for pixel. Total elapsed fell from **839.85 to 412.76 s**. The summed time ratio passed at **0.4915** and the median paired ratio missed at **0.5166**. Total CPU speedup was **1.95×**. These are four recordings from one roof. [Four-recording runtime and error distributions](fractional-selected-four.md) · [Earlier twelve-hour comparison](2026-11-22-progress.md)
 
 On new north–south search faces that disclose neither receiver coordinate, both deployment and the candidate retained both valid fixes and published both 100 m omissions. The northern valid fixed-zero error moved from 106 to 745 m and the southern from 817 to 470 m when the offered square changed. The I/Q, orbit archive and observation assignments stayed fixed within each site. [Prespecified geometry, full refits and residuals](north-south-faces.md)
