@@ -4,6 +4,7 @@ import pytest
 from leo.analysis.localization_v3.region import SearchRegion
 from tools.pipeline_eval.variants.algo08_family_profile import (
     BIAS_SIGMA_HZ,
+    FamilyProfile,
     eliminate_track_offsets,
     propose,
     ridge_profile,
@@ -36,3 +37,20 @@ def test_calibration_arms_profile_the_same_rows_and_nested_design():
 def test_low_support_requests_fallback():
     result = propose(dict(status="inputs_prepared", tracks={"tracks": []}), SearchRegion((20., 0.)))
     assert result == {"fallback": ["track_or_catalogue_support"]}
+
+
+def test_grid_refines_both_arms_on_disjoint_family_scores():
+    model = object.__new__(FamilyProfile)
+    model.region = SearchRegion((20., 0.))
+    endpoints = np.array([[(2., -4.), (2.3, -4.)], [(1., -5.), (1., -5.1)],
+                          [(2.5, -3.), (2.5, -3.2)]])
+
+    def evidence(point):
+        assert np.max(np.abs(point)) <= model.region.half_width_km
+        return dict(scores=np.sum((endpoints - point)**2, axis=-1), visible=True)
+
+    model.at = evidence
+    for part, paired in enumerate(model.minimize()):
+        for arm, (point, _, gap) in enumerate(paired):
+            assert point == pytest.approx(endpoints[part, arm], abs=.1)
+            assert gap > 30.
