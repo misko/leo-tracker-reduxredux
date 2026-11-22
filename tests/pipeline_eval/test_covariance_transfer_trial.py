@@ -93,7 +93,9 @@ def test_geographic_figure_requires_the_same_solver_input_and_region(tmp_path):
     fit = dict(arms={arm: {"endpoint": [1.1, -1.2]} for arm in ("c0", "fitted_c")})
     trace = dict(plan=plan, results=dict(installed={"stages": {"signed": fit, "cavity": fit}},
                                          covariance={"stages": {"signed": fit}}))
-    scored = dict(rows=[dict(plan, reference_east_north_km=[-2., 5.])])
+    restored = {"arms": {arm: {"latlon": [-11.02, 23.01]} for arm in ("c0", "fitted_c")}}
+    scored = dict(rows=[dict(plan, reference_east_north_km=[-2., 5.],
+                             builds={"complete_family_cavity": restored})])
     target = tmp_path / "geo.png"
     plot(trace, scored, target)
     assert target.read_bytes().startswith(b"\x89PNG")

@@ -7,6 +7,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from tools.pipeline_eval.qualification.score_paired_holdout import offset_km
 
 
 def plot(trace, scored, output):
@@ -15,6 +16,7 @@ def plot(trace, scored, output):
     if case["offer"] != trace["plan"]["offer"] or case["document_sha256"] != trace["plan"]["document_sha256"]:
         raise ValueError("Trace and scoring reference must use the same detections and region")
     east, north = case["reference_east_north_km"]
+    restored = case.get("builds", {}).get("complete_family_cavity")
     runs = trace["results"]
     fig, axes = plt.subplots(1, 2, figsize=(8.8, 5.3), sharex=True, sharey=True, layout="constrained")
     fig.get_layout_engine().set(h_pad=.12, w_pad=.08)
@@ -34,6 +36,14 @@ def plot(trace, scored, output):
                    label="Deployed, before reassignment", zorder=3)
         ax.scatter(*after, marker="o", color="#42537a", s=72, label="Deployed, published", zorder=3)
         ax.scatter(*approximate, marker="s", color="#008169", s=60, label="Optimized, published", zorder=3)
+        if restored is not None:
+            x, y = offset_km(case["offer"], restored["arms"][arm]["latlon"])
+            corrected = x - east, y - north
+            ax.annotate("", xy=corrected, xytext=approximate,
+                        arrowprops=dict(arrowstyle="-|>", color="#b15a19", lw=1.2,
+                                        ls="--", shrinkA=6, shrinkB=8))
+            ax.scatter(*corrected, marker="^", color="#b15a19", s=72,
+                       label="Optimized, reassignment restored", zorder=3)
         ax.scatter(0, 0, marker="*", color="#222222", s=160, label="Simulated receiver", zorder=4)
         ax.set(aspect="equal", xlabel="East of receiver (km)", title=title)
         ax.margins(.22)

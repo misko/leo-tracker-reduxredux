@@ -38,7 +38,9 @@ In the portable southern omission both covariance arms reached a face and trigge
 
 On the southern containing offer, the deployed solver reconsidered whether two receiver tracks belonged to a different satellite. It reassigned 443 observations and its fitted position moved from 2.110 km to 0.583 km from the receiver. The optimized build published its previous fit at 1.339 km. The figure uses the public reference only to score positions after the solves. Both axes are distances in the supplied search frame. [Solver trace and earlier differences in track selection](portable-south-solver-attribution.md) · [Figure source](plot_portable_south_trace.py)
 
-![Two panels show the deployed solver's satellite reassignment moving the fixed-zero and fitted positions closer to the simulated receiver.](portable-south-reassignment.png)
+Returning the same catalogue-wide reassignment step to the optimized solver selected the same alternate satellite. The new fit overshot the receiver in a different direction, with errors of **1.159 km fixed-zero and 1.251 km fitted**. It had a slightly smaller frequency residual than deployment in both arms. On the Indian containing control the same code preserved the original positions and satellite assignments. [Unchanged policy on both sites](complete-family-cavity.md)
+
+![Deployed positions move toward the simulated southern receiver after reassignment. Restoring the same rule to the optimized fit moves its positions beyond the receiver.](portable-south-reassignment.png)
 
 ## Boundary exercised
 
