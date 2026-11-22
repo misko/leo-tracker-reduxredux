@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import resource
 import subprocess
 import time
@@ -13,6 +14,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.fast_standard_analysis import PLOTS
 from leo.storage.fast_scan import FastScanStore, immutable_json
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+from leo.storage.short_window import ShortWindowReader
 
 
 LOCK = Path("/tmp/leo-algo08v2-2x-bench/gauss.lock")
@@ -32,6 +34,33 @@ def verify_sources(launcher, sources):
         actual = hashlib.sha256((roots[0] / name).read_bytes()).hexdigest()
         if actual != expected:
             raise ValueError(f"Candidate source changed: {name}")
+
+
+def blind_assignment(panel_path, expected_sha256, recording, region, archive):
+    panel_path = panel_path.resolve(strict=True)
+    public = panel_path.parent
+    private = public.parent / "scorer"
+    if not private.is_dir() or os.access(private, os.R_OK) or os.access(private, os.X_OK):
+        raise ValueError("Blind confirmation requires an inference account without scorer directory access")
+    panel_bytes = panel_path.read_bytes()
+    digest = hashlib.sha256(panel_bytes).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError("Blind assignment manifest changed after freezing")
+    panel = json.loads(panel_bytes)
+    if not re.fullmatch(r"[0-9a-f]{64}", panel["commitment"]):
+        raise ValueError("Invalid scoring-key commitment")
+    recording, region = recording.resolve(strict=True), region.resolve(strict=True)
+    job = {"recording": recording.name, "offer": region.stem}
+    if (recording.parent != public or region.parent != public or region.suffix != ".json"
+            or archive.resolve(strict=True) != public / "tle" or panel["jobs"].count(job) != 1):
+        raise ValueError("Input pair does not belong to the frozen blind panel")
+    inputs = panel["inputs"]
+    orbit_names = sorted(p.relative_to(archive).as_posix() for p in archive.rglob("*.tle"))
+    if (inputs["offers"][region.stem] != hashlib.sha256(region.read_bytes()).hexdigest()
+            or inputs["recordings"][recording.name] != ShortWindowReader(recording).manifest_sha256
+            or inputs["tle_objects"] != orbit_names):
+        raise ValueError("Blind recording, region or orbital inventory changed after freezing")
+    return dict(job=job, panel_sha256=digest, truth_commitment=panel["commitment"])
 
 
 def child_cpu():
@@ -113,6 +142,9 @@ def run_pair(args):
                       region=str(args.region.resolve()), runs=runs)
         pinned_config = None
         try:
+            if args.blind_panel:
+                panel, digest = args.blind_panel
+                result["blind_assignment"] = blind_assignment(Path(panel), digest, args.recording, args.region, args.archive)
             if args.candidate_config:
                 spec = json.loads(args.candidate_config.read_bytes())
                 result["candidate_specification"] = spec
@@ -141,6 +173,8 @@ if __name__ == "__main__":
         p.add_argument(name, type=Path)
     p.add_argument("--baseline", type=Path, default=BASELINE)
     p.add_argument("--candidate-config", type=Path, help="Pinned experimental receiver and solver options")
+    p.add_argument("--blind-panel", nargs=2, metavar=("MANIFEST", "SHA256"),
+                   help="Verify an assigned opaque pair using a scorer-isolated account")
     p.add_argument("--first", choices=("baseline","candidate"), required=True)
     p.add_argument("--cpu", type=int, default=2)
     p.add_argument("--timeout", type=int, default=1200)

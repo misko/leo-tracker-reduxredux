@@ -23,7 +23,7 @@ def test_source_pins_bind_the_measured_launcher_to_the_reviewed_variant(tmp_path
 def test_pair_uses_empty_outputs_and_only_credits_same_recording(tmp_path, monkeypatch, mismatch):
     args = SimpleNamespace(cpu=2, first="candidate", recording=tmp_path/"recording",
                            region=tmp_path/"region", output=tmp_path/"results",
-                           baseline="baseline", candidate="candidate", candidate_config=None)
+                           baseline="baseline", candidate="candidate", candidate_config=None, blind_panel=None)
     calls = []
 
     def measure(launcher, root, _args, specification):
@@ -70,6 +70,36 @@ def test_verified_withholding_counts_as_a_terminal_publication(tmp_path):
     receipt=dict(run_id=rid,session_id="s",region=region,decision="withheld",terminal_sha256=digest)
     result=bench.evidence(tmp_path,receipt,0)
     assert result["arms"]==arms and result["reason"]=="no probes" and result["artifacts"]==[]
+
+
+def test_blind_pair_needs_a_separate_scorer_and_frozen_recording_offer_assignment(tmp_path, monkeypatch):
+    public = tmp_path/"public"
+    public.mkdir()
+    (tmp_path/"scorer").mkdir()
+    recording, region, archive = public/"aa", public/"bb.json", public/"tle"
+    recording.mkdir()
+    region.touch()
+    archive.mkdir()
+    panel = public/"panel.json"
+    monkeypatch.setattr(bench, "ShortWindowReader", lambda _: SimpleNamespace(manifest_sha256="raw digest"))
+    inputs = {"offers": {"bb": hashlib.sha256(region.read_bytes()).hexdigest()},
+              "recordings": {"aa": "raw digest"}, "tle_objects": []}
+    panel.write_text(json.dumps({"commitment": "a"*64, "jobs": [{"recording": "aa", "offer": "bb"}],
+                                 "inputs": inputs}))
+    digest = hashlib.sha256(panel.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="scorer directory access"):
+        bench.blind_assignment(panel, digest, recording, region, archive)
+    monkeypatch.setattr(bench.os, "access", lambda path, mode: False)
+    assert bench.blind_assignment(panel, digest, recording, region, archive)["job"] == {"recording": "aa", "offer": "bb"}
+    with pytest.raises(ValueError, match="manifest changed"):
+        bench.blind_assignment(panel, "0"*64, recording, region, archive)
+    unassigned = public/"cc.json"
+    unassigned.touch()
+    with pytest.raises(ValueError, match="frozen blind panel"):
+        bench.blind_assignment(panel, digest, recording, unassigned, archive)
+    region.write_bytes(b"moved offer")
+    with pytest.raises(ValueError, match="inventory changed"):
+        bench.blind_assignment(panel, digest, recording, region, archive)
 
 
 def test_comparison_rejects_a_grid_published_in_another_site_frame(tmp_path, monkeypatch):

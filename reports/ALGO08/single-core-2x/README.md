@@ -46,3 +46,5 @@ export PYTHONPATH="$PWD:$release/src:$release"
 ```
 
 Use a separate new output directory and `--first candidate` for reverse order. The harness serializes work with the shared Gauss lock and records the run order, CPU and elapsed seconds, decisions, both calibration arms and verified publication evidence. [Paired benchmark](../../../tools/pipeline_eval/qualification/paired_publication.py)
+
+For fresh confirmation, generate the public panel under the scorer account. Record its SHA-256 and the candidate source and binary pins before inference. Under the separate inference account, supply `--blind-panel "$public/panel.json" "$panel_sha256"` on each assigned pair. This checks the manifest digest, matching recording and offer, truth commitment, and effective isolation from the scoring key. Keep both runs on the same public inputs and lock every result before releasing the scoring key.

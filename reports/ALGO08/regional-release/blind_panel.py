@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from leo.storage.short_window import ShortWindowWriter
+from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 from tools.pipeline_eval.qualification import clock_transfer_inputs, waveform_site_model as model
 from tools.pipeline_eval.qualification.portable_v5_transfer import authentic_history
 from tools.pipeline_eval.qualification.waveform_site_trial import revised
@@ -43,6 +43,7 @@ def generate(work, seed=None, fresh=False):
         raise ValueError("Expected a 32-byte seed")
     rng = np.random.default_rng(int.from_bytes(seed, "big"))
     answers, jobs = {}, []
+    inputs = {"offers": {}, "recordings": {}}
     layout = [((48., 15.), "lower"), ((-33., 20.), "upper")]
     if fresh:
         from tools.pipeline_eval.qualification.holdout_geography import fresh_layout, fresh_offers
@@ -65,6 +66,8 @@ def generate(work, seed=None, fresh=False):
         for condition, center in offers.items():
             key = rng.bytes(12).hex()
             save(public / (key + ".json"), dict(center=center, width_km=width))
+            if fresh:
+                inputs["offers"][key] = hashlib.sha256((public / (key + ".json")).read_bytes()).hexdigest()
             answers[key] = dict(recording=recording, truth=scene["coordinate"], condition=condition)
             jobs.append(dict(recording=recording, offer=key))
         targets = [dict(target_id=str(r["channel"]), channel=r["channel"], edge=edge,
@@ -88,10 +91,17 @@ def generate(work, seed=None, fresh=False):
                     complete=True, validity_authority="provider_attested", validity_includes_guard=True,
                     quality_flags=[], retune_receipt=json.dumps(receipt)),
                 samples=model.iq(r, scene, frames[edge]), powers=({}, {}))
-        writer.finish(stop_reason="simulation schedule completed")
+        sealed = writer.finish(stop_reason="simulation schedule completed")
+        if fresh:
+            inputs["recordings"][recording] = ShortWindowReader(sealed).manifest_sha256
     rng.shuffle(jobs)
     save(private, dict(seed=seed.hex(), answers=answers))
-    save(public / "panel.json", dict(jobs=jobs, commitment=hashlib.sha256(private.read_bytes()).hexdigest()))
+    panel = dict(jobs=jobs, commitment=hashlib.sha256(private.read_bytes()).hexdigest())
+    if fresh:
+        # The archive names bind collection timestamps and the object digests.
+        inputs["tle_objects"] = sorted(p.relative_to(public / "tle").as_posix() for p in archive.glob("*.tle"))
+        panel["inputs"] = inputs
+    save(public / "panel.json", panel)
 
 
 if __name__ == "__main__":
