@@ -6,18 +6,20 @@ from tools.pipeline_eval.qualification import freeze_publication as bundle
 from tools.pipeline_eval.qualification.paired_publication import verify_sources
 
 
-@pytest.mark.parametrize("shared", [False, True])
-def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, shared):
+@pytest.mark.parametrize(("solver", "rendering"), [
+    ("stock", "individual"), ("combined-shared-discovery", "shared-orbits"), ("shared-tables", "shared-pixels")])
+def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solver, rendering):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
     (release / "tools").mkdir(parents=True)
     (release / "tools/deployed.py").write_text("production")
     selected = [bundle.ENTRY, bundle.LAUNCHER, bundle.VARIANTS / "experimental/receiver_ingress.py"]
-    solver, rendering = "stock", "individual"
-    if shared:
-        solver, rendering = "combined-shared-discovery", "shared-orbits"
+    if solver != "stock":
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_reuse.py", "algo08_salvage_statistics.py", "algo08_dense_discovery.py",
             "experimental/shared_orbit_figures.py"))
+    if solver == "shared-tables":
+        selected.extend(bundle.VARIANTS / name for name in (
+            "algo08_causal_table.py", "algo08_cavity_projection.py", "algo08_salvage_bound.py"))
     for path in selected:
         (checkout / path).parent.mkdir(parents=True, exist_ok=True)
         (checkout / path).write_text(str(path))

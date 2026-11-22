@@ -19,13 +19,16 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     if hashlib.sha256(detector_bytes).hexdigest() != expected_sha256:
         raise ValueError("Detector differs from its reviewed build")
     sources = [LAUNCHER, ENTRY]
-    if solver in ("causal-reuse", "combined", "combined-shared-discovery"):
+    if solver in ("causal-reuse", "combined", "combined-shared-discovery", "shared-tables"):
         sources.append(VARIANTS / "algo08_causal_reuse.py")
-    if solver in ("combined", "combined-shared-discovery"):
+    if solver in ("combined", "combined-shared-discovery", "shared-tables"):
         sources.append(VARIANTS / "algo08_salvage_statistics.py")
-    if solver == "combined-shared-discovery":
+    if solver in ("combined-shared-discovery", "shared-tables"):
         sources.append(VARIANTS / "algo08_dense_discovery.py")
-    if rendering == "shared-orbits":
+    if solver == "shared-tables":
+        sources.extend(VARIANTS / name for name in ("algo08_causal_table.py", "algo08_cavity_projection.py",
+                                                     "algo08_salvage_bound.py"))
+    if rendering in ("shared-orbits", "shared-pixels"):
         sources.append(VARIANTS / "experimental/shared_orbit_figures.py")
     if ingress == "compressed-buffer":
         sources.append(VARIANTS / "experimental/receiver_ingress.py")
@@ -54,10 +57,10 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("detector", type=Path)
     parser.add_argument("detector_sha256")
-    parser.add_argument("--solver", choices=("stock", "causal-reuse", "combined", "combined-shared-discovery"), required=True)
+    parser.add_argument("--solver", choices=("stock", "causal-reuse", "combined", "combined-shared-discovery", "shared-tables"), required=True)
     parser.add_argument("--ingress", choices=("stock", "compressed-buffer"), required=True)
     parser.add_argument("--schedule", choices=("all", "bursts", "alternate"), default="all")
-    parser.add_argument("--rendering", choices=("individual", "shared-orbits"), default="individual")
+    parser.add_argument("--rendering", choices=("individual", "shared-orbits", "shared-pixels"), default="individual")
     args = parser.parse_args()
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,
            args.solver, args.ingress, schedule=args.schedule, rendering=args.rendering)

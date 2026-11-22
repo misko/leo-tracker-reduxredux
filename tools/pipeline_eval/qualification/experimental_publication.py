@@ -25,10 +25,10 @@ def run(args, specification):
     if not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise ValueError("Expected a pinned detector SHA-256")
     mode = specification["solver"]
-    if mode not in ("stock", "causal-reuse", "combined", "combined-shared-discovery"):
+    if mode not in ("stock", "causal-reuse", "combined", "combined-shared-discovery", "shared-tables"):
         raise ValueError("Unknown experimental solver")
     rendering = specification.get("rendering", "individual")
-    if rendering not in ("individual", "shared-orbits"):
+    if rendering not in ("individual", "shared-orbits", "shared-pixels"):
         raise ValueError("Unknown orbit renderer")
     ingress = specification.get("ingress", "stock")
     if ingress not in ("stock", "compressed-buffer"):
@@ -54,18 +54,19 @@ def run(args, specification):
             from tools.pipeline_eval.variants.experimental.receiver_cadence import AlternatingCadence, BurstCadence
             cadence = AlternatingCadence() if schedule == "alternate" else BurstCadence()
             stack.enter_context(patch.object(algo08_scan, "detector", cadence.wrap(algo08_scan.detector)))
-        if rendering == "shared-orbits":
+        if rendering in ("shared-orbits", "shared-pixels"):
             from leo.presentation import fast_standard_analysis
             from tools.pipeline_eval.variants.experimental.shared_orbit_figures import render_shared
-            stack.enter_context(patch.object(fast_standard_analysis, "render_fast_scan_orbits", render_shared))
+            renderer = partial(render_shared, reuse_pixels=rendering == "shared-pixels")
+            stack.enter_context(patch.object(fast_standard_analysis, "render_fast_scan_orbits", renderer))
         if mode != "stock":
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
             stack.enter_context(patch.object(algo08_position, "prepare_native_scan", scoped))
-        if mode in ("combined", "combined-shared-discovery"):
+        if mode in ("combined", "combined-shared-discovery", "shared-tables"):
             from tools.pipeline_eval.variants.algo08_salvage_statistics import salvage_statistics
             stack.enter_context(salvage_statistics())
-        if mode == "combined-shared-discovery":
+        if mode in ("combined-shared-discovery", "shared-tables"):
             from tools.pipeline_eval.variants import v5_core
             from tools.pipeline_eval.variants.algo08_dense_discovery import dense_discovery
             rank = v5_core.ranked_initial_nodes
@@ -73,6 +74,13 @@ def run(args, specification):
                 with dense_discovery(scan, reuse_associations=True):
                     return rank(scan)
             stack.enter_context(patch.object(v5_core, "ranked_initial_nodes", shared_rank))
+        if mode == "shared-tables":
+            from tools.pipeline_eval.variants.algo08_causal_table import causal_table
+            from tools.pipeline_eval.variants.algo08_cavity_projection import shared_projection
+            from tools.pipeline_eval.variants.algo08_salvage_bound import stable_pruning
+            stack.enter_context(causal_table(canonical_exports=True, previous_catalogues=True))
+            stack.enter_context(shared_projection())
+            stack.enter_context(stable_pruning("gate"))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if schedule != "all":
