@@ -4,6 +4,8 @@
 
 On the earlier two-case comparison, the candidate with moments and deferred receiver measurements took **18.85 versus 24.69 seconds elapsed (1.31×)** on DS30-0016 and **17.76 versus 31.58 seconds (1.78×)** on a southern simulation. Single-core CPU speedups were 1.60× and 1.77×. Every ordered detector row, both positions and all eight PNGs matched on both recordings. [Matched report and figure](moments-publication.md) · [Previous build and wrong-region results](shared-publication.md) · [Geographic qualification protocol](PROTOCOL.md)
 
+The successor with full-observation ranking and shared plot layout preserved the valid northern near-edge fix at **106 m fixed-zero and 141 m fitted**. It ran end to end in **21.71 versus 32.81 seconds** and preserved every detector row and all eight PNGs. [Successor measurement](location-triage.md#full-observation-successor-on-a-valid-boundary-case)
+
 ## Earlier build on a longer physical recording
 
 The build combines receiver `107909cc`, a single compressed input buffer, causal orbital parsing and coarse salvage statistics. The run traverses the same sealed recording in each arm. The physical recording is the first entry in the frozen DS30 order. It has 6,770 windows, of which 4,644 passed the existing capture-quality checks. The southern simulation has 1,200 valid windows. Both builds returned identical owners, optimizer paths, numerical grid values, frequency residuals and eight PNGs on each recording.
