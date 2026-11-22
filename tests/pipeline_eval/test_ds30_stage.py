@@ -130,6 +130,30 @@ def inventory(study):
     return stage.inventory(study.runs, study.assignments, study.candidate, study.spec, 2)
 
 
+def test_timing_diagnostics_keep_missing_counters_out_of_the_zero_read_subset():
+    times = {"elapsed_s": {"baseline": 12., "candidate": 3.},
+             "cpu_s": {"baseline": 8., "candidate": 4.}, "state": "verified"}
+    rows = [dict(times, case="uncounted"), dict(times, case="read", input_blocks={"baseline": 5, "candidate": 0}),
+            dict(times, case="warm", input_blocks={"baseline": 0, "candidate": 0}),
+            {"case": "unmeasured", "state": "missing"}]
+    result = stage.observed_timing(rows)
+    assert result["all_verified"]["cases"] == ["uncounted", "read", "warm"]
+    subset = result["both_zero_input_blocks"]
+    assert subset["cases"] == ["warm"]
+    assert subset["elapsed_s"]["summed_candidate_over_baseline"] == .25
+    assert subset["cpu_s"]["median_candidate_over_baseline"] == .5
+    assert stage.observed_timing(rows[:1])["both_zero_input_blocks"]["cpu_s"]["summed_candidate_over_baseline"] is None
+
+
+def test_bad_filesystem_counter_invalidates_pair(study):
+    first, *_ = study.assignments
+    path = seal_pair(study, first)
+    data = stage.read(path)
+    data["runs"]["candidate"]["input_blocks"] = -1
+    path.write_text(json.dumps(data))
+    assert inventory(study)["coverage"]["invalid"] == [first.name]
+
+
 def test_one_case_and_frozen_order_without_launching_a_benchmark(study, monkeypatch):
     first, second, *_ = study.assignments
     calls = []

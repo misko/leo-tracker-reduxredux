@@ -172,6 +172,8 @@ def verify_pair(path, assigned, candidate, spec, cpu):
         if any(type(run[metric]) not in (int, float) or not isfinite(run[metric]) or run[metric] <= 0
                for metric in ("elapsed_s", "cpu_s")):
             raise ValueError(f"Invalid positive timings for {label}")
+        if "input_blocks" in run and (type(run["input_blocks"]) is not int or run["input_blocks"] < 0):
+            raise ValueError(f"Invalid filesystem input block count for {label}")
         if mode == "exact":
             restored = pair.evidence(path.parent / label, receipt, 0, read_only=True)
             if any(restored[key] != run[key] for key in EVIDENCE_FIELDS):
@@ -197,6 +199,7 @@ def verify_pair(path, assigned, candidate, spec, cpu):
                     audit=summary,
                     elapsed_s={k: v["elapsed_s"] for k, v in data["runs"].items()},
                     cpu_s={k: v["cpu_s"] for k, v in data["runs"].items()},
+                    input_blocks={k: v.get("input_blocks") for k, v in data["runs"].items()},
                     arms={k: v["arms"] for k, v in data["runs"].items()},
                     raw_authority=assigned.raw_authority, actual_order=data["order"],
                     expected_archive=str(assigned.archive))
@@ -293,8 +296,24 @@ def local_quality(cases, refs):
                 preserved=all(arm["preserved"] for site in summaries for arm in site["arms"].values()))
 
 
+def observed_timing(cases):
+    verified = [row for row in cases if row["state"] == "verified"]
+    zero_reads = [row for row in verified if all(row.get("input_blocks", {}).get(k) == 0 for k in BUILDS)]
+    reports = {}
+    for label, rows in (("all_verified", verified), ("both_zero_input_blocks", zero_reads)):
+        result = {"cases": [row["case"] for row in rows]}
+        for metric in ("elapsed_s", "cpu_s"):
+            times = [(r[metric]["baseline"], r[metric]["candidate"]) for r in rows]
+            median_ratio, summed_ratio = elapsed_ratios(times)
+            result[metric] = dict(median_candidate_over_baseline=median_ratio,
+                                  summed_candidate_over_baseline=summed_ratio)
+        reports[label] = result
+    return reports
+
+
 def score(stage):
     cases = stage["cases"]
+    stage = dict(stage, observed_timing=observed_timing(cases))
     approximate = stage.get("comparison") in APPROXIMATE_MODES
     if len(stage["coverage"]["verified"]) != stage["assigned"]:
         result = dict(stage, elapsed_gates=None, position=None)

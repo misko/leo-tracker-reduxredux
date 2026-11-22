@@ -24,6 +24,8 @@ Fifty-eight component tests passed, covering read-only storage, qualification wi
 
 ## Commands
 
+The score's `observed_timing` includes median paired and summed candidate/deployed ratios for elapsed and CPU time. It lists the contributing case IDs twice, once for all verified pairs and once for pairs where both runs explicitly reported zero filesystem input blocks. Older receipts without those counters contribute only to the all-pairs group. These diagnostics are available during triage. The formal elapsed and position gates are still computed only at complete stage coverage.
+
 From the checkout root, choose the frozen build and a local workspace writable by the inference account. The command below uses the same candidate pins as the saved read-only check. `run` preserves the output in the assigned canonical case directory. Later calls use the same workspace and build. Escalating from four to sixteen requires an explicit `--size 16` after review.
 
 ```sh
