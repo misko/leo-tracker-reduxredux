@@ -37,6 +37,7 @@ SCREENED_TILED = "sha256:c803a30087a9c23e00aa4fa30e6a2b87a4d682cd941a3f3d870ce92
 RESTORED_SCOUT_GRAPH = "sha256:ad417aaa51a49edf1a36aca571683bbc0479317c06b821030373656461a28acd"
 TERMINAL_FRAME_PLANE = "sha256:977e7dd61c23622cc05365f0a7743a0042a7edd590d88173faeace8590ca8fe3"
 WRAPPED_SPECTRAL = "sha256:445744b4401d14d42a62130dca85882fd9062eb32627a9046e62205650dddb28"
+SELECTED_FRACTIONAL = "sha256:e819d432e87d84f9f03e6df8e147fc7d2894e776c1db9e23e9b84113cb1e9e71"
 APPROXIMATE_MODES = ("conditional-residual", "full-scan-signed", "full-scan-screened")
 EVIDENCE_FIELDS = ("raw_authority", "arms", "owners", "reason", "artifacts", "scientific_digests")
 BUILDS = ("baseline", "candidate")
@@ -71,7 +72,8 @@ def file_sha(path):
 
 def comparison_mode(spec):
     if spec.get("solver") == "screened-tiled-finish":
-        if canonical_digest(spec) not in (SCREENED_TILED, RESTORED_SCOUT_GRAPH, TERMINAL_FRAME_PLANE, WRAPPED_SPECTRAL):
+        if canonical_digest(spec) not in (SCREENED_TILED, RESTORED_SCOUT_GRAPH, TERMINAL_FRAME_PLANE,
+                                          WRAPPED_SPECTRAL, SELECTED_FRACTIONAL):
             raise ValueError("Only the frozen screened-tiled candidate may use approximate comparison")
         return "full-scan-screened"
     if spec.get("schedule") == "all" and spec.get("solver") == "collapsed-signed":
