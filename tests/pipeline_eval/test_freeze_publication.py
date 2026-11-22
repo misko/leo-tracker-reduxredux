@@ -52,6 +52,7 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
     assert spec.get("rendering", "individual") == rendering
     assert spec.get("startup", "stock") == startup
     assert "endpoint_reuse" not in spec
+    assert "defer_preparation_gc" not in spec
     (checkout / bundle.ENTRY).write_text("edited after freeze")
     verify_sources(output / bundle.LAUNCHER, spec["sources"])
     assert (output / "receiver.so").read_bytes() == b"reviewed"
@@ -75,6 +76,7 @@ def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path, endpoint_r
             "algo08_dense_discovery.py", "algo08_causal_table.py", "algo08_cavity_projection.py",
             "algo08_salvage_bound.py", "algo08_endpoint_readout.py", "algo08_recovery_reuse.py",
         ))
+        selected.append(bundle.VARIANTS / "experimental/preparation_gc.py")
     for path in selected:
         (checkout / path).parent.mkdir(parents=True, exist_ok=True)
         (checkout / path).write_text(str(path))
@@ -91,10 +93,11 @@ def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path, endpoint_r
         bundle.freeze(*args, paired_sha256=(library, "0" * 64))
     assert not output.exists()
     spec = bundle.freeze(*args, paired_sha256=(library, library_digest), endpoint_reuse=endpoint_reuse,
-                         recovery_reuse=endpoint_reuse)
+                         recovery_reuse=endpoint_reuse, defer_preparation_gc=endpoint_reuse)
     assert spec["ingress"] == "paired-sha256"
     assert spec.get("endpoint_reuse", False) == endpoint_reuse
     assert spec.get("recovery_reuse", False) == endpoint_reuse
+    assert spec.get("defer_preparation_gc", False) == endpoint_reuse
     copied = output / "paired-sha256.so"
     assert spec["paired_sha256"] == dict(library=str(copied), sha256=library_digest)
     assert set(spec["sources"]) == {str(path) for path in selected} | {copied.name}

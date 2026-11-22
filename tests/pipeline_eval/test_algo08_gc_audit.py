@@ -1,8 +1,11 @@
 import gc
+import json
+from types import SimpleNamespace
 
 import pytest
 
 from tools import algo08_position
+from tools.pipeline_eval.qualification import experimental_publication
 from tools.pipeline_eval.variants.algo08_gc_audit import measure_collector
 
 
@@ -88,3 +91,43 @@ def test_skips_deferral_with_initially_disabled_collector(monkeypatch):
     finally:
         if original:
             gc.enable()
+
+
+@pytest.mark.parametrize("defer", (False, True))
+def test_publication_scopes_gc_to_preparation_and_restores_on_failure(tmp_path, monkeypatch, defer):
+    from tools import algo08_scan
+
+    error = ValueError("invalid observations")
+
+    def prepare(*args, **kwargs):
+        assert gc.isenabled() is not defer
+        assert "element_parser" in kwargs
+        raise error
+
+    def analyze(*args):
+        assert gc.isenabled()
+        try:
+            algo08_position.prepare_native_scan()
+        finally:
+            assert gc.isenabled()
+
+    monkeypatch.setattr(algo08_position, "prepare_native_scan", prepare)
+    monkeypatch.setattr(algo08_scan, "analyze", analyze)
+    detector = tmp_path / "detector.so"
+    detector.touch()
+    region = tmp_path / "region.json"
+    region.write_text(json.dumps(dict(center=[-33, 113], width_km=25)))
+    root = tmp_path / "output"
+    root.mkdir()
+    args = SimpleNamespace(bulk_root=root, recording=tmp_path / "recording", archive=tmp_path,
+                           region=region)
+    spec = dict(solver="causal-reuse", detector=str(detector), detector_sha256="c" * 64)
+    if defer:
+        spec["defer_preparation_gc"] = True
+    thresholds = gc.get_threshold()
+    with pytest.raises(ValueError) as caught:
+        experimental_publication.run(args, spec)
+
+    assert caught.value is error
+    assert gc.isenabled() and gc.get_threshold() == thresholds
+    assert algo08_position.prepare_native_scan is prepare

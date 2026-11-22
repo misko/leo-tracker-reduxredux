@@ -1,0 +1,388 @@
+{
+  "release": "bdb869682a2ea63af4b198a920b763a4c6a78c4c",
+  "tle_parser": {
+    "library": "/tmp/leo-algo08v2-2x-bench/integration-batch-orbit/_leo_tle_records.so",
+    "sha256": "4bdfbfd2440253a624ac2eab3886be48639e9668f58566e2f5edeffc50de469d"
+  },
+  "solver": "shared-tables",
+  "startup": "lazy-exports",
+  "endpoint_reuse": true,
+  "recovery_reuse": true,
+  "collector_columns": [
+    "phase",
+    "generation",
+    "calls",
+    "cpu_ns",
+    "wall_ns",
+    "collected",
+    "uncollectable"
+  ],
+  "cases": {
+    "DS30-0016": {
+      "execution_order": [
+        "control",
+        "defer"
+      ],
+      "saved_detections": "integration-shared/pairs/DS30-0016/baseline/fast-scan-automatic-work/algo08-v2-56f5b28446c41ce61e320ada30bd0562/detections.json",
+      "native_sha256": "5e29a9c9f76c93e605792915f8baffe4a28e31dbd6bd67e586c6a68821bd9a2d",
+      "tle_archive": "/var/lib/leo/tle",
+      "offer": "/tmp/leo-algo08v2-2x-bench/integration02/ds30-station-offer.json",
+      "offer_sha256": "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236",
+      "runs": {
+        "control": {
+          "solver_cpu_s": 3.564073918,
+          "solver_wall_s": 3.620407171547413,
+          "preparation_cpu_s": 1.9877510370000002,
+          "inclusive": {
+            "cpu_s": 3.602773242,
+            "wall_s": 3.659110818
+          },
+          "gc_parameters": {
+            "version": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+            "enabled": true,
+            "thresholds": [
+              700,
+              10,
+              10
+            ],
+            "debug": 0
+          },
+          "gc_state": {
+            "start_rss_kib": 145532,
+            "start_garbage": 0,
+            "pre_close_rss_kib": 527944,
+            "pre_close_garbage": 0,
+            "closed_rss_kib": 356984,
+            "closed_garbage": 0,
+            "closed_tracked": 134380,
+            "peak_rss_kib": 528852,
+            "closed_enabled": true,
+            "closed_thresholds": [
+              700,
+              10,
+              10
+            ]
+          },
+          "science_sha256": "55c0169f621ec2e34844f17f25efeb1e259b65852724433842ef57232e25a3af",
+          "parser_counts": {
+            "catalogues": 22,
+            "records": 226811,
+            "fallback": 0
+          },
+          "table_counts": {
+            "canonical_export_calls": 11915,
+            "canonical_export_cpu_s": 0.058007270999986815,
+            "initial_sky_calls": 1,
+            "initial_sky_cpu_s": 1.258822698,
+            "phase_history_calls": 1,
+            "phase_history_cpu_s": 0.36312681699999994,
+            "canonical_export_hits": 21412,
+            "canonical_export_retained_peak": 11915,
+            "forecast_calls": 1,
+            "forecast_cpu_s": 0.2564917699999998,
+            "distinct_previous_parse_calls": 2,
+            "distinct_previous_parse_cpu_s": 0.009095434999999874,
+            "distinct_previous_parse_hits": 17,
+            "distinct_previous_parse_retained_peak": 2
+          },
+          "collections": [
+            ["solver_other", 0, 2, 60728, 61649, 0, 0],
+            ["prepare_scan", 0, 183, 8296420, 8360644, 51, 0],
+            ["prepare_scan", 1, 17, 5653434, 5663372, 0, 0],
+            ["prepare_scan", 2, 1, 66390742, 66403316, 0, 0],
+            ["parse_catalogue", 0, 681, 30204279, 34748555, 0, 0],
+            ["parse_catalogue", 1, 62, 23633468, 23664365, 0, 0],
+            ["parse_catalogue", 2, 6, 266375000, 272456302, 172, 0],
+            ["serialize_preparation", 0, 1, 2375442, 2376976, 0, 0],
+            ["scan_context", 0, 15, 261752, 269435, 30, 0],
+            ["scan_context", 1, 1, 287781, 288308, 10, 0],
+            ["initial", 0, 5, 251287, 254793, 520, 0],
+            ["initial", 1, 1, 2503501, 2504157, 0, 0],
+            ["conservative", 0, 4, 62678, 63989, 0, 0],
+            ["family", 0, 3, 374107, 378970, 675, 0],
+            ["signed", 0, 4, 379121, 384354, 824, 0],
+            ["signed", 1, 1, 313552, 314122, 131, 0],
+            ["selected_packet", 0, 3, 830562, 837067, 350, 0],
+            ["closing_collection", 2, 1, 37949400, 37951223, 3530, 0]
+          ]
+        },
+        "defer": {
+          "solver_cpu_s": 3.373624385,
+          "solver_wall_s": 3.4558822624385357,
+          "preparation_cpu_s": 1.77077042,
+          "inclusive": {
+            "cpu_s": 3.414132597,
+            "wall_s": 3.502263239
+          },
+          "gc_parameters": {
+            "version": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+            "enabled": true,
+            "thresholds": [
+              700,
+              10,
+              10
+            ],
+            "debug": 0
+          },
+          "gc_state": {
+            "start_rss_kib": 145652,
+            "start_garbage": 0,
+            "pre_close_rss_kib": 524364,
+            "pre_close_garbage": 0,
+            "closed_rss_kib": 355436,
+            "closed_garbage": 0,
+            "closed_tracked": 134388,
+            "peak_rss_kib": 528412,
+            "closed_enabled": true,
+            "closed_thresholds": [
+              700,
+              10,
+              10
+            ]
+          },
+          "science_sha256": "55c0169f621ec2e34844f17f25efeb1e259b65852724433842ef57232e25a3af",
+          "parser_counts": {
+            "catalogues": 22,
+            "records": 226811,
+            "fallback": 0
+          },
+          "table_counts": {
+            "canonical_export_calls": 11915,
+            "canonical_export_cpu_s": 0.05556503600001772,
+            "initial_sky_calls": 1,
+            "initial_sky_cpu_s": 1.123493242,
+            "phase_history_calls": 1,
+            "phase_history_cpu_s": 0.23543181599999996,
+            "canonical_export_hits": 21412,
+            "canonical_export_retained_peak": 11915,
+            "forecast_calls": 1,
+            "forecast_cpu_s": 0.259323819,
+            "distinct_previous_parse_calls": 2,
+            "distinct_previous_parse_cpu_s": 0.0066258380000001615,
+            "distinct_previous_parse_hits": 17,
+            "distinct_previous_parse_retained_peak": 2
+          },
+          "collections": [
+            ["solver_other", 0, 2, 59948, 60895, 0, 0],
+            ["preparation_collection", 0, 1, 42503820, 42505576, 224, 0],
+            ["serialize_preparation", 0, 1, 2540870, 2542745, 0, 0],
+            ["scan_context", 0, 14, 194474, 201243, 24, 0],
+            ["scan_context", 1, 2, 3968319, 3971223, 16, 0],
+            ["initial", 0, 5, 303347, 307241, 520, 0],
+            ["conservative", 0, 4, 63665, 64995, 0, 0],
+            ["family", 0, 2, 147167, 149587, 0, 0],
+            ["family", 1, 1, 537361, 539881, 628, 0],
+            ["signed", 0, 5, 391857, 397982, 867, 0],
+            ["selected_packet", 0, 3, 797863, 803337, 350, 0],
+            ["closing_collection", 2, 1, 39702338, 45572662, 3664, 0]
+          ]
+        }
+      },
+      "arms": {
+        "c0": {
+          "latlon": [
+            37.834938184864335,
+            -122.49130096936959
+          ],
+          "rf_rms_hz": 109.37512007181024
+        },
+        "fitted_c": {
+          "latlon": [
+            37.83568176481742,
+            -122.49419045080667
+          ],
+          "rf_rms_hz": 109.47893971795968
+        }
+      },
+      "grid": {
+        "points": 179,
+        "complete": true
+      }
+    },
+    "north-edge": {
+      "execution_order": [
+        "defer",
+        "control"
+      ],
+      "saved_detections": "integration-batch-orbit/pairs/north-edge/baseline/fast-scan-automatic-work/algo08-v2-113262a9d6ff6ba8b303ad51dfdf6acf/detections.json",
+      "native_sha256": "54ffd828f5cb9b09baa1d38e0f3fdff5b9e41954f74e60226e239fa5c6e4f1d8",
+      "tle_archive": "/tmp/leo-regional-qZJKBw4W/public/tle",
+      "offer": "/tmp/leo-algo08v2-2x-bench/near-edge/0abe7b4514be674d9f5388e3.json",
+      "offer_sha256": "f4ff743e9f3d00bc18344143bffaaf7801276018dbd75b6ab2ec5207e887e891",
+      "runs": {
+        "control": {
+          "solver_cpu_s": 6.2780978450000005,
+          "solver_wall_s": 7.928738936781883,
+          "preparation_cpu_s": 2.2687723,
+          "inclusive": {
+            "cpu_s": 6.329591418,
+            "wall_s": 8.12920213
+          },
+          "gc_parameters": {
+            "version": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+            "enabled": true,
+            "thresholds": [
+              700,
+              10,
+              10
+            ],
+            "debug": 0
+          },
+          "gc_state": {
+            "start_rss_kib": 146584,
+            "start_garbage": 0,
+            "pre_close_rss_kib": 437776,
+            "pre_close_garbage": 0,
+            "closed_rss_kib": 418336,
+            "closed_garbage": 0,
+            "closed_tracked": 136510,
+            "peak_rss_kib": 882196,
+            "closed_enabled": true,
+            "closed_thresholds": [
+              700,
+              10,
+              10
+            ]
+          },
+          "science_sha256": "b37239ca809be52aca69923377b89777c01108561469fb898acebbb6574dd2c7",
+          "parser_counts": {
+            "catalogues": 25,
+            "records": 260578,
+            "fallback": 0
+          },
+          "table_counts": {
+            "canonical_export_calls": 15203,
+            "canonical_export_cpu_s": 0.07560565399997898,
+            "initial_sky_calls": 1,
+            "initial_sky_cpu_s": 1.263889137,
+            "phase_history_calls": 1,
+            "phase_history_cpu_s": 0.5127080469999998,
+            "canonical_export_hits": 25591,
+            "canonical_export_retained_peak": 15203,
+            "forecast_calls": 1,
+            "forecast_cpu_s": 0.34520909899999985,
+            "distinct_previous_parse_calls": 2,
+            "distinct_previous_parse_cpu_s": 0.008217408000000148,
+            "distinct_previous_parse_hits": 54,
+            "distinct_previous_parse_retained_peak": 2
+          },
+          "collections": [
+            ["solver_other", 0, 2, 59364, 60155, 0, 0],
+            ["prepare_scan", 0, 194, 12208562, 12274497, 51, 0],
+            ["prepare_scan", 1, 15, 5841676, 5851017, 0, 0],
+            ["prepare_scan", 2, 2, 120921868, 128883611, 0, 0],
+            ["parse_catalogue", 0, 777, 35639561, 41887616, 0, 0],
+            ["parse_catalogue", 1, 73, 30023596, 30060165, 0, 0],
+            ["parse_catalogue", 2, 6, 306829260, 306849307, 127, 0],
+            ["serialize_preparation", 0, 1, 3230767, 3232255, 0, 0],
+            ["scan_context", 0, 18, 355632, 364320, 210, 0],
+            ["scan_context", 1, 1, 2964982, 2965625, 0, 0],
+            ["initial", 0, 5, 318093, 322851, 340, 0],
+            ["initial", 1, 1, 642835, 643412, 0, 0],
+            ["conservative", 0, 3, 40790, 41663, 0, 0],
+            ["conservative", 1, 1, 323357, 323949, 10, 0],
+            ["family", 0, 5, 645966, 653649, 1100, 0],
+            ["signed", 0, 4, 456343, 461917, 672, 0],
+            ["signed", 1, 1, 480969, 482282, 241, 0],
+            ["cavity_nominate", 0, 3, 624057, 630439, 1410, 0],
+            ["selected_packet", 0, 4, 4086212, 4095727, 235, 0],
+            ["closing_collection", 2, 1, 48888779, 189858579, 4438, 0]
+          ]
+        },
+        "defer": {
+          "solver_cpu_s": 5.776442082,
+          "solver_wall_s": 5.872781535610557,
+          "preparation_cpu_s": 1.914108021,
+          "inclusive": {
+            "cpu_s": 5.823079705,
+            "wall_s": 5.919422841
+          },
+          "gc_parameters": {
+            "version": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+            "enabled": true,
+            "thresholds": [
+              700,
+              10,
+              10
+            ],
+            "debug": 0
+          },
+          "gc_state": {
+            "start_rss_kib": 146544,
+            "start_garbage": 0,
+            "pre_close_rss_kib": 437768,
+            "pre_close_garbage": 0,
+            "closed_rss_kib": 419352,
+            "closed_garbage": 0,
+            "closed_tracked": 136518,
+            "peak_rss_kib": 880592,
+            "closed_enabled": true,
+            "closed_thresholds": [
+              700,
+              10,
+              10
+            ]
+          },
+          "science_sha256": "b37239ca809be52aca69923377b89777c01108561469fb898acebbb6574dd2c7",
+          "parser_counts": {
+            "catalogues": 25,
+            "records": 260578,
+            "fallback": 0
+          },
+          "table_counts": {
+            "canonical_export_calls": 15203,
+            "canonical_export_cpu_s": 0.07024203100000115,
+            "initial_sky_calls": 1,
+            "initial_sky_cpu_s": 1.0803419879999998,
+            "phase_history_calls": 1,
+            "phase_history_cpu_s": 0.29575045300000014,
+            "canonical_export_hits": 25591,
+            "canonical_export_retained_peak": 15203,
+            "forecast_calls": 1,
+            "forecast_cpu_s": 0.343728944,
+            "distinct_previous_parse_calls": 2,
+            "distinct_previous_parse_cpu_s": 0.007520553999999624,
+            "distinct_previous_parse_hits": 54,
+            "distinct_previous_parse_retained_peak": 2
+          },
+          "collections": [
+            ["solver_other", 0, 2, 63675, 64628, 0, 0],
+            ["preparation_collection", 0, 1, 48634463, 48636372, 179, 0],
+            ["serialize_preparation", 0, 1, 3360870, 3362458, 0, 0],
+            ["scan_context", 0, 16, 278838, 287418, 0, 0],
+            ["scan_context", 1, 2, 4610661, 4611786, 200, 0],
+            ["initial", 0, 6, 337995, 342474, 360, 0],
+            ["conservative", 0, 4, 65174, 66774, 0, 0],
+            ["conservative", 1, 1, 277121, 277655, 0, 0],
+            ["family", 0, 5, 645487, 655057, 1090, 0],
+            ["signed", 0, 5, 402745, 408490, 672, 0],
+            ["cavity_nominate", 0, 2, 380238, 384947, 893, 0],
+            ["cavity_nominate", 1, 1, 496997, 499369, 674, 0],
+            ["selected_packet", 0, 4, 2912293, 2920927, 235, 0],
+            ["closing_collection", 2, 1, 44394072, 44395813, 4519, 0]
+          ]
+        }
+      },
+      "arms": {
+        "c0": {
+          "latlon": [
+            47.77256115611291,
+            16.09547854469706
+          ],
+          "rf_rms_hz": 5.406434005940672
+        },
+        "fitted_c": {
+          "latlon": [
+            47.77135840762463,
+            16.09547854469706
+          ],
+          "rf_rms_hz": 5.166631394982689
+        }
+      },
+      "grid": {
+        "points": 137,
+        "complete": true
+      }
+    }
+  }
+}

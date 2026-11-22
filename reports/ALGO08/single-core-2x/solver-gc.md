@@ -33,6 +33,21 @@ Both runs reported zero uncollectable objects and empty `gc.garbage` throughout 
 
 The saved comparisons matched the numerical decisions, owner maps, endpoints, objective replay, position paths, trims, shortlists, and all 179 physical or 137 northern grid points after dropping timing fields. The northern endpoints still publish a false fix on the offered boundary. Reference locations were used for scoring only. These saved replays stop at the selected figure packet. [Physical reference](../location-audit/README.md) · [Simulated reference scores](../regional-release/blind-scores.csv)
 
+## Shared tables and the batch TLE parser
+
+With the pinned native TLE parser, shared tables, lazy startup, endpoint readout reuse, and unchanged recovery-pair reuse in both runs, deferring collection still saved **5.2%** of the physical saved solve and **8.0%** of the public northern boundary solve. The physical control ran first and the simulation ran the deferred option first. Each invocation used a fresh process. Every timing below includes the final full sweep. [Composed measurements](measurements/solver-gc-composed.json)
+
+| Input | Preparation GC CPU (ms) | Final full sweep CPU (ms) | Total collector CPU (ms) | Solve and final sweep CPU (s) | Peak RSS (MiB) |
+|---|---:|---:|---:|---:|---:|
+| DS30-0016 | 400.6 → 42.5 | 37.9 → 39.7 | 446.2 → 91.2 | 3.603 → 3.414 | 516.5 → 516.0 |
+| North edge, receiver inside offer | 511.5 → 48.6 | 48.9 → 44.4 | 574.6 → 106.9 | 6.330 → 5.823 | 861.5 → 860.0 |
+
+The batch parser validated the same 226,811 physical and 260,578 simulated records in both modes, with zero fallbacks. All shared-table operation counts matched. Both replays had zero uncollectable objects. The physical total of collected objects was 6,293 in both modes. The simulation totals were 8,834 for control and 8,822 for deferred. Both deferred processes restored ordinary GC at the original thresholds.
+
+The full decisions, owner maps, solver frequency RMS, endpoints, paths, objective replay, recovery trims and numerical grid values matched exactly after dropping elapsed times. The physical fixes retained 109 owners and 179 numerical grid points. The northern fixes retained 302 owners and 137 grid points. Northern errors were 0.106 km at zero calibration and 0.141 km with fitted calibration, and RF RMS was 5.406 and 5.167 Hz, respectively. The physical calibration results match the earlier table. This comparison used saved detections and stopped at the selected figure packet. [Northern reference scores](batch-publication.md)
+
+The research freezer exposes `--defer-preparation-gc`. It pins and loads the private preparation wrapper only when selected, with the young-generation sweep and state restoration scoped to preparation. The profiling module and callback remain confined to the saved trial. The freezer, TLE parser, launcher, and collector tests passed 49 checks. [Private wrapper](../../../tools/pipeline_eval/variants/experimental/preparation_gc.py) · [Freezer](../../../tools/pipeline_eval/qualification/freeze_publication.py)
+
 ## Reproduce
 
 Each run used a fresh release interpreter, identical saved detections and offer, the same causal archive, coarse salvage statistics, and unchanged recovery-pair reuse. The control ran first at both sites. Read the input hashes and paths from the measurement receipt. [Trial runner](solver_gc_trial.py) · [Input pins and measurements](measurements/solver-gc.json)
@@ -50,3 +65,5 @@ for mode in control deferred; do
     "$saved_detections" "$tle_archive" "$release/assets" "$offer" "$detector_digest"
 done
 ```
+
+For the composed saved comparison, add `--composed-tle-parser LIBRARY SHA256` to both trial invocations. Use the pinned batch library from the composed receipt and the same public near-edge offer for both runs. [Composed input pins](measurements/solver-gc-composed.json)

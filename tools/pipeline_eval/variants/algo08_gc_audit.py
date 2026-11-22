@@ -3,8 +3,6 @@
 from contextlib import ExitStack, contextmanager
 from functools import wraps
 import gc
-from sys import implementation
-from threading import active_count
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
 
@@ -13,6 +11,7 @@ from leo.analysis.localization_v3 import (
 )
 from tools import algo08_position
 from tools.pipeline_eval.variants import algo08_causal_reuse, v5_core
+from tools.pipeline_eval.variants.experimental.preparation_gc import defer_collection
 
 
 PHASES = (
@@ -69,27 +68,6 @@ class CollectorAudit:
 
 
 @contextmanager
-def defer_preparation_collection(audit):
-    """Defer the automatic collector in one preparation in a dedicated worker."""
-    if (
-        implementation.name != "cpython" or active_count() != 1
-        or not gc.isenabled() or gc.get_debug()
-    ):
-        yield
-        return
-
-    gc.disable()
-    try:
-        yield
-    finally:
-        try:
-            with audit.scope("preparation_collection"):
-                gc.collect(0)
-        finally:
-            gc.enable()
-
-
-@contextmanager
 def measure_collector(*, defer_preparation=False):
     audit = CollectorAudit()
     callback = audit.observe
@@ -107,19 +85,12 @@ def measure_collector(*, defer_preparation=False):
         (family_cavity, "cavity_policy", "cavity_fit"),
         (algo08_position, "selected_packet", "selected_packet"),
     )
-    def defer(original):
-        @wraps(original)
-        def prepare(*args, **kwargs):
-            with defer_preparation_collection(audit):
-                return original(*args, **kwargs)
-
-        return prepare
-
     with ExitStack() as stack:
         for owner, name, phase in bindings:
             operation = getattr(owner, name)
             if phase == "prepare_scan" and defer_preparation:
-                operation = defer(operation)
+                collect = audit.wrap("preparation_collection", gc.collect)
+                operation = defer_collection(operation, collect=collect)
             stack.enter_context(patch.object(owner, name, audit.wrap(phase, operation)))
         gc.callbacks.append(callback)
         stack.callback(gc.callbacks.remove, callback)

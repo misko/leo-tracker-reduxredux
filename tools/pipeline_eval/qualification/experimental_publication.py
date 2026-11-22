@@ -51,6 +51,9 @@ def run(args, specification):
     recovery_reuse = specification.get("recovery_reuse", False)
     if type(recovery_reuse) is not bool:
         raise ValueError("Expected a Boolean recovery reuse selection")
+    defer_preparation_gc = specification.get("defer_preparation_gc", False)
+    if type(defer_preparation_gc) is not bool:
+        raise ValueError("Expected a Boolean preparation GC selection")
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
@@ -123,6 +126,10 @@ def run(args, specification):
             parser_library = assets / "_leo_tle_records.so"
             parser_library.write_bytes(content)
             record_counts = stack.enter_context(batch_records(parser_library))
+        if defer_preparation_gc:
+            from tools.pipeline_eval.variants.experimental.preparation_gc import defer_collection
+            preparation = defer_collection(algo08_position.prepare_native_scan)
+            stack.enter_context(patch.object(algo08_position, "prepare_native_scan", preparation))
         if mode != "stock":
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
