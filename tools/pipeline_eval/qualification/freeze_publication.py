@@ -36,6 +36,9 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         sources.append(VARIANTS / "experimental/receiver_ingress.py")
     if schedule in ("alternate", "bursts"):
         sources.append(VARIANTS / "experimental/receiver_cadence.py")
+    if schedule == "deferred":
+        sources.extend(VARIANTS / "experimental" / name for name in
+                       ("deferred_continuation.py", "deferred_receiver.py"))
     output.mkdir(parents=True, exist_ok=False)
     shutil.copytree(release / "tools", output / "tools", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     digests = {}
@@ -61,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument("detector_sha256")
     parser.add_argument("--solver", choices=("stock", *CAUSAL_MODES), required=True)
     parser.add_argument("--ingress", choices=("stock", "compressed-buffer"), required=True)
-    parser.add_argument("--schedule", choices=("all", "bursts", "alternate"), default="all")
+    parser.add_argument("--schedule", choices=("all", "bursts", "alternate", "deferred"), default="all")
     parser.add_argument("--rendering", choices=("individual", "shared-orbits", "shared-pixels"), default="individual")
     args = parser.parse_args()
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,

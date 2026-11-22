@@ -38,7 +38,7 @@ def run(args, specification):
     if ingress not in ("stock", "compressed-buffer"):
         raise ValueError("Unknown experimental I/Q reader")
     schedule = specification.get("schedule", "all")
-    if schedule not in ("all", "bursts", "alternate"):
+    if schedule not in ("all", "bursts", "alternate", "deferred"):
         raise ValueError("Unknown receiver schedule")
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
@@ -54,10 +54,14 @@ def run(args, specification):
                 with compressed_input_buffer():
                     return acquire(*args, **kwargs)
             stack.enter_context(patch.object(algo08_scan, "acquire", buffered))
-        if schedule != "all":
+        if schedule in ("alternate", "bursts"):
             from tools.pipeline_eval.variants.experimental.receiver_cadence import AlternatingCadence, BurstCadence
             cadence = AlternatingCadence() if schedule == "alternate" else BurstCadence()
             stack.enter_context(patch.object(algo08_scan, "detector", cadence.wrap(algo08_scan.detector)))
+        if schedule == "deferred":
+            from tools.pipeline_eval.variants.experimental.deferred_receiver import DeferredReceiver
+            deferred = DeferredReceiver(max_pending=64)
+            stack.enter_context(patch.object(algo08_scan, "detector", deferred.wrap(algo08_scan.detector)))
         if rendering in ("shared-orbits", "shared-pixels"):
             from leo.presentation import fast_standard_analysis
             from tools.pipeline_eval.variants.experimental.shared_orbit_figures import render_shared
@@ -93,8 +97,11 @@ def run(args, specification):
             stack.enter_context(patch.object(v5_core, "infer", partial(v5_core.infer, select_initial=select)))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
-        if schedule != "all":
+        if schedule in ("alternate", "bursts"):
             result["research_sampling"] = cadence.receipt(result)
+        if schedule == "deferred":
+            result["deferred_continuation"] = dict(pending_lane_budget=64, native_calls=deferred.native_calls,
+                                                   query_cpu_ns=deferred.query_cpu_ns, **deferred.planner.counts)
         return result
 
 
