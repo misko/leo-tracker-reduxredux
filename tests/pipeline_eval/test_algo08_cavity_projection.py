@@ -57,3 +57,25 @@ def test_cavity_inventory_keeps_active_masks_and_eligible_predictive_times():
                    entries=[{"candidate_index": j, "track_index": 3} for j in (3, 8)])
     dates, = held_times(context)
     np.testing.assert_array_equal(dates, [10, 11, 21, 22, 30, 31, 32, 33])
+
+
+def test_reflecting_hemisphere_and_rotating_longitude_preserves_doppler_and_elevation():
+    # WGS84 is symmetric about the equatorial plane and the rotation axis.
+    # Apply the same rigid transform to receiver, satellite positions and velocities.
+    source = sky()
+    source["position_km"][:3] += [-1500., 3900., 1500.]
+    moved = {"time_s": source["time_s"]}
+    for field in ("position_km", "velocity_km_s"):
+        xyz = source[field]
+        moved[field] = np.stack((-xyz[..., 1], xyz[..., 0], -xyz[..., 2]), axis=-1)
+    times = np.array([1., 3., 2., 1., 2.])
+    phases = np.array([-.14, .36, -.21, 1.48, .3, -1.])
+    outputs = []
+    for bank, site in ((source, (30., 38.)), (moved, (-30., 128.))):
+        projection = SharedPhaseGrid(phase_frequency_grid, bank, site, phases, [times], Counter())
+        outputs.append(projection(bank, times, *site, phase_seconds=phases))
+        assert projection.tables
+    (frequency, elevation), (other_frequency, other_elevation) = outputs
+    assert elevation.min() < 0 < elevation.max()
+    np.testing.assert_allclose(frequency, other_frequency, rtol=1e-12, atol=1e-7)
+    np.testing.assert_allclose(elevation, other_elevation, rtol=0, atol=1e-10)

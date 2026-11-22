@@ -1,5 +1,7 @@
 # Geographic inputs in the isolated ALGO08v2 candidate
 
+We independently exercised a geographic symmetry of the optimized Doppler projection. We reflected the synthetic receiver and all satellite states across the equator and rotated them 90° in longitude. Relative range rate and elevation must stay the same on the reference ellipsoid. The cached projection preserved Doppler within 0.1 microhertz absolute plus a relative tolerance of one part in a trillion, and elevation within 1e−10 degrees, for satellites above and below the horizon. All eight component tests passed. This tests the projection in isolation. The current public input contract accepts local squares that stay clear of the poles and the longitude seam. [Symmetry test](../../../tests/pipeline_eval/test_algo08_cavity_projection.py) · [Accepted region domain](../../../src/leo/contracts/algo08_region.py)
+
 The active `shared-tables` candidate takes its search square and orbit screening center from the required runtime offer. The audit found a qualification gap after inference. An otherwise valid terminal digest could carry a different screening center from the assigned offer, and the verifier would accept the terminal's arms. The verifier now checks the terminal's full region against the invocation receipt. This changes evidence verification only.
 
 | Runtime stage | Geographic authority |
