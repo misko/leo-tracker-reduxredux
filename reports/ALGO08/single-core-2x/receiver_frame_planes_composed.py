@@ -80,15 +80,18 @@ def compose(work, bench, assets, weak, archive, source_audit, wide_reference):
 
 
 def regression(work, bench, assets, pair, candidate, binding, bulk):
+    expected = json.loads((work / "build.json").read_bytes())["candidate_sha256"]
+    return check_regression(work / "receiver.so", expected, bench, assets, pair, candidate, binding, bulk)
+
+
+def check_regression(combined, expected, bench, assets, pair, candidate, binding, bulk):
     archived = json.loads((bench / "receiver-cfo-lineage-restoration.json").read_bytes())
     archived = {row["visit"]: row for row in archived["rows"]}
     batch = json.loads(pair.read_bytes())
     rows = lineage.saved_rows(candidate, "candidate", batch)
     saved = lineage.load_samples(binding, bulk, batch, rows)
-    combined = work / "receiver.so"
     restored = bench / "receiver-cfo-lineage-fix/restored.so"
-    identity = json.loads((work / "build.json").read_bytes())
-    restore.digest(combined, identity["candidate_sha256"])
+    restore.digest(combined, expected)
     restore.digest(restored, FULL_RESTORATION_SHA)
     asset = np.frombuffer(lineage.pin(assets / "lower.f32", PINS["lower.f32"]), dtype="<f4")
     outcomes = []
@@ -101,14 +104,14 @@ def regression(work, bench, assets, pair, candidate, binding, bulk):
                 raise ValueError(f"The prior regression I/Q differs for visit {visit}")
             old, new = (radio.timed(window["samples"], window["lane"], window["center"])[0]
                         for radio in radios)
-            expected, = (entry["all_factors"] for entry in archived[visit]["builds"]
-                         if entry["build"] == "restored-delay-product")
-            digests = [digest(native.factor_bytes(items)) for items in (expected, old, new)]
+            archived_factors, = (entry["all_factors"] for entry in archived[visit]["builds"]
+                                 if entry["build"] == "restored-delay-product")
+            digests = [digest(native.factor_bytes(items)) for items in (archived_factors, old, new)]
             if len(set(digests)) != 1:
                 raise ValueError(f"The restored regression factors differ for visit {visit}: {old} / {new}")
             outcomes.append(dict(visit=visit, iq_sha256=window["iq_sha256"], lane=window["lane"],
                                  channel=window["channel"], factors=new, factor_sha256=digests[0]))
-    return dict(candidate_sha256=identity["candidate_sha256"], restored_sha256=FULL_RESTORATION_SHA,
+    return dict(candidate_sha256=expected, restored_sha256=FULL_RESTORATION_SHA,
                 rows=outcomes)
 
 

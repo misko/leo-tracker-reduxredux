@@ -22,6 +22,14 @@ The matched instrumented arms execute 432 scouts each. Timing search drops from 
 
 The measured uninstrumented receiver is `/tmp/leo-algo08v2-2x-bench/spectral-vectors-combined-v1/packed/use.so`, SHA-256 `b63cf5b0b70e142a246fefd40b7ceb8ba2a24ecf0b4e8d0a05c6901cdef5dd94`. Its rebuilt timing object SHA-256 is `5ffc8eb34785b7d20535549da23ba521cf954f86b6cfabce96c0c71ac664292d`. The original wrapped refinement dispatcher, tiled FIR, signed cancellation, and verifier are inherited byte for byte. [Native build and object digest](measurements/receiver-spectral-vectors.json.gz)
 
+## Additional parity checks and terminal-guard freeze
+
+Both receivers passed 24 generated configurations through the normal CI16 native entry point. The exact zero timing ties and sparse ±1 ADC-count tests each returned no factors across eight lane configurations. Eight equal-strength, opposite-CFO overlap configurations each returned both a primary and a residual. The 16 factors and all continuation outputs were identical. The configurations cover both pilot edges and zero and signed nonzero mixer centers. [Generated parity receipt](measurements/receiver-spectral-vectors-generated.json.gz) · [Generator and archived check](receiver_spectral_vectors_check.py)
+
+The three authenticated wrapped CFO regression lanes from DS30-0008 reproduced all five archived factors, byte for byte against the full restoration. Primary CFOs were 423233.6713368766, −85797.21886355223, and −96538.83871655293 Hz. [Regression receipt](measurements/receiver-spectral-vectors-regression.json) · [Original wrapped trace](receiver-cfo-lineage.md)
+
+The research bundle `/tmp/leo-algo08v2-2x-bench/integration-spectral-vectors-terminal-veto` has specification `sha256:23fadeb79c76c343760dc3fb107f7dfb170b0ba4eec22a4dc3df244c2187cf24`. Its parent is terminal-guard `977e7dd6…`. The freezer verifies the parent, detector binary, timing source and object, native output and regression receipts, and both new source pins. The specification and receiver bytes change, with two new source files. The solver, terminal guard, manifests, launcher, and other inherited file bytes match the parent. Ten component tests passed, including tamper checks for inherited sources, new sources, and the receiver. The frozen bundle is for a later paired publication. [Freeze receipt](measurements/spectral-vectors-terminal-veto-freeze.json) · [Freezer](freeze_spectral_vectors_receiver.py) · [Freeze tests](../../../tests/pipeline_eval/test_freeze_spectral_vectors_receiver.py)
+
 ## Reproduce
 
 Use the already verified combined receiver and its archived object and source pins. The builder relinks the combined reference byte for byte, rebuilds only the timing object, and verifies the public symbols. It adds the same clock object to both instrumented arms. The saved controls are the 18-window DS26 weak archive and the authenticated Austin excerpt on both pilot edges, with zero and shifted mixer-center configurations. No position solver or publication runs in this benchmark. [Runner](receiver_spectral_vectors_trial.py) · [Component tests](../../../tests/pipeline_eval/test_experimental_receiver_spectral_vectors.py)
@@ -44,4 +52,24 @@ lock "$tree/.venv/bin/python" -m reports.ALGO08.single-core-2x.receiver_spectral
   "$tree/reports/2026_11_20_single_scan_glrt/satellite-reference.zip" \
   /home/mouse9911/.cache/austin-waveform-20261119/exemplar250-257.zip \
   "$hist/physical/raw-source-audit.json" "$hist/arrival-and-timing/austin-waveform/native-outputs.jsonl.gz"
+~~~
+
+The recorded freeze used these checks with the measured build and receipt names. The regression reads only the three previously authorized saved lanes.
+
+~~~bash
+candidate="$p/spectral-vectors-combined-v1/packed/use.so"
+saved=/tmp/ds30-v2-stage-covariance-375895/DS30-0008
+lock "$tree/.venv/bin/python" -m reports.ALGO08.single-core-2x.receiver_spectral_vectors_check \
+  generated "$p/d97b-planes-and-fir/receiver.so" "$candidate" "$r/assets" \
+  > "$p/spectral-vectors-generated.json"
+lock sudo -n -u leo -- env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="src:.:$t" "$r/venv/bin/python" -BPs \
+  -m reports.ALGO08.single-core-2x.receiver_spectral_vectors_check regression \
+  "$candidate" "$p" "$r/assets" "$saved/pair.json" \
+  "$saved/candidate/fast-scan-automatic-work/algo08-v2-3dce9426edd1831eade2003d69a00297/detections.json" \
+  /srv/bulk/leo-dev/ds30-full-20261121/bindings/DS30-0008.json /srv/bulk \
+  > "$p/spectral-vectors-regression.json"
+lock "$tree/.venv/bin/python" -m reports.ALGO08.single-core-2x.freeze_spectral_vectors_receiver \
+  "$p" "$p/integration-frame-plane-terminal-veto" "$candidate" \
+  "$p/integration-spectral-vectors-terminal-veto" "$p/spectral-vectors-terminal-veto-freeze.json"
 ~~~
