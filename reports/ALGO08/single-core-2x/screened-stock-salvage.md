@@ -32,3 +32,17 @@ flock -x "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 \
   "$bench/portable-v5-geodiverse" "$bench/integration-screened-stock-finish" \
   "$bench/integration-covariance-posterior" "$bench/screened-stock-salvage-next"
 ```
+
+## Integrated launcher and the India omission
+
+The subsequently integrated `c803a300…` launcher ran one saved India omission with its original 25 km search and screening offer. The public reference is 1.500 km outside. Both arms still returned the same false fixes as deployment and screened stock. Horizontal errors were 1.580 km for fixed-zero and 1.534 km for fitted, with 15.631 and 15.451 Hz conditional Doppler RMS and the same 517 observation owners in each arm. All six archived stage checks and the complete regional guard diagnostics matched. Both receivers preferred the same probed point 3.125 km outside the nearest face. The existing veto requires at least 25 km exterior clearance for this offer. The solve took 6.530 CPU seconds and never called salvage. [Integrated omission](measurements/screened-tiled-india-omitted.json.gz) · [Integrated freeze](measurements/screened-tiled-freeze.json) · [Archived omissions](measurements/screened-stock-recovery-omitted.json)
+
+The integrated replay uses the frozen launcher’s own overlays. To repeat it, use the same environment and lock as above with the integrated subcommand and a fresh output path.
+
+```sh
+flock -x "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 \
+  env PYTHONPATH=src:. OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  "$python_bin" -BPs reports/ALGO08/single-core-2x/screened_stock_salvage_trial.py \
+  integrated-omission "$bench/portable-v5-geodiverse" \
+  "$bench/integration-screened-tiled-finish" "$bench/screened-tiled-india-omitted-next"
+```

@@ -20,6 +20,7 @@ SOURCES = Path("tools/pipeline_eval/variants")
 TRIALS = HERE / "measurements"
 SCREENED_SPEC = "sha256:6703ec6db43229305ce82b4987d2c0535bce9e2e2266e6173abb397494abbbf4"
 PARENT_SPEC = "sha256:375895c3afda3abd3a916f90bbd63248b5e792f70c78a0e4f136c9bf1a79d423"
+INTEGRATED_SPEC = "sha256:c803a30087a9c23e00aa4fa30e6a2b87a4d682cd941a3f3d870ce9277dbc90d6"
 SOURCE_PINS = {
     "algo08_salvage_statistics.py": (
         "017e7c9d400c94d2e5d824e1facd8c96ccad51d8eb24128ec7a0fc8e866c4a3c"
@@ -46,16 +47,18 @@ def science_digest(document):
                              if key not in ("binding", "elapsed_seconds")})
 
 
-def check_sources(frozen, parent, release):
+def require_spec(folder, expected):
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.qualification.paired_publication import verify_sources
 
-    for folder, expected in ((frozen, SCREENED_SPEC), (parent, PARENT_SPEC)):
-        specification = read(folder / "spec.json")
-        if canonical_digest(specification) != expected:
-            raise ValueError("Unexpected screened-stock or covariance source freeze")
-        entry = folder / "reports/ALGO08/single-core-2x/run-candidate"
-        verify_sources(entry, specification["sources"])
+    specification = read(folder / "spec.json")
+    if canonical_digest(specification) != expected:
+        raise ValueError("Unexpected screened-stock or covariance source freeze")
+    entry = folder / "reports/ALGO08/single-core-2x/run-candidate"
+    verify_sources(entry, specification["sources"])
+
+
+def check_salvage_pins(frozen, parent, release):
     paths = {name: parent / SOURCES / name for name in
              ("algo08_salvage_statistics.py", "algo08_salvage_bound.py")}
     paths["v5_tiled_salvage.py"] = frozen / SOURCES / "v5_tiled_salvage.py"
@@ -106,7 +109,7 @@ def trace_salvage(kernel, readout):
         yield totals, offers
 
 
-def worker(site, frozen, parent, output):
+def worker(site, frozen, output, parent=None, offer_name="matched-tile"):
     from tools.pipeline_eval.qualification import experimental_publication as publication
     from tools.pipeline_eval.variants.experimental import lean_startup
 
@@ -116,11 +119,13 @@ def worker(site, frozen, parent, output):
     trace = runpy.run_path(str(HERE / "portable_south_solver_trace.py"))
     report = runpy.run_path(str(HERE / "screened_stock_recovery_trial.py"))["readout"]
     native = read(site / "native.json")
+    offer_path = site / (offer_name + ".json")
     diagnostics = {}
 
     def from_saved(recording, _root, assets, archive, offer):
         from leo.analysis.localization_v3 import conservative_recovery
         from leo.application.localization_v3_engine import _json_value
+        from leo.contracts.algo08_region import Algo08Region
         from leo.contracts.digests import canonical_digest
         from leo.operations.tle_archive import TleArchiveReader
         from tools import algo08_position
@@ -128,19 +133,24 @@ def worker(site, frozen, parent, output):
 
         if recording.name != "no-recording" or archive != site / "tle" or diagnostics:
             raise ValueError("Expected one saved detector callback")
+        if offer != Algo08Region.parse(read(offer_path)):
+            raise ValueError("Launcher supplied a different search or screening offer")
         for module in (v5_tiled_salvage, conservative_recovery):
             name = Path(module.__file__).name
             if digest(module.__file__) != SOURCE_PINS[name]:
                 raise ValueError(f"Runtime uses an unexpected salvage source for {name}")
         notes = {}
         with ExitStack() as observer:
-            for name in ("algo08_salvage_statistics.py", "algo08_salvage_bound.py"):
-                if digest(parent / SOURCES / name) != SOURCE_PINS[name]:
-                    raise ValueError("Optional salvage source changed before loading")
-            coarse_module = runpy.run_path(str(parent / SOURCES / "algo08_salvage_statistics.py"))
-            gate_module = runpy.run_path(str(parent / SOURCES / "algo08_salvage_bound.py"))
-            coarse, shortlist = observer.enter_context(coarse_module["salvage_statistics"]())
-            gate = observer.enter_context(gate_module["stable_pruning"]("gate"))
+            coarse, shortlist, gate = None, None, None
+            if parent is not None:
+                for name in ("algo08_salvage_statistics.py", "algo08_salvage_bound.py"):
+                    if digest(parent / SOURCES / name) != SOURCE_PINS[name]:
+                        raise ValueError("Optional salvage source changed before loading")
+                source = parent / SOURCES
+                coarse_module = runpy.run_path(str(source / "algo08_salvage_statistics.py"))
+                gate_module = runpy.run_path(str(source / "algo08_salvage_bound.py"))
+                coarse, shortlist = observer.enter_context(coarse_module["salvage_statistics"]())
+                gate = observer.enter_context(gate_module["stable_pruning"]("gate"))
             timings, offers = observer.enter_context(
                 trace_salvage(conservative_recovery, trace["identity"])
             )
@@ -155,10 +165,12 @@ def worker(site, frozen, parent, output):
             raise ValueError(f"No packet on the known containing offer: {decision['status']}")
         evidence = {key: science_digest(packet[key])
                     for key in ("position_grid", "position_path", "objective_replay")}
-        diagnostics.update(salvage_timing=timings, coarse=coarse, shortlist=shortlist, gate=gate,
+        diagnostics.update(solver_offer=offer.document(), salvage_timing=timings,
+                           coarse=coarse, shortlist=shortlist, gate=gate,
                            offers=offers, stage_evidence=report(notes), science=evidence,
                            published_rows=canonical_digest(notes["published_points"]),
                            grid_points=packet["position_grid"]["evaluated_points"],
+                           regional_bound_guard=decision["metrics"].get("regional_bound_guard"),
                            stage_wall_s=decision["metrics"]["stage_s"],
                            solver_cpu_s=solver_cpu, solver_wall_s=solver_wall)
         # Convert saved numerical values after the complete solver clock.
@@ -181,7 +193,7 @@ def worker(site, frozen, parent, output):
 
         stack.enter_context(patch.object(lean_startup, "install", install_then_adapt))
         args = SimpleNamespace(recording=root / "no-recording", bulk_root=root,
-                               archive=site / "tle", region=site / "matched-tile.json")
+                               archive=site / "tle", region=offer_path)
         result = publication.run(args, specification)
     with output.open("x") as stream:
         json.dump(dict(result=result, **diagnostics), stream, indent=2, allow_nan=False)
@@ -251,14 +263,41 @@ def compare(guarded, archived, deployed):
     )
 
 
-def run(scratch, frozen, parent, output):
+def run_bound_worker(transfer, site, row, frozen, path, parent=None):
     from tools.pipeline_eval.__main__ import THREAD_ENV
     from tools.pipeline_eval.scoring import distance_km
 
-    transfer = runpy.run_path(str(HERE / "covariance_transfer_trial.py"))
     verify_archive = runpy.run_path(str(HERE / "complete_family_cavity_trial.py"))["verify_archive"]
+    if (digest(site / "native.json") != row["document_sha256"]
+            or read(site / (row["mode"] + ".json")) != row["offer"]):
+        raise ValueError("The detector or offer differs from its released input")
+    verify_archive(transfer, row, site)
     release = transfer["RELEASE"]
-    check_sources(frozen, parent, release)
+    env = dict(os.environ, PYTHONPATH=f"{frozen}:{release / 'src'}:{release}", **THREAD_ENV)
+    for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE",
+                "ALGO08_EXPERIMENT_CONFIG"):
+        env.pop(key, None)
+    command = [str(release / "venv/bin/python"), "-BPs", str(Path(__file__).resolve()), "worker",
+               *map(str, (site, frozen, path)), "--offer-name", row["mode"]]
+    if parent is not None:
+        command.extend(("--parent", str(parent)))
+    subprocess.run(command, env=env, timeout=125, check=True)
+    observed = read(path)
+    if observed["solver_offer"] != row["offer"]:
+        raise ValueError("Solver offer differs from the released development offer")
+    verify_archive(transfer, row, site)
+    observed["horizontal_error_km"] = {
+        arm: distance_km(value["latlon"], row["reference_latlon"])
+        for arm, value in observed["result"]["arms"].items()
+    }
+    return observed
+
+
+def run(scratch, frozen, parent, output):
+    transfer = runpy.run_path(str(HERE / "covariance_transfer_trial.py"))
+    require_spec(frozen, SCREENED_SPEC)
+    require_spec(parent, PARENT_SPEC)
+    check_salvage_pins(frozen, parent, transfer["RELEASE"])
     comparison = TRIALS / "screened-stock-recovery-containing.json"
     rows = {row["case"]: row for row in read(comparison)["rows"]}
     deployed_path = TRIALS / "portable-south-solver-attribution.json.gz"
@@ -268,30 +307,14 @@ def run(scratch, frozen, parent, output):
     if any(trace["plan"][key] != southern[key] for key in bind):
         raise ValueError("Deployed salvage trace uses a different input or offer")
     deployed = trace["results"]["installed"]["stages"]
-    env = dict(os.environ, PYTHONPATH=f"{frozen}:{release / 'src'}:{release}", **THREAD_ENV)
-    for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE",
-                "ALGO08_EXPERIMENT_CONFIG"):
-        env.pop(key, None)
-    command = [str(release / "venv/bin/python"), "-BPs", str(Path(__file__).resolve()), "worker"]
     summary = {}
     output.mkdir(parents=True, exist_ok=False)
     for site_name, case, reference in (("southern-portable", transfer["SOUTH"], deployed),
                                        ("India", transfer["INDIA"], None)):
         site, row = scratch / case, rows[case]
-        if (digest(site / "native.json") != row["document_sha256"]
-                or read(site / "matched-tile.json") != row["offer"]):
-            raise ValueError("The detector or offer differs from its released input")
-        verify_archive(transfer, row, site)
         path = output / f"{site_name}-guarded.json"
-        subprocess.run([*command, *map(str, (site, frozen, parent, path))], env=env,
-                       timeout=125, check=True)
-        observed = read(path)
-        verify_archive(transfer, row, site)
+        observed = run_bound_worker(transfer, site, row, frozen, path, parent)
         checks = compare(observed, row["builds"], reference)
-        observed["horizontal_error_km"] = {
-            arm: distance_km(value["latlon"], row["reference_latlon"])
-            for arm, value in observed["result"]["arms"].items()
-        }
         summary[site_name] = dict(plan={k: v for k, v in row.items() if k != "builds"},
                                   checks=checks, guarded=observed,
                                   prior={name: {key: row["builds"][name][key] for key in
@@ -304,13 +327,43 @@ def run(scratch, frozen, parent, output):
                   stream, indent=2, sort_keys=True, allow_nan=False)
 
 
+def integrated_omission(scratch, frozen, output):
+    transfer = runpy.run_path(str(HERE / "covariance_transfer_trial.py"))
+    require_spec(frozen, INTEGRATED_SPEC)
+    check_salvage_pins(frozen, frozen, transfer["RELEASE"])
+    comparison = TRIALS / "screened-stock-recovery-omitted.json"
+    case = transfer["INDIA"]
+    row, = [r for r in read(comparison)["rows"]
+            if r["case"] == case and r["mode"] == "omitted-tile"]
+    output.mkdir(parents=True, exist_ok=False)
+    worker_receipt = output / "India-omitted.json"
+    observed = run_bound_worker(transfer, scratch / case, row, frozen, worker_receipt)
+    prior = row["builds"]["screened_stock_recovery"]
+    checks = compare(observed, row["builds"], None)
+    checks["regional_bound_guard"] = (
+        observed["regional_bound_guard"] == prior["regional_bound_guard"]
+    )
+    result = dict(integrated_specification=INTEGRATED_SPEC, comparison_sha256=digest(comparison),
+                  plan={k: v for k, v in row.items() if k != "builds"},
+                  checks=checks, observed=observed)
+    with (output / "summary.json").open("x") as stream:
+        json.dump(result, stream, indent=2, sort_keys=True, allow_nan=False)
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     actions = cli.add_subparsers(dest="action", required=True)
     trial, child = actions.add_parser("run"), actions.add_parser("worker")
+    omitted = actions.add_parser("integrated-omission")
     for name in ("scratch", "frozen", "parent", "output"):
         trial.add_argument(name, type=Path)
-    for name in ("site", "frozen", "parent", "output"):
+    for name in ("site", "frozen", "output"):
         child.add_argument(name, type=Path)
+    child.add_argument("--parent", type=Path)
+    child.add_argument("--offer-name", choices=("matched-tile", "omitted-tile"), required=True)
+    for name in ("scratch", "frozen", "output"):
+        omitted.add_argument(name, type=Path)
     options = vars(cli.parse_args())
-    {"run": run, "worker": worker}[options.pop("action")](**options)
+    {"run": run, "worker": worker, "integrated-omission": integrated_omission}[
+        options.pop("action")
+    ](**options)
