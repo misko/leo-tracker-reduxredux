@@ -1,7 +1,8 @@
 """Experimental receiver/solver composition for an isolated full publication."""
 import argparse
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 from functools import partial
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,7 @@ DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
 SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
 CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
 RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layout")
+INGRESS_MODES = ("stock", "compressed-buffer", "paired-sha256")
 
 
 def run(args, specification):
@@ -32,7 +34,7 @@ def run(args, specification):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     ingress = specification.get("ingress", "stock")
-    if ingress not in ("stock", "compressed-buffer"):
+    if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
     schedule = specification.get("schedule", "all")
     if schedule not in ("all", "bursts", "alternate", "deferred"):
@@ -53,11 +55,24 @@ def run(args, specification):
             (assets/name).symlink_to(source)
         # The normal publication path checks these pins before it opens the I/Q.
         stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
-        if ingress == "compressed-buffer":
+        if ingress != "stock":
             from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
+            hash_windows = nullcontext
+            if ingress == "paired-sha256":
+                from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
+                pin = specification.get("paired_sha256")
+                if not pin:
+                    raise ValueError("Expected a pinned paired SHA-256 library")
+                native = Path(pin["library"]).read_bytes()
+                if sha256(native).hexdigest() != pin["sha256"]:
+                    raise ValueError("Paired SHA-256 library differs from its reviewed build")
+                # Load exactly the checked bytes from the process-private asset directory.
+                library = assets / "paired-sha256.so"
+                library.write_bytes(native)
+                hash_windows = partial(paired_decoded_hashes, library)
             acquire = algo08_scan.acquire
             def buffered(*args, **kwargs):
-                with compressed_input_buffer():
+                with compressed_input_buffer(), hash_windows():
                     return acquire(*args, **kwargs)
             stack.enter_context(patch.object(algo08_scan, "acquire", buffered))
         if schedule in ("alternate", "bursts"):

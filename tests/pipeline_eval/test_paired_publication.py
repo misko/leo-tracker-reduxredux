@@ -200,3 +200,49 @@ def test_experimental_entry_scopes_the_selected_publication_renderer(tmp_path, m
     spec = dict(solver="stock", rendering=rendering, detector=str(detector), detector_sha256="c" * 64)
     assert trial.run(args, spec) == expected
     assert algo08_scan.render is stock
+
+
+@pytest.mark.parametrize("supported", [True, False])
+def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallback(
+    tmp_path, monkeypatch, supported,
+):
+    from leo.storage.short_window import ShortWindowReader
+    from tools import algo08_scan
+    from tools.pipeline_eval.qualification import experimental_publication as trial
+    from tools.pipeline_eval.variants.experimental import paired_sha256
+
+    stock = ShortWindowReader.windows
+    def acquire():
+        assert (ShortWindowReader.windows is not stock) == supported
+        return {"decision": "withheld"}
+
+    def analyze(*args):
+        assert ShortWindowReader.windows is stock
+        result = algo08_scan.acquire()
+        assert ShortWindowReader.windows is stock
+        return result
+
+    def load(path):
+        assert path != library and path.read_bytes() == library.read_bytes()
+        return object() if supported else None
+
+    monkeypatch.setattr(algo08_scan, "analyze", analyze)
+    monkeypatch.setattr(algo08_scan, "acquire", acquire)
+    monkeypatch.setattr(paired_sha256, "_library", load)
+    output = tmp_path / "output"
+    output.mkdir()
+    detector = tmp_path / "receiver.so"
+    detector.touch()
+    library = tmp_path / "paired.so"
+    library.write_bytes(b"reviewed library")
+    region = tmp_path / "offer.json"
+    region.write_text(json.dumps({"center": [-33, 113], "width_km": 35}))
+    args = SimpleNamespace(recording=tmp_path / "opaque", bulk_root=output,
+                           archive=tmp_path / "tle", region=region)
+    pin = dict(library=str(library), sha256=hashlib.sha256(library.read_bytes()).hexdigest())
+    spec = dict(solver="stock", ingress="paired-sha256", detector=str(detector),
+                detector_sha256="c" * 64, paired_sha256=pin)
+    assert trial.run(args, spec) == {"decision": "withheld"}
+    library.write_bytes(b"substituted")
+    with pytest.raises(ValueError, match="library differs"):
+        trial.run(args, spec)

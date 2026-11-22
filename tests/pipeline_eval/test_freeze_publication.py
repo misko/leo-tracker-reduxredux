@@ -58,3 +58,35 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
     assert set(spec["sources"]) == {str(p) for p in selected}
     with pytest.raises(FileExistsError):
         bundle.freeze(checkout, output, binary, digest, "stock", "compressed-buffer", release)
+
+
+def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path):
+    release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
+    (release / "tools").mkdir(parents=True)
+    selected = [bundle.ENTRY, bundle.LAUNCHER]
+    selected.extend(bundle.VARIANTS / "experimental" / name for name in
+                    ("receiver_ingress.py", "paired_sha256.py", "paired_sha256.c"))
+    for path in selected:
+        (checkout / path).parent.mkdir(parents=True, exist_ok=True)
+        (checkout / path).write_text(str(path))
+    detector, library = tmp_path / "detector.so", tmp_path / "library.so"
+    detector.write_bytes(b"reviewed detector")
+    library.write_bytes(b"reviewed library")
+    detector_digest = hashlib.sha256(detector.read_bytes()).hexdigest()
+    library_digest = hashlib.sha256(library.read_bytes()).hexdigest()
+
+    args = (checkout, output, detector, detector_digest, "stock", "paired-sha256", release)
+    with pytest.raises(ValueError, match="library pin"):
+        bundle.freeze(*args)
+    with pytest.raises(ValueError, match="library differs"):
+        bundle.freeze(*args, paired_sha256=(library, "0" * 64))
+    assert not output.exists()
+    spec = bundle.freeze(*args, paired_sha256=(library, library_digest))
+    assert spec["ingress"] == "paired-sha256"
+    copied = output / "paired-sha256.so"
+    assert spec["paired_sha256"] == dict(library=str(copied), sha256=library_digest)
+    assert set(spec["sources"]) == {str(path) for path in selected} | {copied.name}
+    verify_sources(output / bundle.LAUNCHER, spec["sources"])
+    copied.write_bytes(b"substituted")
+    with pytest.raises(ValueError, match="source changed"):
+        verify_sources(output / bundle.LAUNCHER, spec["sources"])
