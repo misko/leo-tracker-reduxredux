@@ -20,19 +20,19 @@ def test_conditional_publications_admit_reviewed_native_pins():
         residual_receiver.require_native_pin("0" * 64)
 
 
-@pytest.fixture
-def q15_config(tmp_path, monkeypatch):
+@pytest.fixture(params=("Q15_DETECTOR_SHA256", "PROFILED_Q15_SHA256"))
+def q15_config(tmp_path, monkeypatch, request):
     output = tmp_path / "output"
     output.mkdir()
     offer = tmp_path / "region.json"
     offer.write_text(json.dumps(dict(center=[12, 20], width_km=25)))
     args = SimpleNamespace(recording=tmp_path / "recording", archive=tmp_path / "tle",
                            region=offer, bulk_root=output)
-    payload = b"reviewed Q15 native library"
+    payload = request.param.encode("ascii")
     detector = tmp_path / "receiver.so"
     detector.write_bytes(payload)
     digest = sha256(payload).hexdigest()
-    monkeypatch.setattr(residual_receiver, "Q15_DETECTOR_SHA256", digest)
+    monkeypatch.setattr(residual_receiver, request.param, digest)
     spec = dict(detector=str(detector), detector_sha256=digest, solver="stock",
                 schedule="conditional-residual")
     return args, spec, detector

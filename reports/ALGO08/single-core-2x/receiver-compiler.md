@@ -15,6 +15,14 @@ The timer covers launch on sealed I/Q through web publication in an empty output
 
 The summed elapsed ratio was **0.584** (1.71× speedup) and the median paired ratio was **0.567**. Both exceed the 0.500 qualification limit. North alone needs another 6.08 wall seconds to halve its deployed time. These are two development recordings. The independent confirmation panel remains sealed.
 
+| Elapsed stage, deployed → candidate | DS30-0016 | Northern boundary |
+|---|---:|---:|
+| Launch to saved detections | 13.08 → 6.33 s | 19.71 → 12.36 s |
+| Detections to terminal decision | 8.17 → 3.36 s | 9.71 → 8.70 s |
+| Terminal decision to complete publication | 3.76 → 1.68 s | 4.47 → 1.97 s |
+
+The boundaries use the sealed detection and terminal file timestamps within each timed invocation. The northern decision stage includes the exterior-region check because its valid estimate reached the optimizer bound.
+
 ## What the compiler saw
 
 Training generated eight 20 ms dual-antenna windows, equally split between the two pilot edges. Each edge used carriers at ±225 and ±675 kHz, the same signal levels and an alternating weak-pilot or noise lane. This training requires waveform assets and deterministic synthetic I/Q. It receives no recorded data, receiver position, satellite ID or regional offer. GCC 15.2 collected control-flow counts with value profiling disabled. Feedback compilation required matching counter data for all ten translation units and kept the original floating-point contraction policy. Two independent builds in different directories produced identical binaries for both receiver interfaces. [Training and build code](receiver_compiler_trial.py)
