@@ -55,6 +55,7 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
     assert spec.get("startup", "stock") == startup
     assert "endpoint_reuse" not in spec
     assert "defer_preparation_gc" not in spec
+    assert "regional_veto" not in spec
     (checkout / bundle.ENTRY).write_text("edited after freeze")
     verify_sources(output / bundle.LAUNCHER, spec["sources"])
     assert (output / "receiver.so").read_bytes() == b"reviewed"
@@ -141,3 +142,27 @@ def test_freeze_conditional_residual_pins_the_reviewed_pair_of_native_entries_an
     (output / "receiver.so").write_bytes(b"changed after freezing")
     with pytest.raises(ValueError, match="source changed"):
         verify_sources(output / bundle.LAUNCHER, spec["sources"])
+
+
+def test_freezer_pins_the_regional_veto_only_when_explicitly_enabled(tmp_path):
+    release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
+    (release / "tools").mkdir(parents=True)
+    sources = {bundle.VARIANTS / "experimental" / name for name in (
+        "regional_bound_guard.py", "regional_exterior_veto.py", "regional_reassignment.py",
+    )}
+    for path in (bundle.ENTRY, bundle.LAUNCHER, *sources):
+        (checkout / path).parent.mkdir(parents=True, exist_ok=True)
+        (checkout / path).write_text(str(path))
+    detector = tmp_path / "detector.so"
+    detector.write_bytes(b"fixture detector")
+    digest = hashlib.sha256(detector.read_bytes()).hexdigest()
+    args = (checkout, output, detector, digest, "stock", "stock", release)
+    with pytest.raises(ValueError, match="Boolean regional veto"):
+        bundle.freeze(*args, regional_veto="yes")
+    assert not output.exists()
+    spec = bundle.freeze(*args, regional_veto=True)
+    assert spec["regional_veto"] is True
+    assert set(spec["sources"]) == {str(p) for p in (bundle.ENTRY, bundle.LAUNCHER, *sources)}
+    verify_sources(output / bundle.LAUNCHER, spec["sources"])
+    for module in sources:
+        assert (output / module).read_bytes() == (checkout / module).read_bytes()

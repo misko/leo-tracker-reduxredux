@@ -63,6 +63,9 @@ def run(args, specification):
     defer_preparation_gc = specification.get("defer_preparation_gc", False)
     if type(defer_preparation_gc) is not bool:
         raise ValueError("Expected a Boolean preparation GC selection")
+    regional_veto = specification.get("regional_veto", False)
+    if type(regional_veto) is not bool:
+        raise ValueError("Expected a Boolean regional veto selection")
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
@@ -173,6 +176,10 @@ def run(args, specification):
             select = partial(algo08_track_moments.select, detail={})
             stack.enter_context(patch.object(v5_core, "scan_context", context))
             stack.enter_context(patch.object(v5_core, "infer", partial(v5_core.infer, select_initial=select)))
+        if regional_veto:
+            from leo.operations.tle_archive import TleArchiveReader
+            from tools.pipeline_eval.variants.experimental.regional_bound_guard import bound_exterior_veto
+            stack.enter_context(bound_exterior_veto(TleArchiveReader(args.archive)))
         if endpoint_reuse:
             from tools.pipeline_eval.variants import algo08_endpoint_readout, v5_direct_cavity
             endpoint_counts = stack.enter_context(

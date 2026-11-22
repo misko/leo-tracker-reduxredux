@@ -36,7 +36,7 @@ The northern near-edge and far offers used the same digest-verified saved detect
 | 100 m inside | 0.127 | 2.830 |
 | Far omitted | 0.126 | 2.775 |
 
-The solver hook already has the Graph tracks, so only the second column of CPU measurements is incremental when the gate activates. An interior pair bypasses that work. These measurements rebuild only the diagnostic, without a new position fit or publication. The component tests cover representable optimizer limits, signed and cavity pair selection, fallback on missing evidence, unchanged nonvetoed packet creation, and restoration when the experimental scope exits. [Component tests](../../../tests/pipeline_eval/test_regional_bound_guard.py)
+The solver hook already has the Graph tracks, so activation adds the catalogue and probe cost. An interior pair bypasses that work. These measurements rebuild only the diagnostic, without a new position fit or publication. The component tests cover representable optimizer limits, signed and cavity pair selection, fallback on missing evidence and archive errors, unchanged nonvetoed packet creation, and restoration when the experimental scope exits. [Component tests](../../../tests/pipeline_eval/test_regional_bound_guard.py)
 
 The experiment opts in by wrapping one saved solve in `bound_exterior_veto(archive)`. To repeat the independent audit and scorer measurement, use the original public publication root, the existing southern mirrored publication, and the northern saved detections already pinned in the probe packet. [Replay inputs and thresholds](regional-exterior-veto-protocol.md)
 
@@ -50,3 +50,16 @@ flock /tmp/leo-algo08v2-2x-bench/gauss.lock nice -n 15 ionice -c 2 -n 7 taskset 
   --rescore north-edge "$north_saved_detections" "$public_archive" "$release/assets/tracks.json" \
   --rescore north-far "$north_saved_detections" "$public_archive" "$release/assets/tracks.json"
 ```
+
+## Research publication opt-in
+
+Freeze a separate research bundle with `--regional-veto`. The generated specification records `"regional_veto": true` and pins the boundary guard, exterior decision rule and all-track scorer. The launcher uses the same supplied archive path as the compact solve. Existing bundles keep their earlier specifications and sources. Use distinct guarded bundles for the stock receiver and any experimental capture schedule. [Freezer](../../../tools/pipeline_eval/qualification/freeze_publication.py) · [Research publisher](../../../tools/pipeline_eval/qualification/experimental_publication.py)
+
+```sh
+PYTHONPATH="$PWD:$PWD/src:$release" "$release/venv/bin/python" -B \
+  -m tools.pipeline_eval.qualification.freeze_publication "$guarded_stock_build" \
+  "$release/assets/cancellation-factors.so" f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809 \
+  --solver stock --ingress stock --regional-veto
+```
+
+The standard publication records a veto as `both_receivers_support_far_exterior`. Both calibration coordinates are absent, and the normal withheld publication omits the path, grid and eight fix figures. The publication test stubs acquisition, numerical inference and rendering while using the real scan application and stores. It checks that the same numerical fix publishes normally with the flag disabled, and that contained fixes keep their eight figures with the flag enabled. Forty-nine component tests passed. The ten saved simulated offers provide the existing geographic development evidence, including four missed near omissions. [Publication boundary tests](../../../tests/pipeline_eval/test_regional_veto_publication.py)

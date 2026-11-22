@@ -19,7 +19,7 @@ VARIANTS = Path("tools/pipeline_eval/variants")
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
            rendering="individual", startup="stock", paired_sha256=None, endpoint_reuse=False,
            png_filter=None, png_deflate=None, recovery_reuse=False, tle_parser=None,
-           defer_preparation_gc=False):
+           defer_preparation_gc=False, regional_veto=False):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     png_pins = dict(png_filter=png_filter, png_deflate=png_deflate)
@@ -43,6 +43,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         raise ValueError("Expected a Boolean recovery reuse selection")
     if type(defer_preparation_gc) is not bool:
         raise ValueError("Expected a Boolean preparation GC selection")
+    if type(regional_veto) is not bool:
+        raise ValueError("Expected a Boolean regional veto selection")
     if (paired_sha256 is not None) != (ingress == "paired-sha256"):
         raise ValueError("Paired SHA-256 ingress requires exactly one reviewed library pin")
     if paired_sha256 is not None:
@@ -75,6 +77,10 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         sources.append(VARIANTS / "algo08_recovery_reuse.py")
     if defer_preparation_gc:
         sources.append(VARIANTS / "experimental/preparation_gc.py")
+    if regional_veto:
+        sources.extend(VARIANTS / "experimental" / name for name in (
+            "regional_bound_guard.py", "regional_exterior_veto.py", "regional_reassignment.py",
+        ))
     if rendering != "individual":
         sources.append(VARIANTS / "experimental/shared_orbit_figures.py")
     if rendering in ("raster-layout", "lossless-raster"):
@@ -134,6 +140,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         spec["recovery_reuse"] = True
     if defer_preparation_gc:
         spec["defer_preparation_gc"] = True
+    if regional_veto:
+        spec["regional_veto"] = True
     (output / "spec.json").write_text(json.dumps(spec, indent=2) + "\n")
     return spec
 
@@ -155,6 +163,8 @@ if __name__ == "__main__":
     parser.add_argument("--endpoint-reuse", action="store_true")
     parser.add_argument("--recovery-reuse", action="store_true")
     parser.add_argument("--defer-preparation-gc", action="store_true")
+    parser.add_argument("--regional-veto", action="store_true",
+                        help="Withhold a boundary fix when both receivers independently favor the far exterior")
     args = parser.parse_args()
     paired = None if args.paired_sha256 is None else (Path(args.paired_sha256[0]), args.paired_sha256[1])
     native_libraries = {name: (Path(pin[0]), pin[1]) for name in (*PNG_LIBRARIES, "tle_parser")
@@ -163,4 +173,4 @@ if __name__ == "__main__":
            args.solver, args.ingress, schedule=args.schedule, rendering=args.rendering,
            startup=args.startup, paired_sha256=paired, endpoint_reuse=args.endpoint_reuse,
            recovery_reuse=args.recovery_reuse,
-           defer_preparation_gc=args.defer_preparation_gc, **native_libraries)
+           defer_preparation_gc=args.defer_preparation_gc, regional_veto=args.regional_veto, **native_libraries)
