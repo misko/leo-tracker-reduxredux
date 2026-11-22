@@ -67,20 +67,26 @@ def test_pair_uses_empty_outputs_and_only_credits_same_recording(tmp_path, monke
         bench.run_pair(args)
 
 
-def test_verified_withholding_counts_as_a_terminal_publication(tmp_path):
+@pytest.mark.parametrize("wrong_screen", [False, True])
+def test_verified_withholding_binds_the_terminal_region(tmp_path, wrong_screen):
     scans=bench.FastScanStore(tmp_path)
     publications=bench.FastStandardAnalysisStore(tmp_path)
     rid="algo08-v2-trial"
     region=dict(center=[-32.0,95.0], width_km=25.0, screen_center=[-32.0,95.0])
     arms={a: {"latlon":None} for a in ("c0","fitted_c")}
-    terminal=dict(reason="no probes", arms=arms)
+    terminal_region = dict(region, screen_center=[37.5, -122.]) if wrong_screen else region
+    terminal=dict(reason="no probes", arms=arms, region=terminal_region)
     digest=bench.canonical_digest(terminal)
     bench.immutable_json(scans.automatic_workspace(rid)/"terminal.json",terminal)
     scans.publish(rid,dict(session_id="s", points=[]))
     publications.withhold(rid,terminal["reason"],terminal_sha256=digest,region=region,raw_authority="raw")
     receipt=dict(run_id=rid,session_id="s",region=region,decision="withheld",terminal_sha256=digest)
-    result=bench.evidence(tmp_path,receipt,0)
-    assert result["arms"]==arms and result["reason"]=="no probes" and result["artifacts"]==[]
+    if wrong_screen:
+        with pytest.raises(ValueError, match="Terminal region differs"):
+            bench.evidence(tmp_path, receipt, 0)
+    else:
+        result=bench.evidence(tmp_path,receipt,0)
+        assert result["arms"]==arms and result["reason"]=="no probes" and result["artifacts"]==[]
 
 
 def test_blind_pair_needs_a_separate_scorer_and_frozen_recording_offer_assignment(tmp_path, monkeypatch):
@@ -116,7 +122,7 @@ def test_blind_pair_needs_a_separate_scorer_and_frozen_recording_offer_assignmen
 def test_comparison_rejects_a_grid_published_in_another_site_frame(tmp_path, monkeypatch):
     run = "algo08-v2-trial"
     region = dict(center=[-32., 95.], width_km=25., screen_center=[-32., 95.])
-    terminal = {"arms": {}}
+    terminal = {"arms": {}, "region": region}
     receipt = dict(run_id=run, session_id="s", region=region, decision="complete",
                    terminal_sha256=bench.canonical_digest(terminal))
     scans = bench.FastScanStore(tmp_path)

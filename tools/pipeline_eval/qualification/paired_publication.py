@@ -80,6 +80,8 @@ def evidence(root, receipt, started_ns):
     terminal = json.loads(terminal_path.read_bytes())
     if canonical_digest(terminal) != receipt["terminal_sha256"] or detail["terminal_sha256"] != receipt["terminal_sha256"]:
         raise ValueError("Terminal receipt failed digest verification")
+    if terminal.get("region") != receipt["region"]:
+        raise ValueError("Terminal region differs from the timed invocation")
     report = scans.detail(run, include_points=False)
     if (report["session_id"] != receipt["session_id"] or detail["state"] != receipt["decision"]
             or detail["region"] != receipt["region"] or detail.get("evaluation_reference") is not None):
