@@ -162,8 +162,8 @@ def profile_source(text, signatures):
 
 def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True, reuse=True,
           pack_refine=True, profile=False, tracking=False, projection=False, shortlist_audit=False,
-          short_aperture=False, adjacent_primary=False):
-    if (avx2 or fma) and platform.machine() != "x86_64":
+          short_aperture=False, adjacent_primary=False, pack_stencil=False):
+    if (avx2 or fma or pack_stencil) and platform.machine() != "x86_64":
         raise ValueError("the instruction-set optimizations require x86-64")
     if sum((tracking, projection, shortlist_audit, short_aperture, adjacent_primary)) > 1:
         raise ValueError("build each experimental scout or audit separately")
@@ -220,6 +220,13 @@ def build(output, *, fftw=True, crop=True, early_gate=True, avx2=False, fma=True
                     source = exact_integer_only(source)
                 if path.name == "portable_verifier.c":
                     source = omit_integer_control(source)
+            if pack_stencil:
+                if path.name == "refine_bank.c":
+                    source += '\n#include "receiver_stencil_kernel.inc"\n'
+                if path.name == "portable_verifier.c":
+                    from .receiver_stencil_overlay import verifier_overlay
+
+                    source = verifier_overlay(source)
             if path.name in ("timing_first_receiver.c", "delay_product_kernel.c") and avx2:
                 options.append("-mavx2")
             if short_aperture and path.name == "delay_product_kernel.c":
@@ -263,12 +270,13 @@ def main():
     parser.add_argument("--shortlist-audit", action="store_true")
     parser.add_argument("--short-aperture", action="store_true")
     parser.add_argument("--adjacent-primary", action="store_true")
+    parser.add_argument("--pack-stencil", action="store_true")
     args = parser.parse_args()
     build(args.output, fftw=args.fftw, crop=args.crop, early_gate=args.early_gate, avx2=args.avx2,
           fma=args.fma, reuse=args.reuse, pack_refine=args.pack_refine,
           profile=args.profile, tracking=args.tracking, projection=args.projection,
           shortlist_audit=args.shortlist_audit, short_aperture=args.short_aperture,
-          adjacent_primary=args.adjacent_primary)
+          adjacent_primary=args.adjacent_primary, pack_stencil=args.pack_stencil)
 
 
 if __name__ == "__main__":
