@@ -6,6 +6,7 @@ import sysconfig
 from types import SimpleNamespace
 
 import pytest
+from sgp4 import exporter
 
 from leo.sky import propagation
 from tests.operations.test_causal_tle_catalogue import at_day
@@ -38,6 +39,18 @@ def test_canonical_alpha5_matches_reference(library, prefix):
     with tle_records.batch_records(library) as counts:
         assert propagation.parse_element_set_records(text) == expected
     assert counts["records"] == 1
+
+
+def test_checksum_export_preserves_all_lines_and_restores_exporter(library):
+    catalogue = propagation.parse_element_sets(at_day(232) + at_day(234))
+    original = exporter.compute_checksum
+    expected = [exporter.export_tle(item) for item in catalogue.satellites]
+    with tle_records.batch_records(library):
+        assert exporter.compute_checksum is propagation.element_line_checksum
+        assert [exporter.export_tle(item) for item in catalogue.satellites] == expected
+        for text in ("", "-0+987.3", "0" * 68 + "99--", "\u00e9\u0661-7"):
+            assert exporter.compute_checksum(text) == original(text)
+    assert exporter.compute_checksum is original
 
 
 @pytest.mark.parametrize("text", [

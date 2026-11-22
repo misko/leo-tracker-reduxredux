@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from importlib.util import module_from_spec, spec_from_file_location
 from unittest.mock import patch
 
+from sgp4 import exporter
 from leo.sky import propagation
 from tools.pipeline_eval.variants import algo08_causal_reuse
 
@@ -25,5 +26,6 @@ def batch_records(library):
         return result
 
     with (patch.object(propagation, "parse_element_set_records", parse),
-          patch.object(algo08_causal_reuse, "parse_element_set_records", parse)):
+          patch.object(algo08_causal_reuse, "parse_element_set_records", parse),
+          patch.object(exporter, "compute_checksum", propagation.element_line_checksum)):
         yield counts

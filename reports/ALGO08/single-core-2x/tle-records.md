@@ -1,5 +1,7 @@
 # Reading orbital element records in one native pass
 
+A subsequent change uses the repository's existing element-line checksum when SGP4 serializes its canonical lines. Both functions implement the same digit and minus-sign weights on the first 68 columns. On 11,199 satellites, the two original export passes took 0.101 and 0.100 CPU seconds, and the two replacement passes took 0.043 seconds each. Every serialized byte matched. This export change postdates the full DS30-0374 and northern batch-publication comparisons. [Export receipt](measurements/canonical-tle-export.json) · [Reproduction script](canonical_tle_export_trial.py)
+
 The saved profiles showed over a million individual element-line checks in the earlier DS30-0374 solver. For a canonical three-line element record, the prototype validates both line widths, prefixes, checksums and catalogue numbers in C, then constructs the same immutable Python record as the reference reader. It handles numeric and standard Alpha-5 identifiers. Other input formats and suspected errors are passed to the original parser, including the complete original input for error reporting. The SGP4 model, archive reads and digests, cutoff rules, candidate selection and numerical precision are unchanged.
 
 | Saved input | Catalogues / validated records | Original → batch preparation CPU | Original → batch solver and grid CPU |
