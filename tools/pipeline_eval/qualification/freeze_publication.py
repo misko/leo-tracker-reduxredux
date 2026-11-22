@@ -8,8 +8,8 @@ from tempfile import TemporaryDirectory
 
 from .experimental_publication import (
     CAUSAL_MODES, DISCOVERY_MODES, GRAPH_PATH_LIBRARY, GRAPH_PATH_SOURCES, INGRESS_MODES,
-    PNG_LIBRARIES, POSTERIOR_GRID_LIBRARY,
-    RELEASE, RENDERING_MODES, SALVAGE_MODES, SCHEDULE_MODES, TABLE_MODES,
+    PNG_LIBRARIES, POSTERIOR_GRID_LIBRARY, POSTERIOR_MODES,
+    RELEASE, RENDERING_MODES, SALVAGE_MODES, SCHEDULE_MODES, SCREENED_STOCK, TABLE_MODES,
 )
 
 
@@ -29,8 +29,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     png_pins = dict(png_filter=png_filter, png_deflate=png_deflate)
     if any((pin is not None) != (rendering == "lossless-raster") for pin in png_pins.values()):
         raise ValueError("Lossless raster rendering requires both reviewed PNG library pins")
-    if posterior_grid_handoff is not None and solver != "collapsed-signed":
-        raise ValueError("Posterior grid handoff requires the collapsed-signed solver")
+    if posterior_grid_handoff is not None and solver not in POSTERIOR_MODES:
+        raise ValueError("Posterior grid handoff requires the collapsed-signed or screened-stock-finish solver")
     libraries = {}
     for name, pin in {**png_pins, "tle_parser": tle_parser,
                       "posterior_grid_handoff": posterior_grid_handoff, "graph_path": graph_path}.items():
@@ -81,8 +81,11 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     if solver in DISCOVERY_MODES:
         sources.append(VARIANTS / "algo08_dense_discovery.py")
     if solver in TABLE_MODES:
-        sources.extend(VARIANTS / name for name in ("algo08_causal_table.py", "algo08_cavity_projection.py",
-                                                     "algo08_salvage_bound.py"))
+        sources.extend(VARIANTS / name for name in ("algo08_causal_table.py", "algo08_cavity_projection.py"))
+        if solver in SALVAGE_MODES:
+            sources.append(VARIANTS / "algo08_salvage_bound.py")
+    if solver == SCREENED_STOCK:
+        sources.extend(VARIANTS / name for name in ("algo08_stock_finish.py", "v5_screen_winner.py"))
     if solver == "track-moments":
         sources.append(VARIANTS / "algo08_track_moments.py")
     if solver in ("collapsed-repair", "collapsed-signed"):

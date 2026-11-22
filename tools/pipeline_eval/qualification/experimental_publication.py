@@ -11,10 +11,13 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
-TABLE_MODES = ("shared-tables", "track-moments", "collapsed-repair", "collapsed-signed")
+SCREENED_STOCK = "screened-stock-finish"
+TABLE_MODES = ("shared-tables", "track-moments", "collapsed-repair", "collapsed-signed", SCREENED_STOCK)
 DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
-SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
-CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
+CAUSAL_MODES = ("causal-reuse", "combined", *DISCOVERY_MODES)
+# Screened stock keeps the release's conservative salvage and trim operations.
+SALVAGE_MODES = tuple(mode for mode in CAUSAL_MODES if mode not in ("causal-reuse", SCREENED_STOCK))
+POSTERIOR_MODES = ("collapsed-signed", SCREENED_STOCK)
 RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layout", "lossless-raster")
 INGRESS_MODES = ("stock", "compressed-buffer", "paired-sha256")
 SCHEDULE_MODES = ("all", "bursts", "alternate", "deferred", "conditional-residual")
@@ -62,8 +65,8 @@ def run(args, specification):
     posterior_pin = specification.get("posterior_grid_handoff")
     posterior_bytes = None
     if posterior_pin is not None:
-        if mode != "collapsed-signed":
-            raise ValueError("Posterior grid handoff requires the collapsed-signed solver")
+        if mode not in POSTERIOR_MODES:
+            raise ValueError("Posterior grid handoff requires the collapsed-signed or screened-stock-finish solver")
         if (not isinstance(posterior_pin, dict) or set(posterior_pin) != {"library", "sha256"}
                 or not isinstance(posterior_pin["library"], str)
                 or not isinstance(posterior_pin["sha256"], str)
@@ -212,10 +215,14 @@ def run(args, specification):
         if mode in TABLE_MODES:
             from tools.pipeline_eval.variants.algo08_causal_table import causal_table
             from tools.pipeline_eval.variants.algo08_cavity_projection import shared_projection
-            from tools.pipeline_eval.variants.algo08_salvage_bound import stable_pruning
             stack.enter_context(causal_table(canonical_exports=True, previous_catalogues=True))
             stack.enter_context(shared_projection())
-            stack.enter_context(stable_pruning("gate"))
+            if mode in SALVAGE_MODES:
+                from tools.pipeline_eval.variants.algo08_salvage_bound import stable_pruning
+                stack.enter_context(stable_pruning("gate"))
+        if mode == SCREENED_STOCK:
+            from tools.pipeline_eval.variants.algo08_stock_finish import screened_nomination
+            nomination = stack.enter_context(screened_nomination())
         if mode == "track-moments":
             from tools.pipeline_eval.variants import algo08_track_moments
             context = partial(algo08_track_moments.prepare_context, v5_core.scan_context)
@@ -265,6 +272,8 @@ def run(args, specification):
             stack.enter_context(patch.object(localization_v3, "sample_position_grid", posterior_grid))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+        if mode == SCREENED_STOCK:
+            result["screened_nomination"] = nomination
         if graph_path_bytes is not None:
             result["graph_path"] = graph_path_counts
         if specification.get("tle_parser"):
