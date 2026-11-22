@@ -42,3 +42,21 @@ Reusing the southern full-scan detections, the candidate withheld both arms on t
 ## First formal pair for the packed verifier
 
 Freeze the floating-FIR version with the guarded, frame-relative phase calculation in the verifier. The floating path retains the scout used in the successful DS30-0155 accuracy check. The new library is `dd2d83a8cc865b156115922e057823300e269c2fcb65f525f81e6fa620ed1a20`. All captured scientific Python modules match the previous full-scan build. The candidate specification is `sha256:50d30065095e5a354ec589c31b615a0d1d38194b72335864431e3f63be403879`. Use the first assignment in the existing DS30 order, DS30-0374, candidate first. Open just this one complete pair. Require both calibration solutions, report all returned measurements and image changes, and compare both errors, elapsed and CPU seconds to deployed ALGO08v2 on the same raw I/Q and archive.
+
+| DS30-0374, one pinned core | Deployed ALGO08v2 | Full two-scan candidate |
+|---|---:|---:|
+| Raw I/Q through published web artifacts | 136.14 s | 70.69 s |
+| CPU | 129.15 s | 65.82 s |
+| Launch through saved detections, elapsed | 91.79 s | 47.95 s |
+| Detections through position terminal, elapsed | 36.71 s | 20.10 s |
+| Terminal through process exit, elapsed | 7.63 s | 2.65 s |
+| Fixed-zero / fitted horizontal error | 1.855 / 1.935 km | 1.848 / 1.928 km |
+| Fixed-zero / fitted frequency RMS | 101.536 / 101.520 Hz | 101.496 / 101.482 Hz |
+
+The matched elapsed speedup was **1.926×**, 2.63 s short of halving runtime. Single-core CPU speedup was **1.962×**. Both runs had zero filesystem input blocks. Both produced a fix in each calibration arm and all eight required PNGs. The owner digests, grid, path and pixels differed. The fitted position moved 8.9 m and its error decreased 7.6 m. This small movement on one known physical roof supplies no evidence of better accuracy elsewhere. [Matched run](measurements/DS30-0374-full-phase.json) · [Position and timing audit](measurements/full-phase-lead-science.json)
+
+The two receivers agreed on all 9,288 opportunities about whether to return a measurement. All 4,157 selections retained the same winning rank and integer epoch. Only one differed in fractional timing or frequency, by less than 0.000000002 samples and 0.000037 Hz. Numerical scores changed on 3,990 selections, the largest absolute score change being 0.000000000241. The inventory counts whole observation records by digest, so it records 3,990 replacements. The per-field audit establishes that both receivers returned every one of the same selections. The paired build also changes the solver, so this comparison alone cannot attribute the owner changes to the receiver. [Field-level differences](measurements/full-phase-lead-science.json) · [Stage inventory](measurements/full-phase-lead-inventory.json)
+
+![Matched elapsed time, CPU time and both position error curves on the first DS30 pair](full-phase-lead.png)
+
+DS30-0374 belongs to the Gauss development site. The other three assigned pairs, the 16-recording panel and fresh-site confirmation remain unopened for this build. Qualification requires the same frozen algorithm at geographically withheld sites, including containing and omitted offers. The existing Austin waveform exercises the receiver only. Independent physical positioning still requires an off-site capture with a survey, time and orbital archive. [Geographic protocol and physical data inventory](geographic-input-audit.md)
