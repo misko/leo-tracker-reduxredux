@@ -42,11 +42,41 @@ def lock(panel_path, panel_sha, spec_digest, runs):
                 candidate_specification_digest=spec_digest, cases=cases)
 
 
+def offset_km(region, point):
+    lat, lon = region["center"]
+    return (point[1]-lon)*111.32*cos(radians(lat)), (point[0]-lat)*111
+
+
 def face_clearance_km(region, point):
     """Distance to the nearest face in the solver frame, negative outside."""
-    lat, lon = region["center"]
-    offset = max(abs((point[0]-lat)*111), abs((point[1]-lon)*111.32*cos(radians(lat))))
-    return region["width_km"]/2 - offset
+    return region["width_km"]/2 - max(map(abs, offset_km(region, point)))
+
+
+def matches_edge_design(site, offers):
+    """Verify the four-way geometry from locked receipts and revealed truth."""
+    if len(offers) != len(EDGE_CASES) or {label for label, _ in offers} != EDGE_CASES:
+        return False
+    regions = dict(offers)
+    widths = {region["width_km"] for region in regions.values()}
+    if len(widths) != 1:
+        return False
+    width = widths.pop()
+    if not 18 <= width <= 40:
+        return False
+    half = width / 2
+    tolerance = 1e-8  # km, for converting saved coordinates back into the local frame
+    limits = {"containing": (.15*half, .8*half), "far": (2.5*half, 5.5*half),
+              "edge-containing": (half-.25, half-.05), "edge-omitted": (half+.05, half+.25)}
+    edge_faces = set()
+    for label, region in regions.items():
+        east, north = offset_km(region, site)
+        axis, normal, along = ("east", east, north) if abs(east) >= abs(north) else ("north", north, east)
+        lo, hi = limits[label]
+        if not (lo-tolerance <= abs(normal) <= hi+tolerance and abs(along) <= .75*half+tolerance):
+            return False
+        if label.startswith("edge-"):
+            edge_faces.add((axis, normal > 0))
+    return len(edge_faces) == 1
 
 
 def elapsed_ratios(assigned):
@@ -64,6 +94,7 @@ def score(locked, truth):
     recording_sites = {}
     heights = {}
     conditions_by_recording = defaultdict(set)
+    edge_offers = defaultdict(list)
     times_by_site = defaultdict(list)
     rows, times = [], []
     failures = 0
@@ -87,6 +118,11 @@ def score(locked, truth):
         runs = result.get("runs", {})
         failed = "failure" in result or set(runs) != {"baseline", "candidate"}
         failures += int(failed)
+        if locked.get("geography_protocol") == EDGE_PROTOCOL and not failed:
+            for arm in ("baseline", "candidate"):
+                receipt = runs[arm].get("receipt", {})
+                if "region" in receipt:
+                    edge_offers[job["recording"], arm].append((condition, receipt["region"]))
         matched = None if failed else (runs["baseline"]["elapsed_s"], runs["candidate"]["elapsed_s"])
         times.append(matched)
         times_by_site[site].append(matched)
@@ -148,6 +184,10 @@ def score(locked, truth):
     if locked.get("geography_protocol") == EDGE_PROTOCOL:
         # Vary only the offered region within each four-way comparison.
         coverage &= all(conditions == EDGE_CASES for conditions in conditions_by_recording.values())
+        for recording, site in recording_sites.items():
+            baseline_offers = edge_offers[recording, "baseline"]
+            coverage &= (baseline_offers == edge_offers[recording, "candidate"]
+                         and matches_edge_design(site, baseline_offers))
         for site in sites:
             controls = [s for s in summaries if s["site"] == site and s["arm"] == "baseline"]
             coverage &= {s["condition"] for s in controls} == EDGE_CASES

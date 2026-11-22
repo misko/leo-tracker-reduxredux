@@ -1,6 +1,7 @@
 from copy import deepcopy
 import hashlib
 import json
+from math import cos, radians
 
 import pytest
 import numpy as np
@@ -113,7 +114,8 @@ def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_pat
         pinned(path, "00")
 
 
-def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_edge_fixes():
+@pytest.fixture
+def fresh_panel():
     rng = np.random.default_rng(45)
     data = dict(cases=[], geography_protocol=EDGE_PROTOCOL)
     key = dict(answers={}, seed=(45).to_bytes(32, "big").hex())
@@ -130,6 +132,49 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
                 for arm in result["arms"].values():
                     arm["latlon"] = list(site) if contained else None
             data["cases"].append(dict(job=job, result=dict(runs=runs)))
+    return data, key
+
+
+@pytest.mark.parametrize("mutation", ["opposite_face", "perpendicular_face", "barely_outside",
+                                      "different_width", "duplicate_offer", "different_paired_regions"])
+def test_fresh_panel_rejects_mismatched_boundary_design(fresh_panel, mutation):
+    data, key = fresh_panel
+    label = "far" if mutation in {"barely_outside", "different_width", "different_paired_regions"} else "edge-omitted"
+    case = next(case for case in data["cases"] if case["job"]["offer"] == "a" + label)
+    site = key["answers"][case["job"]["offer"]]["truth"]
+    if mutation == "duplicate_offer":
+        extra = deepcopy(case)
+        extra["job"]["offer"] = "extra"
+        key["answers"]["extra"] = dict(key["answers"][case["job"]["offer"]])
+        data["cases"].append(extra)
+    elif mutation == "different_paired_regions":
+        case["result"]["runs"]["candidate"]["receipt"]["region"]["center"] = list(
+            case["result"]["runs"]["candidate"]["receipt"]["region"]["center"])
+        case["result"]["runs"]["candidate"]["receipt"]["region"]["center"][1] += .001
+    else:
+        for run in case["result"]["runs"].values():
+            region = run["receipt"]["region"]
+            lat, lon = region["center"]
+            east = (site[1]-lon)*111.32*cos(radians(lat))
+            north = (site[0]-lat)*111
+            if mutation == "opposite_face":
+                east, north = -east, -north
+            elif mutation == "perpendicular_face":
+                east, north = north, east
+            elif mutation == "barely_outside":
+                east, north = region["width_km"]/2 + .1, 0.
+            else:
+                region["width_km"] += .1
+            lat = site[0]-north/111
+            region["center"] = [lat, site[1]-east/(111.32*cos(radians(lat)))]
+    result = score(data, key)
+    assert result["relative_quality_preserved"]
+    assert not result["geographic_confirmation_coverage"]
+    assert not result["passed_geographic_holdout"]
+
+
+def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_edge_fixes(fresh_panel):
+    data, key = fresh_panel
     result = score(data, key)
     assert result["passed"] and result["assigned"] == 8
     assert result["passed_geographic_holdout"]
