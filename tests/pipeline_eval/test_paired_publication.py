@@ -7,6 +7,17 @@ import pytest
 from tools.pipeline_eval.qualification import paired_publication as bench
 
 
+@pytest.mark.parametrize("changed", [{"center": [37., -122.]}, {"screen_center": [37., -122.]}, {"width_km": 25}])
+def test_each_timed_launcher_must_return_its_actual_assigned_region(tmp_path, monkeypatch, changed):
+    args = SimpleNamespace(region=tmp_path/"offer.json", recording=tmp_path/"r", archive=tmp_path/"tle", timeout=5)
+    args.region.write_text(json.dumps({"center": [-31., 129.], "width_km": 30}))
+    region = {"center": [-31., 129.], "width_km": 30, "screen_center": [-31., 129.]}
+    result = SimpleNamespace(returncode=0, stdout=json.dumps({"region": region | changed}))
+    monkeypatch.setattr(bench.subprocess, "run", lambda *a, **kw: result)
+    with pytest.raises(ValueError, match="assigned offer"):
+        bench.measure(tmp_path/"launcher", tmp_path/"output", args)
+
+
 def test_source_pins_bind_the_measured_launcher_to_the_reviewed_variant(tmp_path):
     runner = tmp_path/"run"
     variant = tmp_path/"solver.py"

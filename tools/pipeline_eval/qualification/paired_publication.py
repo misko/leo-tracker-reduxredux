@@ -10,6 +10,7 @@ import resource
 import subprocess
 import time
 
+from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.digests import canonical_digest
 from leo.contracts.fast_standard_analysis import PLOTS
 from leo.storage.fast_scan import FastScanStore, immutable_json
@@ -109,6 +110,7 @@ def evidence(root, receipt, started_ns):
 
 def measure(launcher, root, args, specification=None):
     root.mkdir()  # Every arm starts without a detection, solver or publication cache.
+    assigned_region = Algo08Region.parse(json.loads(args.region.read_bytes())).document()
     env = os.environ | dict(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1")
     for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE"):
         env.pop(key, None)
@@ -125,7 +127,10 @@ def measure(launcher, root, args, specification=None):
     usage = {k: value - before[k] for k, value in child_usage().items()}
     if result.returncode:
         raise RuntimeError(f"Launcher exited {result.returncode}: {result.stderr[-1500:]}")
-    summary = evidence(root, json.loads(result.stdout.splitlines()[-1]), start_ns)
+    receipt = json.loads(result.stdout.splitlines()[-1])
+    if receipt.get("region") != assigned_region:
+        raise ValueError("Launcher used a different region from the assigned offer")
+    summary = evidence(root, receipt, start_ns)
     return dict(launcher=command[0], elapsed_s=wall, **usage, **summary)
 
 
