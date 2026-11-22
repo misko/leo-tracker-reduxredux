@@ -32,6 +32,7 @@ from tools.pipeline_eval.variants.experimental.receiver_member_lookahead import 
     PREFIX_BYTES,
     compressed_member_lookahead,
 )
+from tools.pipeline_eval.variants.experimental.receiver_member_prefetch import compressed_member_prefetch
 
 from .receiver_member_lookahead_trial import cache_pages, synthetic_members
 
@@ -43,6 +44,7 @@ MIN_COMPRESSED = 77_000_000
 MAX_COMPRESSED = 80_000_000
 COLD_PAIRS = 3
 WARM_PAIRS = 2
+ALGO08V3 = "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
 
 
 def geometry(content, expected):
@@ -137,37 +139,45 @@ def generated_recording(private, reference):
     return writer.finish(stop_reason="synthetic-full-member-benchmark"), divisor, fit
 
 
-def measure(assets, hasher, intake, *, hinted):
+def measure(assets, hasher, intake, *, arm):
+    forecast = {
+        "control": nullcontext,
+        "hint": compressed_member_lookahead,
+        "prefetch": compressed_member_prefetch,
+    }[arm]
     usage = resource.getrusage(resource.RUSAGE_SELF)
     cpu, wall = process_time_ns(), perf_counter_ns()
     with (
         compressed_input_buffer(),
         paired_decoded_hashes(hasher),
-        (compressed_member_lookahead() if hinted else nullcontext()) as advice,
+        forecast() as overlap,
     ):
         doc = algo08_scan.acquire(*intake, assets)
     wall, cpu = perf_counter_ns() - wall, process_time_ns() - cpu
     after = resource.getrusage(resource.RUSAGE_SELF)
     if doc["provenance"]["processed_windows"] != WINDOWS:
         raise ValueError("Expected full acquisition of all generated windows")
-    if hinted and (advice.attempts, advice.submitted, advice.submitted_bytes) != (
+    if arm == "hint" and (overlap.attempts, overlap.submitted, overlap.submitted_bytes) != (
         CHUNKS - 1,
         CHUNKS - 1,
         (CHUNKS - 1) * PREFIX_BYTES,
     ):
         raise ValueError("Expected two capped advisory requests")
-    return dict(
+    row = dict(
         cpu_ns=cpu,
         wall_ns=wall,
         input_blocks=after.ru_inblock - usage.ru_inblock,
         voluntary_switches=after.ru_nvcsw - usage.ru_nvcsw,
         involuntary_switches=after.ru_nivcsw - usage.ru_nivcsw,
-        hints=asdict(advice) if advice is not None else None,
+        hints=asdict(overlap) if arm == "hint" else None,
         acquisition_sha256=canonical_digest(doc),
         raw_authority=doc["source"]["raw_recording_authority_digest"],
         selected=sum(len(row["candidates"]) for row in doc["source"]["probes"]),
         probes_sha256=canonical_digest(doc["source"]["probes"]),
     )
+    if arm == "prefetch":
+        row["prefetch"] = asdict(overlap)
+    return row
 
 
 def verified_start(members, query, expected_pages, *, cold):
@@ -177,7 +187,14 @@ def verified_start(members, query, expected_pages, *, cold):
     return start
 
 
-def run(parent, reference, reference_sha256, build, build_sha256, cache_library):
+def prefetch_comparison(spec):
+    if canonical_digest(spec) != ALGO08V3 or spec.get("member_lookahead") is not True:
+        raise ValueError("Prefetch requires the frozen ALGO08v3 hint control")
+    if len(os.sched_getaffinity(0)) != 1:
+        raise ValueError("Prefetch comparison requires the process and its read thread pinned to one CPU")
+
+
+def run(parent, reference, reference_sha256, build, build_sha256, cache_library, *, prefetch=False):
     parent = parent.resolve(strict=True)
     qnap = Path("/mnt/qnap01")
     if parent == qnap or qnap in parent.parents:
@@ -194,6 +211,9 @@ def run(parent, reference, reference_sha256, build, build_sha256, cache_library)
     spec = json.loads(config)
     if spec["schedule"] != "all" or spec["ingress"] != "paired-sha256":
         raise ValueError("Expected the reviewed full-scan acquisition build")
+    if prefetch:
+        prefetch_comparison(spec)
+    control, candidate = ("hint", "prefetch") if prefetch else ("control", "hint")
     receiver, hasher = Path(spec["detector"]), Path(spec["paired_sha256"]["library"])
     if (
         sha256(receiver.read_bytes()).hexdigest() != spec["detector_sha256"]
@@ -224,32 +244,38 @@ def run(parent, reference, reference_sha256, build, build_sha256, cache_library)
         with patch.dict(algo08_scan.PINS, {"cancellation-factors.so": spec["detector_sha256"]}):
             # Prime detector code and the privately allocated filesystem extents.
             # Compressed page state is separately verified before every timed arm.
-            expected = measure(assets, hasher, intake, hinted=False)
+            expected = measure(assets, hasher, intake, arm=control)
             if not expected["selected"]:
                 raise ValueError("Generated fixture did not exercise selected receiver factors")
             for condition, pair_count in (("cold", COLD_PAIRS), ("warm", WARM_PAIRS)):
                 pairs = []
                 for repeat in range(pair_count):
                     pair = {}
-                    order = ("hint", "control") if repeat % 2 else ("control", "hint")
+                    order = (candidate, control) if repeat % 2 else (control, candidate)
                     for arm in order:
                         start = verified_start(
                             members, query, expected_pages, cold=condition == "cold"
                         )
-                        row = measure(assets, hasher, intake, hinted=arm == "hint")
+                        row = measure(assets, hasher, intake, arm=arm)
                         row["starting_cache_pages"] = start
                         if row["acquisition_sha256"] != expected["acquisition_sha256"]:
-                            raise ValueError("Cache advice changed verified acquisition output")
+                            raise ValueError("I/O overlap changed verified acquisition output")
+                        if arm == "prefetch":
+                            read = row["prefetch"]
+                            if (read["submitted"], read["hits"], read["hit_bytes"], read["fallback"]) != (
+                                CHUNKS - 1, CHUNKS - 1, sum(sizes[1:]), 0,
+                            ):
+                                raise ValueError("Expected two fully consumed speculative member reads")
                         pair[arm] = row
                     pairs.append(dict(order=order, **pair))
                 results[condition] = dict(
                     pairs=pairs,
                     median_wall_saved_ms=median(
-                        (pair["control"]["wall_ns"] - pair["hint"]["wall_ns"]) / 1e6
+                        (pair[control]["wall_ns"] - pair[candidate]["wall_ns"]) / 1e6
                         for pair in pairs
                     ),
                     median_cpu_saved_ms=median(
-                        (pair["control"]["cpu_ns"] - pair["hint"]["cpu_ns"]) / 1e6 for pair in pairs
+                        (pair[control]["cpu_ns"] - pair[candidate]["cpu_ns"]) / 1e6 for pair in pairs
                     ),
                 )
         return dict(
@@ -292,4 +318,5 @@ if __name__ == "__main__":
     parser.add_argument("build", type=Path)
     parser.add_argument("build_sha256")
     parser.add_argument("cache_library", type=Path)
+    parser.add_argument("--prefetch", action="store_true", help="compare the frozen v3 hint with one full read")
     print(json.dumps(run(**vars(parser.parse_args())), indent=2, allow_nan=False))

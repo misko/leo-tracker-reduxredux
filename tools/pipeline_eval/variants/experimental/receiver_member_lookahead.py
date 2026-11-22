@@ -62,6 +62,14 @@ def hinted_windows(windows, source, following, stats, advise, willneed):
             yield window
 
 
+def following_members(source):
+    start, stop = source.start_sequence, source.stop_sequence
+    chunks = [chunk for chunk in source.reader.manifest.chunks
+              if chunk.first_sequence + chunk.window_count > start and chunk.first_sequence < stop]
+    return {max(start, chunk.first_sequence): next_chunk
+            for chunk, next_chunk in zip(chunks, chunks[1:])}
+
+
 @contextmanager
 def compressed_member_lookahead():
     """Hint only the next in-scope member within each sealed segment."""
@@ -73,11 +81,7 @@ def compressed_member_lookahead():
     original = FastSegmentSource.windows
 
     def windows(source):
-        start, stop = source.start_sequence, source.stop_sequence
-        chunks = [chunk for chunk in source.reader.manifest.chunks
-                  if chunk.first_sequence + chunk.window_count > start and chunk.first_sequence < stop]
-        following = {max(start, chunk.first_sequence): next_chunk
-                     for chunk, next_chunk in zip(chunks, chunks[1:])}
+        following = following_members(source)
         released = original(source)
         if not following:
             return released

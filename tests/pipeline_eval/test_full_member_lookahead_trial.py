@@ -50,3 +50,15 @@ def test_generated_amplitude_adjustment_preserves_input_and_ci16_layout():
     assert initial.tobytes() == before
     assert adjusted.dtype == initial.dtype and adjusted.flags.c_contiguous
     assert adjusted.tolist() == [[[-500, 500], [-1, 0]]]
+
+
+def test_prefetch_comparison_requires_exact_v3_and_one_cpu(monkeypatch):
+    spec = {"member_lookahead": True}
+    with pytest.raises(ValueError, match="frozen ALGO08v3"):
+        trial.prefetch_comparison(spec)
+    monkeypatch.setattr(trial, "ALGO08V3", trial.canonical_digest(spec))
+    monkeypatch.setattr(trial.os, "sched_getaffinity", lambda _: {2, 3})
+    with pytest.raises(ValueError, match="pinned to one CPU"):
+        trial.prefetch_comparison(spec)
+    monkeypatch.setattr(trial.os, "sched_getaffinity", lambda _: {2})
+    trial.prefetch_comparison(spec)

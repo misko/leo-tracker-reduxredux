@@ -1,5 +1,7 @@
 import json
 import os
+from collections import Counter
+from threading import Event
 from types import SimpleNamespace
 
 import numpy as np
@@ -8,11 +10,14 @@ import pytest
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.storage.errors import BundleCorruptionError, PathConfinementError
 from leo.storage.fast_scan import FastSegmentSource
+from leo.storage.scanner import ScannerIqStore
 from leo.storage.short_window import ShortWindowWriter
+from tools.pipeline_eval.variants.experimental import receiver_ingress, receiver_member_prefetch
 from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
 from tools.pipeline_eval.variants.experimental.receiver_member_lookahead import (
     PREFIX_BYTES, advise_prefix, compressed_member_lookahead,
 )
+from tools.pipeline_eval.variants.experimental.receiver_member_prefetch import compressed_member_prefetch
 
 
 @pytest.fixture
@@ -85,8 +90,9 @@ def test_advice_prefix_is_capped_even_for_a_larger_file(tmp_path):
     assert result == PREFIX_BYTES and calls == [(0, PREFIX_BYTES, 3)]
 
 
-@pytest.mark.parametrize("damage", ["compressed", "index", "symlink", "hardlink", "decoded"])
-def test_verification_exposes_the_same_rows_and_first_error(sealed, tmp_path, monkeypatch, damage):
+@pytest.mark.parametrize("forecast", [compressed_member_lookahead, compressed_member_prefetch])
+@pytest.mark.parametrize("damage", ["compressed", "index", "window", "symlink", "hardlink", "decoded"])
+def test_verification_exposes_the_same_rows_and_first_error(sealed, tmp_path, monkeypatch, damage, forecast):
     manifest_path = sealed / "manifest.json"
     document = json.loads(manifest_path.read_bytes())
     chunk = document["chunks"][1]
@@ -97,6 +103,14 @@ def test_verification_exposes_the_same_rows_and_first_error(sealed, tmp_path, mo
         (payload.symlink_to if damage == "symlink" else payload.hardlink_to)(substitute)
     elif damage == "decoded":
         chunk["uncompressed_sha256"] = "sha256:" + "0" * 64
+        manifest_path.write_bytes(canonical_json_bytes(document))
+    elif damage == "window":
+        index = sealed / chunk["index_relative_path"]
+        rows = [json.loads(line) for line in index.read_bytes().splitlines()]
+        rows[0]["iq_sha256"] = "sha256:" + "0" * 64
+        content = b"".join(canonical_json_bytes(row) + b"\n" for row in rows)
+        index.write_bytes(content)
+        chunk.update(index_sha256=sha256_digest(content), index_bytes=len(content))
         manifest_path.write_bytes(canonical_json_bytes(document))
     else:
         member = payload if damage == "compressed" else sealed / chunk["index_relative_path"]
@@ -115,7 +129,7 @@ def test_verification_exposes_the_same_rows_and_first_error(sealed, tmp_path, mo
 
     with compressed_input_buffer():
         before = until_failure()
-        with compressed_member_lookahead():
+        with forecast():
             after = until_failure()
     assert before == after
     assert [row[0] for row in after[0]] == list(range(4 if damage == "decoded" else 2))
@@ -133,3 +147,77 @@ def test_advice_error_does_not_advance_or_abort_the_reader(sealed, monkeypatch):
         assert [w.sequence for w in source(sealed).windows()] == list(range(8))
     assert stats.attempts == 3 and stats.submitted == stats.submitted_bytes == 0
     assert FastSegmentSource.windows is original
+
+
+def test_prefetch_overlaps_processing_and_reads_each_touched_member_once(sealed, monkeypatch):
+    scope = dict(start_sequence=1, stop_sequence=5)
+    expected = [snapshot(window) for window in source(sealed, **scope).windows()]
+    members = payloads(sealed)
+    inodes = [path.stat().st_ino for path in members]
+    entered, finish = Event(), Event()
+    counts = Counter()
+    actual_read = receiver_ingress.read_regular_descriptor
+
+    def read(fd, size, **options):
+        inode = os.fstat(fd).st_ino
+        counts[inode] += 1
+        if inode == inodes[1]:
+            entered.set()
+            assert finish.wait(5)
+        return actual_read(fd, size, **options)
+
+    monkeypatch.setattr(receiver_member_prefetch, "read_regular_descriptor", read)
+    monkeypatch.setattr(receiver_ingress, "read_regular_descriptor", read)
+    original_read = ScannerIqStore._read_regular
+    original_windows = FastSegmentSource.windows
+    with compressed_input_buffer(), compressed_member_prefetch() as stats:
+        windows = source(sealed, **scope).windows()
+        observed = [snapshot(next(windows))]
+        try:
+            assert entered.wait(5)
+            assert stats.submitted == 1 and stats.hits == 0
+        finally:
+            finish.set()
+        observed.extend(map(snapshot, windows))
+
+    assert observed == expected
+    assert counts == Counter(inodes[:3])
+    assert stats.submitted == stats.hits == 2 and stats.fallback == 0
+    assert stats.submitted_bytes == stats.hit_bytes == sum(path.stat().st_size for path in members[1:3])
+    assert stats.worker_cpu_ns > 0 and stats.demand_wait_ns > 0
+    assert ScannerIqStore._read_regular is original_read
+    assert FastSegmentSource.windows is original_windows
+
+
+def test_prefetch_rechecks_member_at_demand_and_falls_back_on_replacement(sealed, monkeypatch):
+    expected = [snapshot(window) for window in source(sealed).windows()]
+    member = payloads(sealed)[1]
+    ready = Event()
+    actual_prefetch = receiver_member_prefetch.prefetch_member
+
+    def complete(root, name, size, stats):
+        result = actual_prefetch(root, name, size, stats)
+        if (root / name) == member:
+            assert result is not None
+            ready.set()
+        return result
+
+    monkeypatch.setattr(receiver_member_prefetch, "prefetch_member", complete)
+    with compressed_input_buffer(), compressed_member_prefetch() as stats:
+        windows = source(sealed).windows()
+        visible = [snapshot(next(windows))]
+        assert ready.wait(5)
+        replaced = member.with_name("replacement.zst")
+        replaced.write_bytes(member.read_bytes())
+        replaced.replace(member)
+        visible.extend(map(snapshot, windows))
+
+    assert visible == expected
+    assert stats.submitted == 3 and stats.hits == 2 and stats.fallback == 1
+
+
+def test_prefetch_uses_the_normal_reader_above_its_allocation_bound(sealed, monkeypatch):
+    monkeypatch.setattr(receiver_member_prefetch, "MAX_PREFETCH_BYTES", 1)
+    with compressed_input_buffer(), compressed_member_prefetch() as stats:
+        assert [window.sequence for window in source(sealed).windows()] == list(range(8))
+    assert stats.submitted == stats.hits == stats.fallback == 0

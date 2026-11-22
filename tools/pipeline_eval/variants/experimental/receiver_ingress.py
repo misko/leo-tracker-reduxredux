@@ -13,30 +13,34 @@ from leo.storage.errors import BundleCorruptionError
 from leo.storage.scanner import ScannerIqStore
 
 
+def read_regular_descriptor(descriptor, maximum_bytes, *, hash_block=None):
+    before = os.fstat(descriptor)
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+        raise BundleCorruptionError("scanner IQ bundle member is not one regular file")
+    if before.st_size > maximum_bytes:
+        raise BundleCorruptionError("scanner IQ bundle member exceeds its declared bound")
+    view = memoryview(np.empty(before.st_size, dtype=np.uint8))
+    offset = 0
+    while offset < len(view):
+        block = view[offset:] if hash_block is None else view[offset:offset + 256 * 1024]
+        count = os.readv(descriptor, [block])
+        if not count:
+            raise BundleCorruptionError("scanner IQ bundle member ended while reading")
+        if hash_block is not None:
+            hash_block(block[:count])
+        offset += count
+    extra = os.read(descriptor, 1)
+    after = os.fstat(descriptor)
+    if extra or (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+            after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
+        raise BundleCorruptionError("scanner IQ bundle member changed while reading")
+    return view.toreadonly()
+
+
 def read_regular(path, maximum_bytes, *, hash_block=None):
     descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
     try:
-        before = os.fstat(descriptor)
-        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
-            raise BundleCorruptionError("scanner IQ bundle member is not one regular file")
-        if before.st_size > maximum_bytes:
-            raise BundleCorruptionError("scanner IQ bundle member exceeds its declared bound")
-        view = memoryview(np.empty(before.st_size, dtype=np.uint8))
-        offset = 0
-        while offset < len(view):
-            block = view[offset:] if hash_block is None else view[offset:offset + 256 * 1024]
-            count = os.readv(descriptor, [block])
-            if not count:
-                raise BundleCorruptionError("scanner IQ bundle member ended while reading")
-            if hash_block is not None:
-                hash_block(block[:count])
-            offset += count
-        extra = os.read(descriptor, 1)
-        after = os.fstat(descriptor)
-        if extra or (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
-                after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
-            raise BundleCorruptionError("scanner IQ bundle member changed while reading")
-        return view.toreadonly()
+        return read_regular_descriptor(descriptor, maximum_bytes, hash_block=hash_block)
     finally:
         os.close(descriptor)
 
