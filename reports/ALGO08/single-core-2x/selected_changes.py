@@ -88,9 +88,40 @@ def compare(pair, *, summary=False):
                     bound_rows(pair.parent / "candidate", after))
 
 
+def compare_candidates(earlier, later):
+    """Compare published candidate outputs on one matched recording across two stages."""
+    cases = [json.loads(path.read_bytes()) for path in (earlier, later)]
+    if any(cases[0][key] != cases[1][key] for key in ("archive", "recording")):
+        raise ValueError("Recording or causal archive differs between candidate stages")
+    runs = [case["runs"]["candidate"] for case in cases]
+    before, after = runs
+    if (before["raw_authority"] != after["raw_authority"] or
+            any(before["receipt"][key] != after["receipt"][key]
+                for key in ("session_id", "region", "window_count", "counts"))):
+        raise ValueError("Candidate stages must share raw authority, regional offer and capture coverage")
+    digests = [canonical_digest(case["candidate_specification"]) for case in cases]
+    if digests != [case["candidate_specification_digest"] for case in cases]:
+        raise ValueError("Candidate specification digest mismatch")
+    rows = [bound_rows(path.parent / "candidate", run)
+            for path, run in zip((earlier, later), runs, strict=True)]
+    return dict(candidate_digests=digests, session=before["receipt"]["session_id"],
+                raw_authority=before["raw_authority"], selected=selection_summary(*rows),
+                same_decision=before["receipt"]["decision"] == after["receipt"]["decision"],
+                same_withhold_reason=before["reason"] == after["reason"],
+                same_arms=before["arms"] == after["arms"],
+                same_owners=before["owners"] == after["owners"],
+                same_grid_and_path=before["scientific_digests"] == after["scientific_digests"],
+                same_encoded_figures=before["artifacts"] == after["artifacts"],
+                figure_counts=[len(run["artifacts"]) for run in runs])
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("pair", type=Path)
-    cli.add_argument("--summary", action="store_true", help="Count field changes among same-rank selections")
+    mode = cli.add_mutually_exclusive_group()
+    mode.add_argument("--summary", action="store_true", help="Count field changes among same-rank selections")
+    mode.add_argument("--earlier-candidate", type=Path, help="Compare to the candidate from this earlier pair receipt")
     args = cli.parse_args()
-    print(json.dumps(compare(args.pair, summary=args.summary), indent=2, allow_nan=False))
+    result = (compare_candidates(args.earlier_candidate, args.pair) if args.earlier_candidate
+              else compare(args.pair, summary=args.summary))
+    print(json.dumps(result, indent=2, allow_nan=False))

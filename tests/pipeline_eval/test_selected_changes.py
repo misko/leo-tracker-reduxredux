@@ -1,4 +1,5 @@
 from importlib import import_module
+import json
 
 import pytest
 from PIL import Image
@@ -9,6 +10,27 @@ audit = import_module("reports.ALGO08.single-core-2x.selected_changes")
 def row(visit, rank=None):
     return dict(visit_index=visit, receiver_id=1, channel=3, actual_rf_hz=2,
                 candidates=[] if rank is None else [dict(candidate_rank=rank, cfo=3)])
+
+
+def test_candidate_comparison_binds_region_and_records_result_differences(tmp_path, monkeypatch):
+    paths = [tmp_path / name / "pair.json" for name in ("old", "new")]
+    for index, path in enumerate(paths):
+        path.parent.mkdir()
+        spec = {"build": index}
+        run = dict(raw_authority="raw", receipt=dict(region={"center": [2, 3]}, session_id="capture",
+                   window_count=1, counts={"processed": 1}, decision="complete"),
+                   arms={"c0": index}, owners={"c0": "satellites"}, artifacts=[{"sha256": "figure"}],
+                   scientific_digests={}, reason=None)
+        case = dict(candidate_specification=spec, candidate_specification_digest=audit.canonical_digest(spec),
+                    recording="recording", archive={"snapshots_sha256": "archive"}, runs={"candidate": run})
+        path.write_text(json.dumps(case))
+    monkeypatch.setattr(audit, "bound_rows", lambda path, run: [row(1, 0)])
+    result = audit.compare_candidates(*paths)
+    assert result["selected"]["changed"] == 0 and result["same_encoded_figures"] and not result["same_arms"]
+    case["runs"]["candidate"]["receipt"]["region"]["center"] = [-2, 3]
+    paths[1].write_text(json.dumps(case))
+    with pytest.raises(ValueError, match="regional offer"):
+        audit.compare_candidates(*paths)
 
 
 def test_classifies_lost_primary_and_rank_substitution_separately():
