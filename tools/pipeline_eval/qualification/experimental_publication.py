@@ -30,6 +30,9 @@ def run(args, specification):
     ingress = specification.get("ingress", "stock")
     if ingress not in ("stock", "compressed-buffer"):
         raise ValueError("Unknown experimental I/Q reader")
+    schedule = specification.get("schedule", "all")
+    if schedule not in ("all", "bursts"):
+        raise ValueError("Unknown receiver schedule")
     with TemporaryDirectory() as scratch, ExitStack() as stack:
         assets = Path(scratch)
         for name in (*algo08_scan.PINS, "native", "projector.so"):
@@ -39,7 +42,15 @@ def run(args, specification):
         stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
         if ingress == "compressed-buffer":
             from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
-            stack.enter_context(compressed_input_buffer())
+            acquire = algo08_scan.acquire
+            def buffered(*args, **kwargs):
+                with compressed_input_buffer():
+                    return acquire(*args, **kwargs)
+            stack.enter_context(patch.object(algo08_scan, "acquire", buffered))
+        if schedule == "bursts":
+            from tools.pipeline_eval.variants.experimental.receiver_cadence import BurstCadence
+            cadence = BurstCadence()
+            stack.enter_context(patch.object(algo08_scan, "detector", cadence.wrap(algo08_scan.detector)))
         if mode in ("causal-reuse", "combined"):
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
@@ -48,7 +59,10 @@ def run(args, specification):
             from tools.pipeline_eval.variants.algo08_salvage_statistics import salvage_statistics
             stack.enter_context(salvage_statistics())
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
-        return algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+        result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+        if schedule == "bursts":
+            result["research_sampling"] = cadence.receipt(result)
+        return result
 
 
 if __name__ == "__main__":
