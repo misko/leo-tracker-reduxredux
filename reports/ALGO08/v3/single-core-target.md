@@ -1,5 +1,7 @@
 # Halving ALGO08v3 runtime on one core
 
+Six follow-up experiments now have saved-component measurements, including a cold-read gain, two recovered solver failures and four approaches that missed their cost or accuracy targets. [Results and next experiments](first-experiments.md)
+
 At naming, ALGO08v3 averaged 102.51 s elapsed across the first 55 assigned recordings. Its mean across the 52 successful fixes was 104.97 s elapsed and 77.74 s CPU. Even eliminating every second of waiting would still leave 25.25 CPU seconds to remove per successful fix. Eliminating publication alone would save 2.90 s. The two largest opportunities are reading and detecting signals, and solving the position.
 
 | Successful fixes | Count | Mean elapsed, acquisition / solver / publication | Mean elapsed / CPU | Proposed stage budgets |
