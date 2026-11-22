@@ -1,4 +1,6 @@
 from importlib import import_module
+import json
+from shutil import copyfile
 from types import SimpleNamespace
 
 import pytest
@@ -34,3 +36,29 @@ def test_histograms_retain_withholding_in_fix_counts_and_runtime(tmp_path):
     assert study.stage.read(tmp_path / "progress.json") == summary
     for name in ("runtime", "position-error"):
         assert (tmp_path / (name + ".png")).read_bytes().startswith(b"\x89PNG")
+
+
+def test_partial_archive_review_uses_pair_pin_and_keeps_complete_gates_pending(tmp_path):
+    reviewer = import_module("reports.ALGO08.single-core-2x.ds30_hundred_review")
+    receipts = study.stage.PANEL.parents[1] / "single-core-2x/measurements"
+    first = study.stage.read(receipts / "exact-curved-0374-stage.json")["cases"][0]
+    lock = study.stage.pinned(study.stage.OUT / "prediction-lock.json", study.stage.LOCK_SHA256)
+    names = [r["case"] for r in lock["predictions"] if r["method"] == "compact_two_scan"][:100]
+    manifest = dict(candidate=study.stage.EXACT_CURVED_LOOKAHEAD, baseline=str(study.stage.pair.BASELINE),
+                    baseline_detector=study.stage.BASELINE_DETECTOR, cases=[{"case": name} for name in names])
+    manifest["cases"][0].update(order=first["actual_order"], region=first["region"],
+                                raw_authority=first["raw_authority"])
+    (tmp_path / "panel.json").write_text(json.dumps(manifest))
+    (tmp_path / "audits").mkdir()
+    (tmp_path / "audits/DS30-0374.json").write_text(json.dumps(first))
+    directory = tmp_path / "publications/DS30-0374"
+    directory.mkdir(parents=True)
+    copyfile(receipts / "DS30-0374-exact-curved-lookahead.json", directory / "pair.json")
+    summary = reviewer.review(tmp_path)
+    assert summary["stages"]["100"] == {"assigned": 100, "verified": 1}
+    assert summary["verified_subset"]["quality"]["preserved"]
+    assert not summary["verified_subset"]["passed_elapsed"]
+    assert summary["verified_subset"]["same_pixels_all_returned"] == 1
+    (directory / "pair.json").write_text("{}")
+    with pytest.raises(ValueError, match="Invalid archived"):
+        reviewer.review(tmp_path)
