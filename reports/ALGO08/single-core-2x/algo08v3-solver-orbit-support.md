@@ -1,6 +1,6 @@
 # ALGO08v3 solver recovery and the remaining 2× budget
 
-The orbit-support repair returned both calibration-arm fixes on the two saved ALGO08v3 interpolation failures. DS30-0022 reproduced deployed ALGO08v2 exactly. DS30-0129 returned different satellite owners, with 1,079 fewer associated observations per arm and higher error in both arms. The two saved-packet solves establish recovery from the interpolation crash. DS30-0129’s assignment divergence remains unexplained. [DS30-0022 receipt](measurements/algo08v3-DS30-0022-orbit-support-saved.json) · [DS30-0129 receipt](measurements/algo08v3-DS30-0129-orbit-support-saved.json)
+The orbit-support repair returned both calibration-arm fixes on the first two saved ALGO08v3 interpolation failures. DS30-0022 reproduced deployed ALGO08v2 exactly. DS30-0129 returned different satellite owners, with 1,079 fewer associated observations per arm and higher error in both arms. DS30-0129’s assignment divergence remains unexplained. [DS30-0022 receipt](measurements/algo08v3-DS30-0022-orbit-support-saved.json) · [DS30-0129 receipt](measurements/algo08v3-DS30-0129-orbit-support-saved.json)
 
 ## Orbit support
 
@@ -21,6 +21,15 @@ The horizontal errors use the frozen DS30 reference audit after inference. This 
 | DS30-0022 | Fitted | 161.6148 → 161.6148 | 1.3107 → 1.3107 | 0 m |
 | DS30-0129 | Fixed zero | 108.5044 → 109.6572 | 0.6778 → 0.7261 | 180.53 m |
 | DS30-0129 | Fitted | 108.5826 → 109.7195 | 0.6112 → 0.6894 | 153.10 m |
+
+### Prospective check on DS30-0239
+
+Pair 72 entered the archive after the guard and the first two results were committed. It failed in the same sparse projection during the frozen corner retry. One saved solve used the already committed guard `c23a7c89d`, the same shared CPU slot and all 13,418 original detector rows, which exactly matched the deployed rows. With one added knot at +318 s in two corner projections, the solve returned both fixes in 44.626 CPU s and 45.034 wall s. Both arm endpoints, RF RMS and owner digests matched ALGO08v2 exactly, with 4,339 associated observations per arm. The original panel receipt retains the solver failure and its archived SHA-256 `42b8fbefa2523d428ddc884362f3d8a0269b4612099c6cf64f5542be9d5c8eaf`. This check adds one prospectively observed failure from the same physical panel. [Saved trial receipt](measurements/algo08v3-DS30-0239-orbit-support-saved.json)
+
+| Calibration | RF RMS, both builds (Hz) | Horizontal error, both builds (km) | Endpoint movement |
+|---|---:|---:|---:|
+| Fixed zero | 114.6647 | 0.4066 | 0 m |
+| Fitted | 114.7558 | 0.5859 | 0 m |
 
 ## Speed relative to ALGO08v3
 
@@ -49,4 +58,4 @@ flock -w 600 "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 \
   "$frozen" "$packets/DS30-0022/pair.json" "$new_receipt"
 ```
 
-The two retained receipts predate extraction of the portable runner. The same frozen launcher and injected guard supplied those results. The report records 52 passing component and adjacent integration tests for the guard.
+The DS30-0022 and DS30-0129 receipts predate extraction of the portable runner. The same frozen launcher and injected guard supplied those results. The report records 52 passing component and adjacent integration tests for the guard.
