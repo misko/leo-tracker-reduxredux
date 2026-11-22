@@ -1,0 +1,20 @@
+# Exact absolute oscillator preparation
+
+Hoisting the invariant phase product saved **0.30–0.76%** of complete native CPU on the saved signal-bearing slices, within the variation observed on the two null controls. Packing the corrected quotient into four AVX2 lanes cost **0.19–1.10%** more CPU. Both variants matched the frozen all-factor receiver and deployment byte for byte on **79 ordered factors across 55 lanes**, including every signed CFO, integer epoch, fractional offset, and exact and rolled score. Continuation preference, votes and selection agreed on all lanes. The sampled histories yield no positive continuation selections. [Matched receipts](measurements/receiver-absolute-phase-avx.json.gz)
+
+The frozen loop reloads `-tau` and multiplies by the scout CFO on every tap. The hoisted arm computes this rounded product once per factor, then evaluates the same multiply and divide in the loop. The packed arm prepares four exact absolute phase arguments at a time. It replaces division by `10,000,000` with the rounded reciprocal product, computes the exact residual using fused multiply-add, and applies one fused quotient correction. The divisor is `2^7 × 78125`, so every eligible exact quotient is separated from a rounding midpoint by at least `1 / (2 × 78125)` of its local ulp. The reciprocal approximation in the correction is several orders of magnitude below this gap. The packed path requires AVX2/FMA, nearest rounding, masked exceptions, ordinary denormal handling, and a bounded normal CFO. The hoisted scalar divide covers the other cases. Both arms call the same stock `sincos` and preserve the correlation and reduction arithmetic. [Native arithmetic](../../../tools/pipeline_eval/variants/experimental/receiver_absolute_phase_avx.inc)
+
+Six tests compare 200,004 signed quotients, including the nearest representable numerator witnesses on both sides of a rounding midpoint. They also check every phase and complex-rotation tensor element for four rounding modes, signed zero, tiny CFOs, offset rounding transitions, and the ±5 MHz bounds. Explicit MXCSR tests exercise unexpected rounding, flush-to-zero, denormals-as-zero, and unmasked exceptions. [Component tests](../../../tests/pipeline_eval/test_experimental_receiver_absolute_phase_avx.py)
+
+| Saved group | Lanes | Factors | Hoisted CPU change | Packed CPU change |
+| --- | ---: | ---: | ---: | ---: |
+| DS26 weak stereo | 36 | 58 | −0.36% | +0.78% |
+| Austin measured, zero mixer center | 4 | 8 | −0.76% | +0.19% |
+| Austin measured, shifted center | 4 | 8 | −0.64% | +1.10% |
+| Austin phase nulls, zero mixer center | 4 | 0 | −0.05% | +1.70% |
+| Austin phase nulls, shifted center | 4 | 0 | −0.77% | −0.46% |
+| DS30-0008 saved wrapped regressions | 3 | 5 | −0.30% | +1.00% |
+
+Eight paired cycles rotate and reverse receiver call order. The packed arm avoids the scalar division but adds an argument buffer pass and leaves all existing scalar trigonometric calls in the signal path. Across neighboring complete frames the 2,816-tap phase apertures are disjoint because starts advance by 13,333 or 13,334 samples. With a fixed nonzero CFO in the tested domain, the one-sample phase step remains much larger than its local ulp. There is no repeated argument to cache within a factor. A reusable cross-visit phase tensor would require bit-identical scout CFO and fractional geometry. These controls do not establish such reuse in the live receiver.
+
+The build relinks the frozen `2258f592…` receiver, then replaces only `portable_verifier.o` using the pinned flags and input objects. Independent rebuilds reproduced the hoisted `ba4a505f…` and packed `b795bf6b…` library bytes. Neither experiment supplied a material CPU improvement, so both remain standalone research builds. The runner accepts `build`, `saved`, and `dense` stages and uses the same archived input identities as the all-factor study. The saved and dense timings ran separately on CPU 2 with one numerical thread under the Gauss lock. [Runner and rebuild commands](receiver_absolute_phase_avx_trial.py) · [All-factor study](receiver-fractional-absolute-score.md)
