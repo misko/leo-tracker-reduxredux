@@ -19,6 +19,7 @@ from tools import algo08_scan
 from tools.pipeline_eval.qualification import blind_compact_run
 
 from .receiver_benchmark import digest
+from .receiver_decoded_ingress import decoded_window_buffers, direct_decoded_chunk
 from .receiver_ingress import compressed_input_buffer, decoded_chunk_buffer
 
 
@@ -111,12 +112,15 @@ def evaluate(case, binary, assets, work, *, ingress):
 
         def windows(self):
             chunk = self.reader.manifest.chunks[0]
-            if ingress == "decoded":
+            if ingress in ("decoded", "direct"):
                 if chunk.window_count < limit:
                     raise ValueError("decoded buffering is bounded to one sealed chunk")
-                buffers = decoded_chunk_buffer(chunk.uncompressed_bytes)
+                decoder = decoded_chunk_buffer if ingress == "decoded" else direct_decoded_chunk
+                buffers = decoder(chunk.uncompressed_bytes)
             elif ingress == "compressed":
                 buffers = compressed_input_buffer()
+            elif ingress == "window":
+                buffers = decoded_window_buffers()
             else:
                 buffers = nullcontext()
             with buffers:
@@ -149,7 +153,8 @@ def evaluate(case, binary, assets, work, *, ingress):
     profile = {}
     for (file, _, name), (_, count, own, cumulative, _) in rows.items():
         if file == "~" and any(token in name for token in
-                              ("posix.read", "ZstdDecompressionReader", "_hashlib", "validate_json")):
+                              ("posix.read", "ZstdDecompressionReader", "ZstdDecompressor",
+                               "_hashlib", "validate_json")):
             profile[name] = dict(calls=count, own_cpu_s=own, cumulative_cpu_s=cumulative)
     return dict(case=ident, authorized_visits=limit, processed=document["provenance"]["processed_windows"],
                 factor_sha256=canonical_digest(bound["probes"]), binary_sha256=binary_sha,
@@ -166,24 +171,28 @@ def main():
     parser.add_argument("--bulk", type=Path, required=True)
     parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--visits", type=int, default=40)
-    parser.add_argument("--ingress", choices=["release", "compressed", "decoded"], default="release",
-                        help="opt in to compressed-only or full decoded chunk buffering in the candidate")
+    parser.add_argument("--ingress", choices=["release", "compressed", "decoded", "direct", "window"],
+                        default="release",
+                        help="choose the candidate's verified input buffering")
+    parser.add_argument("--control-ingress", choices=["release", "compressed"], default="release")
+    parser.add_argument("--repeats", type=int, choices=range(1, 4), default=1)
     args = parser.parse_args()
     if not 1 <= len(args.bindings) <= 2 or not 1 <= args.visits <= 64:
         parser.error("profile at most the first 64 visits of two sealed recordings")
     pairs = []
     for index, binding in enumerate(args.bindings):
         case = prefix_entry(binding, args.bulk, args.visits)
-        bins = [(args.oracle, "release"), (args.candidate, args.ingress)]
-        if index % 2:
-            bins.reverse()
-        pair = []
-        for binary, ingress in bins:
-            with TemporaryDirectory(prefix="algo08-acquisition-profile-") as work:
-                pair.append(evaluate(case, binary, args.assets, Path(work), ingress=ingress))
-        if pair[0]["factor_sha256"] != pair[1]["factor_sha256"] or pair[0]["raw_sha256"] != pair[1]["raw_sha256"]:
-            raise ValueError("matched acquisition prefixes disagree")
-        pairs.append(pair)
+        for repeat in range(args.repeats):
+            bins = [(args.oracle, args.control_ingress), (args.candidate, args.ingress)]
+            if (index + repeat) % 2:
+                bins.reverse()
+            pair = []
+            for binary, ingress in bins:
+                with TemporaryDirectory(prefix="algo08-acquisition-profile-") as work:
+                    pair.append(evaluate(case, binary, args.assets, Path(work), ingress=ingress))
+            if any(pair[0][key] != pair[1][key] for key in ("factor_sha256", "raw_sha256")):
+                raise ValueError("matched acquisition prefixes disagree")
+            pairs.append(pair)
     print(json.dumps(pairs, indent=2, sort_keys=True))
 
 
