@@ -26,7 +26,7 @@ def load(name):
     return json.loads(gzip.decompress(contents))
 
 
-def main():
+def saved_offers():
     rows = load("regional-reassignment.json.gz")
     for site, pair in load("region-mirrors.json.gz")["sites"].items():
         original = rows[f"{site}-edge"]
@@ -34,6 +34,11 @@ def main():
             if pair["inside"][key] != original[key]:
                 raise ValueError("Mirrored inside probes differ from the original edge packet")
         rows[f"{site}-mirror-outside"] = pair["outside"]
+    return rows
+
+
+def main():
+    rows = saved_offers()
 
     inputs = {name: (row["points"], row["offer"]["width_km"]) for name, row in rows.items()}
     results = {name: evaluate(*arguments) for name, arguments in inputs.items()}
