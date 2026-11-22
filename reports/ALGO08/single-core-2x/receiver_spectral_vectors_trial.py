@@ -42,6 +42,19 @@ def build(work, bench, assets):
     restore.digest(reference, REFERENCE_SHA)
     stock = old_source.read_text()
     vector = receiver_spectral_vectors.overlay(stock)
+    profile_command, trials = compile_variants(work, link, saved_timing, stock, vector, assets)
+    candidate = work / "packed/use.so"
+    if exports(candidate) != exports(reference):
+        raise ValueError("Packing changed the public receiver symbols")
+    return dict(
+        reference_sha256=REFERENCE_SHA, stock_source_sha256=restore.digest(old_source),
+        header_sha256=restore.digest(restore.HERE / "receiver_spectral_vectors.inc"),
+        overlay_sha256=restore.digest(restore.HERE / "receiver_spectral_vectors.py"),
+        profile_command=profile_command, builds=trials,
+    )
+
+
+def compile_variants(work, link, saved_timing, stock, vector, assets):
     recipe_file = restore.PINNED / "build.json"
     restore.digest(recipe_file, restore.RECIPE_SHA)
     flags, _ = restore.compiler_inputs(
@@ -62,7 +75,7 @@ def build(work, bench, assets):
         profile_dir = target / "feedback"
         profile_dir.mkdir()
         timing = target / saved_timing.name
-        text = target / old_source.name
+        text = target / saved_timing.with_suffix(".c").name
         text.write_text(receiver_build.profile_source(source, PROFILE) if profiled else source)
         recipe = [timing if item == str(saved_timing) else item for item in link[1:-2]]
         if profiled:
@@ -84,15 +97,7 @@ def build(work, bench, assets):
         trials[label] = dict(library_sha256=restore.digest(library), timing_source_sha256=restore.digest(text),
                              timing_object_sha256=restore.digest(timing),
                              commands=commands, training=json.loads(process.stdout))
-    candidate = work / "packed/use.so"
-    if exports(candidate) != exports(reference):
-        raise ValueError("Packing changed the public receiver symbols")
-    return dict(
-        reference_sha256=REFERENCE_SHA, stock_source_sha256=restore.digest(old_source),
-        header_sha256=restore.digest(restore.HERE / "receiver_spectral_vectors.inc"),
-        overlay_sha256=restore.digest(restore.HERE / "receiver_spectral_vectors.py"),
-        profile_command=profile_command, builds=trials,
-    )
+    return profile_command, trials
 
 
 def measure(paths, groups, assets, *, profile=False):
