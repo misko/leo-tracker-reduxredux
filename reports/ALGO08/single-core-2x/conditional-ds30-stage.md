@@ -11,6 +11,8 @@ The conditional build preserved **4/4 fixes** and published all eight required f
 
 The median paired candidate/baseline elapsed ratio was **0.614** and the summed ratio was **0.603**. Each must be at most **0.500**. The measured shortfall was **84.77 seconds elapsed** across four cases. On CPU alone it was 48.83 seconds. Each recording ran serially on one low-priority pinned core on Gauss, alternating arm order. The OS reported different amounts of disk reading between arms. [Third pair](measurements/DS30-0155-conditional.json) · [Fourth pair](measurements/DS30-0001-conditional.json)
 
+The candidate spent **157.23 CPU seconds** inside its 48,674 native receiver calls and 221.53 elsewhere in the pipeline. The scan rule issued 38,315 full requests and 10,359 primary-only requests. If the next change saves time only inside those native calls, it would need to cut **31.1%** of their measured cost to halve summed baseline CPU. If it saves time only outside those calls, the corresponding reduction is **22.0%**. The elapsed-time gates also include storage and scheduling. The bounded Zstandard optimization saved 26–39 ms per two chunks and needed 204.8 MB of additional buffer capacity. The four-observation satellite bound left the dominant projection work in place. Neither component experiment establishes the remaining end-to-end gain. [Acquisition measurements](zstd-conditional-acquisition.md) · [Satellite nomination experiment](solver-nomination-bound.md)
+
 | Error across four recordings | Fixed-zero deployed → candidate | Fitted deployed → candidate |
 |---|---:|---:|
 | Median | 1.306 → 1.431 km | 1.334 → 1.418 km |
@@ -41,6 +43,8 @@ DS30-0008 had 6,765 admitted stereo visits. Baseline ran first. Elapsed time fel
 ## Receiver changes on the regression case
 
 DS30-0155 had 24 changed selections. Seventeen deployed primary factors and five residual factors disappeared. One primary and one residual appeared on previously empty opportunities. The published position degraded in both calibration fits. [DS30-0155 factor changes](measurements/DS30-0155-selected-changes.json.gz) · [DS30-0008 changes](measurements/DS30-0008-selected-changes.json.gz) · [DS30-0001 changes](measurements/DS30-0001-selected-changes.json.gz)
+
+In four saved-detection solves, restoring the eighteen changes involving only primary measurements reduced fitted error from **1.426 to 1.150 km**. Restoring only the six changes that involved a residual measurement gave **1.434 km**. Restoring all changes reproduced the deployed **1.157 km** endpoint. Both unchanged and fully restored controls matched the original coordinates, RF RMS and satellite owners in both calibration arms. This identifies which selected measurements carried the regression on this case. It leaves open how a causal receiver could preserve those primary selections on other recordings. [Matched intervention and controls](receiver-residual-attribution-0155.md)
 
 ## Reproduction
 
