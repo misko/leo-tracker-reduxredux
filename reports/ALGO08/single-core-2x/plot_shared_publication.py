@@ -55,6 +55,9 @@ def main(trial):
     if trial == "compiler":
         cases = (("DS30-0016-compiler", "DS30-0016 · physical"),
                  ("north-edge-compiler", "Northern simulation · 100 m inside"))
+    if trial == "signed":
+        cases = (("north-edge-signed", "Northern simulation · conditional second scans"),
+                 ("south-edge-full-signed", "Southern simulation · full second scans"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -116,6 +119,6 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional", "compiler"),
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional", "compiler", "signed"),
                         default="shared")
     main(parser.parse_args().trial)

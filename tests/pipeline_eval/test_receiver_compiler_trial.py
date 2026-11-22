@@ -45,7 +45,8 @@ def test_dual_training_calls_both_real_entry_points_on_each_lane(tmp_path, monke
                for r, (primary, _, _) in zip(rows, calls, strict=True))
 
 
-def test_build_rejects_a_changed_control_before_collecting_counters(tmp_path, monkeypatch):
+@pytest.mark.parametrize("integer_fir", [True, False])
+def test_build_rejects_a_changed_control_before_collecting_counters(tmp_path, monkeypatch, integer_fir):
     monkeypatch.setattr(trial.receiver_build, "build", lambda path, **_: path.write_bytes(b"unexpected"))
-    with pytest.raises(ValueError, match="frozen Q15"):
-        trial.build(tmp_path / "run", tmp_path)
+    with pytest.raises(ValueError, match="frozen receiver"):
+        trial.build(tmp_path / "run", tmp_path, integer_fir=integer_fir)

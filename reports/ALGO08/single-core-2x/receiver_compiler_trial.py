@@ -1,4 +1,4 @@
-"""Build and exercise a GCC branch-profiled Q15 receiver using site-free training signals."""
+"""Build and exercise a GCC branch-profiled receiver using site-free training signals."""
 import argparse
 from contextlib import contextmanager, nullcontext
 import hashlib
@@ -14,6 +14,7 @@ import numpy as np
 from tools.pipeline_eval.qualification import waveform_site_model as waveform
 from tools.pipeline_eval.variants.experimental import receiver_build, receiver_residual_build
 from tools.pipeline_eval.variants.experimental.receiver_benchmark import Receiver
+from tools.pipeline_eval.variants.experimental.residual_receiver import DETECTOR_SHA256 as DUAL_FLOAT_SHA256
 
 Q15_SHA256 = "8982c1b6cadbe80659f9f7cf8456746472d0f693c2dd363bd4e9a282adaf83e0"
 DUAL_Q15_SHA256 = "c34c55748bd9b5feac6f1736e27acb78b4a1caa97f0d13a50b604cffd61d2d70"
@@ -69,19 +70,22 @@ def dual_source():
         yield
 
 
-def build(work, assets, dual=False):
+def build(work, assets, dual=False, *, integer_fir=True):
     work = work.resolve()
     work.mkdir(exist_ok=False)
     stage, profiles = work / "objects", work / "profiles"
     stage.mkdir()
     profiles.mkdir()
-    recipe = dict(pack_stencil=True, batch_refine=True, fractional_batch=True, integer_fir=True)
+    recipe = dict(pack_stencil=True, batch_refine=True, fractional_batch=True, integer_fir=integer_fir)
     control = work / "control.so"
-    reference_digest = DUAL_Q15_SHA256 if dual else Q15_SHA256
+    if integer_fir:
+        reference_digest = DUAL_Q15_SHA256 if dual else Q15_SHA256
+    else:
+        reference_digest = DUAL_FLOAT_SHA256 if dual else receiver_residual_build.FRACTIONAL_BATCH_SHA256
     with dual_source() if dual else nullcontext():
         receiver_build.build(control, **recipe)
     if hashlib.sha256(control.read_bytes()).hexdigest() != reference_digest:
-        raise ValueError("ordinary compiler did not reproduce the frozen Q15 reference")
+        raise ValueError("ordinary compiler did not reproduce the frozen receiver")
     for mode in ("generate", "use"):
         binary = work / f"{mode}.so"
 
@@ -117,6 +121,8 @@ if __name__ == "__main__":
     parser.add_argument("target", type=Path)
     parser.add_argument("assets", type=Path)
     parser.add_argument("--dual", action="store_true")
+    parser.add_argument("--floating", action="store_true", help="Build with the original floating-point FIR")
     args = parser.parse_args()
-    result = (build if args.action == "build" else train)(args.target, args.assets, args.dual)
+    result = (build(args.target, args.assets, args.dual, integer_fir=not args.floating)
+              if args.action == "build" else train(args.target, args.assets, args.dual))
     print(json.dumps(result, indent=2))
