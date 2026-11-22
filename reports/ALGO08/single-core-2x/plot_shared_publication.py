@@ -38,6 +38,9 @@ def main(trial):
     if trial == "endpoint":
         cases = (("DS30-0016-endpoint", "DS30-0016 · physical"),
                  ("south-edge-endpoint", "Southern site · simulated boundary"))
+    if trial == "lossless":
+        cases = (("DS30-0016-lossless", "DS30-0016 · physical"),
+                 ("north-edge-lossless", "Northern site · simulated boundary"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -99,6 +102,6 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint"),
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless"),
                         default="shared")
     main(parser.parse_args().trial)
