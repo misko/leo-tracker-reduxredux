@@ -31,6 +31,14 @@ def verify_preflight(receipt):
         raise ValueError("Expected a path preflight stop before either timed launch")
 
 
+def shared_error(quality, arm):
+    pairs = [pair for site in quality["by_site"]
+             for pair in site["arms"][arm]["error_by_case_km"].values()
+             if pair["baseline"] is not None and pair["candidate"] is not None]
+    differences = [abs(pair["candidate"] - pair["baseline"]) for pair in pairs]
+    return len(pairs), max(differences, default=None)
+
+
 def report(result, verdict):
     counts = result["builds"]
     ratios = result["timing"]["all_verified"]["elapsed_s"]
@@ -45,6 +53,12 @@ def report(result, verdict):
     verdict_text = ("ALGO08v3 met the original 2× qualification criteria on DS30." if
                     verdict["qualifies"] else "ALGO08v3 missed the following original DS30 qualification criteria: " +
                     ", ".join(key for key, ok in verdict["gates"].items() if not ok) + ".")
+    shared = []
+    for field, name in (("c0", "Fixed-zero"), ("fitted_c", "Fitted")):
+        count, largest = shared_error(result["quality"], field)
+        if count:
+            shared.append(f"{name} calibration had {count} shared fixes. The largest absolute difference "
+                          f"in their horizontal errors was {largest * 1000:.3f} m.")
     return "\n".join([
         "# ALGO08v3 and deployed ALGO08v2 on 100 DS30 recordings", "", verdict_text, "",
         "The frozen candidate was named ALGO08v3 at the user's request during the panel. "
@@ -52,8 +66,11 @@ def report(result, verdict):
         f'The median paired elapsed ratio was **{ratios["median_candidate_over_baseline"]:.5f}** and '
         f'the summed elapsed ratio was **{ratios["summed_candidate_over_baseline"]:.5f}**. '
         'Each compares candidate seconds with deployed seconds, with a 0.50 threshold.', "",
+        f'These ratios correspond to **{1 / ratios["median_candidate_over_baseline"]:.2f}×** and '
+        f'**{1 / ratios["summed_candidate_over_baseline"]:.2f}×** speedups respectively.', "",
         "| Build | Fixes | Elapsed median / P90 (s) | Fixed-zero error median / P90 (km) | Fitted error median / P90 (km) |",
         "|---|---:|---:|---:|---:|", *rows, "",
+        *shared, "",
         "Both runs started from the same sealed I/Q on one low-priority Gauss core and ended after "
         "publication or an observed solver exit. Run order alternated. Error histograms count returned fixes.",
         "", "Solver failures retained in the 100 assigned pairs: " +

@@ -36,6 +36,14 @@ def test_path_preflight_rejects_an_attempt_that_already_started_measurement():
             finish.verify_preflight(dict(value, **change))
 
 
+def test_shared_position_error_counts_only_matched_positions():
+    finish = import_module("reports.ALGO08.single-core-2x.ds30_hundred_finish")
+    pairs = {"both": {"baseline": 1.0, "candidate": 1.25}, "missing": {"baseline": 1.0, "candidate": None}}
+    quality = {"by_site": [{"arms": {"c0": {"error_by_case_km": pairs}}}]}
+    assert finish.shared_error(quality, "c0") == (1, .25)
+    assert finish.shared_error({"by_site": []}, "c0") == (0, None)
+
+
 def test_frozen_roster_is_the_first_hundred_distinct_recordings_and_binds_order():
     predictions = study.stage.pinned(study.stage.OUT / "prediction-lock.json", study.stage.LOCK_SHA256)
     names = [r["case"] for r in predictions["predictions"] if r["method"] == "compact_two_scan"][:100]
