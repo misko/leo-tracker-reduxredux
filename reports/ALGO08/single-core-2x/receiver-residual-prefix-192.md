@@ -1,8 +1,32 @@
-# Frozen residual schedule on two 192-visit prefixes
+# Conditional residual scans on physical and simulated recordings
 
 The unchanged conditional schedule saved **11.9–14.5%** of native factor-call CPU on the first 192 scheduled DS30-0374 visits and **18.0–20.1%** on the first 192 visits of the public northern simulation. It preserved all **78** and **76** ordered selections, respectively, with empty continuation histories at the start of each arm. The conditional receiver removed three verified residual factors on the physical prefix and eight on the simulated prefix. The measurements cover these prefixes and do not establish final position accuracy. [Receipts](measurements/residual-prefix-192.json)
 
-## Matched receiver calls
+## Complete physical and simulated publications
+
+The experimental receiver takes a full residual scan every third admitted opportunity on each radio lane. After observing a verified residual, it takes every opportunity on that lane for eight device seconds. It consumes radio measurements and capture counters. The implementation has no search-region input. The publication trial uses the regional solver, endpoint and recovery reuse, scoped preparation collection, fractional-batch receiver, paired hash verification and lossless PNG encoder. The timing measures this combined candidate against deployed ALGO08v2. [Receiver integration](../../../tools/pipeline_eval/variants/experimental/residual_receiver.py) · [Earlier exact build](batch-publication.md)
+
+| Recording and order | Deployed → candidate elapsed | Elapsed speedup | Deployed → candidate CPU | CPU speedup | Filesystem input blocks, deployed / candidate |
+|---|---:|---:|---:|---:|---:|
+| DS30-0016, baseline first | 38.65 → 11.71 s | 3.30× | 24.80 → 11.50 s | 2.16× | 568,520 / 256 |
+| DS30-0016, candidate first | 24.59 → 11.70 s | 2.10× | 24.19 → 11.58 s | 2.09× | 0 / 0 |
+| Northern simulation, candidate first | 33.20 → 16.50 s | 2.01× | 32.44 → 16.17 s | 2.01× | 0 / 0 |
+
+The candidate landed within 0.02 seconds of its first elapsed time when the order reversed. The baseline's elapsed time fell by 14.06 seconds. The reverse pair gives the cleaner elapsed comparison on this short recording. Both runs used one low-priority pinned CPU on Gauss and the same frozen capture-time orbit archive. Each timed arm began with its own empty output directory and finished after writing all eight figures. [Baseline-first receipt](measurements/DS30-0016-conditional-residual.json) · [Candidate-first receipt](measurements/DS30-0016-conditional-reverse.json)
+
+Of 1,426 opportunities, the candidate requested 872 full scans and 554 primary-only scans. It retained 439 of 440 selected measurements. The lost measurement at visit 68 on receiver 1 changed the three rendered channel 5–8 diagnostics. The other five figures, including the position map, matched in decoded pixels. Both builds published the same satellite owners, numerical grid, optimizer path, and positions. Horizontal errors were **1.644 km with fixed-zero calibration and 1.661 km fitted**. Frequency RMS was **109.38 and 109.48 Hz**, respectively. Both orders reproduced these results. [Baseline-first science and image comparison](measurements/DS30-0016-conditional-changes.json) · [Reversed comparison](measurements/DS30-0016-conditional-reverse-changes.json)
+
+![Matched elapsed and CPU times and both position errors in each run order](conditional-publication.png)
+
+The complete northern simulated recording put the receiver 100 m inside the offered square. The same frozen build preserved all 456 selected measurements, both owners and grids, and all eight decoded figures. Position errors were **106 m fixed-zero and 141 m fitted** in both builds. The earlier exact receiver already reached 1.99–2.01× at this site. The combined timing here does not isolate an additional gain from the conditional scan rule. [Northern timing](measurements/north-edge-conditional.json) · [Northern scientific comparison](measurements/north-edge-conditional-changes.json)
+
+On the same northern recording we gave the solver a different 25 km square whose center was **64.93 km from truth**, using the newly frozen receiver's saved detections and the same causal archive. The solver returned positions **52.46 km from truth fixed-zero and 52.49 km fitted**, matching both wrong baseline endpoints. This was a solver-only replay. It produced a grid and a path. The complete publication timings above apply only to the containing offers. [Wrong-region solver replay](measurements/north-far-conditional-solver.json.gz) · [Previously published baseline](measurements/north-far-shared.json)
+
+The evidence covers one physical recording and one public simulated location, with the first long DS30 prefix below testing receiver work only. Longer recordings, fresh blind locations and independent physical recordings remain unverified for this build. [Geographic evidence and center-only comparison](geographic-input-audit.md)
+
+To reproduce, freeze research commit `8ce0d287f` using `--schedule conditional-residual` and the options in the saved candidate specification. The canonical specification digest is `sha256:65b664d49a5e91baf1fb593c19808f4cf32921d0c17ffe6145d61189570089c6`. Run the paired publisher in each order with the recorded archive digest. Inspect the changes with `python -m reports.ALGO08.single-core-2x.compare_publications PATH/pair.json` and regenerate the figure with `python -m reports.ALGO08.single-core-2x.plot_shared_publication --trial conditional`. For the northern omitted offer use `solver_gc_trial.py --defer-preparation --composed-tle-parser LIBRARY SHA256 NATIVE ARCHIVE ASSETS REGION NATIVE_SHA256` with the frozen parser, candidate detections, northern archive and public far offer. The replay receipt contains the input digest and complete region.
+
+## Matched receiver calls on the prefixes
 
 Both arms use the exact fractional-batch kernel. The full-search control executes the original two-scan entry. The conditional arm invokes the original entry whenever the frozen per-lane schedule requests a residual. Its primary-only entry skips cancellation and residual detection while keeping the original primary verification. The rule requests residuals at admitted opportunities 1, 4, 7 and so on, and on every opportunity through eight device seconds after an observed verified residual. Each observed lane visit, including empty results, advances that arm's released continuation history independently. [Frozen schedule](receiver-residual-schedule.md) · [Fractional kernel](receiver-fractional-batch.md)
 

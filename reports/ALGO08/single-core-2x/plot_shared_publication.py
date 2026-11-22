@@ -48,6 +48,10 @@ def main(trial):
     if trial == "gc":
         cases = (("DS30-0016-gc", "DS30-0016 · candidate first"),
                  ("DS30-0016-gc-reverse", "Same recording · baseline first"))
+    if trial == "conditional":
+        cases = (("DS30-0016-conditional-residual", "DS30-0016 · baseline first"),
+                 ("DS30-0016-conditional-reverse", "Same recording · candidate first"),
+                 ("north-edge-conditional", "Northern simulation · candidate first"))
     fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1),
                              layout="constrained", squeeze=False)
     longest_publication = 0
@@ -109,6 +113,6 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc"),
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge", "full-search", "endpoint", "lossless", "batch", "gc", "conditional"),
                         default="shared")
     main(parser.parse_args().trial)
