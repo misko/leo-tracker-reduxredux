@@ -7,7 +7,8 @@ from tools.pipeline_eval.qualification.paired_publication import verify_sources
 
 
 @pytest.mark.parametrize(("solver", "rendering"), [
-    ("stock", "individual"), ("combined-shared-discovery", "shared-orbits"), ("shared-tables", "shared-pixels")])
+    ("stock", "individual"), ("combined-shared-discovery", "shared-orbits"),
+    ("shared-tables", "shared-pixels"), ("track-moments", "shared-pixels")])
 def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solver, rendering):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
     (release / "tools").mkdir(parents=True)
@@ -17,9 +18,11 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_reuse.py", "algo08_salvage_statistics.py", "algo08_dense_discovery.py",
             "experimental/shared_orbit_figures.py"))
-    if solver == "shared-tables":
+    if solver in ("shared-tables", "track-moments"):
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_table.py", "algo08_cavity_projection.py", "algo08_salvage_bound.py"))
+    if solver == "track-moments":
+        selected.append(bundle.VARIANTS / "algo08_track_moments.py")
     for path in selected:
         (checkout / path).parent.mkdir(parents=True, exist_ok=True)
         (checkout / path).write_text(str(path))

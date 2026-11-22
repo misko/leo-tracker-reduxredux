@@ -79,15 +79,15 @@ def dense_discovery(scan, *, use_scratch=False, reuse_associations=False):
         association = scan.association
         previous = None
 
-        def associate(state, base, point, method, *, all_tracks=False):
+        def associate(state, base, point, method, **options):
             nonlocal previous
-            if all_tracks or method not in ("shared_phase", "receiver_smooth") or state.get("extra"):
-                return association(state, base, point, method, all_tracks=all_tracks)
-            key = tuple(point), method, all_tracks
+            if options or method not in ("shared_phase", "receiver_smooth") or state.get("extra"):
+                return association(state, base, point, method, **options)
+            key = tuple(point), method
             if previous and state is previous[0] and base is previous[1] and key == previous[2]:
                 counts["association_reused"] += 1
                 return previous[3]
-            result = association(state, base, point, method, all_tracks=all_tracks)
+            result = association(state, base, point, method)
             previous = state, base, key, result
             return result
 

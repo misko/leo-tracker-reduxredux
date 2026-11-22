@@ -56,7 +56,7 @@ def test_association_reuse_scoped_to_explore_and_matching_objects(monkeypatch):
     state, base = {}, object()
     calls = []
 
-    def associate(state, base, point, method, *, all_tracks=False):
+    def associate(state, base, point, method):
         result = object()
         calls.append(result)
         return result

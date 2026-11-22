@@ -14,6 +14,10 @@ from tools import algo08_position, algo08_scan
 
 
 RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
+TABLE_MODES = ("shared-tables", "track-moments")
+DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
+SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
+CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
 
 
 def run(args, specification):
@@ -25,7 +29,7 @@ def run(args, specification):
     if not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise ValueError("Expected a pinned detector SHA-256")
     mode = specification["solver"]
-    if mode not in ("stock", "causal-reuse", "combined", "combined-shared-discovery", "shared-tables"):
+    if mode not in ("stock", *CAUSAL_MODES):
         raise ValueError("Unknown experimental solver")
     rendering = specification.get("rendering", "individual")
     if rendering not in ("individual", "shared-orbits", "shared-pixels"):
@@ -63,10 +67,10 @@ def run(args, specification):
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})
             stack.enter_context(patch.object(algo08_position, "prepare_native_scan", scoped))
-        if mode in ("combined", "combined-shared-discovery", "shared-tables"):
+        if mode in SALVAGE_MODES:
             from tools.pipeline_eval.variants.algo08_salvage_statistics import salvage_statistics
             stack.enter_context(salvage_statistics())
-        if mode in ("combined-shared-discovery", "shared-tables"):
+        if mode in DISCOVERY_MODES:
             from tools.pipeline_eval.variants import v5_core
             from tools.pipeline_eval.variants.algo08_dense_discovery import dense_discovery
             rank = v5_core.ranked_initial_nodes
@@ -74,13 +78,19 @@ def run(args, specification):
                 with dense_discovery(scan, reuse_associations=True):
                     return rank(scan)
             stack.enter_context(patch.object(v5_core, "ranked_initial_nodes", shared_rank))
-        if mode == "shared-tables":
+        if mode in TABLE_MODES:
             from tools.pipeline_eval.variants.algo08_causal_table import causal_table
             from tools.pipeline_eval.variants.algo08_cavity_projection import shared_projection
             from tools.pipeline_eval.variants.algo08_salvage_bound import stable_pruning
             stack.enter_context(causal_table(canonical_exports=True, previous_catalogues=True))
             stack.enter_context(shared_projection())
             stack.enter_context(stable_pruning("gate"))
+        if mode == "track-moments":
+            from tools.pipeline_eval.variants import algo08_track_moments
+            context = partial(algo08_track_moments.prepare_context, v5_core.scan_context)
+            select = partial(algo08_track_moments.select, detail={})
+            stack.enter_context(patch.object(v5_core, "scan_context", context))
+            stack.enter_context(patch.object(v5_core, "infer", partial(v5_core.infer, select_initial=select)))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if schedule != "all":

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import shutil
 
-from .experimental_publication import RELEASE
+from .experimental_publication import CAUSAL_MODES, DISCOVERY_MODES, RELEASE, SALVAGE_MODES, TABLE_MODES
 
 
 LAUNCHER = Path("reports/ALGO08/single-core-2x/run-candidate")
@@ -19,15 +19,17 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
     if hashlib.sha256(detector_bytes).hexdigest() != expected_sha256:
         raise ValueError("Detector differs from its reviewed build")
     sources = [LAUNCHER, ENTRY]
-    if solver in ("causal-reuse", "combined", "combined-shared-discovery", "shared-tables"):
+    if solver in CAUSAL_MODES:
         sources.append(VARIANTS / "algo08_causal_reuse.py")
-    if solver in ("combined", "combined-shared-discovery", "shared-tables"):
+    if solver in SALVAGE_MODES:
         sources.append(VARIANTS / "algo08_salvage_statistics.py")
-    if solver in ("combined-shared-discovery", "shared-tables"):
+    if solver in DISCOVERY_MODES:
         sources.append(VARIANTS / "algo08_dense_discovery.py")
-    if solver == "shared-tables":
+    if solver in TABLE_MODES:
         sources.extend(VARIANTS / name for name in ("algo08_causal_table.py", "algo08_cavity_projection.py",
                                                      "algo08_salvage_bound.py"))
+    if solver == "track-moments":
+        sources.append(VARIANTS / "algo08_track_moments.py")
     if rendering in ("shared-orbits", "shared-pixels"):
         sources.append(VARIANTS / "experimental/shared_orbit_figures.py")
     if ingress == "compressed-buffer":
@@ -57,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("detector", type=Path)
     parser.add_argument("detector_sha256")
-    parser.add_argument("--solver", choices=("stock", "causal-reuse", "combined", "combined-shared-discovery", "shared-tables"), required=True)
+    parser.add_argument("--solver", choices=("stock", *CAUSAL_MODES), required=True)
     parser.add_argument("--ingress", choices=("stock", "compressed-buffer"), required=True)
     parser.add_argument("--schedule", choices=("all", "bursts", "alternate"), default="all")
     parser.add_argument("--rendering", choices=("individual", "shared-orbits", "shared-pixels"), default="individual")
