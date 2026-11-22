@@ -16,7 +16,7 @@ from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.fast_standard_analysis import render
 from solver_trial import measure
 from tools import algo08_position
-from tools.pipeline_eval.variants import algo08_collapsed_linear
+from tools.pipeline_eval.variants import algo08_collapsed_linear, algo08_collapsed_salvage
 
 
 def inventory(arm, entries):
@@ -39,7 +39,7 @@ def inventory(arm, entries):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("control", "linear"))
+    parser.add_argument("mode", choices=("control", "linear", "salvage"))
     for name in ("native", "archive", "assets", "region"):
         parser.add_argument(name, type=Path)
     parser.add_argument("native_sha256")
@@ -66,7 +66,11 @@ def main():
         nonlocal curved
         curved = signed["arms"]
 
-    binding = nullcontext() if args.mode == "control" else algo08_collapsed_linear.binding(record_curved)
+    binding = {
+        "control": lambda _: nullcontext(),
+        "linear": algo08_collapsed_linear.binding,
+        "salvage": algo08_collapsed_salvage.binding,
+    }[args.mode](record_curved)
     with binding, patch.object(algo08_position, "selected_packet", selected_packet):
         result = measure("combined", json.loads(raw), TleArchiveReader(args.archive), args.assets, offer)
     result.update(mode=args.mode, native_sha256=args.native_sha256, region=offer.document())
