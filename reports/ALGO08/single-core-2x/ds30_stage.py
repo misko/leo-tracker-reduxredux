@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 from leo.contracts.algo08_region import Algo08Region
 from leo.contracts.digests import canonical_digest
+from tools.pipeline_eval.qualification import cache_residency
 from tools.pipeline_eval.qualification import paired_publication as pair
 from tools.pipeline_eval.qualification.ds30_full_inputs import BULK, INPUTS, OUT, WORK
 from tools.pipeline_eval.qualification.reverse_glrt_reference import read_bound
@@ -49,6 +50,7 @@ class Assignment:
     raw_authority: str
     windows: int
     visits: int
+    segment_manifests: tuple[tuple[Path, str], ...] = ()
 
     @property
     def order(self):
@@ -97,11 +99,13 @@ def frozen_assignments(size, station):
                                    width_km=original.get("width_km", 25.))
                 or original["center"] != station["center"]):
             raise ValueError(f"Incorrect frozen recording, orbit archive or region for {name}")
-        segments = [BULK / s["path"] for s in case["recording"]["segments"]]
-        recording, = {segment.parent.parent for segment in segments}
+        manifests = tuple((BULK / s["path"], "sha256:" + s["sha256"])
+                          for s in case["recording"]["segments"])
+        recording, = {segment.parent.parent for segment, _ in manifests}
         assignments.append(Assignment(name, rank, recording, station, archive,
                                       canonical_digest(request["causal_snapshots"]), case["session_id"],
-                                      case["raw_authority"], case["recording"]["window_count"], case["valid_visits"]))
+                                      case["raw_authority"], case["recording"]["window_count"],
+                                      case["valid_visits"], manifests))
     if len({a.raw_authority for a in assignments}) != size:
         raise ValueError("Frozen prefix repeats a raw recording")
     return assignments
@@ -161,6 +165,11 @@ def verify_pair(path, assigned, candidate, spec, cpu):
         raise ValueError("CPU, pair order, recording or offer differs from its assignment")
     if set(data["runs"]) != set(BUILDS):
         raise ValueError("Pair must contain exactly one run for each build")
+    cache = data.get("cache_observation")
+    if cache is not None and (not assigned.segment_manifests
+            or cache["manifests"] != cache_residency.manifest_pins(assigned.segment_manifests)
+            or set(cache["arms"]) != set(BUILDS)):
+        raise ValueError("Cache observation differs from the assigned recording or arms")
     for label, launcher in (("baseline", pair.BASELINE), ("candidate", candidate)):
         run = data["runs"][label]
         receipt = run["receipt"]
@@ -208,6 +217,8 @@ def verify_pair(path, assigned, candidate, spec, cpu):
         evidence["region"] = assigned.region
     else:
         evidence["decision"] = before["receipt"]["decision"]
+    if cache is not None:
+        evidence["cache_observation"] = cache
     if "archive" not in data:
         return dict(evidence, state="development", reason="Pair lacks recorded causal archive identity")
     expected_archive = dict(root=str(assigned.archive.resolve()), snapshots_sha256=assigned.snapshots_sha256)
@@ -250,13 +261,15 @@ def next_case(stage, requested):
     return next_missing
 
 
-def run_next(workspace, assignments, stage, requested, candidate, config, region_file):
+def run_next(workspace, assignments, stage, requested, candidate, config, region_file,
+             *, cache_library=None):
     name = next_case(stage, requested)
     assigned = next(case for case in assignments if case.name == name)
     pair.run_pair(SimpleNamespace(recording=assigned.recording, region=region_file,
                                   archive=assigned.archive, archive_inventory_sha256=assigned.snapshots_sha256,
                                   output=workspace / name, baseline=pair.BASELINE, candidate=candidate,
                                   candidate_config=config, blind_panel=None, first=assigned.order[0],
+                                  cache_library=cache_library, cache_manifests=assigned.segment_manifests,
                                   cpu=stage["cpu"], timeout=1200))
 
 
@@ -349,15 +362,20 @@ def main():
     parser.add_argument("spec_digest")
     parser.add_argument("--size", type=int, choices=(4, 16), default=4)
     parser.add_argument("--case", help="Require the next assigned case to have this DS30 ID")
+    parser.add_argument("--cache-library", type=Path,
+                        help="Observe the assigned file cache before each timed arm")
     args = parser.parse_args()
     if args.case and args.action != "run":
         parser.error("--case applies to run")
+    if args.cache_library is not None and args.action != "run":
+        parser.error("--cache-library applies to run")
     spec = verify_build(args.candidate, args.config, args.spec_digest)
     region_file = pair.BASELINE.parent / "station/region.json"
     assignments = frozen_assignments(args.size, Algo08Region.parse(read(region_file)).document())
     stage = inventory(args.workspace, assignments, args.candidate, spec, cpu=2)
     if args.action == "run":
-        run_next(args.workspace, assignments, stage, args.case, args.candidate, args.config, region_file)
+        run_next(args.workspace, assignments, stage, args.case, args.candidate, args.config,
+                 region_file, cache_library=args.cache_library)
         stage = inventory(args.workspace, assignments, args.candidate, spec, cpu=2)
     print(json.dumps(score(stage) if args.action == "score" else stage, indent=2, allow_nan=False))
 

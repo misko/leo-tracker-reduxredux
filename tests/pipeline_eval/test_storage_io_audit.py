@@ -129,7 +129,7 @@ def test_native_cache_helper_on_synthetic_written_pages(tmp_path):
     size = os.sysconf("SC_PAGE_SIZE")
     path = tmp_path / "cache-test"
     path.write_bytes(b"x" * size)
-    result = audit.cache_snapshot([(tmp_path, path.name, size)], size, audit._cache_query(library))
+    result = audit.cache_snapshot([(tmp_path, path.name, size)], size, audit.load_query(library))
     if result["unavailable"].keys() & {"ENOSYS", "EOPNOTSUPP", "EPERM"}:
         pytest.skip("This kernel or filesystem cannot expose cachestat to the test process")
     assert result["cached_pages"] == 1

@@ -17,6 +17,7 @@ from leo.operations.tle_archive import TleArchiveReader
 from leo.storage.fast_scan import FastScanStore, immutable_json
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from leo.storage.short_window import ShortWindowReader
+from tools.pipeline_eval.qualification import cache_residency
 
 
 LOCK = Path("/tmp/leo-algo08v2-2x-bench/gauss.lock")
@@ -118,7 +119,7 @@ def evidence(root, receipt, started_ns, *, read_only=False):
                 terminal_file_s=(terminal_path.stat().st_mtime_ns-started_ns)/1e9)
 
 
-def measure(launcher, root, args, specification=None):
+def measure(launcher, root, args, specification=None, *, before_launch=None):
     root.mkdir()  # Every arm starts without a detection, solver or publication cache.
     assigned_region = Algo08Region.parse(json.loads(args.region.read_bytes())).document()
     env = os.environ | dict(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1")
@@ -130,6 +131,8 @@ def measure(launcher, root, args, specification=None):
     command = [str(launcher.resolve()), "--recording", str(args.recording.resolve()),
                "--region", str(args.region.resolve()), "--archive", str(args.archive.resolve()),
                "--bulk-root", str(root.resolve())]
+    if before_launch is not None:
+        before_launch()
     start_ns = time.time_ns()
     before, before_wall = child_usage(), time.monotonic()
     result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=args.timeout)
@@ -176,9 +179,33 @@ def run_pair(args):
                 verify_sources(args.candidate, spec["sources"])
                 pinned_config = args.output/"candidate-config.json"
                 immutable_json(pinned_config, spec)
+            cache_library = getattr(args, "cache_library", None)
+            cache_arms = None
+            if cache_library is not None:
+                manifests = args.cache_manifests
+                if not manifests:
+                    raise ValueError("Cache observation requires assigned sealed manifest pins")
+                query = cache_residency.load_query(cache_library.resolve(strict=True))
+                page_size = os.sysconf("SC_PAGE_SIZE")
+                store = FastScanStore(args.output)
+                cache_arms = {}
+                result["cache_observation"] = dict(
+                    method="linux-cachestat", page_size_bytes=page_size,
+                    manifests=cache_residency.manifest_pins(manifests), arms=cache_arms,
+                )
+
+                def observe(name):
+                    cache_arms[name] = cache_residency.bound_snapshot(
+                        store, args.recording, manifests, page_size, query,
+                    )
+
             for name in order:
-                runs[name] = measure(getattr(args, name), args.output/name, args,
-                                     pinned_config if name == "candidate" else None)
+                measurement = (getattr(args, name), args.output/name, args,
+                               pinned_config if name == "candidate" else None)
+                if cache_arms is None:
+                    runs[name] = measure(*measurement)
+                else:
+                    runs[name] = measure(*measurement, before_launch=lambda name=name: observe(name))
             a, b = runs["baseline"], runs["candidate"]
             if a["raw_authority"] != b["raw_authority"] or any(
                     a["receipt"][k] != b["receipt"][k] for k in ("region","session_id","window_count")):

@@ -48,6 +48,22 @@ stage run --size 4 --case DS30-0374
 stage score --size 4
 ```
 
+For an authorized pair where cache state matters, add `--cache-library` to `stage run`.
+The runner checks the current sealed manifest roster against that case's frozen binding and
+queries only its compressed members. Each observation runs under the same Gauss lock immediately
+before the arm's CPU, elapsed and stage clocks. The pair receipt and its inventory entry record
+`cache_observation.arms` and the manifest pins. An unavailable query is counted by error, including
+`ENOSYS` for a missing syscall and `EPERM` or `EACCES` for denied access. When none of the members
+can be queried, `cached_pages` is null. The observation reads manifest headers and opens payload
+descriptors without reading payload data or issuing cache hints. [Storage accounting](storage-io-accounting.md)
+
+```sh
+cc -O2 -shared -fPIC tools/pipeline_eval/qualification/cache_residency.c \
+  -o /tmp/leo-algo08v2-2x-bench/ds30-cache-residency.so
+stage run --size 4 --case DS30-0374 \
+  --cache-library /tmp/leo-algo08v2-2x-bench/ds30-cache-residency.so
+```
+
 For the conditional-residual build, use the same function with these settings and a separate workspace.
 
 ```sh

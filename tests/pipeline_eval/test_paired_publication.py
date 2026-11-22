@@ -1,10 +1,14 @@
 import json
 import hashlib
+import errno
+import fcntl
+import os
 from types import SimpleNamespace
 
 import pytest
 
 from tools.pipeline_eval.qualification import paired_publication as bench
+from tests.fast_scan_support import recording as synthetic_recording
 
 
 @pytest.mark.parametrize("changed", [{"center": [37., -122.]}, {"screen_center": [37., -122.]}, {"width_km": 25}])
@@ -59,12 +63,98 @@ def test_pair_uses_empty_outputs_and_only_credits_same_recording(tmp_path, monke
         bench.run_pair(args)
     report=json.loads((args.output/"pair.json").read_bytes())
     assert calls == ["candidate", "baseline"]
+    assert "cache_observation" not in report
     if mismatch:
         assert "failure" in report and "elapsed_ratio" not in report
     else:
         assert report["elapsed_ratio"] == 0.5
     with pytest.raises(FileExistsError):
         bench.run_pair(args)
+
+
+@pytest.mark.parametrize("tamper", [False, True])
+def test_cache_snapshot_is_bound_and_precedes_both_clocks_under_the_lock(tmp_path, monkeypatch, tamper):
+    recording = synthetic_recording(tmp_path / "raw")
+    manifest = recording / "manifest.json"
+    region_file = tmp_path / "offer.json"
+    region = dict(center=[-31., 129.], width_km=25., screen_center=[-31., 129.])
+    region_file.write_text(json.dumps(region))
+    library = tmp_path / "helper.so"
+    library.touch()
+    lock = tmp_path / "gauss.lock"
+    args = SimpleNamespace(
+        cpu=2, output=tmp_path / "out", recording=recording, region=region_file,
+        archive=tmp_path, first="candidate", baseline=tmp_path / "stock",
+        candidate=tmp_path / "candidate", candidate_config=None, blind_panel=None, timeout=5,
+        cache_library=library,
+        cache_manifests=((manifest, "sha256:" + hashlib.sha256(manifest.read_bytes()).hexdigest()),),
+    )
+    events = []
+
+    def query(fd, length):
+        assert os.fstat(fd).st_size == length
+        assert os.lseek(fd, 0, os.SEEK_CUR) == 0
+        with lock.open("rb") as other:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        first = events.count("timed launch") == 0
+        events.append("cache")
+        code = errno.ENOSYS if first else errno.EPERM
+        raise OSError(code, os.strerror(code))
+
+    def execute(command, **kwargs):
+        if command[0] == "ionice":
+            return None
+        events.append("timed launch")
+        if tamper:
+            data = json.loads(manifest.read_bytes())
+            data["stop_reason"] = "changed before the second arm"
+            manifest.write_text(json.dumps(data))
+        return SimpleNamespace(returncode=0, stdout=json.dumps(dict(region=region)))
+
+    def clock_start():
+        events.append("stage clock")
+        return 0
+
+    def cpu_clock():
+        events.append("child counters")
+        return {"cpu_s": 1.0}
+
+    def wall_clock():
+        events.append("elapsed clock")
+        return float(len(events))
+
+    monkeypatch.setattr(bench, "LOCK", lock)
+    monkeypatch.setattr(bench.os, "sched_getaffinity", lambda _: {2})
+    monkeypatch.setattr(bench.os, "sched_setaffinity", lambda *args: None)
+    monkeypatch.setattr(bench.os, "setpriority", lambda *args: None)
+    monkeypatch.setattr(bench.subprocess, "run", execute)
+    monkeypatch.setattr(bench.time, "time_ns", clock_start)
+    monkeypatch.setattr(bench.time, "monotonic", wall_clock)
+    monkeypatch.setattr(bench, "child_usage", cpu_clock)
+    monkeypatch.setattr(bench.cache_residency, "load_query", lambda _: query)
+    monkeypatch.setattr(bench, "evidence", lambda *args: dict(
+        raw_authority="scope", receipt=dict(region=region, session_id="session", window_count=3),
+    ))
+
+    if tamper:
+        with pytest.raises(ValueError, match="assigned sealed manifests"):
+            bench.run_pair(args)
+    else:
+        bench.run_pair(args)
+    arm_events = ["cache", "stage clock", "child counters", "elapsed clock",
+                  "timed launch", "elapsed clock", "child counters"]
+    assert events == arm_events * (1 if tamper else 2)
+    result = json.loads((args.output / "pair.json").read_bytes())
+    observations = result["cache_observation"]
+    assert observations["manifests"] == bench.cache_residency.manifest_pins(args.cache_manifests)
+    assert observations["arms"]["candidate"]["unavailable"] == {"ENOSYS": 1}
+    assert observations["arms"]["candidate"]["cached_pages"] is None
+    if tamper:
+        assert set(result["runs"]) == {"candidate"}
+        assert "baseline" not in observations["arms"]
+    else:
+        assert observations["arms"]["baseline"]["unavailable"] == {"EPERM": 1}
 
 
 @pytest.mark.parametrize("wrong_screen", [False, True])

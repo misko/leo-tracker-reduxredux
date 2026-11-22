@@ -1,4 +1,5 @@
 from importlib import import_module
+from dataclasses import replace
 from io import BytesIO
 import json
 from types import SimpleNamespace
@@ -183,6 +184,32 @@ def test_one_case_and_frozen_order_without_launching_a_benchmark(study, monkeypa
         launch(current, first.name)
     launch(current, second.name)
     assert len(calls) == 2 and calls[1].recording == second.recording and calls[1].first == "baseline"
+
+
+def test_stage_passes_only_the_assigned_manifests_and_checks_saved_cache_identity(study, monkeypatch):
+    first = study.assignments[0]
+    first = replace(first, segment_manifests=((first.recording / "manifest.json", "sha256:" + "b" * 64),))
+    study.assignments[0] = first
+    calls = []
+    helper = study.runs.parent / "helper.so"
+    monkeypatch.setattr(pair, "run_pair", calls.append)
+    stage.run_next(study.runs, study.assignments, inventory(study), first.name,
+                   study.candidate, study.region, study.region, cache_library=helper)
+    assert calls[0].cache_library == helper
+    assert calls[0].cache_manifests == first.segment_manifests
+
+    path = seal_pair(study, first)
+    saved = stage.read(path)
+    saved["cache_observation"] = dict(
+        method="linux-cachestat", page_size_bytes=4096,
+        manifests=pair.cache_residency.manifest_pins(first.segment_manifests),
+        arms={arm: dict(cached_pages=None, unavailable={"EPERM": 1}) for arm in stage.BUILDS},
+    )
+    path.write_text(json.dumps(saved))
+    assert inventory(study)["cases"][0]["cache_observation"] == saved["cache_observation"]
+    saved["cache_observation"]["manifests"][0]["sha256"] = "sha256:" + "0" * 64
+    path.write_text(json.dumps(saved))
+    assert inventory(study)["coverage"]["invalid"] == [first.name]
 
 
 def test_legacy_audit_has_no_qualification_coverage(study):
