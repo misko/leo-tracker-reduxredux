@@ -28,7 +28,8 @@ def test_only_reviewed_covariance_build_uses_full_scan_comparison():
 
 @pytest.mark.parametrize("filename", ["screened-tiled-freeze.json", "restored-scout-graph-freeze.json",
                                       "frame-plane-terminal-veto-freeze.json", "spectral-wrapped-longitude-freeze.json",
-                                      "fractional-absolute-selected-v3-freeze.json"])
+                                      "fractional-absolute-selected-v3-freeze.json",
+                                      "exact-curved-lookahead-freeze.json"])
 def test_only_frozen_screened_tiled_build_uses_scientific_comparison(filename):
     path = stage.PANEL.parents[1] / "single-core-2x/measurements" / filename
     spec = stage.read(path)["spec"]
