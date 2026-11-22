@@ -1,0 +1,654 @@
+{
+  "release": "bdb869682a2ea63af4b198a920b763a4c6a78c4c",
+  "specification_sha256": "01e2dce81c1f7d8b9115c9de2486c70f9c75bf09cb47ae7b5ca386c67f5a5cf6",
+  "traces": {
+    "candidate": {
+      "elapsed_s": 1.95,
+      "user_s": 1.8,
+      "system_s": 0.09,
+      "max_rss_kib": 236388,
+      "input_blocks": 0,
+      "cumulative_import_ms": {
+        "leo.contracts": 188.843,
+        "leo.analysis.standard.analyzers": 397.579,
+        "leo.analysis.research": 427.093,
+        "scipy.stats": 204.314,
+        "leo.scanner": 112.617,
+        "leo.storage": 142.884,
+        "leo.catalog": 253.764,
+        "leo.operations": 408.392,
+        "tools.pipeline_eval.qualification.blind_compact_run": 60.068
+      }
+    },
+    "release": {
+      "elapsed_s": 1.94,
+      "user_s": 1.75,
+      "system_s": 0.13,
+      "max_rss_kib": 238568,
+      "input_blocks": 0,
+      "cumulative_import_ms": {
+        "leo.contracts": 193.858,
+        "leo.analysis.standard.analyzers": 410.2,
+        "leo.scanner": 553.866,
+        "leo.storage": 630.955,
+        "leo.catalog": 236.182,
+        "leo.operations": 879.602,
+        "leo.analysis.research": 1.652,
+        "scipy.stats": 149.724,
+        "tools.pipeline_eval.qualification.blind_compact_run": 119.902
+      }
+    },
+    "lean": {
+      "elapsed_s": 0.94,
+      "user_s": 0.86,
+      "system_s": 0.06,
+      "max_rss_kib": 170912,
+      "input_blocks": 0,
+      "cumulative_import_ms": {
+        "leo.contracts": 0.722,
+        "leo.analysis.research": 0.104,
+        "scipy.stats": 145.338,
+        "leo.operations": 0.16,
+        "leo.scanner": 0.47,
+        "leo.storage": 0.282,
+        "tools.pipeline_eval.qualification.blind_compact_run": 54.998
+      }
+    }
+  },
+  "replays": [
+    {
+      "order": [
+        "lazy",
+        "stock"
+      ],
+      "arms": [
+        {
+          "startup": "lazy",
+          "checks": {
+            "prefix_raw_authority": "sha256:fbc7a395a35cb2f5482af249f7f8ed3bb5a97ee3ae97700bdff184c292130b48",
+            "prefix_ordered_probes": "sha256:4829a4f8ad516d3e3b044c71a58c0afb0ae64c7a13c52eae174d50bf71dd7b9f",
+            "native_raw_authority": "sha256:64e945e9717c2612fdb3118d7b65c713076a1b56f5de49f8fdf291a3220fc252",
+            "native_detection": "sha256:b31e70c0167157c1ee6345345ec54b2e51d8505a030d778fb38d2e0e852d621c",
+            "decision": "ok",
+            "policy": "stock",
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.834938184864335,
+                  -122.49130096936959
+                ],
+                "rf_rms_hz": 109.37512007181024
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.83568176481742,
+                  -122.49419045080667
+                ],
+                "rf_rms_hz": 109.47893971795968
+              }
+            },
+            "position_grid": "sha256:256b6f7fe479c2a4c56e513bad17e31d9d6b353155a66faaefe792bee41d5708",
+            "position_path": "sha256:7617b48af30aa91ffc6fd3f74af8da394230fde1f2e7331bd04503825b387a11",
+            "figures": {
+              "ch1-4-all": "03867c29101c94736de42730ec0d85d6279a81511b502c88bd7ca3cce57b09a0",
+              "ch5-8-all": "3ee8789f2026703ddf384b9413297e3ecac68fe1bfc17684a9ab8f27686bc600",
+              "ch1-4-unassociated": "ca2e3f5e7cfee75bbed86baa3c5c18be6c1ca5977333688be9a777093cab7f8f",
+              "ch5-8-unassociated": "e94f0c238d7b0f85713639e936cecde057f7f86750d08a810ef8387e4b10d12f",
+              "ch1-4-residuals": "5916c0bacab47739124a8cfe560cee08a61368728508e2cf27b0898c46c48627",
+              "ch5-8-residuals": "6e9e5ec0f16f4ceb2359e5dd99d920aefe0e8c1f751763bf767fd5cb0989aa24",
+              "track-rms": "985b0c8a04b50cd1d117981fd433656b1f44cfc898e7ce86e532713fbc1c6056",
+              "position": "8ebaf73ddba87e8f5b8f7070c22eb5cf56433f70454618544ab2b883c6e2f1e1"
+            }
+          },
+          "modules": {
+            "import_and_setup": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            },
+            "prefix_acquisition": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            },
+            "saved_factor_solve": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            },
+            "saved_factor_render": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            }
+          },
+          "stages": {
+            "import_and_setup": {
+              "cpu_s": 0.799603378,
+              "elapsed_s": 0.819321293
+            },
+            "prefix_acquisition": {
+              "cpu_s": 0.433632827,
+              "elapsed_s": 0.446082385
+            },
+            "saved_factor_solve": {
+              "cpu_s": 3.967177676,
+              "elapsed_s": 4.03516268
+            },
+            "saved_factor_render": {
+              "cpu_s": 2.287991392,
+              "elapsed_s": 2.319929454
+            }
+          },
+          "cpu_s": 7.493342636,
+          "elapsed_s": 7.625428236,
+          "usage": {
+            "elapsed_s": 7.83,
+            "user_s": 7.45,
+            "system_s": 0.24,
+            "max_rss_kib": 574792,
+            "input_blocks": 0
+          }
+        },
+        {
+          "startup": "stock",
+          "checks": {
+            "prefix_raw_authority": "sha256:fbc7a395a35cb2f5482af249f7f8ed3bb5a97ee3ae97700bdff184c292130b48",
+            "prefix_ordered_probes": "sha256:4829a4f8ad516d3e3b044c71a58c0afb0ae64c7a13c52eae174d50bf71dd7b9f",
+            "native_raw_authority": "sha256:64e945e9717c2612fdb3118d7b65c713076a1b56f5de49f8fdf291a3220fc252",
+            "native_detection": "sha256:b31e70c0167157c1ee6345345ec54b2e51d8505a030d778fb38d2e0e852d621c",
+            "decision": "ok",
+            "policy": "stock",
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.834938184864335,
+                  -122.49130096936959
+                ],
+                "rf_rms_hz": 109.37512007181024
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.83568176481742,
+                  -122.49419045080667
+                ],
+                "rf_rms_hz": 109.47893971795968
+              }
+            },
+            "position_grid": "sha256:256b6f7fe479c2a4c56e513bad17e31d9d6b353155a66faaefe792bee41d5708",
+            "position_path": "sha256:7617b48af30aa91ffc6fd3f74af8da394230fde1f2e7331bd04503825b387a11",
+            "figures": {
+              "ch1-4-all": "03867c29101c94736de42730ec0d85d6279a81511b502c88bd7ca3cce57b09a0",
+              "ch5-8-all": "3ee8789f2026703ddf384b9413297e3ecac68fe1bfc17684a9ab8f27686bc600",
+              "ch1-4-unassociated": "ca2e3f5e7cfee75bbed86baa3c5c18be6c1ca5977333688be9a777093cab7f8f",
+              "ch5-8-unassociated": "e94f0c238d7b0f85713639e936cecde057f7f86750d08a810ef8387e4b10d12f",
+              "ch1-4-residuals": "5916c0bacab47739124a8cfe560cee08a61368728508e2cf27b0898c46c48627",
+              "ch5-8-residuals": "6e9e5ec0f16f4ceb2359e5dd99d920aefe0e8c1f751763bf767fd5cb0989aa24",
+              "track-rms": "985b0c8a04b50cd1d117981fd433656b1f44cfc898e7ce86e532713fbc1c6056",
+              "position": "8ebaf73ddba87e8f5b8f7070c22eb5cf56433f70454618544ab2b883c6e2f1e1"
+            }
+          },
+          "modules": {
+            "import_and_setup": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            },
+            "prefix_acquisition": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            },
+            "saved_factor_solve": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            },
+            "saved_factor_render": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            }
+          },
+          "stages": {
+            "import_and_setup": {
+              "cpu_s": 1.376202875,
+              "elapsed_s": 1.400475548
+            },
+            "prefix_acquisition": {
+              "cpu_s": 0.405269123,
+              "elapsed_s": 0.412252777
+            },
+            "saved_factor_solve": {
+              "cpu_s": 4.009162662,
+              "elapsed_s": 4.063465074
+            },
+            "saved_factor_render": {
+              "cpu_s": 2.434316064,
+              "elapsed_s": 2.479781782
+            }
+          },
+          "cpu_s": 8.229860498,
+          "elapsed_s": 8.36087869,
+          "usage": {
+            "elapsed_s": 8.79,
+            "user_s": 8.28,
+            "system_s": 0.36,
+            "max_rss_kib": 661804,
+            "input_blocks": 0
+          }
+        }
+      ],
+      "matched": true
+    },
+    {
+      "order": [
+        "stock",
+        "lazy"
+      ],
+      "arms": [
+        {
+          "startup": "stock",
+          "checks": {
+            "prefix_raw_authority": "sha256:fbc7a395a35cb2f5482af249f7f8ed3bb5a97ee3ae97700bdff184c292130b48",
+            "prefix_ordered_probes": "sha256:4829a4f8ad516d3e3b044c71a58c0afb0ae64c7a13c52eae174d50bf71dd7b9f",
+            "native_raw_authority": "sha256:64e945e9717c2612fdb3118d7b65c713076a1b56f5de49f8fdf291a3220fc252",
+            "native_detection": "sha256:b31e70c0167157c1ee6345345ec54b2e51d8505a030d778fb38d2e0e852d621c",
+            "decision": "ok",
+            "policy": "stock",
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.834938184864335,
+                  -122.49130096936959
+                ],
+                "rf_rms_hz": 109.37512007181024
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.83568176481742,
+                  -122.49419045080667
+                ],
+                "rf_rms_hz": 109.47893971795968
+              }
+            },
+            "position_grid": "sha256:256b6f7fe479c2a4c56e513bad17e31d9d6b353155a66faaefe792bee41d5708",
+            "position_path": "sha256:7617b48af30aa91ffc6fd3f74af8da394230fde1f2e7331bd04503825b387a11",
+            "figures": {
+              "ch1-4-all": "03867c29101c94736de42730ec0d85d6279a81511b502c88bd7ca3cce57b09a0",
+              "ch5-8-all": "3ee8789f2026703ddf384b9413297e3ecac68fe1bfc17684a9ab8f27686bc600",
+              "ch1-4-unassociated": "ca2e3f5e7cfee75bbed86baa3c5c18be6c1ca5977333688be9a777093cab7f8f",
+              "ch5-8-unassociated": "e94f0c238d7b0f85713639e936cecde057f7f86750d08a810ef8387e4b10d12f",
+              "ch1-4-residuals": "5916c0bacab47739124a8cfe560cee08a61368728508e2cf27b0898c46c48627",
+              "ch5-8-residuals": "6e9e5ec0f16f4ceb2359e5dd99d920aefe0e8c1f751763bf767fd5cb0989aa24",
+              "track-rms": "985b0c8a04b50cd1d117981fd433656b1f44cfc898e7ce86e532713fbc1c6056",
+              "position": "8ebaf73ddba87e8f5b8f7070c22eb5cf56433f70454618544ab2b883c6e2f1e1"
+            }
+          },
+          "modules": {
+            "import_and_setup": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            },
+            "prefix_acquisition": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            },
+            "saved_factor_solve": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            },
+            "saved_factor_render": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": true,
+              "leo.catalog": true,
+              "leo.operations.retention": true,
+              "leo.operations.service": true,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": true,
+              "leo.analysis.standard.analyzers": true,
+              "leo.storage.persistent_hop": true,
+              "leo.scanner.persistent_hop": true
+            }
+          },
+          "stages": {
+            "import_and_setup": {
+              "cpu_s": 1.452313081,
+              "elapsed_s": 1.477973457
+            },
+            "prefix_acquisition": {
+              "cpu_s": 0.419248513,
+              "elapsed_s": 0.419308753
+            },
+            "saved_factor_solve": {
+              "cpu_s": 4.151928038,
+              "elapsed_s": 4.258729164
+            },
+            "saved_factor_render": {
+              "cpu_s": 2.415611133,
+              "elapsed_s": 2.476828435
+            }
+          },
+          "cpu_s": 8.444048031,
+          "elapsed_s": 8.637780101,
+          "usage": {
+            "elapsed_s": 9.08,
+            "user_s": 8.47,
+            "system_s": 0.39,
+            "max_rss_kib": 662700,
+            "input_blocks": 0
+          }
+        },
+        {
+          "startup": "lazy",
+          "checks": {
+            "prefix_raw_authority": "sha256:fbc7a395a35cb2f5482af249f7f8ed3bb5a97ee3ae97700bdff184c292130b48",
+            "prefix_ordered_probes": "sha256:4829a4f8ad516d3e3b044c71a58c0afb0ae64c7a13c52eae174d50bf71dd7b9f",
+            "native_raw_authority": "sha256:64e945e9717c2612fdb3118d7b65c713076a1b56f5de49f8fdf291a3220fc252",
+            "native_detection": "sha256:b31e70c0167157c1ee6345345ec54b2e51d8505a030d778fb38d2e0e852d621c",
+            "decision": "ok",
+            "policy": "stock",
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.834938184864335,
+                  -122.49130096936959
+                ],
+                "rf_rms_hz": 109.37512007181024
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.83568176481742,
+                  -122.49419045080667
+                ],
+                "rf_rms_hz": 109.47893971795968
+              }
+            },
+            "position_grid": "sha256:256b6f7fe479c2a4c56e513bad17e31d9d6b353155a66faaefe792bee41d5708",
+            "position_path": "sha256:7617b48af30aa91ffc6fd3f74af8da394230fde1f2e7331bd04503825b387a11",
+            "figures": {
+              "ch1-4-all": "03867c29101c94736de42730ec0d85d6279a81511b502c88bd7ca3cce57b09a0",
+              "ch5-8-all": "3ee8789f2026703ddf384b9413297e3ecac68fe1bfc17684a9ab8f27686bc600",
+              "ch1-4-unassociated": "ca2e3f5e7cfee75bbed86baa3c5c18be6c1ca5977333688be9a777093cab7f8f",
+              "ch5-8-unassociated": "e94f0c238d7b0f85713639e936cecde057f7f86750d08a810ef8387e4b10d12f",
+              "ch1-4-residuals": "5916c0bacab47739124a8cfe560cee08a61368728508e2cf27b0898c46c48627",
+              "ch5-8-residuals": "6e9e5ec0f16f4ceb2359e5dd99d920aefe0e8c1f751763bf767fd5cb0989aa24",
+              "track-rms": "985b0c8a04b50cd1d117981fd433656b1f44cfc898e7ce86e532713fbc1c6056",
+              "position": "8ebaf73ddba87e8f5b8f7070c22eb5cf56433f70454618544ab2b883c6e2f1e1"
+            }
+          },
+          "modules": {
+            "import_and_setup": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            },
+            "prefix_acquisition": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            },
+            "saved_factor_solve": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            },
+            "saved_factor_render": {
+              "numpy": true,
+              "scipy.linalg": true,
+              "scipy.optimize": true,
+              "scipy.stats": true,
+              "matplotlib.figure": true,
+              "matplotlib.backends.backend_agg": true,
+              "sgp4": true,
+              "sqlalchemy": false,
+              "leo.catalog": false,
+              "leo.operations.retention": false,
+              "leo.operations.service": false,
+              "leo.operations.tle_archive": true,
+              "leo.operations.localization_v3_inputs": true,
+              "leo.analysis.research.analyzers": false,
+              "leo.analysis.standard.analyzers": false,
+              "leo.storage.persistent_hop": false,
+              "leo.scanner.persistent_hop": false
+            }
+          },
+          "stages": {
+            "import_and_setup": {
+              "cpu_s": 0.777931208,
+              "elapsed_s": 0.789760062
+            },
+            "prefix_acquisition": {
+              "cpu_s": 0.414996662,
+              "elapsed_s": 0.425087166
+            },
+            "saved_factor_solve": {
+              "cpu_s": 3.971609039,
+              "elapsed_s": 4.034612457
+            },
+            "saved_factor_render": {
+              "cpu_s": 2.308021584,
+              "elapsed_s": 2.368428654
+            }
+          },
+          "cpu_s": 7.477486503,
+          "elapsed_s": 7.622810079,
+          "usage": {
+            "elapsed_s": 7.87,
+            "user_s": 7.44,
+            "system_s": 0.28,
+            "max_rss_kib": 573936,
+            "input_blocks": 0
+          }
+        }
+      ],
+      "matched": true
+    }
+  ]
+}
