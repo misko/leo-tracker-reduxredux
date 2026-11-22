@@ -1,0 +1,7 @@
+# Frame-plane receiver and sparse satellite ranking
+
+## Public development comparison
+
+Use the existing northern simulated waveform with its lower pilot edge and the same 25 km search square that contains the receiver by just 100 m. This is one engineering comparison on a previously published recording. The last related deployment-first pair took 33.90 and 18.36 seconds. The new comparison runs the candidate first. Both builds start with empty publication roots and use the original recording, orbit archive and offer. Time sealed I/Q through all eight web figures with a single low-priority Gauss core. Inspect file input blocks, both calibration arms, ranks, measured CFO and timing, every observation owner, numerical grid and path, and decoded figure pixels. Score against the public receiver reference after execution. [Previous pair](packed-graph-publication.md)
+
+The candidate combines the tiled receiver filter, wrapped frequency refinement, frame-plane receiver layout and sparse satellite ranking. Require the exact combined binary to preserve all reviewed factors on the weak-carrier and Austin slices and on the three previously sensitive roof lanes before running the public waveform. The sparse solver has already been checked on complete saved dense-roof and Indian containing solutions. The experiment excludes the wider likelihood, Anderson acceleration, alternative allocator and experimental degree bound. [Regional ranking](sparse-rank-projection.md) · [Plain-control solver comparison](solver-wide-private-blocks.md)
