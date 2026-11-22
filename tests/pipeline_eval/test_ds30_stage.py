@@ -25,8 +25,9 @@ def test_only_reviewed_covariance_build_uses_full_scan_comparison():
         stage.comparison_mode(dict(spec, regional_veto=False))
 
 
-def test_only_frozen_screened_tiled_build_uses_scientific_comparison():
-    path = stage.PANEL.parents[1] / "single-core-2x/measurements/screened-tiled-freeze.json"
+@pytest.mark.parametrize("filename", ["screened-tiled-freeze.json", "restored-scout-graph-freeze.json"])
+def test_only_frozen_screened_tiled_build_uses_scientific_comparison(filename):
+    path = stage.PANEL.parents[1] / "single-core-2x/measurements" / filename
     spec = stage.read(path)["spec"]
     assert stage.comparison_mode(spec) == "full-scan-screened"
     with pytest.raises(ValueError, match="frozen screened-tiled"):

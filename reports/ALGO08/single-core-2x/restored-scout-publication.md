@@ -1,0 +1,9 @@
+# Packed cancellation with original carrier refinement
+
+## First physical assignment
+
+The three changed fractional carrier measurements on DS30-0008 appeared when the compiler used profile feedback on the delay-product kernel. Rebuilding that single object without feedback restored the three original epoch and frequency measurements. The change applies to every scan. It has no location input, threshold or satellite selection. The rest of the receiver retains packed cancellation and its existing compiler settings. Replacing the three measurements in a saved solver replay restored all deployed assignments and both coordinates within 0.027 mm. [Dense crossover](screened-graph-transfer.md) · [Frozen integration](measurements/restored-scout-graph-freeze.json)
+
+Run one raw pair on DS30-0374, the first recording in the original four-case order, after checking the corrected receiver on the previously archived weak-carrier and Austin controls. A new lost or gained factor on those controls sends the change back to saved-sample triage. Use the ordinary one-core benchmark with the candidate first, fresh output roots, the exact capture-time orbit archive and cache snapshots before both arms. The scientific check compares all selected measurements, both positions and owner maps, grids, paths and decoded PNGs. Record wall time, CPU time, filesystem input blocks and the three publication stages. A metadata-only preflight observed all 2,054,132 compressed pages already resident across 106 physical input files.
+
+The previous guarded receiver and solver needed 3.80 elapsed seconds and 2.11 CPU seconds beyond half-time on this recording. The separate graph and cancellation trials made that gap small enough to measure end to end. They do not establish an additive improvement. Review this single pair before scheduling any further roof recording. The known Indian omission and northern near-face uncertainty remain open.
