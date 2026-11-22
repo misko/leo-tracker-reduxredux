@@ -1,0 +1,657 @@
+{
+  "source_commit": "ba830dcc3",
+  "release": "bdb869682a2ea63af4b198a920b763a4c6a78c4c",
+  "cases": {
+    "DS30-0374": {
+      "reference": [37.849056280893684, -122.48575489722863],
+      "reference_authority": "reports/2026_11_21_ds30_full/reference-audit.json",
+      "archive": "/var/lib/leo/tle",
+      "order": [
+        "control",
+        "repair",
+        "prefit",
+        "salvage"
+      ],
+      "offer": "/tmp/leo-algo08v2-2x-bench/integration02/ds30-station-offer.json",
+      "offer_sha256": "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236",
+      "detections": "/tmp/leo-algo08v2-2x-bench/physical-full-search/DS30-0374/baseline/fast-scan-automatic-work/algo08-v2-c10cfc6a4fff22a8bbf32b6398eaff10/detections.json",
+      "native_sha256": "e2589f75dce207f1732f1e05899484ebec47c2b93caf1d5ee0991c5a4ea89363",
+      "modes": {
+        "control": {
+          "cpu_s": 28.445266356999998,
+          "wall_s": 29.166249172762036,
+          "selected_packet_cpu_s": 4.443831638999999,
+          "gate": null,
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "75c97b006d24782ed3099c581053161fa9cca47ba8706b80094ef002c2bc0bd9",
+          "path_sha256": "fea618873d58d8bd49f5482934f453643e4cd62bfc1bc0c6635d595ff833fec2",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [37.849624957021575, -122.46463521588952],
+              "error_km": 1.8554413431243482,
+              "rf_rms_hz": 101.53591275629088,
+              "shift_from_control_km": 0.0,
+              "owners": 2905,
+              "satellites": 20,
+              "owner_sha256": "sha256:0f2d378a9afa23277abd545fcd53a870f35904fb6df47801b892f5f6e077c1dd",
+              "across_roles": {
+                "curved": 2494,
+                "predictive": 411
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            },
+            "fitted_c": {
+              "latlon": [37.85068163204372, -122.46380878477721],
+              "error_km": 1.935369630548869,
+              "rf_rms_hz": 101.51980285094695,
+              "shift_from_control_km": 0.0,
+              "owners": 2905,
+              "satellites": 20,
+              "owner_sha256": "sha256:0f2d378a9afa23277abd545fcd53a870f35904fb6df47801b892f5f6e077c1dd",
+              "across_roles": {
+                "curved": 2494,
+                "predictive": 411
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            }
+          }
+        },
+        "repair": {
+          "cpu_s": 21.877285489,
+          "wall_s": 22.431303379125893,
+          "selected_packet_cpu_s": 4.504257645999999,
+          "gate": {
+            "masked_points": 539,
+            "recovered_points": 277,
+            "accepted": true,
+            "selected_trims": 9,
+            "linear": {
+              "offered_tracks": 26,
+              "offered_points": 411,
+              "accepted": true
+            },
+            "phase_change_s": {
+              "c0": 1.1248911179762011e-06,
+              "fitted_c": 2.255299147158052e-06
+            },
+            "failed_tracks": {
+              "c0": [
+                "SCAN-RX1-CH3-T005-RF11440312500.000000",
+                "SCAN-RX1-CH8-T000-RF12690312500.000000",
+                "SCAN-RX1-CH8-T003-RF12690312500.000000",
+                "SCAN-RX1-CH8-T004-RF12690312500.000000",
+                "SCAN-RX2-CH1-T005-RF10940312500.000000",
+                "SCAN-RX2-CH3-T002-RF11440312500.000000"
+              ],
+              "fitted_c": [
+                "SCAN-RX1-CH3-T005-RF11440312500.000000",
+                "SCAN-RX1-CH8-T000-RF12690312500.000000",
+                "SCAN-RX1-CH8-T004-RF12690312500.000000",
+                "SCAN-RX2-CH3-T002-RF11440312500.000000"
+              ]
+            },
+            "repair": {
+              "accepted": true,
+              "refits": 1,
+              "removed_curved": [
+                "SCAN-RX1-CH3-T005-RF11440312500.000000",
+                "SCAN-RX1-CH8-T000-RF12690312500.000000",
+                "SCAN-RX1-CH8-T003-RF12690312500.000000",
+                "SCAN-RX1-CH8-T004-RF12690312500.000000",
+                "SCAN-RX2-CH1-T005-RF10940312500.000000",
+                "SCAN-RX2-CH3-T002-RF11440312500.000000"
+              ],
+              "removed_predictive": [],
+              "removed_curved_points": 160,
+              "removed_predictive_points": 0,
+              "cpu_s": 1.4010652320000005,
+              "preparation_cpu_s": 0.6396100520000019,
+              "failed_tracks": {
+                "c0": [],
+                "fitted_c": []
+              },
+              "phase_change_s": {
+                "c0": 1.526357705616821e-06,
+                "fitted_c": 3.918664935209648e-06
+              }
+            }
+          },
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "a12dc6b3ea7eaf350c9757f1d405e237606c28b4dc4479c779b3f366f18688cc",
+          "path_sha256": "d2ab0f868428b8cf5940508e70f04902913375192a71851a305383df99c30850",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [37.84944352241335, -122.46471456979243],
+              "error_km": 1.847900053159066,
+              "rf_rms_hz": 101.49583902357087,
+              "shift_from_control_km": 0.021343886001207363,
+              "owners": 2907,
+              "satellites": 20,
+              "owner_sha256": "sha256:6bb0295e94c6c21b33e634bd5f267803583ab874051eb7062c624374d26ba923",
+              "across_roles": {
+                "curved": 2496,
+                "predictive": 411
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 2,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {
+                  "SCAN-RX2-CH1-T001-RF10940312500.000000": 2
+                },
+                "lost_by_track": {}
+              }
+            },
+            "fitted_c": {
+              "latlon": [37.85063319757651, -122.46388979895433],
+              "error_km": 1.9277909274763654,
+              "rf_rms_hz": 101.482445308064,
+              "shift_from_control_km": 0.008922001811273905,
+              "owners": 2907,
+              "satellites": 20,
+              "owner_sha256": "sha256:6bb0295e94c6c21b33e634bd5f267803583ab874051eb7062c624374d26ba923",
+              "across_roles": {
+                "curved": 2496,
+                "predictive": 411
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 2,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {
+                  "SCAN-RX2-CH1-T001-RF10940312500.000000": 2
+                },
+                "lost_by_track": {}
+              }
+            }
+          }
+        },
+        "prefit": {
+          "cpu_s": 21.19783728,
+          "wall_s": 25.014610986225307,
+          "selected_packet_cpu_s": 4.452144129000001,
+          "gate": {
+            "masked_points": 539,
+            "recovered_points": 277,
+            "accepted": true,
+            "selected_trims": 9,
+            "linear": {
+              "offered_tracks": 26,
+              "offered_points": 411,
+              "accepted": true
+            },
+            "prefit": {
+              "accepted": true,
+              "refits": 1,
+              "removed_curved": [
+                "SCAN-RX1-CH1-T008-RF10940312500.000000",
+                "SCAN-RX1-CH3-T005-RF11440312500.000000",
+                "SCAN-RX1-CH8-T000-RF12690312500.000000",
+                "SCAN-RX1-CH8-T003-RF12690312500.000000",
+                "SCAN-RX1-CH8-T004-RF12690312500.000000",
+                "SCAN-RX2-CH1-T005-RF10940312500.000000",
+                "SCAN-RX2-CH3-T002-RF11440312500.000000"
+              ],
+              "removed_predictive": [],
+              "removed_curved_points": 185,
+              "removed_predictive_points": 0,
+              "cpu_s": 1.4387044640000006,
+              "preparation_cpu_s": 0.6469544939999992,
+              "failed_tracks": {
+                "c0": [],
+                "fitted_c": []
+              },
+              "phase_change_s": {
+                "c0": 9.82977735874968e-08,
+                "fitted_c": 1.4605266127065697e-06
+              },
+              "fixed_endpoint_gate_cpu_s": 0.1115159090000013,
+              "total_cpu_s": 1.5502596090000011
+            }
+          },
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "ee612279da92582e01ddd7e6077a0c6b383bf3dfdb10387c9b9a98ff57252fa0",
+          "path_sha256": "f3b7a453ba77976cdc3a1f9efc3bf925b5d2e75c4e4238080249cb915b38293f",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [37.849632201777844, -122.46535104467911],
+              "error_km": 1.7926559944670815,
+              "rf_rms_hz": 101.17364829802564,
+              "shift_from_control_km": 0.06285656569331868,
+              "owners": 2882,
+              "satellites": 19,
+              "owner_sha256": "sha256:5e98e73d48efc758af1797b140873d9c82184a4fc082ddc9652de12427e24272",
+              "across_roles": {
+                "curved": 2471,
+                "predictive": 411
+              },
+              "compared_to_control": {
+                "lost": 25,
+                "added": 2,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {
+                  "SCAN-RX2-CH1-T001-RF10940312500.000000": 2
+                },
+                "lost_by_track": {
+                  "SCAN-RX1-CH1-T008-RF10940312500.000000": 25
+                }
+              }
+            },
+            "fitted_c": {
+              "latlon": [37.850688234584666, -122.46439634372462],
+              "error_km": 1.8840828575484176,
+              "rf_rms_hz": 101.21878709137978,
+              "shift_from_control_km": 0.051593502765748644,
+              "owners": 2882,
+              "satellites": 19,
+              "owner_sha256": "sha256:5e98e73d48efc758af1797b140873d9c82184a4fc082ddc9652de12427e24272",
+              "across_roles": {
+                "curved": 2471,
+                "predictive": 411
+              },
+              "compared_to_control": {
+                "lost": 25,
+                "added": 2,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {
+                  "SCAN-RX2-CH1-T001-RF10940312500.000000": 2
+                },
+                "lost_by_track": {
+                  "SCAN-RX1-CH1-T008-RF10940312500.000000": 25
+                }
+              }
+            }
+          }
+        },
+        "salvage": {
+          "cpu_s": 18.874291923,
+          "wall_s": 19.0442311540246,
+          "selected_packet_cpu_s": 2.464437263999997,
+          "gate": {
+            "masked_points": 539,
+            "recovered_points": 277,
+            "accepted": false,
+            "selected_trims": 9,
+            "linear": {
+              "offered_tracks": 26,
+              "offered_points": 411,
+              "accepted": false
+            },
+            "phase_change_s": {
+              "c0": 1.1248911179762011e-06,
+              "fitted_c": 2.255299147158052e-06
+            },
+            "failed_tracks": {
+              "c0": [
+                "SCAN-RX1-CH3-T005-RF11440312500.000000",
+                "SCAN-RX1-CH8-T000-RF12690312500.000000",
+                "SCAN-RX1-CH8-T003-RF12690312500.000000",
+                "SCAN-RX1-CH8-T004-RF12690312500.000000",
+                "SCAN-RX2-CH1-T005-RF10940312500.000000",
+                "SCAN-RX2-CH3-T002-RF11440312500.000000"
+              ],
+              "fitted_c": [
+                "SCAN-RX1-CH3-T005-RF11440312500.000000",
+                "SCAN-RX1-CH8-T000-RF12690312500.000000",
+                "SCAN-RX1-CH8-T004-RF12690312500.000000",
+                "SCAN-RX2-CH3-T002-RF11440312500.000000"
+              ]
+            }
+          },
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "d3abf8a88ecd13e972b170b5ce786947bf392e350110ce51aac6f117b477580f",
+          "path_sha256": "da48ce908b1f9e090b3e9126ccc6cd96b52f2cd06c58a48c11f354bc82b37017",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [37.851145871691934, -122.45983660536261],
+              "error_km": 2.2875017973123826,
+              "rf_rms_hz": 101.4149126701092,
+              "shift_from_control_km": 0.4539993725693278,
+              "owners": 2379,
+              "satellites": 18,
+              "owner_sha256": "sha256:d1a3c5f4ef8af7d4db7c33c2d2e3d40df6f096feead49d6e3f2aaafa231444d7",
+              "across_roles": {
+                "curved": 2379
+              },
+              "compared_to_control": {
+                "lost": 526,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {
+                  "SCAN-RX2-CH1-T006-RF10940312500.000000": 21,
+                  "SCAN-RX1-CH5-T005-RF11940312500.000000": 24,
+                  "SCAN-RX2-CH1-T001-RF10940312500.000000": 35,
+                  "SCAN-RX1-CH1-T007-RF10940312500.000000": 28,
+                  "SCAN-RX1-CH5-T006-RF11940312500.000000": 15,
+                  "SCAN-RX1-CH5-T002-RF11940312500.000000": 55,
+                  "SCAN-RX1-CH6-T009-RF12190312500.000000": 10,
+                  "SCAN-RX1-CH6-T004-RF12190312500.000000": 23,
+                  "SCAN-RX1-CH8-T005-RF12690312500.000000": 16,
+                  "SCAN-RX2-CH3-T009-RF11440312500.000000": 12,
+                  "SCAN-RX2-CH8-T005-RF12690312500.000000": 10,
+                  "SCAN-RX1-CH3-T011-RF11440312500.000000": 10,
+                  "SCAN-RX1-CH4-T005-RF11690312500.000000": 39,
+                  "SCAN-RX2-CH1-T007-RF10940312500.000000": 19,
+                  "SCAN-RX2-CH4-T006-RF11690312500.000000": 22,
+                  "SCAN-RX2-CH3-T010-RF11440312500.000000": 11,
+                  "SCAN-RX2-CH6-T007-RF12190312500.000000": 10,
+                  "SCAN-RX1-CH8-T007-RF12690312500.000000": 10,
+                  "SCAN-RX1-CH7-T000-RF12440312500.000000": 13,
+                  "SCAN-RX1-CH4-T008-RF11690312500.000000": 16,
+                  "SCAN-RX2-CH8-T004-RF12690312500.000000": 18,
+                  "SCAN-RX1-CH1-T012-RF10940312500.000000": 8,
+                  "SCAN-RX1-CH1-T011-RF10940312500.000000": 18,
+                  "SCAN-RX2-CH6-T006-RF12190312500.000000": 14,
+                  "SCAN-RX1-CH1-T008-RF10940312500.000000": 25,
+                  "SCAN-RX2-CH1-T009-RF10940312500.000000": 11,
+                  "SCAN-RX1-CH7-T001-RF12440312500.000000": 8,
+                  "SCAN-RX2-CH8-T003-RF12690312500.000000": 10,
+                  "SCAN-RX1-CH3-T010-RF11440312500.000000": 15
+                }
+              }
+            },
+            "fitted_c": {
+              "latlon": [37.85108576087265, -122.45910292246305],
+              "error_km": 2.3509462791855236,
+              "rf_rms_hz": 101.37751763634193,
+              "shift_from_control_km": 0.41561491907473297,
+              "owners": 2379,
+              "satellites": 18,
+              "owner_sha256": "sha256:d1a3c5f4ef8af7d4db7c33c2d2e3d40df6f096feead49d6e3f2aaafa231444d7",
+              "across_roles": {
+                "curved": 2379
+              },
+              "compared_to_control": {
+                "lost": 526,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {
+                  "SCAN-RX2-CH1-T006-RF10940312500.000000": 21,
+                  "SCAN-RX1-CH5-T005-RF11940312500.000000": 24,
+                  "SCAN-RX2-CH1-T001-RF10940312500.000000": 35,
+                  "SCAN-RX1-CH1-T007-RF10940312500.000000": 28,
+                  "SCAN-RX1-CH5-T006-RF11940312500.000000": 15,
+                  "SCAN-RX1-CH5-T002-RF11940312500.000000": 55,
+                  "SCAN-RX1-CH6-T009-RF12190312500.000000": 10,
+                  "SCAN-RX1-CH6-T004-RF12190312500.000000": 23,
+                  "SCAN-RX1-CH8-T005-RF12690312500.000000": 16,
+                  "SCAN-RX2-CH3-T009-RF11440312500.000000": 12,
+                  "SCAN-RX2-CH8-T005-RF12690312500.000000": 10,
+                  "SCAN-RX1-CH3-T011-RF11440312500.000000": 10,
+                  "SCAN-RX1-CH4-T005-RF11690312500.000000": 39,
+                  "SCAN-RX2-CH1-T007-RF10940312500.000000": 19,
+                  "SCAN-RX2-CH4-T006-RF11690312500.000000": 22,
+                  "SCAN-RX2-CH3-T010-RF11440312500.000000": 11,
+                  "SCAN-RX2-CH6-T007-RF12190312500.000000": 10,
+                  "SCAN-RX1-CH8-T007-RF12690312500.000000": 10,
+                  "SCAN-RX1-CH7-T000-RF12440312500.000000": 13,
+                  "SCAN-RX1-CH4-T008-RF11690312500.000000": 16,
+                  "SCAN-RX2-CH8-T004-RF12690312500.000000": 18,
+                  "SCAN-RX1-CH1-T012-RF10940312500.000000": 8,
+                  "SCAN-RX1-CH1-T011-RF10940312500.000000": 18,
+                  "SCAN-RX2-CH6-T006-RF12190312500.000000": 14,
+                  "SCAN-RX1-CH1-T008-RF10940312500.000000": 25,
+                  "SCAN-RX2-CH1-T009-RF10940312500.000000": 11,
+                  "SCAN-RX1-CH7-T001-RF12440312500.000000": 8,
+                  "SCAN-RX2-CH8-T003-RF12690312500.000000": 10,
+                  "SCAN-RX1-CH3-T010-RF11440312500.000000": 15
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "south": {
+      "reference": [-32.95111322641392, 21.46864598071982],
+      "reference_authority": "reports/ALGO08/regional-release/scoring-key.json",
+      "archive": "/tmp/leo-regional-qZJKBw4W/public/tle",
+      "order": [
+        "repair",
+        "control",
+        "prefit"
+      ],
+      "offer": "/tmp/leo-regional-qZJKBw4W/public/d42b15f61b87f12a9ba43a39.json",
+      "offer_sha256": "40e265015caa53b10b795de7a34fd7ccd76ddd22bb9f9fbfd798b5f7a24d2979",
+      "detections": "/tmp/leo-algo08v2-2x-bench/integration-shared/pairs/south/baseline/fast-scan-automatic-work/algo08-v2-3d8fc8f57b655c3425248304c2776096/detections.json",
+      "native_sha256": "9ead12e735906a95066b77dfcaca54e9bdf68dc0a2c816a95fa3bca3419a3d49",
+      "modes": {
+        "repair": {
+          "cpu_s": 5.083896531,
+          "wall_s": 5.1834742380306125,
+          "selected_packet_cpu_s": 0.49572210500000047,
+          "gate": {
+            "masked_points": 0,
+            "recovered_points": 0,
+            "accepted": false,
+            "linear": {
+              "offered_tracks": 0,
+              "offered_points": 0,
+              "accepted": false
+            }
+          },
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "66a34c616491dd4eb26740f8cbd9d567ceeea469266c4499acf609c5f9ef1872",
+          "path_sha256": "c99c15421c67cae609913f8b8a4748fc6e9f0082f4dd6683191068a45529e591",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [-32.95298018726484, 21.46637964459565],
+              "error_km": 0.29633363118450146,
+              "rf_rms_hz": 6.469772138180044,
+              "shift_from_control_km": 0.5591402362330933,
+              "owners": 266,
+              "satellites": 7,
+              "owner_sha256": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "across_roles": {
+                "curved": 266
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            },
+            "fitted_c": {
+              "latlon": [-32.95643065557102, 21.46716863038791],
+              "error_km": 0.6071272495372474,
+              "rf_rms_hz": 6.373412333949094,
+              "shift_from_control_km": 0.5022755381746378,
+              "owners": 266,
+              "satellites": 7,
+              "owner_sha256": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "across_roles": {
+                "curved": 266
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            }
+          }
+        },
+        "control": {
+          "cpu_s": 6.578899433999999,
+          "wall_s": 6.804277763701975,
+          "selected_packet_cpu_s": 0.5044135249999995,
+          "gate": null,
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "40e83f3e7faa825ca93a073371a63f80cf30877a43aa4e1b04d7e51e87148196",
+          "path_sha256": "4c39b286fa40c07aea21d153edc3bb59164611719c0067b39f972b4fb375e32c",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [-32.95786453528701, 21.464955215589793],
+              "error_km": 0.8259269216922086,
+              "rf_rms_hz": 6.503076453780257,
+              "shift_from_control_km": 0.0,
+              "owners": 266,
+              "satellites": 7,
+              "owner_sha256": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "across_roles": {
+                "curved": 266
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            },
+            "fitted_c": {
+              "latlon": [-32.96074807534152, 21.4655858293316],
+              "error_km": 1.1087415452009735,
+              "rf_rms_hz": 6.392354581586652,
+              "shift_from_control_km": 0.0,
+              "owners": 266,
+              "satellites": 7,
+              "owner_sha256": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "across_roles": {
+                "curved": 266
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            }
+          }
+        },
+        "prefit": {
+          "cpu_s": 4.972558193,
+          "wall_s": 5.099072242155671,
+          "selected_packet_cpu_s": 0.4944839830000003,
+          "gate": {
+            "masked_points": 0,
+            "recovered_points": 0,
+            "accepted": false,
+            "linear": {
+              "offered_tracks": 0,
+              "offered_points": 0,
+              "accepted": false
+            }
+          },
+          "grid_complete": true,
+          "grid_points": 179,
+          "grid_sha256": "66a34c616491dd4eb26740f8cbd9d567ceeea469266c4499acf609c5f9ef1872",
+          "path_sha256": "c99c15421c67cae609913f8b8a4748fc6e9f0082f4dd6683191068a45529e591",
+          "objective_replay": {
+            "c0": 0.0,
+            "fitted_c": 0.0
+          },
+          "status": "ok",
+          "arms": {
+            "c0": {
+              "latlon": [-32.95298018726484, 21.46637964459565],
+              "error_km": 0.29633363118450146,
+              "rf_rms_hz": 6.469772138180044,
+              "shift_from_control_km": 0.5591402362330933,
+              "owners": 266,
+              "satellites": 7,
+              "owner_sha256": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "across_roles": {
+                "curved": 266
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            },
+            "fitted_c": {
+              "latlon": [-32.95643065557102, 21.46716863038791],
+              "error_km": 0.6071272495372474,
+              "rf_rms_hz": 6.373412333949094,
+              "shift_from_control_km": 0.5022755381746378,
+              "owners": 266,
+              "satellites": 7,
+              "owner_sha256": "sha256:5eb8b5638ea67b54906f29c2dd4f6ec952f65c2a196462ffc89078d3d9a4c038",
+              "across_roles": {
+                "curved": 266
+              },
+              "compared_to_control": {
+                "lost": 0,
+                "added": 0,
+                "norad_changed": 0,
+                "role_changed": 0,
+                "added_by_track": {},
+                "lost_by_track": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
