@@ -1,4 +1,5 @@
 import json
+from contextlib import ExitStack
 from ctypes.util import find_library
 
 import numpy as np
@@ -10,6 +11,7 @@ from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 from tools.pipeline_eval.variants.experimental.receiver_arena_ingress import rotating_arenas
 from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
+from tools.pipeline_eval.variants.experimental.receiver_window_ingress import WindowStreams
 from tools.pipeline_eval.variants.experimental.receiver_zstd_arena import runtime
 
 
@@ -75,6 +77,7 @@ def _observed(path, stop):
 
 
 @pytest.mark.parametrize("stop", [3, 4])
+@pytest.mark.parametrize("strategy", ["arena", "persistent", "window"])
 @pytest.mark.parametrize(
     "damage", ["member", "index", "window", "decoded", "truncated", "extra-frame"]
 )
@@ -83,6 +86,7 @@ def test_partial_and_full_scopes_keep_existing_validation_order_on_bad_chunks(
     library,
     stop,
     damage,
+    strategy,
 ):
     manifest_path = sealed / "manifest.json"
     manifest = json.loads(manifest_path.read_bytes())
@@ -112,12 +116,20 @@ def test_partial_and_full_scopes_keep_existing_validation_order_on_bad_chunks(
 
     with compressed_input_buffer():
         expected = _observed(sealed, stop)
-        with rotating_arenas(library) as arenas, arenas.install(None):
+        with ExitStack() as stack:
+            decoder = (
+                stack.enter_context(rotating_arenas(library))
+                if strategy == "arena"
+                else WindowStreams(loan_buffers=strategy == "window")
+            )
+            stack.enter_context(decoder.install(None))
             assert _observed(sealed, stop) == expected
+        if strategy != "arena":
+            return
         if damage in ("truncated", "extra-frame"):
-            assert arenas.counts["frame_fallback"] == 1
+            assert decoder.counts["frame_fallback"] == 1
         elif damage in ("window", "decoded"):
-            assert arenas.counts["decoded"] == 1
+            assert decoder.counts["decoded"] == 1
 
 
 def test_missing_decoder_uses_owned_canonical_windows(sealed):
@@ -125,3 +137,44 @@ def test_missing_decoder_uses_owned_canonical_windows(sealed):
     with rotating_arenas(None) as arenas, arenas.install(None):
         assert _observed(sealed, 5) == expected
     assert arenas.counts == {"unsupported": 2}
+
+
+def test_window_slots_release_only_after_every_array_view_is_gone(sealed):
+    decoder = WindowStreams(loan_buffers=True)
+    with decoder.install(None):
+        windows = ShortWindowReader(sealed).windows()
+        first = next(windows).samples[::2]
+        second = next(windows).samples.reshape(-1)
+        third = next(windows).samples
+        assert np.all(first == 0) and np.all(second == 1) and np.all(third == 2)
+        assert (
+            not first.flags.writeable and not second.flags.writeable and not third.flags.writeable
+        )
+        assert decoder.counts["owned_windows"] == 1
+        address = first.ctypes.data
+        del first
+        fourth = next(windows).samples
+        assert fourth.ctypes.data == address and np.all(fourth == 3)
+        assert decoder.counts["reuses"] == 1
+        windows.close()
+    assert np.all(second == 1) and np.all(third == 2) and np.all(fourth == 3)
+
+
+def test_persistent_decoder_falls_back_for_overlapping_streams_and_resumes_after_close(sealed):
+    decoder = WindowStreams(loan_buffers=True)
+    with decoder.install(None):
+        reader = ShortWindowReader(sealed)
+        with ExitStack() as stack:
+            outer = reader.windows(start_sequence=1, stop_sequence=5)
+            stack.callback(outer.close)
+            assert next(outer).index.sequence == 1
+            nested = reader.windows(start_sequence=2, stop_sequence=3)
+            assert [w.index.sequence for w in nested] == [2]
+            assert [w.index.sequence for w in outer] == [2, 3, 4]
+        assert [w.index.sequence for w in reader.windows(start_sequence=7, stop_sequence=10)] == [
+            7,
+            8,
+            9,
+        ]
+    assert decoder.counts["nested_streams"] == 1
+    assert decoder.counts["streams"] == 5
