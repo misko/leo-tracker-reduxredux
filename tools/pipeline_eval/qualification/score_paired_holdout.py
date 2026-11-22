@@ -49,6 +49,13 @@ def face_clearance_km(region, point):
     return region["width_km"]/2 - offset
 
 
+def elapsed_ratios(assigned):
+    if not assigned or None in assigned:
+        return None, None
+    return (median(b/a for a, b in assigned),
+            sum(b for _, b in assigned) / sum(a for a, _ in assigned))
+
+
 def score(locked, truth):
     labels = truth["answers"]
     if set(labels) != {c["job"]["offer"] for c in locked["cases"]}:
@@ -57,6 +64,7 @@ def score(locked, truth):
     recording_sites = {}
     heights = {}
     conditions_by_recording = defaultdict(set)
+    times_by_site = defaultdict(list)
     rows, times = [], []
     failures = 0
     quality = True
@@ -79,8 +87,9 @@ def score(locked, truth):
         runs = result.get("runs", {})
         failed = "failure" in result or set(runs) != {"baseline", "candidate"}
         failures += int(failed)
-        if not failed:
-            times.append([runs[arm]["elapsed_s"] for arm in ("baseline", "candidate")])
+        matched = None if failed else (runs["baseline"]["elapsed_s"], runs["candidate"]["elapsed_s"])
+        times.append(matched)
+        times_by_site[site].append(matched)
         for calibration in ARMS:
             errors = []
             for arm in ("baseline", "candidate"):
@@ -130,9 +139,7 @@ def score(locked, truth):
             base = distribution(groups[site, condition, calibration, "baseline"])
             if base["n"] and (not stats["n"] or any(stats[k] > base[k] for k in ("p50", "p90"))):
                 quality = False
-    ratios = [b/a for a, b in times]
-    paired = median(ratios) if ratios and not failures else None
-    summed = sum(b for a, b in times)/sum(a for a, b in times) if paired is not None else None
+    paired, summed = elapsed_ratios(times)
     sites = {tuple(s["site"]) for s in summaries}
     tested_sites = {tuple(s["site"]) for s in summaries if s["condition"] == "containing"
                     and s["arm"] == "baseline" and s["fixes"] > 0}
@@ -161,7 +168,13 @@ def score(locked, truth):
     verified_draw = (locked.get("geography_protocol") == EDGE_PROTOCOL
                      and verifies_drawn_sites(truth.get("seed"), sites))
     geographic_pass = relative_pass and candidate_regions_correct and verified_draw
+    site_runtimes = []
+    for site, assigned in sorted(times_by_site.items()):
+        regional_median, regional_total = elapsed_ratios(assigned)
+        site_runtimes.append(dict(site=site, assigned=len(assigned), completed=len(assigned)-assigned.count(None),
+                                  median_elapsed_ratio=regional_median, summed_elapsed_ratio=regional_total))
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
+                runtime_by_site=site_runtimes,
                 geography_protocol=locked.get("geography_protocol"), missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
                 geographic_confirmation_coverage=coverage, fresh_site_draw_verified=verified_draw,

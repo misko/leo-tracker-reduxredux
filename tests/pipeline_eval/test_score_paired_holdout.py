@@ -57,6 +57,9 @@ def test_two_site_confirmation_requires_both_median_and_total_ratios():
     another[0]["result"]["runs"]["candidate"]["elapsed_s"] = 100.
     result = score(data,key)
     assert result["median_elapsed_ratio"] <= .5 and result["summed_elapsed_ratio"] > .5
+    by_site = {tuple(row["site"]): row for row in result["runtime_by_site"]}
+    assert by_site[10., 30.]["summed_elapsed_ratio"] == pytest.approx(2/7)
+    assert by_site[-22., 30.]["summed_elapsed_ratio"] == pytest.approx(101/7)
     assert not result["passed"]
 
 
@@ -85,6 +88,8 @@ def test_lost_fix_missing_pair_worse_error_and_summed_latency_cannot_pass():
     data["cases"][0]["result"] = dict(failure="missing")
     result = score(data,key)
     assert not result["passed"] and result["assigned"] == 2 and result["summed_elapsed_ratio"] is None
+    site, = result["runtime_by_site"]
+    assert site["assigned"] == 2 and site["completed"] == 1 and site["median_elapsed_ratio"] is None
     assert len(result["rows"]) == 8
     data = deepcopy(initial)
     data["cases"][1]["result"]["runs"]["candidate"]["elapsed_s"] = 2.8
