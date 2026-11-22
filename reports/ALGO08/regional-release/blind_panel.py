@@ -24,6 +24,8 @@ def generate(work, seed=None, fresh=False):
         raise ValueError("Fresh confirmation requires an unused public directory")
     private = work / "scorer/answers.json"
     private.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    if fresh and private.parent.stat().st_mode & 0o077:
+        raise ValueError("Fresh confirmation requires a private scorer directory")
     if fresh and private.exists():
         raise FileExistsError(private)
     archive = public / "tle/archive/space-track"
@@ -43,7 +45,7 @@ def generate(work, seed=None, fresh=False):
     answers, jobs = {}, []
     layout = [((48., 15.), "lower"), ((-33., 20.), "upper")]
     if fresh:
-        from tools.pipeline_eval.qualification.holdout_geography import fresh_layout
+        from tools.pipeline_eval.qualification.holdout_geography import fresh_layout, fresh_offers
         layout = fresh_layout(rng)
     for index, (box, edge) in enumerate(layout):
         anchor = received + (3740 + 360 * index) * 10**9
@@ -55,10 +57,14 @@ def generate(work, seed=None, fresh=False):
         with patch.object(model, "SITE_BOX", box), patch.object(model, "schedule", lambda: schedule):
             scan, scene = model.make_scene(bank, causal, anchor, rng)
         recording = rng.bytes(12).hex()
-        offers = dict(scene["offers"], far=model.regional_offer(scene["coordinate"], 0, 1, 65.))
+        width = 25.
+        if fresh:
+            width, offers = fresh_offers(rng, scene["coordinate"])
+        else:
+            offers = dict(scene["offers"], far=model.regional_offer(scene["coordinate"], 0, 1, 65.))
         for condition, center in offers.items():
             key = rng.bytes(12).hex()
-            save(public / (key + ".json"), dict(center=center, width_km=25.))
+            save(public / (key + ".json"), dict(center=center, width_km=width))
             answers[key] = dict(recording=recording, truth=scene["coordinate"], condition=condition)
             jobs.append(dict(recording=recording, offer=key))
         targets = [dict(target_id=str(r["channel"]), channel=r["channel"], edge=edge,

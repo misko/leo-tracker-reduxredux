@@ -11,6 +11,8 @@ The input comprised 1,200 sealed dual-antenna windows at the northern simulated 
 | Candidate first | 33.18 s | 80.49 s | 32.92 s | 26.86 s |
 | Baseline first, repeat | 32.86 s | 25.60 s | 32.62 s | 25.51 s |
 
+![Two runs on the same simulated recording. Baseline CPU was about 33 seconds in both runs. Candidate CPU was about 26 seconds, while candidate elapsed time ranged from 25.6 to 80.5 seconds.](publication-timing.png)
+
 The first candidate invocation spent about 54 seconds beyond its measured CPU time. File-cache state and contention were uncontrolled. Reversing order after the first pair does not recreate the initial machine state. Both observations count. They measure one unique recording.
 
 The 2,400 lane records matched. Both runs selected identical associations, coordinates and frequency residuals in each calibration arm. The optimizer stages and numerical grid values matched apart from build provenance and timing metadata. The fixed-zero position was **745 m** from simulated truth, with 5.380 Hz frequency RMS. The fitted position was **711 m** from truth, with 5.173 Hz frequency RMS. All eight published PNGs matched by SHA-256. [Previously published position scores](../regional-release/blind-scores.csv)

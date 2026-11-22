@@ -1,9 +1,22 @@
 import json
+import hashlib
 from types import SimpleNamespace
 
 import pytest
 
 from tools.pipeline_eval.qualification import paired_publication as bench
+
+
+def test_source_pins_bind_the_measured_launcher_to_the_reviewed_variant(tmp_path):
+    runner = tmp_path/"run"
+    variant = tmp_path/"solver.py"
+    runner.write_bytes(b"run solver")
+    variant.write_bytes(b"original")
+    pins = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (runner, variant)}
+    bench.verify_sources(runner, pins)
+    variant.write_bytes(b"changed after freezing")
+    with pytest.raises(ValueError, match="source changed"):
+        bench.verify_sources(runner, pins)
 
 
 @pytest.mark.parametrize("mismatch", [False, True])

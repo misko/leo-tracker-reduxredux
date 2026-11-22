@@ -1,6 +1,7 @@
 """Time one matched, single-core raw-I/Q-to-publication pair on Gauss."""
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,21 @@ from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 
 LOCK = Path("/tmp/leo-algo08v2-2x-bench/gauss.lock")
 BASELINE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/run")
+
+
+def verify_sources(launcher, sources):
+    """Resolve the manifest relative to the measured launcher, including itself."""
+    launcher = launcher.resolve(strict=True)
+    entries = {Path(name): digest for name, digest in sources.items()}
+    if not entries or any(p.is_absolute() or ".." in p.parts for p in entries):
+        raise ValueError("Expected source pins relative to the research checkout")
+    roots = [root for root in launcher.parents if launcher.relative_to(root) in entries]
+    if len(roots) != 1:
+        raise ValueError("Candidate source manifest must identify its launcher")
+    for name, expected in entries.items():
+        actual = hashlib.sha256((roots[0] / name).read_bytes()).hexdigest()
+        if actual != expected:
+            raise ValueError(f"Candidate source changed: {name}")
 
 
 def child_cpu():
@@ -96,13 +112,14 @@ def run_pair(args):
         result = dict(order=order, cpu=args.cpu, recording=str(args.recording.resolve()),
                       region=str(args.region.resolve()), runs=runs)
         pinned_config = None
-        if args.candidate_config:
-            spec = json.loads(args.candidate_config.read_bytes())
-            result["candidate_specification"] = spec
-            result["candidate_specification_digest"] = canonical_digest(spec)
-            pinned_config = args.output/"candidate-config.json"
-            immutable_json(pinned_config, spec)
         try:
+            if args.candidate_config:
+                spec = json.loads(args.candidate_config.read_bytes())
+                result["candidate_specification"] = spec
+                result["candidate_specification_digest"] = canonical_digest(spec)
+                verify_sources(args.candidate, spec["sources"])
+                pinned_config = args.output/"candidate-config.json"
+                immutable_json(pinned_config, spec)
             for name in order:
                 runs[name] = measure(getattr(args, name), args.output/name, args,
                                      pinned_config if name == "candidate" else None)
