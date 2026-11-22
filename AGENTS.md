@@ -26,3 +26,7 @@
   evidence. Do not start, wait on, or disappear into multi-hour radio campaigns.
   Any new RF collection requires explicit user authorization, must be bounded to
   at most 30 minutes, and must not displace recording CLI/UI or re-analysis work.
+- On shared Gauss, start evaluation with saved results or a few matched
+  recordings on one low-priority worker. Inspect discrepancies and runtime
+  before expanding the panel. Reuse completed pairs and reserve full-corpus
+  replays for questions that remain after triage.
