@@ -108,19 +108,25 @@ def validation(binary, asset, windows):
         len(full) == 1 and full[0][0] == 1 for _, _, _, full in windows))
 
 
-def time_pair(control, candidate, asset, windows, *, candidate_first):
+def time_pair(control, candidate, asset, windows, *, candidate_first, audit=False):
     modes = ("conditional", "always-two") if candidate_first else ("always-two", "conditional")
     policies = {mode: Replay(mode) for mode in modes}
     cpu = {mode: Counter() for mode in modes}
     selected = {mode: [] for mode in modes}
+    observed_orders = {mode: Counter() for mode in modes}
+    changed_order = []
     counts = Counter()
     with ExitStack() as stack:
         original = Receiver(control, asset)
         stack.callback(original.close)
         scheduled = ScheduledReceiver(candidate, asset)
         stack.callback(scheduled.close)
+        if audit:
+            original.reset_profile()
+            scheduled.reset_profile()
         for metadata, center, samples, full in windows:
             calls = {}
+            orders = {}
             lane = metadata["receiver_id"]
             for mode in modes:
                 def measure(residual):
@@ -135,21 +141,43 @@ def time_pair(control, candidate, asset, windows, *, candidate_first):
                     calls[mode] = elapsed
                     return candidates(factors)
 
-                residual, _, admitted = policies[mode].visit(metadata, measure)
+                residual, observed, admitted = policies[mode].visit(metadata, measure)
                 selected[mode].append(dict(metadata, candidates=admitted))
+                if audit:
+                    order = tuple(f["candidate_rank"] for f in observed)
+                    orders[mode] = order
+                    observed_orders[mode][",".join(map(str, order)) or "empty"] += 1
                 if mode == "conditional":
                     scheduled_residual = residual
             group = "residual_requested" if scheduled_residual else "residual_skipped"
             counts[group] += 1
             for mode, elapsed in calls.items():
                 cpu[mode][group] += elapsed
+            if audit and orders["always-two"] != orders["conditional"]:
+                changed_order.append(dict(visit=metadata["visit_index"], receiver=lane,
+                                          before=orders["always-two"], after=orders["conditional"]))
+        profiles = (original.profile(), scheduled.profile()) if audit else None
     difference, rows = changes(selected["always-two"], selected["conditional"])
-    return dict(first=modes[0], lane_counts=counts,
-                native_cpu_s={mode: {k: t / 1e9 for k, t in times.items()} for mode, times in cpu.items()},
-                selection_changes=difference, changed_rows=rows,
-                selections_sha256={mode: canonical_digest(values) for mode, values in selected.items()},
-                selections={mode: sum(bool(row["candidates"]) for row in values)
-                            for mode, values in selected.items()})
+    result = dict(first=modes[0], lane_counts=counts,
+                  native_cpu_s={mode: {k: t / 1e9 for k, t in times.items()}
+                                for mode, times in cpu.items()},
+                  selection_changes=difference, changed_rows=rows,
+                  selections_sha256={mode: canonical_digest(values) for mode, values in selected.items()},
+                  selections={mode: sum(bool(row["candidates"]) for row in values)
+                              for mode, values in selected.items()})
+    if audit:
+        selected_ranks, first_selected = {}, {}
+        for mode, values in selected.items():
+            kept = [row for row in values if row["candidates"]]
+            selected_ranks[mode] = Counter(row["candidates"][0]["candidate_rank"] for row in kept)
+            first_selected[mode] = kept[0]["visit_index"] if kept else None
+        result.update(
+            profiles=dict(zip(("always-two", "conditional"), profiles, strict=True)),
+            schedule_reasons={mode: policy.reasons for mode, policy in policies.items()},
+            observed_rank_orders=observed_orders, changed_factor_orders=changed_order,
+            selected_ranks=selected_ranks, first_selected_visit=first_selected,
+        )
+    return result
 
 
 def main():
