@@ -5,7 +5,7 @@ import json
 import pytest
 import numpy as np
 
-from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_offers
+from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_layout, fresh_offers
 from tools.pipeline_eval.qualification.score_paired_holdout import lock, pinned, score
 
 
@@ -111,8 +111,8 @@ def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_pat
 def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_edge_fixes():
     rng = np.random.default_rng(991)
     data = dict(cases=[], geography_protocol=EDGE_PROTOCOL)
-    key = dict(answers={})
-    for recording, site in [("a", (16., 30.)), ("b", (-38., 40.))]:
+    key = dict(answers={}, seed=(991).to_bytes(32, "big").hex())
+    for recording, (site, _edge) in zip(("a", "b"), fresh_layout(rng), strict=True):
         width, offers = fresh_offers(rng, site)
         for condition, center in offers.items():
             job = dict(recording=recording, offer=recording + condition)
@@ -128,6 +128,10 @@ def test_fresh_edge_protocol_requires_both_sides_at_each_site_and_counts_valid_e
     result = score(data, key)
     assert result["passed"] and result["assigned"] == 8
     assert result["passed_geographic_holdout"]
+    assert result["fresh_site_draw_verified"]
+    substituted = score(data, dict(key, seed="55" * 32))
+    assert substituted["candidate_correct_on_all_region_decisions"]
+    assert not substituted["fresh_site_draw_verified"] and not substituted["passed_geographic_holdout"]
     assert result["candidate_correct_on_all_region_decisions"]
     assert result["geography_protocol"] == EDGE_PROTOCOL
     assert result["missing_region"]["candidate"] == dict(assigned=4, false_fixes=0, withheld=4, failed=0)

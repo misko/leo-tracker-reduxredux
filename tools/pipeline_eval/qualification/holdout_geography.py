@@ -40,6 +40,24 @@ def fresh_layout(rng, additional_centers=()):
     return list(zip(points, edges, strict=True))
 
 
+def verifies_drawn_sites(seed_hex, sites):
+    """Recreate the private draw and check the actual sites against its two boxes."""
+    import numpy as np
+
+    try:
+        seed = bytes.fromhex(seed_hex)
+    except (TypeError, ValueError):
+        return False
+    if len(seed) != 32:
+        return False
+    layout = fresh_layout(np.random.default_rng(int.from_bytes(seed, "big")))
+    if len(sites) != len(layout):
+        return False
+    # make_scene jitters each coordinate independently by at most two degrees.
+    return all(any(abs(lat - center[0]) <= 2 and abs(lon - center[1]) <= 2
+                   for lat, lon in sites) for center, _edge in layout)
+
+
 def fresh_offers(rng, site):
     """Vary both coordinates and challenge the same face from either side."""
     width = float(rng.uniform(18, 40))

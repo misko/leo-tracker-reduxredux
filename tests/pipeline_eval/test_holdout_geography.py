@@ -1,7 +1,7 @@
 import numpy as np
 
 from tools.pipeline_eval.qualification.compact_blind_generator import local_offset
-from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, DEVELOPMENT_CENTERS, EDGE_CASES, fresh_layout, fresh_offers
+from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, DEVELOPMENT_CENTERS, EDGE_CASES, fresh_layout, fresh_offers, verifies_drawn_sites
 from tools.pipeline_eval.scoring import distance_km
 
 
@@ -40,3 +40,13 @@ def test_offer_labels_match_the_search_square_across_widths_and_hemispheres():
                     assert .05 <= abs(offset - width / 2) <= .25
                     edge_faces.append((axis, np.sign(east_north[axis])))
             assert len(set(edge_faces)) == 1
+
+
+def test_actual_sites_must_cover_both_private_boxes_even_with_distinct_recordings():
+    seed = (45).to_bytes(32, "big").hex()
+    (a, _), (b, _) = fresh_layout(np.random.default_rng(45))
+    jittered = [(a[0] + 1.99, a[1] - 1.99), (b[0] - 1.9, b[1] + .5)]
+    assert verifies_drawn_sites(seed, list(reversed(jittered)))
+    assert not verifies_drawn_sites(seed, [a, jittered[0]])
+    assert not verifies_drawn_sites(seed, [a, DEVELOPMENT_CENTERS[0]])
+    assert not verifies_drawn_sites(None, jittered)

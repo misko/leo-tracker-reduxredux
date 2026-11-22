@@ -8,7 +8,7 @@ from pathlib import Path
 from statistics import median
 
 from leo.storage.fast_scan import immutable_json
-from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, EDGE_CASES, EDGE_PROTOCOL
+from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, EDGE_CASES, EDGE_PROTOCOL, verifies_drawn_sites
 from tools.pipeline_eval.scoring import ARMS, distance_km, distribution, thresholds
 
 
@@ -144,11 +144,13 @@ def score(locked, truth):
         r["decision"] == ("complete" if r["condition"] in CONTAINING else "withheld")
         for r in rows if r["arm"] == "candidate" and r["calibration"] == "c0"))
     relative_pass = bool(quality and coverage and paired is not None and max(paired, summed) <= .5)
-    geographic_pass = relative_pass and candidate_regions_correct and locked.get("geography_protocol") == EDGE_PROTOCOL
+    verified_draw = (locked.get("geography_protocol") == EDGE_PROTOCOL
+                     and verifies_drawn_sites(truth.get("seed"), sites))
+    geographic_pass = relative_pass and candidate_regions_correct and verified_draw
     return dict(assigned=len(locked["cases"]), failed_pairs=failures, rows=rows, by_site=summaries,
                 geography_protocol=locked.get("geography_protocol"), missing_region=omission,
                 median_elapsed_ratio=paired, summed_elapsed_ratio=summed,
-                geographic_confirmation_coverage=coverage,
+                geographic_confirmation_coverage=coverage, fresh_site_draw_verified=verified_draw,
                 candidate_correct_on_all_region_decisions=candidate_regions_correct,
                 relative_quality_preserved=quality and not failures,
                 passed=relative_pass, passed_geographic_holdout=geographic_pass)
