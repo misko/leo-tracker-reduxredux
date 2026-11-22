@@ -218,9 +218,11 @@ def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallbac
     from tools.pipeline_eval.qualification import experimental_publication as trial
     from tools.pipeline_eval.variants import v5_direct_cavity
     from tools.pipeline_eval.variants.experimental import paired_sha256
+    from leo.analysis.localization_v3 import conservative_recovery
 
     stock = ShortWindowReader.windows
     optimizer = v5_direct_cavity.bounded_secant
+    recover = conservative_recovery.conservative_recovery
     def acquire():
         assert (ShortWindowReader.windows is not stock) == supported
         return {"decision": "withheld"}
@@ -228,6 +230,7 @@ def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallbac
     def analyze(*args):
         assert ShortWindowReader.windows is stock
         assert (v5_direct_cavity.bounded_secant is not optimizer) == endpoint_reuse
+        assert (conservative_recovery.conservative_recovery is not recover) == endpoint_reuse
         result = algo08_scan.acquire()
         assert ShortWindowReader.windows is stock
         return result
@@ -252,10 +255,13 @@ def test_experimental_entry_paired_ingress_uses_reviewed_bytes_and_stock_fallbac
     pin = dict(library=str(library), sha256=hashlib.sha256(library.read_bytes()).hexdigest())
     spec = dict(solver="shared-tables" if endpoint_reuse else "stock",
                 ingress="paired-sha256", detector=str(detector),
-                detector_sha256="c" * 64, paired_sha256=pin, endpoint_reuse=endpoint_reuse)
+                detector_sha256="c" * 64, paired_sha256=pin, endpoint_reuse=endpoint_reuse,
+                recovery_reuse=endpoint_reuse)
     result = trial.run(args, spec)
     assert result["decision"] == "withheld"
     assert ("endpoint_reuse" in result) == endpoint_reuse
+    assert ("recovery_reuse" in result) == endpoint_reuse
+    assert conservative_recovery.conservative_recovery is recover
     assert v5_direct_cavity.bounded_secant is optimizer
     library.write_bytes(b"substituted")
     with pytest.raises(ValueError, match="library differs"):

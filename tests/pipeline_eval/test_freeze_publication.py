@@ -73,7 +73,7 @@ def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path, endpoint_r
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_reuse.py", "algo08_salvage_statistics.py",
             "algo08_dense_discovery.py", "algo08_causal_table.py", "algo08_cavity_projection.py",
-            "algo08_salvage_bound.py", "algo08_endpoint_readout.py",
+            "algo08_salvage_bound.py", "algo08_endpoint_readout.py", "algo08_recovery_reuse.py",
         ))
     for path in selected:
         (checkout / path).parent.mkdir(parents=True, exist_ok=True)
@@ -90,9 +90,11 @@ def test_paired_ingress_freezer_pins_its_sources_and_binary(tmp_path, endpoint_r
     with pytest.raises(ValueError, match="library differs"):
         bundle.freeze(*args, paired_sha256=(library, "0" * 64))
     assert not output.exists()
-    spec = bundle.freeze(*args, paired_sha256=(library, library_digest), endpoint_reuse=endpoint_reuse)
+    spec = bundle.freeze(*args, paired_sha256=(library, library_digest), endpoint_reuse=endpoint_reuse,
+                         recovery_reuse=endpoint_reuse)
     assert spec["ingress"] == "paired-sha256"
     assert spec.get("endpoint_reuse", False) == endpoint_reuse
+    assert spec.get("recovery_reuse", False) == endpoint_reuse
     copied = output / "paired-sha256.so"
     assert spec["paired_sha256"] == dict(library=str(copied), sha256=library_digest)
     assert set(spec["sources"]) == {str(path) for path in selected} | {copied.name}

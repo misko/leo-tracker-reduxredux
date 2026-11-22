@@ -48,6 +48,9 @@ def run(args, specification):
     endpoint_reuse = specification.get("endpoint_reuse", False)
     if type(endpoint_reuse) is not bool:
         raise ValueError("Expected a Boolean endpoint reuse selection")
+    recovery_reuse = specification.get("recovery_reuse", False)
+    if type(recovery_reuse) is not bool:
+        raise ValueError("Expected a Boolean recovery reuse selection")
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
@@ -145,6 +148,9 @@ def run(args, specification):
             endpoint_counts = stack.enter_context(
                 algo08_endpoint_readout.measured_readout(v5_direct_cavity, reuse=True)
             )
+        if recovery_reuse:
+            from tools.pipeline_eval.variants.algo08_recovery_reuse import stable_recovery
+            recovery_counts = stack.enter_context(stable_recovery())
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
         if schedule in ("alternate", "bursts"):
@@ -154,6 +160,8 @@ def run(args, specification):
                                                    query_cpu_ns=deferred.query_cpu_ns, **deferred.planner.counts)
         if endpoint_reuse:
             result["endpoint_reuse"] = endpoint_counts
+        if recovery_reuse:
+            result["recovery_reuse"] = recovery_counts
         return result
 
 

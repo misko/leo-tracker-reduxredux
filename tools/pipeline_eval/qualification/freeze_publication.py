@@ -18,7 +18,7 @@ VARIANTS = Path("tools/pipeline_eval/variants")
 
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
            rendering="individual", startup="stock", paired_sha256=None, endpoint_reuse=False,
-           png_filter=None, png_deflate=None):
+           png_filter=None, png_deflate=None, recovery_reuse=False):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     png_pins = dict(png_filter=png_filter, png_deflate=png_deflate)
@@ -36,6 +36,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         raise ValueError("Unknown experimental I/Q reader")
     if type(endpoint_reuse) is not bool:
         raise ValueError("Expected a Boolean endpoint reuse selection")
+    if type(recovery_reuse) is not bool:
+        raise ValueError("Expected a Boolean recovery reuse selection")
     if (paired_sha256 is not None) != (ingress == "paired-sha256"):
         raise ValueError("Paired SHA-256 ingress requires exactly one reviewed library pin")
     if paired_sha256 is not None:
@@ -62,6 +64,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         sources.append(VARIANTS / "algo08_track_moments.py")
     if endpoint_reuse:
         sources.append(VARIANTS / "algo08_endpoint_readout.py")
+    if recovery_reuse:
+        sources.append(VARIANTS / "algo08_recovery_reuse.py")
     if rendering != "individual":
         sources.append(VARIANTS / "experimental/shared_orbit_figures.py")
     if rendering in ("raster-layout", "lossless-raster"):
@@ -107,6 +111,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         spec["startup"] = startup
     if endpoint_reuse:
         spec["endpoint_reuse"] = True
+    if recovery_reuse:
+        spec["recovery_reuse"] = True
     (output / "spec.json").write_text(json.dumps(spec, indent=2) + "\n")
     return spec
 
@@ -125,10 +131,12 @@ if __name__ == "__main__":
     parser.add_argument("--png-deflate", nargs=2, metavar=("LIBRARY", "SHA256"), type=str)
     parser.add_argument("--startup", choices=("stock", "lazy-exports"), default="stock")
     parser.add_argument("--endpoint-reuse", action="store_true")
+    parser.add_argument("--recovery-reuse", action="store_true")
     args = parser.parse_args()
     paired = None if args.paired_sha256 is None else (Path(args.paired_sha256[0]), args.paired_sha256[1])
     png = {name: (Path(pin[0]), pin[1]) for name in PNG_LIBRARIES
            if (pin := getattr(args, name)) is not None}
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,
            args.solver, args.ingress, schedule=args.schedule, rendering=args.rendering,
-           startup=args.startup, paired_sha256=paired, endpoint_reuse=args.endpoint_reuse, **png)
+           startup=args.startup, paired_sha256=paired, endpoint_reuse=args.endpoint_reuse,
+           recovery_reuse=args.recovery_reuse, **png)
