@@ -1,8 +1,9 @@
 """Experimental receiver/solver composition for an isolated full publication."""
 import argparse
 from contextlib import ExitStack, nullcontext
-from functools import partial
+from functools import partial, wraps
 from hashlib import sha256
+from importlib import import_module, util
 import json
 import os
 from pathlib import Path
@@ -43,6 +44,8 @@ TERMINAL_VETO_SOURCES = tuple(
         "regional_veto_short_circuit",
     )
 )
+LONGITUDE_CHART_MODULE = "tools.pipeline_eval.variants.experimental.longitude_chart"
+LONGITUDE_CHART_SOURCE = Path(LONGITUDE_CHART_MODULE.replace(".", "/") + ".py")
 
 
 def _checked_graph_path(specification):
@@ -89,6 +92,18 @@ def _check_terminal_veto(specification, modules):
         if (imported != root / source
                 or sha256(imported.read_bytes()).hexdigest() != sources.get(str(source))):
             raise ValueError(f"Terminal veto imported an unpinned module: {source}")
+
+
+def _checked_longitude_chart(specification):
+    root = Path(__file__).resolve().parents[3]
+    source = root / LONGITUDE_CHART_SOURCE
+    sources = specification.get("sources", {})
+    module = util.find_spec(LONGITUDE_CHART_MODULE)
+    if (module is None or module.origin is None or Path(module.origin).resolve() != source
+            or not isinstance(sources, dict)
+            or sha256(source.read_bytes()).hexdigest() != sources.get(str(LONGITUDE_CHART_SOURCE))):
+        raise ValueError("Wrapped longitude requires its pinned chart source in the candidate bundle")
+    return import_module(LONGITUDE_CHART_MODULE).longitude_chart
 
 
 def run(args, specification):
@@ -156,6 +171,9 @@ def run(args, specification):
     terminal_veto = specification.get("regional_veto_terminal_only", False)
     if type(terminal_veto) is not bool or (terminal_veto and not regional_veto):
         raise ValueError("Terminal veto requires the regional guard")
+    wrapped_longitude = specification.get("wrapped_longitude", False)
+    if type(wrapped_longitude) is not bool:
+        raise ValueError("Expected a Boolean wrapped longitude selection")
     if startup == "lazy-exports":
         from tools.pipeline_eval.variants.experimental.lean_startup import install
         install()
@@ -172,6 +190,20 @@ def run(args, specification):
             (assets/name).symlink_to(source)
         # The normal publication path checks these pins before it opens the I/Q.
         stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
+        if wrapped_longitude:
+            chart = _checked_longitude_chart(specification)
+
+            def wrap_solve(solve):
+                @wraps(solve)
+                def solve_with_chart(*args, **kwargs):
+                    with chart():
+                        return solve(*args, **kwargs)
+
+                return solve_with_chart
+
+            # Raw analysis holds a separate import-time alias. Saved solves use the module.
+            for entry in (algo08_scan, algo08_position):
+                stack.enter_context(patch.object(entry, "solve", wrap_solve(entry.solve)))
         if graph_path_bytes is not None:
             from tools.pipeline_eval.variants.experimental.graph_path import native_paths
             library = assets / GRAPH_PATH_LIBRARY
