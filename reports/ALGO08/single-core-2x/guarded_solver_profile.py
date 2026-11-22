@@ -10,7 +10,7 @@ from time import process_time_ns
 from unittest.mock import patch
 
 
-def worker(native, spec, archive, offer, output, profile, packed, private_width):
+def worker(native, spec, archive, offer, output, profile, packed, private_width, likelihood_cache):
     from tools.pipeline_eval.variants.experimental import lean_startup
 
     install = lean_startup.install
@@ -32,6 +32,10 @@ def worker(native, spec, archive, offer, output, profile, packed, private_width)
                 source = Path(__file__).resolve().parents[3] / "tools/pipeline_eval/variants"
                 module = runpy.run_path(str(source / "algo08_private_width.py"))
                 counters = stack.enter_context(module["expand_unsupported_layout"](private_width))
+            if likelihood_cache:
+                source = Path(__file__).resolve().parents[3] / "tools/pipeline_eval/variants"
+                module = runpy.run_path(str(source / "algo08_likelihood_reuse.py"))
+                counters = stack.enter_context(module["ordinary_likelihood_reuse"]())
             solve = algo08_position.solve
 
             def profiled(*args, **kwargs):
@@ -47,7 +51,8 @@ def worker(native, spec, archive, offer, output, profile, packed, private_width)
     if profile:
         profiler.dump_stats(profile)
     if counters is not None:
-        with output.with_suffix(".private-width.json").open("x") as stream:
+        name = ".likelihood-cache.json" if likelihood_cache else ".private-width.json"
+        with output.with_suffix(name).open("x") as stream:
             json.dump(counters, stream, indent=2)
 
 
@@ -59,4 +64,5 @@ if __name__ == "__main__":
     variants = parser.add_mutually_exclusive_group()
     variants.add_argument("--packed", type=Path)
     variants.add_argument("--private-width", type=Path)
+    variants.add_argument("--likelihood-cache", action="store_true")
     worker(**vars(parser.parse_args()))
