@@ -76,7 +76,7 @@ def run_scan(scan, keys):
     stock = results["full"]["rows"]
     comparison = {}
     for mode, evidence in results.items():
-        ok, float_changes, label_changes, max_score = 0, [], [], 0.
+        ok, float_changes, label_changes, maximum = 0, [], [], Counter()
         for i, left, right in zip(tracks, stock, evidence.pop("rows"), strict=True):
             key = scan.tracks[i]["key"]
             if signature(left) == signature(right):
@@ -85,9 +85,11 @@ def run_scan(scan, keys):
                 float_changes.append(key)
             if (left[0], left[2]) != (right[0], right[2]):
                 label_changes.append(key)
-            max_score = max(max_score, abs(left[1] - right[1]))
+            for name, slot in (("cost", 1), ("bias_hz", 3), ("rms_hz", 4), ("innovation_hz", 5)):
+                difference = np.max(np.abs(left[slot] - right[slot]))
+                maximum[name] = max(maximum[name], difference)
         comparison[mode] = dict(evidence, exact_rows=ok, differing_rows=float_changes,
-                                changed_label_or_alias=label_changes, maximum_cost_delta=max_score)
+                                changed_label_or_alias=label_changes, maximum_delta=dict(maximum))
     return dict(
         tracks=len(tracks), catalogue=len(scan.norads), shared_projection_ns=projection,
         shared_preparation_ns=preparation, visible_candidates=sum(int(x[2].sum()) for x in inputs),
