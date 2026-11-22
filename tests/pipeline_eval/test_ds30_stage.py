@@ -150,12 +150,18 @@ def inventory(study):
     return stage.inventory(study.runs, study.assignments, study.candidate, study.spec, 2)
 
 
-def test_one_pair_audit_binds_publication_and_only_scores_that_recording(conditional_study):
+def test_one_pair_audit_binds_publication_and_only_scores_that_recording(conditional_study, monkeypatch):
     audit = import_module("reports.ALGO08.single-core-2x.physical_pair_audit").audit_pair
     study = conditional_study
     first, second, *_ = study.assignments
     path = seal_pair(study, first)
     snapshot = inventory(study)
+    with pytest.raises(ValueError, match="frozen evaluation reference"):
+        audit(snapshot, path)
+    original = stage.pinned
+    predictions = dict(predictions=[dict(case=first.name, raw_authority=first.raw_authority)])
+    monkeypatch.setattr(stage, "pinned", lambda path, digest: predictions if digest == stage.LOCK_SHA256
+                        else original(path, digest))
     result = audit(snapshot, path)
     assert result["case"] == first.name
     assert result["verified_subset_quality"]["by_site"][0]["assigned"] == 1
@@ -175,9 +181,11 @@ def test_grid_scores_only_compared_at_matching_published_locations():
     a, b = dict(points=[p], nuisance_model="control"), dict(points=[q], nuisance_model="trial")
     diff = compare(a, b)
     assert diff["metadata_changed"] == ["nuisance_model"]
-    assert diff["arms"]["c0"] == dict(scored_by_both=1, validity_changed=0, scores_changed=1, max_abs_delta=.25)
+    assert diff["arms"]["c0"] == dict(scored_by_both=1, validity_changed=0, scores_changed=1,
+                                      minimum_indices={"baseline": [0], "candidate": [0]}, max_abs_delta=.25)
     assert diff["arms"]["fitted_c"]["validity_changed"] == 1
     assert diff["arms"]["fitted_c"]["max_abs_delta"] is None
+    assert diff["arms"]["fitted_c"]["minimum_indices"] == {"baseline": [], "candidate": [0]}
     assert "arms" not in compare(a, dict(b, points=[dict(q, latlon=[-2., 169.])]))
 
 

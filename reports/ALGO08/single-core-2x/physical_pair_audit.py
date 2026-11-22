@@ -28,9 +28,14 @@ def compare_grid_samples(before, after):
         for arm in stage.ARMS:
             values = [(p["scores"][arm], q["scores"][arm]) for p, q in points]
             deltas = [abs(a - b) for a, b in values if a is not None and b is not None]
+            minima = []
+            for side in range(2):
+                best = min((pair[side] for pair in values if pair[side] is not None), default=None)
+                minima.append([i for i, pair in enumerate(values) if best is not None and pair[side] == best])
             result["arms"][arm] = dict(scored_by_both=len(deltas),
                                        validity_changed=sum((a is None) != (b is None) for a, b in values),
                                        scores_changed=sum(delta != 0 for delta in deltas),
+                                       minimum_indices=dict(zip(stage.BUILDS, minima, strict=True)),
                                        max_abs_delta=max(deltas, default=None))
     return result
 
@@ -50,9 +55,13 @@ def audit_pair(inventory, path):
         "region" in row and row["region"] != measured["region"]
     ):
         raise ValueError("Recording or region differs from the reopened publication")
-    truth = stage.pinned(stage.OUT / "reference-audit.json", stage.REFERENCE_SHA256)["cases"]
+    truth = stage.pinned(stage.OUT / "reference-audit.json", stage.REFERENCE_SHA256)
+    predictions = stage.pinned(stage.OUT / "prediction-lock.json", stage.LOCK_SHA256)["predictions"]
+    authorities = {p["raw_authority"] for p in predictions if p["case"] == case}
+    if truth["prediction_lock_sha256"] != stage.LOCK_SHA256 or authorities != {measured["raw_authority"]}:
+        raise ValueError("Case label or recording differs from the frozen evaluation reference")
     refs = {r["dataset_label"]: (r["reference"]["latitude_deg"], r["reference"]["longitude_deg"])
-            for r in truth if r["authority_eligible"]}
+            for r in truth["cases"] if r["authority_eligible"]}
     # Compute position and timing from the reopened publications.
     verified = dict(row, region=measured["region"], arms={name: measured[name]["arms"] for name in stage.BUILDS},
                     elapsed_s={name: measured[name]["elapsed_s"] for name in stage.BUILDS})
