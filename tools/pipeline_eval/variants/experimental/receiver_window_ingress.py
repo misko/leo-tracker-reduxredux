@@ -93,6 +93,7 @@ class WindowStreams:
         bound = FunctionType(
             release.__code__, release.__globals__ | {"zstd": codec}, argdefs=release.__defaults__
         )
+        bound.__kwdefaults__ = release.__kwdefaults__
 
         def windows(reader, **scope):
             if type(reader) is not ShortWindowReader:
