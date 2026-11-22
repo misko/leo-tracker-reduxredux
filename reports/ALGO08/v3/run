@@ -1,0 +1,69 @@
+#!/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python -IB
+"""Run the named ALGO08v3 research build from saved I/Q on Gauss."""
+import argparse
+from hashlib import sha256
+import json
+import os
+from pathlib import Path
+import sys
+
+
+VERSION = "ALGO08v3"
+FINGERPRINT = "6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
+RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
+LIBRARIES = ("graph_path", "paired_sha256", "png_deflate", "png_filter", "posterior_grid_handoff", "tle_parser")
+
+
+def checked_spec(payload, fingerprint=FINGERPRINT):
+    spec = json.loads((payload / "spec.json").read_bytes())
+    canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"), allow_nan=False, ensure_ascii=False)
+    if sha256(canonical.encode()).hexdigest() != fingerprint:
+        raise ValueError("Frozen ALGO08v3 specification changed")
+    for name, expected in spec["sources"].items():
+        if sha256((payload / name).read_bytes()).hexdigest() != expected:
+            raise ValueError(f"Frozen ALGO08v3 file changed: {name}")
+    # The original freeze pins absolute library filenames. Rebase only these
+    # seven entries; the scientific settings and all checked bytes stay fixed.
+    for entry, key, digest in [(spec, "detector", spec["detector_sha256"])] + [
+        (spec[name], "library", spec[name]["sha256"]) for name in LIBRARIES
+    ]:
+        filename = Path(entry[key]).name
+        if spec["sources"].get(filename) != digest:
+            raise ValueError(f"Unbound ALGO08v3 library: {filename}")
+        entry[key] = str(payload / filename)
+    return spec
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version=f"{VERSION} sha256:{FINGERPRINT}")
+    parser.add_argument("--verify", action="store_true", help="verify this installation and exit")
+    for name in ("recording", "archive", "region", "bulk-root"):
+        parser.add_argument("--" + name, type=Path)
+    args = parser.parse_args(argv)
+    if not args.verify and not all((args.recording, args.archive, args.region, args.bulk_root)):
+        parser.error("supply --recording, --archive, --region and a new empty --bulk-root")
+    payload = Path(__file__).resolve().parent / "payload"
+    spec = checked_spec(payload)
+    imports = [str(payload), str(RELEASE / "src"), str(RELEASE)]
+    sys.path[:0] = imports
+    os.environ["PYTHONPATH"] = os.pathsep.join(imports)
+    for name in ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS"):
+        os.environ[name] = "1"
+    from tools.pipeline_eval.qualification import experimental_publication
+    if Path(experimental_publication.__file__).resolve() != payload / "tools/pipeline_eval/qualification/experimental_publication.py":
+        raise ValueError("Loaded a different publication entry point")
+    identity = dict(version=VERSION, frozen_specification="sha256:" + FINGERPRINT,
+                    detector_sha256=spec["detector_sha256"])
+    if args.verify:
+        print(json.dumps(identity))
+        return
+    result = experimental_publication.run(args, spec)
+    with (args.bulk_root / "algo08v3-release.json").open("x") as stream:
+        json.dump(dict(identity, session_id=result["session_id"], decision=result["decision"]), stream)
+        stream.write("\n")
+    print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
