@@ -28,9 +28,9 @@ def plot(stage, output):
                                  ("Raw I/Q to web publication", "Single-core CPU"), strict=True):
         for index, case in enumerate(cases):
             times = case[metric]
-            ax.plot([times["baseline"], times["candidate"]], [index, index], color="#cad1d4", lw=3)
+            ax.plot([times["baseline"], times["candidate"]], [index, index], color="#cad1d4", lw=3, zorder=1)
             for name, (label, color) in METHODS.items():
-                ax.scatter(times[name], index, color=color, s=48, label=label if index == 0 else None)
+                ax.scatter(times[name], index, color=color, s=48, zorder=2, label=label if index == 0 else None)
         ax.set_yticks(range(count), [r["case"] for r in cases])
         ax.invert_yaxis()
         ax.set(xlim=(0, None), xlabel="Seconds", title=title)

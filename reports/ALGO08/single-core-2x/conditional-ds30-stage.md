@@ -1,5 +1,25 @@
 # Conditional residual scans on the frozen DS30 panel
 
+The conditional build preserved **4/4 fixes** and published all eight required figures for each. Total elapsed time fell **821.81 → 495.68 s (1.66× speedup)** and total CPU time fell **659.87 → 378.76 s (1.74×)**. Three recordings improved in both position fits. The regression on DS30-0155 increased the panel's median position error in both calibration arms. The candidate failed the prespecified speed and accuracy gates. The 16-recording stage and the reserved blind panel were left unopened for this candidate. [Complete verified stage score](measurements/ds30-conditional-stage-inventory.json)
+
+| Frozen order | Elapsed s, deployed → candidate | CPU s, deployed → candidate | Fitted error km, deployed → candidate |
+|---|---:|---:|---:|
+| DS30-0374 | 129.73 → 92.05 | 127.05 → 71.80 | 1.935 → 1.867 |
+| DS30-0008 | 291.87 → 151.25 | 211.01 → 123.42 | 1.512 → 1.410 |
+| DS30-0155 | 148.20 → 125.89 | 144.70 → 80.96 | 1.157 → 1.426 |
+| DS30-0001 | 252.01 → 126.48 | 177.11 → 102.58 | 0.470 → 0.464 |
+
+The median paired candidate/baseline elapsed ratio was **0.614** and the summed ratio was **0.603**. Each must be at most **0.500**. The measured shortfall was **84.77 seconds elapsed** across four cases. On CPU alone it was 48.83 seconds. Each recording ran serially on one low-priority pinned core on Gauss, alternating arm order. The OS reported different amounts of disk reading between arms. [Third pair](measurements/DS30-0155-conditional.json) · [Fourth pair](measurements/DS30-0001-conditional.json)
+
+| Error across four recordings | Fixed-zero deployed → candidate | Fitted deployed → candidate |
+|---|---:|---:|
+| Median | 1.306 → 1.431 km | 1.334 → 1.418 km |
+| P90 | 1.791 → 1.691 km | 1.808 → 1.735 km |
+
+![Matched elapsed and CPU distributions and cumulative horizontal error on every assigned DS30 recording](conditional-ds30-stage.png)
+
+## First recording in the frozen order
+
 The first longer recording, DS30-0374, took **92.05 seconds** from sealed I/Q to all eight published images with the conditional receiver, versus **129.73 seconds** for deployed ALGO08v2. Both fits moved slightly closer to the scoring reference. The candidate ran first and incurred 16,255,104 filesystem input blocks. The baseline reported zero. Single-core CPU time was **71.80 versus 127.05 seconds**. Even with the disk-read imbalance set aside, the candidate would need another **8.27 seconds of compute savings** to halve baseline CPU time on this case. [Paired recording receipt](measurements/DS30-0374-conditional.json)
 
 ## Where the lead case spent time
@@ -17,6 +37,10 @@ Both solvers returned 81 tracks and 20 associated satellites. The deployed solve
 ## Second recording in the frozen order
 
 DS30-0008 had 6,765 admitted stereo visits. Baseline ran first. Elapsed time fell **291.87 → 151.25 s (1.93×)** and CPU **211.01 → 123.42 s (1.71×)**. The OS counted 16,039,640 filesystem input blocks for baseline and 3,895,888 for the candidate. Halving baseline CPU would require another **17.92 CPU seconds**. Of 13,530 lane requests, 1,990 used the primary-only scan. Both endpoints moved closer to the reference, from **1.639 / 1.512 km to 1.572 / 1.410 km**, despite a small increase in terminal RF RMS from 129.70 / 129.66 Hz to 129.89 / 129.82 Hz. Both runs published all eight images. The candidate retained 6,992 selected measurements, removed 24 and added five. [Paired recording receipt](measurements/DS30-0008-conditional.json)
+
+## Receiver changes on the regression case
+
+DS30-0155 had 24 changed selections. Seventeen deployed primary factors and five residual factors disappeared. One primary and one residual appeared on previously empty opportunities. The published position degraded in both calibration fits. [DS30-0155 factor changes](measurements/DS30-0155-selected-changes.json.gz) · [DS30-0008 changes](measurements/DS30-0008-selected-changes.json.gz) · [DS30-0001 changes](measurements/DS30-0001-selected-changes.json.gz)
 
 ## Reproduction
 

@@ -1,5 +1,16 @@
 # Far-exterior veto gated by the selected optimizer bounds
 
+## Complete raw-I/Q publication on the same northern recording
+
+The frozen guarded conditional build `f495615e14412b6b1aa88e7bebb44130543627f960c5e020bc8090652f4eb5d3` processed two previously published northern simulation offers. Both invocations used the same sealed raw recording, the same verified capture-time archive, one pinned core and separate empty output directories.
+
+| Offered square | Unguarded result | Guarded terminal and web evidence | Guarded elapsed |
+|---|---|---|---:|
+| Receiver 100 m inside | Fix, fitted error 0.141 km | Same two positions, satellite owners, numerical path and grid, and all eight rendered images | 19.44 s |
+| Center 64.93 km from receiver, correct region missing | False fix, fitted error 52.49 km | Withheld both positions, recorded `both_receivers_support_far_exterior`, published zero fix images and no position grid or path | 20.64 s |
+
+The runs validate the guarded candidate through acquisition, conditional residual scanning, solving and publication. The unguarded values come from the preceding frozen comparison. The elapsed values are candidate-only timings. On the saved four-case DS30 stage, none of the verified candidate endpoints touched the optimizer bounds, so none would request the extra test. That endpoint check does not measure the guarded build's DS30 runtime. The saved public two-site dataset still has four near omissions the guard misses. [Inside publication](measurements/guard-north-inside-single.json) · [Distant omitted publication](measurements/guard-north-far-single.json) · [Earlier unguarded endpoint](measurements/north-far-conditional-solver.json.gz) · [Four DS30 endpoint checks](measurements/conditional-four-boundary-check.json)
+
 The optional saved-solver guard dispatches the far-exterior diagnostic only if at least one selected calibration arm reaches a native optimizer bound. Six of the ten public offers activate it. It vetoes both far omissions, retains all four valid fixes, and misses all four near omissions. The guard stays outside the frozen publication candidate. [Earlier ten-offer result](regional-exterior-veto.md) · [Experimental hook](../../../tools/pipeline_eval/variants/experimental/regional_bound_guard.py)
 
 ## Endpoint gate
