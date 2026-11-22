@@ -1,0 +1,7 @@
+# Is the position solve sensitive to the historical sky-screening center?
+
+The deployed DS30 station offer supplies a 25 km search square centered at 37.906°, −122.545° and a separate sky-screening center of 37.5°, −122°. The published simulations ordinarily screen at the search-square center. A field installation can legitimately supply only a search square. This test checks whether removing the historical station setting changes the solution while holding its I/Q, search bounds and orbital archive fixed. The distinct screening center is operator-supplied input.
+
+## Prespecified comparisons
+
+Use the saved native detections from the complete frozen conditional receiver trials. On DS30-0016, replace the historical screening center with the offered square's center. On the public northern near-edge simulation, move only the screening center two square widths east and two widths south in the solver's local coordinate frame. Each original result has a complete paired publication on disk. Both altered offers reuse the original capture-time orbit archive, detector measurements, two calibration fits, fit policy, and grid budget. Score changes in endpoints and RF residuals separately after running the solver. Retain any failures in the comparison. This experiment does not change deployment, time the receiver or use a fresh confirmation location. [Original paired results](receiver-residual-prefix-192.md)
