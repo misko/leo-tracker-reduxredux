@@ -2,7 +2,8 @@
 
 from collections import Counter
 from contextlib import contextmanager
-from ctypes import CDLL, POINTER, byref, c_double, c_int64, c_void_p
+from ctypes import CDLL, POINTER, byref, c_double, c_int64, c_uint32, c_void_p
+from hashlib import sha256
 from pathlib import Path
 import platform
 import subprocess
@@ -13,6 +14,10 @@ import numpy as np
 
 from leo.analysis import graph_tracklets as graph
 from leo.analysis.localization_v3 import tracks
+
+
+ABI_VERSION = 1
+REFERENCE_SHA256 = "74575f44c4e9716707faaac56e3e7c35bb423ba0f75332656d7c6576cd8f2c27"
 
 
 def build(library):
@@ -67,8 +72,18 @@ def pack(t, original):
 
 class NativePath:
     def __init__(self, library):
-        self.library = CDLL(str(library))
-        self.operation = self.library.graph_path
+        if platform.machine() != "x86_64":
+            raise ValueError("The native Graph path ABI requires x86-64")
+        try:
+            self.library = CDLL(str(library))
+            abi = self.library.leo_graph_path_abi
+            self.operation = self.library.leo_graph_path_v1
+        except (OSError, AttributeError) as exc:
+            raise ValueError("Could not load the versioned native Graph path ABI") from exc
+        abi.argtypes = []
+        abi.restype = c_uint32
+        if abi() != ABI_VERSION:
+            raise ValueError("Unsupported native Graph path ABI version")
         self.operation.restype = c_int64
         self.operation.argtypes = ([c_int64, c_int64] + [c_void_p] * 11
                                   + [c_double, c_double, c_double, c_int64, c_double,
@@ -107,14 +122,16 @@ class NativePath:
 
 
 @contextmanager
-def native_paths(library, *, verify=False):
+def native_paths(library, *, verify=False, required=False):
     """Scope a private packing cache to one lane and call the original on fallback."""
     metrics = Counter()
     try:
-        kernel = NativePath(library) if platform.machine() == "x86_64" else None
-    except (OSError, AttributeError):
-        kernel = None
-    if kernel is None:
+        if sha256(Path(graph.__file__).read_bytes()).hexdigest() != REFERENCE_SHA256:
+            raise ValueError("The reference Graph path source differs from the reviewed recurrence")
+        kernel = NativePath(library)
+    except (OSError, ValueError):
+        if required:
+            raise
         metrics["unavailable"] = 1
         yield metrics
         return

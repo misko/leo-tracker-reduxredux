@@ -21,6 +21,30 @@ SCHEDULE_MODES = ("all", "bursts", "alternate", "deferred", "conditional-residua
 PNG_LIBRARIES = {"png_filter": "png-filter.so", "png_deflate": "png-deflate.so"}
 POSTERIOR_GRID_LIBRARY = "posterior-grid-handoff.so"
 POSTERIOR_GRID_ARITHMETIC = "permuted native posterior factor"
+GRAPH_PATH_LIBRARY = "graph-path.so"
+GRAPH_PATH_SOURCES = tuple(
+    Path(f"tools/pipeline_eval/variants/experimental/graph_path.{extension}")
+    for extension in ("c", "py")
+)
+
+
+def _checked_graph_path(specification):
+    pin = specification["graph_path"]
+    if (not isinstance(pin, dict) or set(pin) != {"library", "sha256"}
+            or not isinstance(pin["library"], str) or not isinstance(pin["sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", pin["sha256"])):
+        raise ValueError("Expected a pinned native Graph path library")
+    sources = specification.get("sources")
+    if not isinstance(sources, dict) or sources.get(GRAPH_PATH_LIBRARY) != pin["sha256"]:
+        raise ValueError("Expected source pins for the native Graph path")
+    root = Path(__file__).resolve().parents[3]
+    for source in GRAPH_PATH_SOURCES:
+        if sha256((root / source).read_bytes()).hexdigest() != sources.get(str(source)):
+            raise ValueError(f"Native Graph path source changed: {source}")
+    content = Path(pin["library"]).read_bytes()
+    if sha256(content).hexdigest() != pin["sha256"]:
+        raise ValueError("Native Graph path library differs from its reviewed build")
+    return content
 
 
 def run(args, specification):
@@ -34,6 +58,7 @@ def run(args, specification):
     mode = specification["solver"]
     if mode not in ("stock", *CAUSAL_MODES):
         raise ValueError("Unknown experimental solver")
+    graph_path_bytes = _checked_graph_path(specification) if "graph_path" in specification else None
     posterior_pin = specification.get("posterior_grid_handoff")
     posterior_bytes = None
     if posterior_pin is not None:
@@ -98,6 +123,11 @@ def run(args, specification):
             (assets/name).symlink_to(source)
         # The normal publication path checks these pins before it opens the I/Q.
         stack.enter_context(patch.dict(algo08_scan.PINS, {"cancellation-factors.so": digest}))
+        if graph_path_bytes is not None:
+            from tools.pipeline_eval.variants.experimental.graph_path import native_paths
+            library = assets / GRAPH_PATH_LIBRARY
+            library.write_bytes(graph_path_bytes)
+            graph_path_counts = stack.enter_context(native_paths(library, required=True))
         if ingress != "stock":
             from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
             hash_windows = nullcontext
@@ -235,6 +265,8 @@ def run(args, specification):
             stack.enter_context(patch.object(localization_v3, "sample_position_grid", posterior_grid))
         offer = Algo08Region.parse(json.loads(args.region.read_bytes()))
         result = algo08_scan.analyze(args.recording, root, assets, args.archive, offer)
+        if graph_path_bytes is not None:
+            result["graph_path"] = graph_path_counts
         if specification.get("tle_parser"):
             result["tle_records"] = record_counts
         if schedule in ("alternate", "bursts"):

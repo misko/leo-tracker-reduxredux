@@ -4,9 +4,11 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+from tempfile import TemporaryDirectory
 
 from .experimental_publication import (
-    CAUSAL_MODES, DISCOVERY_MODES, INGRESS_MODES, PNG_LIBRARIES, POSTERIOR_GRID_LIBRARY,
+    CAUSAL_MODES, DISCOVERY_MODES, GRAPH_PATH_LIBRARY, GRAPH_PATH_SOURCES, INGRESS_MODES,
+    PNG_LIBRARIES, POSTERIOR_GRID_LIBRARY,
     RELEASE, RENDERING_MODES, SALVAGE_MODES, SCHEDULE_MODES, TABLE_MODES,
 )
 
@@ -15,13 +17,13 @@ LAUNCHER = Path("reports/ALGO08/single-core-2x/run-candidate")
 ENTRY = Path("tools/pipeline_eval/qualification/experimental_publication.py")
 VARIANTS = Path("tools/pipeline_eval/variants")
 NATIVE_LIBRARIES = {**PNG_LIBRARIES, "tle_parser": "_leo_tle_records.so",
-                    "posterior_grid_handoff": POSTERIOR_GRID_LIBRARY}
+                    "posterior_grid_handoff": POSTERIOR_GRID_LIBRARY, "graph_path": GRAPH_PATH_LIBRARY}
 
 
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
            rendering="individual", startup="stock", paired_sha256=None, endpoint_reuse=False,
            png_filter=None, png_deflate=None, recovery_reuse=False, tle_parser=None,
-           defer_preparation_gc=False, regional_veto=False, posterior_grid_handoff=None):
+           defer_preparation_gc=False, regional_veto=False, posterior_grid_handoff=None, graph_path=None):
     if rendering not in RENDERING_MODES:
         raise ValueError("Unknown publication renderer")
     png_pins = dict(png_filter=png_filter, png_deflate=png_deflate)
@@ -31,13 +33,20 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         raise ValueError("Posterior grid handoff requires the collapsed-signed solver")
     libraries = {}
     for name, pin in {**png_pins, "tle_parser": tle_parser,
-                      "posterior_grid_handoff": posterior_grid_handoff}.items():
+                      "posterior_grid_handoff": posterior_grid_handoff, "graph_path": graph_path}.items():
         if pin is not None:
             library, digest = pin
             content = library.read_bytes()
             if hashlib.sha256(content).hexdigest() != digest:
                 raise ValueError(f"{name} library differs from its reviewed build")
             libraries[name] = (content, digest)
+    if graph_path is not None:
+        from ..variants.experimental.graph_path import NativePath
+
+        with TemporaryDirectory() as scratch:
+            graph_binary = Path(scratch) / GRAPH_PATH_LIBRARY
+            graph_binary.write_bytes(libraries["graph_path"][0])
+            NativePath(graph_binary)
     if ingress not in INGRESS_MODES:
         raise ValueError("Unknown experimental I/Q reader")
     if schedule not in SCHEDULE_MODES:
@@ -83,6 +92,8 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
         sources.append(VARIANTS / "algo08_collapsed_signed_finish.py")
     if posterior_grid_handoff is not None:
         sources.extend(VARIANTS / f"algo08_posterior_handoff.{extension}" for extension in ("py", "h"))
+    if graph_path is not None:
+        sources.extend(GRAPH_PATH_SOURCES)
     if endpoint_reuse:
         sources.append(VARIANTS / "algo08_endpoint_readout.py")
     if recovery_reuse:
@@ -172,6 +183,8 @@ if __name__ == "__main__":
     parser.add_argument("--tle-parser", nargs=2, metavar=("LIBRARY", "SHA256"))
     parser.add_argument("--posterior-grid-handoff", nargs=2, metavar=("LIBRARY", "SHA256"),
                         help="Reuse the checked native posterior in the research predictive grid")
+    parser.add_argument("--graph-path", nargs=2, metavar=("LIBRARY", "SHA256"),
+                        help="Run the exact native Graph path recurrence")
     parser.add_argument("--startup", choices=("stock", "lazy-exports"), default="stock")
     parser.add_argument("--endpoint-reuse", action="store_true")
     parser.add_argument("--recovery-reuse", action="store_true")

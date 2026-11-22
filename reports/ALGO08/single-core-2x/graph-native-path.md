@@ -39,9 +39,28 @@ export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 locked=(flock "$bench/gauss.lock" nice -n 15 ionice -c 2 -n 7 taskset -c 2)
 trial=("$release/venv/bin/python" -B reports/ALGO08/single-core-2x/graph_saved_trial.py
        "$release/assets/tracks.json" "${baseline[@]}" "${packed[@]}" "${north[@]}")
-"${locked[@]}" "${trial[@]}" --library "$bench/graph-path.so" --build --verify
+"${locked[@]}" "${trial[@]}" --library "$bench/graph-path-v1.so" --build --verify
 "${locked[@]}" "${trial[@]}" --timing --audit-polynomial
-"${locked[@]}" "${trial[@]}" --timing --library "$bench/graph-path.so"
+"${locked[@]}" "${trial[@]}" --timing --library "$bench/graph-path-v1.so"
 ```
 
 Each replay begins with saved detection documents and ends at the complete prepared Graph output. The shadow check and polynomial readout run outside the reported timings.
+
+## Frozen research launcher
+
+Add `--graph-path LIBRARY SHA256` to the chosen research freeze. The freezer checks the library digest and native ABI version before it creates the bundle. The bundle pins the copied library, C source and Python adapter. The launcher checks those pins and the installed reference Graph source, then loads the checked bytes from its private asset directory. Ineligible lanes still use the Python recurrence. The original polynomial proposal and finalization code handles ownership, including its original carrier aliases. The opt-in result reports native path counts and CPU times under `graph_path`.
+
+With the environment above, build the current ABI and add it to a freeze using the reviewed detector and digest.
+
+```bash
+graph_library="$bench/graph-path-v1.so"
+"${locked[@]}" "$release/venv/bin/python" -B -c \
+  'from pathlib import Path; from sys import argv; from tools.pipeline_eval.variants.experimental.graph_path import build; build(Path(argv[1]))' \
+  "$graph_library"
+read -r graph_sha256 _ < <(sha256sum "$graph_library")
+"$release/venv/bin/python" -B -m tools.pipeline_eval.qualification.freeze_publication \
+  "$output" "$detector" "$detector_sha256" --solver stock --ingress stock \
+  --graph-path "$graph_library" "$graph_sha256"
+```
+
+The earlier timing receipt used the same recurrence before the ABI version export was added. Rebuild older Graph libraries for the frozen launcher.

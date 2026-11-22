@@ -15,7 +15,11 @@ typedef struct {
     unsigned char allowed;
 } EdgeState;
 
-int64_t graph_path(
+uint32_t leo_graph_path_abi(void) {
+    return 1;
+}
+
+int64_t leo_graph_path_v1(
     int64_t points, int64_t edges, const double *time,
     const int64_t *source, const int64_t *target, const double *duration,
     const double *velocity, const int64_t *incoming_offset,
