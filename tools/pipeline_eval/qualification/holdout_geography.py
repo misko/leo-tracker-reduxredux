@@ -1,7 +1,7 @@
 """Scorer-side geographic sampling for the ALGO08 single-core confirmation."""
 
-from math import cos, radians, sqrt
 import secrets
+from math import cos, radians, sqrt
 
 from tools.pipeline_eval.scoring import distance_km
 
