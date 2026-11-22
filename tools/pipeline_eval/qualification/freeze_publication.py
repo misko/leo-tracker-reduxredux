@@ -71,9 +71,11 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
                                                      "algo08_salvage_bound.py"))
     if solver == "track-moments":
         sources.append(VARIANTS / "algo08_track_moments.py")
-    if solver == "collapsed-repair":
+    if solver in ("collapsed-repair", "collapsed-signed"):
         sources.extend(VARIANTS / name for name in ("algo08_collapsed.py", "algo08_collapsed_linear.py",
                        "algo08_collapsed_salvage.py", "algo08_collapsed_repair.py"))
+    if solver == "collapsed-signed":
+        sources.append(VARIANTS / "algo08_collapsed_signed_finish.py")
     if endpoint_reuse:
         sources.append(VARIANTS / "algo08_endpoint_readout.py")
     if recovery_reuse:

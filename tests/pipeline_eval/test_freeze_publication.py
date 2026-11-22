@@ -13,6 +13,7 @@ from tools.pipeline_eval.variants.experimental import residual_receiver
     ("shared-tables", "shared-pixels", "all"), ("track-moments", "shared-pixels", "all"),
     ("track-moments", "shared-pixels", "deferred"),
     ("collapsed-repair", "raster-layout", "all"),
+    ("collapsed-signed", "raster-layout", "all"),
     ("shared-tables", "raster-layout", "deferred"), ("stock", "raster-layout", "all")])
 def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solver, rendering, schedule):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
@@ -27,14 +28,16 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
         selected.append(bundle.VARIANTS / "experimental/shared_orbit_figures.py")
     if rendering == "raster-layout":
         selected.append(bundle.VARIANTS / "experimental/raster_layout.py")
-    if solver in ("shared-tables", "track-moments", "collapsed-repair"):
+    if solver in ("shared-tables", "track-moments", "collapsed-repair", "collapsed-signed"):
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_table.py", "algo08_cavity_projection.py", "algo08_salvage_bound.py"))
     if solver == "track-moments":
         selected.append(bundle.VARIANTS / "algo08_track_moments.py")
-    if solver == "collapsed-repair":
+    if solver in ("collapsed-repair", "collapsed-signed"):
         selected.extend(bundle.VARIANTS / name for name in ("algo08_collapsed.py", "algo08_collapsed_linear.py",
                         "algo08_collapsed_salvage.py", "algo08_collapsed_repair.py"))
+    if solver == "collapsed-signed":
+        selected.append(bundle.VARIANTS / "algo08_collapsed_signed_finish.py")
     if schedule == "deferred":
         selected.extend(bundle.VARIANTS / "experimental" / name for name in
                         ("deferred_continuation.py", "deferred_receiver.py"))

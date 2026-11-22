@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
-TABLE_MODES = ("shared-tables", "track-moments", "collapsed-repair")
+TABLE_MODES = ("shared-tables", "track-moments", "collapsed-repair", "collapsed-signed")
 DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
 SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
 CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
@@ -177,9 +177,12 @@ def run(args, specification):
             select = partial(algo08_track_moments.select, detail={})
             stack.enter_context(patch.object(v5_core, "scan_context", context))
             stack.enter_context(patch.object(v5_core, "infer", partial(v5_core.infer, select_initial=select)))
-        if mode == "collapsed-repair":
+        if mode in ("collapsed-repair", "collapsed-signed"):
             from tools.pipeline_eval.variants.algo08_collapsed_repair import binding
             stack.enter_context(binding())
+        if mode == "collapsed-signed":
+            from tools.pipeline_eval.variants.algo08_collapsed_signed_finish import signed_finish
+            stack.enter_context(signed_finish())
         if regional_veto:
             from leo.operations.tle_archive import TleArchiveReader
             from tools.pipeline_eval.variants.experimental.regional_bound_guard import bound_exterior_veto
