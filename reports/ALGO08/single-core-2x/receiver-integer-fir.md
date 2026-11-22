@@ -26,7 +26,7 @@ Two instrumented prospective repeats recorded **0.10854 → 0.06754 CPU seconds*
 
 ## Dual-entry composition
 
-The dual-entry candidate exports `cancellation_factors` and `cancellation_primary_factors`, both with the established factor ABI. On the same 232 chronological physical lanes, the full entry returned 111 primary and 41 residual factors. Its raw-only counterpart returned 111 primary factors. Every value and returned order matched the pinned dual-entry reference in all three repeats. Native CPU savings were 1.86–2.30% for full calls and 2.95–3.18% for primary-only calls. Both routes use the same FIR fallback. The published launcher continues to require its reviewed `1b4c43dc` pin. This composition test times the two entries separately.
+The dual-entry candidate exports `cancellation_factors` and `cancellation_primary_factors`, both with the established factor ABI. On the same 232 chronological physical lanes, the full entry returned 111 primary and 41 residual factors. Its raw-only counterpart returned 111 primary factors. Every value and returned order matched the pinned dual-entry reference in all three repeats. Native CPU savings were 1.86–2.30% for full calls and 2.95–3.18% for primary-only calls. Both routes use the same FIR fallback. This composition test times the two entries separately.
 
 | Binary | SHA-256 |
 | --- | --- |
@@ -34,6 +34,29 @@ The dual-entry candidate exports `cancellation_factors` and `cancellation_primar
 | Full integer FIR | `8982c1b6cadbe80659f9f7cf8456746472d0f693c2dd363bd4e9a282adaf83e0` |
 | Dual-entry exact reference | `1b4c43dc1f2edc64ead9c4b9c0f4d724f79f623e04a13f40812a1d4bb40345a5` |
 | Dual-entry integer FIR | `c34c55748bd9b5feac6f1736e27acb78b4a1caa97f0d13a50b604cffd61d2d70` |
+
+## Guarded research publication
+
+The `conditional-residual` research launcher accepts the legacy or Q15 dual-entry detector only when its bytes match the approved SHA-256 selected in the specification. The freezer verifies those bytes and pins the original causal schedule, adapter and native binary in the source manifest. The guarded Q15-only specification, with canonical digest `sha256:e174cfdd19b0c23b2ac3ffbc4f4506c6b2ab310bf43fc25a7854d5c0f8e4f080`, uses the same shared-table solver, decoded SHA ingress, renderer and guard as the prior guarded configuration. Its source manifest differs at the detector, pin list and launcher digest check. [Guarded reference configuration](regional-bound-guard.md) · [One-run comparator](receiver_q15_publication_trial.py)
+
+The complete saved DS30-0016 recording took **11.415 CPU seconds and 11.772 elapsed seconds** in one candidate-only run. It used the same sealed recording, fixed offer and capture-time orbit archive as the saved conditional control. The control's selected local endpoints were more than 4.6 km inside the 25 km search square, so its selected solution would bypass the regional guard. Both runs admitted 713 of 808 windows and requested the same 872 full and 554 primary-only native calls.
+
+- Q15 retained all 439 control selections and added three rank-zero selections at visits 179, 219 and 275, all on channel 4 on receiver 1. The ordered 1,426 probe identities and acquisition metadata matched.
+- Both runs fixed with identical zero-calibration and fitted-calibration endpoints, satellite owners, numerical path and grid. Frequency RMS stayed at 109.375 Hz and 109.479 Hz for the two respective calibration arms.
+- All eight PNGs verified and decoded. Five matched encoded bytes and decoded RGBA hashes, including the position and track-RMS figures. The three channel 1–4 diagnostics changed decoded pixels.
+
+The publication result shows equal position evidence on this input and a difference in selected radio evidence. The short-slice factor parity section above covers different inputs. Launcher and freezer coverage includes the legacy pin, the Q15 pin, modified bytes, and substitution of one approved build for the other. **41 publication and receiver tests passed.** [Single-run science, timings and PNG hashes](measurements/guard-q15-ds30-0016.json) · [Saved conditional control](measurements/DS30-0016-conditional-reverse.json)
+
+~~~sh
+algo08_work=/tmp/leo-algo08v2-2x-bench
+flock -x "$algo08_work/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 timeout 80s \
+  sudo -n -u leo -- env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  PYTHONPATH=src:. PYTHONDONTWRITEBYTECODE=1 /opt/leo-algo08/current/venv/bin/python \
+  -m reports.ALGO08.single-core-2x.receiver_q15_publication_trial \
+  /tmp/leo-conditional-residual-0016-candidate-first/pair.json \
+  "$algo08_work/integration-conditional-residual-regional-veto-q15/spec.json" \
+  /tmp/leo-guard-conditional-q15-ds30-0016-reproduction
+~~~
 
 ## Reproduce
 

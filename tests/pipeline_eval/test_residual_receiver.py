@@ -103,7 +103,7 @@ def test_binary_pin_is_checked_before_loading_the_native_library(inputs, monkeyp
     )
     receiver = residual_receiver.ResidualReceiver()
     with (
-        pytest.raises(ValueError, match="reviewed exact fractional"),
+        pytest.raises(ValueError, match="reviewed native detector"),
         receiver.detector("cancellation", "lower", binary=binary, pilot=asset),
     ):
         pytest.fail("opened unreviewed native")

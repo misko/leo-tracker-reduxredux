@@ -9,12 +9,13 @@ from time import process_time_ns
 from . import residual_schedule
 
 DETECTOR_SHA256 = "1b4c43dc1f2edc64ead9c4b9c0f4d724f79f623e04a13f40812a1d4bb40345a5"
+Q15_DETECTOR_SHA256 = "c34c55748bd9b5feac6f1736e27acb78b4a1caa97f0d13a50b604cffd61d2d70"
 SCHEDULE_SHA256 = "1261e213195c906854ea13b5562e838990a78a04768906e6d0319e772e345eda"
 
 
 def require_native_pin(digest):
-    if digest != DETECTOR_SHA256:
-        raise ValueError("Conditional residual requires the reviewed exact fractional native build")
+    if digest not in (DETECTOR_SHA256, Q15_DETECTOR_SHA256):
+        raise ValueError("Conditional residual requires a reviewed native detector build")
 
 
 def verify_schedule(path):
