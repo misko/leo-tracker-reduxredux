@@ -62,3 +62,16 @@ def test_prefetch_comparison_requires_exact_v3_and_one_cpu(monkeypatch):
         trial.prefetch_comparison(spec)
     monkeypatch.setattr(trial.os, "sched_getaffinity", lambda _: {2})
     trial.prefetch_comparison(spec)
+
+
+def test_prefetch_comparison_loads_the_frozen_adapter_bytes(tmp_path):
+    name = "tools/pipeline_eval/variants/experimental/adapter.py"
+    adapter = tmp_path / name
+    adapter.parent.mkdir(parents=True)
+    contents = b"def context():\n    return 12\n"
+    adapter.write_bytes(contents)
+    spec = {"sources": {name: sha256(contents).hexdigest()}}
+    assert trial.frozen_context(tmp_path, spec, "adapter.py", "context")() == 12
+    adapter.write_bytes(contents.replace(b"12", b"14"))
+    with pytest.raises(ValueError, match="adapter changed"):
+        trial.frozen_context(tmp_path, spec, "adapter.py", "context")

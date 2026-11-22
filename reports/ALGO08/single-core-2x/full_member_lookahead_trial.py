@@ -7,6 +7,7 @@ import resource
 import subprocess
 from contextlib import nullcontext
 from dataclasses import asdict
+from functools import partial
 from hashlib import sha256
 from pathlib import Path
 from statistics import mean, median
@@ -139,17 +140,18 @@ def generated_recording(private, reference):
     return writer.finish(stop_reason="synthetic-full-member-benchmark"), divisor, fit
 
 
-def measure(assets, hasher, intake, *, arm):
+def measure(assets, hasher, intake, *, arm, buffer=compressed_input_buffer,
+            hint=compressed_member_lookahead, hashes=paired_decoded_hashes):
     forecast = {
         "control": nullcontext,
-        "hint": compressed_member_lookahead,
+        "hint": hint,
         "prefetch": compressed_member_prefetch,
     }[arm]
     usage = resource.getrusage(resource.RUSAGE_SELF)
     cpu, wall = process_time_ns(), perf_counter_ns()
     with (
-        compressed_input_buffer(),
-        paired_decoded_hashes(hasher),
+        buffer(),
+        hashes(hasher),
         forecast() as overlap,
     ):
         doc = algo08_scan.acquire(*intake, assets)
@@ -194,6 +196,17 @@ def prefetch_comparison(spec):
         raise ValueError("Prefetch comparison requires the process and its read thread pinned to one CPU")
 
 
+def frozen_context(build, spec, filename, constructor):
+    name = f"tools/pipeline_eval/variants/experimental/{filename}"
+    path = build / name
+    contents = path.read_bytes()
+    if sha256(contents).hexdigest() != spec["sources"][name]:
+        raise ValueError(f"Frozen acquisition adapter changed: {filename}")
+    bindings = {"__name__": __name__, "__file__": str(path)}
+    exec(compile(contents, str(path), "exec"), bindings)
+    return bindings[constructor]
+
+
 def run(parent, reference, reference_sha256, build, build_sha256, cache_library, *, prefetch=False):
     parent = parent.resolve(strict=True)
     qnap = Path("/mnt/qnap01")
@@ -211,8 +224,15 @@ def run(parent, reference, reference_sha256, build, build_sha256, cache_library,
     spec = json.loads(config)
     if spec["schedule"] != "all" or spec["ingress"] != "paired-sha256":
         raise ValueError("Expected the reviewed full-scan acquisition build")
+    timed = measure
     if prefetch:
         prefetch_comparison(spec)
+        timed = partial(
+            measure,
+            buffer=frozen_context(build, spec, "receiver_ingress.py", "compressed_input_buffer"),
+            hint=frozen_context(build, spec, "receiver_member_lookahead.py", "compressed_member_lookahead"),
+            hashes=frozen_context(build, spec, "paired_sha256.py", "paired_decoded_hashes"),
+        )
     control, candidate = ("hint", "prefetch") if prefetch else ("control", "hint")
     receiver, hasher = Path(spec["detector"]), Path(spec["paired_sha256"]["library"])
     if (
@@ -244,7 +264,7 @@ def run(parent, reference, reference_sha256, build, build_sha256, cache_library,
         with patch.dict(algo08_scan.PINS, {"cancellation-factors.so": spec["detector_sha256"]}):
             # Prime detector code and the privately allocated filesystem extents.
             # Compressed page state is separately verified before every timed arm.
-            expected = measure(assets, hasher, intake, arm=control)
+            expected = timed(assets, hasher, intake, arm=control)
             if not expected["selected"]:
                 raise ValueError("Generated fixture did not exercise selected receiver factors")
             for condition, pair_count in (("cold", COLD_PAIRS), ("warm", WARM_PAIRS)):
@@ -256,7 +276,7 @@ def run(parent, reference, reference_sha256, build, build_sha256, cache_library,
                         start = verified_start(
                             members, query, expected_pages, cold=condition == "cold"
                         )
-                        row = measure(assets, hasher, intake, arm=arm)
+                        row = timed(assets, hasher, intake, arm=arm)
                         row["starting_cache_pages"] = start
                         if row["acquisition_sha256"] != expected["acquisition_sha256"]:
                             raise ValueError("I/O overlap changed verified acquisition output")
