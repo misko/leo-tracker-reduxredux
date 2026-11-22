@@ -79,13 +79,13 @@ def worker(mode, native, spec, archive, offer, output):
     helper["write"](output, dict(result, likelihood_timing=clock))
 
 
-def run(receipt_path, frozen, output, *, single_root=None, fused_first=False):
+def saved_inputs(receipt_path, frozen, single_root):
     from leo.contracts.algo08_region import Algo08Region
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.qualification.paired_publication import archive_identity, verify_sources
 
     helper = runpy.run_path(str(HELPER))
-    read, write = helper["read"], helper["write"]
+    read = helper["read"]
     publication = read(receipt_path)
     spec_path = frozen / "spec.json"
     spec = read(spec_path)
@@ -109,7 +109,17 @@ def run(receipt_path, frozen, output, *, single_root=None, fused_first=False):
     if offer != stock["receipt"]["region"] or stock["receipt"]["decision"] != "complete":
         raise ValueError("Expected the original region and a complete published candidate")
     native = helper["saved_native"](receipt_path, root, stock)
+    return publication, stock, spec_path, archive, offer, native
 
+
+def run(receipt_path, frozen, output, *, single_root=None, fused_first=False):
+    from leo.contracts.digests import canonical_digest
+    from tools.pipeline_eval.qualification.paired_publication import archive_identity
+
+    helper = runpy.run_path(str(HELPER))
+    read, write = helper["read"], helper["write"]
+    publication, stock, spec_path, archive, offer, native = saved_inputs(
+        receipt_path, frozen, single_root)
     order = MODES[::-1] if fused_first else MODES
     env = os.environ.copy()
     for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE",
