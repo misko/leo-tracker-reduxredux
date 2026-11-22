@@ -21,10 +21,7 @@ def read(path):
 def main(trial):
     simulations = read(HERE.parent / "regional-release/scoring-key.json")["answers"]
     references = read(HERE.parents[1] / "2026_11_21_ds30_full/reference-audit.json")["cases"]
-    roof = next(row for row in references if row["dataset_label"] == "DS30-0016")
-    if not roof["authority_eligible"]:
-        raise ValueError("Physical recording lacks an eligible survey")
-    roof_truth = [roof["reference"][k] for k in ("latitude_deg", "longitude_deg")]
+    physical = {row["dataset_label"]: row for row in references}
     cases = (("DS30-0016-shared", "DS30-0016 · physical"),
              ("south-shared", "Southern site · simulation"),
              ("north-far-shared", "Northern simulation · true region missing"))
@@ -32,12 +29,19 @@ def main(trial):
         cases = (("DS30-0016-deferred", "DS30-0016 · moments and deferred scans"),
                  ("north-edge-moments", "Northern edge · track moments"),
                  ("south-deferred", "Southern site · moments and deferred scans"))
-    fig, axes = plt.subplots(len(cases), 2, figsize=(9, 8.2), layout="constrained")
+    if trial == "upper-edge":
+        cases = (("DS30-0161-lean", "DS30-0161 · baseline first"),
+                 ("DS30-0161-lean-reverse", "Same recording · candidate first"))
+    fig, axes = plt.subplots(len(cases), 2, figsize=(9, 2.7 * len(cases) + .1), layout="constrained")
     longest_publication = 0
     for row, (key, site) in enumerate(cases):
         pair = read(HERE / "measurements" / f"{key}.json")
-        if key.startswith("DS30-0016"):
-            truth = roof_truth
+        if key.startswith("DS30-"):
+            label = "-".join(key.split("-")[:2])
+            reference = physical[label]
+            if not reference["authority_eligible"]:
+                raise ValueError(f"No eligible physical scoring reference for {label}")
+            truth = [reference["reference"][k] for k in ("latitude_deg", "longitude_deg")]
         else:
             recording = Path(pair["recording"]).name
             truths = {tuple(answer["truth"]) for answer in simulations.values() if answer["recording"] == recording}
@@ -62,7 +66,10 @@ def main(trial):
         duration.set_yticks([1, 0], ["Elapsed", "CPU"])
         errors.set_yticks([1, 0], ["Fixed zero", "Fitted"])
         longest_publication = max(longest_publication, *(run["elapsed_s"] for run in pair["runs"].values()))
-        errors.set_xlim(0, 62 if key == "north-far-shared" else 2)
+        distance_limit = 62 if key == "north-far-shared" else 2
+        if trial == "upper-edge":
+            distance_limit = max(distance_limit, errors.dataLim.xmax * 1.2)
+        errors.set_xlim(0, distance_limit)
         errors.set_title("Published false fix · expanded distance scale" if key == "north-far-shared"
                          else "Position error on the same recording", loc="left", fontsize=11)
         for ax in (duration, errors):
@@ -81,5 +88,5 @@ def main(trial):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trial", choices=("shared", "moments"), default="shared")
+    parser.add_argument("--trial", choices=("shared", "moments", "upper-edge"), default="shared")
     main(parser.parse_args().trial)

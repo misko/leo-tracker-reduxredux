@@ -1,6 +1,8 @@
 # ALGO08v2 single-core experiments
 
-The latest integrated candidate combines track moments with deferred receiver measurements. On **DS30-0016 it took 18.85 versus 24.69 seconds elapsed (1.31×)**. On the **southern simulation it took 17.76 versus 31.58 seconds (1.78×)**. Single-core CPU speedups were 1.60× and 1.77×. Every ordered detector row, both positions and all eight PNGs matched on both recordings. Full-pipeline testing at a second physical station and the 2× target remain open. [Matched report and figure](moments-publication.md) · [Previous build and wrong-region results](shared-publication.md) · [Geographic qualification protocol](PROTOCOL.md)
+**The approximate track-moment search failed on DS30-0008.** Fitted position error rose from 1.512 to 2.916 km and neither shortlist contained the other solver's winning assignment. Keep full-observation ranking for qualification. On a different physical recording, DS30-0161, the integrated experimental build ran 1.66× faster with both inputs cached and exactly reproduced both positions and all eight figures. The 2× end-to-end target and physical transfer to another station remain open. [Measurements, error plot and geographic qualification](location-triage.md)
+
+On the earlier two-case comparison, the candidate with moments and deferred receiver measurements took **18.85 versus 24.69 seconds elapsed (1.31×)** on DS30-0016 and **17.76 versus 31.58 seconds (1.78×)** on a southern simulation. Single-core CPU speedups were 1.60× and 1.77×. Every ordered detector row, both positions and all eight PNGs matched on both recordings. [Matched report and figure](moments-publication.md) · [Previous build and wrong-region results](shared-publication.md) · [Geographic qualification protocol](PROTOCOL.md)
 
 ## Earlier build on a longer physical recording
 

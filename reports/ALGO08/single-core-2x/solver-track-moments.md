@@ -1,5 +1,7 @@
 # Local time moments for broad association
 
+DS30-0008 subsequently exposed a changed winner and worse position in both calibration arms. The approximate initial search is excluded from qualification. The four earlier trials below remain development measurements. [New paired solver receipts and analysis](location-triage.md)
+
 All-observation time moments reduced broad discovery and exact cold ranking CPU from **4.400 to 1.357 seconds (3.24×)** on the longer DS30-0374 recording. Complete saved-detection-to-grid CPU fell from **28.786 to 25.914 seconds (1.11×)**. Both calibration positions, published owners, conditional RF RMS, optimizer paths, and every grid value matched on DS30-0374, a short physical recording, and two public simulated offers. The northern offer still produced two false boundary fixes.
 
 ## Proposal likelihood
