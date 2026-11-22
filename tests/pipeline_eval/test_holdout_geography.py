@@ -44,8 +44,8 @@ def test_offer_labels_match_the_search_square_across_widths_and_hemispheres():
 
 
 def test_actual_sites_must_cover_both_private_boxes_even_with_distinct_recordings():
-    seed = (45).to_bytes(32, "big").hex()
-    (a, _), (b, _) = fresh_layout(np.random.default_rng(45))
+    seed = (0).to_bytes(32, "big").hex()
+    (a, _), (b, _) = fresh_layout(np.random.default_rng(0))
     jittered = [(a[0] + 1.99, a[1] - 1.99), (b[0] - 1.9, b[1] + .5)]
     assert verifies_drawn_sites(seed, list(reversed(jittered)))
     assert not verifies_drawn_sites(seed, [a, jittered[0]])
@@ -80,7 +80,7 @@ def test_offers_redraw_an_along_face_offset_that_rounds_onto_the_receiver():
 
 
 def test_draw_discards_a_height_development_area_before_creating_waveforms(monkeypatch):
-    overlaps, independent = (v.to_bytes(32, "big") for v in (9, 45))
+    overlaps, independent = (v.to_bytes(32, "big") for v in (9, 0))
     assert not verifies_drawn_sites(overlaps.hex(), holdout_geography.seeded_centers(overlaps))
     assert verifies_drawn_sites(independent.hex(), holdout_geography.seeded_centers(independent))
     seeds = iter([overlaps, independent])
@@ -89,7 +89,7 @@ def test_draw_discards_a_height_development_area_before_creating_waveforms(monke
 
 
 def test_austin_receiver_area_is_excluded_from_selection_and_final_scoring(monkeypatch):
-    overlap, independent = (v.to_bytes(32, "big") for v in (1, 45))
+    overlap, independent = (v.to_bytes(32, "big") for v in (1, 0))
     independent_sites = holdout_geography.seeded_centers(independent)
     austin_sites = [(29.8, -98.1), independent_sites[1]]
     # Inject draws to check both consumers without touching a real confirmation seed.
@@ -102,3 +102,23 @@ def test_austin_receiver_area_is_excluded_from_selection_and_final_scoring(monke
     assert holdout_geography.new_confirmation_seed() == independent
     assert not verifies_drawn_sites(overlap.hex(), austin_sites)
     assert verifies_drawn_sites(independent.hex(), independent_sites)
+
+
+def test_site_jitter_cannot_move_a_confirmation_receiver_back_into_a_development_area(monkeypatch):
+    marginal, distant = (v.to_bytes(32, "big") for v in (45, 0))
+    first, second = holdout_geography.seeded_centers(marginal)
+    assert verifies_drawn_sites(marginal.hex(), [first, second])
+    shifted = (first[0] - 1.99, first[1] + 1.99)
+    assert distance_km(first, (12, 105)) > 1600 > distance_km(shifted, (12, 105))
+    assert not verifies_drawn_sites(marginal.hex(), [shifted, second])
+    seeds = iter([marginal, distant])
+    monkeypatch.setattr(holdout_geography.secrets, "token_bytes", lambda _: next(seeds))
+    assert holdout_geography.new_confirmation_seed() == distant
+
+
+def test_separation_accounts_for_both_receivers_moving_in_their_boxes(monkeypatch):
+    monkeypatch.setattr(holdout_geography, "DEVELOPMENT_CENTERS", ())
+    points = [(0., -165.), (0., -150.)]
+    assert holdout_geography.separated_sites(points)
+    assert not holdout_geography.separated_sites(points, holdout_geography.SCENE_DISPLACEMENT_BOUND_KM)
+    assert not holdout_geography.separated_sites([(0., -164.), (0., -151.)])

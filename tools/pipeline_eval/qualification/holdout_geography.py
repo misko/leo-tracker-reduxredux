@@ -1,6 +1,6 @@
 """Scorer-side geographic sampling for the ALGO08 single-core confirmation."""
 
-from math import cos, radians
+from math import cos, radians, sqrt
 import secrets
 
 from tools.pipeline_eval.scoring import distance_km
@@ -9,6 +9,10 @@ EDGE_PROTOCOL = "paired-region-edges-v1"
 CONTAINING = {"containing", "edge-containing"}
 EDGE_CASES = CONTAINING | {"edge-omitted", "far"}
 MIN_CENTER_SEPARATION_KM = 1600
+SCENE_JITTER_DEG = 2.0
+# A straight path in latitude/longitude has length at most the equatorial
+# degrees-to-km scale times its angular length on the coordinate plane.
+SCENE_DISPLACEMENT_BOUND_KM = 111.2 * sqrt(2) * SCENE_JITTER_DEG
 
 # Centers of earlier development simulations and the real DS26/29/30 station.
 # The scene generator adds at most two degrees in each coordinate to a center.
@@ -62,11 +66,20 @@ def independent_of_later_trials(centers):
                for center in centers for used in (*HEIGHT_TRIAL_CENTERS, AUSTIN_RECEIVER_AREA))
 
 
+def separated_sites(sites, displacement_bound_km=0.0):
+    """Check the two receivers against recorded development centers and each other."""
+    first, second = sites
+    excluded = (*DEVELOPMENT_CENTERS, *HEIGHT_TRIAL_CENTERS, AUSTIN_RECEIVER_AREA)
+    return (distance_km(first, second) >= MIN_CENTER_SEPARATION_KM + 2 * displacement_bound_km
+            and all(distance_km(site, old) >= MIN_CENTER_SEPARATION_KM + displacement_bound_km
+                    for site in sites for old in excluded))
+
+
 def new_confirmation_seed():
     """Draw before synthesizing any signals. Explicit replay seeds stay reproducible."""
     while True:
         seed = secrets.token_bytes(32)
-        if independent_of_later_trials(seeded_centers(seed)):
+        if separated_sites(seeded_centers(seed), SCENE_DISPLACEMENT_BOUND_KM):
             return seed
 
 
@@ -79,11 +92,13 @@ def drawn_pilot_edges(seed_hex, sites):
     if len(seed) != 32:
         return {}
     layout = seeded_layout(seed)
-    if len(sites) != len(layout) or not independent_of_later_trials([center for center, _ in layout]):
+    if (len(sites) != len(layout) or not separated_sites(sites)
+            or not independent_of_later_trials([center for center, _ in layout])):
         return {}
     # make_scene jitters each coordinate independently by at most two degrees.
     expected = {tuple(site): edge for center, edge in layout for site in sites
-                if abs(site[0] - center[0]) <= 2 and abs(site[1] - center[1]) <= 2}
+                if (abs(site[0] - center[0]) <= SCENE_JITTER_DEG
+                    and abs(site[1] - center[1]) <= SCENE_JITTER_DEG)}
     return expected if set(expected.values()) == {"lower", "upper"} else {}
 
 
