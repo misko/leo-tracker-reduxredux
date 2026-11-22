@@ -14,6 +14,7 @@ TABLE_MODES = ("shared-tables", "track-moments")
 DISCOVERY_MODES = ("combined-shared-discovery", *TABLE_MODES)
 SALVAGE_MODES = ("combined", *DISCOVERY_MODES)
 CAUSAL_MODES = ("causal-reuse", *SALVAGE_MODES)
+RENDERING_MODES = ("individual", "shared-orbits", "shared-pixels", "raster-layout")
 
 
 def run(args, specification):
@@ -28,8 +29,8 @@ def run(args, specification):
     if mode not in ("stock", *CAUSAL_MODES):
         raise ValueError("Unknown experimental solver")
     rendering = specification.get("rendering", "individual")
-    if rendering not in ("individual", "shared-orbits", "shared-pixels"):
-        raise ValueError("Unknown orbit renderer")
+    if rendering not in RENDERING_MODES:
+        raise ValueError("Unknown publication renderer")
     ingress = specification.get("ingress", "stock")
     if ingress not in ("stock", "compressed-buffer"):
         raise ValueError("Unknown experimental I/Q reader")
@@ -72,6 +73,9 @@ def run(args, specification):
             from tools.pipeline_eval.variants.experimental.shared_orbit_figures import render_shared
             renderer = partial(render_shared, reuse_pixels=rendering == "shared-pixels")
             stack.enter_context(patch.object(fast_standard_analysis, "render_fast_scan_orbits", renderer))
+        if rendering == "raster-layout":
+            from tools.pipeline_eval.variants.experimental.raster_layout import render_layout
+            stack.enter_context(patch.object(algo08_scan, "render", render_layout))
         if mode != "stock":
             from tools.pipeline_eval.variants.algo08_causal_reuse import prepare
             scoped = partial(prepare, algo08_position.prepare_native_scan, statistics={})

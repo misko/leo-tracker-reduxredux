@@ -5,7 +5,9 @@ import json
 from pathlib import Path
 import shutil
 
-from .experimental_publication import CAUSAL_MODES, DISCOVERY_MODES, RELEASE, SALVAGE_MODES, TABLE_MODES
+from .experimental_publication import (
+    CAUSAL_MODES, DISCOVERY_MODES, RELEASE, RENDERING_MODES, SALVAGE_MODES, TABLE_MODES,
+)
 
 
 LAUNCHER = Path("reports/ALGO08/single-core-2x/run-candidate")
@@ -15,6 +17,8 @@ VARIANTS = Path("tools/pipeline_eval/variants")
 
 def freeze(checkout, output, detector, expected_sha256, solver, ingress, release=RELEASE, *, schedule="all",
            rendering="individual", startup="stock"):
+    if rendering not in RENDERING_MODES:
+        raise ValueError("Unknown publication renderer")
     detector_bytes = detector.read_bytes()
     if hashlib.sha256(detector_bytes).hexdigest() != expected_sha256:
         raise ValueError("Detector differs from its reviewed build")
@@ -32,8 +36,10 @@ def freeze(checkout, output, detector, expected_sha256, solver, ingress, release
                                                      "algo08_salvage_bound.py"))
     if solver == "track-moments":
         sources.append(VARIANTS / "algo08_track_moments.py")
-    if rendering in ("shared-orbits", "shared-pixels"):
+    if rendering in ("shared-orbits", "shared-pixels", "raster-layout"):
         sources.append(VARIANTS / "experimental/shared_orbit_figures.py")
+    if rendering == "raster-layout":
+        sources.append(VARIANTS / "experimental/raster_layout.py")
     if ingress == "compressed-buffer":
         sources.append(VARIANTS / "experimental/receiver_ingress.py")
     if schedule in ("alternate", "bursts"):
@@ -69,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("--solver", choices=("stock", *CAUSAL_MODES), required=True)
     parser.add_argument("--ingress", choices=("stock", "compressed-buffer"), required=True)
     parser.add_argument("--schedule", choices=("all", "bursts", "alternate", "deferred"), default="all")
-    parser.add_argument("--rendering", choices=("individual", "shared-orbits", "shared-pixels"), default="individual")
+    parser.add_argument("--rendering", choices=RENDERING_MODES, default="individual")
     parser.add_argument("--startup", choices=("stock", "lazy-exports"), default="stock")
     args = parser.parse_args()
     freeze(Path(__file__).resolve().parents[3], args.output, args.detector, args.detector_sha256,

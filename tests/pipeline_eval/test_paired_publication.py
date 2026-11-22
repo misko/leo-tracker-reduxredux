@@ -164,3 +164,39 @@ def test_experimental_entry_passes_each_offer_without_a_station_reference(tmp_pa
     (root/"prior-result").touch()
     with pytest.raises(ValueError, match="empty output root"):
         trial.run(args,spec)
+
+
+@pytest.mark.parametrize("rendering", ["individual", "raster-layout"])
+def test_experimental_entry_scopes_the_selected_publication_renderer(tmp_path, monkeypatch, rendering):
+    from tools import algo08_scan
+    from tools.pipeline_eval.qualification import experimental_publication as trial
+    from tools.pipeline_eval.variants.experimental import raster_layout
+
+    stock = algo08_scan.render
+    packet = {"selected_model": "fixture"}
+    expected = {"position": b"layout"}
+
+    def candidate(science, *, title):
+        assert science is packet
+        assert title == "opaque"
+        return expected
+
+    def analyze(recording, root, assets, archive, offer):
+        if rendering == "raster-layout":
+            return algo08_scan.render(packet, title=recording.name)
+        assert algo08_scan.render is stock
+        return expected
+
+    monkeypatch.setattr(raster_layout, "render_layout", candidate)
+    monkeypatch.setattr(algo08_scan, "analyze", analyze)
+    output = tmp_path / "output"
+    output.mkdir()
+    detector = tmp_path / "receiver.so"
+    detector.touch()
+    region = tmp_path / "offer.json"
+    region.write_text(json.dumps({"center": [-33, 113], "width_km": 35}))
+    args = SimpleNamespace(recording=tmp_path / "opaque", bulk_root=output,
+                           archive=tmp_path / "tle", region=region)
+    spec = dict(solver="stock", rendering=rendering, detector=str(detector), detector_sha256="c" * 64)
+    assert trial.run(args, spec) == expected
+    assert algo08_scan.render is stock

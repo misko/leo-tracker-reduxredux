@@ -9,7 +9,8 @@ from tools.pipeline_eval.qualification.paired_publication import verify_sources
 @pytest.mark.parametrize(("solver", "rendering", "schedule"), [
     ("stock", "individual", "all"), ("combined-shared-discovery", "shared-orbits", "all"),
     ("shared-tables", "shared-pixels", "all"), ("track-moments", "shared-pixels", "all"),
-    ("track-moments", "shared-pixels", "deferred")])
+    ("track-moments", "shared-pixels", "deferred"),
+    ("shared-tables", "raster-layout", "deferred"), ("stock", "raster-layout", "all")])
 def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solver, rendering, schedule):
     release, checkout, output = [tmp_path / name for name in ("release", "checkout", "output")]
     (release / "tools").mkdir(parents=True)
@@ -18,7 +19,11 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
     if solver != "stock":
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_reuse.py", "algo08_salvage_statistics.py", "algo08_dense_discovery.py",
-            "experimental/shared_orbit_figures.py"))
+        ))
+    if rendering != "individual":
+        selected.append(bundle.VARIANTS / "experimental/shared_orbit_figures.py")
+    if rendering == "raster-layout":
+        selected.append(bundle.VARIANTS / "experimental/raster_layout.py")
     if solver in ("shared-tables", "track-moments"):
         selected.extend(bundle.VARIANTS / name for name in (
             "algo08_causal_table.py", "algo08_cavity_projection.py", "algo08_salvage_bound.py"))
@@ -37,6 +42,10 @@ def test_freeze_copies_release_and_only_selected_research_modules(tmp_path, solv
     digest = hashlib.sha256(binary.read_bytes()).hexdigest()
     with pytest.raises(ValueError, match="reviewed build"):
         bundle.freeze(checkout, output, binary, "wrong", "stock", "compressed-buffer", release)
+    assert not output.exists()
+    with pytest.raises(ValueError, match="publication renderer"):
+        bundle.freeze(checkout, output, binary, digest, solver, "compressed-buffer", release,
+                      rendering="unknown")
     assert not output.exists()
     spec = bundle.freeze(checkout, output, binary, digest, solver, "compressed-buffer", release,
                          rendering=rendering, schedule=schedule, startup=startup)
