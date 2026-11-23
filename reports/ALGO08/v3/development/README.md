@@ -50,6 +50,8 @@ A perfect decision about which antenna visits to search saved 16.3% of authentic
 
 One bounded repair admitted a dense fix without fallback. The same research build ran from raw I/Q through all eight figures on the southern simulation in 13.38 s against 14.36 s for installed v3. It improved both dense and southern position errors, while northern containing errors increased by 66 m and 83 m across the two calibration fits. [End-to-end pair, original position PNGs and five saved offers](joint-publication.md)
 
+Feeding the same repaired solver with saved covariance detections produced a 41.60-second dense solve and 1.093 km fitted error. The alternate receiver's historical warm acquisition alone took 56.20 seconds. With the historical publication cost, the projected dense total is 101.14 seconds against v3's observed 113.02 seconds. [Matched detector packets, both calibration fits and timing boundaries](../receiver-crossover.md)
+
 ## Frozen scoring rules
 
 1. Use the recorded 4-case prefix and then the 16-case prefix in [the assignment manifest](stages.json). Retain complete pairs from the first four only for the identical frozen implementation and timing boundary. Alternate first build according to the assignments. Record cache residence immediately before each build, charged reads, CPU, elapsed, exit and artifacts. Use a single shared lock across each pair, one pinned core, nice 15, best-effort I/O priority 7 and one numerical thread. Keep failed attempts in the ledger.
