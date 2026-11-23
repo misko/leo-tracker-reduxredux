@@ -33,9 +33,11 @@ def test_eliminated_bias_objective_matches_existing_checked_posterior_kernel(wid
     sigma = np.exp(rng.uniform(0, 3, len(design)))
     by_curve = np.repeat([1, 4, 6, 7], [2, 7, 13, 11])
     old = predictive_factor(raw, design, sigma, by_curve, capture, 3)
-    new, counts = reduced_predictive(raw, design, sigma, by_curve, capture, 3)
+    new, counts = reduced_predictive(raw, design, sigma, by_curve, capture, 3, include_residual=True)
     assert new["objective"] == pytest.approx(old["objective"], rel=1e-12, abs=1e-8)
     assert new["normalization_constant"] == old["normalization_constant"]
+    assert new["residual"] @ new["residual"] == pytest.approx(
+        old["residual"] @ old["residual"], rel=1e-12, abs=1e-8)
     assert (counts["prefix"], counts["biases"]) == (prefix, 4)
 
 

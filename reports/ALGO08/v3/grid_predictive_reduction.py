@@ -37,7 +37,7 @@ def collapse_biases(raw, uncertainty, sigma, groups):
     return collapsed[:, :-1], collapsed[:, -1], float(np.log1p(lengths).sum()), len(starts)
 
 
-def reduced_predictive(raw, design, sigma, groups, capture, member_count):
+def reduced_predictive(raw, design, sigma, groups, capture, member_count, *, include_residual=False):
     if not 0 < member_count <= capture.width:
         raise ValueError("The checked posterior and latent scales are incompatible")
     axis_time = process_time_ns()
@@ -61,6 +61,8 @@ def reduced_predictive(raw, design, sigma, groups, capture, member_count):
     result = dict(objective=quadratic+volume+normalization, normalization_constant=normalization)
     if not np.isfinite(result["objective"]):
         raise ValueError("Non-finite reduced predictive objective")
+    if include_residual:
+        result["residual"] = np.r_[innovation, coefficient, np.sqrt(volume)]
     return result, dict(rows=len(raw), width=capture.width, prefix=prefix, biases=biases,
                         whiten_cpu_ns=collapse_time-axis_time, bias_cpu_ns=factor_time-collapse_time,
                         factor_cpu_ns=process_time_ns()-factor_time)

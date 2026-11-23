@@ -18,9 +18,13 @@ def test_full_catalogue_route_is_explicit_for_raw_and_saved_publication(monkeypa
     assert not calls[-1].full_catalogue
     for source in ([], ["--saved", str(tmp_path / "detections.json"), "--saved-digest", "ref"]):
         module.main([*args, *source, "--full-catalogue", "--verify-images"])
-        assert calls[-1].full_catalogue and calls[-1].verify_images
+        assert calls[-1].full_catalogue and calls[-1].verify_images and not calls[-1].optimized_full_catalogue
+        module.main([*args, *source, "--optimized-full-catalogue", "--verify-images"])
+        assert calls[-1].optimized_full_catalogue and calls[-1].verify_images and not calls[-1].full_catalogue
     with pytest.raises(SystemExit):
         module.main([*args, "--stock-control", "--full-catalogue"])
+    with pytest.raises(SystemExit):
+        module.main([*args, "--full-catalogue", "--optimized-full-catalogue"])
 
 
 @pytest.mark.parametrize("wrong", [None, "digest", "session", "inventory", "receiver"])
