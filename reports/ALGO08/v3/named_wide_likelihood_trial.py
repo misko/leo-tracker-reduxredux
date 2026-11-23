@@ -131,7 +131,8 @@ def verify(root, destination):
         raise ValueError("The opt-in library must have distinct research provenance")
     write(destination, dict(admission=admission, build=read(root / "build-clock.json"),
           library_manifest=read(root / "library/manifest.json"), runs=runs,
-          scores=reference["scores"]["stock"], equal_science_and_media=True, waveform_calls=0))
+          scores={k: reference["scores"][k]["stock"] for k in ("horizontal_error_km", "rf_rms_hz")},
+          equal_science_and_media=True, waveform_calls=0))
 
 
 if __name__ == "__main__":
