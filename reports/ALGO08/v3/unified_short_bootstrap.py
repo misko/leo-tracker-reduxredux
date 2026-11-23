@@ -72,7 +72,7 @@ def withhold(scan, args, offer, assets, handoff, reason, *, graph_proof=None):
 
 
 @contextmanager
-def layout_renderer(scan, enabled, audit):
+def layout_renderer(scan, enabled, audit, *, direct_residuals=False):
     if not enabled:
         yield
         return
@@ -86,7 +86,12 @@ def layout_renderer(scan, enabled, audit):
 
     def opted_in(packet, **options):
         start = now()
-        images, detail = render(installed, packet, enabled=True, **options)
+        if direct_residuals:
+            from direct_residual_entry import render as render_residuals
+
+            images, detail = render_residuals(installed, packet, **options)
+        else:
+            images, detail = render(installed, packet, enabled=True, **options)
         audit.update(work=detail, render=clock(start))
         return images
 
@@ -112,6 +117,9 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
                                     png_read_audit if png_read_audit is not None else {})
     grid_library = getattr(args, "grid_feature_projection_library", None)
     grid_audit = {}
+    direct_layout = {"direct_residuals": True} if getattr(args, "direct_residual_figures", False) else {}
+    if direct_layout and not args.one_pass_web_png:
+        raise ValueError("Direct residual figures require the explicit one-pass layout")
     forecast_audit = None
     if getattr(args, "exact_phase_forecast", False):
         forecast_audit = dict(requested=True, executions=[])
@@ -130,7 +138,7 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
         # The installed lossless renderer is bound before the analyze hook.
         with ExitStack() as stack:
             stack.enter_context(handoff.install(scan))
-            stack.enter_context(layout_renderer(scan, args.one_pass_web_png, layout_audit))
+            stack.enter_context(layout_renderer(scan, args.one_pass_web_png, layout_audit, **direct_layout))
             stack.enter_context(graph_execution(enabled=getattr(args, "exact_graph_reuse", False), audit=graph_audit))
             if captured is not None:
                 stack.enter_context(captured.capture(FastStandardAnalysisStore))
@@ -168,6 +176,8 @@ def run(args):
     import empty_bootstrap as staged
 
     started = staged.now()
+    if getattr(args, "direct_residual_figures", False) and not args.one_pass_web_png:
+        raise ValueError("--direct-residual-figures requires --one-pass-web-png")
     if args.output.exists() or not args.output.parent.is_dir():
         raise ValueError("Choose a new local publication directory beneath an existing parent")
     launcher, specification, sources, publication, checks = staged.load_runtime()
@@ -322,6 +332,8 @@ if __name__ == "__main__":
                         help="Use the pinned minimum support proof before loading the numerical solver")
     parser.add_argument("--one-pass-web-png", action="store_true",
                         help="Use the reviewed explicit layout on the installed renderer when supported")
+    parser.add_argument("--direct-residual-figures", action="store_true",
+                        help="Draw the two residual plots directly with Cairo when the explicit layout is enabled")
     parser.add_argument("--exact-graph-reuse", action="store_true",
                         help="Use reviewed ordered graph batches and exact best-piece reuse in active lanes")
     parser.add_argument("--reuse-verified-png-reads", action="store_true",

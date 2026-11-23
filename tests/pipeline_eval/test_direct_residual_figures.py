@@ -2,11 +2,13 @@
 
 from pathlib import Path
 import sys
+from io import BytesIO
 
 import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
+from direct_residual_entry import ResidualFigure, UnsupportedResidualFigures
 from direct_residual_figures import PALETTE, scene, ticks
 
 
@@ -45,3 +47,27 @@ def test_scene_rejects_nonfinite_residual_and_keeps_bounded_ticks():
         scene(packet(np.nan), "Nonfinite")
     assert ticks((0., 300.), 9) == tuple((50.*i, str(50*i)) for i in range(7))
     assert ticks((-20., 20.), 5) == ((-20., "−20"), (-10., "−10"), (0., "0"), (10., "10"), (20., "20"))
+
+
+def test_entry_sheet_draws_once_and_checks_the_original_renderer_shape():
+    selected = scene(packet(), "Saved run")["ch1-4-residuals"]
+    seen = []
+
+    def draw(chapter):
+        seen.append(chapter)
+        return b"pixels"
+
+    figure = ResidualFigure(selected, draw, lambda stream, pixels: stream.write(pixels))
+    with pytest.raises(UnsupportedResidualFigures, match="axis extent"):
+        figure.subplots(2, 4, squeeze=False)
+    assert figure.subplots(4, 2, squeeze=False).shape == (4, 2)
+    with pytest.raises(UnsupportedResidualFigures, match="save request"):
+        figure.savefig(BytesIO(), format="png", dpi=125)
+    with pytest.raises(UnsupportedResidualFigures, match="figure heading"):
+        figure.suptitle("Unrecognized title", fontsize=11)
+    figure.suptitle("\n".join(selected["heading"]), fontsize=11)
+    output = BytesIO()
+    figure.savefig(output, format="png", dpi=125)
+    figure.clear()
+    assert seen == [selected]
+    assert output.getvalue() == b"pixels"
