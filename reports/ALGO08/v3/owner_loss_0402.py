@@ -24,6 +24,7 @@ from prospective_0402_solver import ARMS, PINS, SETTINGS, checked, inspect, invo
 STAGED = Path("/dev/shm/leo-v3-saved-0402-pair-01")
 ARCHIVED = HERE / "measurements/prospective-0402-solver.json.gz"
 ARCHIVED_SHA = "efaf99cf3d5462d9f92a705164c2795c9b72b4cce9f6e3f4c19391f2f36f0e54"
+NAMED_GATES_SHA = "c75ab249e27b54e348b240ab0c1b379615c0b9265f52e4fc0cc208d6b82f03fb"
 REQUEST_SHA = "a2d730f64833eafd096877650e24b5c250b3bcfbef69d6bb5a44b70f0cbf1274"
 BASE = "f0b2bf34f"
 PROTOCOL = HERE / "owner-loss-0402-protocol.md"
@@ -248,8 +249,29 @@ def stages(trace, original):
             raise ValueError("Every archived owner loss needs an observation-backed stage")
         result[arm] = dict(groups=[dict(component=cmp, norad=n, role=r, stage=stage, count=count)
                                    for (cmp, n, r, stage), count in groups.items()], rows=records)
+    base, reentered = (set(oid for oid, row in stage.items() if row["compatible"]) for stage in curved)
     return dict(by_arm=result, curved_counts=[(g["input"], g["retained"]) for g in (first, second)],
+                second_curved_membership=dict(reentered=len(curved[1].keys()-base), new_survivors=len(reentered-base),
+                                              prior_survivors_removed=len(base-reentered)),
                 predictive_counts=dict(families=len(prediction["available"]), rows=sum(r["points"] for r in prediction["entries"])))
+
+
+def named_gate_witness(old):
+    from leo.contracts.digests import canonical_digest
+
+    data = checked(HERE/"measurements/named-roster-0402.json.gz", NAMED_GATES_SHA)
+    capture = json.loads(gzip.decompress(data))
+    named = old["runs"]["stock"]
+    arms = capture["science"]["arms"]
+    if (capture["accounting"]["native_sha256"] != SETTINGS["native_sha"]
+            or capture["accounting"]["archive_sha256"] != old["inputs"]["local_archive"]["snapshots_sha256"]
+            or any(arms[a]["ordered_owner_sha256"] != canonical_digest(named["selected_rows"][a])
+                   or arms[a]["failed_tracks"] for a in ARMS)):
+        raise ValueError("The named compatibility witness differs from the archived selected support")
+    return dict(source_sha256=NAMED_GATES_SHA, arms=arms, cavity_accepted=capture["accounting"]["cavity"]["accepted"],
+                signed_refits=capture["accounting"]["ledger"]["signed_context_refit"]["calls"],
+                phase_history_sha256=capture["science"]["phase_history_sha256"],
+                per_fragment_metrics_retained=False)
 
 
 def evaluate(output, receipt):
@@ -283,9 +305,17 @@ def evaluate(output, receipt):
              for arm, data in current["terminal"]["arms"].items()}
     compare = {mode: {arm: owner_delta(run["selected_rows"][arm], current["selected_rows"][arm]) for arm in ARMS}
                for mode, run in old["runs"].items()}
-    media = {name: old["runs"]["cumulative"]["figures"][name] == data for name, data in current["figures"].items()}
+    media = {name: {k: (list(v) if k == "size" else v) == baseline["figures"][name][k] for k, v in data.items()}
+             for name, data in current["figures"].items()}
+    parity = dict(terminal=current["terminal"] == baseline["terminal"],
+                  owners=all(delta["identical_ordered_rows"] for delta in compare["cumulative"].values()),
+                  scientific_grid_path=current["science"]["scientific_digests"] == baseline["science"]["scientific_digests"],
+                  full_media=all(all(fields.values()) for fields in media.values()))
+    if not trace["final"][-1]["pre_repair"] and not all(parity.values()):
+        raise ValueError("The scoped intervention reverted to a different published result")
     write(receipt, dict(case="DS30-0402", seal=read(output/"seal.json"), prior_sha256=ARCHIVED_SHA, loss=losses,
                        original_scores=old["scores"], candidate_scores=score, deltas=compare, comparison_pngs=media,
+                       archived_cumulative_parity=parity, named_gate_witness=named_gate_witness(old),
                        candidate=current, trace=trace, legends=orbit_legends(path, current),
                        archived_clocks={mode: run["process"] for mode, run in old["runs"].items()}))
 
