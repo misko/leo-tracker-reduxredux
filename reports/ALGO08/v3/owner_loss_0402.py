@@ -164,12 +164,21 @@ def request():
 
 
 def worker(output):
-    from aperture_trial import write
+    import unified_short_bootstrap as entry
 
     verify_sources(checked, SOURCE_PINS)
     audit = dict(curved_gates=[], predictive=[], pre_repair=[], final=[])
-    with bind(audit):
+    publication = entry.publish_active
+
+    def scoped(*args, **kwargs):
+        with bind(audit):
+            return publication(*args, **kwargs)
+
+    with patch.object(entry, "publish_active", scoped):
         invoke(STAGED/"request.json", "cumulative", output)
+
+    from aperture_trial import write
+
     write(output/"owner-trace.json", audit)
 
 
