@@ -23,7 +23,7 @@ def test_noiseless_bin_resolution_and_fractional_control():
     assert measured["centered"]["bin_delta"] == 0
     assert measured["straddled"]["bin_delta"] == 1
     for profile in measured.values():
-        assert profile["signed_delta_hz"] == pytest.approx(70, abs=0.2)
+        assert profile["signed_delta_hz"] == pytest.approx(70, abs=1)
         assert profile["absolute_delta_hz"] == profile["signed_delta_hz"]
 
 

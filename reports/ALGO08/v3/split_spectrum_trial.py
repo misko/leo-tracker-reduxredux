@@ -28,7 +28,6 @@ HERE = Path(__file__).resolve().parent
 MEASURED = HERE / "measurements"
 PROTOCOL = HERE / "split-spectrum-protocol.md"
 PINS = {
-    "full-short-cold": "58892accfa3da056d432031d0a476ec869239963cdc5cd40cd52002c6b2553bc",
     "scout-readout": "5d1998cee0e16165f2c355059d28b4b96f2486cc9297e7c55d760d4784f34431",
 }
 WEAK_ARCHIVE = "0f025d0f5c80f5425a3c6fa90bc77a0e5628eb8cf7bc7ac7dab7fdd6c1d2e9d9"
@@ -232,32 +231,23 @@ def quality(rows, metric):
     )
 
 
-def archived_factor(row):
-    return (row["candidate_rank"], row["integer_epoch_sample"],
-            row["fractional_epoch_offset_samples"], row["fractional_tracking_cfo_hz"],
-            row["fractional_exact_score"], row["fractional_control_score"])
-
-
 def score(trace, pin, output):
     observed = json.loads(gzip.decompress(checked(trace, pin)))
     if sha256(PROTOCOL.read_bytes()).hexdigest() != observed["protocol_sha256"]:
         raise ValueError("Protocol changed after trace seal")
     prior = {key: json.loads(gzip.decompress(checked(MEASURED / (key+".json.gz"), digest)))
              for key, digest in PINS.items()}
-    dense = {}
-    for row in prior["full-short-cold"]["detection_documents"]["stock"]["source"]["probes"]:
-        key = row["visit_index"], row["receiver_id"], row["valid_start_counter"]
-        dense[key] = next((archived_factor(c) for c in row["candidates"] if c["candidate_rank"] == 0), None)
-    weak = {(row["key"], row["lane"], row["digest"]):
-            next((f for f in row["released"] if f[0] == 0), None)
-            for row in prior["scout-readout"]["groups"]["weak"]["rows"]}
     scored, stats = {}, {}
     for cohort, rows in observed["data"].items():
+        released = {
+            (row["key"], row["lane"], row["digest"]):
+            next((f for f in row["released"] if f[0] == 0), None)
+            for row in prior["scout-readout"]["groups"][cohort]["rows"]
+        }
         cohort_rows = []
         by_state = Counter()
         for row in rows:
-            control = (dense[row["visit"], row["lane"], row["start"]] if cohort == "dense"
-                       else weak[row["key"], row["lane"], row["digest"]])
+            control = released[row["key"], row["lane"], row["digest"]]
             short = row["factor"]
             state, timing, delta = "short_empty", None, None
             if short is not None:
