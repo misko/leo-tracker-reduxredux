@@ -70,19 +70,28 @@ def run(args):
     attempts = []
     saved = json.loads(args.saved.read_bytes()) if args.saved else None
     saved_handoffs, solves, selected_rows = [], [], {}
+    observer = getattr(args, "observe_prepared", None)
+    preparations = []
 
     def analyze(*values, **kwargs):
         stock_solve = algo08_scan.solve
 
         def solve(native, reader, assets, region):
             cpu, wall = process_time(), perf_counter()
-            if stock_control:
+            infer = v5_core.infer
+            route = infer if stock_control else make_route(infer, reader, attempts, repair=True, signed_finish=signed_finish)
+
+            def observed(prepared, *values, **options):
+                preparations.append(observer(prepared))
+                return route(prepared, *values, **options)
+
+            with ExitStack() as stack:
+                if observer is not None or not stock_control:
+                    stack.enter_context(patch.object(v5_core, "infer", observed if observer is not None else route))
                 decision, packet, policy = stock_solve(native, reader, assets, region)
-            else:
-                route = make_route(v5_core.infer, reader, attempts, repair=True, signed_finish=signed_finish)
-                with patch.object(v5_core, "infer", route):
-                    decision, packet, policy = stock_solve(native, reader, assets, region)
             solves.append(dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall, orbit_policy=policy))
+            if observer is not None:
+                solves[-1].update(preparation=preparations, inference_metrics=decision.get("metrics"))
             if packet is not None:
                 selected_rows.update({arm: [[row["observation_id"], row["norad"], row["role"]] for row in rows]
                                       for arm, rows in packet["rows"].items()})
