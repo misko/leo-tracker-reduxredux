@@ -2,6 +2,10 @@
 
 The candidate passed the prespecified two-arm position screen on the sealed physical recording. Horizontal error fell from **1.644 to 0.710 km** with `c = 0` and from **1.661 to 0.861 km** with fitted `c`. Both arms published a 179-node grid and all eight figures. Launch through exit took **14.521 s for stock and 9.472 s for the candidate**, with total CPU of **11.347 and 9.442 s**. Stock read an uncached input and the candidate read the same input after all compressed-member pages had become resident. The elapsed pair did not reach 2×, and the cache order prevents attributing the measured elapsed difference to the algorithm. [Frozen protocol](full-short-physical-protocol.md) · [Sealed raw pair and post-publication score](measurements/full-short-DS30-0016-raw.json.gz)
 
+![Raw runtime on Gauss and horizontal position error for all four receiver and solver pairings on DS30-0016](development/full-short-physical.png)
+
+The saved crossovers isolated the contribution of each change to position error. With fitted calibration the receiver alone gave 1.694 km and the solver bundle alone gave 1.974 km, versus 1.661 km for installed v3. Pairing them gave 0.861 km. The two intermediate results reuse the actual detector packets from this raw pair. [Crossover experiment](full-short-crossover.md) · [Once-per-recording timing model for the larger panel](full-short-seal-scaling.md)
+
 ## The saved exterior gate
 
 The all-times long-primary south-far proxy passed before physical acquisition. Its original displaced 25 km offer, exact selected native packet, quadratic graph and causal archive were bound to the receipt. Both receivers independently picked **(-62.5, 0.0) km** with 50 km clearance, zero separation, and exterior gains of **1.1552 and 1.0306**. The prepared archive handoff served one request. The published decision withheld with `both_receivers_support_far_exterior` before catalogue ranking or numerical fitting, after **96 probes** and **1.561 CPU s** in the proof. The complete saved check took **3.801 CPU s**. This gate used the long-primary proxy, so it establishes the early regional route on that signed proxy. [Saved gate receipt](measurements/full-short-south-far-gate.json)
@@ -35,8 +39,10 @@ The archived raw pair is retained in `/var/tmp/leo-full-short-DS30-0016-pair` wi
 release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
 payload=/opt/leo-algo08/algo08v3/payload
 here="$PWD/reports/ALGO08/v3"
-gate=/var/tmp/leo-full-short-DS30-0016-far-gate.json
-out=/var/tmp/leo-full-short-DS30-0016-pair
+trial=$(sudo -n -u leo mktemp -d /var/tmp/leo-full-short-replay.XXXXXXXX)
+fresh_gate="$trial/gate.json"
+fresh_output="$trial/pair"
+fresh_score="$trial/scored.json"
 short=/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so
 gauss() {
   sudo -n -u leo flock -x /tmp/leo-algo08v2-2x-bench/gauss.lock \
@@ -49,5 +55,5 @@ gauss env PYTHONPATH="$here:$payload:$release/src:$release:$PWD" \
 gauss env PYTHONPATH="$here:$PWD:$PWD/src:$release/src:$release" \
   "$release/venv/bin/python" -BPs "$here/full_short_physical.py" run "$fresh_output" "$fresh_gate" "$short"
 gauss env PYTHONPATH="$here:$PWD:$PWD/src:$release/src:$release" \
-  "$release/venv/bin/python" -BPs "$here/full_short_physical_score.py" "$out" "$gate" "$fresh_score"
+  "$release/venv/bin/python" -BPs "$here/full_short_physical_score.py" "$fresh_output" "$fresh_gate" "$fresh_score"
 ```
