@@ -117,7 +117,7 @@ def completed_route(solves, attempts, regional, returned, *, stock, early_region
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
         raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
         reuse_cold_rows=False, profiled_gamma_library=None, reuse_grid_phase_states=False,
-        local_future_policy=None):
+        local_future_policy=None, phase_forecast=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -223,6 +223,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                                                      lambda **cfg: track_config(factory(**cfg))))
                 if observer is not None or not stock_control:
                     stack.enter_context(patch.object(v5_core, "infer", observe_return))
+                if phase_forecast is not None:
+                    stack.enter_context(phase_forecast())
                 decision, packet, policy = stock_solve(native, reader, assets, region)
             solves.append(dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall, orbit_policy=policy))
             if optimized:

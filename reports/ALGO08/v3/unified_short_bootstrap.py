@@ -112,6 +112,14 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
                                     png_read_audit if png_read_audit is not None else {})
     grid_library = getattr(args, "grid_feature_projection_library", None)
     grid_audit = {}
+    forecast_audit = None
+    if getattr(args, "exact_phase_forecast", False):
+        forecast_audit = dict(requested=True, executions=[])
+
+    def phase_forecast():
+        from exact_phase_forecast import active_forecast
+
+        return active_forecast(forecast_audit)
 
     def projection():
         return guarded_projection(args.geographic_library, args.regional_track_library,
@@ -144,7 +152,10 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
             scope.enter_context(defer_detector(enabled=True, audit=detector_import_audit if detector_import_audit is not None else {}))
         result = joint_publication.run(options, raw_context=active_publication, early_regional=True,
                                        keep_selected_rows=True, geographic_projector=projection,
-                                       reuse_cold_rows=True, reuse_grid_phase_states=True)
+                                       reuse_cold_rows=True, reuse_grid_phase_states=True,
+                                       phase_forecast=phase_forecast if forecast_audit is not None else None)
+    if forecast_audit is not None:
+        result["exact_phase_forecast"] = forecast_audit
     if grid_library is not None:
         result["grid_feature_projection"] = dict(grid_audit, source_sha256={
             name: sha256((HERE / name).read_bytes()).hexdigest()
@@ -290,6 +301,9 @@ def run(args):
                   total_before_receipt=staged.clock(started))
     if research is not None and "grid_feature_projection" in research:
         result["grid_feature_projection"] = research["grid_feature_projection"]
+    if getattr(args, "exact_phase_forecast", False):
+        result["exact_phase_forecast"] = (dict(requested=True, executions=[]) if research is None
+                                          else research["exact_phase_forecast"])
     if route_selection is not None:
         result["held_anchor_route"] = route_selection
     with (args.output / "unified-short-bootstrap.json").open("x") as stream:
@@ -316,6 +330,8 @@ if __name__ == "__main__":
                         help="Use the verified experimental grid projection and selected row library")
     parser.add_argument("--lazy-scanner-detector", action="store_true",
                         help="Load the installed detector adapter on first detector use in active publication")
+    parser.add_argument("--exact-phase-forecast", action="store_true",
+                        help="Reuse exact validation UTC splits in the reviewed active phase forecast")
     parser.add_argument("--held-anchor-route", action="store_true",
                         help="Choose unfiltered or full chronological carrier history by held full-anchor log scores")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))

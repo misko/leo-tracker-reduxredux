@@ -30,11 +30,23 @@ def test_real_packet_handoff_runs_once_and_preserves_anchor_asset_pin():
     assert scan.PINS["cancellation-factors.so"] == "checked-anchor"
 
 
-def test_empty_short_packet_has_original_withholding_contract(tmp_path):
-    packet = {"source": {"probes": [{"candidates": []}]}}
+@pytest.mark.parametrize("has_factor", [False, True])
+def test_empty_short_packet_has_original_withholding_contract(tmp_path, monkeypatch, has_factor):
+    from builtins import __import__ as import_module_plain
+
+    from leo.contracts.digests import canonical_digest
+
+    def check_import(name, *args, **kwargs):
+        assert name not in {"exact_phase_forecast", "scipy", "matplotlib", "tools.algo08_position"}
+        return import_module_plain(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", check_import)
+    packet = {"source": {"probes": [{"candidates": [{"candidate_rank": 0}] if has_factor else []}]}}
+    proof = {"proven": True, "native_sha256": canonical_digest(packet)} if has_factor else None
     handoff = Handoff("session", "inventory", "actual-mixed-recipe", packet)
     scan = SimpleNamespace(acquire=None, PINS={"cancellation-factors.so": "checked-anchor"})
-    args = SimpleNamespace(recording="recording", output=tmp_path / "new", archive="archive")
+    args = SimpleNamespace(recording="recording", output=tmp_path / "new", archive="archive",
+                           exact_phase_forecast=True, lazy_scanner_detector=True)
 
     def analyze(recording, output, assets, archive, offer):
         assert (recording, output, assets, archive, offer) == (args.recording, args.output, "assets", args.archive, "offer")
@@ -43,7 +55,7 @@ def test_empty_short_packet_has_original_withholding_contract(tmp_path):
         return scan.solve(packet, scan.TleArchiveReader(archive), assets, offer)
 
     scan.analyze = analyze
-    assert BOOTSTRAP["withhold"](scan, args, "offer", "assets", handoff, "no_active_curvature") == (
+    assert BOOTSTRAP["withhold"](scan, args, "offer", "assets", handoff, "no_active_curvature", graph_proof=proof) == (
         {"status": "withheld", "reason": "no_active_curvature", "arms": {"c0": {"latlon": None}, "fitted_c": {"latlon": None}}},
         None, "stock",
     )
@@ -63,7 +75,8 @@ def test_nonempty_graph_proof_for_another_packet_cannot_seal_the_result():
     native = {"source": {"probes": [{"candidates": [{"candidate_rank": 0}]}]}}
     handoff = Handoff("session", "inventory", "actual-mixed-recipe", native)
     with pytest.raises(ValueError, match="ordinary numerical path"):
-        BOOTSTRAP["withhold"](None, None, None, None, handoff, "no_active_curvature",
+        options = SimpleNamespace(exact_phase_forecast=True, lazy_scanner_detector=True)
+        BOOTSTRAP["withhold"](None, options, None, None, handoff, "no_active_curvature",
                              graph_proof={"proven": True, "native_sha256": "sha256:other"})
 
 
