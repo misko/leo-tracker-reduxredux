@@ -12,6 +12,8 @@ On 0160 the candidate time is from the successful confirmation of the original c
 
 ## Joint acquisition and solver requirement
 
+![Measured saved publication plus assumed acquisition, against each recording's historical half-time](development/accuracy-route-budget.png)
+
 Assume a single effective acquisition rate across all three recordings. Divide each original compressed byte count by that rate, then add a saved elapsed charge from the chosen solver. The two requirements are the median candidate/v3 time ratio and ratio of total times, each at most 0.500. The table gives the minimum rate each gate needs, in decimal MB/s.
 
 | Solver charged | Saved publication through exit, median / summed | Numerical solve alone, median / summed |
