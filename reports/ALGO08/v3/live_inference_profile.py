@@ -10,7 +10,6 @@ from time import perf_counter, process_time
 from unittest.mock import patch
 
 from aperture_trial import ARMS, archive_identity, configuration, inputs, machine, solve, write
-from blind_joint_finish import elapsed
 
 
 CASE = "DS30-0008"
@@ -33,6 +32,7 @@ def replay(mode, output):
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
+    from blind_joint_finish import elapsed
     from early_region import before_fit
     from joint_publication import full_catalogue_route
     from optimized_grid import reduced_grid
