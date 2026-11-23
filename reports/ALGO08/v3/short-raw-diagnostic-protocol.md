@@ -1,0 +1,12 @@
+# Frozen short raw diagnostics
+
+From the 100 existing physical ALGO08v3 publications, select the lowest issued-visit count among withheld cases, DS30-0227, and the lowest issued-visit count among complete cases, DS30-0057. These are development workload diagnostics. The two-case cumulative subset adds the complete case to the withheld case. Run only these two pairs.
+
+| Order in subset | Recording | Historical issued visits | First arm | Second arm | Archived pair SHA-256 |
+|---:|---|---:|---|---|---|
+| 1 | DS30-0227 | 18 | Named installed ALGO08v3 | Combined short | `6c36381a1af955638a46a008d39bd309bab8cd1f46ae9d62753e84bd998edb10` |
+| 2 | DS30-0057 | 2,717 | Combined short | Named installed ALGO08v3 | `e4a143d2c47b7e0bb41061d602780b11d37660fd65ce4b5863996d9d251f155b` |
+
+Use the original signed recordings, segment manifests, offered region and causal TLE archives. Time the unfiltered combined receiver from `593a2ca5f` with the installed track graph, native geographic and regional-track libraries, cold-row reuse and predictive grid phase-state reuse. Keep the unfiltered receiver recipe SHA-256 `13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40`. The three native library SHA-256 values are `06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9` (12 ms short primary), `b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee` (geographic projection) and `5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098` (regional likelihood). Use one shared Gauss lock, CPU 2, nice 15, best-effort I/O priority 7 and one numerical thread. Observe all compressed pages immediately before each process and use the existing read-only warmer if needed. Require full residency for both arms and keep cache warming outside the timed boundary. Prepare the same Matplotlib font cache before both.
+
+Record complete process wall and CPU clocks, charged reads, receipt status and raw, code and native identities. Verify both calibration arms, horizontal error and RF RMS, path, complete grid and eight verified PNGs on successful fixes. Require a reason and no figure or position on a correct withhold. Preserve a failed or divergent candidate arm, finish the other case, and include completed process clocks in the all-assignment summaries without giving a missed fix or false fix scientific credit. Compute paired median and summed candidate/installed elapsed ratios for each cumulative subset and score only after the timed publications.
