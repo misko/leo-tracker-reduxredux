@@ -47,10 +47,18 @@ def run(output):
     sealed = ref.load(MEMBER/"1-anchored/detections.json", archived["native_sha256"][7:])
     trials = {(x["visit"], x["lane"]): x["factors"] for x in archived["vectors"] if x["mode"] == "short_primary"}
     published = {(r["visit_index"], r["receiver_id"]): r["candidates"] for r in sealed["source"]["probes"]}
+    assignment = ref.load(ref.HELD/"scope.json", ref.PINS["held_scope"])
+    segment = Path(assignment["entry"]["path"])
+    if segment.parent != ref.HELD or segment.resolve(strict=True) != segment:
+        raise ValueError("The held source escaped its private staged directory")
+    names = ("manifest.json", assignment["member"]["payload_relative_path"], assignment["member"]["index_relative_path"])
+    for name in names:
+        path = segment/name
+        if path.resolve(strict=True) != path or path.stat().st_dev != output.parent.stat().st_dev:
+            raise ValueError("Only the existing tmpfs member and signed index may be opened")
     before = ref.input_bytes()
     staged, scope = ref.signed_rows("held-0169")
-    if ref.input_bytes() != before:
-        raise ValueError("Only the existing staged member waveform is authorized")
+    staged_worker_input_bytes = ref.input_bytes()-before
     auditor = prefix.Audit(OBSERVER)
     tail = prefix.exact.RefineEntry(PACK/"tail.so", "short_cfo_reanchored")
     exact = prefix.exact.RefineEntry(OBSERVER, "short_cfo_refine")
@@ -113,7 +121,8 @@ def run(output):
     ref.save(output, dict(machine=machine, scope=scope, counts=counters, rows=witness, source_sha256=sha256(
         Path(__file__).read_bytes()).hexdigest(), reference_sha256=MEMBER_SHA, anchored_pack_sha256=PACK_SHA,
         shorter_sha256=SHORT_SHA, independent_tail_sha256=TAIL_SHA, observer_sha256=OBSERVER_SHA,
-        timings_measured=False, decoded_original_staged_member_only=True))
+        timings_measured=False, decoded_original_staged_member_only=True,
+        process_storage_read_bytes_during_intake=staged_worker_input_bytes))
 
 
 if __name__ == "__main__":
