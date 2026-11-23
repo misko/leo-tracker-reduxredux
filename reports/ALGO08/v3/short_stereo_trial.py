@@ -16,7 +16,7 @@ from full_short_graph_transfer import HERE, PHYSICAL, inputs
 from full_short_physical import environment
 from full_short_south import INSIDE, checked
 from north_combined import assignments
-from north_factor_swap import PINS
+from north_factor_swap import PINS, continued
 from short_stereo_evidence import filtered
 
 
@@ -105,22 +105,25 @@ def controls(case, reference):
     saved, north_causal, transfer, physical = (reference[name] for name in CONTROLS)
     if case == "north":
         record = saved["cases"]["stock"]
-        return NORTH_ROOT / "stock", record["native_sha256"], record["terminal_sha256"], saved["cases"]["containing"]["score"], north_causal["cases"]["containing"]["score"]
+        return (NORTH_ROOT / "stock", record["native_sha256"], record["terminal_sha256"],
+                saved["cases"]["containing"]["score"], north_causal["cases"]["containing"])
     if case == "physical":
         record = physical["runs"]["stock"]
-        return PHYSICAL / "stock", record["native_sha256"], record["terminal_sha256"], transfer[case]["unfiltered"], transfer[case]["score"]
+        return (PHYSICAL / "stock", record["native_sha256"], record["terminal_sha256"],
+                transfer[case]["unfiltered"], transfer[case])
     record = checked(INSIDE, SOUTH_PAIR_SHA)["runs"]["candidate"]
-    return INSIDE.parent / "candidate", "sha256:26e4ce9c24e81761e4d92cf05e29474e4ced9ba4effdffff89b817c0ea9f9ce3", record["receipt"]["terminal_sha256"], transfer[case]["unfiltered"], transfer[case]["score"]
+    return (INSIDE.parent / "candidate", "sha256:26e4ce9c24e81761e4d92cf05e29474e4ced9ba4effdffff89b817c0ea9f9ce3",
+            record["receipt"]["terminal_sha256"], transfer[case]["unfiltered"], transfer[case])
 
 
 def score_counts(stock, native, evidence, rows):
     from short_primary_epoch_audit import paired_probes
 
     probes = paired_probes(stock, native)
-    lane_audit = {(visit["visit"], lane["receiver"]): lane for visit in evidence for lane in visit["lanes"]}
-    keys, stats, rescue_details = {}, Counter(), []
+    lane_audit = {(visit["visit"], lane["receiver"]): (visit, lane) for visit in evidence for lane in visit["lanes"]}
+    keys, stats, timing_only, rescue_details = {}, Counter(), Counter(), []
     for oid, probe, before, short, _ in probes:
-        entry = lane_audit[(probe["visit_index"], probe["receiver_id"])]
+        visit, entry = lane_audit[(probe["visit_index"], probe["receiver_id"])]
         if bool(short) != entry["had_factor"] or (entry["rescued"] and entry["continued"]):
             raise ValueError("Filter audit does not bind the original opportunity")
         if not short:
@@ -129,6 +132,8 @@ def score_counts(stock, native, evidence, rows):
         status = "continued" if entry["continued"] else "rescued" if entry["rescued"] else "dropped"
         keys[oid] = status, presence
         stats[(status, presence)] += 1
+        if not entry["continued"] and visit["timing_match"]:
+            timing_only[presence] += 1
         if status == "rescued":
             rescue_details.append(dict(observation_id=oid, visit=probe["visit_index"], receiver=probe["receiver_id"],
                                        channel=probe["channel"], stock_present=bool(before), history_votes=entry["votes"]))
@@ -145,7 +150,10 @@ def score_counts(stock, native, evidence, rows):
         stats["visits", "two_factors"] += all(a["had_factor"] for a in v["lanes"])
         stats["visits", "timing_coincident"] += v["timing_match"]
         stats["visits", "prior_offset_available"] += v["prior_offset_hz"] is not None
+    matched_cfo = [visit["cfo_delta_hz"] for visit in evidence if visit["timing_match"]]
     return dict(counts={f"{k[0]}_{k[1]}": n for k, n in sorted(stats.items())}, accepted_stereo=dict(stereo),
+                timing_only_failed_history=dict(timing_only),
+                timing_coincident_signed_cfo_range_hz=[min(matched_cfo), max(matched_cfo)] if matched_cfo else None,
                 rescued=rescue_details, owners=owner_status)
 
 
@@ -190,6 +198,9 @@ def score(root):
                 and seal["recipe"] == recipe and json.loads(json.dumps(artifacts(folder, receipt))) == report["evidence"]):
             raise ValueError("The study failed to bind the original input, recipe, offer or publication")
         science = section(terminal["arms"], truth[case], stock_terminal["arms"])
+        stock_evidence = artifacts(stock_dir, dict(run_id=stock_terminal_path.parent.name,
+                                   terminal_sha256=stock_terminal_pin, decision="complete"))
+        causal_images_equal = report["evidence"]["images"] == causal["images"]
         results[case] = dict(source_sha256=original, filtered_sha256=output_pin, stock_sha256=stock_pin,
                              stock_terminal_sha256=stock_terminal_pin, recipe=recipe, terminal_sha256=receipt["terminal_sha256"],
                              offer=offer, candidate_decision=receipt["decision"],
@@ -198,9 +209,13 @@ def score(root):
                              route=report["route"], solve=report["solve"], selected_counts={k: len(v) for k, v in report["selected_rows"].items()},
                              process=read(root / f"{case}-process.json"), filter_cpu_s=seal["filter_cpu_s"],
                              proof=report["early_regional"], evidence=report["evidence"], score=science,
-                             stock=section(stock_terminal["arms"], truth[case], stock_terminal["arms"]),
-                             unfiltered=unfiltered, causal=causal, audit=score_counts(stock, native, audit, report["selected_rows"]))
-    source = (*control_paths, Path(__file__), HERE / "short-stereo-evidence-protocol.md", HERE / "short_stereo_evidence.py")
+                             stock=section(stock_terminal["arms"], truth[case], stock_terminal["arms"]), stock_evidence=stock_evidence,
+                             unfiltered=section(unfiltered["arms"], truth[case], stock_terminal["arms"]), causal=causal["score"],
+                             same_probes_as_causal=packet["source"]["probes"] == continued(native)["source"]["probes"],
+                             same_science_as_causal=science == causal["score"], same_images_as_causal=causal_images_equal,
+                             audit=score_counts(stock, native, audit, report["selected_rows"]))
+    source = (*control_paths, Path(__file__), HERE / "short-stereo-evidence-protocol.md", HERE / "short_stereo_evidence.py",
+              HERE / "joint_publication.py", HERE / "north_factor_swap.py")
     return dict(binding=read(root / "binding.json"), source_sha256={p.name: sha256(p.read_bytes()).hexdigest() for p in source},
                 results=results)
 
