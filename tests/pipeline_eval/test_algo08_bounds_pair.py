@@ -61,3 +61,12 @@ def test_calibration_keeps_fit_and_horizontal_error_separate(pair, monkeypatch):
     result = pair.calibration_comparison({"baseline": {"arms": arms}})["runs"]["baseline"]
     assert result["fitted_minus_c0_rf_rms_hz"] == -1.
     assert result["fitted_minus_c0_horizontal_error_km"] == pytest.approx(111.195, abs=.001)
+
+
+@pytest.mark.parametrize("field, wrong", [("cached_pages", 242127), ("observed_members", 12),
+                                         ("observed_file_pages", 242127), ("unavailable", {"EPERM": 1})])
+def test_weak_pair_requires_full_coverage_and_full_cache(pair, field, wrong):
+    complete = dict(members=13, observed_members=13, observed_file_pages=242128, cached_pages=242128, unavailable={})
+    pair.require_full_cache(complete)
+    with pytest.raises(ValueError, match="not fully cached"):
+        pair.require_full_cache(complete | {field: wrong})
