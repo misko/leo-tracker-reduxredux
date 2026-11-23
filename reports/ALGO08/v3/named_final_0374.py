@@ -2,6 +2,7 @@
 
 import argparse
 from hashlib import sha256
+from itertools import groupby
 import json
 from pathlib import Path
 import subprocess
@@ -26,6 +27,7 @@ LOCAL = Path("/var/tmp/leo-signed-0374.KBD4SnU5/pair/stock")
 NATIVE_SHA = "625adbd4e7601afd026f8b5d111e5daf3355727e63f28923058a69cddc9c933d"
 WINDOWS, ADMITTED = 6770, 4644
 AUDIT = "named-final-0374-worker.json"
+TRACKS_SHA = "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
 REUSED_ROOTS = tuple(Path("/dev/shm") / name for name in (
     "leo-v3-saved-0402-pair-01", "leo-v3-saved-0160-pair-01", "leo-v3-saved-0155-pair-01",
     "leo-v3-saved-0316-pair-01", "leo-v3-family-endpoint-0169-pair-01", "leo-v3-raw-0016-best-results-01"))
@@ -256,14 +258,71 @@ def audit(root):
           pair_seal_sha256=sha256((root / "pair-seal.json").read_bytes()).hexdigest()))
 
 
+def missing_spans(track, lost):
+    positions = [i for i, oid in enumerate(track["observation_ids"]) if oid in lost]
+    spans = []
+    for _, run in groupby(enumerate(positions), key=lambda ix: ix[1]-ix[0]):
+        indexes = [item[1] for item in run]
+        first, last = indexes[0], indexes[-1]
+        spans.append(dict(start_index=first, stop_index=last+1, points=len(indexes),
+                          start_time_s=track["times"][first], end_time_s=track["times"][last]))
+    return spans
+
+
+def audit_ownership(root):
+    """Map sealed owners into the original tracks without preparing orbits or fitting position."""
+    from leo.analysis.localization_v3.tracks import prepare_tracks
+    from leo.analysis.polynomial_tracklets import TrackConfig
+
+    pair_path = root / "pair-seal.json"
+    pair = read(pair_path)
+    if not pair["stock_matches_archived"] or pair["owners"]["c0"]["dropped"] != pair["owners"]["fitted_c"]["dropped"]:
+        raise ValueError("The two archived owner arms must bind the same missing set")
+    lost = set(pair["owners"]["c0"]["dropped"])
+    native = json.loads(verified(root / "named-detections.json", NATIVE_SHA))
+    config = json.loads(verified(RELEASE / "assets/tracks.json", TRACKS_SHA))["config"]
+    prepared = prepare_tracks(native, TrackConfig(**config))
+    graph = pair["runs"]["combined"]["worker"]["graph"]["graph"]
+    if (prepared["graph_points"], len(prepared["tracks"])) != (graph["assigned"], graph["tracks"]):
+        raise ValueError("Graph-only diagnostic does not reproduce the original preparation census")
+    original = {oid: (norad, role) for oid,norad,role in pair["runs"]["stock"]["selected_rows"]["c0"]}
+    final = {oid: (norad, role) for oid,norad,role in pair["runs"]["combined"]["selected_rows"]["c0"]}
+    route = pair["runs"]["combined"]["route_details"]
+    support = route["support"]
+    salvage = {row["component"]: row["selected"] for row in support["salvage"]}
+    tracks, seen = [], set()
+    for track in prepared["tracks"]:
+        ids = track["observation_ids"]
+        affected = lost.intersection(ids)
+        if not affected:
+            continue
+        norad, role = {original[oid] for oid in affected}.pop()
+        if seen.intersection(affected) or any(original[oid] != (norad, role) for oid in affected):
+            raise ValueError("Expected unique stock ownership by family and role")
+        seen.update(affected)
+        key = track["key"]
+        offer = salvage.get(key)
+        tracks.append(dict(component=key, norad=norad, role=role, points=len(ids),
+                           named_owners=sum(oid in original for oid in ids), candidate_owners=sum(oid in final for oid in ids),
+                           lost=len(affected), spans=missing_spans(track, lost), first_cold_reject=key in support["cold_rejected_tracks"],
+                           second_curved_reject=key in support["second_curved_rejections"], salvage_offer=offer,
+                           recovered_missing_rows=0 if offer is None else len(affected.intersection(ids[offer["start_index"]:offer["stop_index"]]))))
+    if seen != lost:
+        raise ValueError("Some original named owners could not be joined to graph tracks")
+    write(root / "lost-support.json", dict(pair_seal_sha256=sha256(pair_path.read_bytes()).hexdigest(),
+          graph_points=prepared["graph_points"], graph_tracks=len(prepared["tracks"]), lost=len(lost), tracks=tracks,
+          history=route["signed"]["selection"], past_distribution_qualified=support["past_distribution_qualified"],
+          final_fit=route["named_survivor_fit"], additional_position_solves=0, waveform_reads=0))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for command in ("launch", "audit"):
+    for command in ("launch", "audit", "audit-ownership"):
         sub.add_parser(command).add_argument("root", type=Path)
     replay = sub.add_parser("worker")
     replay.add_argument("job", type=Path)
     replay.add_argument("mode", choices=ORDER)
     replay.add_argument("output", type=Path)
     values = vars(parser.parse_args())
-    {"launch": launch, "worker": invoke, "audit": audit}[values.pop("action")](**values)
+    {"launch": launch, "worker": invoke, "audit": audit, "audit-ownership": audit_ownership}[values.pop("action")](**values)

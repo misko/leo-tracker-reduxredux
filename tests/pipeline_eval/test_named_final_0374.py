@@ -40,3 +40,12 @@ def test_saved_pin_rejects_altered_metadata(tmp_path):
     saved.write_text("{}")
     with pytest.raises(ValueError, match="Saved artifact mismatch"):
         trial.verified(saved, trial.NATIVE_SHA)
+
+
+def test_partition_missing_rows_into_original_track_spans():
+    track = dict(observation_ids=list("abcdefg"), times=[3, 4, 8, 10, 12, 17, 21])
+    assert trial.missing_spans(track, {"a", "b", "e", "g"}) == [
+        dict(start_index=0, stop_index=2, points=2, start_time_s=3, end_time_s=4),
+        dict(start_index=4, stop_index=5, points=1, start_time_s=12, end_time_s=12),
+        dict(start_index=6, stop_index=7, points=1, start_time_s=21, end_time_s=21),
+    ]
