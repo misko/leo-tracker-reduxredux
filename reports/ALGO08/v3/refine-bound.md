@@ -1,6 +1,6 @@
 # Pruning individual full-rate hypotheses in the two-scan receiver
 
-The even-frame bound reduced native receiver CPU by about 2.2% on the matching rebuilt timing object. The tested rebuild ran 4.2–4.8% slower than the installed ALGO08v3 receiver by the median paired CPU ratios. The strongest audited bound projects about **1.19 seconds** of avoided work on the full dense DS30-0008 recording before the bound and other overhead. The measured variant stays outside the v3 follow-up composition.
+The even-frame bound saved **2.0% of native receiver CPU on weak lanes and 2.6% on dense lanes** against installed ALGO08v3 after rebuilding with its original profile-guided compiler recipe. The unprofiled build had run slower than installed v3. The strongest audited bound projects about **1.19 seconds** of avoided work on the full dense DS30-0008 recording before the bound and other overhead.
 
 The audit replayed v3 on all 18 previously nominated DS26 weak-carrier stereo visits and the first 48 authenticated DS30-0008 visits. The bound applies after the quarter-rate scout selects four signed frequency and timing hypotheses, on both the raw scan and the actual signed residual. Both arms preserved the ordered factors, including all 50 residual factors, and the single causal continuation selection across 132 independent lane calls. The replays stopped at continuation. [Per-lane evidence and I/Q identities](measurements/refine-bound-audit.json.gz)
 
@@ -53,6 +53,21 @@ Five paired repeats alternated native call order per lane. The two toggle builds
 
 Twelve component tests passed across the new and earlier bounds. They exercise safe rejection, equality, missing enclosures, an unconfirmed first seed, wrap, signed CFO and byte-exact fallback. [New component tests](../../../tests/pipeline_eval/test_receiver_refine_bound.py)
 
+## Profile-guided build
+
+Fresh feedback came from the original site-free recipe, with eight generated windows evaluated at both antennas and zero and nonzero mixer centers. This gives 32 calls distinct from the saved weak and dense replay windows. Each object used its own counters and the archived GCC flags, with missing feedback and coverage mismatches treated as compiler errors. The stock build reproduced the installed receiver and reference timing object byte for byte. The profile-guided guard preserved every original exported symbol, all 138 factors and the continuation selection. [PGO build and timing receipt](measurements/refine-bound-pgo.json)
+
+| Slice and control | Median native CPU | Median native elapsed | Paired CPU change |
+|---|---:|---:|---:|
+| Weak, installed v3 → guard | 144.56 → 141.21 ms | 144.61 → 141.26 ms | −2.00% (−3.31% to −1.54%) |
+| Weak, fresh v3 → guard | 145.99 → 141.23 ms | 146.05 → 141.27 ms | −3.20% (−3.68% to −2.25%) |
+| Dense, installed v3 → guard | 260.80 → 254.13 ms | 260.91 → 254.22 ms | −2.56% (−3.11% to −2.25%) |
+| Dense, fresh v3 → guard | 252.66 → 247.29 ms | 252.73 → 247.39 ms | −2.13% (−2.28% to −1.87%) |
+
+Five alternating paired repeats showed less than 1.1% variation between the two identical stock libraries. Applying the measured dense gain linearly to 13,530 lanes projects about **0.94 seconds** of native receiver CPU saved. This experiment did not measure the elapsed gain through capture, solving and publication.
+
+The guard receiver SHA-256 is `7ac6de98302ce65c52fdad2f630094e14ab4c503999ba9f3695be2c4403a51b1`. For a publication comparison, place the verified library as `receiver.so` in an isolated copy of the installed v3 payload. Set the copied candidate specification's `detector`, `detector_sha256` and `sources["receiver.so"]` to that path and digest. Load the candidate publication module from the same copied payload so the sparse-ranking check sees the pinned receiver in its expected location. The normal acquisition loader then verifies the detector and records its new provenance. [PGO build runner](receiver_refine_pgo_trial.py)
+
 ## Reproduce
 
 The runner relinks the archived reference and verifies the installed v3 digest before using any saved windows. Use the capture account for the authenticated DS30-0008 reader and a single Gauss CPU. Each command is bounded to fewer than 50 seconds of compute after acquiring the shared lock.
@@ -80,4 +95,11 @@ lock env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
   PYTHONPATH="$PWD:$release/src:$release" "$tree/.venv/bin/python" -BPs -m pytest -q \
   tests/pipeline_eval/test_receiver_refine_bound.py \
   tests/pipeline_eval/test_experimental_receiver_refine_parity.py
+lock sudo -n -u leo env OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 OPENBLAS_NUM_THREADS=1 \
+  MKL_NUM_THREADS=1 BLIS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 \
+  PYTHONPATH="$PWD:$release/src:$release" "$release/venv/bin/python" -BPs \
+  -m reports.ALGO08.v3.receiver_refine_pgo_trial \
+  "$bench/receiver-fractional-exact-v1" "$bench/spectral-vectors-combined-v1.json" \
+  /var/tmp/leo-refine-pgo /opt/leo-algo08/algo08v3/payload/receiver.so "$release/assets" \
+  "$archive" "$binding" /srv/bulk > /var/tmp/leo-refine-pgo.json
 ```
