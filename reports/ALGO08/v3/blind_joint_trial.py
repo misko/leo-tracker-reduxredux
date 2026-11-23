@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from aperture_trial import ARMS, archive_identity, configuration, inputs, machine, write
+from blind_joint_route import make_route
 from mixture_trial import CASES, elapsed, summarize
 
 
@@ -22,13 +23,9 @@ def publication_roles(packet):
 
 def trial(case, output, *, repair=False):
     publication, spec = configuration()
-    import numpy as np
     from leo.operations.tle_archive import TleArchiveReader
     from tools import algo08_position, algo08_scan
     from tools.pipeline_eval.variants import v5_core
-    from tools.pipeline_eval.variants.experimental import regional_bound_guard
-    from blind_joint_finish import propose
-    from blind_joint_repair import repair_once
 
     native, archive, offer, expected, identity = inputs(case)
     if identity["detector_sha256"] != "sha256:" + spec["detector_sha256"]:
@@ -39,61 +36,7 @@ def trial(case, output, *, repair=False):
         installed = v5_core.infer
         reader = TleArchiveReader(archive_root)
 
-        def route(prepared, search_region, bound, stages, *, selected_evidence=None):
-            observed = {}
-            attempts.append(observed)
-            cpu, wall = process_time(), perf_counter()
-            try:
-                signed, reason = propose(prepared, search_region, bound, observed, repair=repair_once if repair else None)
-            except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
-                signed, reason = None, f"{type(exc).__name__}: {exc}"
-            observed["candidate_pre_evidence_clocks"] = elapsed(cpu, wall)
-            if signed is not None:
-                cpu, wall = process_time(), perf_counter()
-                endpoints = {key: record["endpoint_east_north_km"] for key, record in signed["arms"].items()}
-                exterior = regional_bound_guard.inspect_boundary(
-                    endpoints, search_region.width_km,
-                    lambda: regional_bound_guard.causal_probes(prepared["tracks"], reader, search_region,
-                                                               terminal_only=True), terminal_only=True,
-                )
-                observed.update(exterior=exterior, exterior_clocks=elapsed(cpu, wall))
-                if exterior["would_withhold"]:
-                    observed["decision"] = "withheld"
-                    return dict(status="withheld", reason="both_receivers_support_far_exterior", metrics=stages,
-                                arms={arm: {"latlon": None} for arm in ARMS})
-                if exterior.get("diagnostic_error"):
-                    reason = "exterior_evidence_unavailable"
-                else:
-                    cpu, wall = process_time(), perf_counter()
-                    try:
-                        if repair:
-                            packet_builder = algo08_position.selected_packet
-
-                            def complete_packet(*args, **kwargs):
-                                packet = packet_builder(*args, **kwargs)
-                                if not packet["position_grid"]["complete"]:
-                                    raise ValueError("The original numerical evidence grid is incomplete")
-                                return packet
-
-                            with patch.object(algo08_position, "selected_packet", complete_packet):
-                                selected_evidence(prepared, signed, None)
-                        else:
-                            selected_evidence(prepared, signed, None)
-                    except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
-                        reason = f"standard_evidence: {type(exc).__name__}: {exc}"
-                    finally:
-                        observed["standard_evidence_clocks"] = elapsed(cpu, wall)
-                if reason is None:
-                    observed["decision"] = "complete"
-                    return dict(status="ok", reason=None, metrics=stages, arms={arm: dict(
-                        latlon=list(record["endpoint_latlon"]), rf_rms_hz=float(record["RMS_hz"])
-                    ) for arm, record in signed["arms"].items()})
-            observed.update(decision="fallback", reason=reason)
-            cpu, wall = process_time(), perf_counter()
-            try:
-                return installed(prepared, search_region, bound, stages, selected_evidence=selected_evidence)
-            finally:
-                observed["fallback_clocks"] = elapsed(cpu, wall)
+        route = make_route(installed, reader, attempts, repair=repair)
 
         cpu, wall = process_time(), perf_counter()
         with patch.object(v5_core, "infer", route):
