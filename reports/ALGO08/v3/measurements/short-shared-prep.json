@@ -1,0 +1,119 @@
+{
+  "actual_dense_short_calls": 11834,
+  "build": {
+    "binary_sha256": "9959e3a1fbca7e1f87724b5a0fff968c866db34e3af11c25b87238a2ffbd46c7",
+    "command": [
+      "cc",
+      "-shared",
+      "-fPIC",
+      "-O3",
+      "-std=c11",
+      "-fopenmp-simd",
+      "-ffp-contract=off",
+      "-fno-math-errno",
+      "-fno-strict-aliasing",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "/tmp/leo-short-shared-prep-kpvinvqw/prepare.c",
+      "-lm",
+      "-o",
+      "/tmp/leo-short-shared-prep-kpvinvqw/prepare.so"
+    ],
+    "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "fragment_sha256": "0c0157477e7206249c2b1bc1d36d76756bd03a8ce77f2a28380e86bbc43368b7"
+  },
+  "dense_all_preparation_ceiling_s": 0.24384668489409222,
+  "dense_gap_s": 12.800260500000007,
+  "keys_timed": 347,
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "threads": {
+      "BLIS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "panels": {
+    "dense": {
+      "lanes": 96,
+      "mixer_centers_hz": [
+        0
+      ],
+      "reuse": {
+        "16": {
+          "hits": 0,
+          "keys": 384,
+          "misses": 384
+        },
+        "64": {
+          "hits": 10,
+          "keys": 384,
+          "misses": 374
+        },
+        "None": {
+          "hits": 37,
+          "keys": 384,
+          "misses": 347
+        }
+      }
+    },
+    "weak": {
+      "lanes": 36,
+      "mixer_centers_hz": [
+        0
+      ],
+      "reuse": {
+        "16": {
+          "hits": 0,
+          "keys": 144,
+          "misses": 144
+        },
+        "64": {
+          "hits": 1,
+          "keys": 144,
+          "misses": 143
+        },
+        "None": {
+          "hits": 1,
+          "keys": 144,
+          "misses": 143
+        }
+      }
+    }
+  },
+  "pilot_sha256": {
+    "lower": "1b98937cbd87fd5f27b82e4d535512ca5ee12b33a64a6bae90e07ec041368adb",
+    "upper": "eef7b89526adb80fc64cd0be61f35b7cc5edceb3eb293d72066378e751b4467c"
+  },
+  "receipt_sha256": {
+    "dense-full-short-raw.json.gz": "51521b26848532823922cc43a198b7f91d59d3f1d81e155e5862b04b53193f38",
+    "refine-bound-audit.json.gz": "a0a1e7f3eb9b923fa0aef18164c6b81175ab21a15282f1816492556f51037cb7",
+    "scout-readout.json.gz": "5d1998cee0e16165f2c355059d28b4b96f2486cc9297e7c55d760d4784f34431",
+    "short-signed.json.gz": "cb369f55ceaaced0ddc87ff7c9bdff48b6cb78ea4ee7eff8ebf7754983b7234d"
+  },
+  "repeats": 32,
+  "short_binary_sha256": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9",
+  "short_source_sha256": "944d8a9bfee130f8f12e22098ced20195464783e521ced9172c039cadb198ba2",
+  "trials_ns_per_rotation": {
+    "lower": [
+      5153.856538184438,
+      5151.626801152738,
+      5150.159762247838,
+      5150.176152737752,
+      5150.725504322767
+    ],
+    "upper": [
+      5153.500540345822,
+      5152.071325648415,
+      5151.195695244956,
+      5151.05727665706,
+      5151.400306195966
+    ]
+  }
+}
