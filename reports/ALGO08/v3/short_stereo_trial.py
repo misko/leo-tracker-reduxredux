@@ -175,10 +175,11 @@ def score(root):
         published = single_packet(folder)
         packet, audit, recipe = filtered(native)
         seal = read(root / f"{case}-selection.json")
-        terminal = read(published.with_name("terminal.json"))
+        terminal = read(folder / "fast-scan-automatic-work" / receipt["run_id"] / "terminal.json")
         stock_dir, stock_pin, stock_terminal_pin, unfiltered, causal = controls(case, reference)
         stock_path = single_packet(stock_dir)
-        stock, stock_terminal = read(stock_path), read(stock_path.with_name("terminal.json"))
+        stock_terminal_path, = stock_dir.glob("fast-scan-automatic-work/*/terminal.json")
+        stock, stock_terminal = read(stock_path), read(stock_terminal_path)
         output_pin = canonical_digest(packet)
         if not (canonical_digest(stock) == stock_pin == stock_terminal["native_sha256"]
                 and canonical_digest(stock_terminal) == stock_terminal_pin
