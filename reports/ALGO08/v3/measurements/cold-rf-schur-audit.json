@@ -1,0 +1,253 @@
+{
+  "archived_receipt_sha256": {
+    "cumulative-dense-graph-DS30-0008.json.gz": "ceaeaa4a21fd31a0d4ca4d35f03813fc1172087381e909c8c0514b9381d79262",
+    "dense-assignment-reuse.json": "30ee4adefd0926d6d11a57aa6f0137c0f05627b4cf6df0232aab8f3686d23ba6",
+    "grid-cross-arm-posterior.json.gz": "1bd1efb1fecaac2018265bd3498b61d7f28282e15c6c4e418ae34fa23a6afa91",
+    "grid-phase-state-reuse.json.gz": "4372e72b81462ed4c1f7d7e2fb296caf8004c775b90f9469ad6eaf31a20f7a43"
+  },
+  "case": "DS30-0008",
+  "cold": {
+    "adapter_cpu_s": 1.6496856850000001,
+    "all_seven_c0_centre_calls_cpu_s": 0.16965017,
+    "assignment_pairs_with_identical_final_precision": 0,
+    "compared_assignment_pairs": 21,
+    "cross_arm_cpu_ceiling_s": 0.0,
+    "eligible_cross_arm_calls": 0,
+    "enclosing_stage_cpu_s": 5.7242091550000005,
+    "gate_cpu_s": 0.5,
+    "recorded_c0_centre_repeats": 3,
+    "stages": [
+      {
+        "adapter_cpu_s": 0.375203493,
+        "eligible_arm_pairs": 0,
+        "fitted_c_calls": 0,
+        "native_calls": 16,
+        "robust_updates": 690,
+        "stage": "fresh_discovery"
+      },
+      {
+        "adapter_cpu_s": 0.16965017,
+        "eligible_arm_pairs": 0,
+        "fitted_c_calls": 0,
+        "native_calls": 7,
+        "robust_updates": 326,
+        "stage": "exact_centre_rank"
+      },
+      {
+        "adapter_cpu_s": 1.104832022,
+        "eligible_arm_pairs": 0,
+        "fitted_c_calls": 0,
+        "native_calls": 44,
+        "robust_updates": 2337,
+        "stage": "finalist_prefix_and_winner"
+      }
+    ]
+  },
+  "deployed_solver": "screened-tiled-finish",
+  "deployed_spec_sha256": "652f8573e2fdec746dd318849c82992eb7786f014e8dbc393c0352b54e421e46",
+  "grid": {
+    "compared_final_precision_slots": 14514,
+    "equal_final_precision_slots": 0,
+    "exact_reusable_posteriors": 0,
+    "fresh_paired_points": 177,
+    "operands_per_point": {
+      "eligible_common_gram_entries": 18450,
+      "eligible_common_rhs_entries": 0,
+      "equal_full_common_design_rows": 0,
+      "equal_precision_slots": 0,
+      "equal_response_rows": 0,
+      "groups": 82,
+      "rows": 3661,
+      "total_fitted_gram_entries": 32134,
+      "total_fitted_rhs_entries": 1622
+    },
+    "phase_state_calls": 356,
+    "whole_peer_cpu_ceiling": {
+      "bound": {
+        "both_arms_cpu_s": 2.328647438,
+        "endpoint_only_cpu_s": 0.009048436,
+        "granted_peer_cpu_s": 1.200254919
+      },
+      "curved": {
+        "both_arms_cpu_s": 4.220238302,
+        "endpoint_only_cpu_s": 0.020143598,
+        "granted_peer_cpu_s": 2.167629585
+      },
+      "native": {
+        "both_arms_cpu_s": 1.931312414,
+        "endpoint_only_cpu_s": 0.007101171,
+        "granted_peer_cpu_s": 1.000271599
+      },
+      "validation": {
+        "both_arms_cpu_s": 0.184595479,
+        "endpoint_only_cpu_s": 0.000860045,
+        "granted_peer_cpu_s": 0.099588036
+      }
+    }
+  },
+  "new_raw_reads": 0,
+  "new_solver_calls": 0,
+  "new_timing_runs": 0,
+  "packet_sha256": "sha256:ad13073239fe7e4e276debf3c667c0a997408d9efb5e07e309b5ab6fff4d0a85",
+  "scope": "cold discovery, ordered assignment ranking and cold finalist election",
+  "source_base": "f01ce8df1",
+  "source_facts": [
+    {
+      "fact": "Defaults fitted_c to False and forwards it to DiscoveryPosition",
+      "file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/src/leo/analysis/localization_v3/discovery.py",
+      "function": "standard_problem",
+      "line": 337,
+      "source_sha256": "7ca045c3809c8da7b57268b9d9bcc4b8a49366e88376250d0b11227ce6d7e26a"
+    },
+    {
+      "fact": "Both source calls use that default",
+      "file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/src/leo/analysis/localization_v3/discovery.py",
+      "function": "fresh_discovery",
+      "line": 365,
+      "source_sha256": "7ca045c3809c8da7b57268b9d9bcc4b8a49366e88376250d0b11227ce6d7e26a"
+    },
+    {
+      "call": "NormalPosition",
+      "call_lines": [
+        53
+      ],
+      "file": "/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/variants/v5_core.py",
+      "fixed_argument": false,
+      "function": "ranked_initial_nodes",
+      "source_sha256": "30e6f22ab4b49d03cf8536645cbdebb8fec2afa513f3cfa4a9f3163590a84407"
+    },
+    {
+      "call": "refreshed",
+      "call_lines": [
+        67
+      ],
+      "file": "/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/variants/v5_core.py",
+      "fixed_argument": "c0",
+      "function": "fit_initial_nodes",
+      "source_sha256": "30e6f22ab4b49d03cf8536645cbdebb8fec2afa513f3cfa4a9f3163590a84407"
+    },
+    {
+      "call": "refreshed",
+      "call_lines": [
+        30
+      ],
+      "file": "/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/variants/v5_screen_winner.py",
+      "fixed_argument": "c0",
+      "function": "screen_nodes",
+      "source_sha256": "f276b8ee2f4c059d571da874b2fbef6f6b13d08078e30fd93950428f8c10fb70"
+    },
+    {
+      "call": "NormalPosition",
+      "call_lines": [
+        59
+      ],
+      "file": "/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/variants/v5_screen_winner.py",
+      "fixed_argument": false,
+      "function": "screen_nodes",
+      "source_sha256": "f276b8ee2f4c059d571da874b2fbef6f6b13d08078e30fd93950428f8c10fb70"
+    },
+    {
+      "fact": "Uses the top three original ranks and v5_screen_winner.screen_nodes",
+      "file": "/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/variants/algo08_stock_finish.py",
+      "function": "screened_nomination",
+      "line": 10,
+      "source_sha256": "89dbecd98b182562830623c93b96e05f3880b9b791cd8bc87ec66e618ccb5a11"
+    },
+    {
+      "fact": "Installs dense discovery/sparse projection around the stock ranker and selects screened_nomination for the installed preset",
+      "file": "/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/qualification/experimental_publication.py",
+      "function": "run",
+      "line": 195,
+      "source_sha256": "2a6fb84d59d1fba485d270b38a2a0553b59c1977373520dcce0e3488c6859690"
+    },
+    {
+      "call": "refreshed",
+      "call_lines": [
+        175
+      ],
+      "file": "reports/ALGO08/v3/cold_finalist_race.py",
+      "fixed_argument": "c0",
+      "function": "original_fits",
+      "source_sha256": "eeb7d1041f34fb7dbb805cb12eb93f66eba87e729e9cf695ff77811b51842fe7"
+    },
+    {
+      "call": "NormalPosition",
+      "call_lines": [
+        196,
+        215
+      ],
+      "file": "reports/ALGO08/v3/cold_finalist_race.py",
+      "fixed_argument": false,
+      "function": "partial_fits",
+      "source_sha256": "eeb7d1041f34fb7dbb805cb12eb93f66eba87e729e9cf695ff77811b51842fe7"
+    },
+    {
+      "call": "refreshed",
+      "call_lines": [
+        25
+      ],
+      "file": "reports/ALGO08/v3/blind_joint_finish.py",
+      "fixed_argument": "c0",
+      "function": "cold_candidate",
+      "source_sha256": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1"
+    },
+    {
+      "call": "problem",
+      "call_lines": [
+        51
+      ],
+      "file": "reports/ALGO08/v3/blind_joint_finish.py",
+      "fixed_argument": "c0",
+      "function": "build_at",
+      "source_sha256": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1"
+    },
+    {
+      "call": "make_event_problem",
+      "call_lines": [
+        59
+      ],
+      "file": "reports/ALGO08/v3/blind_joint_finish.py",
+      "fixed_argument": "c0",
+      "function": "build_at",
+      "source_sha256": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1"
+    },
+    {
+      "call": "repaired_fit",
+      "call_lines": [
+        262
+      ],
+      "file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/src/leo/analysis/localization_v3/conservative_recovery.py",
+      "fixed_argument": "c0",
+      "function": "salvage",
+      "source_sha256": "9d5047f873a22790c4f0818877b09270ee91a0761a9a3d7204c8a849639ee656"
+    },
+    {
+      "fact": "Paired fits follow an elected cold node and use an already shared support mask within each gate round",
+      "file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/src/leo/analysis/localization_v3/conservative_recovery.py",
+      "function": "fit_and_gate",
+      "line": 211,
+      "source_sha256": "9d5047f873a22790c4f0818877b09270ee91a0761a9a3d7204c8a849639ee656"
+    },
+    {
+      "fact": "Each arm starts at zero phase reference and refreshes it from its own fitted posterior and endpoint",
+      "file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/src/leo/analysis/localization_v3/retained_position.py",
+      "function": "fit_position",
+      "line": 90,
+      "source_sha256": "5d491104a62a78f177a556366168767c5fd62b0dca41c9cf168fe2597f40a81e"
+    },
+    {
+      "fact": "First paired arm_finish starts after cold election, gated support, salvage and one predictive nomination",
+      "file": "reports/ALGO08/v3/blind_joint_finish.py",
+      "function": "propose",
+      "line": 122,
+      "source_sha256": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1"
+    },
+    {
+      "fact": "The optimized research full-catalogue route starts from the frozen cold finalist race",
+      "file": "reports/ALGO08/v3/joint_publication.py",
+      "function": "full_catalogue_route",
+      "line": 18,
+      "source_sha256": "ddac992bb5c1046524b13505300f29dee9d19ab24136331825138dc882095d71"
+    }
+  ]
+}
