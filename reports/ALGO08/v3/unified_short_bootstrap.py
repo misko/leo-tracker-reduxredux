@@ -178,6 +178,9 @@ def run(args):
     started = staged.now()
     if getattr(args, "direct_residual_figures", False) and not args.one_pass_web_png:
         raise ValueError("--direct-residual-figures requires --one-pass-web-png")
+    lane_mask = getattr(args, "short_lane_mask", None)
+    if lane_mask and getattr(args, "held_anchor_route", False):
+        raise ValueError("The held-anchor selector requires measured outcomes on both donor lanes")
     if args.output.exists() or not args.output.parent.is_dir():
         raise ValueError("Choose a new local publication directory beneath an existing parent")
     launcher, specification, sources, publication, checks = staged.load_runtime()
@@ -196,8 +199,17 @@ def run(args):
         staged.checked(path, pin)
     if args.one_pass_web_png:
         staged.checked(HERE / "one_pass_web_png.py", LAYOUT_SHA256)
-    recipe = checked_recipe()
-    mixer = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True)
+    original_recipe = checked_recipe()
+    recipe, effective_detector = original_recipe, RECIPE_SHA
+    if lane_mask:
+        from stereo_lane_receiver import StereoLaneReceiver
+        from stereo_lane_schedule import recipe as mask_recipe
+
+        recipe = mask_recipe(lane_mask, "sha256:" + RECIPE_SHA)
+        effective_detector = canonical_digest(recipe).removeprefix("sha256:")
+        mixer = StereoLaneReceiver(args.short_binary, SHORT_SHA, lane_mask)
+    else:
+        mixer = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True)
     scan = staged.staged_scanner(sources, detector=mixer.detector)
     symbols = staged.receiver_symbols(sources)
     native_import = staged.RECEIVER.removesuffix(".py").replace("/", ".")
@@ -210,14 +222,13 @@ def run(args):
     scope = staged.now()
     audit, layout_audit = {}, {}
     route_selection = None
-    effective_detector = RECIPE_SHA
     graph_audit = {} if args.exact_graph_reuse else None
     png_read_audit = {} if args.reuse_verified_png_reads else None
     detector_import_audit = {} if args.lazy_scanner_detector else None
     with TemporaryDirectory() as temporary:
         assets = Path(temporary)
         anchor = specification["detector_sha256"]
-        if anchor != recipe["installed_sha256"]:
+        if anchor != original_recipe["installed_sha256"]:
             raise ValueError("Mixed-aperture anchors differ from the installed receiver")
         for name in (*scan.PINS, "native", "projector.so"):
             source = Path(specification["detector"]) if name == "cancellation-factors.so" else staged.RELEASE / "assets" / name
@@ -233,10 +244,10 @@ def run(args):
         session, inventory_digest, inventory = scan.FastScanStore(args.output).inventory(args.recording, verify_windows=False)
         phases["asset_and_inventory_checks"] = staged.clock(scope)
         scope = staged.now()
-        with (receiver_import(native_import, symbols), observe_acquisition(scan, mixer, RECIPE_SHA, audit),
+        with (receiver_import(native_import, symbols), observe_acquisition(scan, mixer, effective_detector, audit),
               compressed_input_buffer(), paired_decoded_hashes(library), fetch() as prefetch):
             native = scan.acquire(session, inventory_digest, inventory, assets)
-        staged.bind_native(native, session, inventory_digest, RECIPE_SHA)
+        staged.bind_native(native, session, inventory_digest, effective_detector)
         phases["authenticated_raw_acquisition"] = staged.clock(scope)
         if args.region.read_bytes() != offer_bytes:
             raise ValueError("The offered region changed during acquisition")
@@ -287,6 +298,8 @@ def run(args):
         dependencies += ("lazy_scanner_detector.py",)
     if route_selection is not None:
         dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
+    if lane_mask:
+        dependencies += ("stereo_lane_schedule.py", "stereo_lane_receiver.py")
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
                   route=route, requested_offer_sha256=sha256(offer_bytes).hexdigest(), archive_root=str(archive),
                   frozen_specification="sha256:"+launcher["FINGERPRINT"], receiver_recipe=recipe,
@@ -346,4 +359,6 @@ if __name__ == "__main__":
                         help="Reuse exact validation UTC splits in the reviewed active phase forecast")
     parser.add_argument("--held-anchor-route", action="store_true",
                         help="Choose unfiltered or full chronological carrier history by held full-anchor log scores")
+    parser.add_argument("--short-lane-mask", choices=("quarter", "target"),
+                        help="Skip a scheduled short antenna call while keeping both full anchors")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
