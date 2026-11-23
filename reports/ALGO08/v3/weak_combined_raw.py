@@ -19,7 +19,7 @@ REFERENCE = Path("/var/tmp/leo-full-short-DS30-0016-pair/request.json")
 REFERENCE_PIN = "d58723098826fc7e1478f92880dffdb500bcb3f5225b4d64a4b2949cfbceab06"
 
 
-def run(output, geographic, stock_first=False):
+def run(output, geographic, stock_first=False, frontier_libraries=None, matched_warm=False):
     from leo.storage.fast_scan import FastScanStore
     from tools.pipeline_eval.qualification.cache_residency import bound_snapshot, load_query
 
@@ -49,12 +49,25 @@ def run(output, geographic, stock_first=False):
                       "--reuse-grid-phase-states", "--output", str(output / "candidate")],
         "stock": [str(STOCK), *args, "--bulk-root", str(output / "stock")],
     }
+    if frontier_libraries:
+        block, tracks = frontier_libraries
+        commands["candidate"][2] = str(HERE / "combined_frontier_run.py")
+        commands["candidate"].extend(["--frontier-block-library", str(block), "--regional-track-library", str(tracks)])
     (output / "stock").mkdir()
     order = ("stock", "candidate") if stock_first else ("candidate", "stock")
     write(output / "binding.json", dict(machine=system, commands=commands, order=order, request=request, inventory=digest))
     for arm in order:
         command = commands[arm]
         cache = bound_snapshot(store, recording, members, os.sysconf("SC_PAGE_SIZE"), query)
+        if matched_warm:
+            from short_raw_diagnostic import require_warm, warm_recording
+            initial = cache
+            start = perf_counter()
+            if initial["cached_pages"] != initial["observed_file_pages"]:
+                warm_recording(members)
+                cache = bound_snapshot(store, recording, members, os.sysconf("SC_PAGE_SIZE"), query)
+            require_warm(cache)
+            write(output / f"{arm}-conditioning.json", dict(initial=initial, elapsed_s=perf_counter()-start))
         if cache["members"] != cache["observed_members"]:
             raise ValueError("Incomplete cache observation")
         write(output / f"{arm}-before.json", cache)
@@ -72,4 +85,6 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("geographic", type=Path)
     parser.add_argument("--stock-first", action="store_true")
+    parser.add_argument("--frontier-libraries", type=Path, nargs=2, metavar=("BLOCK", "TRACKS"))
+    parser.add_argument("--matched-warm", action="store_true")
     run(**vars(parser.parse_args()))
