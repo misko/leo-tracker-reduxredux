@@ -1,6 +1,7 @@
 """Whole-region and phase-support guards for fine salvage."""
 
 from collections import Counter
+from contextlib import contextmanager
 from hashlib import sha256
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +16,7 @@ from leo.analysis.research.retained_track_likelihood import PERIOD, profile
 from leo.sky.frames import geodetic_to_ecef_km
 from tools.pipeline_eval.variants import v5_tiled_salvage
 from tools.pipeline_eval.variants.experimental import regional_envelope as trial
+from tools.pipeline_eval.variants.experimental import regional_envelope_install
 
 
 @pytest.mark.parametrize("latitude, longitude", [(0., 0.), (60., 170.), (-75., -145.)])
@@ -129,3 +131,41 @@ def test_unsupported_phase_support_keeps_edge():
     settings = dict(phase_tile_s=5., orbit_position_km=10., orbit_velocity_km_s=.02)
     assert trial.contrast_census(scan, phase_limit_s=15., **settings)["reject_edges"] == 1
     assert trial.contrast_census(scan, phase_limit_s=30., **settings)["reject_edges"] == 0
+
+
+def test_install_loads_after_configuring_and_captures_only_real_solves(monkeypatch):
+    events = []
+
+    @contextmanager
+    def regional(*, prune, expected_source_sha256):
+        assert prune and expected_source_sha256 == regional_envelope_install.FINE_SOURCE
+        events.append("bound-enter")
+        work = Counter()
+        yield work
+        work["profiles"] += 1
+        events.append("bound-exit")
+
+    def load(source):
+        events.append("load")
+        return {"regional_fine_salvage": regional}
+
+    def configure(solve):
+        events.append("configured")
+        return solve
+
+    def solve():
+        events.append("stock-solve")
+        return "same result"
+
+    monkeypatch.setattr(regional_envelope_install, "run_path", load)
+    public = SimpleNamespace(_with_curved_design=configure)
+    spec = dict(curved_design=True, solver="screened-tiled-finish")
+    with regional_envelope_install.install(public, spec, None) as work:
+        assert events == []
+        callback = public._with_curved_design(solve)
+        public._with_curved_design(solve)
+        assert events == ["configured", "load", "configured"]
+        assert callback() == "same result"
+    assert public._with_curved_design is configure
+    assert work == {"solves": [{"profiles": 1}]}
+    assert events[-3:] == ["bound-enter", "stock-solve", "bound-exit"]

@@ -123,12 +123,18 @@ def run(pair_path, output, *, mode, alternate_offer):
                 terminal = dict(status=decision.get("status"), reason=decision.get("reason"),
                                 arms=decision.get("arms"), orbit_policy=policy)
                 if packet is not None:
+                    grid = packet["position_grid"]
+                    timed_grid = None if grid is None else grid.get("elapsed_seconds")
+                    grid_values = (None if grid is None else
+                                   {key: value for key, value in grid.items() if key != "elapsed_seconds"})
                     terminal.update(
                         owners={arm: p["owner_sha256"] for arm, p in packet["arms"].items()},
                         associated={arm: p["associated_points"] for arm, p in packet["arms"].items()},
-                        evidence={key: canonical_digest(packet[key]) for key in (
-                            "position_path", "position_grid", "objective_replay")},
+                        evidence=dict(position_path=canonical_digest(packet["position_path"]),
+                                      position_grid=canonical_digest(grid_values),
+                                      objective_replay=canonical_digest(packet["objective_replay"])),
                     )
+                    elapsed["grid_sampling_s"] = timed_grid
                 trace = json.loads(json.dumps(coarse_trace, default=_json_value, allow_nan=False))
                 return dict(elapsed=elapsed, terminal=terminal, fine=None if work is None else dict(work), census=stage,
                             trim_fragments=len(trace), trim_digest=canonical_digest(trace),
