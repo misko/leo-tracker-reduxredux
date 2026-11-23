@@ -10,6 +10,7 @@ from leo.presentation.orbit_plot import OrbitCurve, OrbitLane, OrbitPeak
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 from direct_orbit_figures import geometry, lane_ticks, legend_columns, scene
+from direct_orbits_medium_trial import neighborhood_match
 
 
 def lanes():
@@ -61,3 +62,13 @@ def test_legend_reserves_width_for_longest_label_in_each_column():
     (start, _), (middle, _), (last, _) = legend_columns(entries, measure)
     assert middle - start == 192
     assert last - middle == 122
+
+
+def test_raster_audit_is_bidirectional_and_excludes_gray():
+    left = np.full((11, 11, 3), 255, dtype=np.uint8)
+    right = left.copy()
+    left[2, 3] = right[4, 5] = [255, 0, 0]
+    right[0, 0] = [100, 100, 100]
+    assert neighborhood_match(left, right) == [1., 1.]
+    right[9, 9] = [0, 0, 255]
+    assert neighborhood_match(left, right) == [1., .5]
