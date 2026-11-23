@@ -116,26 +116,33 @@ def load_policy(library):
 
 def run_cli(library, argv):
     from functools import partial
-    from empty_bootstrap import PAYLOAD, RELEASE
+
+    import empty_bootstrap as bootstrap
 
     incompatible = {"--held-anchor-route", "--short-lane-mask"}
     if any(option.split("=", 1)[0] in incompatible for option in argv):
         raise ValueError("Use the original unfiltered short-primary receiver for fixed-epoch CFO refinement")
     mixed.verified(library, LIBRARY_SHA256)
     mixed.verified(HERE/"short_cfo_refine.inc", EXTENSION_SHA256)
-    sys.path[:0] = map(str, (PAYLOAD, RELEASE/"src", RELEASE))
-    from leo.contracts.digests import canonical_digest
-    import full_short_run
-
     policy = load_policy(library)
-    parent = full_short_run.RECIPE_SHA
-    receiver = recipe(full_short_run.checked_recipe(), parent)
-    pin = canonical_digest(receiver).removeprefix("sha256:")
-    bootstrap = HERE/"unified_short_bootstrap.py"
-    with (patch.object(mixed, "MixedApertureDetector", partial(RefinedShortDetector, policy=policy)),
-          patch.object(full_short_run, "checked_recipe", return_value=receiver),
-          patch.object(full_short_run, "RECIPE_SHA", pin), patch.object(sys, "argv", [str(bootstrap), *argv])):
-        runpy.run_path(str(bootstrap), run_name="__main__")
+    original_load = bootstrap.load_runtime
+    entry = HERE/"unified_short_bootstrap.py"
+    with ExitStack() as activation:
+        def ready():
+            runtime = original_load()
+            from leo.contracts.digests import canonical_digest
+            import full_short_run
+
+            receiver = recipe(full_short_run.checked_recipe(), full_short_run.RECIPE_SHA)
+            pin = canonical_digest(receiver).removeprefix("sha256:")
+            activation.enter_context(patch.object(mixed, "MixedApertureDetector", partial(RefinedShortDetector, policy=policy)))
+            activation.enter_context(patch.object(full_short_run, "checked_recipe", return_value=receiver))
+            activation.enter_context(patch.object(full_short_run, "RECIPE_SHA", pin))
+            return runtime
+
+        activation.enter_context(patch.object(bootstrap, "load_runtime", ready))
+        activation.enter_context(patch.object(sys, "argv", [str(entry), *argv]))
+        runpy.run_path(str(entry), run_name="__main__")
 
 
 if __name__ == "__main__":

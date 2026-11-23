@@ -174,7 +174,7 @@ def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
     return recording, manifests, total, libraries, residency, env
 
 
-def condition(root, manifests, total, residency, inputs=ORIGINAL):
+def condition(root, manifests, total, residency, inputs=ORIGINAL, *, allow_read=True):
     from aperture_trial import write
     from short_raw_diagnostic import require_warm
     from triage_bounds import warm_recording
@@ -184,6 +184,8 @@ def condition(root, manifests, total, residency, inputs=ORIGINAL):
     check_extent(before, total, inputs)
     used = before["cached_pages"] != before["observed_file_pages"]
     write(root/"conditioning-before.json", {"cache": before, "needed": used})
+    if not allow_read:
+        require_warm(before)
     cpu, wall = process_time(), perf_counter()
     blocks = resource.getrusage(resource.RUSAGE_SELF).ru_inblock
     charged = warm_recording(manifests, maximum_bytes=workload.raw_limit) if used else 0
