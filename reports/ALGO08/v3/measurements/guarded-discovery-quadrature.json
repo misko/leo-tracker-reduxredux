@@ -1,0 +1,70 @@
+{
+  "kind": "archive_crosscheck",
+  "source_commit": "153c356c8",
+  "fresh_saved_runs": 0,
+  "raw_acquisitions": 0,
+  "decision": "retain original full-observation discovery; stage ceiling excludes material dense gain",
+  "source_sha256": {
+    "reports/ALGO08/v3/measurements/cold-track-row-reuse.json.gz": "27baf73f3eb1ccf8293b847fdc482b41dd8ad6cf249a3f503b8c8e81d5325692",
+    "reports/ALGO08/v3/measurements/dense-assignment-reuse.json": "30ee4adefd0926d6d11a57aa6f0137c0f05627b4cf6df0232aab8f3686d23ba6",
+    "reports/ALGO08/v3/measurements/full-family-amortized-summary.json": "780366967ecc24287b0d62c42c07cd8dbc6c24f74b175202e75a76700e3fa81e",
+    "reports/ALGO08/v3/measurements/track-moment-exact-rescore.json": "235616db223b2f55475793bfb788dcb3e2216ef6b169f9952070ec9e90f9389b",
+    "reports/ALGO08/v3/quadrature-local-repair.md": "3febdd6648af80d4064a9448d03391a0517ca281eb9328a50dfcc7b7645dec8c",
+    "reports/ALGO08/v3/track-quadrature.md": "3a1384a43028196430267d67aff9157b01ebb495f9a662d4763dff4b3efbe65f",
+    "src/leo/analysis/localization_v3/discovery.py": "7ca045c3809c8da7b57268b9d9bcc4b8a49366e88376250d0b11227ce6d7e26a",
+    "src/leo/analysis/research/orbit_phase_geometry.py": "8affea2a053f3acd2edf38d7daaa2cfe7fcdc86293261fbff69e9e14a0df4d56",
+    "src/leo/analysis/research/phase_linear_geometry.py": "c21c07ec7b5ee206290e8578d4cbd46dcd85fe7cfd742dafb38a70d8a112529e",
+    "tools/pipeline_eval/variants/algo08_blind_rank.py": "321df8d3771fd478543e7c161a4b1c7d1a84734c8c4a0ae2768ebdf1c9038831"
+  },
+  "dense_early_loss": {
+    "full_row_reranked_moment_branches": 7,
+    "original_full_row_signatures_recovered": 0,
+    "earliest_observed": "before exact centre rerank",
+    "first_learned_decision_to_diverge": null,
+    "fixed_zero_state_interpolation_only_changed_nominees": 1
+  },
+  "certified_profile_controls": {
+    "DS30-0008": {
+      "original_full_profiles": 2621376,
+      "certified_full_profiles": 10429,
+      "original_rank_cpu_s": 5.084855651,
+      "certified_rank_cpu_s": 5.106375239,
+      "same_paired_science": true,
+      "same_cold_diagnostics": false
+    },
+    "DS30-0016": {
+      "original_full_profiles": 92736,
+      "certified_full_profiles": 23383,
+      "original_rank_cpu_s": 0.123447463,
+      "certified_rank_cpu_s": 0.127934494,
+      "same_paired_science": true,
+      "same_cold_diagnostics": false
+    }
+  },
+  "current_dense_unfiltered": {
+    "packet_sha256": "sha256:ad13073239fe7e4e276debf3c667c0a997408d9efb5e07e309b5ab6fff4d0a85",
+    "complete_solver_cpu_s": 26.10489322,
+    "aspiration_cpu_s": 16.0,
+    "first_four_model_dense_budget_s": 14.07,
+    "nested_stage_bounds_cpu_s": {
+      "every_curve_likelihood": 0.893472485,
+      "every_association": 1.398745792,
+      "entire_cold_stage": 5.724209155
+    },
+    "remaining_with_free_stage_cpu_s": {
+      "every_curve_likelihood": 25.211420735,
+      "every_association": 24.706147428,
+      "entire_cold_stage": 20.380684065
+    }
+  },
+  "distinct_full_row_reduction": {
+    "timing_source": "independent centre reuse pair on the same dense packet",
+    "additional_benchmarks": 0,
+    "reused_nominal_projections": 8,
+    "all_nominal_projection_requests": 13,
+    "peak_retained_centre_track_bytes": 119756736,
+    "entire_fused_statistics_cpu_s": 0.703127635,
+    "receiver_smooth_reduction_cpu_s": null
+  },
+  "component_tests_passed": 38
+}
