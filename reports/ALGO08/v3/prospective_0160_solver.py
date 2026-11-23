@@ -396,21 +396,34 @@ def confirm(first_root, audit_file, destination):
     write(destination / "cumulative-clock.json", dict(timing=clock, command=list(map(str, command))))
     if clock["exit_code"]:
         raise RuntimeError("Corrected candidate worker failed; its process exit is sealed")
+    confirm_audit(first_root, audit_file, destination)
+
+
+def confirm_audit(first_root, audit_file, destination):
+    from aperture_trial import read, write
+
+    request, audit = read(first_root / "request.json"), read(audit_file)
+    clock = read(destination / "cumulative-clock.json")["timing"]
+    if (audit["case"] != CASE or request != audit["original_inputs"] or clock["exit_code"]
+            or audit["runs"]["cumulative"]["process"]["exit_code"] != 1):
+        raise ValueError("The read-only comparison needs the original saved pair and successful confirmation")
+    output = destination / "cumulative"
     own = read(output / SETTINGS["audit_name"])
     checked_run = inspect(output, "cumulative", own["receipt"], clock, request, **SETTINGS)
     research = read(output / "joint-research-receipt.json")
     original = audit["runs"]["cumulative"]
     numerical = ("arms", "owners", "raw_authority", "scientific_digests", "artifacts")
+    figures = {name: dict(item, size=list(item["size"])) for name, item in checked_run["figures"].items()}
     if (not research.get("recovered_inference") or research["recovered_inference"]["orbit_policy"] != "history_support"
             or any(checked_run["science"][key] != original["science"][key] for key in numerical)
-            or checked_run["figures"] != original["pngs"] or checked_run["terminal"] != original["terminal"]):
+            or figures != original["pngs"] or checked_run["terminal"] != original["terminal"]):
         raise ValueError("Corrected candidate must audit the history retry and reproduce the first published science")
     stock_rows = read(first_root / "stock/joint-research-receipt.json")["selected_rows"]
     stock_cpu = audit["runs"]["stock"]["worker"]["solve"]["cpu_s"]
     solve_cpu = own["solve"]["cpu_s"]
     prior = audit["admission"]["forecast"]["predicted_solve_cpu_s"]
     write(destination / "result.json", dict(case=CASE, first_audit_sha256=sha256(audit_file.read_bytes()).hexdigest(),
-          corrected_source=FIX_PINS, machine=machine, waveform_calls=0, input_staged=True, original_clock=original["process"],
+          corrected_source=FIX_PINS, waveform_calls=0, input_staged=True, original_clock=original["process"],
           candidate=checked_run, recovered_inference=research["recovered_inference"], reproduced_first_publication=True,
           original_stock_solve_cpu_s=stock_cpu, candidate_solve_cpu_s=solve_cpu,
           candidate_minus_frozen_forecast_s={name: solve_cpu-seconds for name, seconds in prior.items()},
@@ -437,6 +450,10 @@ if __name__ == "__main__":
     corrected.add_argument("root", type=Path)
     corrected.add_argument("audit", type=Path)
     corrected.add_argument("output", type=Path)
+    corrected_audit = modes.add_parser("confirm-audit")
+    corrected_audit.add_argument("root", type=Path)
+    corrected_audit.add_argument("audit", type=Path)
+    corrected_audit.add_argument("output", type=Path)
     args = cli.parse_args()
     if args.operation == "preflight":
         print(json.dumps(preflight(), indent=2, allow_nan=False))
@@ -446,6 +463,8 @@ if __name__ == "__main__":
         audit_published(args.root, args.preflight, args.output)
     elif args.operation == "confirm":
         confirm(args.root, args.audit, args.output)
+    elif args.operation == "confirm-audit":
+        confirm_audit(args.root, args.audit, args.output)
     else:
         pins = FIX_PINS if args.staged_inventory else PINS
         worker(args.request, args.mode, args.output, source_pins=pins, inventory_file=args.staged_inventory, **SETTINGS)

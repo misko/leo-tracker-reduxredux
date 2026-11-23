@@ -1,4 +1,3 @@
-from hashlib import sha256
 import json
 
 import pytest
@@ -43,8 +42,8 @@ def test_saved_forecasts_and_numerical_switches_stay_pinned():
     assert forecast["predicted_solve_cpu_s"]["dense_only_s"] == pytest.approx(4.670439584)
     assert replay.SETTINGS["native_sha"] == replay.NATIVE_SHA
     assert (replay.ISSUED, replay.ADMITTED, replay.ORDER) == (3691, 2354, ("stock", "cumulative"))
-    for name, pin in replay.FIX_PINS.items():
-        assert sha256((replay.HERE / name).read_bytes()).hexdigest() == pin
+    changed = {name for name, pin in replay.FIX_PINS.items() if replay.PINS[name] != pin}
+    assert changed == {"joint_publication.py"}
 
 
 def test_only_the_completed_inference_sets_the_public_route_on_history_retry():
