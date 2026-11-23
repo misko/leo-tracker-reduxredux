@@ -119,11 +119,11 @@ def readout(record):
     )
 
 
-def propose(prepared, region, bound, measured, *, repair=None):
+def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_candidate):
     if prepared["status"] != "inputs_prepared":
         return None, prepared["status"]
     cpu, wall = process_time(), perf_counter()
-    node, point, reference, cold = cold_candidate(prepared, region, bound)
+    node, point, reference, cold = cold_start(prepared, region, bound)
     measured.update(cold=cold, cold_clocks=elapsed(cpu, wall))
     cpu, wall = process_time(), perf_counter()
     scan = v5_core.scan_context(prepared, region, digest(prepared["noise"]), bound, "genuine_previous")

@@ -7,19 +7,23 @@ from aperture_trial import ARMS
 from mixture_trial import elapsed
 
 
-def make_route(installed, reader, attempts, *, repair, signed_finish=False, collect=None):
+def make_route(installed, reader, attempts, *, repair, signed_finish=False, collect=None, cold_start=None):
     import numpy as np
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
     from blind_joint_finish import propose
     from blind_joint_repair import repair_once
     from tools import algo08_position
 
+    options = dict(repair=repair_once if repair else None)
+    if cold_start is not None:
+        options["cold_start"] = cold_start
+
     def route(prepared, search_region, bound, stages, *, selected_evidence=None):
         observed = {}
         attempts.append(observed)
         cpu, wall = process_time(), perf_counter()
         try:
-            signed, reason = propose(prepared, search_region, bound, observed, repair=repair_once if repair else None)
+            signed, reason = propose(prepared, search_region, bound, observed, **options)
         except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
             signed, reason = None, f"{type(exc).__name__}: {exc}"
         observed["candidate_pre_evidence_clocks"] = elapsed(cpu, wall)

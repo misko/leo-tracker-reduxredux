@@ -141,10 +141,11 @@ def update(rows, sigma, beta, *, derivatives):
     return score, records, gram, rhs
 
 
-def fit_node(rows, sigma):
+def fit_node(rows, sigma, *, arms=ARMS):
     estimates = {}
     starts = (np.zeros(9), circular_start(4, rows))
-    for arm, width in zip(ARMS, (8, 9), strict=True):
+    for arm in arms:
+        width = 8 + int(arm == "fitted_c")
         fits = []
         for start in starts:
             beta = start[:width].copy()
@@ -161,7 +162,9 @@ def qualified(record):
     return record is not None and record["weight"] > record["null"] and record["rms_hz"] <= 450.
 
 
-def propose(prepared, region):
+def propose(prepared, region, *, arms=ARMS):
+    if arms not in (ARMS, ("c0",)):
+        raise ValueError("Expected paired calibration or the fixed-zero cold proposal")
     if prepared["status"] != "inputs_prepared":
         return dict(status=prepared["status"], arms={})
     bank = prepared["sky"]["bank"]
@@ -194,19 +197,19 @@ def propose(prepared, region):
             indices = [row["labels"] for row in hypotheses]
             for track, labels in zip(tracks, indices, strict=True):
                 union[track["key"]].update(int(catalogue[j]) for j in labels)
-            cache[point] = fit_node(hypotheses, sigma), indices
+            cache[point] = fit_node(hypotheses, sigma, arms=arms), indices
         return cache[point]
 
     radius = region.half_width_km
     mesh = list(product(np.linspace(-radius, radius, 5), repeat=2))
     for point in mesh:
         at(point)
-    starts = [min(mesh, key=lambda point: at(point)[0][arm]["score"]) for arm in ARMS]
+    starts = [min(mesh, key=lambda point: at(point)[0][arm]["score"]) for arm in arms]
     for start in starts:
         for delta in product((-radius / 8, 0., radius / 8), repeat=2):
             at(np.clip(np.array(start) + delta, -radius, radius))
     solutions = {}
-    for arm in ARMS:
+    for arm in arms:
         point = min(cache, key=lambda point: at(point)[0][arm]["score"])
         fits, labels = at(point)
         selected = []
