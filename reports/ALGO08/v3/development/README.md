@@ -69,6 +69,10 @@ Dense DS30-0008 also exposes a cost outside the signal search. Its complete v3 a
 
 A faster alternative replaced the initial satellite search with a mixture fit. It took 30.27 CPU s on the dense recording, but each calibration arm lost a net 495 assigned observations and both position errors rose, despite slightly lower RF residuals. A separate pilot-frequency scout found two of 54 dense factors and one of 58 weak factors with its larger aperture. Both alternatives stopped at their saved-input checks. [Mixture initialization and position errors](../mixture-joint-start.md) · [Carrier scout and planted controls](../cyclic-carrier.md)
 
+On the first assigned physical recording, DS30-0374, the solver's history check declined the signed correction. Its ordinary joint fit produced both positions and eight readable PNGs from the saved detections in **19.13 s**, compared with **24.13 s** for installed v3. Fixed-zero error increased by 4 m and fitted error decreased by 7 m. Both arms retained the same satellite assignments for 2,822 observations and dropped 83. These elapsed times cover publication from saved detections and exclude raw acquisition. [Matched publication and original position plots](../signed-0374-transfer.md)
+
+The first 128 dense visits also understated the value of cancellation. On all of DS30-0008, each calibration arm used 239 factors found by the second search after cancellation. All 239 arrived after that prefix. Neither containing simulation had any selected second-search factors. [Prefix and full-recording owner census](../primary-schedule.md)
+
 ## Frozen scoring rules
 
 1. Use the recorded 4-case prefix and then the 16-case prefix in [the assignment manifest](stages.json). Retain complete pairs from the first four only for the identical frozen implementation and timing boundary. Alternate first build according to the assignments. Record cache residence immediately before each build, charged reads, CPU, elapsed, exit and artifacts. Use a single shared lock across each pair, one pinned core, nice 15, best-effort I/O priority 7 and one numerical thread. Keep failed attempts in the ledger.
