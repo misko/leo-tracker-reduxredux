@@ -222,6 +222,11 @@ def study(receipt_name, receipt_pin):
     }
     challenge = compare(transfer["case"], runs, errors)
     design = development()
+    recorded = read("acquisition-throughput.json")["rows"]
+    split = sorted(
+        (r for r in recorded if r["stages"][0] > 0), key=lambda r: -r["stages"][1]
+    )
+    cohort = {r["case"] for r in [*design, challenge]}
     return {
         "protocol_commit": "7a617e230",
         "challenge_file": receipt_name,
@@ -229,6 +234,16 @@ def study(receipt_name, receipt_pin):
         "development": design,
         "challenge": challenge,
         "challenge_fit_path": correction_path(transfer),
+        "historical_stage_context": {
+            "enrolled": len(recorded),
+            "split_stage_count": len(split),
+            "median_detection_to_terminal_s": median(r["stages"][1] for r in split),
+            "descending_duration_ranks": {
+                r["case"]: i
+                for i, r in enumerate(split, start=1)
+                if r["case"] in cohort
+            },
+        },
         "saved_time_scenarios": totals([*design, challenge]),
         "india_retrospective": india_control(),
     }
