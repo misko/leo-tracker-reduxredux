@@ -11,7 +11,7 @@ from unittest.mock import patch
 from aperture_trial import ARMS, archive_identity, configuration, inputs, read, solve, write
 from blind_rank_trial import timer
 from cold_track_row_reuse import shared_association_rows
-from dense_full_short_crossover import CASE, HERE, TRACK_ASSET_PIN, file_sha, raw_candidate
+from dense_full_short_crossover import CASE, HERE, TRACK_ASSET_PIN, file_sha
 from dense_geographic_trial import elapsed, host, now
 from proof_global_rank import ranked_scores
 
@@ -71,7 +71,7 @@ def rank_and_race(prepared, region, bound, reuse, share):
     return json.loads(json.dumps(result, default=_json_value, allow_nan=False))
 
 
-def run(raw, process, binary, replay, output):
+def run(raw, process, binary, replay, archived_code, output):
     machine = host()
     publication, spec = configuration()
     from early_region import before_fit
@@ -84,8 +84,11 @@ def run(raw, process, binary, replay, output):
     if file_sha(replay) != REPLAY_PIN:
         raise ValueError("The original complete genuine short replay changed")
     sealed = read(replay)
+    if file_sha(archived_code) != sealed["code"]["dense_full_short_crossover.py"]:
+        raise ValueError("Expected the original source verifier in the archived replay checkout")
+    verify_source = run_path(str(archived_code))["raw_candidate"]
     original, archive, offer, _, identity = inputs(CASE)
-    native, source = raw_candidate(raw, process, binary, original, identity)
+    native, source = verify_source(raw, process, binary, original, identity)
     share = run_path(str(SHARING))["shared_rank_preparation"]
     original_solve = algo08_position.solve
     pair, graphs, regional, counts = {}, [], [], {}
@@ -140,6 +143,6 @@ def run(raw, process, binary, replay, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for field in ("raw", "process", "binary", "replay", "output"):
+    for field in ("raw", "process", "binary", "replay", "archived_code", "output"):
         parser.add_argument(field, type=Path)
     run(**vars(parser.parse_args()))
