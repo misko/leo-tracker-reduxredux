@@ -50,15 +50,23 @@ def choose(rows, clocks, *, swap):
                         mask_sha256=canonical_digest(keys), paid_native_cpu_s=sum(clocks[i] for i in paid)/1e9)
 
 
-def measure(case, swap, out):
+def quadratic_run(case, mode, selector, out, *, inspect_region=None):
     with ExitStack() as stack:
         def observe(native, identity, config):
             from tools import algo08_position
 
             factory = algo08_position.TrackConfig
             stack.enter_context(patch.object(algo08_position, "TrackConfig", lambda **cfg: quadratic(factory(**cfg))))
+            if inspect_region is not None:
+                from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+                stack.enter_context(patch.object(regional_bound_guard, "inspect_boundary", inspect_region))
             identity["graph_parameters"] = {"max_degree": 2, "min_points": 6, "points_per_coefficient": 2}
-        run(case, "swapped" if swap else "interlaced", out, observe=observe, select_paid=partial(choose, swap=swap))
+        run(case, mode, out, observe=observe, select_paid=selector)
+
+
+def measure(case, swap, out):
+    quadratic_run(case, "swapped" if swap else "interlaced", partial(choose, swap=swap), out)
 
 
 if __name__ == "__main__":

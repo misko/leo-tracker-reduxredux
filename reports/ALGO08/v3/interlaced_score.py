@@ -13,7 +13,7 @@ from sparse_consensus_trial import CASES
 from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
 
 
-def score(work, output):
+def score(work, output, *, extra=False, checked=False):
     here = Path(__file__).resolve().parent / "measurements"
     complete_blob = (here / "sparse-consensus-summary.json.gz").read_bytes()
     paired_blob = (here / "paid-quadratic.json.gz").read_bytes()
@@ -21,7 +21,8 @@ def score(work, output):
             or sha256(paired_blob).hexdigest() != "9237e3c1d1cbcca9b234dcb5782c1667857efe201683d84634e732004d2e40e1"):
         raise ValueError("Reference receipts differ from the frozen paired runs")
     complete, paired = (json.loads(gzip.decompress(b)) for b in (complete_blob, paired_blob))
-    receipts = {c: {m: read(work / f"{c}-{m}.json") for m in ("interlaced", "swapped")} for c in CASES}
+    methods = ("causal_extra", "causal_extra_checked") if checked else ("causal_extra",) if extra else ("interlaced", "swapped")
+    receipts = {c: {m: read(work / f"{c}-{m}.json") for m in methods} for c in CASES}
     truths = references()
     phys, = [r for r in read(PHYSICAL)["cases"] if r["dataset_label"] == CASES[0] and r["authority_eligible"]]
     truths[CASES[0]] = tuple(phys["reference"][k] for k in ("latitude_deg", "longitude_deg"))
@@ -36,9 +37,18 @@ def score(work, output):
             if any(i[k] != reference["identity"][k] for k in ("source","archive","offer","ledger")):
                 raise ValueError("Unmatched recording, offer or archive")
             data = i.get("selection", {})
-            if name != "complete" and (data["paid_lanes"] != matched["identity"]["selection"]["paid_lanes"]
+            base_count = data.get("base_lanes", data.get("paid_lanes"))
+            if name != "complete" and (base_count != matched["identity"]["selection"]["paid_lanes"]
                                         or i["graph_parameters"] != matched["identity"]["graph_parameters"]):
-                raise ValueError("Paid count or graph policy differs")
+                raise ValueError("Base lane count or graph policy differs")
+            if name.startswith("causal_extra") and (data["extra_lanes"] + base_count != data["paid_lanes"]
+                                                    or data["extra_lanes"] > data["lanes"] // 6):
+                raise ValueError("Extra call budget exceeded")
+            if name == "causal_extra_checked":
+                unchecked = modes["causal_extra"]
+                if (i["native_sha256"] != unchecked["identity"]["native_sha256"]
+                        or not r["attempts"][0]["exterior"]["evaluated"]):
+                    raise ValueError("Expected a matched packet and a completed regional decision")
             result = r["result"]
             science = section(result["arms"], truths[case], reference["result"]["arms"])
             deltas = [science["arms"][arm]["delta_error_km"] for arm in ARMS]
@@ -46,6 +56,11 @@ def score(work, output):
                       if inside else result["status"] == "withheld")
             entry[name] = dict(status=result["status"], reason=result["reason"], selection=data,
                                charged=r["charged"], associated=result.get("associated", {}), passed=passed, **science)
+            acquisition = i["ledger"]["acquisition_cpu_s"]
+            if name != "complete":
+                acquisition += data["paid_native_cpu_s"] - reference["identity"]["replay"]["all_native_cpu_s"]
+                acquisition += data["selection_cpu_s"]
+            entry[name]["projected_through_solve_cpu_s"] = acquisition + r["charged"]["cpu_s"]
         results[case] = entry
     full = gzip.compress(json.dumps(receipts, sort_keys=True, allow_nan=False).encode(), mtime=0)
     with output.with_suffix(".json.gz").open("xb") as f:
@@ -57,5 +72,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("work", type=Path)
     p.add_argument("output", type=Path)
+    p.add_argument("--extra", action="store_true")
+    p.add_argument("--checked", action="store_true")
     a = p.parse_args()
-    score(a.work, a.output)
+    score(a.work, a.output, extra=a.extra, checked=a.checked)
