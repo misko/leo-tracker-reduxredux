@@ -20,7 +20,7 @@ def publication_roles(packet):
     }
 
 
-def trial(case, output):
+def trial(case, output, *, repair=False):
     publication, spec = configuration()
     import numpy as np
     from leo.operations.tle_archive import TleArchiveReader
@@ -28,6 +28,7 @@ def trial(case, output):
     from tools.pipeline_eval.variants import v5_core
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
     from blind_joint_finish import propose
+    from blind_joint_repair import repair_once
 
     native, archive, offer, expected, identity = inputs(case)
     if identity["detector_sha256"] != "sha256:" + spec["detector_sha256"]:
@@ -43,7 +44,7 @@ def trial(case, output):
             attempts.append(observed)
             cpu, wall = process_time(), perf_counter()
             try:
-                signed, reason = propose(prepared, search_region, bound, observed)
+                signed, reason = propose(prepared, search_region, bound, observed, repair=repair_once if repair else None)
             except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
                 signed, reason = None, f"{type(exc).__name__}: {exc}"
             observed["candidate_pre_evidence_clocks"] = elapsed(cpu, wall)
@@ -65,7 +66,19 @@ def trial(case, output):
                 else:
                     cpu, wall = process_time(), perf_counter()
                     try:
-                        selected_evidence(prepared, signed, None)
+                        if repair:
+                            packet_builder = algo08_position.selected_packet
+
+                            def complete_packet(*args, **kwargs):
+                                packet = packet_builder(*args, **kwargs)
+                                if not packet["position_grid"]["complete"]:
+                                    raise ValueError("The original numerical evidence grid is incomplete")
+                                return packet
+
+                            with patch.object(algo08_position, "selected_packet", complete_packet):
+                                selected_evidence(prepared, signed, None)
+                        else:
+                            selected_evidence(prepared, signed, None)
                     except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
                         reason = f"standard_evidence: {type(exc).__name__}: {exc}"
                     finally:
@@ -120,7 +133,8 @@ def trial(case, output):
             data = publication.run(args, spec)
     if archive_identity(archive) != identity["archive"]:
         raise ValueError("Causal archive changed during the trial")
-    data.update(identity=identity, machine=machine(), driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
+    data.update(identity=identity, machine=machine(), repair_enabled=repair,
+                driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
     write(output, data)
 
 
@@ -128,4 +142,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case", choices=CASES)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--repair", action="store_true")
     trial(**vars(parser.parse_args()))

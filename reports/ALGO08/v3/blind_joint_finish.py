@@ -119,7 +119,7 @@ def readout(record):
     )
 
 
-def propose(prepared, region, bound, measured):
+def propose(prepared, region, bound, measured, *, repair=None):
     if prepared["status"] != "inputs_prepared":
         return None, prepared["status"]
     cpu, wall = process_time(), perf_counter()
@@ -167,7 +167,10 @@ def propose(prepared, region, bound, measured):
     accepted = pair_passes(paired, include_linear=bool(entries), half_width_km=region.half_width_km)
     measured.update(finish={arm: readout(record) for arm, record in paired.items()}, finish_clocks=elapsed(cpu, wall),
                     pair_passes=accepted)
+    signed = dict(scan=scan, node=node, keep=checked, entries=entries, means=means,
+                  powers=powers, model=model, arms=paired)
+    if not accepted and repair is not None:
+        return repair(signed, region, measured)
     if not accepted:
         return None, "original_joint_pair_gate"
-    return dict(scan=scan, node=node, keep=checked, entries=entries, means=means,
-                powers=powers, model=model, arms=paired), None
+    return signed, None

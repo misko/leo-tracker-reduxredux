@@ -12,7 +12,8 @@ from mixture_trial import ARMS, CASES
 
 
 HERE = Path(__file__).resolve().parent
-CLOCKS = ("cold", "initial_gate", "salvage", "predictive", "finish", "exterior", "standard_evidence", "fallback")
+CLOCKS = ("cold", "initial_gate", "salvage", "predictive", "finish", "repair_prepare", "repair_fit",
+          "exterior", "standard_evidence", "fallback")
 
 
 def compare(record, truth, archived):
@@ -21,7 +22,9 @@ def compare(record, truth, archived):
     attempt, = record["attempts"]
     clearance = face_clearance_km(record["identity"]["offer"], truth)
     contained = clearance >= 0.
-    diagnostic = section(attempt.get("finish", {}), truth, stock["arms"])
+    first_fit = attempt.get("finish", {})
+    repair_fit = attempt.get("repair", {}).get("finish")
+    diagnostic = section(repair_fit or first_fit, truth, stock["arms"])
     returned = section(decision["arms"], truth, stock["arms"])
     comparison = section(stock["arms"], truth, stock["arms"])
     errors = returned["arms"]
@@ -35,7 +38,7 @@ def compare(record, truth, archived):
     headroom = BUDGET_CPU_S - charged["cpu_s"] if record["identity"]["case"] == "DS30-0008" else None
     arm_decisions = {}
     for arm in ARMS:
-        provisional = attempt.get("finish", {}).get(arm)
+        provisional = (repair_fit or first_fit).get(arm)
         compatible = None if provisional is None else (
             not (provisional["failed_curved"] or provisional["failed_linear"])
             and (not provisional["linear_points"] or provisional["final_phase_change_s"] <= .01)
@@ -49,8 +52,10 @@ def compare(record, truth, archived):
         route=attempt["decision"], rejected_reason=attempt.get("reason"), triage_pass=passes,
         calibration_decisions=arm_decisions,
         diagnostic=diagnostic, returned=returned, stock=comparison,
+        before_repair=section(first_fit, truth, stock["arms"]) if repair_fit is not None else None,
+        repair=attempt.get("repair"),
         support={k: v for k, v in attempt.get("support", {}).items() if k not in ("salvage", "predictive_labels")},
-        actual_finish=attempt.get("finish"), stock_roles=record["stock_roles"],
+        actual_finish=repair_fit or first_fit, stock_roles=record["stock_roles"],
         published_roles=record["published_roles"], published_owner_changes=record["published_owner_changes"],
         grid_points=decision.get("grid_points"), numerical_objective_replay=decision.get("objective_replay"),
         timing=dict(stages=measured, shared_preparation_other_cpu_s=charged["cpu_s"] - total,
