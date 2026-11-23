@@ -12,7 +12,9 @@ def test_saved_simulations_use_the_same_repair_entry_point(monkeypatch, tmp_path
             case = f"{site}-{offer}"
             destination = tmp_path / f"{case}.json"
             runner.main([case, str(destination), "--repair"])
-            assert calls[-1] == dict(case=case, output=destination, repair=True)
+            assert calls[-1] == dict(case=case, output=destination, repair=True, signed_finish=False)
+            runner.main([case, str(destination), "--repair", "--signed-finish"])
+            assert calls[-1] == dict(case=case, output=destination, repair=True, signed_finish=True)
 
 
 def test_northern_receipts_can_be_scored_separately_with_existing_default(monkeypatch, tmp_path):

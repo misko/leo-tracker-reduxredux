@@ -21,11 +21,12 @@ def publication_roles(packet):
     }
 
 
-def trial(case, output, *, repair=False, load_saved_inputs=None):
+def trial(case, output, *, repair=False, signed_finish=False, load_saved_inputs=None):
     publication, spec = configuration()
     from leo.operations.tle_archive import TleArchiveReader
     from tools import algo08_position, algo08_scan
     from tools.pipeline_eval.variants import v5_core
+    from blind_joint_signed import northern_trace
 
     native, archive, offer, expected, identity = (
         inputs(case) if load_saved_inputs is None else load_saved_inputs()
@@ -37,8 +38,11 @@ def trial(case, output, *, repair=False, load_saved_inputs=None):
     def analyze(_recording, _root, assets, archive_root, region):
         installed = v5_core.infer
         reader = TleArchiveReader(archive_root)
+        attribution = {}
+        saved_scope = {}
 
-        route = make_route(installed, reader, attempts, repair=repair)
+        collect = saved_scope.update if case == "north-containing" else None
+        route = make_route(installed, reader, attempts, repair=repair, signed_finish=signed_finish, collect=collect)
 
         cpu, wall = process_time(), perf_counter()
         with patch.object(v5_core, "infer", route):
@@ -53,8 +57,34 @@ def trial(case, output, *, repair=False, load_saved_inputs=None):
             control_clocks = None
         else:
             cpu, wall = process_time(), perf_counter()
-            baseline = algo08_position.solve(native, reader, assets, region)
+            if saved_scope:
+                from leo.analysis.localization_v3 import signed_context
+
+                prepare_packet = algo08_position.prepare_packet
+                stock_signed = signed_context.signed_context
+
+                def observe_signed(*args, **kwargs):
+                    staged = stock_signed(*args, **kwargs)
+                    attribution["stock_signed_selection"] = staged["signed"]["selection"]
+                    attribution["stock_signed_accepted"] = staged["signed"]["accepted"]
+                    return staged
+
+                def trace_stock(context, owners, arms, *args, **kwargs):
+                    packet = prepare_packet(context, owners, arms, *args, **kwargs)
+                    traced_cpu, traced_wall = process_time(), perf_counter()
+                    trace = northern_trace(saved_scope["ordinary"], saved_scope["signed"], context, arms)
+                    trace["clocks"] = elapsed(traced_cpu, traced_wall)
+                    attribution.update(trace)
+                    return packet
+
+                with (patch.object(algo08_position, "prepare_packet", trace_stock),
+                      patch.object(signed_context, "signed_context", observe_signed)):
+                    baseline = algo08_position.solve(native, reader, assets, region)
+            else:
+                baseline = algo08_position.solve(native, reader, assets, region)
             control_clocks = elapsed(cpu, wall)
+            if "clocks" in attribution:
+                control_clocks = {key: value - attribution["clocks"][key] for key, value in control_clocks.items()}
             control, stock_owners = summarize(*baseline)
             stock_roles = publication_roles(baseline[1])
         for key in ("arms", "owners", "reason", "status", "orbit_policy", "science"):
@@ -68,7 +98,7 @@ def trial(case, output, *, repair=False, load_saved_inputs=None):
                                 new=len(after.keys() - before.keys()), changed=sum(before[k] != after[k] for k in shared))
         return dict(result=result, control=control, charged=charged, control_clocks=control_clocks,
                     attempts=attempts, published_roles=publication_roles(published[1]),
-                    stock_roles=stock_roles, published_owner_changes=changes)
+                    stock_roles=stock_roles, published_owner_changes=changes, northern_attribution=attribution)
 
     with TemporaryDirectory() as work:
         scratch = Path(work)
@@ -81,7 +111,7 @@ def trial(case, output, *, repair=False, load_saved_inputs=None):
             data = publication.run(args, spec)
     if archive_identity(archive) != identity["archive"]:
         raise ValueError("Causal archive changed during the trial")
-    data.update(identity=identity, machine=machine(), repair_enabled=repair,
+    data.update(identity=identity, machine=machine(), repair_enabled=repair, signed_finish_enabled=signed_finish,
                 driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
     write(output, data)
 
@@ -91,6 +121,7 @@ def main(argv=None):
     parser.add_argument("case", choices=CASES)
     parser.add_argument("output", type=Path)
     parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--signed-finish", action="store_true")
     trial(**vars(parser.parse_args(argv)))
 
 

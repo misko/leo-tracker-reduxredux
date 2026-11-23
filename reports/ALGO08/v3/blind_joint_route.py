@@ -7,7 +7,7 @@ from aperture_trial import ARMS
 from mixture_trial import elapsed
 
 
-def make_route(installed, reader, attempts, *, repair):
+def make_route(installed, reader, attempts, *, repair, signed_finish=False, collect=None):
     import numpy as np
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
     from blind_joint_finish import propose
@@ -23,6 +23,19 @@ def make_route(installed, reader, attempts, *, repair):
         except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
             signed, reason = None, f"{type(exc).__name__}: {exc}"
         observed["candidate_pre_evidence_clocks"] = elapsed(cpu, wall)
+        if signed is not None and signed_finish:
+            from blind_joint_signed import update
+
+            ordinary = signed
+            started, began = process_time(), perf_counter()
+            try:
+                signed = update(prepared, ordinary, observed)
+            except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
+                signed, reason = None, f"signed_context: {type(exc).__name__}: {exc}"
+            finally:
+                observed["signed_total_clocks"] = elapsed(started, began)
+            if collect is not None and signed is not None:
+                collect(ordinary=ordinary, signed=signed)
         if signed is not None:
             cpu, wall = process_time(), perf_counter()
             endpoints = {key: record["endpoint_east_north_km"] for key, record in signed["arms"].items()}

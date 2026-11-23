@@ -4,6 +4,7 @@ import argparse
 import gzip
 from hashlib import sha256
 import json
+from math import dist
 from pathlib import Path
 
 from aperture_score import PHYSICAL, SIMULATED, face_clearance_km, references
@@ -14,7 +15,30 @@ from mixture_trial import ARMS, CASES
 
 HERE = Path(__file__).resolve().parent
 CLOCKS = ("cold", "initial_gate", "salvage", "predictive", "finish", "repair_prepare", "repair_fit",
-          "exterior", "standard_evidence", "fallback")
+          "signed_total", "exterior", "standard_evidence", "fallback")
+
+
+def compact_attribution(trace):
+    if not trace:
+        return None
+    ordinary, cold, signed, stock = (trace["support"][name] for name in ("warm_ordinary", "cold_ordinary", "cold_signed", "stock"))
+    result = {"fixed_inputs_match": {key: ordinary[key] == stock[key]
+                                     for key in ("curved", "predictive", "weights", "model")}}
+    result["stock_signed_means_match"] = signed["means_s"] == stock["means_s"]
+    result["stock_signed_accepted"] = trace["stock_signed_accepted"]
+    result["means_s"] = dict(ordinary=ordinary["means_s"], signed=signed["means_s"])
+    result["clocks"] = trace["clocks"]
+    result["arms"] = {}
+    for arm in ARMS:
+        samples = trace["objective_samples"][arm]["fixed_reference_objectives"]
+        result["arms"][arm] = dict(
+            starts_only_move_km=dist(ordinary["arms"][arm]["endpoint_east_north_km"], cold["arms"][arm]["endpoint_east_north_km"]),
+            stock_signed_phase_reference_match=signed["arms"][arm]["phase_reference_s"] == stock["arms"][arm]["phase_reference_s"],
+            stock_signed_path_match=signed["arms"][arm]["optimizer_endpoints"] == stock["arms"][arm]["optimizer_endpoints"],
+            inward_1m_change={model: scores["stock_inward_1m"] - scores["stock"] for model, scores in samples.items()
+                              if "stock_inward_1m" in scores},
+        )
+    return result
 
 
 def compare(record, truth, archived):
@@ -25,7 +49,9 @@ def compare(record, truth, archived):
     contained = clearance >= 0.
     first_fit = attempt.get("finish", {})
     repair_fit = attempt.get("repair", {}).get("finish")
-    diagnostic = section(repair_fit or first_fit, truth, stock["arms"])
+    signed = attempt.get("signed")
+    final_fit = signed["finish"] if signed and signed["status"] == "accepted" else (repair_fit or first_fit)
+    diagnostic = section(final_fit, truth, stock["arms"])
     returned = section(decision["arms"], truth, stock["arms"])
     comparison = section(stock["arms"], truth, stock["arms"])
     errors = returned["arms"]
@@ -39,7 +65,7 @@ def compare(record, truth, archived):
     headroom = BUDGET_CPU_S - charged["cpu_s"] if record["identity"]["case"] == "DS30-0008" else None
     arm_decisions = {}
     for arm in ARMS:
-        provisional = (repair_fit or first_fit).get(arm)
+        provisional = final_fit.get(arm)
         compatible = None if provisional is None else (
             not (provisional["failed_curved"] or provisional["failed_linear"])
             and (not provisional["linear_points"] or provisional["final_phase_change_s"] <= .01)
@@ -55,11 +81,16 @@ def compare(record, truth, archived):
         diagnostic=diagnostic, returned=returned, stock=comparison,
         before_repair=section(first_fit, truth, stock["arms"]) if repair_fit is not None else None,
         repair=attempt.get("repair"),
+        signed=signed,
+        before_signed=section(repair_fit or first_fit, truth, stock["arms"]) if signed else None,
+        northern_attribution=compact_attribution(record.get("northern_attribution")),
         support={k: v for k, v in attempt.get("support", {}).items() if k not in ("salvage", "predictive_labels")},
-        actual_finish=repair_fit or first_fit, stock_roles=record["stock_roles"],
+        actual_finish=final_fit, stock_roles=record["stock_roles"],
         published_roles=record["published_roles"], published_owner_changes=record["published_owner_changes"],
         grid_points=decision.get("grid_points"), numerical_objective_replay=decision.get("objective_replay"),
-        timing=dict(stages=measured, shared_preparation_other_cpu_s=charged["cpu_s"] - total,
+        timing=dict(stages=measured, signed_substages={key: attempt.get("signed_" + key + "_clocks")
+                                                     for key in ("qualify", "prior", "refit")} if signed else None,
+                    shared_preparation_other_cpu_s=charged["cpu_s"] - total,
                     charged=charged, archived_stock_cpu_s=archived["cpu_s"], stock=record["control_clocks"],
                     unspent_dense_budget_cpu_s=headroom,
                     pre_fallback_cpu_s=charged["cpu_s"] - (measured["fallback"] or {}).get("cpu_s", 0.)),
