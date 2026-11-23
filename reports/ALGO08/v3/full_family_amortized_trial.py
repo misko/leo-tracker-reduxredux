@@ -2,6 +2,7 @@
 
 import argparse
 from collections import Counter
+from contextlib import nullcontext
 from functools import partial
 import gzip
 from hashlib import sha256
@@ -22,7 +23,7 @@ PRIMARY = CASES[:2]
 MODES = ("control", "contrast")
 
 
-def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_attempt=False):
+def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_attempt=False, evidence_context=None):
     if paid_south and (case not in ("south-containing", "south-far") or mode != "control"):
         raise ValueError("Paid southern transfer requires a southern offer and the original full nominations")
     host = machine()
@@ -96,9 +97,10 @@ def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_
         candidate = make_route(v5_core.infer, reader, attempts, repair=True, signed_finish=True,
                                joint_proposal=proposal, signed_updater=update)
         factory = (lambda **values: quadratic(config(**values))) if paid else config
+        evidence = nullcontext() if evidence_context is None else evidence_context()
         with (patch.object(v5_core, "infer", candidate), patch.object(algo08_position, "TrackConfig", factory),
               patch.object(algo08_position, "prepare_native_scan", observe_prepare),
-              patch.object(regional_bound_guard, "inspect_boundary", observe_exterior)):
+              patch.object(regional_bound_guard, "inspect_boundary", observe_exterior), evidence):
             decision, packet, orbit_policy = original(document, reader, assets, supplied)
         if packet is not None:
             if not packet["position_grid"]["complete"]:
