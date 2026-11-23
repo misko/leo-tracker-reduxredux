@@ -12,27 +12,53 @@ import matplotlib.pyplot as plt
 HERE = Path(__file__).resolve().parent
 
 
-def observations():
+def offers():
     def load(name):
         with gzip.open(HERE / "measurements" / name) as stream:
             return json.load(stream)
 
     initial = load("local-future-repair.json.gz")["results"]
     transfer = load("local-future-0057.json.gz")["runs"]
-    rows = []
     for label, case in (("DS30-0016", "physical"), ("DS30-0057", None),
                         ("Northern simulation", "north"), ("Southern simulation", "south-inside")):
         forward, repair = ((transfer["forward"]["score"], transfer["repair"]["score"]) if case is None
                            else (initial[case]["forward"], initial[case]["score"]))
         stock = transfer["stock"]["score"] if case is None else initial[case]["stock"]
+        yield label, forward, repair, stock
+
+
+def necessary_fraction(forward_error, repaired_error, displacement, limit):
+    """Necessary bounds from both triangle inequalities along the shortest path."""
+    if displacement == 0:
+        return (0., 1.) if max(forward_error, repaired_error) <= limit else None
+    low = max(0., (forward_error - limit) / displacement)
+    high = min(1., 1 - (repaired_error - limit) / displacement)
+    return (low, high) if low <= high else None
+
+
+def damping_budget():
+    from tools.pipeline_eval.scoring import distance_km
+
+    result = {}
+    for label, forward, repair, stock in offers():
+        result[label] = {}
         for arm in ("c0", "fitted_c"):
-            for name, result in (("Forward only", forward), ("Protected repair", repair)):
-                rows.append((label, arm, name, 1000 * (result["arms"][arm]["error_km"] - stock["arms"][arm]["error_km"])))
-    return rows
+            before, after, baseline = (method["arms"][arm] for method in (forward, repair, stock))
+            distance = distance_km(before["latlon"], after["latlon"])
+            limit = baseline["error_km"] + .250
+            result[label][arm] = dict(displacement_km=distance, limit_km=limit, necessary_fraction=necessary_fraction(
+                before["error_km"], after["error_km"], distance, limit))
+    return result
 
 
 def plot(path):
-    rows = observations()
+    rows = []
+    for label, forward, repair, stock in offers():
+        for arm in ("c0", "fitted_c"):
+            stock_km = stock["arms"][arm]["error_km"]
+            for name, result in (("Forward only", forward), ("Protected repair", repair)):
+                delta_m = 1000 * (result["arms"][arm]["error_km"] - stock_km)
+                rows.append((label, arm, name, delta_m))
     labels = list(dict.fromkeys(row[0] for row in rows))
     fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.2), sharey=True, sharex=True)
     for axis, arm, title in zip(axes, ("c0", "fitted_c"), ("Fixed calibration  ·  c = 0", "Fitted calibration"), strict=True):
