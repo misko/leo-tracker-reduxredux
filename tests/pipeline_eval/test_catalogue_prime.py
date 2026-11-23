@@ -23,7 +23,8 @@ def test_prime_source_order_uses_recent_first_and_deduplicates_only_bodies():
         "52-recent.tle", "64-repeat.tle", "100-boundary.tle", "28-old.tle",
     ]
     authoritative = trial.select_sources(refs, 99 * trial.HOUR_NS)
-    assert [snapshot.sha256 for snapshot in authoritative] == ["recent", "repeat", "prehistory", "old"]
+    actual_keys = [snapshot.sha256 for snapshot in authoritative]
+    assert actual_keys == ["recent", "repeat", "prehistory", "old"]
 
 
 def test_manifest_prime_supplies_only_authenticated_body_keys(tmp_path):

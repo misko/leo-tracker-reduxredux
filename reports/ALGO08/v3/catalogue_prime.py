@@ -12,7 +12,6 @@ from pathlib import Path
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
 
-
 RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
 INSTALL = Path("/opt/leo-algo08/algo08v3")
 REQUEST = Path("/dev/shm/leo-v3-provisional-salvage-dense-01/request.json")
@@ -88,8 +87,9 @@ def check_machine():
 
 def parsed_witness(parser):
     """Compare exact parser ordering, epochs, line pairs and SGP4 export for each body."""
-    from leo.contracts.digests import canonical_digest
     from sgp4.exporter import export_tle
+
+    from leo.contracts.digests import canonical_digest
 
     exports = {id(sat): export_tle(sat) for _, sat, _ in parser.elements.values()}
     bodies = {sha256(text.encode("ascii")).hexdigest(): canonical_digest([
@@ -112,14 +112,13 @@ def worker(mode, output):
     from leo.contracts.algo08_region import Algo08Region
     from leo.contracts.digests import canonical_digest
     from leo.operations.tle_archive import TleArchiveReader
+    from reports.ALGO08.v3.paid_certified_trial import prepared_digest
     from tools import algo08_position
     from tools.pipeline_eval.variants import algo08_causal_reuse as reuse
     from tools.pipeline_eval.variants.algo08_causal_table import causal_table
     from tools.pipeline_eval.variants.experimental.graph_path import native_paths
     from tools.pipeline_eval.variants.experimental.preparation_gc import defer_collection
     from tools.pipeline_eval.variants.experimental.tle_records import batch_records
-
-    from reports.ALGO08.v3.paid_certified_trial import prepared_digest
 
     for module in (algo08_position.__name__, reuse.__name__, causal_table.__module__,
                    native_paths.__module__, defer_collection.__module__, batch_records.__module__):
@@ -135,7 +134,8 @@ def worker(mode, output):
         raise ValueError("Saved causal archive changed")
     manifest_path, manifest_digest = request["manifests"][0]
     manifest_path = Path(manifest_path)
-    if manifest_path.name != "manifest.json" or manifest_path.parent.parent != Path(request["recording"]):
+    recording_path = Path(request["recording"])
+    if manifest_path.name != "manifest.json" or manifest_path.parent.parent != recording_path:
         raise ValueError("Expected only the first pinned manifest under the original recording")
 
     timings, reads, calls = {}, {}, {}
@@ -193,26 +193,31 @@ def worker(mode, output):
                 or source["input_manifest_sha256"] != request["inventory"]
                 or source["raw_recording_authority_digest"] != request["raw_authority"]):
             raise ValueError("The saved packet does not bind to the actual causal cutoff")
-        offer = Algo08Region.parse(json.loads(checked(Path(request["offer_file"]), request["offer_sha256"])))
-        config = algo08_position.TrackConfig(**json.loads(checked(RELEASE / "assets/tracks.json", TRACK_PIN))["config"])
+        offer_bytes = checked(Path(request["offer_file"]), request["offer_sha256"])
+        track_bytes = checked(RELEASE / "assets/tracks.json", TRACK_PIN)
+        offer = Algo08Region.parse(json.loads(offer_bytes))
+        config = algo08_position.TrackConfig(**json.loads(track_bytes)["config"])
         phase = "consumer"
         with patch.object(reuse, "CausalPreparationParser", lambda: parser):
             start = clock()
             prepared = reuse.prepare(
                 original_prepare, native, archive, config, statistics=preparation_stats,
-                screen_latitude_deg=offer.screen_center[0], screen_longitude_deg=offer.screen_center[1],
+                screen_latitude_deg=offer.screen_center[0],
+                screen_longitude_deg=offer.screen_center[1],
             )
             timings["consumer"] = elapsed(start)
 
     packed = _prepared_values(prepared)
-    if packed["status"] != "inputs_prepared" or native_counts["fallback"] or parser.stats["fallback_calls"]:
+    if (packed["status"] != "inputs_prepared" or native_counts["fallback"]
+            or parser.stats["fallback_calls"]):
         raise ValueError("Expected the exact charged named parser and consumer path")
     prepared_sha256 = prepared_digest(packed)
     witness = parsed_witness(parser)
     if prime:
         exact_refs = select_sources(refs, cutoff)
         prime["actual_ordered_refs"] = [ref.path.name for ref in exact_refs]
-        prime["actual_body_overlap"] = len(set(prime["digests"]) & {ref.sha256 for ref in exact_refs})
+        actual_bodies = {ref.sha256 for ref in exact_refs}
+        prime["actual_body_overlap"] = len(actual_bodies.intersection(prime["digests"]))
     save(output, dict(
         mode=mode, host=host, frozen_spec_sha256=SPEC_PIN, archive_digest=archive_digest,
         manifest_path=str(manifest_path), manifest_digest=manifest_digest,
@@ -221,7 +226,8 @@ def worker(mode, output):
         native_consumer={key: count - prime_native[key] for key, count in native_counts.items()},
         parser_before=parser_before, parser_after=parser.stats, graph=graph_counts,
         catalogue_costs=catalogue_counts, prepared_sha256=prepared_sha256, witness=witness,
-        metadata=packed["sky"]["metadata"], phase_history_sources=packed["phase_history"]["sources"],
+        metadata=packed["sky"]["metadata"],
+        phase_history_sources=packed["phase_history"]["sources"],
         peak_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
     ))
 
@@ -237,10 +243,13 @@ def pair(output):
     ordinary, primed = (rows[mode] for mode in ("ordinary", "primed"))
     keys = ("prepared_sha256", "witness", "metadata", "phase_history_sources", "actual_cutoff")
     equality = {key: ordinary[key] == primed[key] for key in keys}
-    equality["ordinary_archive_reads"] = ordinary["reads"]["consumer_refs"] == primed["reads"]["consumer_refs"]
+    equality["ordinary_archive_reads"] = (
+        ordinary["reads"]["consumer_refs"] == primed["reads"]["consumer_refs"]
+    )
     result = dict(case="DS30-0008", order=list(rows), runs=rows, equality=equality,
                   driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
-                  request_sha256=REQUEST_PIN, input_boundary="saved detections and original manifest metadata")
+                  request_sha256=REQUEST_PIN,
+                  input_boundary="saved detections and original manifest metadata")
     save(output / "pair.json", result)
     if not all(equality.values()):
         raise ValueError("Priming changed the exact prepared input or original read sequence")
