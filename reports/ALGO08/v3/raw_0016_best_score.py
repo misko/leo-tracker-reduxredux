@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from empty_bootstrap import bind_native, checked
-from raw_0016_best_trial import ARCHIVE, CASE, FLAGS, HERE, INVENTORY, MIXED_NATIVE, PROJECTION_SHA, seal, sha
+from raw_0016_best_trial import ARCHIVE, CASE, FLAGS, HERE, INVENTORY, MIXED_NATIVE, ORIGINAL, PROJECTION_SHA, seal, sha
 
 
 STOCK_NATIVE = "sha256:4c0e22cbc5646e059abf59e968df2ee9d971795204d552adc9223d2426a7a7e0"
@@ -32,7 +32,7 @@ def match_science(actual, expected):
             ("arms", "owners", "reason", "raw_authority", "scientific_digests")}
 
 
-def position_sides(store, receipt, media):
+def position_sides(store, receipt, media, expected_points=179):
     from leo.contracts.position_grid import binding
     from PIL import Image
 
@@ -46,22 +46,27 @@ def position_sides(store, receipt, media):
     if expected["position_png_sha256"] != media["images"]["position"]["sha256"]:
         raise ValueError("Position-image binding does not name an independently checked figure")
     grid, path = store.position_grid(run_id), store.position_path(run_id)
-    if (grid["binding"] != expected or path["binding"] != expected or not grid["complete"]
-            or grid["evaluated_points"] != 179):
+    evaluated = grid["evaluated_points"]
+    if (grid["binding"] != expected or path["binding"] != expected or not grid["complete"] or not evaluated
+            or evaluated != grid["planned_points"] or expected_points is not None and evaluated != expected_points):
         raise ValueError("Invalid published path or matched numerical grid")
     return dict(grid_points=grid["evaluated_points"], binding=expected, figures=plot_headers)
 
 
-def process_rows(root, admission):
+def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, expected_grid_points=None):
     from full_short_raw import RECIPE_SHA
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from local_future_cli_trial import native_packet
-    from short_raw_diagnostic import pairs, require_warm
+    from short_raw_diagnostic import FastScanStore, pairs, require_warm
+
+    if inputs is ORIGINAL:
+        expected_natives = {"stock": STOCK_NATIVE, "candidate": MIXED_NATIVE}
+        expected_grid_points = 179
 
     results = {}
-    for mode in CASE.order:
+    for mode in inputs.workload.order:
         target = root/mode
         log = json.loads((root/f"{mode}-clock.json").read_bytes())
         require_warm(log["cache_before"])
@@ -70,18 +75,26 @@ def process_rows(root, admission):
         candidate = mode == "candidate"
         if candidate:
             bootstrap = json.loads((target/"unified-short-bootstrap.json").read_bytes())
-            research = json.loads((target/"joint-research-receipt.json").read_bytes())
+            active = bootstrap["route"] == "optimized_installed_graph"
+            proof = bootstrap["graph_proof"]
+            authorized_withhold = (
+                bootstrap["route"] == "authenticated_zero_selected_factors" and proof is None
+                or bootstrap["route"] == "authenticated_installed_graph_ineligible" and proof and proof["proven"]
+                and proof["native_sha256"] == bootstrap["native_sha256"]
+            )
+            research = json.loads((target/"joint-research-receipt.json").read_bytes()) if active else None
             projection = bootstrap.get("grid_feature_projection", {})
             scoped_sources = projection.get("source_sha256", {}) | bootstrap["source_sha256"]
-            if (receipt != bootstrap["receipt"] or receipt != research["receipt"]
+            if (receipt != bootstrap["receipt"] or active and receipt != research["receipt"]
                     or bootstrap["raw_acquisitions"] != 1 or bootstrap["verified_handoffs"] != 1
-                    or bootstrap["route"] != "optimized_installed_graph"
+                    or not active and (not authorized_withhold or receipt["decision"] != "withheld")
                     or bootstrap["frozen_specification"] != pairs.V3_IDENTITY["frozen_specification"]
                     or bootstrap["stock_launcher_sha256"] != pairs.V3_LAUNCHER_SHA
                     or bootstrap["requested_offer_sha256"] != admission["offer_sha256"]
                     or bootstrap["archive_root"] != str(root/"tle")
                     or any(admission["sources"][k] != v for k, v in scoped_sources.items() if k in admission["sources"])
-                    or projection.get("library_sha256") != PROJECTION_SHA
+                    or projection and projection.get("library_sha256") != PROJECTION_SHA
+                    or not projection and receipt["decision"] == "complete"
                     or not set(FLAGS) <= set(log["command"])):
                 raise ValueError("Candidate handoff/provenance differs from the frozen composition")
         else:
@@ -89,39 +102,52 @@ def process_rows(root, admission):
             bootstrap, research = None, None
 
         raw = native_packet(target)
-        native = json.loads(raw.read_bytes())
-        expected_native, expected_recipe = (MIXED_NATIVE, RECIPE_SHA) if candidate else (
-            STOCK_NATIVE, pairs.V3_IDENTITY["detector_sha256"])
-        bind_native(native, admission["session"], INVENTORY, expected_recipe, expected=expected_native)
+        raw_bytes = raw.read_bytes()
+        native = json.loads(raw_bytes)
+        native_digest = canonical_digest(native)
+        expected_recipe = RECIPE_SHA if candidate else pairs.V3_IDENTITY["detector_sha256"]
+        bind_native(native, admission["session"], inputs.inventory, expected_recipe,
+                    expected=expected_natives[mode] if expected_natives else None)
         source = native["source"]
         clock = log["clock"]
         now = pairs.evidence(target, receipt, clock["started_unix_ns"], read_only=True)
+        terminal_path = FastScanStore(target).automatic_workspace(receipt["run_id"], create=False)/"terminal.json"
+        terminal = json.loads(terminal_path.read_bytes())
         media = artifacts(target, receipt)
+        complete = receipt["decision"] == "complete"
+        probes = source["probes"]
         if (clock["exit_code"] or now["raw_authority"] != admission["raw_authority"]
                 or source["raw_recording_authority_digest"] != now["raw_authority"]
+                or terminal["native_sha256"] != native_digest or native_digest != "sha256:"+sha(raw_bytes)
                 or native["clock_anchor"]["before"]["realtime_ns"] != admission["cutoff_utc_ns"]
-                or receipt["window_count"] != CASE.windows or receipt["counts"]["processed"] != admission["admitted"]
+                or receipt["window_count"] != inputs.workload.windows or receipt["counts"]["processed"] != inputs.admitted
+                or receipt["counts"]["invalid_capture"] != inputs.workload.windows-inputs.admitted
+                or len(probes) != 2*inputs.admitted
                 or receipt["session_id"] != admission["session"] or receipt["region"] != admission["offer"]
-                or receipt["decision"] != "complete" or len(media["images"]) != 8 or set(now["arms"]) != set(ARMS)):
+                or len(media["images"]) != (8 if complete else 0) or set(now["arms"]) != set(ARMS)
+                or not complete and (not now["reason"] or any(value["latlon"] is not None for value in now["arms"].values()))):
             raise ValueError(f"Invalid or scientifically incomplete {mode} publication")
-        if candidate and bootstrap["native_sha256"] != expected_native:
+        if candidate and bootstrap["native_sha256"] != native_digest:
             raise ValueError("Research handoff and published short packet disagree")
         detail = FastStandardAnalysisStore(target)
-        sidecars = position_sides(detail, receipt, media)
-        probes = source["probes"]
+        sidecars = position_sides(detail, receipt, media, expected_grid_points) if complete else None
+        published_arms = detail.detail(receipt["run_id"])["arms"]
+        if not complete and (published_arms or detail.position_path(receipt["run_id"]) is not None
+                             or detail.position_grid(receipt["run_id"]) is not None):
+            raise ValueError("A withheld terminal contains published position evidence")
         detector_s = (raw.stat().st_mtime_ns-clock["started_unix_ns"])/1e9
         boundaries = dict(detections_file_s=detector_s, terminal_file_s=now["terminal_file_s"],
                           exit_s=clock["elapsed_s"])
-        results[mode] = dict(process=log, native_sha256=expected_native, native_file_sha256=sha(raw.read_bytes()),
-                             science=now, figures=media["images"], full_sidecar_sha256={n: media[n] for n in ("path", "grid")},
+        results[mode] = dict(process=log, native_sha256=native_digest, native_file_sha256=sha(raw_bytes),
+                             science=now, figures=media["images"], full_sidecar_sha256={n: media[n] for n in ("path", "grid") if n in media},
                              opportunities=canonical_digest([{k: v for k, v in p.items() if k != "candidates"} for p in probes]),
                              probes=len(probes), factors=sum(len(p["candidates"]) for p in probes),
                              time_boundaries=boundaries, sidecars=sidecars,
-                             owner_counts={a: detail.detail(receipt["run_id"])["arms"][a]["associated_points"] for a in ARMS},
+                             owner_counts={a: value["associated_points"] for a, value in published_arms.items()},
                              bootstrap=bootstrap)
         if research is not None:
             results[mode]["research"] = {k: research[k] for k in
-                                         ("publication_cpu_s", "publication_elapsed_s", "solve", "route_details",
+                                         ("publication_cpu_s", "publication_elapsed_s", "solve", "route", "route_details",
                                           "selected_roles", "selected_rows", "early_regional", "reference")}
     return results
 
