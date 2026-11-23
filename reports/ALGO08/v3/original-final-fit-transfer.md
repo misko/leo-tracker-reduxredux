@@ -19,12 +19,16 @@ On DS30-0016 we tested both settings using the actual signed 475-factor output o
 
 ## Remaining acquisition budget
 
+The dense DS30-0008 transfer exercised the complete signed output of the mixed receiver. The original final fit retained all 4,367 prior mixed-receiver assignments per arm. Against the preceding warm solver on those same detections it improved horizontal error from **919.0 to 915.2 m** and **857.4 to 853.8 m** at a cost of **27.036 → 30.076 s** through saved publication. Original raw v3, with its own detections, had errors of **1,639.0 / 1,512.0 m**, with lower RF RMS than either mixed fit. Both calibration arms, all 179 grid locations and all eight figures were verified. This is evidence for varying the final-fit policy by recording if a general criterion can identify where its accuracy gain is worth the cost. [Dense mixed-packet comparison](mixed-named-finish-0008.md)
+
 The table subtracts each measured candidate saved process from half of the corresponding historical named raw process. This gives a planning allowance with the full saved startup and publication charged. It assumes the new raw receiver yields a packet with equivalent solver cost and accuracy. Storage residency and shared startup affect the eventual complete comparison.
 
 | Recording | Historical raw v3 / half time | Candidate saved time | Remaining time for acquisition | Required rate including decode, verification and detection |
 |---|---:|---:|---:|---:|
 | DS30-0402 · 8,177 MB, original pages resident | 121.438 / 60.719 s | 29.440 s | 31.279 s | 261.4 MB/s |
 | DS30-0169 · 5,190 MB, original pages cold | 73.673 / 36.836 s | 11.822 s | 25.014 s | 207.5 MB/s |
+
+On DS30-0008, subtracting 30.076 s from half the archived 149.886 s v3 clock leaves **44.867 s** for acquisition and any additional raw-process cost. The earlier mixed receiver used **60.449 s** for authenticated acquisition under different storage residency. [Complete dense raw comparison](dense-full-short-raw.md)
 
 On the first original 0169 member, the mixed receiver reached **260–265 MB/s** on two resident-input runs against **176–181 MB/s** for the named receiver. Staging the initially cold 78.85 MB member into tmpfs took **1.446 s** separately. The first-member numbers establish warm acquisition headroom against the conditional 207.5 MB/s requirement. They cannot price direct cold acquisition for the complete 66-member input.
 
