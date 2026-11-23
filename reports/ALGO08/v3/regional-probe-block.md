@@ -20,4 +20,23 @@ The original reducer always requests the eligible far-exterior probes before che
 | Measured DS30-0008, containing | 2.932 → 2.167 s | 1.416 → 0.684 s | 0.739 / 0.483 |
 | Southern simulation, 52.5 km omission | 0.343 → 0.349 s | 0.173 → 0.176 s | 1.017 / 1.022 |
 
-Each side has three repeats. Dense full CPU ranged from 2.799 to 3.355 s in stock and 2.132 to 2.254 s in the guarded run. Southern full CPU ranged from 0.342 to 0.360 s in stock and 0.347 to 0.357 s in the guarded run. Paired wall ratios were 0.739 and 1.017. The guarded dense reduction passed the 10% CPU gate. The positive veto's 1.7% paired median increase was within the 5% allowance. Four new regression tests and 67 relevant existing tests passed together. This is one measured dense proof plus one simulated positive veto. [Guarded scheduler](regional_probe_block.py) · [Component tests](../../../tests/pipeline_eval/test_regional_probe_block.py)
+Each side has three repeats. Dense full CPU ranged from 2.799 to 3.355 s in stock and 2.132 to 2.254 s in the guarded run. Southern full CPU ranged from 0.342 to 0.360 s in stock and 0.347 to 0.357 s in the guarded run. Paired wall ratios were 0.739 and 1.017. The guarded dense reduction passed the 10% CPU gate. The positive veto's 1.7% paired median increase was within the 5% allowance. Eight new regression tests and 67 relevant existing tests passed together. The reusable binding falls back to the prepared scalar scorer for unsupported layouts and retains original preparation errors. [Guarded scheduler](regional_probe_block.py) · [Reusable binding](regional_probe_block_binding.py) · [Component tests](../../../tests/pipeline_eval/test_regional_probe_block.py)
+
+## Complete saved publication
+
+Both complete publications returned identical fixed-zero and fitted endpoints, 4,367 observation owners and roles per arm, the 179-point numerical grid, position path, and all eight encoded and independently decoded PNGs. The guarded publication evaluated 24 probes through six blocks and one through the original scalar path without fallback. The original stock attempt timed out after 100 s during publication. It had already written a terminal that matched the completed stock retry byte for byte. The retry used the same input and one-core settings with a 150 s deadline. The first complete candidate and the completed stock retry were sealed before geographic scoring. [Prediction and recovery seals, scores and full grid](measurements/regional-probe-block-publication.json.gz)
+
+| Saved DS30-0008 boundary | Stock completion | Guarded |
+|---|---:|---:|
+| Process CPU | 28.806 s | 29.367 s |
+| Process wall to exit | 81.326 s | 97.817 s |
+| Numerical solve CPU | 24.237 s | 24.781 s |
+| Regional proof CPU | 2.981 s | 3.370 s |
+
+The separate complete launches did not reproduce the proof-stage speedup. The integrated proof clock includes preparation and scoring together, and host contention varied between launches. The original timeout and retry make the complete wall measurements unsuitable for estimating a paired gain. Two earlier setup attempts reached no proof. One treated the recording directory as a file, then the release needed the standard service account to open its inventory. Input windows were not read. [Complete publication runner](regional_probe_block_publication.py) · [Bounded stock retry](regional_probe_block_retry.py)
+
+The fixed-zero and fitted geographic errors were **0.919 km** and **0.857 km** in both builds. Conditional Doppler RMS was **140.961 Hz** and **140.950 Hz**, respectively. These results cover the complete saved DS30-0008 position and publication. The southern case was a simulated regional veto.
+
+## Reproduce the guarded proof
+
+Under the Gauss lock, pin CPU 2 at nice 15 with best-effort I/O priority 7 and one numerical thread. Build the stock track library with the [original flags](regional-track-scores.md). Build the block with `cc -std=c11 -O3 -march=haswell -ffp-contract=off -fno-math-errno -fopenmp-simd -fPIC -shared regional_probe_block.c -lm -o block.so`. Use a new local output directory and the frozen release interpreter and payload. Run `regional_probe_block_trial.py` with `freeze`, `dense` and `south-far`, passing `OUTPUT STOCK_LIBRARY BLOCK_LIBRARY --guarded` to each. The complete publication runner accepts `run OUTPUT PROOF_OUTPUT STOCK_LIBRARY BLOCK_LIBRARY` and uses the service account for the installed recording inventory. Run its `score OUTPUT RECEIPT` command in the repository scoring environment after the terminal seal exists.
