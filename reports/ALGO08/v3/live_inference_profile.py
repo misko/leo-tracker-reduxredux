@@ -23,7 +23,7 @@ def attribution(profiler):
             sorted(stats.items(), key=lambda pair: -pair[1][3]) if total >= .005]
 
 
-def replay(mode, output):
+def replay(mode, output, *, configure_solve=None, result_details=None):
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
             or any(value != "1" for value in host["threads"].values())):
@@ -74,6 +74,8 @@ def replay(mode, output):
                     return points, observe_probe, meta
 
                 scope.enter_context(patch.object(regional_reassignment, "_prepare_probe_scores", track_probes))
+            if configure_solve is not None:
+                scope.enter_context(configure_solve(assets, full_catalogue_route))
             cpu, wall = process_time(), perf_counter()
             if profile is not None:
                 profile.enable()
@@ -104,6 +106,8 @@ def replay(mode, output):
                   selected_rows=selected, grid=grids[0] if grids else None, visited_probes=visited, source_sha256=pins, **details)
     if profile is not None:
         result["profile"] = attribution(profile)
+    if result_details is not None:
+        result.update(result_details())
     write(output, result)
 
 
