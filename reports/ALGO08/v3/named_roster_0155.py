@@ -16,7 +16,7 @@ from unittest.mock import patch
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from cross_roster_0155 import BASELINE, BASELINE_SHA, RESEARCH, REQUEST_SHA, STAGE, capture, context_witness, pinned
+from cross_roster_0155 import ARMS, BASELINE, BASELINE_SHA, RESEARCH, REQUEST_SHA, STAGE, brief, capture, pinned, row_data
 
 
 HERE = Path(__file__).resolve().parent
@@ -80,10 +80,34 @@ def profile_receipt(profile):
 def same_science(actual, archived):
     from leo.application.localization_v3_engine import _json_value
 
-    for key in ("arms", "model", "noise_sha256", "phase_history_sha256", "phase_forecast_sha256",
-                "objective_replay", "actual_cold", "actual_warm", "predictive_entries_sha256"):
-        if json.loads(json.dumps(actual[key], default=_json_value, allow_nan=False)) != archived[key]:
+    for key, value in actual.items():
+        if json.loads(json.dumps(value, default=_json_value, allow_nan=False)) != archived[key]:
             raise ValueError(f"Named selected science changed at {key}")
+
+
+def verify_result(result, archived):
+    from leo.contracts.digests import canonical_digest
+
+    ctx = result["context"]
+    common = dict(model=ctx["model"], noise_sha256=ctx["scan"].fixed_window_noise_sha256,
+                  phase_history_sha256=result["phase_history"], phase_forecast_sha256=result["forecast"],
+                  objective_replay=result["packet_replay"], predictive_entries_sha256=canonical_digest(ctx["entries"]))
+    same_science(common, archived)
+    arms = {}
+    for arm in ARMS:
+        p, _ = ctx["problems"][arm]
+        arms[arm] = dict(**brief(ctx, arm, ctx["saved"]["policy_arms"][arm]),
+                         ordered_public_rows_sha256=canonical_digest(result["rows"][arm]),
+                         ordered_row_and_likelihood_sha256=canonical_digest(row_data(ctx, arm)),
+                         hardware_design_sha256=sha256(p.hardware.tobytes()).hexdigest(),
+                         receiver_smooth_design_sha256=sha256(p.smooth.tobytes()).hexdigest())
+        same_science(arms[arm], archived["arms"][arm])
+    return dict(**common, arms=arms, selection_clock=result["selection_clock"], capture_clock=result["capture_clock"])
+
+
+def seal_results(write, root, accounting, verify):
+    write(root / "roster.json", accounting)
+    write(root / "science.json", verify())
 
 
 def run(root):
@@ -166,18 +190,16 @@ def run(root):
 
     if trace["selected"] != 1 or len(ledger.stack):
         raise ValueError("The bounded capture must finish at precisely one selected-evidence call")
-    verified, _, _ = context_witness({"stock": result})
-    same_science(verified["stock"], crossed)
     compute_ns = trace.pop("selected_ns") - trace.pop("start_ns")
     charged = sum(row["exclusive_cpu_ns"] for row in ledger.amounts.values())
     trace["compute_cpu_ns"] = compute_ns
     trace["unattributed_cpu_ns"] = compute_ns - charged
-    write(root / "roster.json", dict(machine=machine, trace=trace, ledger=dict(ledger.amounts),
-          profile=profile_receipt(profile), science=verified["stock"],
-          bindings=dict(request=REQUEST_SHA, stock_pair=BASELINE_SHA, stock_selected=RESEARCH["stock"], cross_roster=CROSS_SHA,
-                        driver=sha256(Path(__file__).read_bytes()).hexdigest(),
-                        protocol=sha256((HERE / "named-roster-0155-protocol.md").read_bytes()).hexdigest()),
-          plot_calls=0, grid_calls=0, waveform_calls=0))
+    accounting = dict(machine=machine, trace=trace, ledger=dict(ledger.amounts), profile=profile_receipt(profile),
+                      bindings=dict(request=REQUEST_SHA, stock_pair=BASELINE_SHA, stock_selected=RESEARCH["stock"],
+                                    cross_roster=CROSS_SHA, driver=sha256(Path(__file__).read_bytes()).hexdigest(),
+                                    protocol=sha256((HERE / "named-roster-0155-protocol.md").read_bytes()).hexdigest()),
+                      plot_calls=0, grid_calls=0, waveform_calls=0)
+    seal_results(write, root, accounting, lambda: verify_result(result, crossed))
 
 
 def launch(root):
