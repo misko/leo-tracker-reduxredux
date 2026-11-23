@@ -1,0 +1,40 @@
+# Certified exclusion in the cold finalist race
+
+The tested bound excludes zero finalists on the saved dense short route. Even granting a free certificate that dismisses both challengers before their first fit, the current race has only **0.295 CPU s** available in their prefixes. The measured route already skips their longer suffixes. A four-observation counterexample shows why the two-iteration gap cannot certify that decision. The runner-up improved from **46.633 to 21.782** after the released phase refresh and beat the apparent leader's **31.860**. [Current race receipt](measurements/cold-track-row-reuse.json.gz) · [Counterexample](../../../tests/pipeline_eval/test_cold_finalist_certificate.py) · [Audit receipt](measurements/cold-finalist-certificate.json)
+
+## Work the current race still pays
+
+The archived DS30-0008 12 ms packet used the installed Graph, full 1,476-orbit cold catalogue and 112 curved tracks. The released shortlist fixes each track's satellite and signed alias, deduplicates those signatures, and ranks them at the original centre with zero phase reference. The research race takes the first three. It advances each bounded secant optimizer for two steps. If the finite interior leader wins the gap test, only that branch completes both phase refreshes. The later paired \(c=0\) and fitted-\(c\) science starts from the selected assignment. The comparison here is to running both original cold \(c=0\) refreshes on all three already ranked assignments and selecting the minimum with the original tie order. [Ranking](../../../tools/pipeline_eval/variants/v5_core.py) · [Race](cold_finalist_race.py) · [Matched dense row-cache pair](cold-track-row-reuse.md)
+
+| Saved scope | CPU s | Interpretation |
+|---|---:|---|
+| Older complete-receiver DS30-0008, both loser fits | 5.195 | Counterfactual all-finalist reference on different detector input |
+| Older complete-receiver DS30-0008, both loser prefixes | 0.738 | Measured remaining work after that race skipped the suffixes |
+| Current short DS30-0008, both loser prefixes | **0.295** | One model construction and five original objective evaluations per challenger |
+| Current short DS30-0008, loser objective calls only | 0.270 | Independent instrumented replay of the same route |
+| Current short DS30-0016, all cold optimizer objective calls | 0.032 | Includes the winner and both losers, apart from construction and ranking |
+
+The current dense incumbent costs the same two refreshes and ends at **36,359.3075**. The two challengers' final scores were never evaluated in the current archived race. Its prefix scores and recent decreases therefore cannot certify the all-finalist result. A certified replacement that remains inconclusive must charge the full remaining loser fits against the existing race, along with certificate cost. The all-cold-free 5.724 s envelope is wider than this assignment boundary and includes the common scan, rank and winner. Earlier guarded quadrature targeted per-track association before candidate construction. The separate optimizer study targeted derivative proposals after cold discovery. Neither supplies extra eliminable finalist work. [Older matched races](cold-finalist-race.md) · [Current dense cost census](dense-assignment-reuse.md) · [Cold objective timing](optimizer-quadrature.md) · [Earlier discovery screening](guarded-discovery-quadrature.md)
+
+## Lower bound after robust nuisance elimination
+
+For a fixed branch, let \(E_g(x,\phi,a)=\sum_{i\in g}[(y_i-f_i(x,\phi)-X_i(x,\phi)a)/s_i]^2\). It uses the original signed aliases, phase-linearized intercept, noise scales, nuisance design, and all rows of group \(g\). The released normalized score contains the weighted innovation, nuisance prior, covariance volume, Gamma penalties, fixed noise volume \(N=2\sum_i\log(s_i/40)\), and nonnegative horizon penalty. It compares the squared residual vector. The separate ELBO normalization constant is outside the ordering. [Physical likelihood](../../../src/leo/analysis/localization_v3/position.py) · [Full geometry and priors](../../../src/leo/analysis/localization_v3/marginal.py) · [Native adapter and original finish](../../../src/leo/analysis/localization_v4/native_bound.py)
+
+For group power \(p_g\), row count \(n_g\), shape \(\alpha_g=\nu/2+p_gn_g/2\), prior rate \(\beta_0=\nu/2\) and current fitted rate \(b\), the innovation and noise Gamma part is
+
+\[
+p_g\alpha_g E_g/b
++2\alpha_g[\log(b/\beta_0)+\beta_0/b-1].
+\]
+
+Its minimum over positive \(b\) occurs at \(b=\beta_0+p_gE_g/2\) and equals \(2\alpha_g\log(1+p_g E_g/(2\beta_0))\). This holds even if the released robust iterations stop before convergence. The cold branch uses unit power, \(\nu=4\) and fixed unit precision in the scaled nuisance coordinates. Its nuisance cost \(\lVert a\rVert^2\) can be retained in a relaxation or bounded below by zero. The normalized determinant is \(\log\det(I+P^{-1/2}X^\top W X P^{-1/2})\geq0\) for positive noise weights \(W\) and prior precision \(P\), with the released nonnegative clamp retained. The horizon term is a squared positive part. These inequalities cover the complete loss while allowing arbitrary changes in precision, nuisance coefficients and phase reference. [Grouped objective source](../../../src/leo/analysis/localization_v3/hierarchical.py)
+
+If \(\underline E_g\) bounds each group's energy for **every** reachable location, clipped reference and nuisance fit, then \(N+\sum_g 2\alpha_g\log(1+p_g\underline E_g/(2\beta_0))\) is a branch lower bound. A subset can contribute only when it has such a lower bound, with the full group's original \(n_g\). A fixed-position or partially fitted score is an attainable value and can be larger than the best fit after reoptimization. A useful implementation would need an interval enclosure or an equivalent certificate that preserves shared nuisance constraints across rows, including the phase-dependent geometry. Where the upper incumbent is finite, exclusion is safe for the original tie rule only with strict separation and outward floating-point allowances. The arithmetic here is an analytic bound and a component check, with no production rounding guard or exclusion hook.
+
+With no certified positive group-energy, prior, volume or horizon floor, the cheap bound reduces to \(N\). The radio noise estimator caps every scale at 600 Hz and cold finalists have 4,896 original rows. Even giving the bound every row at this maximum gives **26,517.2276**, over **9,842** score units below the archived incumbent. Thus this bound cannot exclude either dense challenger even before charging it. A global interval solve with positive energy floors would have to fit in a fraction of the 0.295 s prefix budget and avoid forced loser completions to improve the existing race. No such enclosure was established. [Released noise caps](../../../src/leo/analysis/localization_v3/noise.py) · [Dense fitted-row trace](measurements/optimizer-quadrature-dense.json.gz)
+
+## Counterexample with the released loss
+
+The test fixes the four measured observations and aliases and supplies three synthetic phase-dependent Doppler curves. It uses the original grouped hierarchical loss, fixed prior, covariance volume, positive noise and horizon terms, two-iteration gap rule, secant optimizer and clipped phase refresh. The coordinates stay at the origin. The second branch's posterior phase moves its reference from zero to **14.032 s**, changing its linearized intercept and tangent. Its refreshed score wins. The test substitutes only synthetic geometry and shows that position movement and optimizer step size limits cannot close this gap. The other component test verifies the rate lower bound against the complete score after one released robust iteration.
+
+This audit stopped before creating a certificate overlay or replaying a recording. No waveform was opened and no archive science was changed. Twenty-nine focused tests passed. [Component tests](../../../tests/pipeline_eval/test_cold_finalist_certificate.py)
