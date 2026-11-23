@@ -121,6 +121,13 @@ def run(args, *, detector_override=None, detector_description=None, track_config
 
         def solve(native, reader, assets, region):
             cpu, wall = process_time(), perf_counter()
+            if not native["source"]["probes"]:
+                decision, packet, policy = stock_solve(native, reader, assets, region)
+                if decision["status"] != "withheld" or packet is not None:
+                    raise ValueError("Expected the installed empty receiver decision")
+                solves.append(dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall,
+                                   orbit_policy=policy, empty_receiver_withhold=True))
+                return decision, packet, policy
             infer = v5_core.infer
             route = infer
             if full_catalogue:
@@ -191,8 +198,10 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     cpu, wall = process_time() - clocks[0], perf_counter() - clocks[1]
     stopped_early = (len(regional) == 1 and regional[0]["result"].get("complete") is True
                      and regional[0]["result"].get("would_withhold") is True)
-    if (len(solves) != 1 or len(attempts) != (0 if stock_control or stopped_early else 1)
-            or early_regional and len(regional) != 1 or stopped_early and receipt["decision"] != "withheld"):
+    empty = len(solves) == 1 and solves[0].get("empty_receiver_withhold", False)
+    if (len(solves) != 1 or len(attempts) != (0 if stock_control or stopped_early or empty else 1)
+            or early_regional and len(regional) != int(not empty)
+            or (stopped_early or empty) and receipt["decision"] != "withheld"):
         raise ValueError("Expected exactly one solver invocation through the requested route")
     if saved is not None and len(saved_handoffs) != 1:
         raise ValueError("Expected one verified saved detection handoff")
@@ -215,7 +224,12 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     input_kind = "saved detector" if saved is not None else "raw recording"
     if detector_override is not None:
         input_kind = detector_description or "verified raw recording with archived receiver rows"
-    route_decision = "stock" if stock_control else "withheld_early" if stopped_early else attempts[0]["decision"]
+    if stock_control:
+        route_decision = "stock"
+    elif empty:
+        route_decision = "withheld_empty_receiver"
+    else:
+        route_decision = "withheld_early" if stopped_early else attempts[0]["decision"]
     result = dict(input=input_kind, saved_digest=args.saved_digest,
                   reference="installed v3" if stock_control else "installed v3 with research joint repair",
                   source_sha256=pins, route=route_decision,
