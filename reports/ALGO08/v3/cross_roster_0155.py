@@ -88,7 +88,7 @@ def clocked_refitter(function, tag, witness):
     return record
 
 
-def capture(root, route, historical, expected):
+def capture(root, route, historical, expected, *, job=STAGE / "request.json", invoke_job=invoke, cutoff=CUTOFF):
     import numpy as np
     from leo.analysis.localization_v3 import family_cavity, history_policy, signed_context
     from leo.contracts.digests import canonical_digest
@@ -146,10 +146,10 @@ def capture(root, route, historical, expected):
             scope.enter_context(patch.object(module, "arm_finish", warm_fit))
         start = now()
         try:
-            invoke(STAGE / "request.json", route, root / ("capture-"+route))
+            invoke_job(job, route, root / ("capture-"+route))
         except Captured:
             pass
-    if results.get("cutoff") != CUTOFF or "rows" not in results:
+    if results.get("cutoff") != cutoff or "rows" not in results:
         raise ValueError("The captured route did not reach signed selected evidence")
     return results
 

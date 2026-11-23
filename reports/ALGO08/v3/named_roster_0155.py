@@ -2,7 +2,7 @@
 
 import argparse
 from collections import defaultdict
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from cProfile import Profile
 from functools import wraps
 from hashlib import sha256
@@ -34,7 +34,7 @@ class Ledger:
 
     @contextmanager
     def scope(self, name):
-        children = [0]
+        children = [name, 0]
         self.stack.append(children)
         start = self.timer()
         try:
@@ -43,11 +43,15 @@ class Ledger:
             duration = self.timer() - start
             self.stack.pop()
             if self.stack:
-                self.stack[-1][0] += duration
+                self.stack[-1][1] += duration
             row = self.amounts[name]
             row["calls"] += 1
             row["inclusive_cpu_ns"] += duration
-            row["exclusive_cpu_ns"] += duration - children[0]
+            row["exclusive_cpu_ns"] += duration - children[1]
+
+    @property
+    def active(self):
+        return self.stack[-1][0] if self.stack else "between_scopes"
 
     def measure(self, module, name, label):
         original = getattr(module, name)
@@ -110,26 +114,11 @@ def seal_results(write, root, accounting, verify):
     write(root / "science.json", verify())
 
 
-def run(root):
+def profile_named(runtime, capture_selection, extension=lambda ledger, bound: nullcontext()):
     import empty_bootstrap as boot
-    from dense_geographic_trial import host
-
-    machine = host()
-    if root.absolute() != root.resolve() or not root.is_relative_to("/dev/shm"):
-        raise ValueError("The saved 0155 diagnostic requires a fresh tmpfs destination")
-    root.mkdir()
-    runtime = boot.load_runtime()
-    from aperture_trial import write
     from leo.analysis.localization_v3 import conservative_recovery, family_cavity, history_policy, signed_context
     from tools import algo08_position as position
     from tools.pipeline_eval.variants import v5_core, v5_screen_winner, v5_tiled_salvage
-
-    request = pinned(STAGE / "request.json", REQUEST_SHA)
-    archived = pinned(BASELINE, BASELINE_SHA)["runs"]["stock"]
-    expected = pinned(STAGE / "stock/joint-research-receipt.json", RESEARCH["stock"])
-    crossed = pinned(CROSS, CROSS_SHA)["contexts"]["stock"]
-    if Path(request["local_archive"]["root"]) != STAGE / "tle":
-        raise ValueError("Expected the original sealed tmpfs archive")
 
     profile = Profile()
     ledger = Ledger()
@@ -139,7 +128,7 @@ def run(root):
     def prepare_original(*args, **kwargs):
         trace["preparations"] += 1
         if trace["preparations"] != 1:
-            raise ValueError("Unexpected retry while profiling the named 0155 route")
+            raise ValueError("Unexpected retry while profiling the named route")
         trace["start_ns"] = process_time_ns()
         profile.enable()
         with ledger.scope("prepare_native_scan"):
@@ -176,6 +165,7 @@ def run(root):
                 (family_cavity, "fit_configuration", "cavity_fit_configuration"),
             ):
                 active_route.enter_context(ledger.measure(module, name, label))
+            active_route.enter_context(extension(ledger, bound))
             return infer(prepared, region, bound, stage_s, selected_evidence=seal, **kwargs)
 
     with ExitStack() as scope:
@@ -184,7 +174,7 @@ def run(root):
         scope.enter_context(patch.object(v5_core, "infer", select))
         scope.enter_context(ledger.measure(position, "_prepared_values", "convert_prepared"))
         try:
-            result = capture(root, "stock", archived, expected)
+            result = capture_selection()
         finally:
             profile.disable()
 
@@ -194,7 +184,29 @@ def run(root):
     charged = sum(row["exclusive_cpu_ns"] for row in ledger.amounts.values())
     trace["compute_cpu_ns"] = compute_ns
     trace["unattributed_cpu_ns"] = compute_ns - charged
-    accounting = dict(machine=machine, trace=trace, ledger=dict(ledger.amounts), profile=profile_receipt(profile),
+    return result, dict(trace=trace, ledger=dict(ledger.amounts), profile=profile_receipt(profile))
+
+
+def run(root):
+    import empty_bootstrap as boot
+    from dense_geographic_trial import host
+
+    machine = host()
+    if root.absolute() != root.resolve() or not root.is_relative_to("/dev/shm"):
+        raise ValueError("The saved 0155 diagnostic requires a fresh tmpfs destination")
+    root.mkdir()
+    runtime = boot.load_runtime()
+    from aperture_trial import write
+
+    request = pinned(STAGE / "request.json", REQUEST_SHA)
+    archived = pinned(BASELINE, BASELINE_SHA)["runs"]["stock"]
+    expected = pinned(STAGE / "stock/joint-research-receipt.json", RESEARCH["stock"])
+    crossed = pinned(CROSS, CROSS_SHA)["contexts"]["stock"]
+    if Path(request["local_archive"]["root"]) != STAGE / "tle":
+        raise ValueError("Expected the original sealed tmpfs archive")
+
+    result, timings = profile_named(runtime, lambda: capture(root, "stock", archived, expected))
+    accounting = dict(machine=machine, **timings,
                       bindings=dict(request=REQUEST_SHA, stock_pair=BASELINE_SHA, stock_selected=RESEARCH["stock"],
                                     cross_roster=CROSS_SHA, driver=sha256(Path(__file__).read_bytes()).hexdigest(),
                                     protocol=sha256((HERE / "named-roster-0155-protocol.md").read_bytes()).hexdigest()),
@@ -202,19 +214,19 @@ def run(root):
     seal_results(write, root, accounting, lambda: verify_result(result, crossed))
 
 
-def launch(root):
+def launch(root, stage=STAGE, driver=__file__):
     from aperture_trial import RELEASE, write
     from full_short_physical import environment
     from short_raw_diagnostic import measure
 
     under = root.with_name(root.name + "-scratch")
     if root.absolute() != root.resolve() or not root.is_relative_to("/dev/shm"):
-        raise ValueError("The saved 0155 diagnostic requires a fresh tmpfs destination")
+        raise ValueError("The saved roster diagnostic requires a fresh tmpfs destination")
     under.mkdir()
-    env = environment(STAGE)
+    env = environment(stage)
     env["TMPDIR"] = str(under)
     env["MPLCONFIGDIR"] = str(under)
-    clock = measure([RELEASE / "venv/bin/python", "-IB", __file__, "run", root], env, root)
+    clock = measure([RELEASE / "venv/bin/python", "-IB", driver, "run", root], env, root)
     write(root.with_name(root.name + "-clock.json"), clock)
     if clock["exit_code"]:
         raise RuntimeError("The bounded solver exited before reaching selected evidence")
