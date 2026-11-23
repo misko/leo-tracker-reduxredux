@@ -119,7 +119,23 @@ def readout(record):
     )
 
 
-def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_candidate, expand=None):
+def predictive_details(entries):
+    return dict(predictive_points=sum(entry["points"] for entry in entries), predictive_tracks=len(entries),
+                predictive_labels=[(entry["component"], entry["norad"], entry["alias"]) for entry in entries])
+
+
+def finish_pair(scan, node, checked, base, powers, means, model, entries, point, region, measured):
+    cpu, wall = process_time(), perf_counter()
+    paired = {arm: arm_finish(scan, node, checked, arm, base.reference, powers, means, model, entries, point)
+              for arm in ARMS}
+    accepted = pair_passes(paired, include_linear=bool(entries), half_width_km=region.half_width_km)
+    measured.update(finish={arm: readout(record) for arm, record in paired.items()}, finish_clocks=elapsed(cpu, wall),
+                    pair_passes=accepted)
+    return dict(scan=scan, node=node, keep=checked, entries=entries, means=means,
+                powers=powers, model=model, arms=paired), accepted
+
+
+def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_candidate, expand=None, rescue=None):
     if prepared["status"] != "inputs_prepared":
         return None, prepared["status"]
     cpu, wall = process_time(), perf_counter()
@@ -136,6 +152,7 @@ def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_c
     measured.update(support=offered, initial_gate_clocks=elapsed(cpu, wall))
     if not keep.any():
         return None, "no_curved_support"
+    initial = keep
     if not keep.all():
         cpu, wall = process_time(), perf_counter()
         screened, _, _ = build_at(scan, node, keep, point, reference, model)
@@ -154,12 +171,35 @@ def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_c
     if not checked.any():
         measured["predictive_clocks"] = elapsed(cpu, wall)
         return None, "no_curved_support_after_salvage"
+    if rescue is not None and expand is None:
+        trial = measured["provisional_salvage"] = {"seed_gate_clocks": elapsed(cpu, wall)}
+        alternative = rescue(scan, node, (base, powers, means), initial, keep, checked, point, reference, model,
+                             offered, trial, build=build_at, drop=drop_failing)
+        if alternative is not None:
+            retained, provisional, trial_powers, trial_means, moved, new_gates = alternative
+            trial_cpu, trial_wall = process_time(), perf_counter()
+            try:
+                entries = select_entries(provisional, moved, new_gates)
+                trial["predictive_clocks"] = elapsed(trial_cpu, trial_wall)
+                signed, accepted = finish_pair(scan, node, retained, provisional, trial_powers, trial_means, model,
+                                               entries, moved, region, trial)
+                if accepted:
+                    trial["status"] = "adopted"
+                    offered.update(predictive_details(entries))
+                    measured.update({name: trial[name] for name in ("finish", "finish_clocks", "pair_passes")})
+                    measured["predictive_clocks"] = trial["predictive_clocks"]
+                    return signed, None
+                trial.update(status="reverted", reason="original_paired_gate")
+            except (AssertionError, ValueError, np.linalg.LinAlgError) as exc:
+                trial.update(status="reverted", reason=f"{type(exc).__name__}: {exc}")
+            finally:
+                trial["predictive_and_pair_clocks"] = elapsed(trial_cpu, trial_wall)
+        cpu, wall = process_time(), perf_counter()
     if rejected:
         base, powers, means = build_at(scan, node, checked, point, reference, model)
         gates = conservative_recovery.retained_metrics(base, point)
     entries = select_entries(base, point, gates)
-    offered.update(predictive_points=sum(entry["points"] for entry in entries), predictive_tracks=len(entries),
-                   predictive_labels=[(entry["component"], entry["norad"], entry["alias"]) for entry in entries])
+    offered.update(predictive_details(entries))
     measured["predictive_clocks"] = elapsed(cpu, wall)
     if expand is not None:
         cpu, wall = process_time(), perf_counter()
@@ -167,14 +207,7 @@ def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_c
             scan, node, checked, base, powers, means, entries = expand(scan, node, checked, base, entries, point, model)
         finally:
             measured["expansion_clocks"] = elapsed(cpu, wall)
-    cpu, wall = process_time(), perf_counter()
-    paired = {arm: arm_finish(scan, node, checked, arm, base.reference, powers, means, model, entries, point)
-              for arm in ARMS}
-    accepted = pair_passes(paired, include_linear=bool(entries), half_width_km=region.half_width_km)
-    measured.update(finish={arm: readout(record) for arm, record in paired.items()}, finish_clocks=elapsed(cpu, wall),
-                    pair_passes=accepted)
-    signed = dict(scan=scan, node=node, keep=checked, entries=entries, means=means,
-                  powers=powers, model=model, arms=paired)
+    signed, accepted = finish_pair(scan, node, checked, base, powers, means, model, entries, point, region, measured)
     if not accepted and repair is not None:
         return repair(signed, region, measured)
     if not accepted:
