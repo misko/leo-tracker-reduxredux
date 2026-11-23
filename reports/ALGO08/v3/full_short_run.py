@@ -64,6 +64,7 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--short-binary", type=Path, help="Pinned 12 ms primary library for raw acquisition")
     mode.add_argument("--saved", type=Path, help="Frozen full-short detections from the same recording")
+    parser.add_argument("--causal-selection", action="store_true", help="Apply the existing causal carrier-history filter")
     parser.add_argument("--saved-digest", help="Canonical detector packet digest from its original terminal")
     parser.add_argument("--geographic-library", type=Path, help="Use the reviewed native projection in regional checks")
     parser.add_argument("--regional-track-library", type=Path, help="Use the native track likelihood on fused regional projections")
@@ -85,14 +86,21 @@ def main(argv=None):
     args.optimized_full_catalogue = True
     args.verify_images = True
     identity = checked_recipe()
+    detector_pin = RECIPE_SHA
+    receiver_type = MixedApertureDetector
+    if args.causal_selection:
+        from causal_short_receiver import CausalShortReceiver, identity as causal_identity
+
+        identity, detector_pin = causal_identity(RECIPE_SHA)
+        receiver_type = CausalShortReceiver
     audit = {}
     quadratic = args.track_graph == "quadratic"
-    receiver = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True) if args.short_binary else None
+    receiver = receiver_type(args.short_binary, SHORT_SHA, full_coverage=True) if args.short_binary else None
     run(args, detector_override=receiver.detector if receiver else None,
         detector_description="verified raw stereo with full anchors and 12 ms primaries",
         track_config=graph_config if quadratic else None, early_regional=True, keep_selected_rows=True,
-        raw_context=(lambda scan: observe_acquisition(scan, receiver, RECIPE_SHA, audit)) if receiver else None,
-        saved_receiver=None if receiver else RECIPE_SHA,
+        raw_context=(lambda scan: observe_acquisition(scan, receiver, detector_pin, audit)) if receiver else None,
+        saved_receiver=None if receiver else detector_pin,
         geographic_projector=(lambda: geographic_projection(args.geographic_library, args.regional_track_library))
         if args.geographic_library else None,
         reuse_cold_rows=args.reuse_cold_track_rows, reuse_grid_phase_states=args.reuse_grid_phase_states,
