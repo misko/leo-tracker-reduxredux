@@ -1,6 +1,7 @@
 """Saved-only full numerical evidence for the representative catalogue pool."""
 
 import argparse
+from functools import partial
 import gzip
 from hashlib import sha256
 import json
@@ -14,15 +15,17 @@ HERE = Path(__file__).resolve().parent
 REFERENCE = HERE / "measurements/track-quadrature.json.gz"
 FIRST_POOL = HERE / "measurements/representative-family-pool.json.gz"
 ITERATIVE_POOL = HERE / "measurements/family-pool-closure.json.gz"
+LIGHTER_ESTIMATOR = HERE / "measurements/lighter-joint-estimator.json.gz"
 CASES = ("DS30-0008", "south-containing", "south-far")
 
 
-def run(case, output, *, closure=False, lighter_estimator=False):
+def run(case, output, *, closure=False, lighter_estimator=False, salvage_audit=None):
     publication, spec = configuration()
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
     from blind_joint_route import make_route
     signed_updater = None
+    lighter_estimator = lighter_estimator or salvage_audit is not None
     if lighter_estimator:
         from lighter_joint_estimator import propose, update as signed_updater
         closure = True
@@ -30,6 +33,9 @@ def run(case, output, *, closure=False, lighter_estimator=False):
         from family_pool_closure import propose
     else:
         from representative_family_pool import propose
+    if salvage_audit:
+        from certified_salvage import propose as experiment
+        propose = partial(experiment, certified=salvage_audit == "certified")
 
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
@@ -70,19 +76,48 @@ def run(case, output, *, closure=False, lighter_estimator=False):
         names += ("family_pool_closure.py",)
     if lighter_estimator:
         names += ("lighter_joint_estimator.py",)
+    if salvage_audit:
+        names += ("certified_salvage.py", "certified-salvage-protocol.md")
     result.update(case=case, identity=identity, host=host, attempt=attempts[0], fallback=fallback,
                   selected_rows=rows, closure_enabled=closure, lighter_estimator=lighter_estimator,
                   source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in names})
+    if salvage_audit:
+        result["salvage_audit"] = salvage_audit
     write(output, result)
 
 
-def score(directory, summary, full):
+def compare_salvage(candidate, control, archived):
+    for label, other in (("fresh", control), ("archived", archived)):
+        for key in ("identity", "status", "reason", "arms", "owners", "selected_rows", "science", "grid_points"):
+            if candidate.get(key) != other.get(key):
+                raise ValueError(f"Certified salvage changed {label} control {key}")
+        for key in ("decision", "support", "pair_passes", "signed"):
+            if candidate["attempt"].get(key) != other["attempt"].get(key):
+                raise ValueError(f"Certified salvage changed {label} control decision field {key}")
+        if [step["decision"] for step in candidate["fallback"]] != [step["decision"] for step in other["fallback"]]:
+            raise ValueError(f"Certified salvage changed {label} fallback")
+    if candidate["attempt"].get("salvage_shortlists") != control["attempt"].get("salvage_shortlists"):
+        raise ValueError("Certified salvage changed the exact coarse shortlists")
+
+
+def score(directory, summary, full, *, salvage_control=None):
     from aperture_score import PHYSICAL, SIMULATED, face_clearance_km, references
     from mixture_score import section
     from signed_0374_transfer import owner_changes
 
     paths = {case: directory / f"{case}.json" for case in CASES}
     sealed = {case: read(path) for case, path in paths.items()}
+    salvage_baselines = {}
+    if salvage_control is not None:
+        with gzip.open(LIGHTER_ESTIMATOR, "rt") as stream:
+            original = json.load(stream)["cases"]
+        for case, result in sealed.items():
+            path = salvage_control / f"{case}.json"
+            baseline = read(path)
+            if result.get("salvage_audit") != "certified" or baseline.get("salvage_audit") != "control":
+                raise ValueError("Expected sealed certified and baseline runs")
+            compare_salvage(result, baseline, original[case])
+            salvage_baselines[case] = baseline, sha256(path.read_bytes()).hexdigest()
     with gzip.open(REFERENCE, "rt") as stream:
         controls = json.load(stream)["runs"]
     first_pool = None
@@ -142,6 +177,15 @@ def score(directory, summary, full):
                                  iterative_owner_changes=owner_changes(previous, result),
                                  warm_signed_fit=attempt.get("warm_signed_fit"),
                                  sensitive_confidence=attempt.get("sensitive_confidence"))
+        if salvage_baselines:
+            baseline, _ = salvage_baselines[case]
+            saving = baseline["cpu_s"] - result["cpu_s"]
+            numbers[case]["certification"] = dict(exact=True, cpu_s_saved=saving, target_five_seconds=saving >= 5.,
+                control_cpu_s=baseline["cpu_s"], control_elapsed_s=baseline["elapsed_s"],
+                control_times={k: v for k, v in baseline["attempt"].items() if k.endswith("_clocks")},
+                archived_cpu_s=original[case]["cpu_s"], archived_cpu_s_saved=original[case]["cpu_s"] - result["cpu_s"],
+                certified_counts=attempt["certified_salvage"], control_counts=baseline["attempt"]["certified_salvage"],
+                shortlist_tracks=len(attempt.get("salvage_shortlists", [])))
     pins = dict(trials={case: sha256(path.read_bytes()).hexdigest() for case, path in paths.items()},
                 comparator_archive=sha256(REFERENCE.read_bytes()).hexdigest(),
                 references={p.name: sha256(p.read_bytes()).hexdigest() for p in (PHYSICAL, SIMULATED)})
@@ -149,9 +193,15 @@ def score(directory, summary, full):
         pins["first_pool_archive"] = sha256(FIRST_POOL.read_bytes()).hexdigest()
     if iterative is not None:
         pins["iterative_archive"] = sha256(ITERATIVE_POOL.read_bytes()).hexdigest()
+    if salvage_baselines:
+        pins["salvage_controls"] = {case: digest for case, (_, digest) in salvage_baselines.items()}
+        pins["lighter_estimator_archive"] = sha256(LIGHTER_ESTIMATOR.read_bytes()).hexdigest()
     write(summary, dict(cases=numbers, verification=pins))
     with full.open("xb") as stream:
-        stream.write(gzip.compress(json.dumps(dict(cases=sealed, scores=numbers, verification=pins),
+        record = dict(cases=sealed, scores=numbers, verification=pins)
+        if salvage_baselines:
+            record["salvage_controls"] = {case: baseline for case, (baseline, _) in salvage_baselines.items()}
+        stream.write(gzip.compress(json.dumps(record,
                                              separators=(",", ":"), allow_nan=False).encode(), mtime=0))
 
 
@@ -163,9 +213,11 @@ if __name__ == "__main__":
     trial.add_argument("output", type=Path)
     trial.add_argument("--closure", action="store_true")
     trial.add_argument("--lighter-estimator", action="store_true")
+    trial.add_argument("--salvage-audit", choices=("certified", "control"))
     scoring = actions.add_parser("score")
     for name in ("directory", "summary", "full"):
         scoring.add_argument(name, type=Path)
+    scoring.add_argument("--salvage-control", type=Path)
     args = vars(parser.parse_args())
     action = args.pop("action")
     (run if action == "run" else score)(**args)
