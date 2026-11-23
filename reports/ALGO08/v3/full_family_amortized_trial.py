@@ -23,7 +23,8 @@ PRIMARY = CASES[:2]
 MODES = ("control", "contrast")
 
 
-def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_attempt=False, evidence_context=None):
+def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_attempt=False,
+        evidence_context=None, refine_cold=None):
     if paid_south and (case not in ("south-containing", "south-far") or mode != "control"):
         raise ValueError("Paid southern transfer requires a southern offer and the original full nominations")
     host = machine()
@@ -44,6 +45,7 @@ def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_
     from representative_contrast_bound import bounded_nominations
 
     shared_rank = runpy.run_path(str(SHARED_RANK))["shared_rank_preparation"]
+    refine = cold_candidate if refine_cold is None else refine_cold
     paid = case == "DS30-0016" or paid_south
     if load_saved_inputs is not None:
         native, archive, offer, identity, paid = load_saved_inputs(case)
@@ -69,7 +71,7 @@ def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_
             return cold_nodes
 
         with patch.object(v5_core, "ranked_initial_nodes", rank):
-            node, point, phases, details = cold_candidate(prepared, region, bound)
+            node, point, phases, details = refine(prepared, region, bound)
         chosen.append(dict(node=node, point=point, phases=phases, details=details))
         return node, point, phases, details
 
