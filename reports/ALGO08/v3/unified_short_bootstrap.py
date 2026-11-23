@@ -1,7 +1,7 @@
 """Acquire independently signed 20/12 ms stereo, then publish in one process."""
 
 import argparse
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import asdict
 from functools import partial
 from hashlib import sha256
@@ -72,7 +72,7 @@ def withhold(scan, args, offer, assets, handoff, reason, *, graph_proof=None):
 
 
 @contextmanager
-def layout_renderer(scan, enabled, audit, *, direct_residuals=False):
+def layout_renderer(scan, enabled, audit, *, direct_residuals=False, direct_orbits=False):
     if not enabled:
         yield
         return
@@ -86,13 +86,20 @@ def layout_renderer(scan, enabled, audit, *, direct_residuals=False):
 
     def opted_in(packet, **options):
         start = now()
-        if direct_residuals:
-            from direct_residual_entry import render as render_residuals
+        orbit_details = {}
+        orbit_context = nullcontext()
+        if direct_orbits:
+            from direct_orbit_entry import native_orbits
 
-            images, detail = render_residuals(installed, packet, **options)
-        else:
-            images, detail = render(installed, packet, enabled=True, **options)
-        audit.update(work=detail, render=clock(start))
+            orbit_context = native_orbits(installed, orbit_details)
+        with orbit_context:
+            if direct_residuals:
+                from direct_residual_entry import render as render_residuals
+
+                images, detail = render_residuals(installed, packet, **options)
+            else:
+                images, detail = render(installed, packet, enabled=True, **options)
+        audit.update(work=detail | orbit_details, render=clock(start))
         return images
 
     with patch.object(scan, "render", opted_in):
@@ -118,8 +125,10 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
     grid_library = getattr(args, "grid_feature_projection_library", None)
     grid_audit = {}
     direct_layout = {"direct_residuals": True} if getattr(args, "direct_residual_figures", False) else {}
+    if getattr(args, "direct_orbit_figures", False):
+        direct_layout["direct_orbits"] = True
     if direct_layout and not args.one_pass_web_png:
-        raise ValueError("Direct residual figures require the explicit one-pass layout")
+        raise ValueError("Direct figure rendering requires the explicit one-pass layout")
     forecast_audit = None
     if getattr(args, "exact_phase_forecast", False):
         forecast_audit = dict(requested=True, executions=[])
@@ -176,8 +185,8 @@ def run(args):
     import empty_bootstrap as staged
 
     started = staged.now()
-    if getattr(args, "direct_residual_figures", False) and not args.one_pass_web_png:
-        raise ValueError("--direct-residual-figures requires --one-pass-web-png")
+    if (getattr(args, "direct_residual_figures", False) or getattr(args, "direct_orbit_figures", False)) and not args.one_pass_web_png:
+        raise ValueError("Direct figure rendering requires --one-pass-web-png")
     lane_mask = getattr(args, "short_lane_mask", None)
     if lane_mask and getattr(args, "held_anchor_route", False):
         raise ValueError("The held-anchor selector requires measured outcomes on both donor lanes")
@@ -347,6 +356,8 @@ if __name__ == "__main__":
                         help="Use the reviewed explicit layout on the installed renderer when supported")
     parser.add_argument("--direct-residual-figures", action="store_true",
                         help="Draw the two residual plots directly with Cairo when the explicit layout is enabled")
+    parser.add_argument("--direct-orbit-figures", action="store_true",
+                        help="Draw the four shared orbit plots directly with Cairo when the explicit layout is enabled")
     parser.add_argument("--exact-graph-reuse", action="store_true",
                         help="Use reviewed ordered graph batches and exact best-piece reuse in active lanes")
     parser.add_argument("--reuse-verified-png-reads", action="store_true",
