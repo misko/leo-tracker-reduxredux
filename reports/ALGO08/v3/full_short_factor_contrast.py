@@ -229,9 +229,12 @@ def bind_publication(root, native, expected):
                 owner_counts=report["selected_roles"], solve=report["solve"], media=media)
 
 
-def score(sealed, root):
+def score(root):
     from mixture_score import section
 
+    sealed = read(root / "numerical-seal.json")
+    if tuple(sealed["order"]) != CELLS or set(sealed["trials"]) != set(CELLS):
+        raise ValueError("Score only after all three diagnostics are sealed")
     old = verified(HERE / "measurements/eight-ms-physical.json", EIGHT_MS_REFERENCE)
     cross = verified(HERE / "measurements/full-short-crossover-summary.json", CROSSOVER_REFERENCE)
     controls = sealed["controls"]
@@ -297,17 +300,17 @@ def run(root):
                   driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
                   protocol_sha256=sha256((HERE / "full-short-factor-contrast-protocol.md").read_bytes()).hexdigest())
     write(root / "numerical-seal.json", sealed)
-    score(sealed, root)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    sub.add_parser("run").add_argument("root", type=Path)
+    for command in ("run", "score"):
+        sub.add_parser(command).add_argument("root", type=Path)
     replay = sub.add_parser("worker")
     replay.add_argument("saved", type=Path)
     replay.add_argument("digest")
     replay.add_argument("output", type=Path)
     replay.add_argument("inventory_path", type=Path)
     values = vars(parser.parse_args())
-    {"run": run, "worker": worker}[values.pop("action")](**values)
+    {"run": run, "worker": worker, "score": score}[values.pop("action")](**values)
