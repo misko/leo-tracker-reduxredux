@@ -1,11 +1,14 @@
 """Run the identical composite CLI on the small original withheld recording."""
 
 import argparse
+from contextlib import ExitStack
 import gzip
 import json
+import mmap
 from pathlib import Path
 from statistics import median
 import subprocess
+from time import perf_counter
 
 from aperture_trial import RELEASE, read, write
 from combined_frontier_run import BLOCK_SHA, HERE, verify
@@ -15,6 +18,7 @@ from local_future_cli_trial import cache_before
 from short_raw_diagnostic import (
     CACHE_LIB, CACHE_SHA, CASES, FastScanStore, assignment, cache_residency, checked, measure, pairs, science,
 )
+from triage_bounds import ShortWindowReader, confined_path
 
 
 def gates(times):
@@ -23,7 +27,7 @@ def gates(times):
     return median(c/s for s, c in times), sum(c for s, c in times)/sum(s for s, c in times)
 
 
-def run(root, block):
+def run(root, block, skip_empty_proof=False, weak_receipt=None):
     machine = host()
     case, pin, expected, visits, order = CASES[0]
     if (case, visits, expected, order) != ("DS30-0227", 18, "withheld", ("stock", "candidate")):
@@ -53,21 +57,43 @@ def run(root, block):
                                libs["regional"], "--frontier-block-library", str(block), "--track-graph", "installed",
                                "--reuse-cold-track-rows", "--reuse-grid-phase-states", "--output", str(root/"candidate")])
     runs = {}
-    for arm in order:
-        cache = cache_before(store, recording, manifests, query)
-        timing = measure(commands[arm], env, root/arm)
-        write(root/f"{arm}-time.json", timing)
-        if timing["exit_code"]:
-            raise RuntimeError(timing["stderr_tail"])
-        results = science(root, arm, timing, archived, inventory_pin)
-        if (results["native_sha256"] != reference["raw"][arm]["verified"]["native_sha256"]
-                or results["reason"] != "no_active_curvature" or results["decision"] != expected or results["pngs"]):
-            raise ValueError("Changed detector or withheld result")
-        runs[arm] = dict(cache=cache, timing=timing, verified=results, command=commands[arm])
-    warm = json.loads(gzip.decompress((HERE/"measurements/combined-frontier-weak-warm.json.gz").read_bytes()))
+    if skip_empty_proof:
+        commands["candidate"].append("--skip-empty-proof")
+    with ExitStack() as scope:
+        start = perf_counter()
+        mapped_bytes = sampled_pages = 0
+        for manifest, digest in manifests:
+            reader = ShortWindowReader(manifest.parent)
+            if reader.manifest_sha256 != digest:
+                raise ValueError("Changed manifest during cache conditioning")
+            for chunk in reader.manifest.chunks:
+                mapped_bytes += chunk.compressed_bytes
+                if mapped_bytes > 32*1024**2:
+                    raise ValueError("Expected the small withheld control")
+                member = confined_path(reader.path, reader.path/chunk.payload_relative_path, must_exist=True)
+                stream = scope.enter_context(member.open("rb"))
+                view = scope.enter_context(mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ))
+                sampled_pages += len(view[::mmap.PAGESIZE])
+        conditioning_s = perf_counter() - start
+        for arm in order:
+            cache = cache_before(store, recording, manifests, query)
+            timing = measure(commands[arm], env, root/arm)
+            write(root/f"{arm}-time.json", timing)
+            if timing["exit_code"]:
+                raise RuntimeError(timing["stderr_tail"])
+            results = science(root, arm, timing, archived, inventory_pin)
+            if (results["native_sha256"] != reference["raw"][arm]["verified"]["native_sha256"]
+                    or results["reason"] != "no_active_curvature" or results["decision"] != expected or results["pngs"]):
+                raise ValueError("Changed detector or withheld result")
+            runs[arm] = dict(cache=cache, timing=timing, verified=results, command=commands[arm])
+    weak_receipt = weak_receipt or HERE/"measurements/combined-frontier-weak-warm.json.gz"
+    warm = json.loads(gzip.decompress(weak_receipt.read_bytes()))
+    if warm["composition"].get("skip_empty_proof", False) != skip_empty_proof:
+        raise ValueError("Cannot pool two different candidate configurations")
     ratios = gates([(warm["runs"]["stock"]["clock"]["elapsed_s"], warm["runs"]["candidate"]["clock"]["elapsed_s"]),
                     (runs["stock"]["timing"]["elapsed_s"], runs["candidate"]["timing"]["elapsed_s"])])
     write(root/"result.json", dict(case=case, machine=machine, inventory=inventory_pin, runs=runs,
+          read_only_conditioning=dict(bytes=mapped_bytes, pages=sampled_pages, elapsed_s=conditioning_s),
           composition=read(root/"candidate/combined-frontier.json"), paired_warm_median_and_sum=ratios))
 
 
@@ -75,4 +101,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("block", type=Path)
+    parser.add_argument("--skip-empty-proof", action="store_true")
+    parser.add_argument("--weak-receipt", type=Path)
     run(**vars(parser.parse_args()))

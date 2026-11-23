@@ -81,7 +81,8 @@ def main():
     if len(acquisitions) != 1:
         raise ValueError("Expected one verified raw acquisition")
     write(options.output / "combined-frontier.json", dict(prefetch=acquisitions[0],
-          block_sha256=BLOCK_SHA, prefetch_sources=PREFETCH_FILES, track_sha256=full_short_run.TRACK_SCORES_SHA))
+          block_sha256=BLOCK_SHA, prefetch_sources=PREFETCH_FILES, track_sha256=full_short_run.TRACK_SCORES_SHA,
+          skip_empty_proof="--skip-empty-proof" in rest))
 
 
 if __name__ == "__main__":

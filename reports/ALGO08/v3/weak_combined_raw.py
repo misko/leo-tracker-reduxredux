@@ -19,7 +19,7 @@ REFERENCE = Path("/var/tmp/leo-full-short-DS30-0016-pair/request.json")
 REFERENCE_PIN = "d58723098826fc7e1478f92880dffdb500bcb3f5225b4d64a4b2949cfbceab06"
 
 
-def run(output, geographic, stock_first=False, frontier_libraries=None, matched_warm=False):
+def run(output, geographic, stock_first=False, frontier_libraries=None, matched_warm=False, skip_empty_proof=False):
     from leo.storage.fast_scan import FastScanStore
     from tools.pipeline_eval.qualification.cache_residency import bound_snapshot, load_query
 
@@ -53,6 +53,8 @@ def run(output, geographic, stock_first=False, frontier_libraries=None, matched_
         block, tracks = frontier_libraries
         commands["candidate"][2] = str(HERE / "combined_frontier_run.py")
         commands["candidate"].extend(["--frontier-block-library", str(block), "--regional-track-library", str(tracks)])
+    if skip_empty_proof:
+        commands["candidate"].append("--skip-empty-proof")
     (output / "stock").mkdir()
     order = ("stock", "candidate") if stock_first else ("candidate", "stock")
     write(output / "binding.json", dict(machine=system, commands=commands, order=order, request=request, inventory=digest))
@@ -87,4 +89,5 @@ if __name__ == "__main__":
     parser.add_argument("--stock-first", action="store_true")
     parser.add_argument("--frontier-libraries", type=Path, nargs=2, metavar=("BLOCK", "TRACKS"))
     parser.add_argument("--matched-warm", action="store_true")
+    parser.add_argument("--skip-empty-proof", action="store_true")
     run(**vars(parser.parse_args()))
