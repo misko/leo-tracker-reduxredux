@@ -3,28 +3,35 @@ import sys
 
 import pytest
 
-HERE = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"
-sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
-from causal_cold_audit import duplicate_scope, without_timers
-
-
-def point(model, position, fingerprint, cpu):
-    return dict(model=model, exact_position=position, result_sha256=fingerprint, cpu_ns=cpu)
+from causal_cold_audit import owner_delta, summarize
 
 
-def test_repeated_position_in_different_phase_or_branch_cannot_be_reused():
-    rows = [point(1, "0000", "a", 10), point(2, "0000", "b", 20), point(1, "8000", "c", 30),
-            point(1, "0000", "a", 40), point(2, "0000", "b", 50)]
-    assert duplicate_scope(rows) == dict(calls=5, exact_duplicates=2, cpu_ns=150, free_duplicate_ceiling_ns=90)
+def trace(completed, routing):
+    return dict(prefix=[dict(branch=b, score=b, cpu_ns=100_000_000, evaluations=5) for b in (1, 2, 3)],
+                completed=[dict(branch=b, score=4-b, cpu_ns=200_000_000, first_evaluations=7,
+                                second_evaluations=4) for b in completed], branch=max(completed), routing=routing)
 
 
-def test_same_coordinate_must_reproduce_the_entire_objective():
-    with pytest.raises(ValueError, match="different objective bits"):
-        duplicate_scope([point(1, "0000", "a", 10), point(1, "0000", "b", 20)])
+def test_count_first_prefixes_once_and_include_unfinished_challengers():
+    result = summarize(trace([1], "winner_raced"), dict(cpu_s=1))
+    assert result["first_objective_requests"] == 17
+    assert result["total_objective_requests"] == 21
+    assert result["setup_rank_and_other_cpu_s"] == pytest.approx(.5)
+    assert result["final_score_spread"] is None
 
 
-def test_evidence_comparison_removes_only_diagnostic_clocks():
-    assert without_timers(dict(branch=2, completed=[dict(cpu_ns=5, score=4, second_evaluations=17)])) == {
-        "branch": 2, "completed": [{"score": 4, "second_evaluations": 17}],
-    }
+def test_refreshed_ranking_can_reverse_original_prefix_choice():
+    result = summarize(trace([1, 2, 3], "ambiguous_gap"), dict(cpu_s=1))
+    assert result["total_objective_requests"] == 33
+    assert result["winner_reversed"]
+    assert result["final_penalty_for_selecting_prefix_leader"] == 2
+    with pytest.raises(ValueError, match="disjoint CPU accounting"):
+        summarize(trace([1], "full_restart_on_invalid"), dict(cpu_s=1))
+
+
+def test_owner_accounting_counts_changed_satellite_and_role_on_shared_rows():
+    a = [("a", 100, "curved"), ("b", 101, "curved")]
+    b = [("a", 102, "predictive"), ("c", 103, "curved")]
+    assert owner_delta(a, b) == dict(total=2, shared=1, lost=1, new=1, norad_changes=1, role_changes=1)
