@@ -1,0 +1,35 @@
+# Two coherent frame pairs miss eight-frame primary winners
+
+On the saved public North control, the shortlist reached **16 of 41** incumbent primary winners within six wrapped samples and 2,250 Hz of signed CFO. The full eight-frame confirmation and verifier also returned **16 matches**. Retrying every empty proposal increased the mixed detector stage from **112.563 to 155.142 CPU ms** and still left three changed factors and one addition. Even an answer key routing each discrepancy to the complete released 12 ms retry cost **127.974 ms**. The result stops this shortlist before larger runs. [Frozen protocol](frame-block-shortlist-protocol.md) · [Complete signed clocks and proposals](measurements/frame-block-shortlist.json.gz)
+
+## Independent proposal and verified outputs
+
+The proposal uses centered, RMS-normalized quarter-rate samples from frame origins 0–1 and 6–7. It estimates each pair's relative phase from its own complex correlation and adds the aligned samples. The two folded rows enter the existing lag and signed frequency scouts. Four timing maxima replace twelve and produce at most four joint seeds on the unchanged carrier grid. The FIR runs only the necessary original tiles for those pairs. The full-rate refinement, independent confirmation and exact fractional verifier retain all eight original frame origins and signed coordinates. No reference result participated in nomination or in the live retry decision. [Coherent projection](frame_block_modes.inc) · [Relink and validation](frame_block_shortlist.py)
+
+| Saved cohort | 12 ms positives / nonanchor lanes | Joint seeds within 2 samples / 250 Hz | Joint seeds within 6 samples / 2,250 Hz | Verified candidate matches | Live retries | Final changed / extra |
+|---|---:|---:|---:|---:|---:|---:|
+| North, with scheduled anchors | 41 / 80 | 11 | 16 | 16 | 60 | 3 / 1 |
+| Weak physical, forced-short challenge | 34 / 36 | 19 | 26 | 26 | 9 | 1 / 0 |
+| North, all lanes treated as short for the census | 45 / 96 | 11 | 17 | 17 | 72 | 4 / 3 |
+
+The looser North comparison found stand-alone signed frequency coverage on **36 of 41** positives and stand-alone timing coverage on **16 of 41**. Weak had **26 of 34** on each axis at those limits. The routed North result matched 38/41 and weak matched 33/34. Two accepted mismatches changed signed frequency by about 195.5 kHz on North and 39.0 kHz on weak. A match is agreement with the measured released receiver at the prespecified two-sample and 250 Hz tolerances. The comparison makes no satellite-truth assignment. [Signed per-lane factors and seed list](measurements/frame-block-shortlist.json.gz)
+
+## Complete detector stage and answer-key bounds
+
+| Saved cohort | Full anchor calls / paid CPU ms | Released CPU / elapsed ms | Live routed CPU / elapsed ms | Paid candidate with answer-key exact retries, CPU ms | Free winning seed and empty decisions, CPU ms | Also charge measured nomination before granting winner, CPU ms |
+|---|---:|---:|---:|---:|---:|---:|
+| North mixed | 16 / 26.048 | 112.563 / 112.571 | 155.142 / 155.154 | 127.974 | 46.353 | 79.831 |
+| Weak forced-short challenge | 0 / 0 | 50.029 / 50.032 | 50.431 / 50.432 | 56.114 | 18.570 | 34.327 |
+| Weak mixed, clip chronology | 34 / 138.930 | 141.605 / 141.615 | 141.322 / 141.331 | 141.306 | 139.972 | 140.826 |
+
+The four rotated repeats pay every 20 ms anchor in both stage totals. The sparse weak snapshots restart the schedule by recording across only the observed clips, so just two lanes fall off anchor. The 34 anchor calls returned 21 secondaries, which are unaffected by the proposal. The forced-short weak row supplies the larger primary-quality panel. North's released mixed selections reproduced the existing signed public probes. Common input loading and authentication for the held 48 visits took **241.722 CPU / 242.850 elapsed ms** once outside the detector comparison. The weak ZIP load took **104.464 / 104.882 ms**. No physical waveform archive or new solver ran. [Original mixed schedule](mixed-aperture-receiver.md) · [Common input and mixed-stage receipts](measurements/frame-block-shortlist.json.gz)
+
+The answer-key exact retry adds the released cost only on measured **byte discrepancies**, which occurred on 26 North nonanchors and 12 forced-short weak lanes. It grants perfect detection of disagreement and still loses time. The free-winner column gives the verifier the incumbent's exact pre-verification seed for every positive and eliminates all work on reference empties. Every such source-backed staged verification reproduced the original factor. The last column adds the actual measured blind proposal cost to that otherwise ideal verifier case. Those two ceilings do not demonstrate a way to identify a winner or certify emptiness from the measured slate.
+
+Even discarding every retry and accepting the reduced quality, the North clocks give at most **17.781 ms** over 80 nonanchors, or **2.630 s** at the dense 11,834-short-call count if the per-call saving transfers. Weak forced-short gives **3.470 s** under the same optimistic scaling. The target is **3.49 s**. The candidate timing object is unprofiled. A separately recompiled unchanged unprofiled timing object preserved all 132 measured released factors byte for byte and was slower by **16.762 ms** on the 80 North nonanchors and **3.809 ms** on the 36 weak lanes. That compiler difference does not identify the candidate's potential gain from retraining. The recall deficit and surviving routed disagreements are independent of that timing qualification. [Dense CPU requirement](next-single-core-experiments.md) · [Per-repeat comparison](measurements/frame-block-shortlist.json.gz)
+
+## Relation to previous work
+
+The earlier seven-frame scout already established the risk of short nomination with a longer verifier. It retained the PCA and 12 timing maxima from a contiguous prefix and verified over the original 20 ms visit. The differential-fold experiment used within-frame lag products across all 14 frames, discarding relative frame phase. The earlier three-frame coherence test nominated epochs with the ordinary wide detector's carrier search still to follow. Here each pair retains a coherently aligned complex row, searches signed CFO at nomination and uses true eight-frame 12 ms verification. The 8 ms restart and resumable studies instead accepted some five-frame verified measurements directly. That shortcut is absent here. Prior graph-targeted aperture rechecks also require signed readback and sit downstream of this receiver decision. [Earlier partial aperture](../single-core-2x/receiver-aperture.md) · [Differential fold](differential-fold.md) · [Progressive primary](progressive-primary.md) · [Resume ceiling](resumable-primary-ceiling.md) · [Graph rechecks](eight-ms-backverify.md)
+
+The measured relinks and receipt remain at `/dev/shm/leo-v3-frame-block-shortlist-01`. Three component tests passed. [Runner](frame_block_shortlist.py) · [Component tests](../../../tests/pipeline_eval/test_frame_block_shortlist.py)
