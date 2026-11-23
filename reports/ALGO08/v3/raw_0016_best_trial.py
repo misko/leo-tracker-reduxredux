@@ -1,6 +1,7 @@
 """Run exactly one candidate-first original DS30-0016 pair."""
 
 import argparse
+from dataclasses import dataclass
 from hashlib import sha256
 import json
 import os
@@ -28,6 +29,19 @@ FLAGS = ("--prove-empty-graph", "--prove-graph-time-support", "--named-survivor-
          "--direct-residual-figures", "--direct-orbit-figures")
 
 
+@dataclass(frozen=True)
+class PairInputs:
+    workload: Workload
+    members: int
+    admitted: int
+    cutoff_ns: int
+    inventory: str
+    archive: str
+
+
+ORIGINAL = PairInputs(CASE, MEMBERS, 713, 1794568912154038024, INVENTORY, ARCHIVE)
+
+
 def sha(data):
     return sha256(data).hexdigest()
 
@@ -52,9 +66,10 @@ def frozen_sources():
     return result
 
 
-def check_extent(cache, compressed):
-    if (compressed != CASE.compressed_bytes or compressed > CASE.raw_limit
-            or cache["members"] != MEMBERS or cache["observed_members"] != MEMBERS or cache["unavailable"]
+def check_extent(cache, compressed, inputs=ORIGINAL):
+    workload = inputs.workload
+    if (compressed != workload.compressed_bytes or compressed > workload.raw_limit
+            or cache["members"] != inputs.members or cache["observed_members"] != inputs.members or cache["unavailable"]
             or cache["observed_file_pages"] < 1):
         raise ValueError("Original signed recording differs from the allocated conditioning extent")
 
@@ -71,15 +86,15 @@ def command(mode, root, recording, libraries, named):
             "--grid-feature-projection-library", libraries["projection"], *FLAGS]
 
 
-def seal(root):
+def seal(root, order=CASE.order):
     paths = [root/"admission.json", root/"offer.json", root/"conditioning-before.json", root/"conditioning.json"]
-    for mode in CASE.order:
+    for mode in order:
         paths.extend(root / f"{mode}{suffix}" for suffix in ("-clock.json", ".stdout", ".stderr"))
         paths.extend(p for p in (root/mode).rglob("*") if p.is_file())
     return {str(p.relative_to(root)): sha(p.read_bytes()) for p in sorted(paths)}
 
 
-def configuration(root):
+def configuration(root, inputs=ORIGINAL, *, selection=None):
     from aperture_trial import write
     from combined_frontier_run import BLOCK_SHA
     from dense_geographic_trial import host
@@ -95,23 +110,26 @@ def configuration(root):
         raise ValueError("Need fresh private tmpfs for all outputs and staging")
     sources = frozen_sources()
     named = pairs.verified_v3(pairs.NAMED_V3)
-    signed, request = enrollment(CASE)
+    workload = inputs.workload
+    signed, request = enrollment(workload)
     case, job = signed["case"], request["job"]
     manifests = tuple((BULK/r["path"], "sha256:"+r["sha256"]) for r in case["recording"]["segments"])
     recording = manifests[0][0].parent.parent
     official = checked(OPERATOR_OFFER, REGION_SHA)
     offer = json.loads(official)
     if (offer["center"] != job["search_center"] or offer["screen_center"] != job["screen_center"]
-            or signed["orbit_cutoff_ns"] != 1794568912154038024 or case["valid_visits"] != 713
-            or canonical_digest(request["causal_snapshots"]) != ARCHIVE):
+            or signed["orbit_cutoff_ns"] != inputs.cutoff_ns or case["valid_visits"] != inputs.admitted
+            or canonical_digest(request["causal_snapshots"]) != inputs.archive):
         raise ValueError("The original causal inputs or operator offer changed")
 
     root.mkdir(mode=0o700)
     (root/"tmp").mkdir()
     (root/"offer.json").write_bytes(official)
     store = FastScanStore(root)
-    _, _, inventory = store.inventory(recording, verify_windows=False)
-    if canonical_digest(inventory) != INVENTORY:
+    session, inventory, catalogue = store.inventory(recording, verify_windows=False)
+    actual_manifests = [(Path(row["path"])/"manifest.json", row["manifest_digest"]) for row in catalogue["segments"]]
+    if (inventory != inputs.inventory or session != case["session_id"] or catalogue["window_count"] != workload.windows
+            or manifests != tuple(actual_manifests)):
         raise ValueError("Original inventory changed")
     checked(CACHE_LIB, CACHE_SHA)
     query = cache_residency.load_query(CACHE_LIB)
@@ -120,11 +138,11 @@ def configuration(root):
         return cache_residency.bound_snapshot(store, recording, manifests, os.sysconf("SC_PAGE_SIZE"), query)
 
     total = sum(chunk.compressed_bytes for path, _ in manifests for chunk in ShortWindowReader(path.parent).manifest.chunks)
-    check_extent(residency(), total)
+    check_extent(residency(), total, inputs)
     start_cpu, start_wall = process_time(), perf_counter()
     archive = stage_orbits(root/"tle", Path(job["tle_root"]), request["causal_snapshots"],
-                           signed["orbit_cutoff_ns"], expected_count=CASE.snapshots)
-    if pairs.archive_identity(root/"tle")["snapshots_sha256"] != ARCHIVE:
+                           signed["orbit_cutoff_ns"], expected_count=workload.snapshots)
+    if pairs.archive_identity(root/"tle")["snapshots_sha256"] != inputs.archive:
         raise ValueError("Staged archive changed")
     libraries = {}
     inputs = (("short", SHORT, SHORT_SHA), ("geographic", STAGED/"geographic_library.so", GEOGRAPHIC_SHA),
@@ -139,32 +157,36 @@ def configuration(root):
     subprocess.run([RELEASE/"venv/bin/python", "-Bc",
                     "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
                    env=env, check=True, timeout=30)
-    archive["sha256"] = ARCHIVE
-    write(root/"admission.json", dict(case=CASE.id, base=BASE, order=CASE.order, host=machine, stock=named,
+    archive["sha256"] = inputs.archive
+    admission = dict(case=workload.id, base=BASE, order=workload.order, host=machine, stock=named,
           route_flags=FLAGS, sources=sources, driver_sha256=sha(Path(__file__).read_bytes()),
-          binding=CASE.binding_sha, request=case["request"]["sha256"], inventory=INVENTORY,
+          binding=workload.binding_sha, request=case["request"]["sha256"], inventory=inputs.inventory,
           cutoff_utc_ns=signed["orbit_cutoff_ns"], manifests=cache_residency.manifest_pins(manifests),
-          offer=offer, offer_sha256=REGION_SHA, issued=CASE.windows, admitted=case["valid_visits"],
+          offer=offer, offer_sha256=REGION_SHA, issued=workload.windows, admitted=case["valid_visits"],
           archive=archive, recording=str(recording), raw_authority=case["raw_authority"], session=case["session_id"],
           library_sha256={name: pin for name, _, pin in inputs},
           staging=dict(wall_s=perf_counter()-start_wall, driver_cpu_s=process_time()-start_cpu),
-          raw_budget_bytes=CASE.raw_limit, compressed_bytes=total))
+          raw_budget_bytes=workload.raw_limit, compressed_bytes=total)
+    if selection is not None:
+        admission["selection"] = selection
+    write(root/"admission.json", admission)
     return recording, manifests, total, libraries, residency, env
 
 
-def launch(root):
+def launch(root, inputs=ORIGINAL, *, selection=None):
     from aperture_trial import write
     from short_raw_diagnostic import measure, pairs, require_warm
     from triage_bounds import warm_recording
 
-    recording, manifests, total, libraries, residency, env = configuration(root)
+    workload = inputs.workload
+    recording, manifests, total, libraries, residency, env = configuration(root, inputs, selection=selection)
     before = residency()
-    check_extent(before, total)
+    check_extent(before, total, inputs)
     used = before["cached_pages"] != before["observed_file_pages"]
     write(root/"conditioning-before.json", {"cache": before, "needed": used})
     cpu, wall = process_time(), perf_counter()
     blocks = resource.getrusage(resource.RUSAGE_SELF).ru_inblock
-    charged = warm_recording(manifests, maximum_bytes=CASE.raw_limit) if used else 0
+    charged = warm_recording(manifests, maximum_bytes=workload.raw_limit) if used else 0
     conditioning = dict(used=used, bytes=charged, wall_s=perf_counter()-wall, cpu_s=process_time()-cpu,
                         input_blocks=resource.getrusage(resource.RUSAGE_SELF).ru_inblock-blocks)
     after = residency()
@@ -172,7 +194,7 @@ def launch(root):
     if charged != (total if used else 0):
         raise ValueError("The conditioning pass changed its signed extent")
     require_warm(after)
-    for mode in CASE.order:
+    for mode in workload.order:
         target = root/mode
         if mode == "stock":
             target.mkdir()
@@ -186,7 +208,7 @@ def launch(root):
         if clock["exit_code"]:
             raise RuntimeError(clock["stderr_tail"])
         require_warm(end_cache)
-    write(root/"prediction-seal.json", seal(root))
+    write(root/"prediction-seal.json", seal(root, workload.order))
 
 
 if __name__ == "__main__":
