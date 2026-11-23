@@ -106,6 +106,7 @@ if __name__ == "__main__":
     parser.add_argument("root", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
+    result = summary(args.root)
     with args.output.open("x") as stream:
-        dump(summary(args.root), stream, allow_nan=False, indent=2, sort_keys=True)
+        dump(result, stream, allow_nan=False, indent=2, sort_keys=True)
         stream.write("\n")
