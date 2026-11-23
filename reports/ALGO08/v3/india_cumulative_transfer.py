@@ -136,6 +136,7 @@ def run(mode, route, output):
     projection = None
     forecast = None
     if cumulative:
+        audit["forecast"].update(requested=True, executions=[])
         projection = partial(guarded_projection, paths["geographic"], paths["regional"],
                              paths["frontier"], geographic_projection)
         forecast = partial(active_forecast, audit["forecast"])
