@@ -47,9 +47,13 @@ def main(argv=None):
                         help="Reuse nominal centre rows in full-catalogue cold rank")
     parser.add_argument("--track-graph", choices=("quadratic", "installed"), default="quadratic",
                         help="Track configuration to use after the signed receiver handoff")
+    parser.add_argument("--profiled-gamma-library", type=Path,
+                        help="Use the reviewed profiled Gamma fit on saved detections")
     args = parser.parse_args(argv)
     if bool(args.saved) != bool(args.saved_digest):
         parser.error("--saved and --saved-digest must be used together")
+    if args.profiled_gamma_library is not None and not args.saved:
+        parser.error("--profiled-gamma-library requires --saved")
     args.optimized_full_catalogue = True
     args.verify_images = True
     identity = checked_recipe()
@@ -62,11 +66,13 @@ def main(argv=None):
         raw_context=(lambda scan: observe_acquisition(scan, receiver, RECIPE_SHA, audit)) if receiver else None,
         saved_receiver=None if receiver else RECIPE_SHA,
         geographic_projector=(lambda: geographic_projection(args.geographic_library)) if args.geographic_library else None,
-        reuse_cold_rows=args.reuse_cold_track_rows)
+        reuse_cold_rows=args.reuse_cold_track_rows,
+        **({"profiled_gamma_library": args.profiled_gamma_library} if args.profiled_gamma_library is not None else {}))
     write(args.output / "full-short-recipe.json", dict(recipe=identity, graph=GRAPH if quadratic else "installed",
              receiver_audit=audit,
              saved_digest=args.saved_digest, geographic_sha256=GEOGRAPHIC_SHA if args.geographic_library else None,
-             **({"reuse_cold_track_rows": True} if args.reuse_cold_track_rows else {})))
+             **({"reuse_cold_track_rows": True} if args.reuse_cold_track_rows else {}),
+             **({"profiled_gamma": True} if args.profiled_gamma_library is not None else {})))
 
 
 if __name__ == "__main__":

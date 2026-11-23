@@ -5,6 +5,7 @@ from ctypes import CDLL, POINTER, c_uint64
 import json
 from pathlib import Path
 import subprocess
+from time import process_time_ns
 from unittest.mock import patch
 
 from leo.analysis.localization_v4 import native_bound
@@ -94,7 +95,7 @@ int nb_profiled_gamma(void *layout,void *pf,void *ps,void *pi,void *pc,
         compiler_flags=flags), indent=2) + "\n")
 
 
-def operations(library):
+def operations(library, *, allowed=None, activity=None):
     library = Path(library)
     manifest = json.loads(library.with_suffix(".json").read_text())
     if native_bound.digest(library) != manifest["binary_sha256"]:
@@ -114,8 +115,23 @@ def operations(library):
         run.argtypes, run.restype = stock.argtypes, stock.restype
 
         def call(*args):
+            if allowed is not None and not allowed():
+                if activity is not None:
+                    activity["ordinary_grid_bypasses"] += 1
+                return stock(*args)
+            if activity is None:
+                status = run(*args)
+                return stock(*args) if status else status
+            began = process_time_ns()
             status = run(*args)
-            return stock(*args) if status else status
+            activity["profiled_call_cpu_ns"] += process_time_ns() - began
+            activity["profiled_calls"] += 1
+            if not status:
+                return status
+            began = process_time_ns()
+            replay = stock(*args)
+            activity["stock_replay_cpu_ns"] += process_time_ns() - began
+            return replay
 
         call.argtypes, call.restype = stock.argtypes, stock.restype
         bound.run = call
@@ -125,9 +141,9 @@ def operations(library):
 
 
 @contextmanager
-def profiled_gamma(algo08_position, library):
+def profiled_gamma(algo08_position, library, *, allowed=None, activity=None):
     """Scope the numerical change to the saved solve's native backend."""
-    wrap, read = operations(library)
+    wrap, read = operations(library, allowed=allowed, activity=activity)
     backend = algo08_position.NativeBound
     instances, stats = [], {}
     before = read()

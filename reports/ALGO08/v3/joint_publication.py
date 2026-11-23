@@ -86,7 +86,7 @@ def artifacts(root, receipt):
 
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
         raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
-        reuse_cold_rows=False):
+        reuse_cold_rows=False, profiled_gamma_library=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -103,6 +103,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         raise ValueError("A geographic projector requires the regional proof")
     if reuse_cold_rows and not optimized:
         raise ValueError("Cold track-row reuse requires the optimized full catalogue")
+    if profiled_gamma_library is not None and (not args.saved or not optimized):
+        raise ValueError("Profiled Gamma requires a saved detector and the optimized full catalogue")
     full_catalogue = getattr(args, "full_catalogue", False) or optimized
     signed_finish = getattr(args, "signed_finish", False) or full_catalogue
     if stock_control and signed_finish:
@@ -206,11 +208,17 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 stack.enter_context(patch.object(algo08_scan, "acquire", acquire))
             return original(*values, **kwargs)
 
-    clocks = (process_time(), perf_counter())
-    with patch.object(algo08_scan, "analyze", analyze):
+    gamma = None
+    with ExitStack() as scope:
+        scope.enter_context(patch.object(algo08_scan, "analyze", analyze))
+        if profiled_gamma_library is not None:
+            from profiled_gamma_live import outside_grid
+
+            gamma = scope.enter_context(outside_grid(algo08_position, profiled_gamma_library))
+        clocks = (process_time(), perf_counter())
         receipt = publication.run(SimpleNamespace(recording=args.recording, archive=args.archive, region=args.region,
                                                  bulk_root=args.output), spec)
-    cpu, wall = process_time() - clocks[0], perf_counter() - clocks[1]
+        cpu, wall = process_time() - clocks[0], perf_counter() - clocks[1]
     stopped_early = (len(regional) == 1 and regional[0]["result"].get("complete") is True
                      and regional[0]["result"].get("would_withhold") is True)
     empty = len(solves) == 1 and solves[0].get("empty_receiver_withhold", False)
@@ -266,6 +274,9 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         result["optimized_full_catalogue"] = True
     if early_regional:
         result["early_regional"] = regional
+    if gamma is not None:
+        result["profiled_gamma"] = gamma
+        pins["profiled_gamma_live.py"] = sha256((source / "profiled_gamma_live.py").read_bytes()).hexdigest()
     with (args.output / "joint-research-receipt.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False, default=_json_value)
         stream.write("\n")
