@@ -31,6 +31,24 @@ Pair 72 entered the archive after the guard and the first two results were commi
 | Fixed zero | 114.6647 | 0.4066 | 0 m |
 | Fitted | 114.7558 | 0.5859 | 0 m |
 
+### Final five-failure census
+
+The completed 100-pair audit at `027acfc35` identified DS30-0234 and DS30-0247 at panel ranks 86 and 100. Both had failed in the same sparse corner retry and entered the archive after the guard was frozen. Each additional check ran once on its original saved detector document and causal TLE archive. The two cases had 13,266 and 13,140 detector rows, respectively, with exact equality to the corresponding ALGO08v2 rows. Both original failure receipts retain their final-audit file digests. [DS30-0234 saved trial](measurements/algo08v3-DS30-0234-orbit-support-saved.json) · [DS30-0247 saved trial](measurements/algo08v3-DS30-0247-orbit-support-saved.json)
+
+| Recording | Recovered decision | Associated observations per arm, deployed → recovered | Owner digests agree | New orbit knots | Recovered CPU / wall s |
+|---|---|---:|---|---:|---:|
+| DS30-0234 | Both fixes | 3,495 → 3,495 | Both arms | −22 to −18 s | 34.239 / 34.763 |
+| DS30-0247 | Both fixes | 3,410 → 3,307 | Neither arm | +319 to +323 s | 48.261 / 48.976 |
+
+| Recording | Calibration | RF RMS, deployed → recovered (Hz) | Horizontal error, deployed → recovered (km) | Endpoint movement |
+|---|---|---:|---:|---:|
+| DS30-0234 | Fixed zero | 107.1329 → 107.1329 | 0.3437 → 0.3437 | 0 m |
+| DS30-0234 | Fitted | 107.0486 → 107.0486 | 0.5311 → 0.5311 | 0 m |
+| DS30-0247 | Fixed zero | 93.8289 → 94.3470 | 0.5658 → 0.6928 | 493.99 m |
+| DS30-0247 | Fitted | 93.8492 → 94.3352 | 0.6669 → 0.7218 | 475.49 m |
+
+The frozen guard recovered a fix in both calibration arms for all five saved failures. Three cases exactly reproduced ALGO08v2’s endpoints, RF RMS and ownership. DS30-0129 and DS30-0247 retained fewer associated observations and had higher horizontal errors in both arms. All five original candidate failures remain in the final 100-pair result. The recovery clocks cover saved detections through numerical evidence and provide no new raw-publication timing.
+
 ## Speed relative to ALGO08v3
 
 In the first 56 archived pairs, the 54 candidate runs with terminals took 5,546.7 s in total across 3,714.8 s through detections, 1,678.1 s through solving and numerical evidence, and 153.8 s to exit. The two crashes contribute elapsed time to their fixed panel comparison. Their missing terminal timestamps leave them out of this stage split. Stage clocks come from the detection and terminal file modification times and the recorded launch-to-terminal and launch-to-exit durations. The zero-charged-input subset spans three recordings, with summed elapsed time split 49.70%, 46.65% and 3.65% across the same boundaries. [Stage clock calculation](compare_publications.py)
