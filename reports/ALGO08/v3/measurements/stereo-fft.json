@@ -1,0 +1,1026 @@
+{
+  "cohorts": {
+    "dense": {
+      "build": {
+        "binary_sha256": "61c8990d325be5aa2ddb60d80d888b49015d1bc91c13fef1293516daa26f2222",
+        "commands": [
+          [
+            "cc",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-Wall",
+            "-Werror",
+            "-c",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-Wall",
+            "-Werror",
+            "-c",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/two_carrier_receiver.c",
+            "-o",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/two_carrier_receiver.o"
+          ]
+        ],
+        "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+        "driver_sha256": "4987af866a5b8d89006f3df272bd4f35fe586555e317b65fe76093bd343e8746",
+        "pgo": false,
+        "relinked_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+        "source_sha256": {
+          "timing_first_receiver": {
+            "appended": "deae2176e0668c4ce81dcab5b999777c8b19f1331656e0abddb29c51141cd17f",
+            "injected": "b2fe85ae8f6106192235f6c902fff98da09f261909fd6813e4df5639c0bdbf80",
+            "stock": "936b67cbb9af0201a7e65281756cc9c16f042ac2ad5e84201b1577131c67044a"
+          },
+          "two_carrier_receiver": {
+            "appended": "b06f498f2349f810fdf06b8ebc7a46a06d33421aed1a78baa7d1f5d18d603162",
+            "injected": "4e68bf4ac68c26bbd67c64ac571d55098cd7f33f858611345e02c4e050b4b591",
+            "stock": "4f3326eee5522f02ee05a236f22a41fc1af5bb0f21b6e3fe337711a66226f5f7"
+          }
+        }
+      },
+      "cohort": "dense",
+      "differences": [],
+      "exact_installed_factors_by_rank": [
+        52,
+        28
+      ],
+      "initialization": {
+        "lower": {
+          "installed": {
+            "bytes": 10880424,
+            "cpu_wall_ns": [
+              1792541,
+              1793093
+            ]
+          },
+          "paired_fft": {
+            "bytes": 21837712,
+            "cpu_wall_ns": [
+              2574230,
+              2574859
+            ]
+          },
+          "scalar_dispatch": {
+            "bytes": 10880448,
+            "cpu_wall_ns": [
+              1244825,
+              1245211
+            ]
+          }
+        }
+      },
+      "inputs": [
+        [
+          "DS30-0008:0",
+          "sha256:25ffc8a2b23638d1b3cd9e0ca85b08f3696fcfd8fa6d05c0b447581df4f3e31b"
+        ],
+        [
+          "DS30-0008:1",
+          "sha256:38a85096a138bdecb8c14da43070b7dc88d433c8ee59a23a4f153920c23d934a"
+        ],
+        [
+          "DS30-0008:2",
+          "sha256:b48ec990dda0f59bb210030c622317ba26229d17403e3279858d136b2aa12473"
+        ],
+        [
+          "DS30-0008:3",
+          "sha256:aef16b7dc410ada80cb4b9367c1abb7a2377a585ca63e90ce35383d5dd232ec3"
+        ],
+        [
+          "DS30-0008:4",
+          "sha256:6822975976374b5e2466255955d1831797c6291217a98200079fed6597fd5fab"
+        ],
+        [
+          "DS30-0008:5",
+          "sha256:229af1ac03f23712f6f702cbca2c8ad87973b84e99c36947e4c77cf6d02aec69"
+        ],
+        [
+          "DS30-0008:6",
+          "sha256:0e7093d4bbe5e95c07cd202cbaf55aaf0954ac2e564bb1805cdc05bc4ce4f885"
+        ],
+        [
+          "DS30-0008:7",
+          "sha256:0e7cf7d129e012cdc595d294e79d7bf8a6ee00582c4b34a945f1b6b4d124cd48"
+        ],
+        [
+          "DS30-0008:8",
+          "sha256:e12a86fc6c854e1be2fcf1d9abbca5fba7a5b0a95308737b8eb24c87be16cb23"
+        ],
+        [
+          "DS30-0008:9",
+          "sha256:8d2acccb0394260d21ffc19d6017c5076b76efcc4541c5d8f13af63ed7338b11"
+        ],
+        [
+          "DS30-0008:10",
+          "sha256:e87694fdb1be2e2307db2e67e9666c98a182df77318adf1fac990612db388c0b"
+        ],
+        [
+          "DS30-0008:11",
+          "sha256:2a9407e3966f3ae39d2692942629b8c1c3f1dd2834e9056f554cab671c40511f"
+        ],
+        [
+          "DS30-0008:12",
+          "sha256:fa295353cd453134533f60501cc2b2b86c99c381db4556d0bdabf9656084e7bc"
+        ],
+        [
+          "DS30-0008:13",
+          "sha256:2f87768583d0a65eae014c73b0d5fd7f593fd5d15ac8175038fd1b460e4b7fa2"
+        ],
+        [
+          "DS30-0008:14",
+          "sha256:32bf90121f12167709493ac71dde190a90ae8bc9e7661f21e87122b04f593e3e"
+        ],
+        [
+          "DS30-0008:15",
+          "sha256:1a1abec656ff2ee936222d3f309fc1a89082a79fecb64efa65662ec59de334bb"
+        ],
+        [
+          "DS30-0008:16",
+          "sha256:e66125d2a6f1615c14b71f6e0234bcb09bd19d414e59ce230bd4a483f3fae70c"
+        ],
+        [
+          "DS30-0008:17",
+          "sha256:09482e24a67857ae8dc6383441cf3526b6111797c565c7dd473d72c77f4718db"
+        ],
+        [
+          "DS30-0008:18",
+          "sha256:b6e65d2e6e49b6e490b99316008329bbe31b1d6669a31c889961502f567893a8"
+        ],
+        [
+          "DS30-0008:19",
+          "sha256:c7c66d78dd431a5406e310b07dd92f4c40dd020cf98f8fb3086f8290877c9e5a"
+        ],
+        [
+          "DS30-0008:20",
+          "sha256:41452bf8d6b92158296119dbe3b34b46cb689f19e14701aeab20101a9eb71187"
+        ],
+        [
+          "DS30-0008:21",
+          "sha256:7871ec9f7eee3441ec8a79a2c5d8df6857fde2144afacb81cbbd40403f2edd9e"
+        ],
+        [
+          "DS30-0008:22",
+          "sha256:e5d1ee51ea70e50b95eee27c06cd41beb66742c482df31098fb601ba2f186ff2"
+        ],
+        [
+          "DS30-0008:23",
+          "sha256:5e21ae176a3a854cbf707c1cd74730e22c597b99c84f8afd43f13761941821ab"
+        ],
+        [
+          "DS30-0008:24",
+          "sha256:219c906b7272a32620d47615721336419a0a1eeecfe40d51e4c3cf944f975caa"
+        ],
+        [
+          "DS30-0008:25",
+          "sha256:ee2f9fd553f081807ce68b84d78bbeb76b2bccbb3ae147b355bfd0afde9a413b"
+        ],
+        [
+          "DS30-0008:26",
+          "sha256:7e7b41c1fb34e9d0fe738ec14bbd0e78b711b98f79983c4e2b0ff95851e24c23"
+        ],
+        [
+          "DS30-0008:27",
+          "sha256:ffee9bba49ebb439736b3e74cacb3ca6c14e83ff5c5f07b118c5fa48763bbb00"
+        ],
+        [
+          "DS30-0008:28",
+          "sha256:f68ab31cf5cb56b1fee40bead22a3ae711ca4dbe5857e669935cc5314fbd3bf2"
+        ],
+        [
+          "DS30-0008:29",
+          "sha256:fcdaaa5556b105aca135119a7970b1e5512f81ecbfc2c8ca6907af19bb22629e"
+        ],
+        [
+          "DS30-0008:30",
+          "sha256:36a8d1520b1b94dc1baa3745ea3c61d2ace39fd201e7f63031cd263e8971bfa4"
+        ],
+        [
+          "DS30-0008:31",
+          "sha256:339e387591e0b2d5dc0a037576b3428088eb170a958d08e82b8977a41e1b18b6"
+        ],
+        [
+          "DS30-0008:32",
+          "sha256:7e7d2b7f6fd5f385b8ebd8e52288c77bc46d40543bd14984d2ae1556e51cd1b2"
+        ],
+        [
+          "DS30-0008:33",
+          "sha256:5140130874c80d9fceaa6d2bc8a50cb82b2a6c0d8565728f063251e70b179d9a"
+        ],
+        [
+          "DS30-0008:34",
+          "sha256:220a2f86c4a556727b48b94e62ce464fdfe617c0c6aa5b8835b676946358be67"
+        ],
+        [
+          "DS30-0008:35",
+          "sha256:b0eeb7fd8359046d33678248a16203de20b15f1341d986fb4e744de9a89ec135"
+        ],
+        [
+          "DS30-0008:36",
+          "sha256:616646935316d5d9799ca083f27cbcbbfb0c0937687a4d70a01d84ab173ee30f"
+        ],
+        [
+          "DS30-0008:37",
+          "sha256:bd9e3b29f65edf87c80d953e789dd883800e4964426a98ba0a1bec56d09d0a7f"
+        ],
+        [
+          "DS30-0008:38",
+          "sha256:29ec1cf6a61cc75b537beee5024e064573f92e7186449d3f4b0bc617acc0b933"
+        ],
+        [
+          "DS30-0008:39",
+          "sha256:4193be9c8e523b5054f2416c75554f9c43f2fb4bd8aa58dcebd4a9367461d12a"
+        ],
+        [
+          "DS30-0008:40",
+          "sha256:7c3f0f8a604ddddd28dcf715ff59149889cabaf26c80c760001e4c72b5fb0a60"
+        ],
+        [
+          "DS30-0008:41",
+          "sha256:411a375f2be5ecc583f68f88ea49761d811c425fd23052868d9a9253a99e8db2"
+        ],
+        [
+          "DS30-0008:42",
+          "sha256:20137c745975d22a2bc5dc7b90dbe3e1ac704e260085a69278728477d11aa686"
+        ],
+        [
+          "DS30-0008:43",
+          "sha256:58fdd9995521817f1fae85645fc25ff92462a3fa1eef21d722237a6821acd10b"
+        ],
+        [
+          "DS30-0008:44",
+          "sha256:2081d10cfba5faeadda67369cdea892113d3304856e4b2201fec6629f71fd347"
+        ],
+        [
+          "DS30-0008:45",
+          "sha256:cc23c69a954e8316f1945d3c566eeaa4b0b7148b94483a7af6e4bc5ed36ea526"
+        ],
+        [
+          "DS30-0008:46",
+          "sha256:69108e3756f3d2d7540da29eace5565058b8f8d2c85c1d7d3dd05b06a714f60a"
+        ],
+        [
+          "DS30-0008:47",
+          "sha256:5287985ccdd2ed7969f47aa13656c7c308ff1da8b057e16d641371fb2f82d3b3"
+        ]
+      ],
+      "repeats": [
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.262674096,
+              "median_stereo_cpu_ms": 5.2928715,
+              "wall_s": 0.262768713
+            },
+            "paired_fft": {
+              "cpu_s": 0.302476169,
+              "median_stereo_cpu_ms": 6.010457,
+              "wall_s": 0.302530337
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.276285425,
+              "median_stereo_cpu_ms": 5.7064695,
+              "wall_s": 0.276338159
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.281847736,
+              "median_stereo_cpu_ms": 5.6558775,
+              "wall_s": 0.281913336
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 12,
+            "paired_primary": 48,
+            "paired_residual": 20
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.264255755,
+              "median_stereo_cpu_ms": 5.505093,
+              "wall_s": 0.264432785
+            },
+            "paired_fft": {
+              "cpu_s": 0.303887103,
+              "median_stereo_cpu_ms": 6.286561,
+              "wall_s": 0.304064937
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.278319898,
+              "median_stereo_cpu_ms": 5.562256,
+              "wall_s": 0.278466602
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.27904264,
+              "median_stereo_cpu_ms": 5.958574,
+              "wall_s": 0.279186701
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 12,
+            "paired_primary": 48,
+            "paired_residual": 20
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.254762798,
+              "median_stereo_cpu_ms": 5.181247,
+              "wall_s": 0.254878438
+            },
+            "paired_fft": {
+              "cpu_s": 0.291171919,
+              "median_stereo_cpu_ms": 5.9718625,
+              "wall_s": 0.291268198
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.269233423,
+              "median_stereo_cpu_ms": 5.478201,
+              "wall_s": 0.26930713
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.271547582,
+              "median_stereo_cpu_ms": 5.501126,
+              "wall_s": 0.271635443
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 12,
+            "paired_primary": 48,
+            "paired_residual": 20
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.254694585,
+              "median_stereo_cpu_ms": 5.2824935,
+              "wall_s": 0.254781424
+            },
+            "paired_fft": {
+              "cpu_s": 0.292226,
+              "median_stereo_cpu_ms": 6.03537,
+              "wall_s": 0.292271964
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.270851684,
+              "median_stereo_cpu_ms": 5.6544145,
+              "wall_s": 0.270906397
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.274427186,
+              "median_stereo_cpu_ms": 5.611652,
+              "wall_s": 0.274481758
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 12,
+            "paired_primary": 48,
+            "paired_residual": 20
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.258804495,
+              "median_stereo_cpu_ms": 5.3497715,
+              "wall_s": 0.258905609
+            },
+            "paired_fft": {
+              "cpu_s": 0.296223819,
+              "median_stereo_cpu_ms": 6.068301,
+              "wall_s": 0.296273576
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.277270864,
+              "median_stereo_cpu_ms": 5.723533,
+              "wall_s": 0.277336863
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.278794341,
+              "median_stereo_cpu_ms": 5.749828,
+              "wall_s": 0.278856724
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 12,
+            "paired_primary": 48,
+            "paired_residual": 20
+          }
+        }
+      ],
+      "singleton_cpu_ms": {
+        "installed": 3.615175,
+        "paired_fft": 3.9515255,
+        "scalar_dispatch": 3.7911285,
+        "scalar_two_dispatches": 3.8957355
+      },
+      "summary": {
+        "clears_20_percent_gate": false,
+        "median_clocks": {
+          "installed": {
+            "cpu_s": 0.258804495,
+            "median_stereo_cpu_ms": 5.2928715,
+            "wall_s": 0.258905609
+          },
+          "paired_fft": {
+            "cpu_s": 0.296223819,
+            "median_stereo_cpu_ms": 6.03537,
+            "wall_s": 0.296273576
+          },
+          "scalar_dispatch": {
+            "cpu_s": 0.276285425,
+            "median_stereo_cpu_ms": 5.6544145,
+            "wall_s": 0.276338159
+          },
+          "scalar_two_dispatches": {
+            "cpu_s": 0.278794341,
+            "median_stereo_cpu_ms": 5.6558775,
+            "wall_s": 0.278856724
+          }
+        },
+        "paired_per_repeat_ratio": {
+          "installed": [
+            1.1515264489574943,
+            1.1499734528014347,
+            1.1429138056491277,
+            1.147358511764198,
+            1.1445852940073546
+          ],
+          "scalar_dispatch": [
+            1.0947959668882281,
+            1.0918626558277913,
+            1.0814850390993245,
+            1.0789152043817458,
+            1.0683553790202782
+          ]
+        }
+      },
+      "timing_and_carrier_profile_proxy": {
+        "combined_share_proxy": 0.1768863744804011,
+        "profiled_stage_cpu_s": 0.234129997,
+        "uninstrumented_reference_cpu_s": 1.323618044
+      },
+      "transform_checks": {
+        "lower": {
+          "0": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 19200,
+            "transform_size": 4800
+          },
+          "1": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 19200,
+            "transform_size": 4800
+          },
+          "2": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 16384,
+            "transform_size": 4096
+          }
+        }
+      },
+      "visits": 48,
+      "worker": {
+        "cpu": [
+          2
+        ],
+        "ionice": "best-effort: prio 7",
+        "nice": 15,
+        "threads": {
+          "BLIS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        }
+      }
+    },
+    "weak": {
+      "build": {
+        "binary_sha256": "61c8990d325be5aa2ddb60d80d888b49015d1bc91c13fef1293516daa26f2222",
+        "commands": [
+          [
+            "cc",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-Wall",
+            "-Werror",
+            "-c",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-Wall",
+            "-Werror",
+            "-c",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/two_carrier_receiver.c",
+            "-o",
+            "/var/tmp/leo-pair-fft.tGrM6dkb/build/two_carrier_receiver.o"
+          ]
+        ],
+        "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+        "driver_sha256": "4987af866a5b8d89006f3df272bd4f35fe586555e317b65fe76093bd343e8746",
+        "pgo": false,
+        "relinked_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+        "source_sha256": {
+          "timing_first_receiver": {
+            "appended": "deae2176e0668c4ce81dcab5b999777c8b19f1331656e0abddb29c51141cd17f",
+            "injected": "b2fe85ae8f6106192235f6c902fff98da09f261909fd6813e4df5639c0bdbf80",
+            "stock": "936b67cbb9af0201a7e65281756cc9c16f042ac2ad5e84201b1577131c67044a"
+          },
+          "two_carrier_receiver": {
+            "appended": "b06f498f2349f810fdf06b8ebc7a46a06d33421aed1a78baa7d1f5d18d603162",
+            "injected": "4e68bf4ac68c26bbd67c64ac571d55098cd7f33f858611345e02c4e050b4b591",
+            "stock": "4f3326eee5522f02ee05a236f22a41fc1af5bb0f21b6e3fe337711a66226f5f7"
+          }
+        }
+      },
+      "cohort": "weak",
+      "differences": [],
+      "exact_installed_factors_by_rank": [
+        36,
+        22
+      ],
+      "initialization": {
+        "lower": {
+          "installed": {
+            "bytes": 10880424,
+            "cpu_wall_ns": [
+              2798851,
+              2800164
+            ]
+          },
+          "paired_fft": {
+            "bytes": 21837712,
+            "cpu_wall_ns": [
+              2810372,
+              2812103
+            ]
+          },
+          "scalar_dispatch": {
+            "bytes": 10880448,
+            "cpu_wall_ns": [
+              1565271,
+              1565880
+            ]
+          }
+        },
+        "upper": {
+          "installed": {
+            "bytes": 10880424,
+            "cpu_wall_ns": [
+              1374642,
+              1374866
+            ]
+          },
+          "paired_fft": {
+            "bytes": 21837712,
+            "cpu_wall_ns": [
+              2601717,
+              2602668
+            ]
+          },
+          "scalar_dispatch": {
+            "bytes": 10880448,
+            "cpu_wall_ns": [
+              1308209,
+              1308605
+            ]
+          }
+        }
+      },
+      "inputs": [
+        [
+          "DS26-0020-v2502-rx1",
+          "sha256:a7f146320e11c11aee0664a217bc502943222925a14c758ac0d0932b06388223"
+        ],
+        [
+          "DS26-0020-v6100-rx0",
+          "sha256:3aadeb889951cd2ebb53870fdbd3bbbbbfc292c96a731ad1212c9a79f791b242"
+        ],
+        [
+          "DS26-0036-v1479-rx0",
+          "sha256:2bc20f736863fec49fa5adf02f99361d8dc9d8c3ff2762a515071100b5b8567e"
+        ],
+        [
+          "DS26-0036-v1850-rx1",
+          "sha256:042bb7e353a3c985da536d2e70b6f5045fbcec4eabcb582357092e19aba6da90"
+        ],
+        [
+          "DS26-0036-v4196-rx0",
+          "sha256:f2a9296136ff1054d403f274108dea2c2eb1a55bf24a61494579bcb53dbbb604"
+        ],
+        [
+          "DS26-0036-v5358-rx1",
+          "sha256:06437f4ebd715c88782cbbc76dd34088633d90f94ab6eadd9be1f0046005a5b5"
+        ],
+        [
+          "DS26-0066-v0366-rx1",
+          "sha256:9c9805e06dde69510d9ef61155345b02659403eba09cfcf3a5740fc8783369b8"
+        ],
+        [
+          "DS26-0066-v2580-rx0",
+          "sha256:8434f4691d00eed575db150a279b2383008532e29e1892e85d5191345ea47000"
+        ],
+        [
+          "DS26-0066-v3099-rx1",
+          "sha256:5661415c18cd593a0b394b2ac5baa2d39311738f9639b414230bee0ddb656406"
+        ],
+        [
+          "DS26-0162-v1534-rx0",
+          "sha256:2ffbad6607f12aeddb1d90238dd210e911c844001825e43e0c90c02255eefd6c"
+        ],
+        [
+          "DS26-0162-v2579-rx1",
+          "sha256:435bcd0edd60e2e2e4198fe28897d23bf8d9c47122c3cf55ea00333eccc4e77c"
+        ],
+        [
+          "DS26-0162-v5631-rx1",
+          "sha256:44a8a3a6a15dd8a37928847c2d98bf0eef360b49ae325a1cb526bfa80677edb1"
+        ],
+        [
+          "DS26-0162-v5687-rx1",
+          "sha256:fd8658ee1885e04276044ae564200969a948774c7766fab92d5a0010c76c1a15"
+        ],
+        [
+          "DS26-0162-v6113-rx1",
+          "sha256:1766452453270591237ed85b1f87702cc276fb2d1530b5d0a5521d87a8a76713"
+        ],
+        [
+          "DS26-0237-v2268-rx1",
+          "sha256:34c22023efddba02ebff07a44ead34ab9614fa3f792b4385ca1f0d38a1523fa2"
+        ],
+        [
+          "DS26-0237-v4048-rx1",
+          "sha256:7a2946a48ba88d2661948286c86aa848636452080406a29b02d7d69c3f8e84a0"
+        ],
+        [
+          "DS26-0237-v4051-rx1",
+          "sha256:beba19c22e9eb2fca7a14792b405c890e59edfdc008058f9bc9db79aad53208d"
+        ],
+        [
+          "DS26-0237-v4505-rx1",
+          "sha256:7383534abe4746b12367883dd09a2d269fe349be005430b4f2e84d9e5445a0c0"
+        ]
+      ],
+      "repeats": [
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.142544202,
+              "median_stereo_cpu_ms": 7.614592,
+              "wall_s": 0.142599831
+            },
+            "paired_fft": {
+              "cpu_s": 0.169706008,
+              "median_stereo_cpu_ms": 8.8547855,
+              "wall_s": 0.169730124
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.152891765,
+              "median_stereo_cpu_ms": 8.252734,
+              "wall_s": 0.152921277
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.155234573,
+              "median_stereo_cpu_ms": 8.3910105,
+              "wall_s": 0.155273201
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 0,
+            "paired_primary": 18,
+            "paired_residual": 18
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.14240299,
+              "median_stereo_cpu_ms": 7.8659985,
+              "wall_s": 0.142451609
+            },
+            "paired_fft": {
+              "cpu_s": 0.157211235,
+              "median_stereo_cpu_ms": 8.6544745,
+              "wall_s": 0.157243555
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.150832734,
+              "median_stereo_cpu_ms": 8.376287,
+              "wall_s": 0.150859078
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.150270997,
+              "median_stereo_cpu_ms": 8.3239135,
+              "wall_s": 0.150303611
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 0,
+            "paired_primary": 18,
+            "paired_residual": 18
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.140445793,
+              "median_stereo_cpu_ms": 7.7428725,
+              "wall_s": 0.140490828
+            },
+            "paired_fft": {
+              "cpu_s": 0.159261753,
+              "median_stereo_cpu_ms": 8.841838,
+              "wall_s": 0.159283793
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.149809288,
+              "median_stereo_cpu_ms": 8.240198,
+              "wall_s": 0.149829175
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.148848498,
+              "median_stereo_cpu_ms": 8.1742205,
+              "wall_s": 0.148878232
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 0,
+            "paired_primary": 18,
+            "paired_residual": 18
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.137204339,
+              "median_stereo_cpu_ms": 7.5672345,
+              "wall_s": 0.137250855
+            },
+            "paired_fft": {
+              "cpu_s": 0.155496975,
+              "median_stereo_cpu_ms": 8.597486,
+              "wall_s": 0.155521137
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.147807299,
+              "median_stereo_cpu_ms": 8.166394,
+              "wall_s": 0.147828105
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.146408008,
+              "median_stereo_cpu_ms": 8.0471385,
+              "wall_s": 0.146436133
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 0,
+            "paired_primary": 18,
+            "paired_residual": 18
+          }
+        },
+        {
+          "clocks": {
+            "installed": {
+              "cpu_s": 0.138469593,
+              "median_stereo_cpu_ms": 7.8025735,
+              "wall_s": 0.138512242
+            },
+            "paired_fft": {
+              "cpu_s": 0.156739554,
+              "median_stereo_cpu_ms": 8.766898,
+              "wall_s": 0.156761004
+            },
+            "scalar_dispatch": {
+              "cpu_s": 0.147279427,
+              "median_stereo_cpu_ms": 8.106443,
+              "wall_s": 0.147306658
+            },
+            "scalar_two_dispatches": {
+              "cpu_s": 0.146991477,
+              "median_stereo_cpu_ms": 8.254516,
+              "wall_s": 0.147022021
+            }
+          },
+          "paths": {
+            "one_request": 0,
+            "one_residual": 0,
+            "paired_primary": 18,
+            "paired_residual": 18
+          }
+        }
+      ],
+      "singleton_cpu_ms": {
+        "installed": 4.123873,
+        "paired_fft": 4.421829,
+        "scalar_dispatch": 4.3773965,
+        "scalar_two_dispatches": 4.281819
+      },
+      "summary": {
+        "clears_20_percent_gate": false,
+        "median_clocks": {
+          "installed": {
+            "cpu_s": 0.140445793,
+            "median_stereo_cpu_ms": 7.7428725,
+            "wall_s": 0.140490828
+          },
+          "paired_fft": {
+            "cpu_s": 0.157211235,
+            "median_stereo_cpu_ms": 8.766898,
+            "wall_s": 0.157243555
+          },
+          "scalar_dispatch": {
+            "cpu_s": 0.149809288,
+            "median_stereo_cpu_ms": 8.240198,
+            "wall_s": 0.149829175
+          },
+          "scalar_two_dispatches": {
+            "cpu_s": 0.148848498,
+            "median_stereo_cpu_ms": 8.254516,
+            "wall_s": 0.148878232
+          }
+        },
+        "paired_per_repeat_ratio": {
+          "installed": [
+            1.190550058289989,
+            1.103988301088341,
+            1.1339731123167214,
+            1.1333240343076905,
+            1.131942043044786
+          ],
+          "scalar_dispatch": [
+            1.1099748112659957,
+            1.0422885724527144,
+            1.0630966552621224,
+            1.052025008589055,
+            1.0642325081832373
+          ]
+        }
+      },
+      "timing_and_carrier_profile_proxy": {
+        "combined_share_proxy": 0.1576213258157882,
+        "profiled_stage_cpu_s": 0.112307538,
+        "uninstrumented_reference_cpu_s": 0.7125148670000001
+      },
+      "transform_checks": {
+        "lower": {
+          "0": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 19200,
+            "transform_size": 4800
+          },
+          "1": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 19200,
+            "transform_size": 4800
+          },
+          "2": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 16384,
+            "transform_size": 4096
+          }
+        },
+        "upper": {
+          "0": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 19200,
+            "transform_size": 4800
+          },
+          "1": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 19200,
+            "transform_size": 4800
+          },
+          "2": {
+            "exact_bytes": true,
+            "max_abs": 0.0,
+            "same_floats": 16384,
+            "transform_size": 4096
+          }
+        }
+      },
+      "visits": 18,
+      "worker": {
+        "cpu": [
+          2
+        ],
+        "ionice": "best-effort: prio 7",
+        "nice": 15,
+        "threads": {
+          "BLIS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        }
+      }
+    }
+  },
+  "factor_reference_sha256": "dc132cbaac6cb3eddb21ec4c7df950b03eb1713461dac2d50ff0a92ac3e9a13b",
+  "plan_sha256": "00fac5434a275095979377646407a5e1aa60e1e4bc4f0a21961408fd9dc3eb05",
+  "plans": {
+    "carrier_forward": {
+      "paired": "(dft-buffered-4096-x2/2-6\n  (dft-vrank>=1-x2/1\n    (dft-ct-dit/32\n      (dftw-direct-32/32 \"t3fv_32_avx\")\n      (dft-direct-128-x32 \"n1fv_128_avx\")))\n  (dft-r2hc-1\n    (rdft-rank0-iter-ci/8192-x2))\n  (dft-nop))",
+      "stock": "(dft-ct-dit/32\n  (dftw-direct-32/32 \"t3fv_32_avx\")\n  (dft-buffered-128-x32/32-6\n    (dft-direct-128-x32 \"n1fv_128_avx\")\n    (dft-r2hc-1\n      (rdft-rank0-iter-ci/256-x32))\n    (dft-nop)))"
+    },
+    "timing_backward": {
+      "paired": "(dft-buffered-4800-x2/2-6\n  (dft-vrank>=1-x2/1\n    (dft-ct-dit/25\n      (dftw-direct-25/32 \"t3bv_25_avx\")\n      (dft-vrank>=1-x25/1\n        (dft-ct-dit/16\n          (dftw-direct-16/32 \"t3bv_16_avx\")\n          (dft-direct-12-x16 \"n1bv_12_avx\")))))\n  (dft-r2hc-1\n    (rdft-rank0-iter-ci/9600-x2))\n  (dft-nop))",
+      "stock": "(dft-ct-dit/25\n  (dftw-direct-25/32 \"t3bv_25_avx\")\n  (dft-buffered-192-x25/25-6\n    (dft-vrank>=1-x25/1\n      (dft-ct-dit/16\n        (dftw-direct-16/32 \"t3bv_16_avx\")\n        (dft-direct-12-x16 \"n1bv_12_avx\")))\n    (dft-r2hc-1\n      (rdft-rank0-iter-ci/384-x25))\n    (dft-nop)))"
+    },
+    "timing_forward": {
+      "paired": "(dft-buffered-4800-x2/2-6\n  (dft-vrank>=1-x2/1\n    (dft-ct-dit/25\n      (dftw-direct-25/32 \"t3fv_25_avx\")\n      (dft-vrank>=1-x25/1\n        (dft-ct-dit/16\n          (dftw-direct-16/32 \"t3fv_16_avx\")\n          (dft-direct-12-x16 \"n1fv_12_avx\")))))\n  (dft-r2hc-1\n    (rdft-rank0-iter-ci/9600-x2))\n  (dft-nop))",
+      "stock": "(dft-ct-dit/25\n  (dftw-direct-25/32 \"t3fv_25_avx\")\n  (dft-buffered-192-x25/25-6\n    (dft-vrank>=1-x25/1\n      (dft-ct-dit/16\n        (dftw-direct-16/32 \"t3fv_16_avx\")\n        (dft-direct-12-x16 \"n1fv_12_avx\")))\n    (dft-r2hc-1\n      (rdft-rank0-iter-ci/384-x25))\n    (dft-nop)))"
+    }
+  },
+  "profile_sha256": "fc7a810e5ce43968de08c26e1e3726a4e8dbbfb047f5d41675c1aa0a7d4deba5",
+  "raw_sha256": {
+    "dense": "d52f9caceb4e8497a9dcaf20b2adcc70032a5e173e4421ccec05bc71f499c72a",
+    "weak": "31a084e473201c2bfd7e4871f4a6ade3747ea769cd1c7418e651beefc72a8710"
+  }
+}
