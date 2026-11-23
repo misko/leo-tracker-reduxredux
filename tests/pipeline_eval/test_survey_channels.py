@@ -62,3 +62,12 @@ def test_saved_decisions_match_solver_receipts_and_southern_masks():
         assert reference["identity"]["native_sha256"] == entry["mask"]["packet_digest"]
         assert reference["result"]["status"] == entry["decision"]["status"]
         assert entry["quality_screen"] == (case == "south-far")
+
+
+def test_budget_reproduces_frozen_paired_and_summed_projections(policy):
+    budget = import_module("survey_budget")
+    receipt = json.loads((budget.ROOT / "measurements/survey-budget.json").read_bytes())
+    actual = budget.estimate()
+    assert actual == receipt
+    assert actual["projected_stages"]["4"]["summed_ratio"] < 0.5
+    assert actual["projected_stages"]["16"]["summed_ratio"] > 0.5
