@@ -1,0 +1,5 @@
+# Isolate the graph change on genuine short receiver packets
+
+Use the previously sealed full-short detections from physical DS30-0016 and the public southern simulated waveform. Reuse the original candidate's quadratic-graph publications as the control. Change only the track configuration to the installed v3 default, retaining the candidate's full-catalogue solver, early region check, complete numerical grid and standard publisher. Evaluate the original physical and southern containing offers, plus the original southern 52.5 km omission. Pass the same signed short-receiver identity through each verified saved handoff.
+
+Seal all three results before using the evaluation references. Report fix/withhold, horizontal error and RF residual for fixed-zero and fitted calibration separately, owner counts, grid size and numerical CPU. Use an increase of at most 250 m per arm as the existing development accuracy screen. Distinguish this test from the earlier exchange of entire receiver and solver bundles. Use one low-priority Gauss core. No raw reads or fresh installed controls.
