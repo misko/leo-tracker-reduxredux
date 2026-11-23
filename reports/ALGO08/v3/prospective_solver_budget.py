@@ -87,9 +87,10 @@ def plot(result, output):
         budget.text(left + amount / 2, 0, f"{amount:.2f} s", ha="center", va="center", color="white")
     target = half["target_s"]
     budget.axvline(target, color="#7f3b23", linewidth=2)
-    budget.text(target, .30, f"Half of v3\n{target:.2f} s", ha="center", color="#7f3b23")
+    budget.annotate(f"Half of v3\n{target:.2f} s", (target, .30), xytext=(-5, 0),
+                    textcoords="offset points", ha="right", color="#7f3b23")
     budget.legend(loc="lower left", frameon=False, fontsize=8)
-    budget.set(xlim=(0, 25), ylim=(-.75, .75), yticks=[], title="Time through publication", xlabel="Elapsed seconds")
+    budget.set(xlim=(0, 25), ylim=(-.75, .75), yticks=[], title="Acquisition, solve and rendering", xlabel="Elapsed seconds")
     for ax in (pred, budget):
         ax.spines[["left", "top", "right"]].set_visible(False)
         ax.tick_params(axis="y", length=0)
