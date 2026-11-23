@@ -1,15 +1,18 @@
 # Recovering solver time while keeping the original DS30-0402 position
 
-Two changes together reduced the named DS30-0402 process from **73.351 to 65.646 seconds**, starting from the same saved detections and ending after publication and process exit. Both calibration arms kept all 4,821 original ordered assignments and roles, the same positions and RF residuals, the 179-point grid and path, and identical bytes and decoded pixels for all eight figures. This is one development recording with an unusually long numerical solve. [Frozen protocol](constrained-pair-veto-protocol.md) · [Measured receipt](measurements/paired-veto-0402.json.gz) · [Historical timing context](phase-route-challenge.md)
+The fastest solver that reproduced the entire named DS30-0402 publication took **55.830 seconds versus 73.351 seconds for ALGO08v3 (1.31×)**, from identical saved detections through exit. It prepared repeated numerical checks once and stopped an alternative satellite assignment as soon as its completed fitted-calibration arm failed a mandatory track check. Both published arms kept all 4,821 original ordered assignments and roles, positions and RF residuals, the 179-point grid and path, and identical bytes and decoded pixels for all eight figures. This was one development recording with an unusually long solve. The faster arm order was chosen after profiling it. [Fixed-zero-first protocol](constrained-pair-veto-protocol.md) · [Fitted-first trial and receipt](constrained-pair-arm-order.md) · [Historical timing context](phase-route-challenge.md)
+
+![Time and horizontal error for five DS30-0402 runs starting at the same detections](development/paired-veto-0402.png)
 
 | Saved DS30-0402 process | Whole elapsed s | Numerical CPU s | Constrained phase fits | Optimizer visits | Fixed / fitted error km | Associated observations per arm |
 |---|---:|---:|---:|---:|---:|---:|
 | Original named ALGO08v3 | 73.351 | 68.774 | 10 | 393 | 0.864 / 0.860 | 4,821 |
 | Reuse fixed numerical inputs in the original checks | 68.589 | 64.041 | 10 | 393 | 0.864 / 0.860 | 4,821 |
 | Same reuse, then stop a trial after a terminal fixed-zero failure | 65.646 | 61.179 | 5 | 335 | 0.864 / 0.860 | 4,821 |
+| Same reuse, then stop a trial after a terminal fitted-calibration failure | 55.830 | 51.471 | 5 | 58 | 0.864 / 0.860 | 4,821 |
 | Earlier cumulative solver with different observation selection | 23.749 | 20.405 | — | — | 0.954 / 0.949 | 4,680 |
 
-Each row uses the original named 20 ms detector output. The first and fourth are the original matched replay. The middle two are separate subsequent candidate launches on the same staged inputs. Each timed process includes its own Python startup, numerical solution, durable tmpfs publication and verification. The I/O cache state and process order differed across launches. [Original and cumulative pair](prospective-0402-solver.md) · [Exact gate reuse](stock-exact-gate-0402.md)
+Each row uses the original named 20 ms detector output. The first and last are the original matched replay. The middle three are separate subsequent candidate launches on the same staged inputs. Each timed process includes its own Python startup, numerical solution, durable tmpfs publication and verification. The I/O cache state and process order differed across launches. [Original and cumulative pair](prospective-0402-solver.md) · [Exact gate reuse](stock-exact-gate-0402.md) · [Figure generator](paired_veto_figure.py)
 
 ## Why the second change saved 2.94 seconds
 
@@ -19,7 +22,11 @@ Fixed-zero needed **335** unique optimizer visits. The omitted fitted arm origin
 
 The rule depends only on the completed, original track gates. A trial whose first arm passes still runs the second arm. The partial rejected trial records the actually evaluated arm. An exception that would arise only in omitted work is consequently unobservable. Tests exercise a later successful alternative, passing and failing track lists, an unfinished first arm, propagation of executed numerical failures and restoration of the original functions. The physical replay verifies complete selected outputs and mandatory gates for this rejection. A different recording that actually accepts a reassignment remains a transfer check. [Implementation](constrained_pair_veto.py) · [Component tests](../../../tests/pipeline_eval/test_constrained_pair_veto.py)
 
-The original 0402 recording took 121.438 s from raw I/Q through exit, so its individual half-time budget is **60.719 s**. The measured fixed-zero-first numerical solve alone consumed **61.179 CPU s** on one core. Even at zero input wait, this implementation needs another numerical saving plus enough time for all 8.177 GB of signed input and the web outputs. That individual arithmetic illustrates why a larger exact solver gain or a less expensive candidate that recovers the missing observations still matters. Both release gates are panel statistics. [Original raw and saved boundaries](phase-route-challenge.md)
+The original 0402 recording took 121.438 s from raw I/Q through exit, so its individual half-time budget is **60.719 s**. The fitted-first saved run leaves just **4.889 s** for 8.177 GB of original input if those separate process costs are added. That would take roughly **1,670 MB/s** through detection. The historical original acquisition took **50.741 s**. Startup may overlap in an integrated build, and both release gates are panel statistics. This budget points toward recovering v3-quality observations at a cost much closer to the cumulative solver's. [Original raw and saved boundaries](phase-route-challenge.md)
+
+## Which historical reassignments really needed both arms?
+
+An independent historical check replayed both orderings on the archived equal-prior DS23 policy. Among **410 recordings**, 95 had at least one proposed reassignment. All **101 of 137** paired-valid proposals passed both arms' track checks. In the remaining **36**, both arms had a failed track. Either order reproduced all 410 published decisions, including **74 recordings that actually accepted a replacement**. The check uses the reported final gates, RF scores and assignment identities. The archive omits the per-arm constrained timing and a per-trial rescue flag, so the 36 rejected trials cannot all be counted as opportunities for this scoped optimization. This verifies decision logic on archived final evidence. It supplies no additional raw or solver timings. [Historical benchmark](../../2026_10_22_ds23_family_cavity_full_assessment/README.md) · [Reproduce the audit](paired_veto_history.py)
 
 ## Reproduction
 
