@@ -17,6 +17,14 @@ RELEASE_PINS = {
 }
 TRACKS = "leo/analysis/localization_v3/tracks.py"
 TRACK_CONFIG = "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
+CURVATURE_SPAN_S = 20
+NAMED_ORDER_PINS = {
+    "src/leo/application/localization_v3.py": "0642e5de4e765e89791f9ea827950a0e29fdad01f16d9f91e8f2e19b11e51cf6",
+    "src/leo/application/localization_v3_engine.py": "1649cac660237a6c097cbc915c0f8e409bfe7fe45f53f1f546d0d218751b6e4e",
+    "payload/tools/algo08_position.py": "cd5c728e7f81b675b796d69713ca66e601a54534bdbf1d606dc8ecf16c4c138c",
+    "payload/tools/pipeline_eval/variants/v5_core.py": "30e6f22ab4b49d03cf8536645cbdebb8fec2afa513f3cfa4a9f3163590a84407",
+    "payload/tools/pipeline_eval/variants/experimental/regional_bound_guard.py": "d8a81c561bf8652d1e8521bcbf4b357198a483f5cb364613772e2e3ec1f77aad",
+}
 
 
 def lane_counts(rows, minimum):
@@ -58,7 +66,27 @@ def time_support(rows, minimum, min_span_s, max_gap_s):
     return dict(proven=True, possible_time_support=False, largest_eligible_count_span_s=largest_span)
 
 
-def prove(native, assets, *, use_time_support=False):
+def curvature_extent(rows):
+    """Every installed track is a subset of one unchanged binary64 time lane."""
+    import numpy as np
+
+    lanes = defaultdict(list)
+    for row in rows:
+        if not isfinite(row["time_s"]):
+            raise ValueError("Nonfinite time cannot certify curvature")
+        lanes[row["actual_rf_hz"], row["receiver"], row["channel"]].append(row["time_s"])
+    with np.errstate(over="ignore", invalid="ignore"):
+        extents = [dict(actual_rf_hz=rf, receiver=rx, channel=ch,
+                        span_s=float(np.ptp(np.asarray(times, dtype=np.float64))))
+                   for (rf, rx, ch), times in sorted(lanes.items())]
+    if not all(isfinite(lane["span_s"]) for lane in extents):
+        raise ValueError("Overflowing time extent cannot certify curvature")
+    maximum = max((lane["span_s"] for lane in extents), default=0.)
+    return dict(proven=maximum < CURVATURE_SPAN_S, largest_lane_span_s=maximum,
+                required_track_span_s=CURVATURE_SPAN_S, lanes=extents)
+
+
+def prove(native, assets, *, use_time_support=False, use_curvature_extent=False):
     import numpy as np
     import empty_bootstrap as staged
     from leo.analysis.glrt_frequency_input import frequency_evidence
@@ -79,6 +107,16 @@ def prove(native, assets, *, use_time_support=False):
             counts.update(time_support(rows, config["min_points"], **bounds), **bounds)
     except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
         return dict(proven=False, reason=f"could not certify installed graph: {exc}")
+    if use_curvature_extent:
+        try:
+            for name, pin in NAMED_ORDER_PINS.items():
+                prefix, relative = name.split("/", 1)
+                staged.checked((src if prefix == "src" else staged.PAYLOAD) / relative, pin)
+            extent = curvature_extent(rows)
+        except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
+            extent = dict(proven=False, reason=f"could not certify named curvature: {exc}")
+        counts["curvature_extent"] = dict(extent, named_order_source_sha256=NAMED_ORDER_PINS,
+                                           native_sha256=canonical_digest(native) if extent["proven"] else None)
     return dict(counts, causal_cutoff_utc_ns=metadata["causal_cutoff_utc_ns"],
                 native_sha256=canonical_digest(native) if counts["proven"] else None,
                 release_sources=RELEASE_PINS, track_config_sha256=TRACK_CONFIG,

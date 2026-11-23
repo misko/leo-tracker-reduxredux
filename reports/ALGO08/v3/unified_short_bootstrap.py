@@ -107,7 +107,7 @@ def layout_renderer(scan, enabled, audit, *, direct_residuals=False, direct_orbi
 
 
 def publish_active(args, publication, specification, handoff, layout_audit, *, graph_audit=None, png_read_audit=None,
-                   detector_import_audit=None):
+                   detector_import_audit=None, no_active_curvature_sha256=None):
     from exact_graph_execution import graph_execution
     from full_short_run import geographic_projection
     import joint_publication
@@ -178,7 +178,8 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
         result = joint_publication.run(options, raw_context=active_publication, early_regional=True,
                                        keep_selected_rows=True, geographic_projector=projection,
                                        reuse_cold_rows=True, reuse_grid_phase_states=True,
-                                       phase_forecast=phase_forecast if forecast_audit is not None else None)
+                                       phase_forecast=phase_forecast if forecast_audit is not None else None,
+                                       no_active_curvature_sha256=no_active_curvature_sha256)
     if forecast_audit is not None:
         result["exact_phase_forecast"] = forecast_audit
     if survivor_witness is not None:
@@ -281,20 +282,23 @@ def run(args):
         reason = staged.empty_reason(native, frequency_evidence)
         graph_proof = None
         time_proof = getattr(args, "prove_graph_time_support", False)
-        if reason is None and (args.prove_empty_graph or time_proof):
+        curvature_proof = getattr(args, "prove_no_active_curvature", False)
+        if reason is None and (args.prove_empty_graph or time_proof or curvature_proof):
             from short_graph_guard import prove
 
-            graph_proof = prove(native, assets, use_time_support=True) if time_proof else prove(native, assets)
-            if graph_proof["proven"]:
+            graph_proof = prove(native, assets, use_time_support=time_proof, use_curvature_extent=curvature_proof)
+            if (args.prove_empty_graph or time_proof) and graph_proof["proven"]:
                 reason = "no_active_curvature"
         before = [name for name in staged.SCIENTIFIC_IMPORTS if name in sys.modules]
         if before:
             raise ValueError(f"Scientific imports crossed the receiver-first boundary: {before}")
         handoff = Handoff(session, inventory_digest, effective_detector, native)
         if reason is None:
+            extent = (graph_proof or {}).get("curvature_extent", {})
             terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
                                                 graph_audit=graph_audit, png_read_audit=png_read_audit,
-                                                detector_import_audit=detector_import_audit)
+                                                detector_import_audit=detector_import_audit,
+                                                no_active_curvature_sha256=extent.get("native_sha256"))
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
@@ -367,6 +371,8 @@ if __name__ == "__main__":
         parser.add_argument("--"+name, type=Path, required=True)
     parser.add_argument("--prove-graph-time-support", action="store_true",
                         help="Prove no graph path spans the required time on small signed packets")
+    parser.add_argument("--prove-no-active-curvature", action="store_true",
+                        help="Keep named-v3 withholding precedence when every authenticated lane is shorter than 20 seconds")
     parser.add_argument("--named-survivor-finish", action="store_true",
                         help="Isolate a disputed satellite family and run the original qualified final fit on the accepted observations")
     parser.add_argument("--prove-empty-graph", action="store_true",

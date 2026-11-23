@@ -117,7 +117,7 @@ def completed_route(solves, attempts, regional, returned, *, stock, early_region
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
         raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
         reuse_cold_rows=False, profiled_gamma_library=None, reuse_grid_phase_states=False,
-        local_future_policy=None, phase_forecast=None):
+        local_future_policy=None, phase_forecast=None, no_active_curvature_sha256=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -215,8 +215,14 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                         from early_region import before_fit
                         from tools.pipeline_eval.variants.experimental import regional_bound_guard
 
+                        named_inactive = False
+                        if no_active_curvature_sha256 is not None:
+                            from leo.contracts.digests import canonical_digest
+
+                            named_inactive = canonical_digest(native) == no_active_curvature_sha256
                         route = before_fit(route, reader, regional_bound_guard.causal_probes, regional,
-                                           live_catalogue.match, skip_empty=getattr(args, "skip_empty_proof", False))
+                                           live_catalogue.match, skip_empty=getattr(args, "skip_empty_proof", False),
+                                           named_inactive=named_inactive)
                 if track_config is not None:
                     factory = algo08_position.TrackConfig
                     stack.enter_context(patch.object(algo08_position, "TrackConfig",
