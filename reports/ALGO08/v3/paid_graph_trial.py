@@ -17,36 +17,43 @@ class SamePacket(Exception):
     pass
 
 
+def prepare_paid(native, rows, clocks, identity, mode, *, select_paid=None):
+    from leo.analysis.graph_tracklets import fit_lane
+    from leo.analysis.polynomial_tracklets import TrackConfig
+    from leo.contracts.digests import canonical_digest
+
+    config_blob = (RELEASE / "assets/tracks.json").read_bytes()
+    config_sha = sha256(config_blob).hexdigest()
+    if config_sha != "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a":
+        raise ValueError("Installed track configuration differs")
+    config = TrackConfig(**json.loads(config_blob)["config"])
+    source = native["source"]
+    start = process_time()
+    if select_paid is None:
+        paid = paid_visits(rows)
+        picks, stats = select(rows, paid, source["sample_rate_hz"], config, fit_lane, mode == "graph")
+        stats.update(paid_lanes=2 * len(paid), mask_sha256=canonical_digest(sorted(paid)),
+                     paid_native_cpu_s=sum(t for r, t in zip(rows, clocks, strict=True) if r["visit_index"] in paid)/1e9)
+    else:
+        picks, stats = select_paid(rows, clocks)
+    stats.update(selection_cpu_s=process_time() - start, lanes=len(rows), returned=sum(map(bool, picks)),
+                 config_sha256=config_sha)
+    probes = [dict(r, candidates=p) for r, p in zip(rows, picks, strict=True)]
+    binding = canonical_digest(["cancellation", source["raw_recording_authority_digest"],
+                                identity["ledger"]["detector_sha256"], probes])
+    native = dict(native, source=dict(source, probes=probes, analysis_manifest_sha256=binding),
+                  provenance=dict(native["provenance"], run_id="blind-compact-" + binding[7:39]))
+    return native, config, stats
+
+
 def run(case, mode, out, prior=None, *, observe=None, select_paid=None):
     staged = {}
 
     def load():
-        from leo.analysis.graph_tracklets import fit_lane
-        from leo.analysis.polynomial_tracklets import TrackConfig
         from leo.contracts.digests import canonical_digest
 
         native, rows, _, clocks, archive, offer, identity = bound_inputs(case)
-        config_blob = (RELEASE / "assets/tracks.json").read_bytes()
-        config_sha = sha256(config_blob).hexdigest()
-        if config_sha != "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a":
-            raise ValueError("Installed track configuration differs")
-        config = TrackConfig(**json.loads(config_blob)["config"])
-        source = native["source"]
-        start = process_time()
-        if select_paid is None:
-            paid = paid_visits(rows)
-            picks, stats = select(rows, paid, source["sample_rate_hz"], config, fit_lane, mode == "graph")
-            stats.update(paid_lanes=2 * len(paid), mask_sha256=canonical_digest(sorted(paid)),
-                         paid_native_cpu_s=sum(t for r, t in zip(rows, clocks, strict=True) if r["visit_index"] in paid)/1e9)
-        else:
-            picks, stats = select_paid(rows, clocks)
-        stats.update(selection_cpu_s=process_time() - start, lanes=len(rows), returned=sum(map(bool, picks)),
-                     config_sha256=config_sha)
-        probes = [dict(r, candidates=p) for r, p in zip(rows, picks, strict=True)]
-        binding = canonical_digest(["cancellation", source["raw_recording_authority_digest"],
-                                    identity["ledger"]["detector_sha256"], probes])
-        native = dict(native, source=dict(source, probes=probes, analysis_manifest_sha256=binding),
-                      provenance=dict(native["provenance"], run_id="blind-compact-" + binding[7:39]))
+        native, config, stats = prepare_paid(native, rows, clocks, identity, mode, select_paid=select_paid)
         identity.update(mode=mode, selection=stats, native_sha256=canonical_digest(native))
         if observe is not None:
             observe(native, identity, config)
