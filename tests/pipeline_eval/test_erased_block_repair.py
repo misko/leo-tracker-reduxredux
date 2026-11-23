@@ -17,6 +17,14 @@ def test_lower_median_depends_only_on_ordered_occupied_block_indices(monkeypatch
         core.central_block([dict(block=1, held=0)])
 
 
+def test_enrolment_binds_the_sealed_coverage_bytes_and_fixed_blocks(monkeypatch):
+    load(monkeypatch)
+    driver = import_module("erased_block_repair_trial")
+    weak, transfer = (driver.enrol(case) for case in driver.CASES)
+    assert weak["seconds"] == [10, 20] and len(weak["held_ids"]) == 9
+    assert transfer["seconds"] == [50, 60] and len(transfer["held_ids"]) == 21
+
+
 def test_held_erasure_precedes_history_and_guards_all_future_training_lanes(monkeypatch):
     core = load(monkeypatch)
     probe = dict(visit_index=10, receiver_id=0, channel=1, actual_rf_hz=11e9, valid_start_counter=100_000_000,

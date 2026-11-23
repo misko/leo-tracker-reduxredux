@@ -22,7 +22,7 @@ from full_short_raw import RECIPE_SHA
 HERE = Path(__file__).resolve().parent
 CASES = ("DS30-0016", "DS30-0057")
 COVERAGE = HERE / "measurements/crossfit-future-coverage.json.gz"
-COVERAGE_PIN = "db0d5ab68802acb69bf2bebc3da75e33adda5bbf9b2d1d5ed16479240b736"
+COVERAGE_PIN = "db0d5ab68802acb69bf2bebc3da75e33adda5bbf9b2d1d5ed65d16479240b736"
 GEO = Path("/var/tmp/leo-dense-short-pins.0zaX7eSH/geographic.so")
 REGIONAL = Path("/var/tmp/leo-regional-track.O238AD0C/scores.so")
 
