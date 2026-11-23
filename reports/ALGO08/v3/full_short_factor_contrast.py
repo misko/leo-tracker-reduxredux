@@ -157,7 +157,9 @@ def enrolled():
 
 
 def worker(saved, digest, output, inventory_path):
-    from joint_publication import run
+    import joint_publication
+
+    runtime = joint_publication.configuration()
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_scan import FastScanStore, FastSegmentSource
     from leo.storage.short_window import ShortWindowReader
@@ -184,9 +186,10 @@ def worker(saved, digest, output, inventory_path):
 
     args = SimpleNamespace(recording=recording, archive=ARCHIVE, region=PAIR / "offer.json", output=output,
                            saved=saved, saved_digest=digest, stock_control=True, verify_images=True, observe_prepared=graph)
-    with (patch.object(FastScanStore, "inventory", metadata_only),
+    with (patch.object(joint_publication, "configuration", return_value=runtime),
+          patch.object(FastScanStore, "inventory", metadata_only),
           patch.object(FastSegmentSource, "windows", deny_waveform), patch.object(ShortWindowReader, "__init__", deny_waveform)):
-        run(args, saved_receiver=native["provenance"]["detector_sha256"][7:])
+        joint_publication.run(args, saved_receiver=native["provenance"]["detector_sha256"][7:])
 
 
 def bind_publication(root, native, expected):
