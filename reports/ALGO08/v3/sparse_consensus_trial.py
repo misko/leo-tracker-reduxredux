@@ -14,10 +14,9 @@ CASES = ("DS30-0016", "south-containing", "south-far")
 MODES = ("complete", "buffered")
 
 
-def load(case, mode):
+def bound_inputs(case):
     from reports.ALGO08.v3.anchor_sky import sealed_inputs
-    from anchor_orbit_census import saved_ledger, selected
-    from leo.contracts.digests import canonical_digest
+    from anchor_orbit_census import saved_ledger
 
     physical = case == CASES[0]
     name = case if physical else "south"
@@ -33,6 +32,15 @@ def load(case, mode):
         _, archive, offer, _, current = inputs(case)
         if current["raw_authority"] != source["raw_authority"] or archive_identity(archive) != archive_identity(reader.root):
             raise ValueError("Southern offer belongs to another input")
+    identity = dict(case=case, archive=archive_identity(archive), offer=offer, source=source, ledger=binding)
+    return native, rows, original, clocks, archive, offer, identity
+
+
+def load(case, mode):
+    from anchor_orbit_census import selected
+    from leo.contracts.digests import canonical_digest
+
+    native, rows, original, clocks, archive, offer, identity = bound_inputs(case)
     paid = paid_visits(rows)
     start = process_time()
     sparse = buffered(rows, paid, native["source"]["sample_rate_hz"])
@@ -45,11 +53,11 @@ def load(case, mode):
                  buffered_selections=sum(map(bool, sparse)), mask_sha256=canonical_digest(sorted(paid)))
     if mode == "buffered":
         probes = [dict(r, candidates=c) for r, c in zip(rows, sparse, strict=True)]
-        digest = canonical_digest(["cancellation", source["raw_authority"], binding["detector_sha256"], probes])
+        digest = canonical_digest(["cancellation", identity["source"]["raw_authority"],
+                                   identity["ledger"]["detector_sha256"], probes])
         native = dict(native, source=dict(native["source"], probes=probes, analysis_manifest_sha256=digest),
                       provenance=dict(native["provenance"], run_id="blind-compact-" + digest[7:39]))
-    identity = dict(case=case, mode=mode, archive=archive_identity(archive), offer=offer, source=source,
-                    ledger=binding, replay=stats, native_sha256=canonical_digest(native))
+    identity.update(mode=mode, replay=stats, native_sha256=canonical_digest(native))
     return native, archive, offer, {}, identity
 
 
