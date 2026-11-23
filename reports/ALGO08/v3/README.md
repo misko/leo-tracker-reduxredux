@@ -37,6 +37,8 @@ install -m 0755 reports/ALGO08/v3/run "$work/run"
 
 ### Evidence at naming
 
+For the subsequent one-core trial of early receiver stopping, solver layout reuse and regional pruning, see the [component ceilings and end-to-end comparison](bounds-trial.md).
+
 The installed launcher replayed DS30-0374 from saved I/Q in the single-core slot. All 9,288 detector probes, both calibration-arm positions and owners, path and grid scientific digests, and all eight PNG file hashes matched the corresponding frozen candidate publication. [Gauss replay and artifact digests](gauss-smoke.json)
 
 On the first 55 of 100 assigned DS30 recordings, median paired and summed elapsed speedups over ALGO08v2 were 1.75× and 1.79×. ALGO08v2 returned 54 fixes and ALGO08v3 returned 52. The horizontal error matched on every shared fix for both calibration fits. ALGO08v3 stopped at an orbit-interpolation boundary on DS30-0022 and DS30-0129. Both builds withheld on DS30-0227. All physical DS30 recordings come from one site. The research version was named at the user's request before the full panel completed.
