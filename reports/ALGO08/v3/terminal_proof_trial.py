@@ -68,6 +68,7 @@ def run(root):
 def score(root):
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 
     results = {}
     for case, order in ORDERS.items():
@@ -83,10 +84,17 @@ def score(root):
                     or clock["status"] or canonical_digest(terminal) != receipt["terminal_sha256"]
                     or canonical_digest(rebuilt) != canonical_digest(report["evidence"])):
                 raise ValueError("Unbound terminal, changed offer, or scientific publication differs")
+            numerical = dict(rebuilt)
+            if receipt["decision"] == "complete":
+                grid = FastStandardAnalysisStore(folder).position_grid(receipt["run_id"])
+                if not grid["complete"]:
+                    raise ValueError("Incomplete numerical grid")
+                numerical["grid"] = canonical_digest({k: v for k, v in grid.items() if k != "elapsed_seconds"})
             pair[arm] = dict(clock=clock, cache=read(folder / "proof-reuse.json"), solve=report["solve"],
                              decision=receipt["decision"], terminal=receipt["terminal_sha256"], arms=terminal["arms"],
-                             owners_sha256=canonical_digest(report["selected_rows"]), artifacts=rebuilt)
-        science = ("decision", "terminal", "arms", "owners_sha256", "artifacts")
+                             owners_sha256=canonical_digest(report["selected_rows"]), artifacts=rebuilt,
+                             scientific_evidence_sha256=canonical_digest(numerical))
+        science = ("decision", "terminal", "arms", "owners_sha256", "scientific_evidence_sha256")
         if any(pair["cached"][k] != pair["plain"][k] for k in science):
             raise ValueError("Cache changed scientific results")
         results[case] = pair
