@@ -172,7 +172,7 @@ def cumulative(rows):
                 candidate_failures=sum("error" in r["runs"]["candidate"] for r in rows))
 
 
-def run(output, short, geographic, regional):
+def run(output, short, geographic, regional, resume=False):
     settings = host()
     build = pairs.verified_v3(pairs.NAMED_V3)
     checked(HERE / "full_short_run.py", RUN_SOURCE)
@@ -181,7 +181,8 @@ def run(output, short, geographic, regional):
                  for name, path in dict(short=short, geographic=geographic, regional=regional).items()}
     query = cache_residency.load_query(checked(CACHE_LIB, CACHE_SHA))
     verified = [assignment(*row[:4]) for row in CASES]
-    output.mkdir()
+    if not resume:
+        output.mkdir()
     store, env = FastScanStore(output), environment(output)
     python = str(RELEASE / "venv/bin/python")
     subprocess.run([python, "-Bc", "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
@@ -189,8 +190,21 @@ def run(output, short, geographic, regional):
     results = []
     for (case, digest, decision, visits, order), (pair, archived) in zip(CASES, verified, strict=True):
         work = output / case
-        work.mkdir()
-        (work / "stock").mkdir()
+        if resume and (work / "result.json").is_file():
+            previous = read(work / "result.json")
+            if previous["original_pair_sha256"] != digest or tuple(previous["order"]) != order:
+                raise ValueError("Resume changes the sealed first case's assignment")
+            for item in previous["runs"].values():
+                require_warm(item["cache"])
+            previous["cache_mode"] = "fully_warm"
+            results.append(previous)
+            continue
+        if resume and work.exists():
+            if sorted(p.name for p in work.iterdir()) != ["stock"] or any((work / "stock").iterdir()):
+                raise ValueError("Resume requires an unmeasured case with empty outputs")
+        else:
+            work.mkdir()
+            (work / "stock").mkdir()
         recording = Path(pair["recording"])
         session, input_digest, inventory = store.inventory(recording, verify_windows=False)
         if session != archived["receipt"]["session_id"] or inventory["window_count"] != visits:
@@ -206,13 +220,22 @@ def run(output, short, geographic, regional):
         for arm in order:
             page_size = os.sysconf("SC_PAGE_SIZE")
             cache = cache_residency.bound_snapshot(store, recording, manifests, page_size, query)
-            initial = cache
-            if cache["cached_pages"] != cache["observed_file_pages"]:
+            observations = [cache]
+            previous_warm = all(item["fully_warm"] for item in runs.values())
+            if previous_warm and cache["cached_pages"] != cache["observed_file_pages"]:
                 warm_recording(manifests)
                 cache = cache_residency.bound_snapshot(store, recording, manifests, page_size, query)
-            require_warm(cache)
+                observations.append(cache)
+            try:
+                require_warm(cache)
+                fully_warm = True
+            except ValueError as error:
+                fully_warm = False
+                print(f"Natural-cache fallback for {case} {arm}: {error}", flush=True)
             timed = measure(commands[arm], env, work / arm)
-            runs[arm] = timed | dict(cache=cache, cache_before_warming=initial, command=list(map(str, commands[arm])))
+            runs[arm] = timed | dict(cache=cache, cache_before_warming=observations[0],
+                                     cache_warming_observations=observations, fully_warm=fully_warm,
+                                     command=list(map(str, commands[arm])))
             if timed["exit_code"]:
                 runs[arm]["error"] = f"Process exited {timed['exit_code']}"
             else:
@@ -221,9 +244,10 @@ def run(output, short, geographic, regional):
                 except Exception as error:
                     runs[arm]["error"] = f"{type(error).__name__}: {error}"
         assignment(case, digest, decision, visits)
+        cache_mode = "fully_warm" if all(item["fully_warm"] for item in runs.values()) else "natural_cache_fallback"
         row = dict(case=case, order=order, issued=visits, expected_decision=decision, archive=pair["archive"],
                    original_pair_sha256=digest, recording=str(recording), region_file=pair["region"],
-                   region=archived["receipt"]["region"], runs=runs,
+                   region=archived["receipt"]["region"], cache_mode=cache_mode, runs=runs,
                    missed_fix=decision == "complete" and runs["candidate"].get("decision") != "complete",
                    false_fix=decision == "withheld" and runs["candidate"].get("decision") == "complete")
         write(work / "result.json", row)
@@ -239,6 +263,7 @@ def run(output, short, geographic, regional):
               (HERE / "short-raw-diagnostic-protocol.md").read_bytes()).hexdigest(),
           driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), cache_library_sha256=CACHE_SHA,
           reference_audit_sha256=REFERENCE_SHA256, cases=results,
+          resumed_unmeasured_second_case=resume,
           cumulative=[cumulative(results[:n]) for n in (1, 2)]))
 
 
@@ -246,6 +271,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("output", "short", "geographic", "regional"):
         parser.add_argument(name, type=Path)
+    parser.add_argument("--resume", action="store_true", help="Preserve a sealed first case and complete an unmeasured second case")
     args = parser.parse_args()
     with pairs.single_core_slot(2):
         run(**vars(args))
