@@ -123,7 +123,9 @@ def run(root, short, geographic, regional, block):
     label, pin, decision, visits, _ = CASES[0]
     tiny, recorded = assignment(label, pin, decision, visits)
     weak = read(checked(REFERENCE, REFERENCE_PIN))
-    if any(weak[k] != v for k, v in assigned(short).items()) or weak != frozen["weak"]["binding"]["request"]:
+    basic = assigned(short)
+    if (any(weak[k] != v for k, v in basic.items()) or basic != frozen["weak"]["binding"]["request"]
+            or weak["inventory_sha256"] != frozen["weak"]["binding"]["inventory"]):
         raise ValueError("The DS30-0016 causal assignment changed")
     assignments = {
         "tiny": (tiny["recording"], tiny["archive"], tiny["region"], visits, recorded["raw_authority"], ("stock", "candidate")),
