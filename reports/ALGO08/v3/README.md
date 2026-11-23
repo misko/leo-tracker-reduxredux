@@ -14,6 +14,10 @@ The receiver verifies all fractional scores, uses both scans and reads compresse
 | Gauss payload archive SHA-256 | `96f3c6e74264f1bbfea58e78337b4ec8d9160ddad6b360af2ab36dd300ba3eba` |
 | Required Gauss numerical environment | `/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c` |
 
+### Work toward another 2× on one core
+
+Two matched warm DS30 recordings took **12.108 s on v3 and 9.075 s on the combined research candidate**, a **1.33×** speedup from original I/Q through exit. One fixed and one withheld. On another physical recording, DS30-0155, starting both solvers from identical detections reduced runtime through publication from **25.571 to 18.271 s**, but increased horizontal error by **713 m** with calibration fixed at zero and **620 m** with it fitted. Both produced all eight figures. In a separate retrospective India simulation, both solvers published a false fix when the offered region excluded the receiver by 1.5 km. These measurements prioritize preserving observation selection, accelerating the expensive optimizer evaluations and testing whole receiver-search savings before widening the raw benchmark. [Ten ranked experiments and evidence](https://github.com/misko/leo-tracker-reduxredux/blob/7cef8c3d0dc58755ecaab38f48b475b4f9a6f6be/reports/ALGO08/v3/next-2x-after-rank-census.md)
+
 ### Run on Gauss
 
 ```sh
