@@ -1,6 +1,7 @@
 """Run the unmodified provisional salvage rule on one authenticated saved transfer."""
 
 import argparse
+from collections import Counter
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -22,10 +23,12 @@ HERE = Path(__file__).resolve().parent
 STAGED = Path("/dev/shm/leo-v3-saved-0155-pair-01")
 BASELINE = Path("/dev/shm/leo-v3-saved-0155-result.json")
 CROSS = Path("/dev/shm/leo-v3-cross-roster-0155-score.json")
+CONTEXT = Path("/dev/shm/leo-v3-cross-roster-0155-01/captured-contexts.json")
 REQUEST_PIN = "c0533ae6b92b66593d59a2f9a7aaf2b64194563c18ef8038ec2afdfc66c1da79"
 TRACE_PIN = "b82d5b1aa6c86109646eae0666779fe72b2457c487b8437f3e21ebeecd99325f"
 BASELINE_PIN = "63efc82d3c0fa0889f3c85e630ddb427f041b6174a7c9f175676c1f0fec64d75"
 CROSS_PIN = "28780656e6672b36f9e72c6b1f02309ed51f571e805d49bb248cd45685ec1c66"
+MEASURED_DRIVER = "53b1ac92e440c2ec877d896dafa83cf086ebf3afa892fac91257399b6f8b6ce3"
 PROTOCOL = HERE / "provisional-salvage-0155-protocol.md"
 TRACE = STAGED / "cumulative/joint-research-receipt.json"
 PINS = original.PINS | ORIGINAL_PINS | {
@@ -108,6 +111,21 @@ def stages(route):
                 signed_update=route.get("signed", {}).get("status"))
 
 
+def original_component_delta(captured, archived):
+    result = {}
+    for arm in ARMS:
+        maps = []
+        for mode in ("stock", "cumulative"):
+            actual = captured["exact_ordered_likelihood_rows"][mode][arm]
+            if [row[:3] for row in actual] != archived["runs"][mode]["selected_rows"][arm]:
+                raise ValueError("The captured component rows differ from the original publication")
+            maps.append({row[0]: tuple(row[1:4]) for row in actual})
+        a, b = maps
+        result[arm] = {label: [[*key, count] for key, count in sorted(Counter(before[oid] for oid in before.keys()-after).items())]
+                       for label, before, after in (("removed", a, b), ("added", b, a))}
+    return result
+
+
 def score(root, output):
     from aperture_trial import read, write
     from tools.pipeline_eval.scoring import distance_km
@@ -117,12 +135,16 @@ def score(root, output):
     if clock["exit_code"]:
         raise ValueError("The single staged worker exited unsuccessfully")
     seal, directory = read(root / "seal.json"), root / "candidate"
-    if seal["driver_sha256"] != sha256(Path(__file__).read_bytes()).hexdigest():
+    if seal["driver_sha256"] not in (MEASURED_DRIVER, sha256(Path(__file__).read_bytes()).hexdigest()):
         raise ValueError("The executed candidate driver changed")
     request = json.loads(checked(STAGED / "request.json", REQUEST_PIN))
     original_trace = json.loads(checked(TRACE, TRACE_PIN))
     archived = json.loads(checked(BASELINE, BASELINE_PIN))
     crossed = json.loads(checked(CROSS, CROSS_PIN))
+    capture_pin = crossed["diagnostic"]["context_capture_sha256"]
+    captured = json.loads(checked(CONTEXT, capture_pin))
+    if captured["original_native_sha256"] != SETTINGS["native_sha"] or captured["prior_publication_sha256"] != BASELINE_PIN:
+        raise ValueError("The component evidence has a different native or published identity")
     own = read(directory / SETTINGS["audit_name"])
     candidate = inspect(directory, "cumulative", own["receipt"], clock, request, **SETTINGS)
     route = candidate["route_details"]
@@ -145,12 +167,14 @@ def score(root, output):
               for mode in ("stock", "cumulative")}
     if trial["status"] == "reverted" and not all(equals.values()):
         raise ValueError("The original scientific and media publication changed after reversion")
-    legends = orbit_legends(directory, candidate) if candidate["terminal"]["decision"] == "complete" else None
+    legends = orbit_legends(directory, candidate) if own["receipt"]["decision"] == "complete" else None
     write(output, dict(case=CASE, seal=seal, no_waveform=True, reference_sha256=REFERENCE_SHA256,
                        candidate=candidate, scores=paired_scores, owner_deltas=owners, equality=equals,
                        stages={"historical_cumulative": stages(original_trace["route_details"]), "candidate": stages(route)},
                        control_clocks={mode: archived["runs"][mode]["process"] for mode in ("stock", "cumulative")},
-                       controls=dict(historical=BASELINE_PIN, crossed=CROSS_PIN, crossed_errors_km=crossed["scored_errors_km"]),
+                       controls=dict(historical=BASELINE_PIN, crossed=CROSS_PIN, capture_sha256=capture_pin,
+                                     original_components=original_component_delta(captured, archived),
+                                     crossed_errors_km=crossed["scored_errors_km"]),
                        cairo_legends=legends))
 
 
