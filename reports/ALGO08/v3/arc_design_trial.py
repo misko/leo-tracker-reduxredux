@@ -89,6 +89,7 @@ def geometry_blocks(tracks, memberships, opportunities, grams):
 
 def retained(prepared, tracks, roles, *, refit):
     from leo.analysis.localization_v3.noise import estimate_noise
+    from leo.application.localization_v3_engine import _json_value
 
     full = prepared["tracks"]
     ids = {oid for track in tracks for oid in track["observation_ids"]}
@@ -97,7 +98,9 @@ def retained(prepared, tracks, roles, *, refit):
         raise ValueError("At least one retained arc measurement is missing or repeated")
     curves = [i for i, (_, role, _) in enumerate(roles) if role == "conditional"]
     stream = dict(full, observations=observations, tracks=tracks, curved_indices=curves, graph_points=len(ids))
-    return dict(prepared, tracks=stream, noise=estimate_noise(tracks, observations) if refit else prepared["noise"])
+    noise = (json.loads(json.dumps(estimate_noise(tracks, observations), default=_json_value))
+             if refit else prepared["noise"])
+    return dict(prepared, tracks=stream, noise=noise)
 
 
 def design(prepared, region, bound, tracks, roles, descriptions, rows, total_lanes):
