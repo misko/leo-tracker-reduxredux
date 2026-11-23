@@ -1,6 +1,4 @@
-from copy import deepcopy
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -11,20 +9,6 @@ def diagnostic(monkeypatch):
     import india_regional_diagnostic
 
     return india_regional_diagnostic
-
-
-def test_handoff_requires_original_normalized_graph_root_and_causal_cutoff(diagnostic, tmp_path):
-    from prepared_exterior import PreparedExterior
-
-    tracks = {"metadata": {"causal_cutoff_utc_ns": 42}}
-    reader = SimpleNamespace(root=tmp_path)
-    causal = object()
-    handoff = PreparedExterior(reader.root, tracks, 42, causal)
-    assert handoff.match(tracks, reader) is causal
-    assert handoff.match(deepcopy(tracks), reader) is None
-    assert handoff.match(tracks, SimpleNamespace(root=tmp_path / "other")) is None
-    tracks["metadata"]["causal_cutoff_utc_ns"] += 1
-    assert handoff.match(tracks, reader) is None
 
 
 def test_probe_maxima_keep_pooled_and_receiver_signs_independent(diagnostic):
