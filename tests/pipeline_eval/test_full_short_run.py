@@ -16,7 +16,8 @@ def runner(monkeypatch):
 @pytest.mark.parametrize("mode", ["raw", "saved"])
 @pytest.mark.parametrize("installed_graph", [False, True])
 @pytest.mark.parametrize("row_reuse", [False, True])
-def test_supplied_region_archive_and_receiver_reach_solver(runner, monkeypatch, tmp_path, mode, installed_graph, row_reuse):
+@pytest.mark.parametrize("phase_reuse", [False, True])
+def test_supplied_region_archive_and_receiver_reach_solver(runner, monkeypatch, tmp_path, mode, installed_graph, row_reuse, phase_reuse):
     observed = {}
     class Receiver:
         def __init__(self, path, pin, *, full_coverage):
@@ -35,15 +36,18 @@ def test_supplied_region_archive_and_receiver_reach_solver(runner, monkeypatch, 
     monkeypatch.setattr(runner, "MixedApertureDetector", Receiver)
     monkeypatch.setattr(runner, "run", observe)
     runner.main(argv + extra + (["--track-graph", "installed"] if installed_graph else [])
-                + (["--reuse-cold-track-rows"] if row_reuse else []))
+                + (["--reuse-cold-track-rows"] if row_reuse else [])
+                + (["--reuse-grid-phase-states"] if phase_reuse else []))
     args, options = observed["args"], observed["options"]
     assert all(getattr(args, name) == path for name, path in paths.items())
     assert args.verify_images and args.optimized_full_catalogue and options["early_regional"]
     assert options["track_config"] is (None if installed_graph else runner.graph_config)
     assert options["reuse_cold_rows"] is row_reuse
+    assert options["reuse_grid_phase_states"] is phase_reuse
     sealed = json.loads((args.output / "full-short-recipe.json").read_bytes())
     assert sealed["graph"] == ("installed" if installed_graph else runner.GRAPH)
     assert sealed.get("reuse_cold_track_rows", False) is row_reuse
+    assert sealed.get("reuse_grid_phase_states", False) is phase_reuse
     if mode == "raw":
         assert observed["receiver"] == (Path("short.so"), runner.SHORT_SHA, True)
         assert options["raw_context"] and options["saved_receiver"] is None

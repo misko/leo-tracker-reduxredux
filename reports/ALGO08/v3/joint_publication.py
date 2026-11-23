@@ -86,7 +86,7 @@ def artifacts(root, receipt):
 
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
         raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
-        reuse_cold_rows=False, profiled_gamma_library=None):
+        reuse_cold_rows=False, profiled_gamma_library=None, reuse_grid_phase_states=False):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -103,6 +103,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         raise ValueError("A geographic projector requires the regional proof")
     if reuse_cold_rows and not optimized:
         raise ValueError("Cold track-row reuse requires the optimized full catalogue")
+    if reuse_grid_phase_states and not optimized:
+        raise ValueError("Predictive phase reuse requires the checked publication handoff")
     if profiled_gamma_library is not None and (not args.saved or not optimized):
         raise ValueError("Profiled Gamma requires a saved detector and the optimized full catalogue")
     full_catalogue = getattr(args, "full_catalogue", False) or optimized
@@ -159,6 +161,10 @@ def run(args, *, detector_override=None, detector_description=None, track_config
 
                     live_catalogue, prepared_counts, _ = stack.enter_context(handoff(reader))
                     grid_counts = stack.enter_context(reduced_grid())
+                    if reuse_grid_phase_states:
+                        from grid_phase_state_reuse import cached_predictive_grid
+
+                        phase_counts = stack.enter_context(cached_predictive_grid())
                     if early_regional:
                         from early_region import before_fit
                         from tools.pipeline_eval.variants.experimental import regional_bound_guard
@@ -179,6 +185,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 solves[-1]["geographic_projector"] = dict(projection_counts)
             if reuse_cold_rows:
                 solves[-1]["cold_track_rows"] = dict(cold_row_counts)
+            if reuse_grid_phase_states:
+                solves[-1]["predictive_phase_states"] = dict(phase_counts)
             if observer is not None:
                 solves[-1].update(preparation=preparations, inference_metrics=decision.get("metrics"))
             if packet is not None:
@@ -242,6 +250,9 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         pins["installed/algo08_posterior_handoff.py"] = HANDOFF_SHA256
     if early_regional:
         pins["early_region.py"] = sha256((source / "early_region.py").read_bytes()).hexdigest()
+    if reuse_grid_phase_states:
+        module = source / "grid_phase_state_reuse.py"
+        pins[module.name] = sha256(module.read_bytes()).hexdigest()
     if reuse_cold_rows:
         for name in ("cold_track_row_reuse.py", "cold_track_row_entry.py"):
             pins[name] = sha256((source / name).read_bytes()).hexdigest()
