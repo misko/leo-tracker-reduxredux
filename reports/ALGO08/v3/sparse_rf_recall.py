@@ -133,7 +133,9 @@ def capture_sparse(case, receipt):
     return saved[0]
 
 
-def trial(case, receipt, output, *, signed_ceiling=None):
+def trial(case, receipt, output, *, signed_ceiling=None, visits_file=None):
+    if visits_file is not None and signed_ceiling is None:
+        raise ValueError("The stereo visit export requires signed proposals")
     frozen = json.loads(check_file(FROZEN_BLOCK, BLOCK_SHA256))["cases"][case]
     check_file(HERE / "rf_block_trial.py", TRIAL_SHA256)
     if signed_ceiling is not None:
@@ -165,18 +167,33 @@ def trial(case, receipt, output, *, signed_ceiling=None):
     signed = {}
     if predicted:
         from leo.contracts.digests import canonical_digest
-        from sparse_rf_carrier import score
+        from sparse_rf_carrier import score, visit_ids
 
-        probes = native["source"]["probes"]
+        source = native["source"]
+        probes = source["probes"]
+        bytes_per_stereo = round(source["probe_ms"] * .001 * source["sample_rate_hz"]) * 8
+        visit_export = {}
+        unpaid_visits = len({row["visit"] for row in meta if not row["paid"]})
         for arm, proposed in predicted.items():
             held = {row["observation_id"]: (row["norad"], probes[index]["candidates"][0]["fractional_tracking_cfo_hz"])
                     for index, row in full[arm].items() if not meta[index]["paid"]}
             proposals = proposed.pop("proposals")
+            by_rule = {rule: visit_ids(meta, probes, rows, held) for rule, rows in proposals.items()}
+            visit_export[arm] = by_rule
             signed[arm] = dict(
                 **proposed, all_unpaid_lanes=sum(not row["paid"] for row in meta),
+                all_unpaid_stereo_visits=unpaid_visits,
+                all_unpaid_stereo_probe_bytes=unpaid_visits * bytes_per_stereo,
                 proposal_sha256=canonical_digest(proposals),
-                rules={rule: score(rows, held) for rule, rows in proposals.items()},
+                rules={rule: dict(score(rows, held),
+                                  stereo_visits={key: len(visits) for key, visits in by_rule[rule].items()},
+                                  proposed_stereo_probe_bytes=len(by_rule[rule]["proposed"]) * bytes_per_stereo)
+                       for rule, rows in proposals.items()},
             )
+        if visits_file is not None:
+            write(visits_file, dict(case=case, identity=identity, bytes_per_stereo_probe=bytes_per_stereo,
+                                    prediction_sha256={arm: result["proposal_sha256"] for arm, result in signed.items()},
+                                    visits=visit_export))
     write(output, dict(case=case, identity=identity, mask=observed["mask"], sparse=decision,
                        frozen_block_sha256=BLOCK_SHA256, trial_sha256=TRIAL_SHA256,
                        source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -190,4 +207,5 @@ if __name__ == "__main__":
     cli.add_argument("receipt", type=Path)
     cli.add_argument("output", type=Path)
     cli.add_argument("--signed-ceiling", type=Path)
+    cli.add_argument("--visits-file", type=Path)
     trial(**vars(cli.parse_args()))

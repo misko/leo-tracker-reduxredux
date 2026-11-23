@@ -148,3 +148,23 @@ def score(proposals, held_owner):
         counts.setdefault(key, 0)
     return dict(counts, held_owned=len(held_owner), all_proposal_lanes=len(proposals),
                 all_proposals=sum(map(len, proposals.values())))
+
+
+def visit_ids(metadata, probes, proposals, held_owner):
+    """Account for both antennas inside each stereo window exactly once."""
+    requested, nonempty, correct = set(), set(), {threshold: set() for threshold in TOLERANCES_HZ}
+    for lane, probe in zip(metadata, probes, strict=True):
+        oid, visit = lane["observation_id"], lane["visit"]
+        candidates = proposals.get(oid)
+        if not candidates:
+            continue
+        requested.add(visit)
+        if probe["candidates"]:
+            nonempty.add(visit)
+        if oid in held_owner:
+            norad, cfo_hz = held_owner[oid]
+            for threshold, visits in correct.items():
+                if any(label == norad and abs(value - cfo_hz) <= threshold for label, value in candidates):
+                    visits.add(visit)
+    return dict(proposed=sorted(requested), original_factor=sorted(nonempty),
+                **{f"owner_and_signed_{threshold}_hz": sorted(visits) for threshold, visits in correct.items()})
