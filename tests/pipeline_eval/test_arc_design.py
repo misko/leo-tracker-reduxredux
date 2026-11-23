@@ -44,3 +44,18 @@ def test_minimum_cost_uses_lane_union_and_matched_arm_fraction(selectors):
     assert known["best"]["per_arm"] == pytest.approx((10 / 10.5, 10 / 12))
     assert known["best"]["fraction"] <= known["optimistic_upper"] + 1e-12
     assert rows["frontier"]["12"]["selected"] is None
+
+
+def test_relaxed_directional_bound_dominates_exhaustive_overlapping_sets(selectors):
+    rng = np.random.default_rng(708)
+    for _ in range(6):
+        blocks = []
+        for norad in range(6):
+            lanes = frozenset(rng.choice(26, size=6, replace=False))
+            linear = [rng.normal(size=(8, 5)) for _ in selectors.ARMS]
+            grams = tuple(rows.T @ rows for rows in linear)
+            blocks.append(selectors.Block(norad, lanes, frozenset({"all"}), grams))
+        plan = selectors.select(blocks, 66)
+        for row in plan["frontier"].values():
+            if row["best"] is not None:
+                assert row["best"]["fraction"] <= row["optimistic_upper"] + 1e-10
