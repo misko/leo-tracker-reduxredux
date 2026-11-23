@@ -136,7 +136,7 @@ def shared_geometry(scan, tracks, live, region, probe_rows, positions):
                                 max_change=max(scores)-min(scores), clocks=clocks(clock)))
 
 
-def run(output):
+def run(output, *, additional_rank=None):
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
             or any(value != "1" for value in host["threads"].values())):
@@ -172,6 +172,9 @@ def run(output):
             scope.enter_context(graph.configure(assets, full_catalogue_route))
 
             def inspect(prepared, view, bound, _stages, **_options):
+                if additional_rank is not None:
+                    recovered.update(additional_rank(prepared, view, bound, seen, sealed, rank_share))
+                    return dict(status="withheld", reason="rank_only_audit", arms={arm: {"latlon": None} for arm in ARMS})
                 start = now()
                 scan = v5_core.scan_context(prepared, view, digest(prepared["noise"]), bound, "previous")
                 recovered["scan_setup"] = clocks(start)
