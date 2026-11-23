@@ -1,13 +1,15 @@
 # Cumulative short receiver, exact graph proof and explicit web layout
 
-The same research CLI with `--prove-empty-graph --one-pass-web-png` took **0.437 s** on the tiny withhold and **8.638 s** on the weak complete fix. The paired elapsed median ratio was **0.568** and the summed ratio was **0.750**. Both exceed the 0.500 target. This is the measured result of the combined candidate, including launch, original signed I/Q, either decision path, durable publication to tmpfs, verification, and process exit. [Protocol](unified-short-layout-protocol.md) · [Raw paired receipt](measurements/unified-short-layout.json.gz)
+The same research CLI with `--prove-empty-graph --one-pass-web-png` took **0.437 s** on the tiny withhold and **8.638 s** on the weak complete fix. The paired elapsed median ratio was **0.568** and the summed ratio was **0.750**. Both exceed the 0.500 target. This is the measured result of the combined candidate, including launch, original signed I/Q, either decision path, the standard store's writes and synchronization on tmpfs, verification, and process exit. [Protocol](unified-short-layout-protocol.md) · [Raw paired receipt](measurements/unified-short-layout.json.gz)
+
+![Paired runtime and horizontal position error for the two original recordings](development/unified-short-layout-pair.png)
 
 | Warm original I/Q | Named v3 → cumulative elapsed | Named v3 → cumulative CPU | Decision, both |
 | --- | ---: | ---: | --- |
 | DS30-0227, candidate first | 1.295895 → 0.437077 s | 1.294376 → 0.434737 s | Withheld |
 | DS30-0016, named v3 first | 10.812561 → 8.638297 s | 10.809384 → 8.629740 s | Complete |
 
-The two cases took 12.108 s on named v3 and 9.075 s on the cumulative CLI, a 3.033 s reduction. The observed half-time sum was 6.054 s, leaving 3.021 s to close on these workloads. The first qualification used separate recorded timings for the bootstrap, proof and saved renderer. These new clocks charge their combined real execution. The stage effect of layout alone was measured in saved matched renders, with median CPU 1.434 → 1.188 s. The raw active rendering boundary was 1.132 CPU s. [Prior unified and exact graph evidence](unified-short-bootstrap.md) · [Visual and same-artists qualification](/var/tmp/leo-v3-one-pass-png/reports/ALGO08/v3/one-pass-web-png.md)
+The two cases took 12.108 s on named v3 and 9.075 s on the cumulative CLI, a 3.033 s reduction. The observed half-time sum was 6.054 s, leaving 3.021 s to close on these workloads. The first qualification used separate recorded timings for the bootstrap, proof and saved renderer. These new clocks charge their combined real execution. The stage effect of layout alone was measured in saved matched renders, with median CPU 1.434 → 1.188 s. The raw active rendering boundary was 1.132 CPU s. [Prior unified and exact graph evidence](unified-short-bootstrap.md) · [Visual and same-artists qualification](one-pass-web-png.md) [Figure from the paired receipt](unified_short_layout_figure.py)
 
 ## Publication verification
 
