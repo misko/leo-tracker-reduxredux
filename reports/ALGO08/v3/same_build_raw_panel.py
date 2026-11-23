@@ -14,6 +14,17 @@ MODES = ("stock", "candidate")
 IMPLEMENTATION = ("stock", "route_flags", "library_sha256", "sources", "host")
 
 
+def implementation(admission):
+    identity = {key: admission[key] for key in IMPLEMENTATION}
+    receiver = admission.get("receiver_configuration")
+    if receiver is not None:
+        recipe = json.dumps(receiver["recipe"], ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        if receiver["detector_recipe_sha256"] != "sha256:"+sha256(recipe.encode()).hexdigest():
+            raise ValueError("Receiver configuration does not bind its detector recipe")
+        identity["receiver_configuration"] = receiver
+    return identity
+
+
 def read_pair(receipt):
     admission = receipt["admission"]
     modes = receipt["original"]
@@ -31,6 +42,9 @@ def read_pair(receipt):
         if (clock["exit_code"] != 0 or not isfinite(elapsed) or elapsed <= 0
                 or run["science"]["raw_authority"] != row["raw_authority"]):
             raise ValueError("Invalid process clock or unmatched original recording")
+        receiver = admission.get("receiver_configuration")
+        if receiver is not None and mode == "candidate" and run["bootstrap"]["detector_recipe_sha256"] != receiver["detector_recipe_sha256"]:
+            raise ValueError("Candidate packet uses a different enrolled receiver configuration")
         times = run["time_boundaries"]
         detection, terminal = times["detections_file_s"], times["terminal_file_s"]
         if not 0 <= detection <= terminal <= elapsed or times["exit_s"] != elapsed:
@@ -51,9 +65,9 @@ def read_pair(receipt):
 def summarize(receipts):
     if not receipts:
         raise ValueError("No matched pairs supplied")
-    identity = {k: receipts[0]["admission"][k] for k in IMPLEMENTATION}
-    if any(any(r["admission"][k] != v for k, v in identity.items()) for r in receipts):
-        raise ValueError("Raw pairs use different flags, pinned sources, libraries, release or host settings")
+    identity = implementation(receipts[0]["admission"])
+    if any(implementation(r["admission"]) != identity for r in receipts):
+        raise ValueError("Raw pairs use different receiver configurations, flags, pinned sources, libraries, release or host settings")
     rows = sorted((read_pair(r) for r in receipts), key=lambda r: (r["visits"], r["case"]))
     if any(len({r[k] for r in rows}) != len(rows) for k in ("case", "raw_authority")):
         raise ValueError("A recording was enrolled more than once")

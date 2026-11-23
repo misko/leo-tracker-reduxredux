@@ -1,4 +1,5 @@
 from copy import deepcopy
+from hashlib import sha256
 
 import pytest
 
@@ -38,3 +39,25 @@ def test_changed_libraries_repeated_recordings_and_missing_artifacts_fail():
     first["original"]["candidate"]["figures"].pop()
     with pytest.raises(ValueError, match="media"):
         summarize([first])
+
+
+def test_receiver_digest_participates_in_panel_identity_and_must_match_the_child():
+    old = pair("a", 10, 8, "complete")
+    new = pair("b", 12, 8, "complete")
+    pin = "sha256:"+sha256(b'{"mode":"refined"}').hexdigest()
+    new["admission"]["receiver_configuration"] = dict(recipe={"mode": "refined"}, detector_recipe_sha256=pin)
+    new["original"]["candidate"]["bootstrap"] = dict(detector_recipe_sha256=pin)
+    assert summarize([new])["fix_counts"] == dict(stock=1, candidate=1)
+    with pytest.raises(ValueError, match="receiver configurations"):
+        summarize([old, new])
+    new["original"]["candidate"]["bootstrap"]["detector_recipe_sha256"] = "sha256:"+"0"*64
+    with pytest.raises(ValueError, match="different enrolled receiver"):
+        summarize([new])
+
+
+def test_a_measured_failure_cannot_count_as_a_withhold_or_a_timing_row():
+    failed = pair("a", 10, 8, "withheld")
+    failed["original"]["candidate"]["process"]["clock"]["exit_code"] = 1
+    failed["original"]["candidate"]["science"] = None
+    with pytest.raises(ValueError, match="Invalid process clock"):
+        summarize([failed])
