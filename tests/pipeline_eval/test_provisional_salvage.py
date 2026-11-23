@@ -110,3 +110,16 @@ def test_original_paired_gate_failure_reverts_owners_and_seed(monkeypatch):
     assert result == ("old fit", None)
     assert finished == [(expanded.tolist(), moved.tolist()), (initial.tolist(), seed.tolist())]
     assert audit["provisional_salvage"]["reason"] == "original_paired_gate"
+
+
+def test_dense_archived_trigger_counts_only_rejected_independent_nominations():
+    from reports.ALGO08.v3.provisional_salvage_dense import trigger
+
+    archive = dict(initial_curved=100, curved_restored=24, rechecked_curved=112, past_distribution_qualified=True,
+                   second_curved_rejections=["unnominated", "recovered"], salvage=[
+                       dict(component="unnominated", selected=None), dict(component="recovered", selected={"points": 12}),
+                       dict(component="newly_compatible", selected={"points": 12})])
+    assert trigger(archive) == dict(eligible=True, initial_curved=100, restored=24, rechecked_curved=112,
+                                    lost_restored_points=12, lost_restored_tracks=1)
+    assert not trigger(dict(archive, second_curved_rejections=["unnominated"]))["eligible"]
+    assert not trigger(dict(archive, past_distribution_qualified=False))["eligible"]

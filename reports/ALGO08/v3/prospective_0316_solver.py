@@ -91,7 +91,8 @@ def saved_inventory(request, path):
 
 
 def worker(job, mode, output, *, source_pins=SOURCE_PINS, native_sha=NATIVE_SHA,
-           windows=3042, admitted=2702, audit_name="saved-0316-worker.json", inventory_file=None):
+           windows=3042, admitted=2702, audit_name="saved-0316-worker.json", inventory_file=None,
+           detector=DETECTOR, input_description=INPUT_DESCRIPTION):
     begin = process_time(), perf_counter()
     import empty_bootstrap as staged
     import unified_short_bootstrap as cumulative
@@ -120,15 +121,15 @@ def worker(job, mode, output, *, source_pins=SOURCE_PINS, native_sha=NATIVE_SHA,
             or native["clock_anchor"]["before"]["realtime_ns"] != req["causal_cutoff_utc_ns"]):
         raise ValueError("The original named detector, authority or causal epoch changed")
     staged.checked(offer, req["offer_sha256"])
-    staged.bind_native(native, session, inventory, DETECTOR, expected="sha256:"+native_sha)
+    staged.bind_native(native, session, inventory, detector, expected="sha256:"+native_sha)
     layout, graph, proof = {}, {}, None
     opts = SimpleNamespace(recording=recording, archive=Path(req["local_archive"]["root"]), region=offer,
                            output=output, one_pass_web_png=True, exact_graph_reuse=True,
                            **{name: Path(path) for name, path in req["local_libraries"].items()})
-    handoff = cumulative.Handoff(session, inventory, DETECTOR, native)
+    handoff = cumulative.Handoff(session, inventory, detector, native)
     # The sentinel ensures the saved input label in the normal research receipt
     # describes the actual boundary; invoking it would also abort this worker.
-    run_saved = partial(joint.run, detector_override=denied, detector_description=INPUT_DESCRIPTION)
+    run_saved = partial(joint.run, detector_override=denied, detector_description=input_description)
     with (inventory_scope, patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
           patch.object(joint, "configuration", return_value=(publication, dict(specification, startup="stock")))):
         if mode == "stock":
@@ -140,10 +141,10 @@ def worker(job, mode, output, *, source_pins=SOURCE_PINS, native_sha=NATIVE_SHA,
                 raise ValueError("The authenticated complete named packet should reach the active solver")
             with patch.object(joint, "run", run_saved):
                 _, result = cumulative.publish_active(opts, publication, specification, handoff, layout, graph_audit=graph)
-    if handoff.calls != 1 or result["input"] != INPUT_DESCRIPTION:
+    if handoff.calls != 1 or result["input"] != input_description:
         raise ValueError("The normal acquisition boundary did not consume its authenticated saved packet once")
     write(output / audit_name, dict(mode=mode, complete_saved=elapsed(begin), no_waveform=True,
-          handoffs=handoff.calls, detector=DETECTOR, native_sha256=native_sha, graph=graph, layout=layout,
+          handoffs=handoff.calls, detector=detector, native_sha256=native_sha, graph=graph, layout=layout,
           startup_source_checks=checks, graph_proof=proof, solve=result["solve"], receipt=result["receipt"]))
     print(json.dumps(result["receipt"], allow_nan=False))
 
@@ -215,7 +216,8 @@ def stage(root):
 
 
 def inspect(root, mode, receipt, clock, req, *, native_sha=NATIVE_SHA, windows=3042,
-            admitted=2702, audit_name="saved-0316-worker.json"):
+            admitted=2702, audit_name="saved-0316-worker.json", detector=DETECTOR,
+            input_description=INPUT_DESCRIPTION):
     from aperture_trial import read
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
@@ -230,11 +232,11 @@ def inspect(root, mode, receipt, clock, req, *, native_sha=NATIVE_SHA, windows=3
     terminal = read(work / "terminal.json")
     native, = work.parent.glob("*/detections.json")
     figures = artifacts(root, receipt)["images"]
-    if (sha256(native.read_bytes()).hexdigest() != native_sha or own["detector"] != DETECTOR
+    if (sha256(native.read_bytes()).hexdigest() != native_sha or own["detector"] != detector
             or terminal["native_sha256"] != "sha256:"+native_sha or science["raw_authority"] != req["raw_authority"]
             or receipt["window_count"] != windows or receipt["counts"]["processed"] != admitted
             or receipt["session_id"] != req["session"] or not own["no_waveform"] or own["handoffs"] != 1
-            or research["input"] != INPUT_DESCRIPTION):
+            or research["input"] != input_description):
         raise ValueError(f"{mode} publication changed the native packet or its original authority")
     documents = {}
     if receipt["decision"] == "complete":

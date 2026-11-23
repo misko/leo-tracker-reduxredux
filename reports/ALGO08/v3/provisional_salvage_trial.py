@@ -66,7 +66,7 @@ def saved_request(case):
     return job, inventory
 
 
-def candidate_worker(case, request, inventory, output):
+def candidate_worker(case, request, inventory, output, *, runtime=None):
     import unified_short_bootstrap as active
 
     publish = active.publish_active
@@ -91,7 +91,8 @@ def candidate_worker(case, request, inventory, output):
             return publish(*args, **kwargs)
 
     with patch.object(active, "publish_active", opted_in):
-        worker(request, "cumulative", output, source_pins=PINS, inventory_file=inventory, **settings(case))
+        worker(request, "cumulative", output, source_pins=PINS, inventory_file=inventory,
+               **(settings(case) if runtime is None else runtime))
 
 
 def run(root):
