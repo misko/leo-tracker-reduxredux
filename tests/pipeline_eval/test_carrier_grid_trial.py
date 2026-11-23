@@ -52,3 +52,12 @@ def test_only_cfo_and_derived_binding_change(trial):
         assert audit["candidate_ranks"] == {"1": 1}
         assert audit["admitted"] == audit["changed"] == 1 and audit["windows"] == 2
         assert audit["max_abs_hz"] == pytest.approx(abs(placed + 430.2))
+
+
+def test_owner_overlap_uses_signed_observation_identity(trial):
+    from carrier_grid_score import changes
+
+    old = {"keep": 10, "relabel": 20, "lost": 30}
+    new = {"keep": 10, "relabel": 21, "added": 40}
+    assert changes(old, new) == {"kept": 1, "relabeled": 1, "lost": 1, "added": 1}
+    assert changes(old, None) is None
