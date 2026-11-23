@@ -25,6 +25,8 @@ The southern containing candidate returned the original 266 owners and a 137-poi
 
 ## Cost through the terminal
 
+![Saved-packet CPU and horizontal error for both calibration arms, with withholding shown explicitly](blind-joint.png)
+
 | Saved offer | Preparation and other CPU s | Cold discovery | Fixed-site gates and predictive | Curved salvage | Joint fit | Candidate exterior / evidence | v3 fallback | Charged CPU / elapsed s | Matched v3 CPU s |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | DS30-0008 | 3.707 | 13.763 | 4.663 | 5.020 | 0.682 | — / — | 50.136 | 77.971 / 78.012 | 54.720 archived |
