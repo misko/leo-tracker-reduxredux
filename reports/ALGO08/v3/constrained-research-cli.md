@@ -15,6 +15,8 @@ The existing case-study drivers and their measured source pins remain valid. The
 
 Use the sealed named 20 ms detection digest with `--saved`. The optional `--saved-inventory` binds that packet to the canonical original inventory and avoids opening the original recording for metadata. The named acquisition port reads original manifest metadata when the saved inventory is omitted. Without the three saved-input arguments, the same command uses ordinary named acquisition. The installed release and research CLI were exercised in saved mode.
 
+The independent `--optimized-publication` option enables the previously measured ordered graph and polynomial fit reuse, exact causal phase forecast, and direct residual and orbit rendering. It can be combined with any constrained policy. On DS30-0402 the combined option took 53.403 s against 55.752 s for fitted-first alone and retained the original science. Two dense gray orbit layers fell below the registered-pixel acceptance threshold. [Matched scientific and figure audit](named-combined-0402.md)
+
 ## Saved DS30-0155 transfer
 
 The [frozen test](constrained-research-cli-protocol.md) used only the prior authenticated 20 ms packet, inventory, causal archive and offer staged in tmpfs. Both fresh children ran on CPU 2 with one numerical thread, low scheduler and I/O priority and the shared Gauss lock. Stock executed first. Each child clock was persisted at exit before scoring. Both processes exited zero and produced a fix.

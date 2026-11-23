@@ -71,3 +71,17 @@ def test_registered_support_sees_missing_layers_and_uses_both_directions():
         named_weak_visual.support(stock, candidate)
     candidate[2, 2] = candidate[9, 9] = True
     assert named_weak_visual.support(stock, candidate) == {"pixels": [1, 2], "fraction": [1., .5]}
+
+
+def test_registration_diagnostic_retains_failure_without_changing_default(monkeypatch):
+    from PIL import Image, ImageDraw
+
+    monkeypatch.setattr(named_weak_visual, "orbit_boxes", lambda rgb: [(0, 0, 2160, 246)])
+    first = Image.new("RGB", (2160, 246), "white")
+    ImageDraw.Draw(first).rectangle((30, 30, 45, 45), fill="red")
+    second = first.copy()
+    ImageDraw.Draw(second).rectangle((230, 30, 245, 45), fill="red")
+    with pytest.raises(ValueError, match="two-pixel"):
+        named_weak_visual.registered_orbits(first, second)
+    rows = named_weak_visual.registered_orbits(first, second, require_match=False)["rows"]
+    assert rows[0]["color"]["fraction"] == [1., .5]
