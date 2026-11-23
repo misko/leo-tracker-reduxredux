@@ -155,6 +155,49 @@ def totals(rows):
     }
 
 
+def correction_path(transfer):
+    from tools.pipeline_eval.scoring import distance_km
+
+    reference = (
+        DATA.parents[2] / "2026_11_21_ds30_full/reference-audit.json"
+    ).read_bytes()
+    if sha256(reference).hexdigest() != transfer["reference_sha256"]:
+        raise ValueError("Survey reference does not match the sealed paired score")
+    (site,) = (
+        r["reference"]
+        for r in json.loads(reference)["cases"]
+        if r["dataset_label"] == transfer["case"]
+        and r["authority_eligible"]
+        and r["sealed_metadata_digests_verified"]
+    )
+    truth = site["latitude_deg"], site["longitude_deg"]
+    details = transfer["runs"]["cumulative"]["route_details"]
+    stages = {
+        "initial": details["finish"],
+        "repaired": details["repair"]["finish"],
+        "signed": details["signed"]["finish"],
+    }
+    result = {
+        name: {
+            arm: {
+                "horizontal_error_km": distance_km(truth, fit["latlon"]),
+                "rf_rms_hz": fit["rf_rms_hz"],
+                "conditional": fit["curved_points"],
+                "predictive": fit["linear_points"],
+            }
+            for arm, fit in arms.items()
+        }
+        for name, arms in stages.items()
+    }
+    if any(
+        result["signed"][arm]["horizontal_error_km"]
+        != transfer["scores"]["cumulative"][arm]["horizontal_error_km"]
+        for arm in ARMS
+    ):
+        raise ValueError("Final path position does not reproduce the paired score")
+    return result
+
+
 def study(receipt_name, receipt_pin):
     transfer = sealed(receipt_name, receipt_pin)
     if (
@@ -185,6 +228,7 @@ def study(receipt_name, receipt_pin):
         "challenge_sha256": receipt_pin,
         "development": design,
         "challenge": challenge,
+        "challenge_fit_path": correction_path(transfer),
         "saved_time_scenarios": totals([*design, challenge]),
         "india_retrospective": india_control(),
     }
