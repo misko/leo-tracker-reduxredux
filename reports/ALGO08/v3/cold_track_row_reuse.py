@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from hashlib import sha256
 from inspect import getsource
 from pathlib import Path
+from textwrap import dedent
 from types import MethodType
 from unittest.mock import patch
 
@@ -66,7 +67,7 @@ def associate_with_rows(original, rows):
     if source.count(old) != 1:
         raise ValueError("The released association gather changed")
     namespace = dict(original.__globals__, _rows=rows)
-    exec(compile(source.replace(old, new), original.__code__.co_filename, "exec"), namespace)
+    exec(compile(dedent(source.replace(old, new)), original.__code__.co_filename, "exec"), namespace)
     return namespace[original.__name__]
 
 

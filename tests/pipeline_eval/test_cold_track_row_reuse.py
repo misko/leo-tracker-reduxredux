@@ -8,11 +8,12 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from leo.analysis.localization_v3.scan import ScanLikelihood
 from leo.analysis.research.retained_track_likelihood import profile, whitening
 from tools.pipeline_eval.variants.algo08_sparse_rank_projection import ProjectedRows
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
-from cold_track_row_reuse import CentreRows
+from cold_track_row_reuse import CentreRows, associate_with_rows
 
 
 @pytest.fixture
@@ -81,3 +82,8 @@ def test_original_gathers_when_binding_is_unavailable(why, table):
     assert np.array_equal(predicted, q * f[:, indices])
     assert np.array_equal(visibility, e[:, indices].min(axis=1) >= 0)
     assert counts["reused_requests"] == 0 and counts["released_requests"] == 1
+
+
+def test_released_association_port_compiles_its_class_method():
+    work = associate_with_rows(ScanLikelihood.association, object())
+    assert work.__name__ == "association"
