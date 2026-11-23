@@ -48,3 +48,21 @@ def test_native_chain_awards_both_start_nodes_and_one_new_target(trial, tmp_path
     assert score.hex() == ((((3. + 2. - 1.) - .05) + 4.) - .05).hex()
     enabled[0] = False
     assert native.solve(paths, values, available, enabled, config, np.full(3, 9.))[0].size == 0
+
+
+def test_saved_input_requires_the_pinned_aperture_and_full_raw_selection(trial, monkeypatch, tmp_path):
+    driver = importlib.import_module("discovery_margin_trial")
+    monkeypatch.setattr(driver, "CASE_ROOTS", {"north": tmp_path})
+    monkeypatch.setattr(driver, "originals", lambda case, apertures: (case, apertures, ({"selected": 4},)))
+    monkeypatch.setattr(driver, "factor_weights", lambda native, unit: ({}, {"anchors": 1, "nonanchors": 3}))
+    monkeypatch.setattr(driver, "checked_recipe", lambda eight: [200000, 80000 if eight else 120000])
+    seal = {"recipe": [200000, 120000], "graph": "installed", "saved_digest": None,
+            "receiver_audit": {"selected": 4}}
+    monkeypatch.setattr(driver, "read", lambda path: seal)
+    assert driver.packet_pin("north", "12ms") == driver.PACKET_PINS["north"][0]
+    assert driver.verified_input("north", "12ms")[1] == "12ms"
+    with pytest.raises(ValueError, match="original unfiltered raw"):
+        driver.verified_input("north", "8ms")
+    seal["receiver_audit"]["selected"] = 3
+    with pytest.raises(ValueError, match="original unfiltered raw"):
+        driver.verified_input("north", "12ms")
