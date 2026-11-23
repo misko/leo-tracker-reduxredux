@@ -5,7 +5,7 @@ import pytest
 
 from leo.analysis.localization_v3 import history_policy as named
 from reports.ALGO08.v3 import causal_linear_refit as warm
-from reports.ALGO08.v3.causal_pre_refit_0155 import compare_grid
+from reports.ALGO08.v3.causal_pre_refit_0155 import ENROLLED, SOURCE_PINS, compare_grid
 
 
 def test_pre_refit_seed_uses_earlier_arm_state_and_original_satellite_labels():
@@ -50,3 +50,10 @@ def test_common_grid_comparison_never_interpolates_moved_point_scores():
     result = compare_grid(grid([1.,2.]),grid([1.,3.]))
     assert result["shared_coordinates"] == 1 and result["unique_coordinates"] == dict(control=1,warm=1)
     assert result["calibration"]["c0"]["changed_scores"] == 0
+
+
+def test_history_retry_transfer_enrollment_preserves_exact_policy():
+    transfer = ENROLLED["DS30-0160"]
+    assert (transfer["windows"],transfer["admitted"],transfer["cutoff"]) == (3691,2354,1794782905318901898)
+    assert transfer["stage"].is_relative_to("/dev/shm")
+    assert SOURCE_PINS["causal_linear_refit.py"] == "a6b9e994845552bf3136a47f7b61a3df6badbd0a0509bbea5c021554dcfac905"
