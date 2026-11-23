@@ -37,7 +37,7 @@ def sequence_count(data):
     return 0x7f00 + word(data, 1, 2)
 
 
-def inspect(frame, decoded_bytes):
+def inspect(frame, decoded_bytes, *, block_spans=None):
     data = memoryview(frame)
     if data[:4] != MAGIC:
         raise ValueError("Expected one ordinary Zstandard frame")
@@ -92,6 +92,8 @@ def inspect(frame, decoded_bytes):
             zeros += sequences == 0
             seq_bytes += payload-header-packed
             literal_header += header
+            if block_spans is not None:
+                block_spans.append((position, payload, plain, sequences))
         position += payload
         if last:
             break

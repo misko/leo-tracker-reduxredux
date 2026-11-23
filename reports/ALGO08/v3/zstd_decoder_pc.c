@@ -43,6 +43,7 @@ int start_samples(int interval_us) {
 }
 
 void mark_decode(int value) { active = value; }
+int samples_size(void) { return used; }
 int stop_samples(void) {
     active = 0;
     timer_delete(clock_timer);
