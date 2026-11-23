@@ -1,0 +1,408 @@
+{
+  "accepted": true,
+  "build": {
+    "binary_sha256": "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee",
+    "command": [
+      "cc",
+      "-O3",
+      "-march=haswell",
+      "-fopenmp-simd",
+      "-ffp-contract=off",
+      "-fno-math-errno",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-shared",
+      "-fPIC",
+      "-fopt-info-vec-optimized=/var/tmp/leo-dense-geo-kernel.LoaQDdqx/build/vectorization.txt",
+      "/var/tmp/leo-algo08v3-dense-geographic-kernel/reports/ALGO08/v3/dense_geographic_projection.c",
+      "-lm",
+      "-o",
+      "/var/tmp/leo-dense-geo-kernel.LoaQDdqx/build/geographic.so"
+    ],
+    "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "compiler_cpu_s": 0.09,
+    "elapsed_s": 0.104972446,
+    "machine": {
+      "cpu": [
+        2
+      ],
+      "ionice": "best-effort: prio 7",
+      "nice": 15,
+      "threads": {
+        "BLIS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      }
+    },
+    "source_sha256": "d198a1a843a8d23e0afb85e17198f7e2e8c7794ca48b5ff4c0096d717c769fb0",
+    "vectorization": [
+      "/var/tmp/leo-algo08v3-dense-geographic-kernel/reports/ALGO08/v3/dense_geographic_projection.c:21:13: optimized: loop vectorized using 32 byte vectors",
+      "/var/tmp/leo-algo08v3-dense-geographic-kernel/reports/ALGO08/v3/dense_geographic_projection.c:24:36: optimized: loop vectorized using 32 byte vectors"
+    ]
+  },
+  "checks": {
+    "arms": true,
+    "associated": true,
+    "grid": true,
+    "grid_points": true,
+    "identity": true,
+    "objective_replay": true,
+    "optimizer_route": true,
+    "orbit_policy": true,
+    "owners": true,
+    "reason": true,
+    "regional_decision": true,
+    "science": true,
+    "selected_rows": true,
+    "status": true,
+    "visited_probes": true
+  },
+  "control_receipt_sha256": "22f6a006e0958476c4a46591af1c1159e8f4c95ed60a13604db57831e20bbd79",
+  "input_receipts": {
+    "dense-full": "ab8089ba8389bc8f2a6a90ed471bba19f7b341b355c9599aaf9ef01f7ad5b66f",
+    "dense-probe": "db6da12628887718b4a7e9d5f5a4cce79f40134319b130aeb90eb2de40fd336c",
+    "south-probe": "b27028253ca5dde75a6ac3c92a1c020fdc232c6f44041cb569ee5fe41d5d79ce"
+  },
+  "physical": {
+    "arms": {
+      "c0": {
+        "latlon": [
+          37.839297288561845,
+          -122.48665601247716
+        ],
+        "rf_rms_hz": 128.82184347152008
+      },
+      "fitted_c": {
+        "latlon": [
+          37.83952797414584,
+          -122.4881007212449
+        ],
+        "rf_rms_hz": 128.75340829856236
+      }
+    },
+    "associated": {
+      "c0": 4440,
+      "fitted_c": 4440
+    },
+    "control": {
+      "cpu_s": 33.677484838,
+      "elapsed_s": 33.728430333547294
+    },
+    "early_control": {
+      "cpu_s": 10.040088028,
+      "result": {
+        "catalogue_orbits": 11177,
+        "complete": false,
+        "graph_points": 6456,
+        "original_points": 7016,
+        "potentially_visible_orbits": 771,
+        "probes_evaluated": 25,
+        "receiver_points": {
+          "1": 3965,
+          "2": 3051
+        },
+        "snapshots": [
+          "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+          "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+          "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+          "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+          "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+        ],
+        "stop": "inside_score",
+        "track_count": 236,
+        "would_withhold": false
+      },
+      "reused": 0
+    },
+    "early_native": {
+      "cpu_s": 6.331005538,
+      "result": {
+        "catalogue_orbits": 11177,
+        "complete": false,
+        "graph_points": 6456,
+        "original_points": 7016,
+        "potentially_visible_orbits": 771,
+        "probes_evaluated": 25,
+        "receiver_points": {
+          "1": 3965,
+          "2": 3051
+        },
+        "snapshots": [
+          "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+          "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+          "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+          "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+          "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+        ],
+        "stop": "inside_score",
+        "track_count": 236,
+        "would_withhold": false
+      },
+      "reused": 0
+    },
+    "native": {
+      "cpu_s": 30.064235294,
+      "elapsed_s": 30.147088487
+    },
+    "native_counters": {
+      "calls": 25,
+      "cells": 78622725,
+      "projection_cpu_ns": 702711741
+    }
+  },
+  "probe_difference_full": 2.9753977059954195e-13,
+  "probes": {
+    "dense": {
+      "arrays": [
+        {
+          "cells": 3144909,
+          "frequency_max_hz": 6.257323548197746e-09,
+          "horizon_mismatches": 0,
+          "latitude_longitude": [
+            37.860954954954956,
+            -122.118056708069
+          ],
+          "tangent_max_hz_per_s": 3.3014657674357295e-10
+        },
+        {
+          "cells": 3144909,
+          "frequency_max_hz": 6.1409082263708115e-09,
+          "horizon_mismatches": 0,
+          "latitude_longitude": [
+            37.860954954954956,
+            -122.50942139233908
+          ],
+          "tangent_max_hz_per_s": 3.228706191293895e-10
+        }
+      ],
+      "evidence_matches": true,
+      "geometry": {
+        "cpu_s": 2.301830084,
+        "elapsed_s": 2.301927873
+      },
+      "native_counters": {
+        "calls": 25,
+        "cells": 78622725,
+        "projection_cpu_ns": 445286674
+      },
+      "probe_difference": 2.9753977059954195e-13,
+      "proof": {
+        "control": {
+          "cpu_s": 6.589307396,
+          "elapsed_s": 6.59660539,
+          "terminal": {
+            "catalogue_orbits": 11177,
+            "complete": false,
+            "graph_points": 6456,
+            "original_points": 7016,
+            "potentially_visible_orbits": 771,
+            "probes_evaluated": 25,
+            "receiver_points": {
+              "1": 3965,
+              "2": 3051
+            },
+            "snapshots": [
+              "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+              "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+              "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+              "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+              "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+            ],
+            "stop": "inside_score",
+            "track_count": 236,
+            "would_withhold": false
+          }
+        },
+        "native": {
+          "cpu_s": 2.18717351,
+          "elapsed_s": 2.187269843,
+          "terminal": {
+            "catalogue_orbits": 11177,
+            "complete": false,
+            "graph_points": 6456,
+            "original_points": 7016,
+            "potentially_visible_orbits": 771,
+            "probes_evaluated": 25,
+            "receiver_points": {
+              "1": 3965,
+              "2": 3051
+            },
+            "snapshots": [
+              "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+              "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+              "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+              "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+              "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+            ],
+            "stop": "inside_score",
+            "track_count": 236,
+            "would_withhold": false
+          }
+        }
+      },
+      "setup": {
+        "cpu_s": 0.00127444,
+        "elapsed_s": 0.001274541
+      },
+      "terminal_difference": 0.0
+    },
+    "south": {
+      "arrays": [
+        {
+          "cells": 225984,
+          "frequency_max_hz": 5.878973752260208e-09,
+          "horizon_mismatches": 0,
+          "latitude_longitude": [
+            -32.99615827145897,
+            22.565929480654006
+          ],
+          "tangent_max_hz_per_s": 2.9740476747974753e-10
+        },
+        {
+          "cells": 225984,
+          "frequency_max_hz": 5.966285243630409e-09,
+          "horizon_mismatches": 0,
+          "latitude_longitude": [
+            -33.09187899217969,
+            22.218010322138287
+          ],
+          "tangent_max_hz_per_s": 3.1741365091875196e-10
+        }
+      ],
+      "evidence_matches": true,
+      "geometry": {
+        "cpu_s": 0.216799705,
+        "elapsed_s": 0.216828305
+      },
+      "native_counters": {
+        "calls": 96,
+        "cells": 21694464,
+        "projection_cpu_ns": 204776029
+      },
+      "probe_difference": 7.465139617579553e-13,
+      "proof": {
+        "control": {
+          "cpu_s": 1.444817546,
+          "elapsed_s": 1.444926885,
+          "terminal": {
+            "catalogue_orbits": 10937,
+            "complete": true,
+            "exterior_separation_km": 0.0,
+            "graph_points": 509,
+            "original_points": 531,
+            "potentially_visible_orbits": 856,
+            "probes_evaluated": 96,
+            "receiver_points": {
+              "1": 265,
+              "2": 266
+            },
+            "receivers": {
+              "1": {
+                "exterior_clearance_km": 50.0,
+                "exterior_xy_km": [
+                  -62.5,
+                  0.0
+                ],
+                "gain": 1.1551782055251865,
+                "inside_xy_km": [
+                  -12.40234375,
+                  5.0
+                ],
+                "unique_exterior": true
+              },
+              "2": {
+                "exterior_clearance_km": 50.0,
+                "exterior_xy_km": [
+                  -62.5,
+                  0.0
+                ],
+                "gain": 1.0306184908978366,
+                "inside_xy_km": [
+                  -12.40234375,
+                  0.0
+                ],
+                "unique_exterior": true
+              }
+            },
+            "snapshots": [
+              "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+              "sha256:1a730e3fc41fb81e9ca09fb7e792b05764b92277a9322b7d0dbdfa6410b29a19",
+              "sha256:20475481baa8eb4be510c955483280abd96b5ff0d2bb418aa840184b44b772e3",
+              "sha256:36252c1f8ef4ca1fe523c1b9d1a108b6a524eed83ecd625c9f89379294e5dde5",
+              "sha256:5f56298337ea6d22fe99064f25c533eabb7de571aad0f5cb2991c59fac858cdd"
+            ],
+            "track_count": 29,
+            "would_withhold": true
+          }
+        },
+        "native": {
+          "cpu_s": 0.672396306,
+          "elapsed_s": 0.672458139,
+          "terminal": {
+            "catalogue_orbits": 10937,
+            "complete": true,
+            "exterior_separation_km": 0.0,
+            "graph_points": 509,
+            "original_points": 531,
+            "potentially_visible_orbits": 856,
+            "probes_evaluated": 96,
+            "receiver_points": {
+              "1": 265,
+              "2": 266
+            },
+            "receivers": {
+              "1": {
+                "exterior_clearance_km": 50.0,
+                "exterior_xy_km": [
+                  -62.5,
+                  0.0
+                ],
+                "gain": 1.155178205525825,
+                "inside_xy_km": [
+                  -12.40234375,
+                  5.0
+                ],
+                "unique_exterior": true
+              },
+              "2": {
+                "exterior_clearance_km": 50.0,
+                "exterior_xy_km": [
+                  -62.5,
+                  0.0
+                ],
+                "gain": 1.0306184908979699,
+                "inside_xy_km": [
+                  -12.40234375,
+                  0.0
+                ],
+                "unique_exterior": true
+              }
+            },
+            "snapshots": [
+              "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+              "sha256:1a730e3fc41fb81e9ca09fb7e792b05764b92277a9322b7d0dbdfa6410b29a19",
+              "sha256:20475481baa8eb4be510c955483280abd96b5ff0d2bb418aa840184b44b772e3",
+              "sha256:36252c1f8ef4ca1fe523c1b9d1a108b6a524eed83ecd625c9f89379294e5dde5",
+              "sha256:5f56298337ea6d22fe99064f25c533eabb7de571aad0f5cb2991c59fac858cdd"
+            ],
+            "track_count": 29,
+            "would_withhold": true
+          }
+        }
+      },
+      "setup": {
+        "cpu_s": 0.001253307,
+        "elapsed_s": 0.001253412
+      },
+      "terminal_difference": 6.3860028376439e-13
+    }
+  },
+  "south": {
+    "fit_attempts": 0,
+    "reason": "both_receivers_support_far_exterior",
+    "status": "withheld"
+  }
+}
