@@ -15,6 +15,10 @@ The sampler first covers the offered square on a five-by-five grid and samples a
 
 The endpoints and region decision were fixed before grid construction. In particular the known false near-omission fix stays a false fix. All four source paths, grids and terminal digests were cross-checked against their original sealed publications. The plotted scores use the fitted calibration arm and a common clipped color scale. The comparisons used archived scores without reading recorded I/Q. [Sampler and scorer](adaptive_grid_screen.py) · [Component tests](../../../tests/pipeline_eval/test_adaptive_grid_screen.py)
 
+## Cost overlap on the installed track graph
+
+Applying the same frozen selection to the genuine dense 12 ms packet with the original v3 graph retained **104 of 179 locations** and all tested low-loss points. This offer also has paired clocks for predictive geometry on every original objective call. The 75 omitted nodes accounted for **0.184 CPU s** of original predictive geometry. Caching orbit states saved **0.213 CPU s** at full resolution, but only **0.123 CPU s** of that saving belongs to the 104 retained nodes. These components overlap. The other per-node work was not independently timed on those coordinates, so the archived clocks do not establish an adaptive solve runtime. For scale, the dense solve would still need to fall by **2.959 CPU s** in the earlier favorable 55-recording timing model. [Matched per-node prices](measurements/adaptive-grid-cost.json) · [Exact full-grid state reuse](grid-phase-state-reuse.md)
+
 To regenerate the numeric receipt on Gauss, run the following from the research checkout with a fresh destination. The figure driver reads the archived receipt in the checkout.
 
 ```sh

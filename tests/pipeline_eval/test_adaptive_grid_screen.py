@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 
 from leo.analysis.position_grid import sample_position_grid
 from reports.ALGO08.v3.adaptive_grid_screen import choose_nodes, screen
+from reports.ALGO08.v3.adaptive_grid_cost import geometry_cost
 
 
 def test_refines_either_calibration_and_outside_the_hull():
@@ -29,3 +31,15 @@ def test_hidden_mode_outside_the_initial_refinement_is_counted():
     assert second["selected_xy"] == first["selected_xy"]
     assert second["arms"]["c0"]["missed_minima"] == 1
     assert not second["passed"]
+
+
+def test_cost_joins_points_and_arms_once_and_excludes_own_endpoint():
+    a, b = (1., 0.), (2., 0.)
+    grid = {"endpoints": {"c0": a, "fitted_c": b},
+            "points": [{"east_km": p[0], "north_km": p[1]} for p in (a, b)]}
+    calls = [{"point": point, "arm": arm, "exact": True, "clocks_ns": {"released": 8, "prepared": 4}}
+             for point, arm in ((a, "fitted_c"), (b, "c0"))]
+    assert geometry_cost(calls, {a}, grid)["prepared_kept"] == 4e-9
+    for bad in (calls[:1], calls+calls[:1]):
+        with pytest.raises(ValueError):
+            geometry_cost(bad, {a}, grid)
