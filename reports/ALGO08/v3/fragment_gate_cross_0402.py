@@ -354,9 +354,76 @@ def launch(root):
         raise RuntimeError("Saved crossed diagnostic failed. Its original clock and stderr were sealed.")
 
 
+def isolated_slope_gate(row):
+    from math import sqrt
+
+    diag = row["conditional_residual_gate"]["diagnostics"]
+    return (not row["compatible"] and abs(row["profile_bias_hz"]) <= 3000
+            and row["profile_rms_hz"] <= 450 and row["aliases_changed"] == 0
+            and row["conditional_residual_gate"]["rms_hz"] <= 450
+            and diag["slope_z"] > 3 and diag["mean_z"] <= 3
+            and diag["quadratic_bic_gain"] <= 10 and diag["maximum_step_z"] <= 4
+            and abs(diag["lag1_acf"]) <= 4 / sqrt(row["points"]))
+
+
+def seal(root, destination):
+    """Append independent post-exit support joins and the whole process clock."""
+    from aperture_trial import read, write
+    from empty_bootstrap import checked
+    from leo.analysis.localization_v3.tracks import winning_observations
+
+    process = read(root / "exit.json")
+    if process["timing"]["exit_code"]:
+        raise ValueError("The diagnostic must exit before scientific scoring")
+    path = root / "diagnostic/cross.json"
+    core = read(path)
+    request = json.loads(checked(STAGED / "request.json", REQUEST_SHA))
+    native = json.loads(checked(Path(request["native_file"]), request["native_sha256"]))
+    sealed = json.loads(gzip.decompress(checked(ARCHIVED, ARCHIVED_SHA)))
+    trace = json.loads(checked(ARCHIVED_CUMULATIVE, TRACE_SHA))
+    official = trace["pre_repair"][0]["arms"]["c0"]["curved"]
+    support = find_track(official, TRACK_58377)["observation_ids"]
+    extra = core["arms"]["c0"]["curved_58377"]["mask_influence"]["extra"]
+    rows, _ = winning_observations(native)
+    detect = {row["observation_id"]: row for row in rows}
+    excluded = detect[extra["removed"]]
+    if excluded["time_s"] != extra["time_s"] or support[-1] != extra["removed"]:
+        raise ValueError("The trailing candidate observation must have the original native sample counter time")
+    margins = [detect[oid]["fractional_margin"] for oid in support]
+    first, second = (row["rows"] for row in trace["curved_gates"])
+    kept = {oid for row in second if row["compatible"] for oid in row["observation_ids"]}
+    restored = set(find_track(second, TRACK_62735)["observation_ids"])
+    expected = {oid for oid, _norad, role in sealed["runs"]["stock"]["selected_rows"]["c0"] if role == "conditional"}
+    prior = {row["component"]: row["norad"] for row in first}
+    proposed = sealed["runs"]["cumulative"]["route_details"]["support"]["salvage"]
+    independently_nominated = {row["component"]: row["selected"] for row in proposed if row["selected"] is not None}
+    trials = [dict(component=row["component"], points=row["points"], slope_z=row["conditional_residual_gate"]["diagnostics"]["slope_z"])
+              for row in second if row["component"] in independently_nominated
+              and prior.get(row["component"]) == independently_nominated[row["component"]]["norad"]
+              and isolated_slope_gate(row)]
+    core.update(
+        original_process=process, sealed_cross_sha256=sha256(path.read_bytes()).hexdigest(),
+        staged_request_sha256=REQUEST_SHA,
+        native_extra_observation=excluded | {
+            "fractional_margin_rank_ascending": 1 + sum(value < excluded["fractional_margin"] for value in margins),
+            "fragment_points": len(margins),
+        },
+        provisional_mask_arithmetic=dict(cumulative_survivors=len(kept), independent_target_points=len(restored),
+                                         named_curved=len(expected), surplus=sorted((kept | restored) - expected),
+                                         missing=sorted(expected - (kept | restored))),
+        isolated_same_identity_slope_offers=trials,
+    )
+    write(destination, core)
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("action", choices=("launch", "run"))
-    cli.add_argument("root", type=Path)
+    commands = cli.add_subparsers(dest="action", required=True)
+    for name in ("launch", "run", "seal"):
+        command = commands.add_parser(name)
+        command.add_argument("root", type=Path)
+        if name == "seal":
+            command.add_argument("destination", type=Path)
     args = cli.parse_args()
-    globals()[args.action](args.root)
+    options = vars(args)
+    globals()[options.pop("action")](**options)
