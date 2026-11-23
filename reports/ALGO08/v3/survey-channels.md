@@ -14,6 +14,10 @@ The survey kept both antennas for the first sixth of the admitted visits, then k
 
 On the dense recording, the survey fit assigned 1,407 observations in each arm. RF RMS fell from 129.70 / 129.66 Hz with v3 to 125.47 / 125.52 Hz. Position error rose in both arms. On the southern containing offer the survey retained 152 assigned observations and RF RMS rose from 6.50 / 6.39 to 6.97 / 6.97 Hz. The fixed-zero error increased 327 m and exceeded the tolerance, even though the fitted error increased only 42 m. The far-offer run completed its exterior check and withheld. [Full RF and position scores](measurements/survey-channels.json)
 
+## What the survey lost
+
+The survey and v3 agreed on the satellite for every observation they both assigned. The dense schedule skipped 3,023 of v3's 4,472 assigned observations. It also lost 182 on visits it did process. On the southern recording it kept exactly the 152 available stock observations, with the same satellites and roles. A fresh fit started at the offered center with the original satellite labels on those 152 observations and reproduced the survey positions in both arms. Across all 16 eligible channel pairs, even the best southern pair retained only four of seven satellites. [Verified assignments and cold fit](survey-owner-diagnostic.md) · [Every two-channel choice](survey-pair-census.md)
+
 ## Dense CPU budget
 
 Using the measured **21.623 CPU s** outside detector callbacks and charging the 2,539 retained calls at the full-recording mean gives **35.64 CPU s** for acquisition. Adding the measured **11.96 CPU s** for the solver and numerical evidence gives **47.60 CPU s** before figure rendering and exit. The historical warm half-time CPU budget is **55.54 s**. More active channels may take longer per call, skipped visits still require empty-probe handling, and storage waits affect elapsed time. This estimate assumes unchanged outside work and excludes selector overhead. The run failed the accuracy screen and stopped before a raw replay. [Full acquisition timers](acquisition-split.md) · [Historical warm clocks](single-core-target.md)
