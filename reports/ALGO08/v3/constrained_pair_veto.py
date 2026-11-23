@@ -10,9 +10,16 @@ def incompatible_tracks(record):
     """Only a completed constrained result can disqualify this trial."""
     if len(record.get("history", ())) != 5 or "minimum_gate_slack" not in record:
         return []
-    groups = (("conditional", record["gates"]["tracks"]), ("predictive", record.get("linear_gates", ())))
-    return [(role, index) for role, tracks in groups for index, track in enumerate(tracks)
-            if track["compatible"] is False]
+    groups = (
+        ("conditional", record["gates"]["tracks"]),
+        ("predictive", record.get("linear_gates", ())),
+    )
+    return [
+        (role, index)
+        for role, tracks in groups
+        for index, track in enumerate(tracks)
+        if track["compatible"] is False
+    ]
 
 
 class IneligiblePair(Exception):
@@ -61,7 +68,10 @@ def guard(family, feasible, audit):
 
         start = process_time_ns()
         try:
-            with patch.object(feasible, "_problem", problem), patch.object(feasible, "summary", summary):
+            with (
+                patch.object(feasible, "_problem", problem),
+                patch.object(feasible, "summary", summary),
+            ):
                 return old_constrained(*args, **kwargs)
         finally:
             audit["rescue_cpu_ns"] += process_time_ns() - start
@@ -71,11 +81,24 @@ def guard(family, feasible, audit):
         try:
             return old_configuration(d, node, entries, means)
         except IneligiblePair as veto:
-            audit["rejected_trials"].append(dict(failed_tracks=veto.failed,
-                                                phase_change_s=float(veto.record["final_phase_change_s"]),
-                                                skipped_arm="fitted_c"))
-            return dict(paired_valid=False, arms={"c0": veto.record}, node=node, entries=entries,
-                        means=means, constrained_refinement_attempted=True)
+            audit["rejected_trials"].append(
+                {
+                    "failed_tracks": veto.failed,
+                    "phase_change_s": float(veto.record["final_phase_change_s"]),
+                    "skipped_arm": "fitted_c",
+                }
+            )
+            return {
+                "paired_valid": False,
+                "arms": {"c0": veto.record},
+                "node": node,
+                "entries": entries,
+                "means": means,
+                "constrained_refinement_attempted": True,
+            }
 
-    with patch.object(family, "constrained", constrained), patch.object(family, "fit_configuration", configuration):
+    with (
+        patch.object(family, "constrained", constrained),
+        patch.object(family, "fit_configuration", configuration),
+    ):
         yield

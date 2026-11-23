@@ -16,8 +16,10 @@ def ports():
         return node
 
     def summary(node, arm):
-        return dict(gates={"tracks": [{"compatible": node.get("conditional", True)}]},
-                    linear_gates=[{"compatible": node.get("predictive", True)}])
+        return {
+            "gates": {"tracks": [{"compatible": node.get("conditional", True)}]},
+            "linear_gates": [{"compatible": node.get("predictive", True)}],
+        }
 
     feasible._problem = problem
     feasible.summary = summary
@@ -27,8 +29,11 @@ def ports():
         for arm in feasible.ARMS:
             p = feasible._problem(None, node, None, arm)
             record = feasible.summary(p, arm)
-            record.update(history=[{}] * node.get("rounds", 5), final_phase_change_s=0.001,
-                          minimum_gate_slack=-0.3)
+            record.update(
+                history=[{}] * node.get("rounds", 5),
+                final_phase_change_s=0.001,
+                minimum_gate_slack=-0.3,
+            )
             results[arm] = record
         return results
 
@@ -36,9 +41,12 @@ def ports():
 
     def configuration(d, node, entries, means):
         result = family.constrained(node)
-        passed = all(t["compatible"] for r in result.values()
-                     for t in r["gates"]["tracks"] + r["linear_gates"])
-        return dict(arms=result, paired_valid=passed)
+        passed = all(
+            t["compatible"]
+            for r in result.values()
+            for t in r["gates"]["tracks"] + r["linear_gates"]
+        )
+        return {"arms": result, "paired_valid": passed}
 
     family.fit_configuration = configuration
     return family, feasible, calls
@@ -61,14 +69,48 @@ def test_completed_gate_rejects_and_next_trial_can_still_win(role):
 def test_incomplete_first_arm_keeps_original_execution():
     family, feasible, calls = ports()
     with guard(family, feasible, {}):
-        result = family.fit_configuration(None, {"conditional": False, "rounds": 4}, [], {})
+        result = family.fit_configuration(
+            None, {"conditional": False, "rounds": 4}, [], {}
+        )
     assert calls == ["c0", "fitted_c"] and not result["paired_valid"]
 
 
 @pytest.mark.parametrize("arm", ["c0", "fitted_c"])
 def test_actual_numerical_failures_propagate_and_ports_restore(arm):
     family, feasible, _ = ports()
-    original = family.constrained, family.fit_configuration, feasible.summary, feasible._problem
+    original = (
+        family.constrained,
+        family.fit_configuration,
+        feasible.summary,
+        feasible._problem,
+    )
     with pytest.raises(ArithmeticError), guard(family, feasible, {}):
         family.fit_configuration(None, {"error": arm}, [], {})
-    assert original == (family.constrained, family.fit_configuration, feasible.summary, feasible._problem)
+    assert original == (
+        family.constrained,
+        family.fit_configuration,
+        feasible.summary,
+        feasible._problem,
+    )
+
+
+def test_named_adoption_can_select_a_later_successful_trial():
+    from leo.analysis.localization_v3.family_cavity import adopt_equal_assignment_prior
+
+    family, feasible, _ = ports()
+    with guard(family, feasible, {}):
+        first = family.fit_configuration(None, {"predictive": False}, [], {})
+        second = family.fit_configuration(None, {}, [], {})
+    second["arms"]["c0"]["corrected_selection_loss"] = 8.0
+    baseline = {"c0": {"corrected_selection_loss": 10.0}}
+    policy = {
+        "status": "complete",
+        "trials": [first, second],
+        "accepted": False,
+        "policy_arms": baseline,
+        "baseline_arms": baseline,
+        "baseline_corrected_loss": {"c0": 10.0},
+    }
+    selected = adopt_equal_assignment_prior(policy)
+    assert selected["accepted"] and selected["selected"] is second
+    assert selected["policy_arms"] is second["arms"]
