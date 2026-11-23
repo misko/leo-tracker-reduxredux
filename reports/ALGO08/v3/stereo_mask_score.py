@@ -1,7 +1,10 @@
 """Join all sealed stereo-mask publications to independent evaluation positions."""
 
 import argparse
+from bisect import bisect_right
+import gzip
 from hashlib import sha256
+import json
 from pathlib import Path
 
 from aperture_score import PHYSICAL, SIMULATED, distance_km, references
@@ -9,11 +12,23 @@ from aperture_trial import ARMS, read, write
 from dense_full_short_raw import checked
 from late_prefix_stop_score import compare, has_complete_evidence, passes
 from signed_0374_transfer import owner_changes
-from stereo_mask_trial import ORDER
+from stereo_mask_trial import HERE, ORDER
 
 
 PINS = {PHYSICAL: "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5",
         SIMULATED: "0bda865a20e62852220a9ab8df63895a449bf203a2deb5370920dc3ce215d37d"}
+PREFIX_MEMBERS_SHA = "4e3c020254a6b94f66f8e1bef39e4b475068d4c6658332cd22122d794cfc6dec"
+
+
+def member_revisit(members, skipped):
+    stops = tuple(row["stop"] for row in members)
+    if not stops or len(set(stops)) != len(stops) or sorted(stops) != list(stops):
+        raise ValueError("Expected ordered signed member boundaries")
+    touched = {bisect_right(stops, visit) for visit, _ in skipped}
+    if any(visit < 0 for visit, _ in skipped) or len(stops) in touched:
+        raise ValueError("Unpaid slot outside the signed capture")
+    return dict(revisit_members=len(touched), total_members=len(stops), member_ids=sorted(touched),
+                **{key+"_bytes":sum(members[i][key] for i in touched) for key in ("compressed", "decoded", "index")})
 
 
 def charge(original_solve_s, new_solve_s, budget, planner):
@@ -66,6 +81,9 @@ def score(root, far):
     if not physical["authority_eligible"]:
         raise ValueError("Weak physical reference not eligible")
     truth["DS30-0016"] = tuple(physical["reference"][k] for k in ("latitude_deg", "longitude_deg"))
+    archive = checked(HERE / "measurements/late-prefix-stop.json.gz", PREFIX_MEMBERS_SHA)
+    with gzip.open(archive, "rt") as stream:
+        dense_prefix = json.load(stream)["DS30-0008"]["binding"]["record"]
     reports = {}
     for case, modes in ORDER.items():
         directory = root / case
@@ -73,6 +91,14 @@ def score(root, far):
         controls, binding = frozen["controls"], frozen["binding"]
         point = truth["south-containing" if case == "south" else case]
         scores = {mode:row(sealed[case][mode], controls, binding, point) for mode in modes}
+        if case == "DS30-0008":
+            source = dense_prefix["binding"]
+            if (source["raw_authority"] != binding["raw_authority"]
+                    or source["native_sha256"] != binding["original_native_sha256"]):
+                raise ValueError("Retried member inventory is from another recording or native packet")
+            members = dense_prefix["controls"]["members"]
+            for mode in modes:
+                scores[mode]["dense_member_revisit"] = member_revisit(members, sealed[case][mode]["mask"]["skipped_slots"])
         reference = {kind: compare(controls[kind]["arms"], {}, point, binding["offer"]) for kind in ("full", "named")}
         full = controls["full"]
         endpoints = [sealed[case][mode]["result"]["terminal"]["arms"] for mode in modes]
@@ -94,7 +120,7 @@ def score(root, far):
             raise ValueError("South wave selection changed across regions")
         omitted = row(replay, frozen["controls"], frozen["binding"], truth["south-far"])
         omitted["passed"] = omitted["status"] == "withheld" and omitted["image_count"] == 0
-    return dict(cases=reports, containing_qualified=qualified, far=omitted,
+    return dict(cases=reports, containing_qualified=qualified, far=omitted, member_source_sha256=PREFIX_MEMBERS_SHA,
                 reference_pins={p.name:pin for p,pin in PINS.items()}, waveform_calls=0)
 
 

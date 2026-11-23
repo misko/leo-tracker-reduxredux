@@ -65,3 +65,14 @@ def test_saved_projection_never_infers_missing_data_or_changes_a_paid_lane():
             assert old["candidates"]
         else:
             assert current == old
+
+
+def test_member_revisit_uses_exclusive_boundaries_and_counts_each_member_once():
+    from stereo_mask_score import member_revisit
+
+    members = [dict(stop=n, compressed=10, decoded=20, index=2) for n in (64, 128, 192)]
+    result = member_revisit(members, ((63, 0), (64, 1), (64, 0)))
+    assert result == dict(revisit_members=2, total_members=3, member_ids=[0, 1], compressed_bytes=20,
+                          decoded_bytes=40, index_bytes=4)
+    with pytest.raises(ValueError, match="outside the signed capture"):
+        member_revisit(members, ((192, 0),))
