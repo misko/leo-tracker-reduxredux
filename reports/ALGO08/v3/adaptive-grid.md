@@ -1,8 +1,8 @@
 # Can the position map keep its low-loss region with fewer evaluations?
 
-On four archived offers, an adaptive layout retained the original sampled minima, all tested locations within 4.5 objective units of the minimum, and all failed locations for both calibration arms. The weak DS30-0016 layout still needed **153 of 179** locations, a **14.5%** reduction. It missed the study's prespecified 25% minimum reduction per offer. The screen ended before a timed fit or new web publication. [Frozen criteria](adaptive-grid-protocol.md) · [All retained coordinates and scores of the audit](measurements/adaptive-grid.json)
+On four archived offers, an adaptive layout retained the original sampled minima, all tested locations within 4.5 objective units of the minimum, and all failed locations for both calibration arms. The weak DS30-0016 layout still needed **153 of 179** locations, a **14.5%** reduction. It missed the study's prespecified 25% minimum reduction per offer. The screen ended before a timed fit or new web publication. [Frozen criteria](adaptive-grid-protocol.md) · [Retained coordinates and interpolation errors](measurements/adaptive-grid.json)
 
-| Completed short-receiver publication | Starting locations | Retained / original | Calls avoided | Largest fitted-arm loss interpolation error on omitted nodes |
+| Completed short-receiver publication | Starting locations | Retained / original | Locations omitted | Largest fitted-arm loss interpolation error on omitted nodes |
 |---|---:|---:|---:|---:|
 | Dense DS30-0008 | 59 | 110 / 179 | 38.5% | 54.29 |
 | Weak DS30-0016 | 59 | 153 / 179 | 14.5% | 2.96 |
