@@ -204,13 +204,13 @@ def opportunities(trace):
     )
 
 
-def read_dense(directory):
+def read_dense(directory, visits=24):
     from leo.contracts.fast_scan_native import FastScanPolicyV2
     from leo.scanner.fast_scan_analysis import valid_window_support
     from leo.storage.fast_scan import FastSegmentSource
 
     scope = dict(path=str(directory), manifest_digest="sha256:" + DENSE_MANIFEST_SHA)
-    source = FastSegmentSource(scope, stop_sequence=24)
+    source = FastSegmentSource(scope, stop_sequence=visits)
     policy = FastScanPolicyV2()
     lanes = tuple(source.receiver_ids)
     if lanes != (0, 1):
