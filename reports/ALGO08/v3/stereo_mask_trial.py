@@ -104,7 +104,7 @@ def bind(case):
         request = prior["binding"]
         command = request["command"]
         recording, region, archive = command[command.index("--recording") + 1], Path(request["region"]), request["archive"]
-        native = full / "fast-scan-automatic-work" / receipt["run_id"] / "detections.json"
+        native, = (full / "fast-scan-automatic-work").glob("*/detections.json")
         pin, raw = prior["candidate"]["native_sha256"], prior["candidate"]["recipe"]["receiver_audit"]
         named = read(checked(PAIR, PAIR_SHA))["runs"]["baseline"]["arms"]
     else:
