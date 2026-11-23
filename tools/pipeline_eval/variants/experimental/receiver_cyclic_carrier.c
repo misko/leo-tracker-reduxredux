@@ -69,17 +69,16 @@ static void make_spectrum(CyclicCarrier *work, const int16_t *iq, int lane) {
     memcpy(work->power + work->size, work->power, work->size * sizeof(float));
 }
 
-int cyclic_carrier_propose(CyclicCarrier *work, const int16_t *iq, int lane,
-                          double center, const int *lines, const float *weights,
-                          double *hz, double *scores) {
-    if (!work || !iq || !lines || !weights || !hz || !scores || lane < 0 || lane > 1
+static int make_scores(CyclicCarrier *work, const int16_t *iq, int lane, double center,
+                       const int *lines, const float *weights, int *first_bin) {
+    if (!work || !iq || !lines || !weights || lane < 0 || lane > 1
         || !isfinite(center) || fabs(center) > sample_rate / 2) return -1;
     const int size = work->size;
     const double spacing = sample_rate / size;
     const int low = (int)ceil(2 * (center - 800000.) / spacing);
     const int high = (int)floor(2 * (center + 800000.) / spacing);
     const int count = high - low + 1;
-    const int exclude = (int)ceil(2 * 10000. / spacing);
+    *first_bin = low;
     make_spectrum(work, iq, lane);
     memset(work->score, 0, count * sizeof(float));
     for (int line = 0; line < line_count; ++line) {
@@ -91,6 +90,47 @@ int cyclic_carrier_propose(CyclicCarrier *work, const int16_t *iq, int lane,
         for (int i = 0; i < count; ++i)
             work->score[i] += before * bins[i] + after * bins[i + 1];
     }
+    return count;
+}
+
+int cyclic_carrier_surface(CyclicCarrier *work, const int16_t *iq, int lane,
+                           double center, const int *lines, const float *weights,
+                           float *scores, int *first_bin) {
+    if (!scores || !first_bin) return -1;
+    const int count = make_scores(work, iq, lane, center, lines, weights, first_bin);
+    if (count > 0) memcpy(scores, work->score, count * sizeof(float));
+    return count;
+}
+
+int cyclic_carrier_accumulate(const float *scores, int size, double lower, double bin_hz,
+                             const double *carrier, int satellites, const double *offsets,
+                             int cells, double *sums) {
+    int reads = 0;
+    for (int sat = 0; sat < satellites; ++sat) {
+        if (!isfinite(carrier[sat])) continue;
+        for (int i = 0; i < cells; ++i) {
+            const double index = (carrier[sat] + offsets[i] - lower) / bin_hz;
+            if (index < 0 || index > size - 1) continue;
+            const int bin = (int)index;
+            const double weight = index - bin;
+            const float left = scores[bin];
+            const float right = scores[bin + (bin < size - 1)];
+            sums[sat * cells + i] += left + weight * (right - left);
+            ++reads;
+        }
+    }
+    return reads;
+}
+
+int cyclic_carrier_propose(CyclicCarrier *work, const int16_t *iq, int lane,
+                          double center, const int *lines, const float *weights,
+                          double *hz, double *scores) {
+    if (!hz || !scores) return -1;
+    int low;
+    const int count = make_scores(work, iq, lane, center, lines, weights, &low);
+    if (count < 0) return count;
+    const double spacing = sample_rate / work->size;
+    const int exclude = (int)ceil(2 * 10000. / spacing);
     for (int hypothesis = 0; hypothesis < capacity; ++hypothesis) {
         int best = 0;
         for (int i = 1; i < count; ++i)

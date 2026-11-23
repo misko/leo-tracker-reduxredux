@@ -88,7 +88,7 @@ def anchor_factors(rows, lanes, anchors):
             for candidate in row["candidates"]]
 
 
-def projected_sky(catalogue, origin, lanes, offer):
+def projected_sky(catalogue, origin, lanes, offer, *, include_visibility=False):
     duration = max(lane.time for lane in lanes)
     coarse = np.arange(0., duration + 5., 5.)
     pos, vel, usable = ecef_states(catalogue, origin, coarse)
@@ -129,8 +129,15 @@ def projected_sky(catalogue, origin, lanes, offer):
         corner_cfo, corner_delay = projected(region.latlon(xy))
         corner_deltas.append(dict(xy_km=xy, maximum_cfo_hz=float(np.max(np.abs(cfo-corner_cfo))),
                                   maximum_range_samples=float(np.max(np.abs(delay-corner_delay)))))
-    return cfo, delay, numbers, dict(coarse_visible=len(visible), usable=len(usable),
-                                     corner_deltas=corner_deltas)
+    metadata = dict(coarse_visible=len(visible), usable=len(usable), corner_deltas=corner_deltas)
+    if include_visibility:
+        center = tuple(offer.center)
+        _, elevation, _, _ = look_angles(pos, vel, geodetic_to_ecef_km(*center, 0.),
+                                         ecef_to_enu_matrix(*center))
+        metadata["above_horizon"] = (
+            (elevation[:, floor] * (1. - fraction) + elevation[:, ceiling] * fraction) >= 0.
+        )
+    return cfo, delay, numbers, metadata
 
 
 def stereo_offset(factors):
