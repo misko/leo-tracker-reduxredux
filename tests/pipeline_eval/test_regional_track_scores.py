@@ -56,6 +56,47 @@ def test_original_likelihood_and_owner(compiled, monkeypatch, mode):
     assert trial["receiver_scores"] == pytest.approx(control["receiver_scores"], abs=1e-12, rel=0.)
     assert trial["score"] == pytest.approx(control["score"], abs=1e-12, rel=0.)
     assert candidate.fallbacks == int(mode == "float_horizon")
+    subset = TrackScores(compiled, original, only_receiver=1)
+    if mode == "float_horizon":
+        with pytest.raises(ValueError, match="requires the original native score"):
+            subset(dict(points[0]))
+    else:
+        partial = subset(dict(points[0]))
+        assert partial["receiver_scores"] == {"1": trial["receiver_scores"]["1"]}
+        assert partial["owners"] == {k: trial["owners"][k] for k in ("0", "2")}
+
+
+@pytest.mark.parametrize("evidence", ["strict", "equality", "ext_tie", "invalid", "positive", "bad_layout"])
+def test_one_receiver_terminal_veto(evidence):
+    from bilateral_veto_disproof import disprove
+    from tests.pipeline_eval.test_regional_exterior_veto import WIDTH, fixture, scores_at
+    from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal
+
+    points = fixture()
+    first = points[0]["receiver_scores"]
+    if evidence in ("strict", "equality", "invalid"):
+        first["1"] = {"strict": 3., "equality": 2., "invalid": float("nan")}[evidence]
+    if evidence == "ext_tie":
+        scores_at(points, (30., 4.))["1"] = 2.
+    if evidence == "bad_layout":
+        points.pop()
+    visited = []
+
+    def score(point):
+        visited.append(point)
+        return point["receiver_scores"]["1"]
+
+    original = evaluate_terminal(points, WIDTH, lambda point: point["receiver_scores"])
+    result = disprove(points, WIDTH, score)
+    if evidence == "strict":
+        assert len(visited) == 25 and visited[-1] is points[0]
+        assert result == dict(would_withhold=False, complete=False, probes_evaluated=25,
+                              stop="single_receiver_inside_score")
+        assert original["would_withhold"] == result["would_withhold"]
+    else:
+        assert result is None
+        assert original["would_withhold"] == (evidence == "positive")
+        assert len(visited) == {"ext_tie": 24, "bad_layout": 0}.get(evidence, 25)
 
 
 def test_track_library_requires_projector(tmp_path):

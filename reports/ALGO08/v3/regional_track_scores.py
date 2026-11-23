@@ -7,27 +7,36 @@ import numpy as np
 
 
 class TrackScores:
-    def __init__(self, library, scorer):
+    def __init__(self, library, scorer, *, only_receiver=None):
         state = getclosurevars(scorer).nonlocals
         self.geometry = state["geometry"]
         self.labels = np.asarray(state["labels"])
-        self.index = np.ascontiguousarray(np.concatenate(state["indexes"]), dtype=np.int64)
-        self.tracks = state["tracks"]
+        self.tracks, indexes = state["tracks"], state["indexes"]
         self.counts = state["counts"]
         self.groups = state["groups"]
-        self.total = len(state["rows"])
-        self.catalogue = state["catalogue_size"]
-        self.original = scorer
+        self.only_receiver = only_receiver
         sizes = np.asarray([len(t["values"]) for t in self.tracks])
-        self.offset = np.r_[np.int64(0), np.cumsum(sizes, dtype=np.int64)]
-        self.observed = np.ascontiguousarray(np.concatenate([t["values"] for t in self.tracks]), dtype=np.float64)
-        self.scale = np.asarray([t["rf_hz"] / 11.5e9 for t in self.tracks], dtype=np.float64)
         from leo.analysis.research.retained_track_likelihood import NOISE, PERIOD
 
         self.noise = NOISE
         self.base = (sizes - 1) * np.log(PERIOD / (np.sqrt(2 * np.pi) * NOISE)) - .5 * np.log(sizes)
+        if only_receiver is not None:
+            selected = [i for i, track in enumerate(self.tracks) if track["receiver"] == only_receiver]
+            if len(self.groups) != 2 or only_receiver not in self.groups or not selected:
+                raise ValueError("Expected both receivers and retained tracks for the selected receiver")
+            self.tracks = [self.tracks[i] for i in selected]
+            indexes = [indexes[i] for i in selected]
+            sizes, self.base = sizes[selected], self.base[selected]
+            self.groups = (only_receiver,)
+        self.index = np.ascontiguousarray(np.concatenate(indexes), dtype=np.int64)
+        self.total = len(state["rows"])
+        self.catalogue = state["catalogue_size"]
+        self.original = scorer
+        self.offset = np.r_[np.int64(0), np.cumsum(sizes, dtype=np.int64)]
+        self.observed = np.ascontiguousarray(np.concatenate([t["values"] for t in self.tracks]), dtype=np.float64)
+        self.scale = np.asarray([t["rf_hz"] / 11.5e9 for t in self.tracks], dtype=np.float64)
         if (self.observed.ndim != 1 or self.index.ndim != 1 or self.labels.ndim != 1 or np.any(sizes < 1)
-                or any(len(ix) != n for ix, n in zip(state["indexes"], sizes, strict=True))
+                or any(len(ix) != n for ix, n in zip(indexes, sizes, strict=True))
                 or self.index.min() < 0 or self.catalogue < 1):
             raise ValueError("Invalid track projection input")
         self.last = self.index.max()
@@ -62,5 +71,7 @@ class TrackScores:
                     point.update(score=sum(sums.values()) / self.total, owners=owners,
                                  receiver_scores={str(r): sums[r] / self.counts[r] for r in self.groups})
                     return point
+        if self.only_receiver is not None:
+            raise ValueError("Selected receiver requires the original native score")
         self.fallbacks += 1
         return self.original(point)
