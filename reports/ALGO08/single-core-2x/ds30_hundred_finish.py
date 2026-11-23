@@ -59,6 +59,18 @@ def report(result, verdict):
         if count:
             shared.append(f"{name} calibration had {count} shared fixes. The largest absolute difference "
                           f"in their horizontal errors was {largest * 1000:.3f} m.")
+    speed_rows = []
+    for name, timing in (("All assigned recordings", result["timing"]),
+                         ("Both returned a fix", result["shared_fix_timing"]),
+                         ("ALGO08v2 ran first", result["by_first_build"]["baseline"]),
+                         ("ALGO08v3 ran first", result["by_first_build"]["candidate"])):
+        group = timing["all_verified"]
+        if group["cases"]:
+            elapsed = group["elapsed_s"]
+            speed_rows.append(f'| {name} | {len(group["cases"])} | '
+                              f'{1 / elapsed["median_candidate_over_baseline"]:.2f}× | '
+                              f'{1 / elapsed["summed_candidate_over_baseline"]:.2f}× | '
+                              f'{1 / group["cpu_s"]["summed_candidate_over_baseline"]:.2f}× |')
     return "\n".join([
         "# ALGO08v3 and deployed ALGO08v2 on 100 DS30 recordings", "", verdict_text, "",
         "The frozen candidate was named ALGO08v3 at the user's request during the panel. "
@@ -71,6 +83,10 @@ def report(result, verdict):
         "| Build | Fixes | Elapsed median / P90 (s) | Fixed-zero error median / P90 (km) | Fitted error median / P90 (km) |",
         "|---|---:|---:|---:|---:|", *rows, "",
         *shared, "",
+        "| Recordings | Pairs | Median paired elapsed speedup | Summed elapsed speedup | Summed CPU speedup |",
+        "|---|---:|---:|---:|---:|", *speed_rows, "",
+        "The second arm can read input pages cached by the first. The run-order rows contain different "
+        "recordings, so their difference cannot isolate the effect of caching.", "",
         "Both runs started from the same sealed I/Q on one low-priority Gauss core and ended after "
         "publication or an observed solver exit. Run order alternated. Error histograms count returned fixes.",
         "", "Solver failures retained in the 100 assigned pairs: " +

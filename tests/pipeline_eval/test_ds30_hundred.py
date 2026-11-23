@@ -95,6 +95,7 @@ def test_partial_archive_review_uses_pair_pin_and_keeps_complete_gates_pending(t
     assert summary["verified_subset"]["quality"]["preserved"]
     assert not summary["verified_subset"]["passed_elapsed"]
     assert summary["verified_subset"]["same_pixels_all_returned"] == 1
+    assert summary["verified_subset"]["shared_fix_timing"]["all_verified"]["cases"] == names[:1]
     (directory / "pair.json").write_text("{}")
     with pytest.raises(ValueError, match="Invalid archived"):
         reviewer.review(tmp_path)
