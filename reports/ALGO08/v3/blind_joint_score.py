@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from aperture_score import PHYSICAL, SIMULATED, face_clearance_km, references
+from aperture_trial import CASES as SAVED_CASES
 from mixture_score import BUDGET_CPU_S, section
 from mixture_trial import ARMS, CASES
 
@@ -65,11 +66,11 @@ def compare(record, truth, archived):
     )
 
 
-def score(directory, summary, full):
+def score(directory, summary, full, *, cases=None):
     truth = references()
     archived = json.loads((HERE / "measurements/aperture-summary.json").read_text())["cases"]
     observed, pins, results = {}, {}, {}
-    for case in CASES:
+    for case in CASES if cases is None else cases:
         raw = (directory / f"{case}.json").read_bytes()
         record = json.loads(raw)
         results[case] = compare(record, truth[case], archived[case]["full"])
@@ -84,8 +85,13 @@ def score(directory, summary, full):
                                              separators=(",", ":"), allow_nan=False).encode(), mtime=0))
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("directory", "summary", "full"):
         parser.add_argument(name, type=Path)
-    score(**vars(parser.parse_args()))
+    parser.add_argument("--case", dest="cases", choices=SAVED_CASES, action="append")
+    score(**vars(parser.parse_args(argv)))
+
+
+if __name__ == "__main__":
+    main()

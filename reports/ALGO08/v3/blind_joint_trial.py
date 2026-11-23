@@ -10,9 +10,9 @@ from time import perf_counter, process_time
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from aperture_trial import ARMS, archive_identity, configuration, inputs, machine, write
+from aperture_trial import ARMS, CASES, archive_identity, configuration, inputs, machine, write
 from blind_joint_route import make_route
-from mixture_trial import CASES, elapsed, summarize
+from mixture_trial import elapsed, summarize
 
 
 def publication_roles(packet):
@@ -81,9 +81,13 @@ def trial(case, output, *, repair=False):
     write(output, data)
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case", choices=CASES)
     parser.add_argument("output", type=Path)
     parser.add_argument("--repair", action="store_true")
-    trial(**vars(parser.parse_args()))
+    trial(**vars(parser.parse_args(argv)))
+
+
+if __name__ == "__main__":
+    main()
