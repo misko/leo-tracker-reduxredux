@@ -2,10 +2,12 @@
 
 import argparse
 from collections import Counter
+import gzip
 from hashlib import sha256
 import json
 from math import remainder
 from pathlib import Path
+from statistics import median
 import subprocess
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -31,6 +33,7 @@ CONTROLS = {
 CELLS = ("matched-measurements", "also-drop-stock", "mixed-stock-matches")
 EIGHT_MS_REFERENCE = "d5db26385ce031957206e47a0cf12ee2f93b04e2898daff2f10d7fd4e0452a7a"
 CROSSOVER_REFERENCE = "7ad1cb18caacdcd101537b8f490ac096373e3fcff5b2baf82fce40cbf6b2c89a"
+OWNER_REFERENCE = "e705da811970901e5d1636f7e54e9de1a49669172eb1998ccb2f7b0a241e2c55"
 
 
 def verified(path, digest):
@@ -255,6 +258,57 @@ def score(root):
                                      numerical_seal_sha256=sha256((root / "numerical-seal.json").read_bytes()).hexdigest()))
 
 
+def ownership(root):
+    source = root / "numerical-seal.json"
+    sealed = read(source)
+    inputs = root / "inputs.json"
+    enrolled_rows = read(inputs)
+    if any(trial["native"] != enrolled_rows["packets"][cell] for cell, trial in sealed["trials"].items()):
+        raise ValueError("Owner study must bind the original derived input digests")
+    evidence = enrolled_rows["census"]["evidence"]
+    path = HERE / "measurements/full-short-crossover.json.gz"
+    data = path.read_bytes()
+    if sha256(data).hexdigest() != OWNER_REFERENCE:
+        raise ValueError("The archived installed owner rows changed")
+    reference = json.loads(gzip.decompress(data))["cells"]
+    stock, mixed = (reference[name] for name in ("stock-stock", "candidate-stock"))
+    if (stock["native_sha256"] != "sha256:" + CONTROLS["stock"][0]
+            or mixed["detector_source_sha256"] != "sha256:" + CONTROLS["candidate"][0]):
+        raise ValueError("The owner controls do not bind the installed detector endpoints")
+    session = sealed["controls"]["stock"]["terminal"]["session_id"]
+    by_id = {"sha256:" + sha256(f"{session}:{row['radio']}:{row['counter']}".encode()).hexdigest(): row for row in evidence}
+    if len(by_id) != len(evidence):
+        raise ValueError("Expected unique signed receiver and counter pairs")
+    owners = {name: {arm: [[r[k] for k in ("observation_id", "norad", "role")] for r in dataset["selected_rows"][arm]]
+                     for arm in ARMS} for name, dataset in (("stock", stock), ("candidate", mixed))}
+    owners.update({name: trial["owners"] for name, trial in sealed["trials"].items()})
+    counts = {name: {arm: Counter(by_id[oid]["kind"] for oid, _, _ in rows) for arm, rows in dataset.items()}
+              for name, dataset in owners.items()}
+    changes = {}
+    pairs = (("stock", CELLS[0]), (CELLS[0], CELLS[1]), (CELLS[1], "candidate"), (CELLS[2], "candidate"))
+    for before, after in pairs:
+        steps = {}
+        for arm in ARMS:
+            left, right = owners[before][arm], owners[after][arm]
+            lbind, rbind = ({oid: (sat, role) for oid, sat, role in rows} for rows in (left, right))
+            common = lbind.keys() & rbind.keys()
+            steps[arm] = dict(exact_ordered_rows=left == right, shared=len(common),
+                 reassigned=sum(lbind[k] != rbind[k] for k in common),
+                 lost=Counter(by_id[k]["kind"] for k in lbind.keys() - rbind.keys()),
+                 added=Counter(by_id[k]["kind"] for k in rbind.keys() - lbind.keys()))
+        changes[f"{before} -> {after}"] = steps
+    differences = {}
+    for radio in (0, 1):
+        matched = [r for r in evidence if r["radio"] == radio and not r["anchor"] and r["kind"] == "matched"]
+        hz = [abs(r["stock"]["fractional_tracking_cfo_hz"] - r["mixed"]["fractional_tracking_cfo_hz"]) for r in matched]
+        samples = [abs(remainder(epoch(r["stock"]) - epoch(r["mixed"]), 40000/3)) for r in matched]
+        differences[str(radio)] = dict(count=len(hz), absolute_cfo_hz_median=median(hz), absolute_cfo_hz_max=max(hz),
+                                      wrapped_samples_median=median(samples), wrapped_samples_max=max(samples))
+    write(root / "ownership.json", dict(counts=counts, changes=changes, matched_nonanchor_differences=differences,
+         numerical_seal_sha256=sha256(source.read_bytes()).hexdigest(), inputs_sha256=sha256(inputs.read_bytes()).hexdigest(),
+         owner_reference_sha256=OWNER_REFERENCE))
+
+
 def run(root):
     from full_short_physical import environment
     from leo.contracts.digests import canonical_digest
@@ -305,7 +359,7 @@ def run(root):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for command in ("run", "score"):
+    for command in ("run", "score", "ownership"):
         sub.add_parser(command).add_argument("root", type=Path)
     replay = sub.add_parser("worker")
     replay.add_argument("saved", type=Path)
@@ -313,4 +367,4 @@ if __name__ == "__main__":
     replay.add_argument("output", type=Path)
     replay.add_argument("inventory_path", type=Path)
     values = vars(parser.parse_args())
-    {"run": run, "worker": worker, "score": score}[values.pop("action")](**values)
+    {"run": run, "worker": worker, "score": score, "ownership": ownership}[values.pop("action")](**values)
