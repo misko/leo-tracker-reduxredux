@@ -133,7 +133,7 @@ def read_simulated_prefix(panel, limit):
                        target=t, visit=visit, sha256=window.iq_sha256), window.samples
 
 
-def benchmark(binaries, rows, assets, repeats):
+def benchmark(binaries, rows, assets, repeats, *, include_observations=False):
     timings, walls, distributions = {}, {}, {}
     ranks, continuation_kept = [Counter(), Counter()], [Counter(), Counter()]
     changed, selection_changed, ordered, max_delta = set(), set(), [[], []], [0.0] * 4
@@ -188,7 +188,7 @@ def benchmark(binaries, rows, assets, repeats):
                             for col, (a, b) in enumerate(zip(base[2:], candidate[2:])):
                                 max_delta[col] = max(max_delta[col], abs(a - b))
         profiles = [receivers[edges[0], arm].profile() for arm in (0, 1)]
-    return dict(
+    result = dict(
         lane_calls=2 * len(rows), repeats=repeats, changed=sorted(changed),
         changed_continuation=sorted(selection_changed), max_field_deltas=max_delta,
         factor_histograms=[dict(distributions[arm]) for arm in (0, 1)],
@@ -199,6 +199,10 @@ def benchmark(binaries, rows, assets, repeats):
         total_wall_s=[[sum(walls[k, arm]) / 1e9 for arm in (0, 1)] for k in range(repeats)],
         profiles=profiles,
     )
+    if include_observations:
+        result["observations"] = ordered
+        result["reference_lane_cpu_ns"] = [timings[k, 0] for k in range(repeats)]
+    return result
 
 
 def main():

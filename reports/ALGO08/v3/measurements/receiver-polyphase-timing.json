@@ -1,0 +1,4662 @@
+{
+  "build": {
+    "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "installed_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+    "polyphase_source_sha256": "b78f0b2c7a9b78d381067f27aadf2914e129a94121171a767e02896ccfc8cdaa",
+    "arms": {
+      "stock": {
+        "library_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+        "timing_sha256": "5ffc8eb34785b7d20535549da23ba521cf954f86b6cfabce96c0c71ac664292d",
+        "source_sha256": "936b67cbb9af0201a7e65281756cc9c16f042ac2ad5e84201b1577131c67044a",
+        "feedback_sha256": "6afa7f61c0160cffe0cccd95fa41657b5273b94e15b05a73af0f339e36cce429",
+        "training_script_sha256": "c63b849fb630d33fee53d8011b1766891b7e3c9038295334275135055dc443ac",
+        "training": [
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          }
+        ],
+        "commands": [
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/stock/feedback",
+            "-fno-profile-values",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/stock/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/generate.so"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/stock/feedback",
+            "-fno-profile-values",
+            "-Werror=missing-profile",
+            "-Werror=coverage-mismatch",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/stock/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock/use.so"
+          ]
+        ]
+      },
+      "full_grid": {
+        "library_sha256": "1f5c15e2bd1766f1714cfe4630ad8a797fe1798048a6920da9df64a9ea36f59e",
+        "timing_sha256": "ee9b19d0c5692f063ac26a4a02f7431d37a30d266353169e913d237086955572",
+        "source_sha256": "6409d46146da3d2849731c4aa0d94777a6029ae372efdf6916f31ed035ad2d42",
+        "feedback_sha256": "25c87fcec01d85557b71082f2ee921dcdc9f301c39e55eca3ffed56f9ef259ab",
+        "training_script_sha256": "c63b849fb630d33fee53d8011b1766891b7e3c9038295334275135055dc443ac",
+        "training": [
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          }
+        ],
+        "commands": [
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/full_grid/feedback",
+            "-fno-profile-values",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/full_grid/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/generate.so"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/full_grid/feedback",
+            "-fno-profile-values",
+            "-Werror=missing-profile",
+            "-Werror=coverage-mismatch",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/full_grid/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/full_grid/use.so"
+          ]
+        ]
+      },
+      "half_grid": {
+        "library_sha256": "aad09532a5479b68e9add5a9d8eb60668cf2c6184073227fd8ec135bdfc0b1c2",
+        "timing_sha256": "51cdd20ed77a6082dc8c69457546177a0912af591350af9ca99b2b256dcf62ff",
+        "source_sha256": "a9ecabbc2a71737d82aff92cdfc56c7d4b7082bd42a65bb43b3cd5eaa2c097e1",
+        "feedback_sha256": "214a1d4cdc38168fdc3f907f2af86c77e4d96a92f571e60ba63372e18d537ffb",
+        "training_script_sha256": "c63b849fb630d33fee53d8011b1766891b7e3c9038295334275135055dc443ac",
+        "training": [
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          }
+        ],
+        "commands": [
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/half_grid/feedback",
+            "-fno-profile-values",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/half_grid/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/generate.so"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/half_grid/feedback",
+            "-fno-profile-values",
+            "-Werror=missing-profile",
+            "-Werror=coverage-mismatch",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/half_grid/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid/use.so"
+          ]
+        ]
+      },
+      "stock_stages": {
+        "library_sha256": "05174e8637d5ac9c00de10acf8e84327c0cb845946c6873bacad2037ffea87b5",
+        "timing_sha256": "769be3fc2020066fb680572beee87f8e8d26a65554c261abc02d5f5a635c9b6f",
+        "source_sha256": "e1a704581cf67b79d4b4ff7e5c8be8f003a48d3e0804a449bca6488ee0212d0a",
+        "feedback_sha256": "ace70763af692a3bac8b951bb4982c5a2a63832fd3f6e69d25eacee3bd294d27",
+        "training_script_sha256": "c63b849fb630d33fee53d8011b1766891b7e3c9038295334275135055dc443ac",
+        "training": [
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          }
+        ],
+        "commands": [
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/stock_stages/feedback",
+            "-fno-profile-values",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/stock_stages/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/generate.so"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/stock_stages/feedback",
+            "-fno-profile-values",
+            "-Werror=missing-profile",
+            "-Werror=coverage-mismatch",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/stock_stages/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/stock_stages/use.so"
+          ]
+        ]
+      },
+      "half_grid_stages": {
+        "library_sha256": "e3d027db4e49800b968d8bd5f55b1df5894efc80e95591bbbc8f7ea8af4541ec",
+        "timing_sha256": "17faefc67ff12353fe94834ec40ff91573ba13b99104465ca0c7509b3fbac7da",
+        "source_sha256": "83e98d336c77435f44affda0958223b8995f089e78cd307cec1e45b7e746e9ca",
+        "feedback_sha256": "bd18d6e67a374743d5178bb031ff143a769d350bf66676955e85af9a75b259b2",
+        "training_script_sha256": "c63b849fb630d33fee53d8011b1766891b7e3c9038295334275135055dc443ac",
+        "training": [
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "lower",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": -100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": -100000.0,
+            "count": 0
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 0.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 0,
+            "center_hz": 100000.0,
+            "count": 1
+          },
+          {
+            "edge": "upper",
+            "lane": 1,
+            "center_hz": 100000.0,
+            "count": 1
+          }
+        ],
+        "commands": [
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/feedback",
+            "-fno-profile-values",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-generate=/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/generate.so"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/feedback",
+            "-fno-profile-values",
+            "-Werror=missing-profile",
+            "-Werror=coverage-mismatch",
+            "-fPIC",
+            "-O3",
+            "-std=c11",
+            "-fopenmp-simd",
+            "-ffp-contract=off",
+            "-fno-math-errno",
+            "-fno-strict-aliasing",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+            "-I",
+            "native/adaptive/detector/kernel/private/native_presence",
+            "-I",
+            "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+            "-I",
+            "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+            "-c",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/timing_first_receiver.c",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/timing_first_receiver.o"
+          ],
+          [
+            "cc",
+            "-fprofile-use=/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/feedback",
+            "-fno-profile-values",
+            "-shared",
+            "-Wl,--gc-sections",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/timing_first_receiver.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+            "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+            "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+            "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+            "-lfftw3f",
+            "-pthread",
+            "-lm",
+            "-o",
+            "/var/tmp/leo-v3-polyphase-pass1/half_grid_stages/use.so"
+          ]
+        ]
+      }
+    }
+  },
+  "runs": {
+    "weak": {
+      "inputs": [
+        [
+          "DS26-0020-v2502-rx1",
+          "sha256:a7f146320e11c11aee0664a217bc502943222925a14c758ac0d0932b06388223"
+        ],
+        [
+          "DS26-0020-v6100-rx0",
+          "sha256:3aadeb889951cd2ebb53870fdbd3bbbbbfc292c96a731ad1212c9a79f791b242"
+        ],
+        [
+          "DS26-0036-v1479-rx0",
+          "sha256:2bc20f736863fec49fa5adf02f99361d8dc9d8c3ff2762a515071100b5b8567e"
+        ],
+        [
+          "DS26-0036-v1850-rx1",
+          "sha256:042bb7e353a3c985da536d2e70b6f5045fbcec4eabcb582357092e19aba6da90"
+        ],
+        [
+          "DS26-0036-v4196-rx0",
+          "sha256:f2a9296136ff1054d403f274108dea2c2eb1a55bf24a61494579bcb53dbbb604"
+        ],
+        [
+          "DS26-0036-v5358-rx1",
+          "sha256:06437f4ebd715c88782cbbc76dd34088633d90f94ab6eadd9be1f0046005a5b5"
+        ],
+        [
+          "DS26-0066-v0366-rx1",
+          "sha256:9c9805e06dde69510d9ef61155345b02659403eba09cfcf3a5740fc8783369b8"
+        ],
+        [
+          "DS26-0066-v2580-rx0",
+          "sha256:8434f4691d00eed575db150a279b2383008532e29e1892e85d5191345ea47000"
+        ],
+        [
+          "DS26-0066-v3099-rx1",
+          "sha256:5661415c18cd593a0b394b2ac5baa2d39311738f9639b414230bee0ddb656406"
+        ],
+        [
+          "DS26-0162-v1534-rx0",
+          "sha256:2ffbad6607f12aeddb1d90238dd210e911c844001825e43e0c90c02255eefd6c"
+        ],
+        [
+          "DS26-0162-v2579-rx1",
+          "sha256:435bcd0edd60e2e2e4198fe28897d23bf8d9c47122c3cf55ea00333eccc4e77c"
+        ],
+        [
+          "DS26-0162-v5631-rx1",
+          "sha256:44a8a3a6a15dd8a37928847c2d98bf0eef360b49ae325a1cb526bfa80677edb1"
+        ],
+        [
+          "DS26-0162-v5687-rx1",
+          "sha256:fd8658ee1885e04276044ae564200969a948774c7766fab92d5a0010c76c1a15"
+        ],
+        [
+          "DS26-0162-v6113-rx1",
+          "sha256:1766452453270591237ed85b1f87702cc276fb2d1530b5d0a5521d87a8a76713"
+        ],
+        [
+          "DS26-0237-v2268-rx1",
+          "sha256:34c22023efddba02ebff07a44ead34ab9614fa3f792b4385ca1f0d38a1523fa2"
+        ],
+        [
+          "DS26-0237-v4048-rx1",
+          "sha256:7a2946a48ba88d2661948286c86aa848636452080406a29b02d7d69c3f8e84a0"
+        ],
+        [
+          "DS26-0237-v4051-rx1",
+          "sha256:beba19c22e9eb2fca7a14792b405c890e59edfdc008058f9bc9db79aad53208d"
+        ],
+        [
+          "DS26-0237-v4505-rx1",
+          "sha256:7383534abe4746b12367883dd09a2d269fe349be005430b4f2e84d9e5445a0c0"
+        ]
+      ],
+      "comparisons": {
+        "full_grid": {
+          "lane_calls": 36,
+          "repeats": 5,
+          "changed": [],
+          "changed_continuation": [],
+          "max_field_deltas": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "factor_histograms": [
+            {
+              "2": 22,
+              "1": 14
+            },
+            {
+              "2": 22,
+              "1": 14
+            }
+          ],
+          "ranks": [
+            {
+              "0": 36,
+              "1": 22
+            },
+            {
+              "0": 36,
+              "1": 22
+            }
+          ],
+          "continuation_kept": [
+            {},
+            {}
+          ],
+          "factor_digests": [
+            "e3d6ac95f00fbc8b57cfca61044f56426fbf2cd51aca227d0b87ed21b0afbd72",
+            "e3d6ac95f00fbc8b57cfca61044f56426fbf2cd51aca227d0b87ed21b0afbd72"
+          ],
+          "median_cpu_ms": [
+            4.046232,
+            4.2122335
+          ],
+          "total_cpu_s": [
+            [
+              0.145627488,
+              0.14866474
+            ],
+            [
+              0.144401089,
+              0.147316377
+            ],
+            [
+              0.138722232,
+              0.142301994
+            ],
+            [
+              0.141233815,
+              0.144453094
+            ],
+            [
+              0.143007368,
+              0.145496531
+            ]
+          ],
+          "total_wall_s": [
+            [
+              0.14567831,
+              0.148721027
+            ],
+            [
+              0.144446657,
+              0.147360535
+            ],
+            [
+              0.13876088,
+              0.142342345
+            ],
+            [
+              0.141287562,
+              0.144491822
+            ],
+            [
+              0.143052823,
+              0.145538772
+            ]
+          ],
+          "profiles": [
+            null,
+            null
+          ],
+          "factors": {
+            "counts": {
+              "reference_continued": 0,
+              "candidate_continued": 0,
+              "matching_continued": 0,
+              "lanes_missing_factor": 0,
+              "lanes_adding_factor": 0,
+              "reference_by_rank": [
+                36,
+                22
+              ],
+              "candidate_by_rank": [
+                36,
+                22
+              ],
+              "matched_by_rank": [
+                36,
+                22
+              ],
+              "matched_candidate_by_rank": [
+                36,
+                22
+              ]
+            },
+            "changed": [],
+            "maximum_matched_epoch_hz_exact_control_delta": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "retry": {
+            "oracle_factor_availability": {
+              "lanes": 0,
+              "additional_native_cpu_s": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.0208563097648158,
+                1.0201888228142102,
+                1.0258052508843716,
+                1.022793967577807,
+                1.0174058374390893
+              ]
+            },
+            "oracle_factor_bytes": {
+              "lanes": 0,
+              "additional_native_cpu_s": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.0208563097648158,
+                1.0201888228142102,
+                1.0258052508843716,
+                1.022793967577807,
+                1.0174058374390893
+              ]
+            },
+            "fewer_than_two": {
+              "lanes": 14,
+              "additional_native_cpu_s": [
+                0.050292382,
+                0.050499781,
+                0.047778462,
+                0.04847824,
+                0.050461586
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.3662058223513407,
+                1.3699076604609262,
+                1.3702234548821273,
+                1.3660420771045516,
+                1.3702658802866718
+              ]
+            }
+          }
+        },
+        "half_grid": {
+          "lane_calls": 36,
+          "repeats": 5,
+          "changed": [
+            [
+              "DS26-0020-v2502-rx1",
+              0
+            ],
+            [
+              "DS26-0036-v1850-rx1",
+              0
+            ],
+            [
+              "DS26-0036-v1850-rx1",
+              1
+            ],
+            [
+              "DS26-0036-v4196-rx0",
+              0
+            ],
+            [
+              "DS26-0066-v0366-rx1",
+              1
+            ],
+            [
+              "DS26-0066-v2580-rx0",
+              1
+            ],
+            [
+              "DS26-0162-v2579-rx1",
+              0
+            ],
+            [
+              "DS26-0162-v5631-rx1",
+              0
+            ],
+            [
+              "DS26-0162-v5687-rx1",
+              1
+            ],
+            [
+              "DS26-0162-v6113-rx1",
+              1
+            ]
+          ],
+          "changed_continuation": [
+            [
+              "DS26-0036-v1850-rx1",
+              1
+            ],
+            [
+              "DS26-0162-v5631-rx1",
+              0
+            ]
+          ],
+          "max_field_deltas": [
+            0.0004304250977699431,
+            4.529622183588799,
+            5.112171526833187e-05,
+            4.32710774535966e-06
+          ],
+          "factor_histograms": [
+            {
+              "2": 22,
+              "1": 14
+            },
+            {
+              "2": 20,
+              "1": 16
+            }
+          ],
+          "ranks": [
+            {
+              "0": 36,
+              "1": 22
+            },
+            {
+              "0": 36,
+              "1": 20
+            }
+          ],
+          "continuation_kept": [
+            {},
+            {}
+          ],
+          "factor_digests": [
+            "e3d6ac95f00fbc8b57cfca61044f56426fbf2cd51aca227d0b87ed21b0afbd72",
+            "d2b60f2dcb6cf2f6c77dd8c0b33f230a19a5761361426793a9b22cecba9f919f"
+          ],
+          "median_cpu_ms": [
+            4.0298235,
+            4.0134935
+          ],
+          "total_cpu_s": [
+            [
+              0.14321837,
+              0.141462954
+            ],
+            [
+              0.141618227,
+              0.138337352
+            ],
+            [
+              0.144649508,
+              0.141941296
+            ],
+            [
+              0.140222854,
+              0.138937797
+            ],
+            [
+              0.142805908,
+              0.142425611
+            ]
+          ],
+          "total_wall_s": [
+            [
+              0.143270313,
+              0.141505328
+            ],
+            [
+              0.141659861,
+              0.138374539
+            ],
+            [
+              0.144702621,
+              0.141985091
+            ],
+            [
+              0.140265864,
+              0.138974478
+            ],
+            [
+              0.142857157,
+              0.142472507
+            ]
+          ],
+          "profiles": [
+            null,
+            null
+          ],
+          "factors": {
+            "counts": {
+              "reference_continued": 0,
+              "candidate_continued": 0,
+              "matching_continued": 0,
+              "lanes_missing_factor": 3,
+              "lanes_adding_factor": 1,
+              "reference_by_rank": [
+                36,
+                22
+              ],
+              "candidate_by_rank": [
+                36,
+                20
+              ],
+              "matched_by_rank": [
+                36,
+                19
+              ],
+              "matched_candidate_by_rank": [
+                36,
+                19
+              ]
+            },
+            "changed": [
+              {
+                "key": "DS26-0020-v2502-rx1",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    9727,
+                    -0.2016448792386872,
+                    -237120.2235051832,
+                    0.19715137438799343,
+                    0.03967872975528512
+                  ],
+                  [
+                    1,
+                    2234,
+                    0.6097612890028282,
+                    -259770.37631543408,
+                    0.1214133372387781,
+                    0.03790220587584539
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    9727,
+                    -0.2016448792386872,
+                    -237120.2235051832,
+                    0.19715137438799343,
+                    0.03967872975528512
+                  ],
+                  [
+                    1,
+                    2235,
+                    -0.3876357945418465,
+                    -259868.07983626443,
+                    0.12109844170086224,
+                    0.03790759432878241
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0036-v1850-rx1",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    3196,
+                    0.4083170557894748,
+                    -131139.35169778223,
+                    0.5778848933142988,
+                    0.03880750279181118
+                  ],
+                  [
+                    1,
+                    1072,
+                    -0.2250156096142806,
+                    -157139.131974515,
+                    0.3665594356290137,
+                    0.036241836688507494
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    3196,
+                    0.4083170557894748,
+                    -131139.35169778223,
+                    0.5778848933142988,
+                    0.03880750279181118
+                  ],
+                  [
+                    1,
+                    1072,
+                    -0.22544603471205055,
+                    -157142.37404818003,
+                    0.36661055734428205,
+                    0.03624616379625285
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0036-v1850-rx1",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    4959,
+                    0.19872717020294994,
+                    406548.1848354326,
+                    0.2899121575713949,
+                    0.03517707209027103
+                  ],
+                  [
+                    1,
+                    3196,
+                    0.6015826570521822,
+                    509606.97823317884,
+                    0.21464365271272495,
+                    0.039110781135880346
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    4959,
+                    0.19872717020294994,
+                    406548.1848354326,
+                    0.2899121575713949,
+                    0.03517707209027103
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0036-v4196-rx0",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    9588,
+                    -0.23031114876028894,
+                    -188055.68487455903,
+                    0.456204590556184,
+                    0.04279899389458348
+                  ],
+                  [
+                    1,
+                    8997,
+                    -0.4329857959849709,
+                    -267525.4368557567,
+                    0.17117950564468126,
+                    0.033132508903025576
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    9588,
+                    -0.22988843046306498,
+                    -188051.85861137396,
+                    0.4561994178322529,
+                    0.04279668240794171
+                  ],
+                  [
+                    1,
+                    2593,
+                    -0.5170642745393983,
+                    -349619.1208584352,
+                    0.1512501915943943,
+                    0.035817611393349616
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0066-v0366-rx1",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    12653,
+                    0.33923624864101043,
+                    500997.22200737614,
+                    0.2293784439626377,
+                    0.03388420978724763
+                  ],
+                  [
+                    1,
+                    8135,
+                    0.3834071247034481,
+                    390375.4751522031,
+                    0.14602633106058374,
+                    0.03705854992589603
+                  ]
+                ],
+                "candidate": [
+                  [
+                    1,
+                    12653,
+                    0.33742683056278344,
+                    500982.7418126345,
+                    0.22943769926200192,
+                    0.03388123450674851
+                  ],
+                  [
+                    0,
+                    8135,
+                    0.3775601359190858,
+                    390426.2953911255,
+                    0.1463762275374316,
+                    0.03713336638787946
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0066-v2580-rx0",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    7012,
+                    0.13446509771642107,
+                    346323.1440828228,
+                    0.23589244826418698,
+                    0.043806040554426676
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    7012,
+                    0.13406973582865356,
+                    346326.89841250615,
+                    0.23590319787309377,
+                    0.04380444301333309
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0162-v2579-rx1",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    1674,
+                    -0.1348097835921919,
+                    -138234.95514633702,
+                    0.47720633799301426,
+                    0.03452868925096099
+                  ],
+                  [
+                    1,
+                    1692,
+                    -0.4558418901083475,
+                    -39920.914979606896,
+                    0.38913110891590746,
+                    0.03828004616440773
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    1674,
+                    -0.1349253591107559,
+                    -138233.92680629806,
+                    0.4772096062501516,
+                    0.034526579363543156
+                  ],
+                  [
+                    1,
+                    1692,
+                    -0.455843993609475,
+                    -39920.97758153145,
+                    0.38913024922755624,
+                    0.03828004877244687
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0162-v5631-rx1",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    1552,
+                    -0.4125099059090136,
+                    -141058.7410475813,
+                    0.49126301853971716,
+                    0.040811742947472494
+                  ],
+                  [
+                    1,
+                    10996,
+                    -0.4812920288889889,
+                    155.1845123442516,
+                    0.2994175335069155,
+                    0.039270121701990054
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    1552,
+                    -0.4125099059090136,
+                    -141058.7410475813,
+                    0.49126301853971716,
+                    0.040811742947472494
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0162-v5687-rx1",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    7340,
+                    -0.306951499276476,
+                    464849.76732836955,
+                    0.35539045907456357,
+                    0.03477191635768012
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    7340,
+                    -0.3067412804055662,
+                    464845.23770618596,
+                    0.3554022727104407,
+                    0.034774783823394856
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS26-0162-v6113-rx1",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    9133,
+                    0.5542707090624905,
+                    439677.521730274,
+                    0.30405308522744445,
+                    0.03400905332241158
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    9133,
+                    0.5541821571923053,
+                    439675.9600166151,
+                    0.3040399767100038,
+                    0.034010995446806
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "maximum_matched_epoch_hz_exact_control_delta": [
+              0.005846988784469431,
+              97.70352083034231,
+              0.0003498964768478552,
+              7.481646198342906e-05
+            ]
+          },
+          "retry": {
+            "oracle_factor_availability": {
+              "lanes": 3,
+              "additional_native_cpu_s": [
+                0.01264466,
+                0.012552735,
+                0.012438075,
+                0.012383093,
+                0.012715368
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.0760324530994172,
+                1.0654708097708354,
+                1.067265095709831,
+                1.0791457004576444,
+                1.086376475404645
+              ]
+            },
+            "oracle_factor_bytes": {
+              "lanes": 10,
+              "additional_native_cpu_s": [
+                0.040461352,
+                0.039413255,
+                0.040433373,
+                0.039039859,
+                0.040261731
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.2702581798689652,
+                1.2551393331594243,
+                1.2608039358142855,
+                1.2692485634331763,
+                1.2792701965803823
+              ]
+            },
+            "fewer_than_two": {
+              "lanes": 16,
+              "additional_native_cpu_s": [
+                0.058982927,
+                0.057288571,
+                0.058846469,
+                0.05732367,
+                0.05892383
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.3995821974513463,
+                1.3813611930051912,
+                1.3880984994432197,
+                1.399639655030841,
+                1.4099517577382024
+              ]
+            }
+          }
+        }
+      },
+      "stages": [
+        {
+          "measure": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "timing": {
+            "calls": 360,
+            "cpu_s": 0.394095142
+          },
+          "input": {
+            "calls": 180,
+            "cpu_s": 0.037603512
+          },
+          "decimate": {
+            "calls": 360,
+            "cpu_s": 0.054078237
+          },
+          "modes": {
+            "calls": 360,
+            "cpu_s": 0.06354091
+          },
+          "time_search": {
+            "calls": 360,
+            "cpu_s": 0.061227619
+          },
+          "carrier_search": {
+            "calls": 360,
+            "cpu_s": 0.051079919
+          },
+          "refine": {
+            "calls": 360,
+            "cpu_s": 0.104451998
+          },
+          "gate": {
+            "calls": 1130,
+            "cpu_s": 0.021493218
+          },
+          "cancel": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify_load": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify": {
+            "calls": 0,
+            "cpu_s": 0.0
+          }
+        },
+        {
+          "measure": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "timing": {
+            "calls": 360,
+            "cpu_s": 0.38750053
+          },
+          "input": {
+            "calls": 180,
+            "cpu_s": 0.035421044
+          },
+          "decimate": {
+            "calls": 360,
+            "cpu_s": 0.053820708
+          },
+          "modes": {
+            "calls": 360,
+            "cpu_s": 0.062523783
+          },
+          "time_search": {
+            "calls": 360,
+            "cpu_s": 0.057052761
+          },
+          "carrier_search": {
+            "calls": 360,
+            "cpu_s": 0.05076227
+          },
+          "refine": {
+            "calls": 360,
+            "cpu_s": 0.105028553
+          },
+          "gate": {
+            "calls": 1240,
+            "cpu_s": 0.022261434
+          },
+          "cancel": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify_load": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify": {
+            "calls": 0,
+            "cpu_s": 0.0
+          }
+        }
+      ]
+    },
+    "dense": {
+      "inputs": [
+        [
+          "DS30-0008:0",
+          "sha256:25ffc8a2b23638d1b3cd9e0ca85b08f3696fcfd8fa6d05c0b447581df4f3e31b"
+        ],
+        [
+          "DS30-0008:1",
+          "sha256:38a85096a138bdecb8c14da43070b7dc88d433c8ee59a23a4f153920c23d934a"
+        ],
+        [
+          "DS30-0008:2",
+          "sha256:b48ec990dda0f59bb210030c622317ba26229d17403e3279858d136b2aa12473"
+        ],
+        [
+          "DS30-0008:3",
+          "sha256:aef16b7dc410ada80cb4b9367c1abb7a2377a585ca63e90ce35383d5dd232ec3"
+        ],
+        [
+          "DS30-0008:4",
+          "sha256:6822975976374b5e2466255955d1831797c6291217a98200079fed6597fd5fab"
+        ],
+        [
+          "DS30-0008:5",
+          "sha256:229af1ac03f23712f6f702cbca2c8ad87973b84e99c36947e4c77cf6d02aec69"
+        ],
+        [
+          "DS30-0008:6",
+          "sha256:0e7093d4bbe5e95c07cd202cbaf55aaf0954ac2e564bb1805cdc05bc4ce4f885"
+        ],
+        [
+          "DS30-0008:7",
+          "sha256:0e7cf7d129e012cdc595d294e79d7bf8a6ee00582c4b34a945f1b6b4d124cd48"
+        ],
+        [
+          "DS30-0008:8",
+          "sha256:e12a86fc6c854e1be2fcf1d9abbca5fba7a5b0a95308737b8eb24c87be16cb23"
+        ],
+        [
+          "DS30-0008:9",
+          "sha256:8d2acccb0394260d21ffc19d6017c5076b76efcc4541c5d8f13af63ed7338b11"
+        ],
+        [
+          "DS30-0008:10",
+          "sha256:e87694fdb1be2e2307db2e67e9666c98a182df77318adf1fac990612db388c0b"
+        ],
+        [
+          "DS30-0008:11",
+          "sha256:2a9407e3966f3ae39d2692942629b8c1c3f1dd2834e9056f554cab671c40511f"
+        ],
+        [
+          "DS30-0008:12",
+          "sha256:fa295353cd453134533f60501cc2b2b86c99c381db4556d0bdabf9656084e7bc"
+        ],
+        [
+          "DS30-0008:13",
+          "sha256:2f87768583d0a65eae014c73b0d5fd7f593fd5d15ac8175038fd1b460e4b7fa2"
+        ],
+        [
+          "DS30-0008:14",
+          "sha256:32bf90121f12167709493ac71dde190a90ae8bc9e7661f21e87122b04f593e3e"
+        ],
+        [
+          "DS30-0008:15",
+          "sha256:1a1abec656ff2ee936222d3f309fc1a89082a79fecb64efa65662ec59de334bb"
+        ],
+        [
+          "DS30-0008:16",
+          "sha256:e66125d2a6f1615c14b71f6e0234bcb09bd19d414e59ce230bd4a483f3fae70c"
+        ],
+        [
+          "DS30-0008:17",
+          "sha256:09482e24a67857ae8dc6383441cf3526b6111797c565c7dd473d72c77f4718db"
+        ],
+        [
+          "DS30-0008:18",
+          "sha256:b6e65d2e6e49b6e490b99316008329bbe31b1d6669a31c889961502f567893a8"
+        ],
+        [
+          "DS30-0008:19",
+          "sha256:c7c66d78dd431a5406e310b07dd92f4c40dd020cf98f8fb3086f8290877c9e5a"
+        ],
+        [
+          "DS30-0008:20",
+          "sha256:41452bf8d6b92158296119dbe3b34b46cb689f19e14701aeab20101a9eb71187"
+        ],
+        [
+          "DS30-0008:21",
+          "sha256:7871ec9f7eee3441ec8a79a2c5d8df6857fde2144afacb81cbbd40403f2edd9e"
+        ],
+        [
+          "DS30-0008:22",
+          "sha256:e5d1ee51ea70e50b95eee27c06cd41beb66742c482df31098fb601ba2f186ff2"
+        ],
+        [
+          "DS30-0008:23",
+          "sha256:5e21ae176a3a854cbf707c1cd74730e22c597b99c84f8afd43f13761941821ab"
+        ],
+        [
+          "DS30-0008:24",
+          "sha256:219c906b7272a32620d47615721336419a0a1eeecfe40d51e4c3cf944f975caa"
+        ],
+        [
+          "DS30-0008:25",
+          "sha256:ee2f9fd553f081807ce68b84d78bbeb76b2bccbb3ae147b355bfd0afde9a413b"
+        ],
+        [
+          "DS30-0008:26",
+          "sha256:7e7b41c1fb34e9d0fe738ec14bbd0e78b711b98f79983c4e2b0ff95851e24c23"
+        ],
+        [
+          "DS30-0008:27",
+          "sha256:ffee9bba49ebb439736b3e74cacb3ca6c14e83ff5c5f07b118c5fa48763bbb00"
+        ],
+        [
+          "DS30-0008:28",
+          "sha256:f68ab31cf5cb56b1fee40bead22a3ae711ca4dbe5857e669935cc5314fbd3bf2"
+        ],
+        [
+          "DS30-0008:29",
+          "sha256:fcdaaa5556b105aca135119a7970b1e5512f81ecbfc2c8ca6907af19bb22629e"
+        ],
+        [
+          "DS30-0008:30",
+          "sha256:36a8d1520b1b94dc1baa3745ea3c61d2ace39fd201e7f63031cd263e8971bfa4"
+        ],
+        [
+          "DS30-0008:31",
+          "sha256:339e387591e0b2d5dc0a037576b3428088eb170a958d08e82b8977a41e1b18b6"
+        ],
+        [
+          "DS30-0008:32",
+          "sha256:7e7d2b7f6fd5f385b8ebd8e52288c77bc46d40543bd14984d2ae1556e51cd1b2"
+        ],
+        [
+          "DS30-0008:33",
+          "sha256:5140130874c80d9fceaa6d2bc8a50cb82b2a6c0d8565728f063251e70b179d9a"
+        ],
+        [
+          "DS30-0008:34",
+          "sha256:220a2f86c4a556727b48b94e62ce464fdfe617c0c6aa5b8835b676946358be67"
+        ],
+        [
+          "DS30-0008:35",
+          "sha256:b0eeb7fd8359046d33678248a16203de20b15f1341d986fb4e744de9a89ec135"
+        ],
+        [
+          "DS30-0008:36",
+          "sha256:616646935316d5d9799ca083f27cbcbbfb0c0937687a4d70a01d84ab173ee30f"
+        ],
+        [
+          "DS30-0008:37",
+          "sha256:bd9e3b29f65edf87c80d953e789dd883800e4964426a98ba0a1bec56d09d0a7f"
+        ],
+        [
+          "DS30-0008:38",
+          "sha256:29ec1cf6a61cc75b537beee5024e064573f92e7186449d3f4b0bc617acc0b933"
+        ],
+        [
+          "DS30-0008:39",
+          "sha256:4193be9c8e523b5054f2416c75554f9c43f2fb4bd8aa58dcebd4a9367461d12a"
+        ],
+        [
+          "DS30-0008:40",
+          "sha256:7c3f0f8a604ddddd28dcf715ff59149889cabaf26c80c760001e4c72b5fb0a60"
+        ],
+        [
+          "DS30-0008:41",
+          "sha256:411a375f2be5ecc583f68f88ea49761d811c425fd23052868d9a9253a99e8db2"
+        ],
+        [
+          "DS30-0008:42",
+          "sha256:20137c745975d22a2bc5dc7b90dbe3e1ac704e260085a69278728477d11aa686"
+        ],
+        [
+          "DS30-0008:43",
+          "sha256:58fdd9995521817f1fae85645fc25ff92462a3fa1eef21d722237a6821acd10b"
+        ],
+        [
+          "DS30-0008:44",
+          "sha256:2081d10cfba5faeadda67369cdea892113d3304856e4b2201fec6629f71fd347"
+        ],
+        [
+          "DS30-0008:45",
+          "sha256:cc23c69a954e8316f1945d3c566eeaa4b0b7148b94483a7af6e4bc5ed36ea526"
+        ],
+        [
+          "DS30-0008:46",
+          "sha256:69108e3756f3d2d7540da29eace5565058b8f8d2c85c1d7d3dd05b06a714f60a"
+        ],
+        [
+          "DS30-0008:47",
+          "sha256:5287985ccdd2ed7969f47aa13656c7c308ff1da8b057e16d641371fb2f82d3b3"
+        ]
+      ],
+      "comparisons": {
+        "full_grid": {
+          "lane_calls": 96,
+          "repeats": 5,
+          "changed": [],
+          "changed_continuation": [],
+          "max_field_deltas": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "factor_histograms": [
+            {
+              "2": 28,
+              "1": 24,
+              "0": 44
+            },
+            {
+              "2": 28,
+              "1": 24,
+              "0": 44
+            }
+          ],
+          "ranks": [
+            {
+              "0": 52,
+              "1": 28
+            },
+            {
+              "0": 52,
+              "1": 28
+            }
+          ],
+          "continuation_kept": [
+            {
+              "0": 1
+            },
+            {
+              "0": 1
+            }
+          ],
+          "factor_digests": [
+            "3a8c7649f6b59d9fad28b8fda30bf0391672ea9d3de35c94e925030ed9d3aedb",
+            "3a8c7649f6b59d9fad28b8fda30bf0391672ea9d3de35c94e925030ed9d3aedb"
+          ],
+          "median_cpu_ms": [
+            3.4491395,
+            3.476975
+          ],
+          "total_cpu_s": [
+            [
+              0.26365939,
+              0.270924091
+            ],
+            [
+              0.260734443,
+              0.269119152
+            ],
+            [
+              0.26472055,
+              0.276241783
+            ],
+            [
+              0.26746245,
+              0.275062102
+            ],
+            [
+              0.259934313,
+              0.269303096
+            ]
+          ],
+          "total_wall_s": [
+            [
+              0.263765785,
+              0.271018571
+            ],
+            [
+              0.26083586,
+              0.269209475
+            ],
+            [
+              0.264818719,
+              0.276347809
+            ],
+            [
+              0.267571004,
+              0.275162065
+            ],
+            [
+              0.260031792,
+              0.269420002
+            ]
+          ],
+          "profiles": [
+            null,
+            null
+          ],
+          "factors": {
+            "counts": {
+              "reference_continued": 1,
+              "candidate_continued": 1,
+              "matching_continued": 1,
+              "lanes_missing_factor": 0,
+              "lanes_adding_factor": 0,
+              "reference_by_rank": [
+                52,
+                28
+              ],
+              "candidate_by_rank": [
+                52,
+                28
+              ],
+              "matched_by_rank": [
+                52,
+                28
+              ],
+              "matched_candidate_by_rank": [
+                52,
+                28
+              ]
+            },
+            "changed": [],
+            "maximum_matched_epoch_hz_exact_control_delta": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "retry": {
+            "oracle_factor_availability": {
+              "lanes": 0,
+              "additional_native_cpu_s": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.027553355865687,
+                1.0321580413524423,
+                1.04352224638397,
+                1.0284139025870733,
+                1.0360428867273097
+              ]
+            },
+            "oracle_factor_bytes": {
+              "lanes": 0,
+              "additional_native_cpu_s": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.027553355865687,
+                1.0321580413524423,
+                1.04352224638397,
+                1.0284139025870733,
+                1.0360428867273097
+              ]
+            },
+            "fewer_than_two": {
+              "lanes": 68,
+              "additional_native_cpu_s": [
+                0.146908969,
+                0.143674863,
+                0.146438506,
+                0.147203067,
+                0.143490998
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.5847456068224992,
+                1.5831971037290231,
+                1.5967037277612184,
+                1.5787829992584004,
+                1.5880708061809448
+              ]
+            }
+          }
+        },
+        "half_grid": {
+          "lane_calls": 96,
+          "repeats": 5,
+          "changed": [
+            [
+              "DS30-0008:1",
+              0
+            ],
+            [
+              "DS30-0008:14",
+              0
+            ],
+            [
+              "DS30-0008:14",
+              1
+            ],
+            [
+              "DS30-0008:15",
+              0
+            ],
+            [
+              "DS30-0008:16",
+              0
+            ],
+            [
+              "DS30-0008:16",
+              1
+            ],
+            [
+              "DS30-0008:19",
+              0
+            ],
+            [
+              "DS30-0008:19",
+              1
+            ],
+            [
+              "DS30-0008:21",
+              0
+            ],
+            [
+              "DS30-0008:22",
+              0
+            ],
+            [
+              "DS30-0008:28",
+              1
+            ],
+            [
+              "DS30-0008:29",
+              1
+            ],
+            [
+              "DS30-0008:3",
+              0
+            ],
+            [
+              "DS30-0008:37",
+              0
+            ],
+            [
+              "DS30-0008:39",
+              0
+            ],
+            [
+              "DS30-0008:39",
+              1
+            ],
+            [
+              "DS30-0008:44",
+              0
+            ],
+            [
+              "DS30-0008:46",
+              0
+            ],
+            [
+              "DS30-0008:6",
+              0
+            ],
+            [
+              "DS30-0008:8",
+              0
+            ],
+            [
+              "DS30-0008:9",
+              0
+            ]
+          ],
+          "changed_continuation": [
+            [
+              "DS30-0008:14",
+              1
+            ],
+            [
+              "DS30-0008:16",
+              1
+            ],
+            [
+              "DS30-0008:21",
+              0
+            ],
+            [
+              "DS30-0008:22",
+              0
+            ],
+            [
+              "DS30-0008:28",
+              1
+            ],
+            [
+              "DS30-0008:38",
+              0
+            ],
+            [
+              "DS30-0008:39",
+              1
+            ],
+            [
+              "DS30-0008:44",
+              0
+            ],
+            [
+              "DS30-0008:46",
+              0
+            ],
+            [
+              "DS30-0008:6",
+              0
+            ],
+            [
+              "DS30-0008:9",
+              0
+            ]
+          ],
+          "max_field_deltas": [
+            0.0011618641281688907,
+            10.416583231184632,
+            9.899641098748413e-05,
+            1.4481251521702987e-05
+          ],
+          "factor_histograms": [
+            {
+              "2": 28,
+              "1": 24,
+              "0": 44
+            },
+            {
+              "2": 22,
+              "1": 25,
+              "0": 49
+            }
+          ],
+          "ranks": [
+            {
+              "0": 52,
+              "1": 28
+            },
+            {
+              "0": 47,
+              "1": 22
+            }
+          ],
+          "continuation_kept": [
+            {
+              "0": 1
+            },
+            {}
+          ],
+          "factor_digests": [
+            "3a8c7649f6b59d9fad28b8fda30bf0391672ea9d3de35c94e925030ed9d3aedb",
+            "be6315aeb26bd8469d871688890e3dece8c4f54d98b1bc0a9f09213a09603934"
+          ],
+          "median_cpu_ms": [
+            3.4222615,
+            1.8197715
+          ],
+          "total_cpu_s": [
+            [
+              0.261176663,
+              0.246146663
+            ],
+            [
+              0.258675056,
+              0.244181329
+            ],
+            [
+              0.260049424,
+              0.247270238
+            ],
+            [
+              0.265401321,
+              0.251035508
+            ],
+            [
+              0.27831558,
+              0.264644698
+            ]
+          ],
+          "total_wall_s": [
+            [
+              0.261263728,
+              0.246232919
+            ],
+            [
+              0.258775967,
+              0.24426271
+            ],
+            [
+              0.260139571,
+              0.247369864
+            ],
+            [
+              0.265509461,
+              0.251137667
+            ],
+            [
+              0.278423751,
+              0.26475266
+            ]
+          ],
+          "profiles": [
+            null,
+            null
+          ],
+          "factors": {
+            "counts": {
+              "reference_continued": 1,
+              "candidate_continued": 0,
+              "matching_continued": 0,
+              "lanes_missing_factor": 10,
+              "lanes_adding_factor": 0,
+              "reference_by_rank": [
+                52,
+                28
+              ],
+              "candidate_by_rank": [
+                47,
+                22
+              ],
+              "matched_by_rank": [
+                47,
+                22
+              ],
+              "matched_candidate_by_rank": [
+                47,
+                22
+              ]
+            },
+            "changed": [
+              {
+                "key": "DS30-0008:1",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    3474,
+                    -0.002971352297458511,
+                    -66300.20573440919,
+                    0.471329884795703,
+                    0.03506041030621216
+                  ],
+                  [
+                    1,
+                    6541,
+                    0.060904793513045834,
+                    -126685.35454338143,
+                    0.1645331165978616,
+                    0.03240207026170016
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    3474,
+                    -0.002971352297458511,
+                    -66300.20573440919,
+                    0.471329884795703,
+                    0.03506041030621216
+                  ],
+                  [
+                    1,
+                    6541,
+                    0.06110335434207863,
+                    -126686.0227627997,
+                    0.16453538717425223,
+                    0.03240230246956337
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:3",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    3242,
+                    0.12018276333775768,
+                    -123018.3476473136,
+                    0.7100802180731727,
+                    0.045581077186654516
+                  ],
+                  [
+                    1,
+                    2768,
+                    -0.39420153435279376,
+                    -253347.0458316574,
+                    0.4370113458779002,
+                    0.03993010027472193
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    3242,
+                    0.12015829891683573,
+                    -123016.22071075205,
+                    0.7100941303141568,
+                    0.0455865202194279
+                  ],
+                  [
+                    1,
+                    2768,
+                    -0.3942007363137646,
+                    -253347.059828705,
+                    0.43701131565133405,
+                    0.03993006084323636
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:6",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    11289,
+                    -0.296768934465421,
+                    -409338.87345326686,
+                    0.2998870168012272,
+                    0.03712064885313238
+                  ],
+                  [
+                    1,
+                    12196,
+                    0.6854432351300723,
+                    -288629.8505921753,
+                    0.23676632712260845,
+                    0.036024903049974674
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    11289,
+                    -0.296768934465421,
+                    -409338.87345326686,
+                    0.2998870168012272,
+                    0.03712064885313238
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:8",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    925,
+                    0.3020603445916296,
+                    -184081.7933865102,
+                    0.5729553083665297,
+                    0.039118294832392556
+                  ],
+                  [
+                    1,
+                    173,
+                    0.016265250431285638,
+                    -70170.86298731774,
+                    0.5083618332645352,
+                    0.04489175645537164
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    925,
+                    0.3020168300449335,
+                    -184079.62747252948,
+                    0.5729735755605616,
+                    0.039117436617061054
+                  ],
+                  [
+                    1,
+                    173,
+                    0.016264359297846268,
+                    -70170.85159334686,
+                    0.5083617016854167,
+                    0.04489174590382325
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:9",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    5218,
+                    0.11398044013031883,
+                    -67204.55040666905,
+                    0.4560859375077046,
+                    0.03748984876415845
+                  ],
+                  [
+                    1,
+                    8260,
+                    0.3308706838806317,
+                    -128327.37352418275,
+                    0.18058719381862143,
+                    0.0357295998403555
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    5218,
+                    0.11398044013031883,
+                    -67204.55040666905,
+                    0.4560859375077046,
+                    0.03748984876415845
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:14",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    5854,
+                    -0.10141401480884563,
+                    -410587.68562264065,
+                    0.27613035699011523,
+                    0.04152233037407518
+                  ],
+                  [
+                    1,
+                    6803,
+                    0.11336489006275184,
+                    -289810.9484545675,
+                    0.2349731052703558,
+                    0.03618038368045867
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    5854,
+                    -0.10025215068067674,
+                    -410578.4420265226,
+                    0.27620103759141157,
+                    0.04153681162559688
+                  ],
+                  [
+                    1,
+                    6803,
+                    0.11338173049717577,
+                    -289810.8676766714,
+                    0.23497354954473262,
+                    0.0361806850235225
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:14",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    5637,
+                    0.1916514617510376,
+                    50187.49412893895,
+                    0.14329960264579056,
+                    0.03738021070448146
+                  ]
+                ],
+                "candidate": [],
+                "matches": [],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    null,
+                    null,
+                    []
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:15",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    4995,
+                    -0.14360095366533138,
+                    -351200.3552627453,
+                    0.33003908113622354,
+                    0.03304506976866075
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    4995,
+                    -0.14405891055263234,
+                    -351210.7718459765,
+                    0.3300343829190504,
+                    0.03304253183850487
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:16",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    7661,
+                    -0.40315513612035353,
+                    -185333.32057631592,
+                    0.6349851634010606,
+                    0.03688040272082588
+                  ],
+                  [
+                    1,
+                    6950,
+                    0.10775424140391182,
+                    -71187.93116094191,
+                    0.5786108025846761,
+                    0.03924330105374128
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    7661,
+                    -0.4031150728147828,
+                    -185332.42811941207,
+                    0.6349898238053229,
+                    0.03687860695623359
+                  ],
+                  [
+                    1,
+                    6950,
+                    0.10774825090212459,
+                    -71187.9092764742,
+                    0.5786110867847921,
+                    0.03924339576349283
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:16",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    6931,
+                    0.31389033385292203,
+                    285310.9894146926,
+                    0.39809933143258236,
+                    0.04072546217966479
+                  ],
+                  [
+                    1,
+                    7661,
+                    -0.4284463753806304,
+                    440888.33499164006,
+                    0.1172139778910924,
+                    0.03348411033645805
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    6931,
+                    0.31389033385292203,
+                    285310.9894146926,
+                    0.39809933143258236,
+                    0.04072546217966479
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:19",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    1908,
+                    0.008508398773028912,
+                    -125586.34652181006,
+                    0.7614392040292564,
+                    0.04149909014279405
+                  ],
+                  [
+                    1,
+                    1355,
+                    0.2967033455330059,
+                    -256124.1927974553,
+                    0.31326595787253136,
+                    0.03744341073164961
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    1908,
+                    0.008508398773028912,
+                    -125586.34652181006,
+                    0.7614392040292564,
+                    0.04149909014279405
+                  ],
+                  [
+                    1,
+                    1356,
+                    -0.7022172126574506,
+                    -256137.55797181293,
+                    0.3132773701797625,
+                    0.037473419810457674
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:19",
+                "lane": 1,
+                "installed": [
+                  [
+                    1,
+                    1356,
+                    -0.22275345949801562,
+                    369717.04016211716,
+                    0.33153368989255905,
+                    0.03405952241548652
+                  ],
+                  [
+                    0,
+                    1908,
+                    0.12714972627242566,
+                    500066.24739056814,
+                    0.2917001646900058,
+                    0.03829185231691283
+                  ]
+                ],
+                "candidate": [
+                  [
+                    1,
+                    1356,
+                    -0.2226899142980926,
+                    369716.5342767295,
+                    0.3315345983552325,
+                    0.03405855334867453
+                  ],
+                  [
+                    0,
+                    1908,
+                    0.12821306784326914,
+                    500057.5324772198,
+                    0.2916400109411352,
+                    0.03830464203564266
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:21",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    5197,
+                    -0.1908944334300411,
+                    -149245.26480158124,
+                    0.14045767620388339,
+                    0.03514975847933979
+                  ],
+                  [
+                    1,
+                    8933,
+                    0.017631873160396203,
+                    -56555.98550379716,
+                    0.11198045515739449,
+                    0.03325276001154053
+                  ]
+                ],
+                "candidate": [],
+                "matches": [],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    null,
+                    null,
+                    []
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:22",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    8228,
+                    0.18870315687585595,
+                    -147812.1053573914,
+                    0.278406481029491,
+                    0.036593396363350864
+                  ]
+                ],
+                "candidate": [],
+                "matches": [],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    null,
+                    null,
+                    []
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:28",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    6732,
+                    0.5997137560641914,
+                    528215.0292556479,
+                    0.08799839630095951,
+                    0.03656543080241206
+                  ]
+                ],
+                "candidate": [],
+                "matches": [],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    null,
+                    null,
+                    []
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:29",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    7099,
+                    -0.3805065621478788,
+                    307326.96647404146,
+                    0.3433010658297347,
+                    0.0337838703137677
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    7099,
+                    -0.3800325101093254,
+                    307335.6529802399,
+                    0.3432020694187472,
+                    0.033787549143725844
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:37",
+                "lane": 0,
+                "installed": [
+                  [
+                    1,
+                    8061,
+                    0.6524303092432695,
+                    -151368.8406776209,
+                    0.4299831280496331,
+                    0.037077562255404393
+                  ],
+                  [
+                    0,
+                    11860,
+                    0.051017195610190684,
+                    -57735.93064100972,
+                    0.4229726019101035,
+                    0.03981314252026036
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    8061,
+                    0.6523269236573286,
+                    -151335.89969235624,
+                    0.4301779675032304,
+                    0.03705190650249647
+                  ],
+                  [
+                    1,
+                    11860,
+                    0.04740291636395015,
+                    -57771.993521643286,
+                    0.42327476625586097,
+                    0.03981661218123773
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:38",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    9229,
+                    0.26813767388821663,
+                    -149944.03689083323,
+                    0.29230418798014973,
+                    0.03758816320793616
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    9229,
+                    0.26813767388821663,
+                    -149944.03689083323,
+                    0.29230418798014973,
+                    0.03758816320793616
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      2
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:39",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    10380,
+                    -0.5807427605439703,
+                    -66706.73712043521,
+                    0.5278986249662537,
+                    0.04066839267662508
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    10380,
+                    -0.5807962582846538,
+                    -66709.56945971261,
+                    0.5279546589006135,
+                    0.04066969599283916
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      2
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      2
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:39",
+                "lane": 1,
+                "installed": [
+                  [
+                    0,
+                    8927,
+                    -0.42185461274556724,
+                    300066.73207463295,
+                    0.14668404131103488,
+                    0.033026222825162294
+                  ],
+                  [
+                    1,
+                    9749,
+                    -0.5248035896718484,
+                    399328.9840773902,
+                    0.1267798681289881,
+                    0.03125087924297137
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    8927,
+                    -0.42185461274556724,
+                    300066.73207463295,
+                    0.14668404131103488,
+                    0.033026222825162294
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      0
+                    ]
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:44",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    3901,
+                    -0.10714271969785188,
+                    -415950.9400615594,
+                    0.13695837512825818,
+                    0.03038642435306247
+                  ]
+                ],
+                "candidate": [],
+                "matches": [],
+                "continuations": [
+                  [
+                    0,
+                    0,
+                    [
+                      3
+                    ]
+                  ],
+                  [
+                    null,
+                    null,
+                    []
+                  ]
+                ]
+              },
+              {
+                "key": "DS30-0008:46",
+                "lane": 0,
+                "installed": [
+                  [
+                    0,
+                    10026,
+                    0.16409079635715432,
+                    -414734.2603425544,
+                    0.2642702942102937,
+                    0.03823420851669273
+                  ],
+                  [
+                    1,
+                    11131,
+                    0.5660557446388952,
+                    -292794.99412157584,
+                    0.261072901624032,
+                    0.039460166960216814
+                  ]
+                ],
+                "candidate": [
+                  [
+                    0,
+                    10026,
+                    0.16409079635715432,
+                    -414734.2603425544,
+                    0.2642702942102937,
+                    0.03823420851669273
+                  ]
+                ],
+                "matches": [
+                  [
+                    0,
+                    0
+                  ]
+                ],
+                "continuations": [
+                  [
+                    0,
+                    null,
+                    [
+                      2,
+                      2
+                    ]
+                  ],
+                  [
+                    0,
+                    null,
+                    [
+                      2
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "maximum_matched_epoch_hz_exact_control_delta": [
+              0.0036142792469036067,
+              36.06288063356624,
+              0.00030216434575747186,
+              3.000907880806175e-05
+            ]
+          },
+          "retry": {
+            "oracle_factor_availability": {
+              "lanes": 10,
+              "additional_native_cpu_s": [
+                0.040419971,
+                0.039248142,
+                0.040281518,
+                0.041057495,
+                0.041994116
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.0972137813093967,
+                1.09569695425136,
+                1.1057580961994364,
+                1.100571021649135,
+                1.1017666132812256
+              ]
+            },
+            "oracle_factor_bytes": {
+              "lanes": 21,
+              "additional_native_cpu_s": [
+                0.084588347,
+                0.08354655,
+                0.084250326,
+                0.086342598,
+                0.08937905
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.2663268080732006,
+                1.2669481320224396,
+                1.2748367556468807,
+                1.271199799340863,
+                1.2720227448280115
+              ]
+            },
+            "fewer_than_two": {
+              "lanes": 74,
+              "additional_native_cpu_s": [
+                0.168793271,
+                0.166666604,
+                0.169504873,
+                0.171535408,
+                0.179731818
+              ],
+              "candidate_over_installed_cpu_after_retry": [
+                1.5887328110934629,
+                1.5882781252785347,
+                1.6026765396719356,
+                1.5921959785573183,
+                1.596664175250268
+              ]
+            }
+          }
+        }
+      },
+      "stages": [
+        {
+          "measure": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "timing": {
+            "calls": 740,
+            "cpu_s": 0.890571261
+          },
+          "input": {
+            "calls": 480,
+            "cpu_s": 0.120188798
+          },
+          "decimate": {
+            "calls": 740,
+            "cpu_s": 0.11276216
+          },
+          "modes": {
+            "calls": 740,
+            "cpu_s": 0.125376083
+          },
+          "time_search": {
+            "calls": 740,
+            "cpu_s": 0.129049237
+          },
+          "carrier_search": {
+            "calls": 740,
+            "cpu_s": 0.10508076
+          },
+          "refine": {
+            "calls": 740,
+            "cpu_s": 0.221283311
+          },
+          "gate": {
+            "calls": 4630,
+            "cpu_s": 0.075083189
+          },
+          "cancel": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify_load": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify": {
+            "calls": 0,
+            "cpu_s": 0.0
+          }
+        },
+        {
+          "measure": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "timing": {
+            "calls": 715,
+            "cpu_s": 0.8698242
+          },
+          "input": {
+            "calls": 480,
+            "cpu_s": 0.121598298
+          },
+          "decimate": {
+            "calls": 715,
+            "cpu_s": 0.108538216
+          },
+          "modes": {
+            "calls": 715,
+            "cpu_s": 0.127320214
+          },
+          "time_search": {
+            "calls": 715,
+            "cpu_s": 0.116472722
+          },
+          "carrier_search": {
+            "calls": 715,
+            "cpu_s": 0.102021573
+          },
+          "refine": {
+            "calls": 715,
+            "cpu_s": 0.213052233
+          },
+          "gate": {
+            "calls": 4840,
+            "cpu_s": 0.079088509
+          },
+          "cancel": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify_load": {
+            "calls": 0,
+            "cpu_s": 0.0
+          },
+          "verify": {
+            "calls": 0,
+            "cpu_s": 0.0
+          }
+        }
+      ]
+    }
+  }
+}
