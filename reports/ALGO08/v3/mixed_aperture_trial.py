@@ -40,18 +40,22 @@ def exports(path):
     return {row.split()[-1] for row in rows.splitlines() if row}
 
 
-def build(archive, output):
+def build(archive, output, *, short=None):
     machine = check_machine()
-    earlier = json.loads(gzip.decompress(verified(HERE / "measurements/short-signed.json.gz", SHORT_RECEIPT_SHA)))
+    if short is None:
+        earlier = json.loads(gzip.decompress(verified(HERE / "measurements/short-signed.json.gz", SHORT_RECEIPT_SHA)))
+        short = earlier["build"]["arms"]["short"]
+        pinned = SHORT_SHA
+    else:
+        pinned = short["binary_sha256"]
     manifest = json.loads(verified(archive / "receiver-fractional-exact-v1/build.json", BUILD_MANIFEST_SHA))
-    short = earlier["build"]["arms"]["short"]
     link = short["commands"][-1]
     original = Path(link[-1])
-    verified(original, SHORT_SHA)
+    verified(original, pinned)
     output.mkdir()
     baseline = output / "original-short-relinked.so"
     subprocess.run([*link[:-1], baseline], cwd=manifest["cwd"], check=True)
-    verified(baseline, SHORT_SHA)
+    verified(baseline, pinned)
     object_idx, = (i for i, item in enumerate(link) if Path(item).name == "two_carrier_receiver.o")
     archived = Path(link[object_idx]).with_suffix(".c")
     extension = HERE / "short_primary_entry.inc"
@@ -79,7 +83,7 @@ def build(archive, output):
     if any(name in binary_info for name in ("receiver.so", "use.so")):
         raise ValueError("The shortened entry depends on an external receiver DSO")
     receipt = dict(binary=str(candidate), binary_sha256=digest(candidate.read_bytes()),
-                   short_relink_sha256=SHORT_SHA, source_wrapper_sha256=digest(source.read_bytes()),
+                   short_relink_sha256=pinned, source_wrapper_sha256=digest(source.read_bytes()),
                    extension_sha256=digest(extension.read_bytes()),
                    callback_sha256=digest((HERE / "mixed_aperture_receiver.py").read_bytes()),
                    short_object_sha256={Path(item).name: digest(Path(item).read_bytes())

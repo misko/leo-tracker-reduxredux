@@ -55,34 +55,34 @@ def verified(path, expected):
     return contents
 
 
-def geometry():
+def geometry(samples=SAMPLES, frames=FRAMES):
     # At 10 MS/s the frame spacing is exactly 40000 ticks at 3 ticks/sample.
-    origin = (40000 * (FRAMES - 1) + 1) // 3
+    origin = (40000 * (frames - 1) + 1) // 3
     last_epoch = PERIOD - 1
-    return dict(sample_rate_hz=10000000, stored_samples=200000, short_samples=SAMPLES,
-                short_frames=FRAMES, last_origin=origin,
+    return dict(sample_rate_hz=10000000, stored_samples=200000, short_samples=samples,
+                short_frames=frames, last_origin=origin,
                 first_unused_fir_sample=origin + last_epoch + 128 * 44 + 41,
                 first_unused_latest_confirmation_sample=origin + last_epoch + 88 + (232 + 64) * 44,
                 first_unused_integer_stencil_sample=origin + last_epoch + (2 + 64) * 44 + 4,
                 first_unused_fractional_sample=origin + last_epoch + (2 + 64) * 44 + 10)
 
 
-def short_source(name, source):
+def short_source(name, source, samples=SAMPLES, frames=FRAMES):
     cuts = {
         "timing_first_receiver": [
-            ("points = 200000", f"points = {SAMPLES}"),
-            ("count = 14", f"count = {FRAMES}"),
+            ("points = 200000", f"points = {samples}"),
+            ("count = 14", f"count = {frames}"),
             ("early ? 7 : 2", "early ? count / 2 : 2"),
         ],
         "delay_product_kernel": [
-            ("samples = 200000", f"samples = {SAMPLES}"),
-            ("frames = 14", f"frames = {FRAMES}"),
+            ("samples = 200000", f"samples = {samples}"),
+            ("frames = 14", f"frames = {frames}"),
         ],
-        "pilot_cancel": [("samples = 200000", f"samples = {SAMPLES}")],
+        "pilot_cancel": [("samples = 200000", f"samples = {samples}")],
         "portable_verifier": [
             # The unchanged conditioned/stencil objects use the 15-frame array stride.
-            ("max_frames = 15", f"max_frames = 15, analysis_frames = {FRAMES}"),
-            ("samples = PORTABLE_FINE_SAMPLES", f"samples = PORTABLE_FINE_SAMPLES, loaded_samples = {SAMPLES}"),
+            ("max_frames = 15", f"max_frames = 15, analysis_frames = {frames}"),
+            ("samples = PORTABLE_FINE_SAMPLES", f"samples = PORTABLE_FINE_SAMPLES, loaded_samples = {samples}"),
             ("sample < samples;", "sample < loaded_samples;"),
             ("frame < max_frames;", "frame < analysis_frames;"),
             ("start + stop - 1 + offset >= samples", "start + stop - 1 + offset >= loaded_samples"),
@@ -92,8 +92,12 @@ def short_source(name, source):
             ("start + aperture > samples", "start + aperture > loaded_samples"),
             ("start + aperture + 4 > samples", "start + aperture + 4 > loaded_samples"),
         ],
-        "tile": [("input_samples = 200000", f"input_samples = {SAMPLES}")],
+        "tile": [("input_samples = 200000", f"input_samples = {samples}")],
     }
+    if name == "timing_first_receiver" and frames % 2:
+        # The AVX frame-plane layout stores two lanes per stripe, including the final partial pair.
+        cuts[name].append(("w->frames = reserve(w, count * w->width, sizeof(Sample));",
+                           "w->frames = reserve(w, ((count + 1) / 2) * 2 * w->width, sizeof(Sample));"))
     for old, new in cuts[name]:
         source = replace_once(source, old, new)
     return source
@@ -110,7 +114,7 @@ def wrapped_profile(command, original, temporary):
             original, temporary]
 
 
-def build(archive, work, installed, assets):
+def build(archive, work, installed, assets, *, apertures=None):
     verified(installed, V3_SHA)
     recipes = {name: json.loads(verified(archive / name, sha)) for name, sha in HISTORY.items()}
     release = recipes["receiver-fractional-exact-v1/build.json"]
@@ -138,7 +142,9 @@ def build(archive, work, installed, assets):
     trainer = ROOT / "reports/ALGO08/single-core-2x/receiver_mixer_profile_trial.py"
     inputs = {name: verified(path, SOURCES[name]).decode() for name, path in source_paths.items()}
     result = {}
-    for arm in ARM_NAMES[1:]:
+    if apertures is None:
+        apertures = {"control": None, "short": (SAMPLES, FRAMES)}
+    for arm, aperture in apertures.items():
         out = work / arm
         out.mkdir()
         feedback = out / "feedback"
@@ -155,7 +161,7 @@ def build(archive, work, installed, assets):
 
         names = {name: name if name.endswith(".inc") else f"{name}.c" for name in inputs}
         for name, source in inputs.items():
-            (out / names[name]).write_text(short_source(name, source) if arm == "short" else source)
+            (out / names[name]).write_text(short_source(name, source, *aperture) if aperture is not None else source)
         compile_unit(release["commands"][-2][:-4], "portable_verifier", out / "portable_verifier.o")
         compile_unit(tile[2][:-4], "tile", out / "tile.o")
         compile_unit(lineage["compile"][:-4], "delay_product_kernel", out / "delay_plain.o")
