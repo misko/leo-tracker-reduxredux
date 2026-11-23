@@ -68,7 +68,7 @@ def run(root, prior, score_path, weak):
     old_cmd = old["process"]["command"]
     recording = Path(old_cmd[old_cmd.index("--recording") + 1])
     signed = json.loads(checked(BINDING, BINDING_SHA))
-    segments = [(BULK / arg["path"], "sha256:" + arg["sha256"]) for arg in signed["case"]["recording"]["segments"]]
+    segments = tuple((BULK / arg["path"], "sha256:" + arg["sha256"]) for arg in signed["case"]["recording"]["segments"])
     if (recording != segments[0][0].parent.parent or Path(old_cmd[2]).name != "unified_short_bootstrap.py"
             or old_cmd[old_cmd.index("--output")+1] != str(prior / "candidate")):
         raise ValueError("Source recording or candidate identity differs")
