@@ -42,7 +42,12 @@ def one_pass_layout(*, enabled):
                     self.subplots_adjust(left=.052, right=.985, bottom=max(.13, bottom), top=.87)
                     counts["track_figures"] += 1
                 elif self.template == (14, 8) and len(self.axes) in (2, 3):
-                    self.subplots_adjust(left=.065, right=.965, bottom=.14, top=.77, wspace=.37)
+                    self.subplots_adjust(left=.065, right=.967, bottom=.14, top=.83, wspace=.32)
+                    if len(self.axes) == 3:
+                        grid, _, colorbar = self.axes
+                        bounds, bar = grid.get_position(), colorbar.get_position()
+                        colorbar.set_axes_locator(None)
+                        colorbar.set_position((bar.x0, bounds.y0, bar.width, bounds.height))
                     counts["position_figures"] += 1
                 else:
                     raise UnsupportedWebLayout("Unknown standard figure dimensions")
@@ -54,8 +59,10 @@ def one_pass_layout(*, enabled):
             if rect is None or rect[0] != 0 or rect[2] != 1 or options:
                 raise UnsupportedWebLayout("Unknown orbit figure layout bounds")
             height = self.get_size_inches()[1]
-            self.subplots_adjust(left=.07, right=.97, bottom=rect[1] + .29 / height,
-                                 top=rect[3] - .18 / height, hspace=.37)
+            # The original legend is anchored to the page, not the shared x-axis.
+            footer = rect[1] + .62 / height + max(0., .025 - .50 / height)
+            self.subplots_adjust(left=.07, right=.97, bottom=footer,
+                                 top=rect[3] - .37 / height, hspace=.37)
             counts["orbit_figures"] += 1
 
     with (
