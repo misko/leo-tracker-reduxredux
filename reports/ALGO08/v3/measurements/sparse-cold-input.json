@@ -1,0 +1,599 @@
+{
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "nice": 15,
+    "ionice": "best-effort: prio 7",
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "filesystem": "xfs",
+  "kernel": "7.0.0-31-generic",
+  "orders": [
+    [
+      "advice",
+      "prefetch"
+    ],
+    [
+      "prefetch",
+      "advice"
+    ]
+  ],
+  "specification_sha256": "652f8573e2fdec746dd318849c82992eb7786f014e8dbc393c0352b54e421e46",
+  "reader_sha256": {
+    "tools.algo08_scan": "573d6608597f1619785688769e7504a4ad8ac30dd71fecd37876c678ed4aca53",
+    "tools.pipeline_eval.qualification.blind_compact_run": "2fd4596da78d6fd0a472b183c02e7636322eeb9cfb107d60df56424b38acfe85",
+    "leo.storage.fast_scan": "db79b4e50c10a3b948c69c86a464fb57a226b0dbb2955cf90d8ae83db3f39527",
+    "leo.storage.short_window": "0884ab7ca630d59dd041e50e0ef89cd847ca842c11097f8bde06b869645eafa2",
+    "leo.scanner.fast_scan_analysis": "51f513ddeea44ca7caf3d8fd27988a9180f8f86078a3901804a0bc7ee351fe14",
+    "tools.pipeline_eval.variants.experimental.paired_sha256": "95485b5598d9f003c87cf1475418a75fc82cfecbce8518f8279b4f124b61240f",
+    "tools.pipeline_eval.variants.experimental.receiver_member_prefetch": "05b3b619429e1e35c9e9f811b3a68e68df6a6f6b37e7c05338dccd91fb0db8cc"
+  },
+  "manifest_sha256": "5ffe3ed98feb37f7f7ada44dbf34d2af9d3fcadce567fd3cdbb7e31965a02759",
+  "archived_stock_sha256": "2df28e68ea845576ea5e8a02057bce32983dbafb469fa2c4f710a3d89729fa85",
+  "inventory_sha256": "sha256:3f08c51c74fa878e0b5993311a840172c2b06d2d0be02988d13f0c29f502034b",
+  "cache_library_sha256": "4f10e0a2e23121e184ee7d37767f55c29fefc158f4182a2dd99c4268ff2ce6ab",
+  "compressed_bytes": 232083693,
+  "decoded_bytes": 307200000,
+  "selected_verified_index_and_payloads": [
+    {
+      "chunk_index": 0,
+      "first_sequence": 0,
+      "window_count": 64,
+      "payload_relative_path": "iq-000000.ci16.zst",
+      "index_relative_path": "windows-000000.jsonl",
+      "uncompressed_bytes": 102400000,
+      "compressed_bytes": 77442779,
+      "index_bytes": 172750,
+      "uncompressed_sha256": "sha256:758d22d502ba1e0688f3dfb2528549eadd187f33021598179e9fab308e9a89b6",
+      "compressed_sha256": "sha256:556772d5619b710cae8030050b8f8a4a7b18f4b196e57cddc14562c8ca73404a",
+      "index_sha256": "sha256:9bd62a272cc90d7b1abbb6ac2424317a599b9f92fca5287ed0999fd1e6b1e802"
+    },
+    {
+      "chunk_index": 1,
+      "first_sequence": 64,
+      "window_count": 64,
+      "payload_relative_path": "iq-000001.ci16.zst",
+      "index_relative_path": "windows-000001.jsonl",
+      "uncompressed_bytes": 102400000,
+      "compressed_bytes": 77279318,
+      "index_bytes": 172679,
+      "uncompressed_sha256": "sha256:246ef265fd9b5161c91f6cc68e8e0ad1a73f189cb293ef37474d288e25c0c469",
+      "compressed_sha256": "sha256:8f128d90d65f455cfb3cd82e51c07788dbd0bddd83a44c9bb01e2b5def8c97af",
+      "index_sha256": "sha256:b9ffeb10f6dd82e11020001699a820f10df79b321392f514c4b70ec1a8c85241"
+    },
+    {
+      "chunk_index": 2,
+      "first_sequence": 128,
+      "window_count": 64,
+      "payload_relative_path": "iq-000002.ci16.zst",
+      "index_relative_path": "windows-000002.jsonl",
+      "uncompressed_bytes": 102400000,
+      "compressed_bytes": 77361596,
+      "index_bytes": 172820,
+      "uncompressed_sha256": "sha256:7ec6cfbf7f84c4eefd7fb9dcd5bf05ab56c862b073a7922d5e0406451146545c",
+      "compressed_sha256": "sha256:2fbfc5342cff55dab234c2000a15a48a80c61f058fe33b3ac228701d1eda6a48",
+      "index_sha256": "sha256:49afdebda6193de5fd07ffb6d064a4df866d0892fbfa10ac36283366560864a0"
+    }
+  ],
+  "expected_payload_pages": [
+    18907,
+    18868,
+    18888
+  ],
+  "runs": [
+    [
+      {
+        "arm": "advice",
+        "cpu_ns": 787638276,
+        "wall_ns": 883431296,
+        "overlap": {
+          "attempts": 2,
+          "submitted": 2,
+          "submitted_bytes": 33554432,
+          "cpu_ns": 8242834,
+          "wall_ns": 8350012
+        },
+        "resource_input_blocks": 453304,
+        "process_io_delta": {
+          "rchar": 233670429,
+          "wchar": 0,
+          "syscr": 29,
+          "syscw": 0,
+          "read_bytes": 232091648,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "effective_compressed_MB_per_s": 262.70712170921325,
+        "charged_MB_per_s": 262.7161263709634,
+        "plan_cpu_ns": 6941923,
+        "callback_cpu_ns": 353844661,
+        "paid_callback_cpu_ns": 353088742,
+        "visits": 192,
+        "paid_visits": 64,
+        "emitted_probes": 384,
+        "selected": 19,
+        "selected_sha256": "sha256:517ea7369183f3973042aecc0e3b52423f5056f3e3ac674496416c85abe1b799",
+        "selected_probe_keys": [
+          [
+            44,
+            0
+          ],
+          [
+            48,
+            0
+          ],
+          [
+            48,
+            1
+          ],
+          [
+            49,
+            0
+          ],
+          [
+            50,
+            0
+          ],
+          [
+            50,
+            1
+          ],
+          [
+            51,
+            0
+          ],
+          [
+            51,
+            1
+          ],
+          [
+            52,
+            0
+          ],
+          [
+            54,
+            0
+          ],
+          [
+            56,
+            0
+          ],
+          [
+            56,
+            1
+          ],
+          [
+            57,
+            0
+          ],
+          [
+            58,
+            0
+          ],
+          [
+            58,
+            1
+          ],
+          [
+            59,
+            0
+          ],
+          [
+            59,
+            1
+          ],
+          [
+            60,
+            0
+          ],
+          [
+            62,
+            0
+          ]
+        ],
+        "probes_sha256": "sha256:440e80a7db588834774f5fd0537bc8a9dd8f000a61ac58a9664244dca70fd8d3",
+        "raw_authority": "sha256:96d9210b0fea334669b8eae272181630db4f9e87625b8228b6e96b93d87e28f3",
+        "clock_sha256": "sha256:8150fc3449c0cae19eb34e592111383b0a6c334058b4389ad9486f36ac4f78c8",
+        "acquisition_sha256": "sha256:bc9111b59215d98772ba18f20e7b35cc1e38338a2442a46cc99d018b36f934ec",
+        "start_cache_pages": [
+          0,
+          0,
+          0
+        ],
+        "end_cache_pages": [
+          18907,
+          18868,
+          18888
+        ]
+      },
+      {
+        "arm": "prefetch",
+        "cpu_ns": 769563836,
+        "wall_ns": 769670450,
+        "overlap": {
+          "submitted": 2,
+          "submitted_bytes": 154640914,
+          "hits": 2,
+          "hit_bytes": 154640914,
+          "fallback": 0,
+          "demand_wait_ns": 14494,
+          "worker_cpu_ns": 51503154
+        },
+        "resource_input_blocks": 453304,
+        "process_io_delta": {
+          "rchar": 233668766,
+          "wchar": 0,
+          "syscr": 27,
+          "syscw": 0,
+          "read_bytes": 232091648,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "effective_compressed_MB_per_s": 301.536447189833,
+        "charged_MB_per_s": 301.54678278216346,
+        "plan_cpu_ns": 2532809,
+        "callback_cpu_ns": 348561617,
+        "paid_callback_cpu_ns": 347816344,
+        "visits": 192,
+        "paid_visits": 64,
+        "emitted_probes": 384,
+        "selected": 19,
+        "selected_sha256": "sha256:517ea7369183f3973042aecc0e3b52423f5056f3e3ac674496416c85abe1b799",
+        "selected_probe_keys": [
+          [
+            44,
+            0
+          ],
+          [
+            48,
+            0
+          ],
+          [
+            48,
+            1
+          ],
+          [
+            49,
+            0
+          ],
+          [
+            50,
+            0
+          ],
+          [
+            50,
+            1
+          ],
+          [
+            51,
+            0
+          ],
+          [
+            51,
+            1
+          ],
+          [
+            52,
+            0
+          ],
+          [
+            54,
+            0
+          ],
+          [
+            56,
+            0
+          ],
+          [
+            56,
+            1
+          ],
+          [
+            57,
+            0
+          ],
+          [
+            58,
+            0
+          ],
+          [
+            58,
+            1
+          ],
+          [
+            59,
+            0
+          ],
+          [
+            59,
+            1
+          ],
+          [
+            60,
+            0
+          ],
+          [
+            62,
+            0
+          ]
+        ],
+        "probes_sha256": "sha256:440e80a7db588834774f5fd0537bc8a9dd8f000a61ac58a9664244dca70fd8d3",
+        "raw_authority": "sha256:96d9210b0fea334669b8eae272181630db4f9e87625b8228b6e96b93d87e28f3",
+        "clock_sha256": "sha256:8150fc3449c0cae19eb34e592111383b0a6c334058b4389ad9486f36ac4f78c8",
+        "acquisition_sha256": "sha256:bc9111b59215d98772ba18f20e7b35cc1e38338a2442a46cc99d018b36f934ec",
+        "start_cache_pages": [
+          0,
+          0,
+          0
+        ],
+        "end_cache_pages": [
+          18907,
+          18868,
+          18888
+        ]
+      }
+    ],
+    [
+      {
+        "arm": "prefetch",
+        "cpu_ns": 768615904,
+        "wall_ns": 768677675,
+        "overlap": {
+          "submitted": 2,
+          "submitted_bytes": 154640914,
+          "hits": 2,
+          "hit_bytes": 154640914,
+          "fallback": 0,
+          "demand_wait_ns": 9233,
+          "worker_cpu_ns": 50091278
+        },
+        "resource_input_blocks": 453304,
+        "process_io_delta": {
+          "rchar": 233668766,
+          "wchar": 0,
+          "syscr": 27,
+          "syscw": 0,
+          "read_bytes": 232091648,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "effective_compressed_MB_per_s": 301.92589240997535,
+        "charged_MB_per_s": 301.9362413510969,
+        "plan_cpu_ns": 2453250,
+        "callback_cpu_ns": 350432586,
+        "paid_callback_cpu_ns": 349763157,
+        "visits": 192,
+        "paid_visits": 64,
+        "emitted_probes": 384,
+        "selected": 19,
+        "selected_sha256": "sha256:517ea7369183f3973042aecc0e3b52423f5056f3e3ac674496416c85abe1b799",
+        "selected_probe_keys": [
+          [
+            44,
+            0
+          ],
+          [
+            48,
+            0
+          ],
+          [
+            48,
+            1
+          ],
+          [
+            49,
+            0
+          ],
+          [
+            50,
+            0
+          ],
+          [
+            50,
+            1
+          ],
+          [
+            51,
+            0
+          ],
+          [
+            51,
+            1
+          ],
+          [
+            52,
+            0
+          ],
+          [
+            54,
+            0
+          ],
+          [
+            56,
+            0
+          ],
+          [
+            56,
+            1
+          ],
+          [
+            57,
+            0
+          ],
+          [
+            58,
+            0
+          ],
+          [
+            58,
+            1
+          ],
+          [
+            59,
+            0
+          ],
+          [
+            59,
+            1
+          ],
+          [
+            60,
+            0
+          ],
+          [
+            62,
+            0
+          ]
+        ],
+        "probes_sha256": "sha256:440e80a7db588834774f5fd0537bc8a9dd8f000a61ac58a9664244dca70fd8d3",
+        "raw_authority": "sha256:96d9210b0fea334669b8eae272181630db4f9e87625b8228b6e96b93d87e28f3",
+        "clock_sha256": "sha256:8150fc3449c0cae19eb34e592111383b0a6c334058b4389ad9486f36ac4f78c8",
+        "acquisition_sha256": "sha256:bc9111b59215d98772ba18f20e7b35cc1e38338a2442a46cc99d018b36f934ec",
+        "start_cache_pages": [
+          0,
+          0,
+          0
+        ],
+        "end_cache_pages": [
+          18907,
+          18868,
+          18888
+        ]
+      },
+      {
+        "arm": "advice",
+        "cpu_ns": 762601383,
+        "wall_ns": 766955743,
+        "overlap": {
+          "attempts": 2,
+          "submitted": 2,
+          "submitted_bytes": 33554432,
+          "cpu_ns": 8435290,
+          "wall_ns": 8434419
+        },
+        "resource_input_blocks": 453304,
+        "process_io_delta": {
+          "rchar": 233668766,
+          "wchar": 0,
+          "syscr": 27,
+          "syscw": 0,
+          "read_bytes": 232091648,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "effective_compressed_MB_per_s": 302.6037618444432,
+        "charged_MB_per_s": 302.6141340205076,
+        "plan_cpu_ns": 2536369,
+        "callback_cpu_ns": 340384404,
+        "paid_callback_cpu_ns": 339706001,
+        "visits": 192,
+        "paid_visits": 64,
+        "emitted_probes": 384,
+        "selected": 19,
+        "selected_sha256": "sha256:517ea7369183f3973042aecc0e3b52423f5056f3e3ac674496416c85abe1b799",
+        "selected_probe_keys": [
+          [
+            44,
+            0
+          ],
+          [
+            48,
+            0
+          ],
+          [
+            48,
+            1
+          ],
+          [
+            49,
+            0
+          ],
+          [
+            50,
+            0
+          ],
+          [
+            50,
+            1
+          ],
+          [
+            51,
+            0
+          ],
+          [
+            51,
+            1
+          ],
+          [
+            52,
+            0
+          ],
+          [
+            54,
+            0
+          ],
+          [
+            56,
+            0
+          ],
+          [
+            56,
+            1
+          ],
+          [
+            57,
+            0
+          ],
+          [
+            58,
+            0
+          ],
+          [
+            58,
+            1
+          ],
+          [
+            59,
+            0
+          ],
+          [
+            59,
+            1
+          ],
+          [
+            60,
+            0
+          ],
+          [
+            62,
+            0
+          ]
+        ],
+        "probes_sha256": "sha256:440e80a7db588834774f5fd0537bc8a9dd8f000a61ac58a9664244dca70fd8d3",
+        "raw_authority": "sha256:96d9210b0fea334669b8eae272181630db4f9e87625b8228b6e96b93d87e28f3",
+        "clock_sha256": "sha256:8150fc3449c0cae19eb34e592111383b0a6c334058b4389ad9486f36ac4f78c8",
+        "acquisition_sha256": "sha256:bc9111b59215d98772ba18f20e7b35cc1e38338a2442a46cc99d018b36f934ec",
+        "start_cache_pages": [
+          0,
+          0,
+          0
+        ],
+        "end_cache_pages": [
+          18907,
+          18868,
+          18888
+        ]
+      }
+    ]
+  ],
+  "expected_prefix_paid": 64,
+  "timed_logical_compressed_bytes": 928334772,
+  "staging_copy_compressed_bytes": 232083693
+}
