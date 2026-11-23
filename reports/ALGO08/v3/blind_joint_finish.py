@@ -119,7 +119,7 @@ def readout(record):
     )
 
 
-def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_candidate):
+def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_candidate, expand=None):
     if prepared["status"] != "inputs_prepared":
         return None, prepared["status"]
     cpu, wall = process_time(), perf_counter()
@@ -161,6 +161,12 @@ def propose(prepared, region, bound, measured, *, repair=None, cold_start=cold_c
     offered.update(predictive_points=sum(entry["points"] for entry in entries), predictive_tracks=len(entries),
                    predictive_labels=[(entry["component"], entry["norad"], entry["alias"]) for entry in entries])
     measured["predictive_clocks"] = elapsed(cpu, wall)
+    if expand is not None:
+        cpu, wall = process_time(), perf_counter()
+        try:
+            scan, node, checked, base, powers, means, entries = expand(scan, node, checked, base, entries, point, model)
+        finally:
+            measured["expansion_clocks"] = elapsed(cpu, wall)
     cpu, wall = process_time(), perf_counter()
     paired = {arm: arm_finish(scan, node, checked, arm, base.reference, powers, means, model, entries, point)
               for arm in ARMS}
