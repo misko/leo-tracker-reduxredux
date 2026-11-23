@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from hashlib import sha256
 import json
 from pathlib import Path
+import subprocess
 import sys
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -9,6 +10,7 @@ from unittest.mock import patch
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
+import named_wide_likelihood as wide
 from named_wide_likelihood import checked_library, inference_scope
 
 
@@ -29,6 +31,11 @@ def test_changing_the_binary_and_its_manifest_cannot_change_the_operator_pin(tmp
     write(b"trusted binary", source="another C program")
     with pytest.raises(ValueError, match="source record"):
         checked_library(path, trusted, builder)
+
+
+def test_builder_imports_the_named_runtime_in_isolated_python():
+    result = subprocess.run([sys.executable, "-IB", wide.__file__, "--help"], capture_output=True, text=True, check=True)
+    assert "Build the wider private likelihood" in result.stdout
 
 
 def test_widened_binding_limits_retry_to_inference_and_restores_stock_for_selected_packet():

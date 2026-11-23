@@ -8,6 +8,7 @@ from hashlib import sha256
 import importlib.util
 import json
 from pathlib import Path
+import sys
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
@@ -90,6 +91,7 @@ def binding(path, expected, output, audit):
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     from empty_bootstrap import load_runtime
 
     cli = argparse.ArgumentParser(description="Build the wider private likelihood and its source manifest")
