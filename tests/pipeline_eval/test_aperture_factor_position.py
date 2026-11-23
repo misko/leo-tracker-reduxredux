@@ -67,3 +67,22 @@ def test_full_chronology_can_change_later_selection_with_equal_raw_factors(repla
     changes = replay.differences(first, second, ["short_primary"] * 3 + ["full"], 1)
     assert len(changes["changes"]) == 1
     assert changes["counts"]["later_anchor"] == dict(opportunities=1, prefix_present=1, centered_present=0, lost=1)
+
+
+def test_reference_grid_parity_ignores_only_the_independent_clock(replay):
+    grid = dict(binding="signed", elapsed_seconds=15., points=[2.])
+    other = dict(grid, elapsed_seconds=17.)
+    assert replay.grid_without_elapsed(grid) == replay.grid_without_elapsed(other)
+    assert replay.grid_without_elapsed(grid) != replay.grid_without_elapsed(dict(other, points=[3.]))
+
+
+def test_signed_rf_and_position_deltas_remain_separate_per_calibration_arm(replay):
+    prefix = dict(terminal=dict(arms={"c0": dict(latlon=[2., 3.], rf_rms_hz=8.),
+                                      "fitted_c": dict(latlon=[2., 4.], rf_rms_hz=7.)}),
+                  horizontal_error_km={"c0": 2., "fitted_c": 4.})
+    centered = deepcopy(prefix)
+    centered["terminal"]["arms"]["fitted_c"]["rf_rms_hz"] = 6.
+    centered["horizontal_error_km"]["fitted_c"] = 5.
+    changes = replay.compare_endpoints(prefix, centered)
+    assert changes["fitted_c"] == dict(shift_km=0., horizontal_error_delta_km=1., rf_rms_delta_hz=-1.)
+    assert changes["c0"] == dict(shift_km=0., horizontal_error_delta_km=0., rf_rms_delta_hz=0.)

@@ -233,6 +233,14 @@ def evidence(folder, native):
     source = native["source"]
     validate_receipt(terminal, detail, receipt, canonical_digest(native), receipt["region"],
                      source["session_id"], source["raw_recording_authority_digest"])
+    solve = research["solve"]
+    proof, = research["early_regional"]
+    projection = solve["geographic_projector"]
+    if (research["saved_digest"] != terminal["native_sha256"] or research["saved_handoff_manifest"] != source["input_manifest_sha256"]
+            or not research["full_catalogue"] or not research["optimized_full_catalogue"] or not research["signed_finish"]
+            or projection["track_score_native"] != proof["result"]["probes_evaluated"] or projection["track_score_fallbacks"]
+            or not solve["cold_track_rows"]["reused_requests"]):
+        raise ValueError("The publication did not use the original unfiltered optimized saved route")
     science = json.loads(json.dumps(artifacts(folder, receipt)))
     if science != research["evidence"]:
         raise ValueError("Reopened report artifacts differ from the sealed solver output")
@@ -256,6 +264,25 @@ def evidence(folder, native):
     return result
 
 
+def grid_without_elapsed(grid):
+    return {key: value for key, value in grid.items() if key != "elapsed_seconds"}
+
+
+def compare_endpoints(prefix, centered):
+    from tools.pipeline_eval.scoring import distance_km
+
+    changes = {}
+    for arm in ARMS:
+        first, second = (result["terminal"]["arms"].get(arm, {}) for result in (prefix, centered))
+        if first.get("latlon") and second.get("latlon"):
+            changes[arm] = dict(
+                shift_km=distance_km(first["latlon"], second["latlon"]),
+                horizontal_error_delta_km=centered["horizontal_error_km"][arm] - prefix["horizontal_error_km"][arm],
+                rf_rms_delta_hz=second["rf_rms_hz"] - first["rf_rms_hz"],
+            )
+    return changes
+
+
 def score(output, result_path):
     from dense_full_short_crossover_score import REFERENCE as reference_path
     from leo.contracts.digests import canonical_digest
@@ -271,8 +298,10 @@ def score(output, result_path):
     original = evidence(archived, packets["prefix"])
     results = {name: evidence(output / name, packet) for name, packet in packets.items()}
     prefix = results["prefix"]
-    if (prefix["terminal"] != original["terminal"]
-            or any(prefix[key] != original[key] for key in ("science", "selected_rows", "route"))
+    if (prefix["terminal"] != original["terminal"] or prefix["selected_rows"] != original["selected_rows"]
+            or prefix["route"] != original["route"]
+            or any(prefix["science"][key] != original["science"][key] for key in ("images", "path"))
+            or grid_without_elapsed(prefix["grid"]) != grid_without_elapsed(original["grid"])
             or any(row["region"][0]["result"]["snapshots"] != prefix["region"][0]["result"]["snapshots"]
                    for row in results.values())):
         raise ValueError("Saved prefix replay did not reproduce the archived complete publication")
@@ -289,7 +318,8 @@ def score(output, result_path):
                               for name in ("prefix", "centered")))
     write(result_path, dict(binding=binding, build_clock=read(output / "build-clock.json"),
                             launch_binding=read(output / "launch-binding.json"), original_terminal=original["terminal_sha256"],
-                            receiver_owner_changes=owners, survey_sha256=REFERENCE,
+                            receiver_owner_changes=owners, endpoint_changes=compare_endpoints(prefix, results["centered"]),
+                            survey_sha256=REFERENCE,
                             results=results))
 
 
