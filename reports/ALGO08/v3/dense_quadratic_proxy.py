@@ -81,7 +81,6 @@ class GraphAudit:
                                graph_sha256=canonical_digest(json.loads(json.dumps(graph, default=_json_value))),
                                observation_sha256=canonical_digest(graph["observations"]), observations=len(graph["observations"]),
                                tracks=len(fits), active_curvature=len(graph["curved_indices"]), graph_points=graph["graph_points"],
-                               path_extracted=sum(t.get("diagnostics", {}).get("graph_paths_extracted", 0) for t in fits),
                                piece_degrees={degree: sum(p["degree"] == degree for t in fits for p in t["pieces"])
                                               for degree in range(5)}),
                     experiment_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
