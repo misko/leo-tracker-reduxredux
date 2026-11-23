@@ -23,6 +23,20 @@ The dynamic program keeps the cheapest path for each distinct twelve-opportunity
 
 The complete clocks start at signed acquisition and end after sealing and checking the prefix detections. Every arm authenticated both complete members, 154,722,097 compressed bytes, and used the same verified window receipts and scoped raw digest. All timed arms charged zero storage input blocks. Schedule search, its extra native cost census, and all position solving are outside the paired clocks. These measurements cover one warm physical prefix.
 
+## Appendix — Ownership across the saved recordings
+
+The metadata census joined each frozen case in order: DS30-0008, north containing, and south containing. It reconstructed both canonical owner digests for each case using the exact observation join. Every case had selected ranks and canonical owner rows available. A selected factor is an exported continuation result. Both calibration arms draw from the same selected denominator.
+
+| Recording and scope | Selected rank 0 / rank 1 (total) | `c = 0` owned rank 0 / rank 1 (total) | Fitted `c` owned rank 0 / rank 1 (total) |
+|---|---:|---:|---:|
+| DS30-0008, full recording | 6,584 / 432 (7,016) | 4,233 / 239 (4,472) | 4,233 / 239 (4,472) |
+| DS30-0008, first 128 visits | 78 / 6 (84) | 25 / 0 (25) | 25 / 0 (25) |
+| DS30-0008, after first 128 visits | 6,506 / 426 (6,932) | 4,208 / 239 (4,447) | 4,208 / 239 (4,447) |
+| North containing simulation, full recording | 456 / 0 (456) | 302 / 0 (302) | 302 / 0 (302) |
+| South containing simulation, full recording | 456 / 0 (456) | 266 / 0 (266) | 266 / 0 (266) |
+
+The dense prefix contributed **0.56% of the full owned factors**. It selected six rank-1 factors and neither arm owned any of them. Each full-recording arm owned **239 of 432 selected rank-1 factors**, accounting for **5.34% of its owned evidence**. All 239 came after the prefix. Both simulations exported zero rank-1 selections, so their owner sets give no comparison for residual evidence. These are counts from existing publications. The census opened no I/Q and ran no acquisition or position solve. [Source-pinned census and per-arm counts](measurements/primary-owner-census.json) · [Metadata runner](primary_owner_census.py)
+
 ## Reproduce
 
 The command uses the capture account and the shared Gauss benchmark lock. It reads only the first 128 saved visits per pass and creates fresh result and helper paths.
@@ -40,4 +54,14 @@ flock -x "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 timeout 55s \
   "$release/venv/bin/python" -BPs "$runner/primary_schedule_trial.py" \
   "$out/result.json" "$out/native"
 sudo -n -u leo cat "$out/result.json"
+```
+
+Run the metadata census separately with the same pinned files and a fresh output path. The saved native packets and calibration owners supply all inputs.
+
+```sh
+flock -x "$bench/gauss.lock" ionice -c2 -n7 nice -n15 taskset -c 2 timeout 25s \
+  env PYTHONPATH="$runner:$payload:$release/src:$release" OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 \
+  OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 BLIS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
+  PYTHONDONTWRITEBYTECODE=1 "$release/venv/bin/python" -BPs "$runner/primary_owner_census.py" \
+  /var/tmp/leo-primary-owner-census.json
 ```

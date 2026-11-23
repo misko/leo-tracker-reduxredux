@@ -2,15 +2,14 @@
 
 import argparse
 import ctypes as ct
-import gzip
 from hashlib import sha256
-import json
 from pathlib import Path
 import subprocess
 
 from aperture_ingress import PREFIX
 from aperture_trial import BENCH, DENSE, PAYLOAD, configuration, inputs, machine, read, write
 from continuation_skip_trial import capture
+from primary_owner_census import APERTURE_SHA, canonical_owners, pinned_aperture
 from primary_schedule import FULL, PRIMARY, SKIP, optimum, replay_actions
 
 
@@ -18,8 +17,6 @@ BASE = BENCH / "site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.c
 BASE_SHA = "4f3326eee5522f02ee05a236f22a41fc1af5bb0f21b6e3fe337711a66226f5f7"
 DETECTOR = PAYLOAD / "receiver.so"
 DETECTOR_SHA = "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5"
-APERTURE = Path(__file__).resolve().parent / "measurements/aperture.json.gz"
-APERTURE_SHA = "15a4e12381055327d19467fca6c2d16ab3f0d7a4b44698d20d38e42ce3359540"
 PROBES_SHA = "sha256:3cee5442affabf0c7ad6f8d17281bc5f0ebfdec465e1a4238261fd45d3217c6e"
 
 FIRST = """
@@ -68,43 +65,20 @@ def build_primary(work):
 
 
 def owned_opportunities(native, before, identity, expected):
-    from leo.analysis.glrt_frequency_input import frequency_evidence
-    from leo.analysis.localization_v3.tracks import winning_observations
-    from leo.presentation.localization_v3 import owner_digest
-
-    compressed = APERTURE.read_bytes()
-    if digest(compressed) != APERTURE_SHA:
-        raise ValueError("Aperture archive differs from the frozen canonical owners")
-    packet = json.loads(gzip.decompress(compressed))["cases"]["DS30-0008"]["full"]
-    if packet["identity"] != identity or packet["owners"] != expected["owners"]:
-        raise ValueError("Archived full ownership does not describe the installed native packet")
-    evidence, _, _ = frequency_evidence(native)
-    candidates, _ = winning_observations(native)
-    native_indices = {"sha256:" + digest(name.encode()): i for i, name in enumerate(evidence.ids)}
-    fields = ("receiver", "channel", "time_s", "measured_cfo_hz")
-    reverse = {tuple(observation[key] for key in fields): observation["observation_id"]
-               for observation in candidates}
+    packet = pinned_aperture()["DS30-0008"]["full"]
     probes = native["source"]["probes"]
-    if len(native_indices) != len(probes) or len(reverse) != len(candidates):
-        raise ValueError("Canonical observation keys do not determine unique original opportunities")
     index_in_prefix = {(row["visit_index"], row["receiver_id"]): i for i, row in enumerate(before)}
-    partial = {arm: {} for arm in ("c0", "fitted_c")}
-    for arm, retained in partial.items():
-        catalog = {}
-        for *key, norad in packet["owner_rows"][arm]:
-            observation = reverse[tuple(key)]
-            if observation in catalog:
-                raise ValueError("Duplicate owner in the archived canonical arm")
-            catalog[observation] = norad
-            row = probes[native_indices[observation]]
+    partial = {}
+    for arm, entries in canonical_owners(native, packet, identity, expected).items():
+        retained = {}
+        for native_index, owner in entries.items():
+            row = probes[native_index]
             index = index_in_prefix.get((row["visit_index"], row["receiver_id"]))
             if index is not None:
-                if before[index] != row or len(row["candidates"]) != 1:
+                if before[index] != row:
                     raise ValueError("Owned opportunity lacks its unique original exported factor")
-                retained[index] = dict(observation_id=observation, norad=norad,
-                                       rank=row["candidates"][0]["candidate_rank"])
-        if owner_digest(catalog) != packet["owners"][arm]:
-            raise ValueError("Exact native time and frequency join failed to reconstruct owner digest")
+                retained[index] = owner
+        partial[arm] = retained
     union = set().union(*(set(row) for row in partial.values()))
     return union, dict(aperture_sha256=APERTURE_SHA, full_native_sha256=identity["native_sha256"],
                        owner_digests=packet["owners"], full_owner_rows=packet["associated"],
