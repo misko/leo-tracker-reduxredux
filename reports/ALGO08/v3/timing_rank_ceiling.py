@@ -17,8 +17,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 RELEASE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c")
-FULL = RELEASE / "assets/cancellation-factors.so"
-SHORT = Path("/dev/shm/leo-v3-whole-group-native/short/stock.so")
+NATIVE_ARCHIVE = Path("/dev/shm/leo-v3-whole-group-native")
+FULL = NATIVE_ARCHIVE / "full/stock.so"
+SHORT = NATIVE_ARCHIVE / "short/stock.so"
 BENCH = Path("/tmp/leo-algo08v2-2x-bench")
 FULL_SOURCE = BENCH / "spectral-vectors-combined-v1/packed/timing_first_receiver.c"
 SHORT_SOURCE = Path("/var/tmp/leo-short-signed-02/short/timing_first_receiver.c")
