@@ -142,8 +142,31 @@ def compare_arms(named, fixed):
                                       for tag in numeric})
 
 
+def compare_grids(named, fixed, offset):
+    from math import hypot
+
+    if not named["complete"] or not fixed["complete"] or named["evaluated_points"] != fixed["evaluated_points"]:
+        raise ValueError("Both cohorts must publish complete corresponding grid samples")
+    pairs = list(zip(named["points"], fixed["points"], strict=True))
+    if any(a["failures"] != b["failures"] or a["scores"].keys() != b["scores"].keys() for a, b in pairs):
+        raise ValueError("The aligned grid calls must have matched decision and availability")
+    displacement = [hypot(a["east_km"] - b["east_km"], a["north_km"] - b["north_km"]) for a, b in pairs]
+    differences = {
+        arm: [b["scores"][arm] - a["scores"][arm] for a, b in pairs if arm in a["scores"]] for arm in ARMS
+    }
+    return dict(
+        points=len(pairs), maximum_coordinate_displacement_km=max(displacement),
+        scores={arm: dict(count=len(delta), raw_min=min(delta), raw_max=max(delta),
+                          max_absolute_minus_dormant_prior=max(abs(value-offset) for value in delta))
+                for arm, delta in differences.items()},
+    )
+
+
 def evaluate(root, destination):
     from aperture_trial import read, write
+    from leo.analysis.localization_v3.cavity_prediction import unused_student_gap
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from tools.pipeline_eval.scoring import distance_km
     from triage_bounds import REFERENCE, REFERENCE_SHA256
 
@@ -176,10 +199,30 @@ def evaluate(root, destination):
                             for arm in ARMS} for name in ("named", "warm")}
     details = actual["route_details"]
     inputs = {arm: compare_arms(named["likelihood"]["arms"][arm], fresh["arms"][arm]) for arm in ARMS}
+    unused_prior = unused_student_gap(fresh["model"]["nu"])
+    dormant_offsets = {}
+    for arm, values in inputs.items():
+        original_count, candidate_count = values["nominal_columns"]["phase_labels"]
+        dormant_offsets[arm] = (candidate_count - original_count) * unused_prior
+    if dormant_offsets["c0"] != dormant_offsets["fitted_c"]:
+        raise ValueError("The original cohorts must keep the same phase count in both calibration arms")
+    normalization = {arm: dict(expected=dormant_offsets[arm], objective_gap=
+        fresh["arms"][arm]["fit"]["objective"] - named["likelihood"]["arms"][arm]["fit"]["objective"])
+        for arm in ARMS}
+    for gap in normalization.values():
+        gap["difference_after_expected_prior"] = gap["objective_gap"] - gap["expected"]
+    released_grid = FastStandardAnalysisStore(STAGED / "stock").position_grid(stock["science"]["receipt"]["run_id"])
+    new_grid = FastStandardAnalysisStore(path).position_grid(trace["receipt"]["run_id"])
+    grid_docs = ((released_grid, stock["sidecars"]["grid"]), (new_grid, actual["sidecars"]["grid"]))
+    if any(canonical_digest({k: v for k, v in body.items() if k not in ("binding", "elapsed_seconds")})
+           != record["scientific_sha256"] for body, record in grid_docs):
+        raise ValueError("The offline grid comparison requires both original scientific digests")
+    grid_equivalence = compare_grids(released_grid, new_grid, dormant_offsets["c0"])
     picture = json.loads(json.dumps(actual["figures"]))
     figures = {label: {name: {key: value == ref[name][key] for key, value in body.items()}
                        for name, body in picture.items()}
                for label, ref in (("named", stock["figures"]), ("warm", previous["publication"]["figures"]))}
+    stages = ("candidate_pre_evidence_clocks", "signed_total_clocks", "standard_evidence_clocks")
     write(destination, dict(
         launch=read(root / "launch.json"), clocks=clocks, named_parity=parity, ownership=keep,
         witness_sha256={key: sha256(file.read_bytes()).hexdigest() for key, file in (
@@ -191,11 +234,15 @@ def evaluate(root, destination):
         likelihood_comparison=inputs, terminal=terminal, horizontal_error_km=error, displacement_km=displacement,
         fits={mode: {arm: content["arms"][arm]["fit"] for arm in ARMS}
               for mode, content in (("named", named["likelihood"]), ("fixed", fresh))},
-        scientific_grid=actual["sidecars"], media=picture, media_equality=figures,
+        scientific_grid=actual["sidecars"], grid_comparison=grid_equivalence,
+        normalization_offset=normalization, media=picture, media_equality=figures,
         legends=orbit_legends(path, actual), candidate_solve=actual["worker"]["solve"],
         signed_fit=details["named_survivor_fit"], signed_total=details["signed_total_clocks"],
         signed_qualification=details["signed_qualify_clocks"], signed_prior=details["signed_prior_clocks"],
         earlier_warm_fit=warm["route_details"]["warm_signed_fit"], earlier_check=warm["route_details"]["signed_total_clocks"],
+        comparator_process=dict(named=stock["process"], warm=previous["process"]),
+        solve_scopes={"warm": {key: warm["route_details"][key] for key in stages},
+                      "fixed": {key: details[key] for key in stages}},
     ))
 
 
