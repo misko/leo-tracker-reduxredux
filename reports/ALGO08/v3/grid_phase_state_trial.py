@@ -6,9 +6,9 @@ from pathlib import Path
 from runpy import run_path
 from unittest.mock import patch
 
-from aperture_trial import configuration, read, solve as saved_solve, write
+from aperture_trial import archive_identity, configuration, read, solve as saved_solve, write
 from cold_track_row_transfer import DENSE, GEOGRAPHIC, PREVIOUS, RAW, same_route
-from cold_track_row_trial import REPLAY_PIN
+from cold_track_row_trial import REPLAY_PIN, same_proof
 import dense_full_short_crossover as crossover
 from dense_geographic_trial import host
 from grid_phase_state_reuse import GridAudit, SOURCES, cached_predictive_grid
@@ -124,18 +124,26 @@ def run_without_predictive(output):
 
     with patch.object(algo08_position, "solve", observed):
         result = saved_solve(publication, specification, native, archive, offer)
+    result.pop("owner_rows", None)
+    completed = output.with_suffix(".replay.json")
+    write(completed, dict(solution=result, attempts=attempts, owners=rows, proofs=proofs, runtime=counts))
+    archive_rows = read(completed)
+    attempts, proofs = archive_rows["attempts"], archive_rows["proofs"]
     store = FastStandardAnalysisStore(SOUTH)
     methods = {"path": store.position_path, "grid": store.position_grid}
     science = {name: canonical_digest({k: v for k, v in method(report["run_id"]).items()
                                      if k not in ("binding", "elapsed_seconds")}) for name, method in methods.items()}
-    checks = dict(route=len(attempts) == 1 and same_route(attempts[0], control["route_details"]),
+    checks = dict(route=len(attempts) == 1 and same_route(dict(salvage_shortlists=None) | attempts[0],
+                        dict(salvage_shortlists=None) | control["route_details"]),
                   owners=rows == control["selected_rows"], grid_and_path=result["science"] == science,
+                  proof=len(proofs) == 1 and same_proof(proofs[0]["result"], control["early_regional"][0]["result"]),
+                  archive=archive_identity(archive) == identity["archive"],
                   terminal=result["status"] == "ok" and result["arms"] == terminal["arms"]
                   and result["reason"] == terminal["reason"] and result["orbit_policy"] == terminal["orbit_policy"],
                   empty_predictive=counts == dict(grids=1, prepared_views=0, prepared_calls=0))
-    result.pop("owner_rows", None)
     write(output, dict(identity=identity, machine=machine, control_sha256=SOUTH_SHA256, runtime=counts, checks=checks,
-                       solution=result, proof=proofs, source_sha256={name: crossover.file_sha(Path(__file__).with_name(name))
+                       solution=result, proof=proofs, replay_sha256=crossover.file_sha(completed),
+                       source_sha256={name: crossover.file_sha(Path(__file__).with_name(name))
                            for name in ("grid_phase_state_trial.py", "grid_phase_state_reuse.py")}))
     if not all(checks.values()):
         raise ValueError(f"The empty-predictive saved science changed: {checks}")
