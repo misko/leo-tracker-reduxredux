@@ -21,12 +21,13 @@ CONTROL_SHA = "1bdaf3976abeb36bf919652e495b4d63f0739a9cd6edd12695dea1356ffb9d37"
 MODE = "full_primary_availability"
 
 
-def select(rows, clocks):
+def select(rows, clocks, *, all_times=False, all_ranks=False):
     from leo.contracts.digests import canonical_digest
 
     if len(rows) != len(clocks):
         raise ValueError("Missing measured lane clocks")
     visits, last, lane_counts, native_ns = Counter(), {}, Counter(), Counter()
+    ranks, eligible_counts = Counter(), Counter()
     mask, picks = [], []
     common = ("channel", "actual_rf_hz", "edge", "visit_index", "valid_start_counter")
     seen = set()
@@ -42,19 +43,23 @@ def select(rows, clocks):
         last[key] = counter
         index = visits[key] % 8
         visits[key] += 1
-        mode = "full" if index == 0 else "primary" if index % 2 else "skip"
+        retained = all_times or index == 0 or index % 2
+        mode = ("skip" if not retained else "full" if index == 0 or all_ranks else "primary")
         mask.append((left["visit_index"], mode))
         for j, row in enumerate((left, right)):
             lane_counts[mode] += 1
             native_ns[mode] += clocks[2 * i + j]
             eligible = [c for c in row["candidates"] if c["passed_fractional_margin_gate"] is True
                         and (mode == "full" or mode == "primary" and c["candidate_rank"] == 0)]
+            eligible_counts[mode] += len(eligible)
             if eligible:
-                picks.append([max(eligible, key=lambda c: (c["fractional_margin"], -c["candidate_rank"]))])
+                strongest = max(eligible, key=lambda c: (c["fractional_margin"], -c["candidate_rank"]))
+                ranks[str(strongest["candidate_rank"])] += 1
+                picks.append([strongest])
             else:
                 picks.append([])
     return picks, dict(counts=lane_counts, full_call_cpu_s_by_slot={k: n / 1e9 for k, n in native_ns.items()},
-                       mask_sha256=canonical_digest(mask))
+                       mask_sha256=canonical_digest(mask), ranks=ranks, eligible_factors=eligible_counts)
 
 
 def prepare(case):
