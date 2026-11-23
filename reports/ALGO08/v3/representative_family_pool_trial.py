@@ -12,15 +12,19 @@ from aperture_trial import ARMS, archive_identity, configuration, inputs, machin
 
 HERE = Path(__file__).resolve().parent
 REFERENCE = HERE / "measurements/track-quadrature.json.gz"
+FIRST_POOL = HERE / "measurements/representative-family-pool.json.gz"
 CASES = ("DS30-0008", "south-containing", "south-far")
 
 
-def run(case, output):
+def run(case, output, *, closure=False):
     publication, spec = configuration()
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
     from blind_joint_route import make_route
-    from representative_family_pool import propose
+    if closure:
+        from family_pool_closure import propose
+    else:
+        from representative_family_pool import propose
 
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
@@ -56,8 +60,11 @@ def run(case, output):
     result.pop("owner_rows", None)
     names = ("representative_family_pool.py", "representative_family_pool_trial.py", "blind_joint_finish.py",
              "blind_joint_repair.py", "blind_joint_signed.py", "blind_joint_route.py")
+    if closure:
+        names += ("family_pool_closure.py",)
     result.update(case=case, identity=identity, host=host, attempt=attempts[0], fallback=fallback,
-                  selected_rows=rows, source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in names})
+                  selected_rows=rows, closure_enabled=closure,
+                  source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in names})
     write(output, result)
 
 
@@ -70,10 +77,16 @@ def score(directory, summary, full):
     sealed = {case: read(path) for case, path in paths.items()}
     with gzip.open(REFERENCE, "rt") as stream:
         controls = json.load(stream)["runs"]
+    first_pool = None
+    if all(result.get("closure_enabled") for result in sealed.values()):
+        with gzip.open(FIRST_POOL, "rt") as stream:
+            first_pool = json.load(stream)["cases"]
     for case, result in sealed.items():
         stock, signed = (controls[case][k] for k in ("stock", "signed-full"))
         if result["identity"] != stock["identity"] or result["identity"] != signed["identity"]:
             raise ValueError(f"The matched stage timing controls have different input provenance for {case}")
+        if first_pool is not None and result["identity"] != first_pool[case]["identity"]:
+            raise ValueError(f"The first pool control has a different causal input for {case}")
         if result["fallback"] and result["fallback"][0]["decision"] != "fallback":
             for key in ("arms", "owners", "science", "status", "reason"):
                 if result.get(key) != signed.get(key):
@@ -101,9 +114,16 @@ def score(directory, summary, full):
                              stock_cpu_s=stock["cpu_s"], full_signed_cpu_s=signed["cpu_s"],
                              owner_changes={name: owner_changes(dict(selected_rows=base.get("selected_rows", {})), result)
                                             for name, base in (("stock", stock), ("signed-full", signed))})
+        if first_pool is not None:
+            previous = first_pool[case]
+            numbers[case].update(closure=attempt["pool_closure"], first_pool_cpu_s=previous["cpu_s"],
+                                 first_pool_route=previous["attempt"]["decision"],
+                                 first_pool_cold_reason=previous["attempt"].get("reason"))
     pins = dict(trials={case: sha256(path.read_bytes()).hexdigest() for case, path in paths.items()},
                 comparator_archive=sha256(REFERENCE.read_bytes()).hexdigest(),
                 references={p.name: sha256(p.read_bytes()).hexdigest() for p in (PHYSICAL, SIMULATED)})
+    if first_pool is not None:
+        pins["first_pool_archive"] = sha256(FIRST_POOL.read_bytes()).hexdigest()
     write(summary, dict(cases=numbers, verification=pins))
     with full.open("xb") as stream:
         stream.write(gzip.compress(json.dumps(dict(cases=sealed, scores=numbers, verification=pins),
@@ -116,6 +136,7 @@ if __name__ == "__main__":
     trial = actions.add_parser("run")
     trial.add_argument("case", choices=CASES)
     trial.add_argument("output", type=Path)
+    trial.add_argument("--closure", action="store_true")
     scoring = actions.add_parser("score")
     for name in ("directory", "summary", "full"):
         scoring.add_argument(name, type=Path)
