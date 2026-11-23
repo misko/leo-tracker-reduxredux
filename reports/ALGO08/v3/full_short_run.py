@@ -15,6 +15,8 @@ from mixed_aperture_receiver import MixedApertureDetector
 
 GEOGRAPHIC_SHA = "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee"
 TRACK_SCORES_SHA = "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098"
+EIGHT_MS_SHA = "fe4ba7b7613654c268353f9e4a78c2bbb916904e06387ace304b0866818f0e3d"
+EIGHT_MS_RECIPE_SHA = "2358151dbbbf4f9db1ba6b1a2393a993854c4b1fdd959bc96022e5e21c91fd89"
 
 
 @contextmanager
@@ -49,11 +51,18 @@ def geographic_projection(binary, track_library=None):
         yield native.counts
 
 
-def checked_recipe():
-    value = recipe()
+def verify_recipe(value, pin):
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    if sha256(encoded.encode()).hexdigest() != RECIPE_SHA:
+    if sha256(encoded.encode()).hexdigest() != pin:
         raise ValueError("The receiver callback or schedule changed")
+
+
+def checked_recipe(eight_ms=False):
+    value = recipe()
+    verify_recipe(value, RECIPE_SHA)
+    if eight_ms:
+        value.update(shortened_sha256=EIGHT_MS_SHA, aperture_samples=[value["aperture_samples"][0], 80_000])
+        verify_recipe(value, EIGHT_MS_RECIPE_SHA)
     return value
 
 
@@ -62,8 +71,9 @@ def main(argv=None):
     for name in ("recording", "archive", "region", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--short-binary", type=Path, help="Pinned 12 ms primary library for raw acquisition")
+    mode.add_argument("--short-binary", type=Path, help="Pinned short primary library for raw acquisition")
     mode.add_argument("--saved", type=Path, help="Frozen full-short detections from the same recording")
+    parser.add_argument("--eight-ms-primary", action="store_true", help="Use the pinned 8 ms primary in unfiltered raw mode")
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--causal-selection", action="store_true", help="Apply the existing causal carrier-history filter")
     selection.add_argument("--local-future-repair", action="store_true", help="Attach future-supported factors to fixed forward-owned tracks")
@@ -90,10 +100,13 @@ def main(argv=None):
         parser.error("--local-future-repair requires the installed graph and original Gamma fit")
     if args.track_graph is None:
         args.track_graph = "installed" if args.local_future_repair else "quadratic"
+    if args.eight_ms_primary and (not args.short_binary or args.track_graph != "installed"
+                                  or args.causal_selection or args.local_future_repair):
+        parser.error("--eight-ms-primary requires unfiltered raw mode with --track-graph installed")
     args.optimized_full_catalogue = True
     args.verify_images = True
-    identity = checked_recipe()
-    detector_pin = RECIPE_SHA
+    identity = checked_recipe(args.eight_ms_primary)
+    detector_pin = EIGHT_MS_RECIPE_SHA if args.eight_ms_primary else RECIPE_SHA
     receiver_type = MixedApertureDetector
     if args.causal_selection:
         from causal_short_receiver import CausalShortReceiver, identity as causal_identity
@@ -107,9 +120,11 @@ def main(argv=None):
 
         policy = LocalFuturePolicy("raw" if args.short_binary else "saved")
     quadratic = args.track_graph == "quadratic"
-    receiver = receiver_type(args.short_binary, SHORT_SHA, full_coverage=True) if args.short_binary else None
+    short_pin = EIGHT_MS_SHA if args.eight_ms_primary else SHORT_SHA
+    receiver = receiver_type(args.short_binary, short_pin, full_coverage=True) if args.short_binary else None
+    aperture = 8 if args.eight_ms_primary else 12
     result = run(args, detector_override=receiver.detector if receiver else None,
-        detector_description="verified raw stereo with full anchors and 12 ms primaries",
+        detector_description=f"verified raw stereo with full anchors and {aperture} ms primaries",
         track_config=graph_config if quadratic else None, early_regional=True, keep_selected_rows=True,
         raw_context=(lambda scan: observe_acquisition(scan, receiver, detector_pin, audit)) if receiver else None,
         saved_receiver=None if receiver else detector_pin,
