@@ -1,0 +1,23 @@
+# DS30-0155 transfer on identical full named-v3 observations
+
+The current cumulative saved publication shortened DS30-0155 through-exit elapsed time from **25.571 to 18.271 s**, a **1.40×** speedup. On the identical named-v3 20 ms detector packet, horizontal error increased by **713 m** with `c=0` and **620 m** with fitted `c`. Both RF residuals decreased. The stock replay reproduced the signed historical scientific and media evidence. [Frozen case and protocol](prospective-0155-solver-protocol.md) · [Sealed pair](measurements/prospective-0155-solver.json.gz)
+
+| Calibration | Named-v3 horizontal error | Cumulative horizontal error | Named-v3 RF RMS | Cumulative RF RMS |
+|---|---:|---:|---:|---:|
+| `c=0` | 0.9724 km | 1.6852 km | 155.420 Hz | 154.034 Hz |
+| Fitted `c` | 1.1569 km | 1.7769 km | 155.382 Hz | 154.039 Hz |
+
+Each stock arm assigned 3,498 observations. Each cumulative arm assigned 3,352, retaining 3,273 original observation IDs and adding 79. It dropped 225 original IDs. Every shared observation retained the same NORAD and role. The equal input to both solves covered **6,179 admitted stereo visits out of 6,773 issued**, with the original 25 km offer, inventory and cutoff. Both publications carried a complete 179-point grid, both path/grid bindings to their own position PNGs, and all eight decoded and content-addressed PNGs. The signed prior was unqualified in the cumulative arm. The normal paired route accepted its ordinary solution after the existing common-support repair, which dropped two curved tracks. The raw receiver and the provisional salvage, held-anchor and exact phase forecast experiments were outside this pair. [Runner and evidence checks](prospective_0155_solver.py)
+
+| Saved process scope | Named v3 | Cumulative |
+|---|---:|---:|
+| Launch to exit elapsed | 25.571 s | 18.271 s |
+| Launch to exit CPU | 25.499 s | 18.228 s |
+| Numerical solve CPU | 21.549 s | 15.227 s |
+| Numerical solve elapsed | 21.553 s | 15.257 s |
+
+The cumulative cold stage cost **3.493 CPU s**. The finalist gaps were too small for the race to discard either trailing branch, so all three cold finalists completed. Their prefixes consumed 0.143 CPU s, and their continuations consumed 0.462 s. Other work in the cold clock includes catalogue ranking and context preparation. The separate regional check cost 2.021 CPU s, certified salvage 0.979 s, preparation and fit of the paired repair 0.581 s, and complete numerical evidence 3.126 s. The renderer took 1.285 CPU s. All four Cairo orbit sheets were produced without fallback and took 0.732 CPU s, including 0.200 s encoding. The two native residuals also completed. All four orbit footers exactly match legends reconstructed independently from 18 fitted owner NORADs, with at least 26 pixels of spacing. All eight dimensions matched the named plots. Their bytes and decoded pixels differ across the two publications, which have different scientific fits and renderers. This pair measures the combined solver and renderer change. [Prior independent Cairo artist comparisons](direct-orbits-medium.md)
+
+DS30-0374 and DS30-0008 preceded DS30-0155 and already had current cumulative comparisons. The first four contained no unseen physical input. DS30-0155's deployed factor rows match the ordered factors in its archived named-v3 document, and an earlier residual-attribution experiment had already scored a restored version of those rows using another composed solver. The other remaining member, DS30-0001, was previously used in a deployed-input crossover. This prospectively fixed the first new **current cumulative publication** in the four-case roster. It adds one saved solver comparison on a historically studied recording. [Earlier DS30-0155 crossed input](../single-core-2x/receiver-residual-attribution-0155.md) · [Earlier DS30-0001 crossover](../single-core-2x/full-phase-ds30-stage.md)
+
+All 52 snapshots totaling **92,934,518 bytes** came from already staged tmpfs content. Fifty-one were supplied by the DS30-0160 stage and one by the DS30-0008 stage. Sixteen had matching content under another snapshot filename. The new isolated archive rehashed each file and published its originally signed filename and timestamp. The bulk archive inspection opened directory and inode metadata only. All 52 original timestamps precede the original signed cutoff. Staging took **0.055 s** wall and CPU outside the pair. The single Gauss CPU2 slot ran both workers at nice 15, I/O priority 7 and one numerical thread. Both exited 0, with 8,512 and 1,000 input blocks respectively from their ordinary saved process dependencies. No original waveform or bulk archive payload was read. The saved jobs and immediate clocks remain in `/dev/shm/leo-v3-saved-0155-pair-01`.
