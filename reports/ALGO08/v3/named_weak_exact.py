@@ -41,7 +41,7 @@ def acquire_once(original, digest, audit, *, saved=None, expected=None):
     return acquire
 
 
-def run(args, *, optimized, saved=None, expected=None):
+def run(args, *, optimized, saved=None, expected=None, analysis_scope=nullcontext):
     if (saved is None) != (expected is None):
         raise ValueError("Provide both the saved detector file and its sealed digest")
     started = now()
@@ -103,7 +103,7 @@ def run(args, *, optimized, saved=None, expected=None):
         with patch.object(algo08_scan, "acquire", acquisition_op), patch.object(algo08_scan, "solve", solve_scoped), layout:
             return analyze(*values, **options)
 
-    with patch.object(algo08_scan, "analyze", scoped):
+    with analysis_scope(), patch.object(algo08_scan, "analyze", scoped):
         # The named startup finder is already in place for the scanner import.
         result = experimental_publication.run(args, dict(spec, startup="stock"))
     if not acquisition or not numerical:
