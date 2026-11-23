@@ -5,6 +5,7 @@ import ctypes as ct
 import numpy as np
 import pytest
 
+from reports.ALGO08.v3.anchored_prefix_identity import transferable
 from reports.ALGO08.v3 import short_cfo_refine as ref
 from reports.ALGO08.v3.short_prefix_benchmark import build_full
 from reports.ALGO08.v3.short_prefix_correlations import Audit, PREFIX, frame_geometry, same_bytes_by_frame, signature
@@ -29,6 +30,14 @@ def test_both_pilot_rows_must_match_with_native_signed_zero():
     exact.view(np.float64)[1, 4, 9] = -0.0
     exact[0, 5, 62] = 1j
     assert same_bytes_by_frame(short, exact) == [True, True, True, True, False, False, True, True]
+
+
+def test_recurrence_inventory_requires_witnessed_identical_guarded_mode_and_cfo():
+    assert transferable(-200., -200., True, 0, False)
+    assert not transferable(-200., -200., False, 0, False)
+    assert not transferable(-200., -200., True, 1, False)
+    assert not transferable(-200., -200., True, 0, True)
+    assert not transferable(0., -0., True, 0, False)
 
 
 def test_reused_prefix_matches_exact_integer_and_fractional_boundaries_and_wrong_seed(tmp_path):
