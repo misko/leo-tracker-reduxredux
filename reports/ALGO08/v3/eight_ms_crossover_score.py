@@ -7,7 +7,8 @@ from pathlib import Path
 
 from aperture_trial import ARMS, read, write
 from dense_full_short_raw import checked
-from eight_ms_crossover import BINDING_SHA, MARGIN, ORDER, PACKET_PINS, margin_packet, originals, projected, strata
+from eight_ms_crossover import BINDING_SHA, MARGIN, ORDER, PACKET_PINS, RAW_REPORT_PINS
+from eight_ms_crossover import margin_packet, originals, projected, strata
 from eight_ms_physical_score import quality
 from joint_publication import artifacts
 from leo.contracts.digests import canonical_digest
@@ -22,8 +23,6 @@ from tools.pipeline_eval.qualification.paired_publication import evidence
 
 
 HERE = Path(__file__).resolve().parent
-REFERENCES = {"physical": "d5db26385ce031957206e47a0cf12ee2f93b04e2898daff2f10d7fd4e0452a7a",
-              "north": "16ee7ed27cad9fac9403f57342e277a3551a76afee651e0e8e7c3f30f6f4971d"}
 
 
 def groups(graph, shared=None):
@@ -113,7 +112,7 @@ def score(root, crossover=None):
     if (binding["request"] != source["request"] or binding["inventory"] != source["inventory"]
             or binding["source_binding_sha256"] != BINDING_SHA[case] or binding["order"] != order):
         raise ValueError("Crossover did not use the frozen original recording and offer")
-    archived = read(checked(HERE / f"measurements/eight-ms-{case}.json", REFERENCES[case]))
+    archived = read(checked(HERE / f"measurements/eight-ms-{case}.json", RAW_REPORT_PINS[case]))
     reference = archived["runs"]
     rows = strata(twelve, eight)
     classes = {oid: ("shared_matched" if good_match(a, b) else "shared_changed") if kind == "shared" else kind
@@ -149,7 +148,7 @@ def score(root, crossover=None):
         row["graph_classes"] = dict(Counter(classes[oid] for oid in groups(graph)))
         row["owner_vs_12ms"] = owner_changes(control, proof)
     return dict(case=archived["case"], binding=binding, lane_classes=dict(Counter(classes.values())),
-                reference_receipt_sha256=REFERENCES[case], reference=archived["survey"], reference_errors_km=controls,
+                reference_receipt_sha256=RAW_REPORT_PINS[case], reference=archived["survey"], reference_errors_km=controls,
                 runs={code: row for code, (row, _, _) in publications.items()})
 
 
@@ -176,7 +175,7 @@ def margin_score(binding, trial, rows, classes, archived, crossover):
     return dict(case=archived["case"], binding=binding, fraction_margin=MARGIN, reference=archived["survey"],
                 reference_errors_km=controls, shortlist={name: {"available": count, "kept": kept[name]}
                                                         for name, count in supplied.items()},
-                reference_receipt_sha256=REFERENCES[binding["case"]], trial=row)
+                reference_receipt_sha256=RAW_REPORT_PINS[binding["case"]], trial=row)
 
 
 if __name__ == "__main__":

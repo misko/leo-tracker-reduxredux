@@ -83,8 +83,9 @@ class BudgetExceeded(Exception):
 
 
 class GraphBuild:
-    def __init__(self, config):
+    def __init__(self, config, *, max_fits=MAX_FITS):
         self.config = config
+        self.max_fits = max_fits
         self.fits = 0
         self.cpu, self.started = process_time(), perf_counter()
 
@@ -92,7 +93,7 @@ class GraphBuild:
         from leo.analysis import graph_tracklets
         from leo.analysis.localization_v3.tracks import active_curvature, graph_tracks
 
-        if self.fits >= MAX_FITS or process_time()-self.cpu >= MAX_CPU_S:
+        if self.fits >= self.max_fits or process_time()-self.cpu >= MAX_CPU_S:
             raise BudgetExceeded("Reached frozen graph-evaluation budget")
         self.fits += 1
         if trace is None:

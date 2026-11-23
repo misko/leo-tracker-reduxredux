@@ -27,6 +27,8 @@ BINDING_SHA = {
     "physical": "4e61f165347710aa3e84d36497a844070a0459cc386c914437b5795ef3b308bb",
     "north": "a48a25c9ca2f3575eb33834c78660cfec99028445dce666a032d57ac52d488c5",
 }
+RAW_REPORT_PINS = {"physical": "d5db26385ce031957206e47a0cf12ee2f93b04e2898daff2f10d7fd4e0452a7a",
+                   "north": "16ee7ed27cad9fac9403f57342e277a3551a76afee651e0e8e7c3f30f6f4971d"}
 PACKET_PINS = {
     "physical": ("sha256:c09de017909fdc6ffa9b0720b29f3a3fbb84b0785c110f15414ef3fc5bd37589",
                  "sha256:f16ca1c684283a720596edfd727620a90f48712936f135c420d0c993ec669f6e"),
