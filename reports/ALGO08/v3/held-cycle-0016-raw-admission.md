@@ -1,0 +1,7 @@
+# DS30-0016 raw admission blocked on payload residency
+
+The shared Gauss lock protected a passive `mincore` check of the original DS30-0016 signed 808-visit recording. Its two original segments contain 13 compressed members and 242,128 payload pages. The read-only check observed all 13 members and **0 of 242,128 pages resident**. It returned no unavailable members. The scan started at `1795477855185712625` and ended at `1795477855187178350` Unix ns.
+
+The archive-readable account searched existing local stages without reading I/Q. It examined 258 accessible manifest names under `/dev/shm`, 773 under `/tmp`, and 3,784 under `/var/tmp`, through eight directory levels and without following symlinks. The only same-size manifest among those belonged to DS30-0169 and did not match either signed DS30-0016 digest. The prior local 0016 publication folders hold detector products, receipts and figures. A staged original needs both exact segment manifests and every signed member. The search found neither matching segment in the accessible stages.
+
+The reviewed guarded phase pack is already staged at `/dev/shm/leo-anchored-cfo-raw-pack01`. The unchanged 0016 causal catalogue and projection libraries remain at `/dev/shm/leo-v3-raw-cfo-0016-result03`. The opted-in entry at `3a2825dbf` accepted the help preflight for `--select-before-cfo`, exact Graph, the named survivor finish and the empty-family guard. No original waveform read, acquisition, warming, substitution, or timed raw child occurred. [Protocol](held-cycle-0016-protocol.md)
