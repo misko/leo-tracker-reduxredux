@@ -1,25 +1,30 @@
 #!/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python -IB
 """Run the ALGO08v3 full-member prefetch and orbit-support research successor."""
 import argparse
-from contextlib import ExitStack, contextmanager
-from hashlib import sha256
-from importlib.util import module_from_spec, spec_from_file_location
 import json
 import os
-from pathlib import Path
 import runpy
 import sys
+from contextlib import ExitStack, contextmanager
+from hashlib import sha256
+from importlib import import_module
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 from unittest.mock import patch
-
 
 ROOT = Path(__file__).resolve().parents[3]
 BASELINE = Path("/opt/leo-algo08/algo08v3/run")
 BASELINE_SHA256 = "fae032526227f55ca2419a0b29c69afc7fc97fa04508f33d0403802934f13448"
 FROZEN_SPEC = "6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
-PREFETCH = "tools.pipeline_eval.variants.experimental.receiver_member_prefetch"
+EXPERIMENTAL = "tools.pipeline_eval.variants.experimental"
+PREFETCH = f"{EXPERIMENTAL}.receiver_member_prefetch"
+INGRESS = f"{EXPERIMENTAL}.receiver_ingress"
+LOOKAHEAD = f"{EXPERIMENTAL}.receiver_member_lookahead"
 ORBIT_GUARD = "tools.pipeline_eval.variants.v5_orbit_domain"
 SOURCE_PINS = {
     PREFETCH: "05b3b619429e1e35c9e9f811b3a68e68df6a6f6b37e7c05338dccd91fb0db8cc",
+    INGRESS: "c58f76ae56022aca3893b04bfe4732f24185e9b98294c543a31abf752c264fa8",
+    LOOKAHEAD: "3e89683eeea48443d6a6c9cf81c843189ccfa4638206e7f57e182489c905791e",
     ORBIT_GUARD: "14be68cd3af6906dbe0df64841e6a756e93caf234ad11b553bd1d8937fc2e18f",
 }
 
@@ -42,7 +47,9 @@ def checked_build():
     spec = installed["checked_spec"](payload, FROZEN_SPEC)
     if spec["member_lookahead"] is not True or spec["startup"] != "lazy-exports":
         raise ValueError("Expected the frozen ALGO08v3 lookahead and startup")
-    sources = {name: checked_bytes(ROOT / source_path(name), pin) for name, pin in SOURCE_PINS.items()}
+    sources = {
+        name: checked_bytes(ROOT / source_path(name), pin) for name, pin in SOURCE_PINS.items()
+    }
     identity = dict(
         version="ALGO08v3 successor research", frozen_specification="sha256:" + FROZEN_SPEC,
         baseline_launcher_sha256=BASELINE_SHA256, detector_sha256=spec["detector_sha256"],
@@ -64,7 +71,7 @@ def research_module(name, source):
     return module
 
 
-def publish(args, payload, spec, sources, identity):
+def install_payload(payload, identity):
     release = Path(identity["runtime"])
     imports = [str(payload), str(release / "src"), str(release)]
     sys.path[:0] = imports
@@ -76,6 +83,35 @@ def publish(args, payload, spec, sources, identity):
 
     if Path(publication.__file__).resolve() != payload / source_path(publication.__name__):
         raise ValueError("Expected the installed ALGO08v3 publication entry point")
+    return publication
+
+
+def research_overlays(sources):
+    # The installed modules predate these two helpers. Let the prefetch module
+    # capture the research functions without replacing the frozen adapters.
+    ingress = research_module(INGRESS, sources[INGRESS])
+    lookahead = research_module(LOOKAHEAD, sources[LOOKAHEAD])
+    with (
+        patch.object(import_module(INGRESS), "read_regular_descriptor",
+                     ingress.read_regular_descriptor, create=True),
+        patch.object(import_module(LOOKAHEAD), "following_members",
+                     lookahead.following_members, create=True),
+    ):
+        prefetch = research_module(PREFETCH, sources[PREFETCH]).compressed_member_prefetch
+    guard = research_module(ORBIT_GUARD, sources[ORBIT_GUARD]).corner_support
+    return prefetch, guard
+
+
+def verify_imports(publication, spec, sources):
+    from tools.pipeline_eval.variants.experimental import lean_startup
+
+    lean_startup.install()
+    import_module("tools.algo08_scan")
+    publication._checked_member_lookahead(spec)
+    research_overlays(sources)
+
+
+def publish(args, publication, spec, sources, identity):
     check_lookahead = publication._checked_member_lookahead
     support_stats = {}
 
@@ -83,7 +119,7 @@ def publish(args, payload, spec, sources, identity):
         check_lookahead(specification)
         from tools import algo08_position
 
-        guard = research_module(ORBIT_GUARD, sources[ORBIT_GUARD]).corner_support
+        prefetch, guard = research_overlays(sources)
 
         @contextmanager
         def measured_guard():
@@ -92,15 +128,20 @@ def publish(args, payload, spec, sources, identity):
                 yield
 
         stack.enter_context(patch.object(algo08_position, "corner_support", measured_guard))
-        return research_module(PREFETCH, sources[PREFETCH]).compressed_member_prefetch
+        return prefetch
 
     with ExitStack() as stack:
-        stack.enter_context(patch.object(publication, "_checked_member_lookahead", research_lookahead))
+        stack.enter_context(
+            patch.object(publication, "_checked_member_lookahead", research_lookahead)
+        )
         result = publication.run(args, spec)
     result["member_prefetch"] = result.pop("member_lookahead")
-    result["orbit_support_guard"] = dict(entered=bool(support_stats), **support_stats.get("stats", {}))
+    result["orbit_support_guard"] = dict(
+        entered=bool(support_stats), **support_stats.get("stats", {}),
+    )
+    marker = dict(identity, session_id=result["session_id"], decision=result["decision"])
     with (args.bulk_root / "algo08v3-successor.json").open("x") as stream:
-        json.dump(dict(identity, session_id=result["session_id"], decision=result["decision"]), stream)
+        json.dump(marker, stream)
         stream.write("\n")
     return result
 
@@ -114,7 +155,12 @@ def main():
     if not args.verify and not all((args.recording, args.archive, args.region, args.bulk_root)):
         parser.error("supply --recording, --archive, --region and a new empty --bulk-root")
     payload, spec, sources, identity = checked_build()
-    print(json.dumps(identity if args.verify else publish(args, payload, spec, sources, identity)))
+    publication = install_payload(payload, identity)
+    if args.verify:
+        verify_imports(publication, spec, sources)
+        print(json.dumps(identity))
+    else:
+        print(json.dumps(publish(args, publication, spec, sources, identity)))
 
 
 if __name__ == "__main__":
