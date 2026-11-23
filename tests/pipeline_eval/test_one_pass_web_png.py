@@ -41,6 +41,8 @@ def test_explicit_layout_draws_original_data_and_pixel_dimensions(
         if field == "position_figures":
             colored = axis.scatter([1., 2.], [-1., 0.], c=[0., 3.])
             figure.colorbar(colored, ax=axis, label="Conditional fitted-c objective")
+            axis.set_aspect("equal")
+            axis.set_title("Regional objective\nFitted c: evaluation reference unavailable")
             figure.supxlabel("Search centre (−35.92369°, 133.02345°)")
         figure.suptitle("Study recording · 185 km search")
         stream = BytesIO()
@@ -54,6 +56,9 @@ def test_explicit_layout_draws_original_data_and_pixel_dimensions(
             bbox = axis.get_xticklabels()[0].get_window_extent(canvas.get_renderer())
             assert bbox.y0 > 0
             assert axis.get_xticklabels()[0].get_text().splitlines()[0] == label
+        if field == "position_figures":
+            title = axis.title.get_window_extent(canvas.get_renderer())
+            assert not title.overlaps(figure.axes[-1].bbox)
     with Image.open(stream) as image:
         assert image.size == tuple(side * dpi for side in size)
 
@@ -104,4 +109,7 @@ def test_orbit_template_preserves_lane_order_curve_and_selection(direct, monkeyp
         assert len(figure.axes[0].lines[0].get_xdata()) > 4
         assert len(figure.axes[0].collections) == 2
         assert len(figure.axes[1].collections) == 1
+        renderer = figure.canvas.get_renderer()
+        label = figure.axes[-1].xaxis.label.get_window_extent(renderer)
+        assert not label.overlaps(figure.legends[0].get_window_extent(renderer))
         assert dict(counts) == {"orbit_figures": 1}
