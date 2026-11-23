@@ -13,15 +13,20 @@ from aperture_trial import ARMS, archive_identity, configuration, inputs, machin
 HERE = Path(__file__).resolve().parent
 REFERENCE = HERE / "measurements/track-quadrature.json.gz"
 FIRST_POOL = HERE / "measurements/representative-family-pool.json.gz"
+ITERATIVE_POOL = HERE / "measurements/family-pool-closure.json.gz"
 CASES = ("DS30-0008", "south-containing", "south-far")
 
 
-def run(case, output, *, closure=False):
+def run(case, output, *, closure=False, lighter_estimator=False):
     publication, spec = configuration()
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
     from blind_joint_route import make_route
-    if closure:
+    signed_updater = None
+    if lighter_estimator:
+        from lighter_joint_estimator import propose, update as signed_updater
+        closure = True
+    elif closure:
         from family_pool_closure import propose
     else:
         from representative_family_pool import propose
@@ -38,7 +43,8 @@ def run(case, output, *, closure=False):
 
     def observed(native, reader, assets, offer):
         full = make_route(v5_core.infer, reader, fallback, repair=True, signed_finish=True)
-        candidate = make_route(full, reader, attempts, repair=True, signed_finish=True, joint_proposal=propose)
+        candidate = make_route(full, reader, attempts, repair=True, signed_finish=True, joint_proposal=propose,
+                               signed_updater=signed_updater)
         with patch.object(v5_core, "infer", candidate):
             decision, packet, policy = original(native, reader, assets, offer)
         if packet is not None:
@@ -62,8 +68,10 @@ def run(case, output, *, closure=False):
              "blind_joint_repair.py", "blind_joint_signed.py", "blind_joint_route.py")
     if closure:
         names += ("family_pool_closure.py",)
+    if lighter_estimator:
+        names += ("lighter_joint_estimator.py",)
     result.update(case=case, identity=identity, host=host, attempt=attempts[0], fallback=fallback,
-                  selected_rows=rows, closure_enabled=closure,
+                  selected_rows=rows, closure_enabled=closure, lighter_estimator=lighter_estimator,
                   source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in names})
     write(output, result)
 
@@ -81,12 +89,18 @@ def score(directory, summary, full):
     if all(result.get("closure_enabled") for result in sealed.values()):
         with gzip.open(FIRST_POOL, "rt") as stream:
             first_pool = json.load(stream)["cases"]
+    iterative = None
+    if all(result.get("lighter_estimator") for result in sealed.values()):
+        with gzip.open(ITERATIVE_POOL, "rt") as stream:
+            iterative = json.load(stream)["cases"]
     for case, result in sealed.items():
         stock, signed = (controls[case][k] for k in ("stock", "signed-full"))
         if result["identity"] != stock["identity"] or result["identity"] != signed["identity"]:
             raise ValueError(f"The matched stage timing controls have different input provenance for {case}")
         if first_pool is not None and result["identity"] != first_pool[case]["identity"]:
             raise ValueError(f"The first pool control has a different causal input for {case}")
+        if iterative is not None and result["identity"] != iterative[case]["identity"]:
+            raise ValueError(f"The iterative pool control has a different causal input for {case}")
         if result["fallback"] and result["fallback"][0]["decision"] != "fallback":
             for key in ("arms", "owners", "science", "status", "reason"):
                 if result.get(key) != signed.get(key):
@@ -119,11 +133,22 @@ def score(directory, summary, full):
             numbers[case].update(closure=attempt["pool_closure"], first_pool_cpu_s=previous["cpu_s"],
                                  first_pool_route=previous["attempt"]["decision"],
                                  first_pool_cold_reason=previous["attempt"].get("reason"))
+        if iterative is not None:
+            previous = iterative[case]
+            numbers[case].update(iterative_cpu_s=previous["cpu_s"], iterative_elapsed_s=previous["elapsed_s"],
+                                 iterative_route=previous["attempt"]["decision"],
+                                 iterative_times={k: v for k, v in previous["attempt"].items() if k.endswith("_clocks")},
+                                 relative_to_iterative=section(result["arms"], truth[case], previous["arms"]),
+                                 iterative_owner_changes=owner_changes(previous, result),
+                                 warm_signed_fit=attempt.get("warm_signed_fit"),
+                                 sensitive_confidence=attempt.get("sensitive_confidence"))
     pins = dict(trials={case: sha256(path.read_bytes()).hexdigest() for case, path in paths.items()},
                 comparator_archive=sha256(REFERENCE.read_bytes()).hexdigest(),
                 references={p.name: sha256(p.read_bytes()).hexdigest() for p in (PHYSICAL, SIMULATED)})
     if first_pool is not None:
         pins["first_pool_archive"] = sha256(FIRST_POOL.read_bytes()).hexdigest()
+    if iterative is not None:
+        pins["iterative_archive"] = sha256(ITERATIVE_POOL.read_bytes()).hexdigest()
     write(summary, dict(cases=numbers, verification=pins))
     with full.open("xb") as stream:
         stream.write(gzip.compress(json.dumps(dict(cases=sealed, scores=numbers, verification=pins),
@@ -137,6 +162,7 @@ if __name__ == "__main__":
     trial.add_argument("case", choices=CASES)
     trial.add_argument("output", type=Path)
     trial.add_argument("--closure", action="store_true")
+    trial.add_argument("--lighter-estimator", action="store_true")
     scoring = actions.add_parser("score")
     for name in ("directory", "summary", "full"):
         scoring.add_argument(name, type=Path)

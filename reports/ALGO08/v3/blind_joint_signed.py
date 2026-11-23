@@ -19,7 +19,7 @@ def fitted_pair(candidate, means):
     ) for arm in ARMS}
 
 
-def update(prepared, ordinary, measured):
+def update(prepared, ordinary, measured, *, fit_pair=None):
     scan, model = ordinary["scan"], ordinary["model"]
     cpu, wall = process_time(), perf_counter()
     raw, forecast = prepared["phase_history"], prepared["phase_forecast"]
@@ -46,7 +46,7 @@ def update(prepared, ordinary, measured):
     detail.update(status="rejected", means_s=means, ordinary_means_s=ordinary["means"])
     cpu, wall = process_time(), perf_counter()
     try:
-        fitted = fitted_pair(ordinary, means)
+        fitted = (fitted_pair if fit_pair is None else fit_pair)(ordinary, means)
     except (AssertionError, ValueError, np.linalg.LinAlgError) as exc:
         detail["reason"] = f"{type(exc).__name__}: {exc}"
         return ordinary

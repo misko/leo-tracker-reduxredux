@@ -8,7 +8,7 @@ from mixture_trial import elapsed
 
 
 def make_route(installed, reader, attempts, *, repair, signed_finish=False, collect=None, cold_start=None,
-               joint_proposal=None):
+               joint_proposal=None, signed_updater=None):
     import numpy as np
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
     from blind_joint_finish import propose
@@ -35,7 +35,7 @@ def make_route(installed, reader, attempts, *, repair, signed_finish=False, coll
             ordinary = signed
             started, began = process_time(), perf_counter()
             try:
-                signed = update(prepared, ordinary, observed)
+                signed = (update if signed_updater is None else signed_updater)(prepared, ordinary, observed)
             except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
                 signed, reason = None, f"signed_context: {type(exc).__name__}: {exc}"
             finally:
