@@ -73,6 +73,10 @@ On the first assigned physical recording, DS30-0374, the solver's history check 
 
 The first 128 dense visits also understated the value of cancellation. On all of DS30-0008, each calibration arm used 239 factors found by the second search after cancellation. All 239 arrived after that prefix. Neither containing simulation had any selected second-search factors. [Prefix and full-recording owner census](../primary-schedule.md)
 
+## Acquisition with one third of the signal searches
+
+The first-third and staggered-RF schedules both brought dense solve time below 12 CPU seconds. Fitted DS30 error rose from 1.512 km with installed v3 to 3.835 and 3.750 km. The southern containing fix also worsened under both policies, and both withheld on the distant omission. The complete saved-input publications for the first-third route and the numerical evidence for staggered blocks passed their own RF and fitting checks. The checks allowed these inaccurate fixes. [Side-by-side chart, costs and geographic results](../rf-block.md) · [Contiguous prefix publication receipts](../contiguous-third.md)
+
 ## Frozen scoring rules
 
 1. Use the recorded 4-case prefix and then the 16-case prefix in [the assignment manifest](stages.json). Retain complete pairs from the first four only for the identical frozen implementation and timing boundary. Alternate first build according to the assignments. Record cache residence immediately before each build, charged reads, CPU, elapsed, exit and artifacts. Use a single shared lock across each pair, one pinned core, nice 15, best-effort I/O priority 7 and one numerical thread. Keep failed attempts in the ledger.
