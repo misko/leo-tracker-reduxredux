@@ -3,7 +3,10 @@ from math import nextafter
 import pytest
 
 from leo.analysis.localization_v3.region import SearchRegion
-from tools.pipeline_eval.variants.experimental.local_exterior_descent import evaluate, shared_face
+from tools.pipeline_eval.variants.experimental.local_exterior_descent import (
+    evaluate,
+    shared_face,
+)
 from tools.pipeline_eval.variants.experimental.regional_reassignment import probes
 
 WIDTH = 32.0

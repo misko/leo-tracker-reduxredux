@@ -21,7 +21,9 @@ from geographic_peak_score import (
 from leo.contracts.digests import canonical_digest
 from tools.pipeline_eval.variants.experimental import local_exterior_descent as descent
 from tools.pipeline_eval.variants.experimental.regional_bound_guard import bound_arms
-from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal
+from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import (
+    evaluate_terminal,
+)
 
 HERE = Path(__file__).resolve().parent
 REGIONAL = HERE.parent / "regional-release"
@@ -56,8 +58,11 @@ def carrier_record(document):
     from leo.analysis.localization_v3.tracks import winning_observations
 
     rows, meta = winning_observations(document)
-    geometry = {key: meta[key] for key in ("anchor_utc_ns", "causal_cutoff_utc_ns", "utc_half_width_s")}
-    return [{key: value for key, value in row.items() if key != "fractional_margin"} for row in rows], geometry
+    clock_keys = ("anchor_utc_ns", "causal_cutoff_utc_ns", "utc_half_width_s")
+    geometry = {key: meta[key] for key in clock_keys}
+    carriers = [{key: value for key, value in row.items() if key != "fractional_margin"}
+                for row in rows]
+    return carriers, geometry
 
 
 def original_release_binding(site, offer, prediction, native_sha):
@@ -78,9 +83,11 @@ def original_release_binding(site, offer, prediction, native_sha):
     evidence = carrier_record(frozen_json(scored_doc, native_sha))
     if evidence != carrier_record(read(original_doc)):
         raise ValueError("Held map and original terminal do not share observed Graph carrier inputs")
-    return dict(terminal_sha256=prediction["terminal_sha256"], terminal_native=terminal["native_sha256"],
-                measured_carriers_sha256=canonical_digest(evidence), scored_native=native_sha,
-                exact_document_match=terminal["native_sha256"] == "sha256:" + native_sha)
+    return {
+        "terminal_sha256": prediction["terminal_sha256"], "terminal_native": terminal["native_sha256"],
+        "measured_carriers_sha256": canonical_digest(evidence), "scored_native": native_sha,
+        "exact_document_match": terminal["native_sha256"] == "sha256:" + native_sha,
+    }
 
 
 def replay(site, name, offer, points, arms, identity, old_full_probe_cpu):
@@ -96,21 +103,24 @@ def replay(site, name, offer, points, arms, identity, old_full_probe_cpu):
     if bound_arms(endpoints, width):
         far = evaluate_terminal(points, width, scored)
     else:
-        far = dict(would_withhold=False, stop="no_clipped_arm", probes_evaluated=0)
+        far = {"would_withhold": False, "stop": "no_clipped_arm", "probes_evaluated": 0}
     far_cpu = (process_time_ns() - started) / 1e9
     before = len(cache)
     started = process_time_ns()
-    near = (dict(would_withhold=False, stop="already_withheld_far", probes_evaluated=0)
-            if far["would_withhold"] else descent.evaluate(endpoints, width, points, scored))
-    near_cpu = (process_time_ns() - started) / 1e9
-    return dict(
-        site=site, name=name, offer=offer, identity=identity, arms=arms, endpoints_km=endpoints,
-        map_sha256=canonical_digest(points), stock_far=far, near=near,
-        would_withhold=far["would_withhold"] or near["would_withhold"],
-        distinct_stock_scores=before, additional_scores=len(cache) - before,
-        stock_readout_cpu_s=far_cpu, added_readout_cpu_s=near_cpu,
-        archived_complete_map_cpu_s=old_full_probe_cpu,
+    near = (
+        {"would_withhold": False, "stop": "already_withheld_far", "probes_evaluated": 0}
+        if far["would_withhold"]
+        else descent.evaluate(endpoints, width, points, scored)
     )
+    near_cpu = (process_time_ns() - started) / 1e9
+    return {
+        "site": site, "name": name, "offer": offer, "identity": identity,
+        "arms": arms, "endpoints_km": endpoints, "map_sha256": canonical_digest(points),
+        "stock_far": far, "near": near, "would_withhold": far["would_withhold"] or near["would_withhold"],
+        "distinct_stock_scores": before, "additional_scores": len(cache) - before,
+        "stock_readout_cpu_s": far_cpu, "added_readout_cpu_s": near_cpu,
+        "archived_complete_map_cpu_s": old_full_probe_cpu,
+    }
 
 
 def run(output):
@@ -136,25 +146,34 @@ def run(output):
                 saved_offer, source = saved["region"], control["native_sha256"]
                 pin = GRAPH_PIN
             else:
-                saved = edges[f"{site}-solver.json"] if name == "inside" else mirrors["north_stock_position"]
+                saved = (edges[f"{site}-solver.json"] if name == "inside"
+                         else mirrors["north_stock_position"])
                 arms = saved["decision"]["arms"]
                 saved_offer, source = saved["region"], saved["native_sha256"]
                 pin = EDGE_PIN if name == "inside" else MIRRORS_PIN
             if saved_offer != offer or source.removeprefix("sha256:") != map_record["native_sha256"]:
-                raise ValueError("Mirror map and published terminal do not bind identical detections")
-            identity = dict(native_sha256=source, fit_source_sha256=pin, map_source_sha256=MIRRORS_PIN)
+                raise ValueError("Mirror map and fit do not bind identical detections")
+            identity = {
+                "native_sha256": source, "fit_source_sha256": pin, "map_source_sha256": MIRRORS_PIN,
+            }
             fits.append(replay(site, name, offer, map_record["points"], arms, identity,
-                               map_record["cpu_s"]))
+                               map_record["cpu_s"]["probes"]))
         for name in ("containing", "omitted", "far"):
             map_record = maps[f"{site}-{name}"]
             offer = map_record["offer"]
             prediction, = [p for p in predictions if p["region"] == offer
                            and p["recording"] == RECORDINGS[site]]
-            identity = original_release_binding(site, offer, prediction, map_record["native_sha256"])
-            fits.append(replay(site, name, offer, map_record["points"], prediction["arms"], identity,
-                               map_record["cpu_s"]))
-    write(output, dict(results=fits, input_sha256=dict(india=INDIA_PIN, mirrors=MIRRORS_PIN,
-                      released_maps=ARCHIVE_PIN, predictions=PREDICTIONS_PIN)))
+            identity = original_release_binding(
+                site, offer, prediction, map_record["native_sha256"]
+            )
+            fits.append(replay(
+                site, name, offer, map_record["points"], prediction["arms"], identity,
+                map_record["cpu_s"]["probes"],
+            ))
+    write(output, {"results": fits, "input_sha256": {
+        "india": INDIA_PIN, "mirrors": MIRRORS_PIN,
+        "released_maps": ARCHIVE_PIN, "predictions": PREDICTIONS_PIN,
+    }})
 
 
 def score(pinned, output):

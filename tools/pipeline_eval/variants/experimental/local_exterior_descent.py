@@ -2,9 +2,14 @@
 
 from math import inf, isfinite, nextafter
 
-from tools.pipeline_eval.variants.experimental.regional_bound_guard import ARMS, bound_arms
+from tools.pipeline_eval.variants.experimental.regional_bound_guard import (
+    ARMS,
+    bound_arms,
+)
 from tools.pipeline_eval.variants.experimental.regional_reassignment import RADII
-from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import probe_layout
+from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import (
+    probe_layout,
+)
 
 
 def shared_face(endpoints, width_km):
@@ -30,8 +35,10 @@ def evaluate(endpoints, width_km, points, score_at):
     visited = {}
 
     def result(stop, witness=None):
-        return dict(would_withhold=stop == "exterior_supported", stop=stop, face=face,
-                    probes_evaluated=len(visited), rays=ray_results, witness=witness)
+        return {
+            "would_withhold": stop == "exterior_supported", "stop": stop, "face": face,
+            "probes_evaluated": len(visited), "rays": ray_results, "witness": witness,
+        }
 
     if face is None:
         return result("no_shared_face")
@@ -76,8 +83,10 @@ def evaluate(endpoints, width_km, points, score_at):
     try:
         for wide_in, near_in, near_out, wide_out in rays:
             low, high = score(near_in), score(near_out)
-            ray = dict(near_in=near_in["xy_km"], near_out=near_out["xy_km"],
-                       face_gain={rx: high[rx] - low[rx] for rx in groups})
+            ray = {
+                "near_in": near_in["xy_km"], "near_out": near_out["xy_km"],
+                "face_gain": {rx: high[rx] - low[rx] for rx in groups},
+            }
             ray_results.append(ray)
             if not strictly_better(high, low):
                 continue
@@ -97,14 +106,17 @@ def evaluate(endpoints, width_km, points, score_at):
             interior = score(point)
             candidates = {xy: v for xy, v in candidates.items() if strictly_better(v, interior)}
             if not candidates:
-                return result("viable_interior", dict(xy_km=point["xy_km"], scores=interior))
+                return result("viable_interior", {"xy_km": point["xy_km"], "scores": interior})
             for rx, value in interior.items():
                 best_inside[rx] = max(best_inside[rx], value)
     except (AttributeError, KeyError, OSError, TypeError, ValueError, OverflowError):
         return result("unavailable_score")
 
-    winner = max(candidates, key=lambda xy: min(candidates[xy][rx] - best_inside[rx] for rx in groups))
-    return result("exterior_supported", dict(
-        xy_km=winner, gain={rx: candidates[winner][rx] - best_inside[rx] for rx in groups},
-        inside_maximum=best_inside,
-    ))
+    def margin(xy):
+        return min(candidates[xy][rx] - best_inside[rx] for rx in groups)
+
+    winner = max(candidates, key=margin)
+    return result("exterior_supported", {
+        "xy_km": winner, "gain": {rx: candidates[winner][rx] - best_inside[rx] for rx in groups},
+        "inside_maximum": best_inside,
+    })
