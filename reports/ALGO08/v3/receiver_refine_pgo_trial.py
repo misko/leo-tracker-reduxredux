@@ -17,7 +17,7 @@ def exports(binary):
     return {line.split()[-1] for line in symbols.splitlines() if line.strip()}
 
 
-def train(work, archive, history, args):
+def train(work, archive, history, args, *, additional_training=None):
     timing = work / "timing_first_receiver.o"
     source = timing.with_suffix(".c")
     feedback = work / "feedback"
@@ -31,6 +31,7 @@ def train(work, archive, history, args):
     trainer = Path(__file__).resolve().parents[1] / "single-core-2x/receiver_mixer_profile_trial.py"
     commands = []
     training_result = None
+    additional_result = None
     for mode, previous in (("generate", template), ("use", use_template)):
         binary = work / f"{mode}.so"
         compile_cmd = [previous[0], f"-fprofile-{mode}={feedback}", *previous[2:-4],
@@ -44,13 +45,18 @@ def train(work, archive, history, args):
             command = [sys.executable, trainer, "train", binary, args.assets]
             result = subprocess.run(command, check=True, text=True, stdout=subprocess.PIPE)
             training_result = json.loads(result.stdout)
+            if additional_training is not None:
+                additional_result = additional_training(binary)
             profile, = feedback.rglob("timing_first_receiver.gcda")
-    return binary, dict(library_sha256=digest(binary.read_bytes()),
+    receipt = dict(library_sha256=digest(binary.read_bytes()),
                         timing_sha256=digest(timing.read_bytes()),
                         source_sha256=digest(source.read_bytes()),
                         feedback_sha256=digest(profile.read_bytes()),
                         training_script_sha256=digest(trainer.read_bytes()), training=training_result,
                         commands=[[str(arg) for arg in command] for command in commands])
+    if additional_training is not None:
+        receipt["additional_training"] = additional_result
+    return binary, receipt
 
 
 def run(args):
