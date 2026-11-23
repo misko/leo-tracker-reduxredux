@@ -160,6 +160,14 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
     # Bootstrap already installed the release's lazy package facades. The
     # normal analyze/raw-context boundary consumes the in-memory packet once.
     with ExitStack() as scope:
+        survivor_witness = None
+        if getattr(args, "named_survivor_finish", False):
+            from isolated_salvage import binding as isolated_families
+            from named_survivor_fit import binding as original_final_fit
+
+            survivor_witness = {}
+            scope.enter_context(isolated_families())
+            scope.enter_context(original_final_fit(survivor_witness))
         scope.enter_context(patch.object(joint_publication, "configuration", return_value=(publication, dict(specification, startup="stock"))))
         if captured is not None:
             scope.enter_context(patch.object(joint_publication, "artifacts", partial(joint_publication.artifacts, verified_read=captured.read)))
@@ -173,6 +181,8 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
                                        phase_forecast=phase_forecast if forecast_audit is not None else None)
     if forecast_audit is not None:
         result["exact_phase_forecast"] = forecast_audit
+    if survivor_witness is not None:
+        result["named_survivor_finish"] = dict(requested=True, paid_final_fit=bool(survivor_witness))
     if grid_library is not None:
         result["grid_feature_projection"] = dict(grid_audit, source_sha256={
             name: sha256((HERE / name).read_bytes()).hexdigest()
@@ -302,6 +312,9 @@ def run(args):
         raise ValueError("Immutable publication differs from the acquired packet or offered region")
     dependencies = ("empty_bootstrap.py", "full_short_raw.py", "full_short_run.py", "combined_frontier_run.py",
                     "regional_probe_block_binding.py", "unified_short_bootstrap.py")
+    if getattr(args, "named_survivor_finish", False):
+        dependencies += ("isolated_salvage.py", "endpoint_track_repair.py", "fragment_gate_cross.py",
+                         "provisional_salvage.py", "named_survivor_fit.py")
     if png_read_audit:
         dependencies += ("verified_png_reads.py",)
     if detector_import_audit:
@@ -320,6 +333,7 @@ def run(args):
                   installed_acquisition_sources=staged.EXTRA_SOURCES,
                   solver_source_sha256=None if research is None else research["source_sha256"],
                   graph_proof=graph_proof,
+                  named_survivor_finish=None if research is None else research.get("named_survivor_finish"),
                   exact_graph_reuse=dict(requested=args.exact_graph_reuse, executed=graph_audit or None),
                   verified_png_reads=png_read_audit,
                   scanner_detector_import=detector_import_audit,
@@ -353,6 +367,8 @@ if __name__ == "__main__":
         parser.add_argument("--"+name, type=Path, required=True)
     parser.add_argument("--prove-graph-time-support", action="store_true",
                         help="Prove no graph path spans the required time on small signed packets")
+    parser.add_argument("--named-survivor-finish", action="store_true",
+                        help="Isolate a disputed satellite family and run the original qualified final fit on the accepted observations")
     parser.add_argument("--prove-empty-graph", action="store_true",
                         help="Use the pinned minimum support proof before loading the numerical solver")
     parser.add_argument("--one-pass-web-png", action="store_true",

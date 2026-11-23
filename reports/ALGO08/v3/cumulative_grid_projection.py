@@ -75,7 +75,7 @@ def read_checked_science(pin):
     return json.loads(checked(HERE / "measurements/weak-combined-raw.json", pin))["runs"]["candidate"]
 
 
-def worker(job, mode, output):
+def worker(job, mode, output, named_survivor_finish=False):
     started = process_time(), perf_counter()
     import empty_bootstrap as staged
     import unified_short_bootstrap as cumulative
@@ -87,7 +87,7 @@ def worker(job, mode, output):
     request = read(job)
     args = SimpleNamespace(recording=Path(request["recording"]), archive=Path(request["archive"]["root"]),
                            region=Path(request["region"]), output=output, one_pass_web_png=True,
-                           exact_graph_reuse=mode == "combined",
+                           exact_graph_reuse=mode == "combined", named_survivor_finish=named_survivor_finish,
                            grid_feature_projection_library=Path(request["projection"]) if mode == "combined" else None,
                            **{key: Path(path) for key, path in request["libraries"].items()})
     scan = staged.staged_scanner(sources)
@@ -108,7 +108,8 @@ def worker(job, mode, output):
         raise ValueError("Expected a verified handoff and one full active publication")
     write(output / "cumulative-grid-worker.json", dict(receipt=receipt, graph=graph, layout=layout, pins=pins,
           waveform_calls=0, handoffs=handoff.calls, solve=detail["solve"], complete_publication=clocks,
-          sources=detail["source_sha256"], projection=detail.get("grid_feature_projection")))
+          sources=detail["source_sha256"], projection=detail.get("grid_feature_projection"),
+          named_survivor_finish=detail.get("named_survivor_finish")))
     print(json.dumps(receipt, allow_nan=False))
 
 
@@ -228,6 +229,8 @@ if __name__ == "__main__":
         parser.add_argument("job", type=Path)
         parser.add_argument("mode", choices=MODES)
         parser.add_argument("output", type=Path)
+        parser.add_argument("--named-survivor-finish", action="store_true",
+                            help="Apply the same original final-fit option as the raw research launcher")
         worker(**vars(parser.parse_args(sys.argv[2:])))
     else:
         parser.add_argument("case", choices=CASES)
