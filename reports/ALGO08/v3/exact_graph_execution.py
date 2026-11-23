@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 PINS = {
     "vector_graph_edges.py": "b4a4c67f9100b668129bce2c4baa23440edde92374386260475be01f898115fd",
-    "polynomial_fit_cache.py": "d9c4559b8f3fa1a7efe4b390ad97882a82e4c3c5077d61f666150ea01edf130f",
+    "polynomial_fit_cache.py": "6c2f936f9904c707a6dab7846fb242602baf72a369c1c207624825625906c75b",
 }
 
 
