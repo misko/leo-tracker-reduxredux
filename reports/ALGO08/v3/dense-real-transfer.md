@@ -45,6 +45,18 @@ Of the candidate's 67.352 CPU seconds, **17.351 s** went to native waveform dete
 
 The model uses the respective observed dense solve CPU fraction, charges one detector-file seal plus worker overhead, retains the historical terminal-to-exit times, and leaves three uninstrumented outcomes at their historical elapsed. A single reader rate applied across recordings is a sensitivity calculation. Even the fastest-prefix scenario with the installed graph misses the summed gate. That graph would require **242.44 MB/s** for the summed gate with other prices held fixed, equivalent to reading this 8.182 GB in **33.75 s**. The observed acquisition already consumed **32.40 s of CPU**. Both core work and waiting matter. The 4- and 16-recording evaluations remain gated. [Reproducible model](dense_measured_budget.py)
 
+### How much could eliminating wait time buy?
+
+For a candidate pinned to one core, the full-process CPU time gives an optimistic elapsed floor when keeping all its work. Subtracting it from the comparator's half-elapsed budget shows whether faster input alone could suffice on a particular pair. The weak and dense runs used different versions of the regional projector. Each row uses the actual complete candidate and the v3 clock from its corresponding experiment.
+
+| Recording and v3 comparator | Half of v3 elapsed | Measured candidate CPU | Measured candidate elapsed minus CPU | Consequence at the same CPU cost |
+|---|---:|---:|---:|---|
+| DS30-0008, named launcher | 74.94 s | 67.35 s | 28.08 s | At most 7.59 s of elapsed beyond CPU fits the target. |
+| DS30-0008, fully cached qualification | 56.51 s | 67.35 s | 28.08 s | Even zero waiting leaves 10.84 s of CPU to remove. |
+| DS30-0016, named launcher | 7.26 s | 9.44 s | 0.03 s | Even zero waiting leaves 2.18 s of CPU to remove. |
+
+Elapsed minus CPU includes scheduling and storage waits. The measurements do not assign the whole difference to disk. On the separately timed dense 192-visit prefix, about 84% of the acquisition CPU outside native detector calls was spent on Zstandard reads and payload authentication. Those checks operated on all the input bytes. The conditional 8 ms receiver also spent more CPU on dense once 12 ms restarts were charged. [Weak physical clocks](full-short-physical.md) · [Measured input CPU](dense-ingress-attribution.md) · [Measured receiver restarts](progressive-primary.md)
+
 ### Reproduction
 
 The [full-short research entry](full_short_run.py) accepts `--track-graph installed` on either raw or saved inputs. Its default remains the six-point quadratic configuration used in the measured raw run. The resulting recipe file records which graph ran alongside the receiver identity and the optional geographic-library digest.
