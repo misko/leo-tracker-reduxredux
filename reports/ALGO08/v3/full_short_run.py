@@ -43,6 +43,8 @@ def main(argv=None):
     mode.add_argument("--saved", type=Path, help="Frozen full-short detections from the same recording")
     parser.add_argument("--saved-digest", help="Canonical detector packet digest from its original terminal")
     parser.add_argument("--geographic-library", type=Path, help="Use the reviewed native projection in regional checks")
+    parser.add_argument("--track-graph", choices=("quadratic", "installed"), default="quadratic",
+                        help="Track configuration to use after the signed receiver handoff")
     args = parser.parse_args(argv)
     if bool(args.saved) != bool(args.saved_digest):
         parser.error("--saved and --saved-digest must be used together")
@@ -50,14 +52,16 @@ def main(argv=None):
     args.verify_images = True
     identity = checked_recipe()
     audit = {}
+    quadratic = args.track_graph == "quadratic"
     receiver = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True) if args.short_binary else None
     run(args, detector_override=receiver.detector if receiver else None,
         detector_description="verified raw stereo with full anchors and 12 ms primaries",
-        track_config=graph_config, early_regional=True, keep_selected_rows=True,
+        track_config=graph_config if quadratic else None, early_regional=True, keep_selected_rows=True,
         raw_context=(lambda scan: observe_acquisition(scan, receiver, RECIPE_SHA, audit)) if receiver else None,
         saved_receiver=None if receiver else RECIPE_SHA,
         geographic_projector=(lambda: geographic_projection(args.geographic_library)) if args.geographic_library else None)
-    write(args.output / "full-short-recipe.json", dict(recipe=identity, graph=GRAPH, receiver_audit=audit,
+    write(args.output / "full-short-recipe.json", dict(recipe=identity, graph=GRAPH if quadratic else "installed",
+             receiver_audit=audit,
              saved_digest=args.saved_digest, geographic_sha256=GEOGRAPHIC_SHA if args.geographic_library else None))
 
 

@@ -14,7 +14,8 @@ def runner(monkeypatch):
 
 
 @pytest.mark.parametrize("mode", ["raw", "saved"])
-def test_supplied_region_archive_and_receiver_reach_solver(runner, monkeypatch, tmp_path, mode):
+@pytest.mark.parametrize("installed_graph", [False, True])
+def test_supplied_region_archive_and_receiver_reach_solver(runner, monkeypatch, tmp_path, mode, installed_graph):
     observed = {}
     class Receiver:
         def __init__(self, path, pin, *, full_coverage):
@@ -32,11 +33,13 @@ def test_supplied_region_archive_and_receiver_reach_solver(runner, monkeypatch, 
     extra = ["--saved", "saved.json", "--saved-digest", "original"] if mode == "saved" else ["--short-binary", "short.so"]
     monkeypatch.setattr(runner, "MixedApertureDetector", Receiver)
     monkeypatch.setattr(runner, "run", observe)
-    runner.main(argv + extra)
+    runner.main(argv + extra + (["--track-graph", "installed"] if installed_graph else []))
     args, options = observed["args"], observed["options"]
     assert all(getattr(args, name) == path for name, path in paths.items())
     assert args.verify_images and args.optimized_full_catalogue and options["early_regional"]
-    assert options["track_config"] is runner.graph_config
+    assert options["track_config"] is (None if installed_graph else runner.graph_config)
+    sealed = json.loads((args.output / "full-short-recipe.json").read_bytes())
+    assert sealed["graph"] == ("installed" if installed_graph else runner.GRAPH)
     if mode == "raw":
         assert observed["receiver"] == (Path("short.so"), runner.SHORT_SHA, True)
         assert options["raw_context"] and options["saved_receiver"] is None

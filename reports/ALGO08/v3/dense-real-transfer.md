@@ -41,6 +41,8 @@ The model uses the respective observed dense solve CPU fraction, charges one det
 
 ### Reproduction
 
+The [full-short research entry](full_short_run.py) accepts `--track-graph installed` on either raw or saved inputs. Its default remains the six-point quadratic configuration used in the measured raw run. The resulting recipe file records which graph ran alongside the receiver identity and the optional geographic-library digest.
+
 The [raw publication runner](dense-full-short-raw.md) and [saved crossover runner](dense-full-short-crossover.md) document the archived inputs, source identities and Gauss lock. To reproduce just the degree-only comparisons, use the release environment for the solves and the repository environment for scoring, with the same low-priority single-core wrapper. `GEO_SO` must have the checked native projector digest, and `PREFIX` must identify fresh output directories.
 
 ```text
