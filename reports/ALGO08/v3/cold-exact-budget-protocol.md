@@ -1,0 +1,7 @@
+# Full-observation initial association budget on the cumulative route
+
+Use the exact already staged unfiltered mixed 20/12 ms DS30-0008 packet, supplied region, causal archive and installed exact-Graph cumulative path at `00b32f587`. Match the original observations, both calibration arms, all original cold seeds and race settings, and the ordinary publication. No waveform or bulk metadata access.
+
+Instrument only the cold call and its full ordered rank, with inclusive CPU/elapsed scopes and a full Python/native-call profile exclusive attribution. Price observed duplicate operations after existing centre row reuse, repeat association reuse and finalist race. Use the ordinary saved worker and let it finish through both calibrations, the position path and grid, and all eight verified PNGs. Record the external clock and selected output. Keep profile instrumentation outside later comparison clocks and require same actual winners and science for any candidate. A tested lever must offer a meaningfully scalable disjoint saving or supply a measured ceiling.
+
+Run in fresh tmpfs and under the shared Gauss CPU 2 lock at nice 15, I/O priority 7 and one numerical thread. Any optimized run starts under its own frozen source and matched settings. Use only staged input files. The independently staged DS30-0316 subject is eligible only after the dominant scope demonstrates a viable exact replacement and before any dense candidate rerun.
