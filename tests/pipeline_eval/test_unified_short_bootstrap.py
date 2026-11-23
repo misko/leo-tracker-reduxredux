@@ -58,6 +58,14 @@ def test_one_selected_native_factor_cannot_take_zero_shortcut(tmp_path):
     assert handoff.calls == 0
 
 
+def test_nonempty_graph_proof_for_another_packet_cannot_seal_the_result():
+    native = {"source": {"probes": [{"candidates": [{"candidate_rank": 0}]}]}}
+    handoff = Handoff("session", "inventory", "actual-mixed-recipe", native)
+    with pytest.raises(ValueError, match="ordinary numerical path"):
+        BOOTSTRAP["withhold"](None, None, None, None, handoff, "no_active_curvature",
+                             graph_proof={"proven": True, "native_sha256": "sha256:other"})
+
+
 def test_qualified_receiver_shim_is_scoped_and_fails_if_already_imported():
     name = "_unified_test_receiver_module"
     names = ("Native", "Factor", "_probe", "factor_candidate")

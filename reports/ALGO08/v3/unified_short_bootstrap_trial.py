@@ -30,6 +30,8 @@ CONTROLS = {
     "weak": "f049c5c80b1fcdb6004dab75c76324193bb7313918631292b354b9fa413b695e",
 }
 WEAK_SCIENCE = "a704861e37e40e7364fbf97bcb74e98bb9c701ca474c12821e8ed7df86cab233"
+SURVEY = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
+ORIGINAL_TIMING_DRIVER = "4948954903289835646c81e753af518be1f74cd73f35f91708a1e1073792f54d"
 
 
 def control(case):
@@ -180,9 +182,14 @@ def run(root, short, geographic, regional, block):
                         request_offer_sha256=sha256(Path(offer).read_bytes()).hexdigest())
         write(folder / "verified.json", evidence)
         observations[case] = evidence
+    summarize(root, observations, system, identified, sha256(Path(__file__).read_bytes()).hexdigest())
+
+
+def summarize(root, observations, system, identified, timing_driver):
     from aperture_score import PHYSICAL, distance_km
 
-    (survey,) = [row["reference"] for row in read(PHYSICAL)["cases"] if row["dataset_label"] == "DS30-0016" and row["authority_eligible"]]
+    (survey,) = [row["reference"] for row in read(checked(PHYSICAL, SURVEY))["cases"]
+                 if row["dataset_label"] == "DS30-0016" and row["authority_eligible"]]
     truth = [survey[k] for k in ("latitude_deg", "longitude_deg")]
     for row in observations["weak"]["rows"].values():
         row["errors_km"] = {arm: distance_km(value["latlon"], truth) for arm, value in row["science"]["publication"]["arms"].items()}
@@ -190,12 +197,21 @@ def run(root, short, geographic, regional, block):
     write(root / "result.json", dict(machine=system, stock_build=identified, controls=CONTROLS,
           weak_science_sha256=WEAK_SCIENCE,
           protocol_sha256=sha256((HERE / "unified-short-bootstrap-protocol.md").read_bytes()).hexdigest(),
-          driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), observations=observations,
+          timing_driver_sha256=timing_driver, score_driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
+          survey_sha256=SURVEY, observations=observations,
           median_ratio=median(b/a for a, b in elapsed), summed_ratio=sum(b for a, b in elapsed)/sum(a for a, b in elapsed)))
 
 
 if __name__ == "__main__":
+    import sys
+
     parser = argparse.ArgumentParser(description=__doc__)
-    for arg in ("root", "short", "geographic", "regional", "block"):
-        parser.add_argument(arg, type=Path)
-    run(**vars(parser.parse_args()))
+    if sys.argv[1:2] == ["rescore-sealed"]:
+        parser.add_argument("root", type=Path)
+        root = parser.parse_args(sys.argv[2:]).root
+        sealed = {case: read(root / case / "verified.json") for case in CONTROLS}
+        summarize(root, sealed, host(), pairs.verified_v3(pairs.NAMED_V3), ORIGINAL_TIMING_DRIVER)
+    else:
+        for arg in ("root", "short", "geographic", "regional", "block"):
+            parser.add_argument(arg, type=Path)
+        run(**vars(parser.parse_args()))

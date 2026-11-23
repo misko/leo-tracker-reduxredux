@@ -52,11 +52,15 @@ class Handoff:
             yield
 
 
-def withhold(scan, args, offer, assets, handoff, reason):
+def withhold(scan, args, offer, assets, handoff, reason, *, graph_proof=None):
     if reason not in ("no_active_curvature", "no valid receiver windows in the sealed recording"):
         raise ValueError("Expected a verified empty receiver decision")
     if any(probe["candidates"] for probe in handoff.native["source"]["probes"]):
-        raise ValueError("An authenticated factor requires the ordinary numerical path")
+        from leo.contracts.digests import canonical_digest
+
+        if (graph_proof is None or graph_proof.get("proven") is not True
+                or reason != "no_active_curvature" or graph_proof["native_sha256"] != canonical_digest(handoff.native)):
+            raise ValueError("An authenticated factor requires the ordinary numerical path unless its graph is proven empty")
     scan.TleArchiveReader = lambda path: path
     scan.solve = lambda *_: (dict(status="withheld", reason=reason,
                                  arms={name: {"latlon": None} for name in ("c0", "fitted_c")}), None, "stock")
@@ -147,6 +151,13 @@ def run(args):
             raise ValueError("The offered region changed during acquisition")
         scope = staged.now()
         reason = staged.empty_reason(native, frequency_evidence)
+        graph_proof = None
+        if reason is None and args.prove_empty_graph:
+            from short_graph_guard import prove
+
+            graph_proof = prove(native, assets)
+            if graph_proof["proven"]:
+                reason = "no_active_curvature"
         before = [name for name in staged.SCIENTIFIC_IMPORTS if name in sys.modules]
         if before:
             raise ValueError(f"Scientific imports crossed the receiver-first boundary: {before}")
@@ -156,9 +167,10 @@ def run(args):
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
-            terminal = withhold(scan, args, offer, assets, handoff, reason)
+            terminal = withhold(scan, args, offer, assets, handoff, reason, graph_proof=graph_proof)
             research = None
-            route = "authenticated_zero_selected_factors"
+            route = ("authenticated_zero_selected_factors" if graph_proof is None
+                     else "authenticated_installed_graph_ineligible")
         phases["decision_and_publication"] = staged.clock(scope)
     after = [name for name in staged.SCIENTIFIC_IMPORTS if name in sys.modules]
     if handoff.calls != 1 or reason is not None and after:
@@ -178,6 +190,7 @@ def run(args):
                   source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in dependencies},
                   installed_acquisition_sources=staged.EXTRA_SOURCES,
                   solver_source_sha256=None if research is None else research["source_sha256"],
+                  graph_proof=graph_proof,
                   solver_recipe=dict(graph="installed", block_sha256=BLOCK_SHA, scalar_track_sha256=TRACK_SCORES_SHA,
                                      geographic_sha256=GEOGRAPHIC_SHA, reuse_cold_rows=True,
                                      reuse_grid_phase_states=True, skip_empty_proof=True),
@@ -197,4 +210,6 @@ if __name__ == "__main__":
     for name in ("recording", "archive", "region", "output", "short-binary", "geographic-library",
                  "regional-track-library", "frontier-block-library"):
         parser.add_argument("--"+name, type=Path, required=True)
+    parser.add_argument("--prove-empty-graph", action="store_true",
+                        help="Use the pinned minimum support proof before loading the numerical solver")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
