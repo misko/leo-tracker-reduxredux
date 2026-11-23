@@ -1,6 +1,6 @@
 # How much independent support do the three apertures offer?
 
-On **112 dense nonanchor lanes**, 65 had an installed rank-zero factor. The released prefix matched 49, the distributed primary matched 48, and at least one matched 54. On the **80 dense nonanchor lanes common to all three apertures**, the three-way union matched 35 of 43 installed rank-zero factors. The best observed single fixed aperture, centered on that prefix, matched 33. [Distributed factors](measurements/distributed-aperture.json.gz) · [Centered factors](/var/tmp/leo-v3-centered-primary/reports/ALGO08/v3/measurements/centered-primary.json.gz)
+On **112 dense nonanchor lanes**, 65 had an installed rank-zero factor. The released prefix matched 49, the distributed primary matched 48, and at least one matched 54. On the **80 dense nonanchor lanes common to all three apertures**, the three-way union matched 35 of 43 installed rank-zero factors. The best observed single fixed aperture, centered on that prefix, matched 33. [Distributed factors](measurements/distributed-aperture.json.gz) · [Centered factors](measurements/centered-primary.json.gz)
 
 | Common lanes | Installed reference held fixed | Reference present | Prefix | Centered | Distributed | Prefix + centered union | Prefix + distributed union | Three-way union |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
@@ -18,5 +18,5 @@ Each fixed aperture uses one call per lane. A union uses the installed factor to
 ```sh
 python3 -B reports/ALGO08/v3/aperture_factor_union.py \
   reports/ALGO08/v3/measurements/distributed-aperture.json.gz \
-  /tmp/leo-centered-primary-run05/complete.json
+  reports/ALGO08/v3/measurements/centered-primary.json.gz
 ```
