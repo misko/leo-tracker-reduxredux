@@ -49,7 +49,7 @@ def select_member(members, minimum, maximum):
     return eligible
 
 
-def selection(selection=BAND):
+def selection(selection=BAND, *, checkout=CHECKOUT, protocol_sha256=PROTOCOL_SHA):
     cohort = json.loads(checked(COHORT, COHORT_SHA))
     members = cohort["members"]
     eligible = select_member(members, selection.minimum, selection.maximum)
@@ -57,10 +57,10 @@ def selection(selection=BAND):
     workload = selection.inputs.workload
     if len(members) != 455 or (winner["id"], winner["windows"]) != (workload.id, workload.windows):
         raise ValueError("Pinned whole-raw enrollment differs from the visit-count selection")
-    return dict(checkout=CHECKOUT, cohort_sha256=COHORT_SHA, cohort_size=len(members),
+    return dict(checkout=checkout, cohort_sha256=COHORT_SHA, cohort_size=len(members),
                 band=[selection.minimum, selection.maximum], order_by=["issued_visits", "dataset_label"],
                 eligible=[dict(dataset_label=row["id"], issued_visits=row["windows"]) for row in eligible],
-                recording_state=winner["recording_state"], protocol_sha256=PROTOCOL_SHA)
+                recording_state=winner["recording_state"], protocol_sha256=protocol_sha256)
 
 
 if __name__ == "__main__":

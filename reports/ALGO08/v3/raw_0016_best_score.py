@@ -96,7 +96,7 @@ def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, exp
                     or any(admission["sources"][k] != v for k, v in scoped_sources.items() if k in admission["sources"])
                     or projection and projection.get("library_sha256") != PROJECTION_SHA
                     or not projection and receipt["decision"] == "complete"
-                    or not set(FLAGS) <= set(log["command"])):
+                    or not set(admission["route_flags"]) <= set(log["command"])):
                 raise ValueError("Candidate handoff/provenance differs from the frozen composition")
         else:
             pairs.verify_v3_publication(target, receipt)

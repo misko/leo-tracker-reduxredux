@@ -46,7 +46,7 @@ def sha(data):
     return sha256(data).hexdigest()
 
 
-def frozen_sources():
+def frozen_sources(base=BASE, extra_sources=()):
     """Verify untouched trial dependencies against the frozen parent tree."""
     names = ("unified_short_bootstrap.py", "empty_bootstrap.py", "full_short_raw.py", "full_short_run.py",
              "short_graph_guard.py", "named_survivor_fit.py", "isolated_salvage.py", "endpoint_track_repair.py",
@@ -54,13 +54,13 @@ def frozen_sources():
              "vector_graph_edges.py", "polynomial_fit_cache.py", "verified_png_reads.py", "joint_publication.py",
              "one_pass_web_png.py", "direct_residual_entry.py", "direct_residual_figures.py",
              "direct_orbit_entry.py", "direct_orbit_figures.py", "grid_feature_projection.py",
-             "grid_feature_projection.c", "short_raw_0180.py", "short_raw_diagnostic.py", "triage_bounds.py")
+             "grid_feature_projection.c", "short_raw_0180.py", "short_raw_diagnostic.py", "triage_bounds.py", *extra_sources)
     repo = HERE.parents[2]
     result = {}
     for name in names:
         path = HERE / name
         reference = subprocess.check_output(["git", "-c", f"safe.directory={repo}", "-C", repo,
-                                             "show", f"{BASE}:{path.relative_to(repo)}"])
+                                             "show", f"{base}:{path.relative_to(repo)}"])
         checked(path, sha(reference))
         result[name] = sha(reference)
     return result
@@ -94,7 +94,8 @@ def seal(root, order=CASE.order):
     return {str(p.relative_to(root)): sha(p.read_bytes()) for p in sorted(paths)}
 
 
-def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
+def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None, base=BASE, route_flags=FLAGS,
+                  extra_sources=(), extra_libraries=(), receiver_configuration=None):
     from aperture_trial import write
     from combined_frontier_run import BLOCK_SHA
     from dense_geographic_trial import host
@@ -108,7 +109,7 @@ def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
     machine = host()
     if subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", root.parent], text=True).strip() != "tmpfs":
         raise ValueError("Need fresh private tmpfs for all outputs and staging")
-    sources = frozen_sources()
+    sources = frozen_sources(base, extra_sources)
     named = pairs.verified_v3(pairs.NAMED_V3)
     workload = inputs.workload
     signed, request = enrollment(workload)
@@ -147,7 +148,8 @@ def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
     libraries = {}
     library_inputs = (("short", SHORT, SHORT_SHA), ("geographic", STAGED/"geographic_library.so", GEOGRAPHIC_SHA),
                       ("regional", STAGED/"regional_track_library.so", TRACK_SCORES_SHA),
-                      ("block", STAGED/"frontier_block_library.so", BLOCK_SHA), ("projection", PROJECTION, PROJECTION_SHA))
+                      ("block", STAGED/"frontier_block_library.so", BLOCK_SHA), ("projection", PROJECTION, PROJECTION_SHA),
+                      *extra_libraries)
     for name, source, digest in library_inputs:
         destination = root / f"{name}.so"
         destination.write_bytes(checked(source, digest))
@@ -159,8 +161,8 @@ def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
                    env=env, check=True, timeout=30)
     archive["sha256"] = inputs.archive
     order = workload.order if launch_order is None else launch_order
-    admission = dict(case=workload.id, base=BASE, order=order, host=machine, stock=named,
-          route_flags=FLAGS, sources=sources, driver_sha256=sha(Path(__file__).read_bytes()),
+    admission = dict(case=workload.id, base=base, order=order, host=machine, stock=named,
+          route_flags=route_flags, sources=sources, driver_sha256=sha(Path(__file__).read_bytes()),
           binding=workload.binding_sha, request=case["request"]["sha256"], inventory=inputs.inventory,
           cutoff_utc_ns=signed["orbit_cutoff_ns"], manifests=cache_residency.manifest_pins(manifests),
           offer=offer, offer_sha256=REGION_SHA, issued=workload.windows, admitted=case["valid_visits"],
@@ -170,6 +172,8 @@ def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
           raw_budget_bytes=workload.raw_limit, compressed_bytes=total)
     if selection is not None:
         admission["selection"] = selection
+    if receiver_configuration is not None:
+        admission["receiver_configuration"] = receiver_configuration
     write(root/"admission.json", admission)
     return recording, manifests, total, libraries, residency, env
 

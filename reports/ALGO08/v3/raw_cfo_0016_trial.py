@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 import subprocess
 
-from empty_bootstrap import RELEASE, checked
+from empty_bootstrap import checked
 from raw_0016_best_trial import HERE, ORIGINAL, command, condition, configuration, measure_mode, seal, sha
 from short_cfo_raw import EXTENSION_SHA256, FREEZE_SHA256, LIBRARY_SHA256, POLICY_SHA256, STEP
 
@@ -20,6 +20,23 @@ WRAPPER = HERE/"short_cfo_raw.py"
 FAILED = Path("/dev/shm/leo-v3-raw-cfo-0016-result02")
 FAILED_CLOCK_SHA = "867d83b642e25ff17a234970eed7268e0eb85eac04104e20be7b5c96a308cbf4"
 FIRST_CONDITIONING_SHA = "8639fa68cc0dd0f0f3ee0afcfc4feb971d599bb32c02e159bab872e01861b89c"
+
+
+def receiver_preflight(root, argv, env, *, capabilities=("--exact-graph-reuse",)):
+    library_flag = "--cfo-refinement-library"
+    library = argv[argv.index(library_flag)+1]
+    help_check = subprocess.run([*argv[:3], library_flag, library, "--help"],
+                                env=env, capture_output=True, text=True, timeout=15)
+    if help_check.returncode or any(flag not in help_check.stdout for flag in capabilities):
+        raise ValueError("Refined receiver did not reach the original bootstrap CLI: "+help_check.stderr)
+    dummy = argv.copy()
+    dummy_recording, dummy_output = root/"nonexistent-recording", root/"preflight-only"
+    dummy[dummy.index("--recording")+1] = dummy_recording
+    dummy[dummy.index("--output")+1] = dummy_output
+    check = subprocess.run(dummy, env=env, capture_output=True, text=True, timeout=15)
+    if check.returncode != 1 or "FileNotFoundError" not in check.stderr or str(dummy_recording) not in check.stderr or dummy_output.exists():
+        raise ValueError("Expected the original inventory boundary to reject a nonexistent recording: "+check.stderr)
+    return dict(help=True, expected_failure_exit=check.returncode, stderr=check.stderr)
 
 
 def launch(root, *, resident_recovery=False):
@@ -43,23 +60,10 @@ def launch(root, *, resident_recovery=False):
         root, ORIGINAL, selection=document, launch_order=ORDER)
     library = root/"cfo-refinement.so"
     library.write_bytes(checked(LIBRARY, LIBRARY_SHA256))
-    # The dry startup exercises source imports and the verified dynamic symbol, with no recording argument.
-    startup = subprocess.run([RELEASE/"venv/bin/python", "-IB", WRAPPER, "--cfo-refinement-library", library, "--help"],
-                             env=env, capture_output=True, timeout=15)
-    if startup.returncode or b"--exact-graph-reuse" not in startup.stdout:
-        raise ValueError("Refined receiver did not reach the original bootstrap CLI: "+startup.stderr.decode(errors="replace"))
     argv = command("candidate", root, recording, libraries, pairs.NAMED_V3)
     argv[2] = WRAPPER
     argv.extend(("--cfo-refinement-library", library))
-    dummy = argv.copy()
-    dummy_recording = root/"nonexistent-recording"
-    dummy_output = root/"preflight-only"
-    dummy[dummy.index("--recording")+1] = dummy_recording
-    dummy[dummy.index("--output")+1] = dummy_output
-    check = subprocess.run(dummy, env=env, capture_output=True, text=True, timeout=15)
-    if check.returncode != 1 or "FileNotFoundError" not in check.stderr or str(dummy_recording) not in check.stderr or dummy_output.exists():
-        raise ValueError("Expected the original inventory boundary to reject a nonexistent recording: "+check.stderr)
-    write(root/"preflight.json", dict(help=True, expected_failure_exit=check.returncode, stderr=check.stderr))
+    write(root/"preflight.json", receiver_preflight(root, argv, env))
     condition(root, manifests, total, residency, ORIGINAL, allow_read=not resident_recovery)
     measure_mode(root, "candidate", argv, env, residency)
     write(root/"prediction-seal.json", seal(root, ORDER) | {"preflight.json": sha((root/"preflight.json").read_bytes())})
