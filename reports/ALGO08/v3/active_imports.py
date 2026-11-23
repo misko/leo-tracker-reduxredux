@@ -22,6 +22,7 @@ RAW = Path("/dev/shm/leo-unified-short-layout.lDeYMN5U/trial/result.json")
 RAW_SHA = "d1eee8981f1be7e09c79019b7c3e0dbf2136cebaa453e2ae0ff5440d222ace7e"
 NATIVE = "c09de017909fdc6ffa9b0720b29f3a3fbb84b0785c110f15414ef3fc5bd37589"
 RECEIVER = "tools.pipeline_eval.qualification.blind_compact_run"
+WATCHED = (RECEIVER, "tools.pipeline_eval.variants.differential_pilot", "scipy.signal", "scipy.stats", "matplotlib")
 
 
 def clocks():
@@ -104,6 +105,7 @@ def worker(job, mode, output):
         request = json.loads(staged.checked(job, BINDING_SHA))
         args = SimpleNamespace(recording=Path(request["recording"]), archive=Path(request["archive"]["root"]),
                               region=Path(request["region"]), output=output, one_pass_web_png=True, exact_graph_reuse=False,
+                              lazy_scanner_detector=mode == "deferred",
                               **{key: Path(value) for key, value in request["libraries"].items()})
         for path, pin in ((args.geographic_library, GEOGRAPHIC_SHA), (args.regional_track_library, TRACK_SCORES_SHA),
                           (args.frontier_block_library, BLOCK_SHA), (HERE / "one_pass_web_png.py", unified.LAYOUT_SHA256),
@@ -130,12 +132,14 @@ def worker(job, mode, output):
                     yield
 
             scope.enter_context(patch.object(unified, "layout_renderer", mark_science))
-        handoff, layout = unified.Handoff(session, inventory, RECIPE_SHA, native), {}
-        receipt, details = unified.publish_active(args, publication, spec, handoff, layout)
+        handoff, layout, detector_import = unified.Handoff(session, inventory, RECIPE_SHA, native), {}, {}
+        receipt, details = unified.publish_active(args, publication, spec, handoff, layout,
+                                                 detector_import_audit=detector_import)
         stage = elapsed(start)
     if receipt["decision"] != "complete" or handoff.calls != 1:
         raise ValueError("Active import trial did not complete one scientific publication")
-    result = dict(receipt=receipt, mode=mode, stage=stage, solve=details["solve"], layout=layout, waveform_calls=0)
+    result = dict(receipt=receipt, mode=mode, stage=stage, solve=details["solve"], layout=layout, waveform_calls=0,
+                  detector_import=detector_import, loaded={name: name in sys.modules for name in WATCHED})
     if trace is not None:
         result.update(modules=trace.modules, compiles=trace.compiles)
     with (output / "imports.json").open("x") as stream:
@@ -174,6 +178,18 @@ def timed(root, mode):
             or receipt["terminal_sha256"] != raw["publication"]["receipt"]["terminal_sha256"]
             or len(figures) != 8 or canonical_digest(figures) != canonical_digest(raw["figures"])):
         raise ValueError("Import timing did not reproduce exact original science and publication")
+    if mode == "deferred":
+        from publication_media_checks import verify_position_sidecars
+        from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+
+        original = read(root / "original-verified.json")
+        run_id = receipt["run_id"]
+        stores = (FastStandardAnalysisStore(root / "original"), FastStandardAnalysisStore(output))
+        if (not observed["detector_import"]["deferred"] or observed["detector_import"]["original_calls"]
+                or observed["loaded"][RECEIVER] or original["selected_rows"] != canonical_digest(detail["selected_rows"])
+                or any(stores[0].artifact(run_id, name) != stores[1].artifact(run_id, name) for name in figures)):
+            raise ValueError("Reviewed detector deferral did not preserve all original active publication bytes")
+        observed["verified_sidecars"] = verify_position_sidecars(root / "original", output, run_id, original["figures"], figures)
     write(root / f"{mode}-verified.json", dict(timing=timing, profile=observed, figures=figures,
           evidence=evidence, selected_rows=canonical_digest(detail["selected_rows"])))
 
@@ -190,19 +206,31 @@ def setup(root):
                    env=environment(root), check=True, timeout=30)
 
 
+def import_gate(traced):
+    matches = [row for row in traced["modules"] if row["name"] == RECEIVER and row["phase"] == "outer"]
+    return len(matches) == 1 and matches[0]["cpu_ns"] >= 50_000_000
+
+
 if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
     parser = argparse.ArgumentParser(description=__doc__)
     if sys.argv[1:2] == ["worker"]:
         parser.add_argument("job", type=Path)
-        parser.add_argument("mode", choices=("original", "traced"))
+        parser.add_argument("mode", choices=("original", "traced", "deferred"))
         parser.add_argument("output", type=Path)
         worker(**vars(parser.parse_args(sys.argv[2:])))
     else:
         parser.add_argument("root", type=Path)
-        root = parser.parse_args().root
+        parser.add_argument("--deferred-only", action="store_true")
+        args = parser.parse_args()
+        root = args.root
         from dense_geographic_trial import host
         host()
-        setup(root)
-        for mode in ("original", "traced"):
-            timed(root, mode)
+        if args.deferred_only:
+            if not import_gate(json.loads((root / "traced/imports.json").read_bytes())):
+                raise ValueError("The profiled receiver subtree did not earn one deferred candidate run")
+            timed(root, "deferred")
+        else:
+            setup(root)
+            for mode in ("original", "traced"):
+                timed(root, mode)

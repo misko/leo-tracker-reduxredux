@@ -94,7 +94,8 @@ def layout_renderer(scan, enabled, audit):
         yield
 
 
-def publish_active(args, publication, specification, handoff, layout_audit, *, graph_audit=None, png_read_audit=None):
+def publish_active(args, publication, specification, handoff, layout_audit, *, graph_audit=None, png_read_audit=None,
+                   detector_import_audit=None):
     from exact_graph_execution import graph_execution
     from full_short_run import geographic_projection
     import joint_publication
@@ -137,6 +138,10 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
         scope.enter_context(patch.object(joint_publication, "configuration", return_value=(publication, dict(specification, startup="stock"))))
         if captured is not None:
             scope.enter_context(patch.object(joint_publication, "artifacts", partial(joint_publication.artifacts, verified_read=captured.read)))
+        if getattr(args, "lazy_scanner_detector", False):
+            from lazy_scanner_detector import defer_detector
+
+            scope.enter_context(defer_detector(enabled=True, audit=detector_import_audit if detector_import_audit is not None else {}))
         result = joint_publication.run(options, raw_context=active_publication, early_regional=True,
                                        keep_selected_rows=True, geographic_projector=projection,
                                        reuse_cold_rows=True, reuse_grid_phase_states=True)
@@ -185,6 +190,7 @@ def run(args):
     audit, layout_audit = {}, {}
     graph_audit = {} if args.exact_graph_reuse else None
     png_read_audit = {} if args.reuse_verified_png_reads else None
+    detector_import_audit = {} if args.lazy_scanner_detector else None
     with TemporaryDirectory() as temporary:
         assets = Path(temporary)
         anchor = specification["detector_sha256"]
@@ -226,7 +232,8 @@ def run(args):
         handoff = Handoff(session, inventory_digest, RECIPE_SHA, native)
         if reason is None:
             terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
-                                                graph_audit=graph_audit, png_read_audit=png_read_audit)
+                                                graph_audit=graph_audit, png_read_audit=png_read_audit,
+                                                detector_import_audit=detector_import_audit)
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
@@ -246,6 +253,8 @@ def run(args):
                     "regional_probe_block_binding.py", "unified_short_bootstrap.py")
     if png_read_audit:
         dependencies += ("verified_png_reads.py",)
+    if detector_import_audit:
+        dependencies += ("lazy_scanner_detector.py",)
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
                   route=route, requested_offer_sha256=sha256(offer_bytes).hexdigest(), archive_root=str(archive),
                   frozen_specification="sha256:"+launcher["FINGERPRINT"], receiver_recipe=recipe,
@@ -258,6 +267,7 @@ def run(args):
                   graph_proof=graph_proof,
                   exact_graph_reuse=dict(requested=args.exact_graph_reuse, executed=graph_audit or None),
                   verified_png_reads=png_read_audit,
+                  scanner_detector_import=detector_import_audit,
                   one_pass_web_png=dict(enabled=args.one_pass_web_png,
                                         source_sha256=LAYOUT_SHA256 if args.one_pass_web_png else None, **layout_audit),
                   solver_recipe=dict(graph="installed", block_sha256=BLOCK_SHA, scalar_track_sha256=TRACK_SCORES_SHA,
@@ -291,4 +301,6 @@ if __name__ == "__main__":
                         help="Decode each new PNG from its original verified publication read")
     parser.add_argument("--grid-feature-projection-library", type=Path,
                         help="Use the verified experimental grid projection and selected row library")
+    parser.add_argument("--lazy-scanner-detector", action="store_true",
+                        help="Load the installed detector adapter on first detector use in active publication")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
