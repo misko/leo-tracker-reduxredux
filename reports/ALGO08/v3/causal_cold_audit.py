@@ -21,7 +21,6 @@ from dense_full_short_raw import checked
 from dense_geographic_trial import host
 from full_short_physical import environment
 from optimizer_quadrature_census import site
-from short_raw_diagnostic import measure
 from target_owner_recovery_trial import STAGED, inventory_for, worker as original_worker
 
 
@@ -244,6 +243,8 @@ def archived():
 
 
 def run(root):
+    from short_raw_diagnostic import measure
+
     machine = host()
     for path, pin in PINS.items():
         checked(path, pin)
