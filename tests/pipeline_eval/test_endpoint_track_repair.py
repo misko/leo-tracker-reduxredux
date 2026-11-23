@@ -98,3 +98,13 @@ def test_unfinished_phase_refit_returns_original_support_and_pays_one_trial(monk
     assert [arm for arm, _ in attempts] == list(variant.ARMS)
     assert all(int((~mask).sum()) == 1 and not mask[-1] for _, mask in attempts)
     assert len(fallbacks) == 2 and all(mask.all() for mask in fallbacks)
+
+
+def test_transfer_counts_a_rejected_attempt_before_history_retry():
+    from reports.ALGO08.v3.endpoint_track_repair_0160 import observe_repair
+
+    rejected = {"status": "rejected", "refit_calls": 1}
+    research = dict(route_details={"pair_passes": True},
+                    recovered_inference={"attempts": [{"endpoint_trim": rejected}]})
+    assert observe_repair(research) == [rejected]
+    assert observe_repair(dict(route_details={"pair_passes": True}, recovered_inference=None)) == []
