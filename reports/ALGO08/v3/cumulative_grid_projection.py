@@ -90,15 +90,26 @@ def saved_inventory_port(request):
     from named_constrained_research import deny_waveform, inventory_binding
 
     inventory = inventory_binding(Path(request["recording"]), Path(path), request["session"], request["inventory"])
+    description = ("authenticated saved named v3 20 ms acquisition" if request.get("receiver") == "named-v3"
+                   else "authenticated saved mixed 20/12 ms acquisition")
     saved_publication = partial(joint_publication.run, detector_override=deny_waveform,
-                                detector_description="authenticated saved mixed 20/12 ms acquisition")
+                                detector_description=description)
     with (patch.object(FastScanStore, "inventory", inventory),
           patch.object(ShortWindowReader, "__init__", deny_waveform),
           patch.object(joint_publication, "run", saved_publication)):
         yield True
 
 
-def worker(job, mode, output, named_survivor_finish=False):
+def saved_detector(request, specification, mixed_recipe):
+    receiver = request.get("receiver", "mixed-20-12")
+    if receiver == "mixed-20-12":
+        return mixed_recipe
+    if receiver == "named-v3" and request.get("saved_inventory"):
+        return specification["detector_sha256"]
+    raise ValueError("Expected a reviewed receiver and authenticated saved inventory for named v3")
+
+
+def worker(job, mode, output, named_survivor_finish=False, direct_orbit_figures=False, direct_residual_figures=False):
     started = process_time(), perf_counter()
     import empty_bootstrap as staged
     import unified_short_bootstrap as cumulative
@@ -108,23 +119,31 @@ def worker(job, mode, output, named_survivor_finish=False):
 
     _, specification, sources, publication, pins = staged.load_runtime()
     request = read(job)
+    detector = saved_detector(request, specification, RECIPE_SHA)
+    projection = request.get("projection") if mode == "combined" else None
     args = SimpleNamespace(recording=Path(request["recording"]), archive=Path(request["archive"]["root"]),
                            region=Path(request["region"]), output=output, one_pass_web_png=True,
                            exact_graph_reuse=mode == "combined", named_survivor_finish=named_survivor_finish,
-                           grid_feature_projection_library=Path(request["projection"]) if mode == "combined" else None,
+                           direct_orbit_figures=direct_orbit_figures, direct_residual_figures=direct_residual_figures,
+                           grid_feature_projection_library=Path(projection) if projection else None,
                            **{key: Path(path) for key, path in request["libraries"].items()})
     with saved_inventory_port(request) as inventory_staged:
         scan = staged.staged_scanner(sources)
         session, inventory, manifest = scan.FastScanStore(output).inventory(args.recording, verify_windows=False)
         native = json.loads(staged.checked(Path(request["packet"]), request["native"].removeprefix("sha256:")))
-        staged.bind_native(native, session, inventory, RECIPE_SHA, expected=request["native"])
+        staged.bind_native(native, session, inventory, detector, expected=request["native"])
         if (session, inventory, manifest["window_count"]) != (request["session"], request["inventory"], request["issued"]):
             raise ValueError("The original signed inventory changed")
         if (native["source"]["raw_recording_authority_digest"] != request["authority"]
                 or native["clock_anchor"]["before"]["realtime_ns"] != request["cutoff_utc_ns"]
                 or sha256(args.region.read_bytes()).hexdigest() != request["offer_sha256"]):
             raise ValueError("The signed acquisition or supplied offer changed")
-        handoff = cumulative.Handoff(session, inventory, RECIPE_SHA, native)
+        graph_proof = None
+        if request.get("receiver") == "named-v3":
+            from short_graph_guard import prove
+
+            graph_proof = prove(native, staged.RELEASE / "assets")
+        handoff = cumulative.Handoff(session, inventory, detector, native)
         graph, layout = {}, {}
         receipt, detail = cumulative.publish_active(args, publication, specification, handoff, layout, graph_audit=graph)
     clocks = dict(cpu_s=process_time()-started[0], elapsed_s=perf_counter()-started[1])
@@ -134,7 +153,7 @@ def worker(job, mode, output, named_survivor_finish=False):
           waveform_calls=0, handoffs=handoff.calls, staged_inventory=inventory_staged,
           solve=detail["solve"], complete_publication=clocks,
           sources=detail["source_sha256"], projection=detail.get("grid_feature_projection"),
-          named_survivor_finish=detail.get("named_survivor_finish")))
+          named_survivor_finish=detail.get("named_survivor_finish"), detector=detector, graph_proof=graph_proof))
     print(json.dumps(receipt, allow_nan=False))
 
 
@@ -256,6 +275,8 @@ if __name__ == "__main__":
         parser.add_argument("output", type=Path)
         parser.add_argument("--named-survivor-finish", action="store_true",
                             help="Apply the same original final-fit option as the raw research launcher")
+        parser.add_argument("--direct-orbit-figures", action="store_true")
+        parser.add_argument("--direct-residual-figures", action="store_true")
         worker(**vars(parser.parse_args(sys.argv[2:])))
     else:
         parser.add_argument("case", choices=CASES)
