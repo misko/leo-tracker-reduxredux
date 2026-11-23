@@ -116,7 +116,7 @@ def solve(publication, specification, native, archive, offer):
         decision, packet, policy = algo08_position.solve(native, TleArchiveReader(causal_archive), assets, region)
         elapsed = dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall)
         result = dict(status=decision["status"], reason=decision.get("reason"), orbit_policy=policy,
-                      arms=decision["arms"], **elapsed)
+                      arms=decision["arms"], science={}, **elapsed)
         if packet is not None:
             summaries = packet["arms"]
             result.update(
