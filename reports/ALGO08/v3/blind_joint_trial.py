@@ -21,14 +21,16 @@ def publication_roles(packet):
     }
 
 
-def trial(case, output, *, repair=False):
+def trial(case, output, *, repair=False, load_saved_inputs=None):
     publication, spec = configuration()
     from leo.operations.tle_archive import TleArchiveReader
     from tools import algo08_position, algo08_scan
     from tools.pipeline_eval.variants import v5_core
 
-    native, archive, offer, expected, identity = inputs(case)
-    if identity["detector_sha256"] != "sha256:" + spec["detector_sha256"]:
+    native, archive, offer, expected, identity = (
+        inputs(case) if load_saved_inputs is None else load_saved_inputs()
+    )
+    if load_saved_inputs is None and identity["detector_sha256"] != "sha256:" + spec["detector_sha256"]:
         raise ValueError("The saved receiver packet differs from the released binary")
     attempts = []
 
@@ -43,6 +45,9 @@ def trial(case, output, *, repair=False):
             published = algo08_position.solve(native, reader, assets, region)
         charged = elapsed(cpu, wall)
         result, chosen_owners = summarize(*published)
+        if load_saved_inputs is not None:
+            return dict(result=result, charged=charged, attempts=attempts,
+                        published_roles=publication_roles(published[1]))
         if attempts[-1]["decision"] == "fallback":
             control, stock_owners, stock_roles = result, chosen_owners, publication_roles(published[1])
             control_clocks = None
