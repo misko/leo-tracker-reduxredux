@@ -191,7 +191,8 @@ def train(library, kind, assets):
     return dict(output)
 
 
-def build(root, assets):
+def build(root, assets, *, source_overlay=overlay, extra_flags=(),
+          worker="reports.ALGO08.v3.timing_only_oracle"):
     full = json.loads(verified(FULL_BUILD, FULL_BUILD_SHA))
     short = json.loads(verified(SHORT_BUILD, SHORT_BUILD_SHA))
     builds = {}
@@ -208,7 +209,7 @@ def build(root, assets):
         old, = (value for value in link if Path(value).name == "timing_first_receiver.o")
         source = verified(Path(old).with_suffix(".c"), SOURCE_SHA[kind]).decode()
         c_path = work / "timing_first_receiver.c"
-        c_path.write_text(overlay(source))
+        c_path.write_text(source_overlay(source))
         obj = c_path.with_suffix(".o")
         relink = [str(obj) if arg == old else arg for arg in link[1:-1]
                   if not arg.startswith("-fprofile-use") and arg != "-fno-profile-values"]
@@ -220,11 +221,11 @@ def build(root, assets):
             if phase == "use":
                 guard = ["-Werror=missing-profile", "-Werror=coverage-mismatch"]
             cc = full["commands"][-2]
-            subprocess.run([*cc[:-4], *profile, *guard, "-c", c_path, "-o", obj],
+            subprocess.run([*cc[:-4], *extra_flags, *profile, *guard, "-c", c_path, "-o", obj],
                            cwd=full["cwd"], check=True)
             subprocess.run([cc[0], *profile, *relink, binary], cwd=full["cwd"], check=True)
             if phase == "generate":
-                command = [sys.executable, "-BPs", "-m", "reports.ALGO08.v3.timing_only_oracle",
+                command = [sys.executable, "-BPs", "-m", worker,
                            "train", str(binary), kind, str(assets)]
                 result = subprocess.check_output(command, text=True)
                 receipt["training"] = json.loads(result)
