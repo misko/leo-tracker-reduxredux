@@ -15,7 +15,7 @@ from aperture_trial import configuration, machine
 from blind_joint_route import make_route
 
 
-def full_catalogue_route(installed, reader, attempts, *, optimized=False):
+def full_catalogue_route(installed, reader, attempts, *, optimized=False, postfit_repair=None):
     from functools import partial
     from runpy import run_path
     from blind_joint_finish import cold_candidate
@@ -42,7 +42,8 @@ def full_catalogue_route(installed, reader, attempts, *, optimized=False):
             return refine(prepared, region, bound)
 
     return make_route(installed, reader, attempts, repair=True, signed_finish=True,
-                      joint_proposal=partial(propose, certified=True, cold_start=cold), signed_updater=update)
+                      joint_proposal=partial(propose, certified=True, cold_start=cold), signed_updater=update,
+                      postfit_repair=postfit_repair)
 
 
 def verified_saved(native, expected, session, inventory_digest, receiver):
@@ -86,7 +87,8 @@ def artifacts(root, receipt):
 
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
         raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
-        reuse_cold_rows=False, profiled_gamma_library=None, reuse_grid_phase_states=False):
+        reuse_cold_rows=False, profiled_gamma_library=None, reuse_grid_phase_states=False,
+        postfit_repair=None, prepare_native_projection=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -97,6 +99,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         raise ValueError("Choose a prepared detector or a detector factory")
     stock_control = getattr(args, "stock_control", False)
     optimized = getattr(args, "optimized_full_catalogue", False)
+    if (postfit_repair is not None or prepare_native_projection is not None) and (not args.saved or not optimized):
+        raise ValueError("Local repair research requires a saved packet and the optimized full catalogue")
     if early_regional and not optimized:
         raise ValueError("Early regional proof requires the optimized full catalogue")
     if geographic_projector is not None and not early_regional:
@@ -140,7 +144,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
             infer = v5_core.infer
             route = infer
             if full_catalogue:
-                route = full_catalogue_route(infer, reader, attempts, optimized=optimized)
+                route = full_catalogue_route(infer, reader, attempts, optimized=optimized, postfit_repair=postfit_repair)
             elif not stock_control:
                 route = make_route(infer, reader, attempts, repair=True, signed_finish=signed_finish)
 
@@ -149,6 +153,12 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 return route(prepared, *values, **options)
 
             with ExitStack() as stack:
+                if prepare_native_projection is not None:
+                    from functools import partial
+
+                    prepare = algo08_position.prepare_native_scan
+                    stack.enter_context(patch.object(algo08_position, "prepare_native_scan",
+                                                     partial(prepare_native_projection, prepare)))
                 if reuse_cold_rows:
                     from cold_track_row_entry import cold_track_rows
 

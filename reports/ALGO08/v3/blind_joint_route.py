@@ -8,7 +8,7 @@ from mixture_trial import elapsed
 
 
 def make_route(installed, reader, attempts, *, repair, signed_finish=False, collect=None, cold_start=None,
-               joint_proposal=None, signed_updater=None):
+               joint_proposal=None, signed_updater=None, postfit_repair=None):
     import numpy as np
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
     from blind_joint_finish import propose
@@ -58,6 +58,25 @@ def make_route(installed, reader, attempts, *, repair, signed_finish=False, coll
             if exterior.get("diagnostic_error"):
                 reason = "exterior_evidence_unavailable"
             else:
+                evidence_inputs = prepared, signed
+                proposed = False
+                if postfit_repair is not None:
+                    new_prepared, new_signed = postfit_repair(prepared, signed, observed)
+                    proposed = new_signed is not signed
+                    if proposed:
+                        cpu, wall = process_time(), perf_counter()
+                        endpoints = {key: record["endpoint_east_north_km"] for key, record in new_signed["arms"].items()}
+                        followup = regional_bound_guard.inspect_boundary(
+                            endpoints, search_region.width_km,
+                            lambda: regional_bound_guard.causal_probes(prepared["tracks"], reader, search_region,
+                                                                       terminal_only=True), terminal_only=True)
+                        audit = observed["local_future_repair"]
+                        audit.update(exterior=followup, exterior_clocks=elapsed(cpu, wall))
+                        if followup["would_withhold"] or followup.get("diagnostic_error"):
+                            audit.update(decision="rejected", reason="repair exterior decision")
+                            proposed = False
+                        else:
+                            evidence_inputs = new_prepared, new_signed
                 cpu, wall = process_time(), perf_counter()
                 try:
                     if repair:
@@ -70,9 +89,20 @@ def make_route(installed, reader, attempts, *, repair, signed_finish=False, coll
                             return packet
 
                         with patch.object(algo08_position, "selected_packet", complete_packet):
-                            selected_evidence(prepared, signed, None)
+                            try:
+                                selected_evidence(*evidence_inputs, None)
+                            except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
+                                if not proposed:
+                                    raise
+                                observed["local_future_repair"].update(decision="rejected", reason=f"repair evidence: {exc}",
+                                                discarded_evidence_clocks=elapsed(cpu, wall))
+                                proposed = False
+                                selected_evidence(prepared, signed, None)
                     else:
                         selected_evidence(prepared, signed, None)
+                    if proposed:
+                        signed = evidence_inputs[1]
+                        observed["local_future_repair"]["decision"] = "accepted"
                 except (ValueError, AssertionError, np.linalg.LinAlgError) as exc:
                     reason = f"standard_evidence: {type(exc).__name__}: {exc}"
                 finally:
