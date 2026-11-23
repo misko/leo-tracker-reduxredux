@@ -1,0 +1,1743 @@
+{
+  "pair_sha256": "8ab5a1aded90d17b400496b7afd93b158568456dea108c02cb11021c93cd3323",
+  "reference_sha256": "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5",
+  "horizontal_error_km": {
+    "stock": {
+      "c0": 1.9447257037413004,
+      "fitted_c": 1.863055829279405
+    },
+    "signed": {
+      "c0": 1.9167699402595184,
+      "fitted_c": 1.8336523063355286
+    }
+  },
+  "delta_error_km": {
+    "c0": -0.02795576348178197,
+    "fitted_c": -0.029403522943876492
+  },
+  "rf_rms_hz": {
+    "stock": {
+      "c0": 99.23210226352965,
+      "fitted_c": 99.05409260483067
+    },
+    "signed": {
+      "c0": 99.59400325268228,
+      "fitted_c": 99.43532021520635
+    }
+  },
+  "triage_pass": true,
+  "case": "DS30-0316",
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "nice": 15,
+    "ionice": "best-effort: prio 7",
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "archive": {
+    "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0316/tle",
+    "snapshots_sha256": "sha256:2b0884d96825e99d15d46036f1dee00620351a9665ab6511dfd5e9ada47811a6"
+  },
+  "original_pair_sha256": "334790daefa5a26511aa72328ecd2dc3124a92c826257df9019f8afa793415ed",
+  "saved_native_sha256": "sha256:6bbbb2575df6a203dd0d183a3ad8390110fbac778504803e275b7493b8422bed",
+  "order": [
+    "stock",
+    "signed"
+  ],
+  "stock_resumed": false,
+  "runs": {
+    "stock": {
+      "receipt": {
+        "run_id": "algo08-v2-50f3bd384b7d1e1586cee32eee9064d2",
+        "session_id": "fast-061f319935b349c7d5edc858adb0a982",
+        "window_count": 3042,
+        "counts": {
+          "processed": 2702,
+          "invalid_capture": 340,
+          "skipped_fast_score": 0
+        },
+        "region": {
+          "center": [
+            37.906,
+            -122.545
+          ],
+          "width_km": 25.0,
+          "screen_center": [
+            37.5,
+            -122.0
+          ]
+        },
+        "decision": "complete",
+        "terminal_sha256": "sha256:7de79e774289169059060d6c94c6735cbd6eb5e0d5c149447e3d26dae4b6e2de",
+        "screened_nomination": {
+          "ranks": [
+            0,
+            1,
+            2
+          ],
+          "screen_c0_scores": [
+            11183.662259615881,
+            11188.693363242168,
+            11229.798016708748
+          ],
+          "winning_rank": 0,
+          "completed_c0_score": 11183.713901662417,
+          "early_fits": 6,
+          "finish_fits": 3,
+          "initial_phase_fits": 9,
+          "fallback": false,
+          "initial_screen_cpu_s": 0.5081270469999994
+        },
+        "sparse_rank_projection": [
+          {
+            "calls": 16,
+            "fallbacks": 0,
+            "previous_full_copy_bytes": 945659904,
+            "materialized_bytes": 0,
+            "active_rows": 211,
+            "catalogue_rows": 23552,
+            "shifted_cpu_s": 0.022049873999997693,
+            "column_requests": 1248,
+            "replacement_cells": 773948
+          }
+        ],
+        "graph_path": {
+          "pack_ns": 1900586,
+          "packed_lanes": 16,
+          "search_ns": 6340931,
+          "native_paths": 100
+        },
+        "tle_records": {
+          "catalogues": 42,
+          "records": 450380,
+          "fallback": 0
+        },
+        "endpoint_reuse": {
+          "models": 44,
+          "endpoint_calculations": 44,
+          "repeated_endpoint_calls": 90,
+          "other_coordinate_calls": 0,
+          "context_rebuilds": 0,
+          "unsupported_context_calls": 0,
+          "endpoint_cpu_s": 0.14950200800000513
+        },
+        "recovery_reuse": {
+          "executed_gates": 2,
+          "reused_pairs": 0
+        },
+        "curved_design": {
+          "direct_assembly_ns": 353715542,
+          "direct_assembly_calls": 1252,
+          "normal_selection_ns": 52890335,
+          "normal_selection_calls": 403,
+          "normal_selection_direct": 403,
+          "history_selection_ns": 99056042,
+          "history_selection_calls": 833,
+          "history_selection_direct": 833
+        },
+        "member_lookahead": {},
+        "posterior_grid_handoff": {
+          "arithmetic": "permuted native posterior factor",
+          "curved_cpu_ns": 964502237,
+          "prediction_calls": 356,
+          "gram_or_check_cpu_ns": 7154751,
+          "predictive_kernel_cpu_ns": 353658056,
+          "factor_calls": 356
+        }
+      },
+      "raw_authority": "sha256:ad07fb192332ec96510f467b705267eb295dee5813c09a372c8c7a9c4c3f04fc",
+      "arms": {
+        "c0": {
+          "latlon": [
+            37.83423955813423,
+            -122.4975212237155
+          ],
+          "rf_rms_hz": 99.23210226352965
+        },
+        "fitted_c": {
+          "latlon": [
+            37.83433291162306,
+            -122.4958810244614
+          ],
+          "rf_rms_hz": 99.05409260483067
+        }
+      },
+      "owners": {
+        "c0": "sha256:d854f9f1f4ca2d7c87238dd942117cdd5219ee5020f4b993762f1c71fbd374fa",
+        "fitted_c": "sha256:d854f9f1f4ca2d7c87238dd942117cdd5219ee5020f4b993762f1c71fbd374fa"
+      },
+      "reason": null,
+      "artifacts": [
+        {
+          "byte_count": 1616319,
+          "name": "ch1-4-all",
+          "sha256": "sha256:9fe266bbd3b2893d64b7f1e0904c0761546852fe572cea21fc2f78e19e74321a"
+        },
+        {
+          "byte_count": 1701473,
+          "name": "ch5-8-all",
+          "sha256": "sha256:70bf37e929c09f3b3430a659eb99e718e3b87a2ad73ce27a0d00d2fa4720f840"
+        },
+        {
+          "byte_count": 1594673,
+          "name": "ch1-4-unassociated",
+          "sha256": "sha256:afa04f21af9501030d96ea4fc7b66c2a82a855d3492fdea8818b757f12332dad"
+        },
+        {
+          "byte_count": 1686517,
+          "name": "ch5-8-unassociated",
+          "sha256": "sha256:86f769189fcf8c96518d1360641c538feef8c9732b6636e267fd10634db95399"
+        },
+        {
+          "byte_count": 226440,
+          "name": "ch1-4-residuals",
+          "sha256": "sha256:50b0431b5f386d7b8feca6ed148db7400a64bf734c485908ca888acc69b6b42f"
+        },
+        {
+          "byte_count": 220558,
+          "name": "ch5-8-residuals",
+          "sha256": "sha256:61aa706398c3fcd53f7c71e1749c7f7adebb450afdfc3f2e2aeca64aba9c79a8"
+        },
+        {
+          "byte_count": 200112,
+          "name": "track-rms",
+          "sha256": "sha256:720d01f7850a7f7023af1e1f3b3fe6d6d4ff41b5471c001d05f279f822210873"
+        },
+        {
+          "byte_count": 193038,
+          "name": "position",
+          "sha256": "sha256:c18673137f4a2d1f13040c37e50fc319f968295836ccf90f3ec39e05798ee01a"
+        }
+      ],
+      "scientific_digests": {
+        "path": "sha256:bc83a573b8d1e1dc3a755e541d4258b99cf79f96f303bb8450d2dd0d85de6faa",
+        "grid": "sha256:5601a294c2ae308c370fa4b675320c418bd7ecd0e5bf890897dc4bd4e083571d"
+      },
+      "terminal_file_s": 1795416373.9111097,
+      "outer_clocks": {
+        "elapsed_s": 19.33323400001973,
+        "cpu_s": 18.852723,
+        "input_blocks": 85744,
+        "output_blocks": 21072,
+        "major_faults": 0,
+        "voluntary_switches": 267,
+        "involuntary_switches": 97
+      },
+      "evidence": {
+        "images": {
+          "ch1-4-all": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:9fe266bbd3b2893d64b7f1e0904c0761546852fe572cea21fc2f78e19e74321a",
+            "rgba_sha256": "801354bc22fc7f224e3489a3b709f2b7508f8639cab9d468f9561fd7da5af3b8"
+          },
+          "ch5-8-all": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:70bf37e929c09f3b3430a659eb99e718e3b87a2ad73ce27a0d00d2fa4720f840",
+            "rgba_sha256": "c08bc29ed82608b100a148b4f99ae197c76dac04e0e4e398f7d36a79db4cca5c"
+          },
+          "ch1-4-unassociated": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:afa04f21af9501030d96ea4fc7b66c2a82a855d3492fdea8818b757f12332dad",
+            "rgba_sha256": "09ee6693bc17a2dc5ff9fcd25de4312a2531a09edc359208f0bbf2f042231022"
+          },
+          "ch5-8-unassociated": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:86f769189fcf8c96518d1360641c538feef8c9732b6636e267fd10634db95399",
+            "rgba_sha256": "090d9bed2f26a0f7707fa198129a5ce1dbb017c1acfa71f6bcaf6e2bd86cfcf6"
+          },
+          "ch1-4-residuals": {
+            "size": [
+              1875,
+              1375
+            ],
+            "sha256": "sha256:50b0431b5f386d7b8feca6ed148db7400a64bf734c485908ca888acc69b6b42f",
+            "rgba_sha256": "9b3227df718c993159410d73772c810e585c2b4bfb6d99c77a9d0a24b4ffdc6b"
+          },
+          "ch5-8-residuals": {
+            "size": [
+              1875,
+              1375
+            ],
+            "sha256": "sha256:61aa706398c3fcd53f7c71e1749c7f7adebb450afdfc3f2e2aeca64aba9c79a8",
+            "rgba_sha256": "fa5e8b2b1f0cf44511873806d5a56bd913c908270438bb7d649cac23513c3b9c"
+          },
+          "track-rms": {
+            "size": [
+              2000,
+              750
+            ],
+            "sha256": "sha256:720d01f7850a7f7023af1e1f3b3fe6d6d4ff41b5471c001d05f279f822210873",
+            "rgba_sha256": "765db3c3f09216bc731e684c04c7e4ade595c75272612fb5339303a536dadd68"
+          },
+          "position": {
+            "size": [
+              1680,
+              960
+            ],
+            "sha256": "sha256:c18673137f4a2d1f13040c37e50fc319f968295836ccf90f3ec39e05798ee01a",
+            "rgba_sha256": "246d10daaa31ff2d14266c448e72b4057c454326c55683c935468ecaab0bcb06"
+          }
+        },
+        "path": "sha256:9ca1eac421a63a4274af01d78620706e0e7a134d1cf1d653e811b7b3cd891663",
+        "grid": "sha256:9f4950e6a2aacee1bc1ba94bc3165ee9d556f4925547df29ef4c11d31778ffe4"
+      },
+      "route": "stock",
+      "route_details": null,
+      "solve": {
+        "cpu_s": 15.178053954,
+        "elapsed_s": 15.590279206633568,
+        "orbit_policy": "stock",
+        "grid_points": 179,
+        "grid_complete": true,
+        "objective_replay": {
+          "c0": 0.0,
+          "fitted_c": 0.0
+        }
+      },
+      "selected_roles": {
+        "c0": {
+          "conditional": 1443,
+          "predictive": 533
+        },
+        "fitted_c": {
+          "conditional": 1443,
+          "predictive": 533
+        }
+      },
+      "source_sha256": {
+        "joint_publication.py": "3e8361f95d427f6e8f9ef5cfdc4caf2ebc24d2be78548daaf56d2d1ee4e4ce59",
+        "blind_joint_finish.py": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1",
+        "blind_joint_route.py": "8b65372ac2255aca4074037382e107be3b5fbaf40fac6a21f69c163381cd6a61",
+        "blind_joint_repair.py": "f89e80dd65606b065e4c8097d0d3204362993e070dc7dd3f2c2590dc2c32b2a0",
+        "blind_joint_signed.py": "8efe2551d6bf4cb1c3ff6a428fbde0919aad6111f3596a799a14afd69fc68e54"
+      },
+      "publication_cpu_s": 17.375831633,
+      "publication_elapsed_s": 17.854891726747155,
+      "archived_stock_checks": {
+        "raw_authority": true,
+        "arms": true,
+        "owners": true,
+        "reason": true,
+        "artifacts": true,
+        "scientific_digests": true,
+        "terminal": true,
+        "decoded": true
+      },
+      "runner_receipt_sha256": "c95cf72c606a9926f26515d420be30e6a9e2cd57d369d1cc1841063690d3fa21"
+    },
+    "signed": {
+      "receipt": {
+        "run_id": "algo08-v2-50f3bd384b7d1e1586cee32eee9064d2",
+        "session_id": "fast-061f319935b349c7d5edc858adb0a982",
+        "window_count": 3042,
+        "counts": {
+          "processed": 2702,
+          "invalid_capture": 340,
+          "skipped_fast_score": 0
+        },
+        "region": {
+          "center": [
+            37.906,
+            -122.545
+          ],
+          "width_km": 25.0,
+          "screen_center": [
+            37.5,
+            -122.0
+          ]
+        },
+        "decision": "complete",
+        "terminal_sha256": "sha256:930a716bcd4f67263f8bcd1a3fd60a812a0206977df550effcc7b29f68cc8145",
+        "screened_nomination": {},
+        "sparse_rank_projection": [
+          {
+            "calls": 16,
+            "fallbacks": 0,
+            "previous_full_copy_bytes": 945659904,
+            "materialized_bytes": 0,
+            "active_rows": 211,
+            "catalogue_rows": 23552,
+            "shifted_cpu_s": 0.02178094500000105,
+            "column_requests": 1248,
+            "replacement_cells": 773948
+          }
+        ],
+        "graph_path": {
+          "pack_ns": 1925033,
+          "packed_lanes": 16,
+          "search_ns": 6543327,
+          "native_paths": 100
+        },
+        "tle_records": {
+          "catalogues": 42,
+          "records": 450380,
+          "fallback": 0
+        },
+        "endpoint_reuse": {
+          "models": 6,
+          "endpoint_calculations": 6,
+          "repeated_endpoint_calls": 6,
+          "other_coordinate_calls": 0,
+          "context_rebuilds": 0,
+          "unsupported_context_calls": 0,
+          "endpoint_cpu_s": 0.026637795000000963
+        },
+        "recovery_reuse": {
+          "executed_gates": 0,
+          "reused_pairs": 0
+        },
+        "curved_design": {
+          "direct_assembly_ns": 175345040,
+          "direct_assembly_calls": 577,
+          "normal_selection_ns": 13781097,
+          "normal_selection_calls": 88,
+          "normal_selection_direct": 88,
+          "history_selection_ns": 75849653,
+          "history_selection_calls": 473,
+          "history_selection_direct": 473
+        },
+        "member_lookahead": {},
+        "posterior_grid_handoff": {
+          "arithmetic": "permuted native posterior factor",
+          "curved_cpu_ns": 1041381736,
+          "prediction_calls": 356,
+          "gram_or_check_cpu_ns": 8345951,
+          "predictive_kernel_cpu_ns": 380884417,
+          "factor_calls": 356
+        }
+      },
+      "raw_authority": "sha256:ad07fb192332ec96510f467b705267eb295dee5813c09a372c8c7a9c4c3f04fc",
+      "arms": {
+        "c0": {
+          "latlon": [
+            37.83455291425868,
+            -122.49755233318494
+          ],
+          "rf_rms_hz": 99.59400325268228
+        },
+        "fitted_c": {
+          "latlon": [
+            37.834646559859564,
+            -122.49590843860017
+          ],
+          "rf_rms_hz": 99.43532021520635
+        }
+      },
+      "owners": {
+        "c0": "sha256:34278384c1543975d67070508fd3720a108b77f99a8b6f49d0d2e6d67619977e",
+        "fitted_c": "sha256:34278384c1543975d67070508fd3720a108b77f99a8b6f49d0d2e6d67619977e"
+      },
+      "reason": null,
+      "artifacts": [
+        {
+          "byte_count": 1612492,
+          "name": "ch1-4-all",
+          "sha256": "sha256:ffe32a9df07700aab337e50c2d33480eb628b36a97d09f73c75181d2ed0c4ef7"
+        },
+        {
+          "byte_count": 1701005,
+          "name": "ch5-8-all",
+          "sha256": "sha256:60cb90146f18f23282dfcddfd468b45aa9a63470344d627540308c4ad5e64ab1"
+        },
+        {
+          "byte_count": 1594516,
+          "name": "ch1-4-unassociated",
+          "sha256": "sha256:ea0fcdd22b0e0bb1564a594fd557ebd158a94495cf0775497af3c3d7ca9819c6"
+        },
+        {
+          "byte_count": 1689339,
+          "name": "ch5-8-unassociated",
+          "sha256": "sha256:51fe73b6edce68bf4047eb1b165b2fb5dfb63b5e31c4aac90a4159f4721379fc"
+        },
+        {
+          "byte_count": 222985,
+          "name": "ch1-4-residuals",
+          "sha256": "sha256:333efbace9172e6a160047dad7173c5c19010d7b159a14807f9ad4f4b61240f6"
+        },
+        {
+          "byte_count": 220341,
+          "name": "ch5-8-residuals",
+          "sha256": "sha256:e6b3dee47901c1cdee5b76953ecc9cf3d85438c4cedfc9735a94901f6a9d78ea"
+        },
+        {
+          "byte_count": 154478,
+          "name": "track-rms",
+          "sha256": "sha256:d8ec8e4d037a204dac1ea64bf9669d93fcf3d40a43a101b1c366a522b53dbf7f"
+        },
+        {
+          "byte_count": 191242,
+          "name": "position",
+          "sha256": "sha256:e0b5644cacc7b905f1b0fae39d09661127a36c91b043f06d5b73039735919cad"
+        }
+      ],
+      "scientific_digests": {
+        "path": "sha256:619df9b2ee38f18446674bd65c065497d78a9e451ee372abd838f67202922214",
+        "grid": "sha256:5267d1711ff46beb0098ddddd94e6fcc06bae6e9bb6a53207792b2172e49fb6b"
+      },
+      "terminal_file_s": 1795416390.3930979,
+      "outer_clocks": {
+        "elapsed_s": 16.001284445635974,
+        "cpu_s": 15.974053999999999,
+        "input_blocks": 24,
+        "output_blocks": 21048,
+        "major_faults": 0,
+        "voluntary_switches": 72,
+        "involuntary_switches": 48
+      },
+      "evidence": {
+        "images": {
+          "ch1-4-all": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:ffe32a9df07700aab337e50c2d33480eb628b36a97d09f73c75181d2ed0c4ef7",
+            "rgba_sha256": "5c2b0ed63a13b4d89ae593c9fa01f2941af6a2c31ca914b115a5b1869c231ed2"
+          },
+          "ch5-8-all": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:60cb90146f18f23282dfcddfd468b45aa9a63470344d627540308c4ad5e64ab1",
+            "rgba_sha256": "f0dd867455a49aef80f4aed1b3edfc7c88d619bda7058bcd5d0ac00c9c47588b"
+          },
+          "ch1-4-unassociated": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:ea0fcdd22b0e0bb1564a594fd557ebd158a94495cf0775497af3c3d7ca9819c6",
+            "rgba_sha256": "88617098e89ec862f3ddf2c84c05fe7c823dd7432118f172245eb507542ba721"
+          },
+          "ch5-8-unassociated": {
+            "size": [
+              2400,
+              3097
+            ],
+            "sha256": "sha256:51fe73b6edce68bf4047eb1b165b2fb5dfb63b5e31c4aac90a4159f4721379fc",
+            "rgba_sha256": "0b30201d3263f2a4d58f0432873ccaebc7b89afde821c1a30ee92d81d13e05dc"
+          },
+          "ch1-4-residuals": {
+            "size": [
+              1875,
+              1375
+            ],
+            "sha256": "sha256:333efbace9172e6a160047dad7173c5c19010d7b159a14807f9ad4f4b61240f6",
+            "rgba_sha256": "adee3ff1407c46c6a513e4041d089845b9ad525fc526a7c2d69cbf2c427d1e87"
+          },
+          "ch5-8-residuals": {
+            "size": [
+              1875,
+              1375
+            ],
+            "sha256": "sha256:e6b3dee47901c1cdee5b76953ecc9cf3d85438c4cedfc9735a94901f6a9d78ea",
+            "rgba_sha256": "b302a81d5b3d326cf668b067bce2c9d16790ac91c50429b359f7108e8bcb059e"
+          },
+          "track-rms": {
+            "size": [
+              2000,
+              750
+            ],
+            "sha256": "sha256:d8ec8e4d037a204dac1ea64bf9669d93fcf3d40a43a101b1c366a522b53dbf7f",
+            "rgba_sha256": "116c8ac70d2f1cf461ef9f5fab7f72f6a2802042624c011b7c71b173db27cb8c"
+          },
+          "position": {
+            "size": [
+              1680,
+              960
+            ],
+            "sha256": "sha256:e0b5644cacc7b905f1b0fae39d09661127a36c91b043f06d5b73039735919cad",
+            "rgba_sha256": "39dc2745ccd91f162c6fd19e15087f48006f0fcbdac9e1d2cafacdccb55962ca"
+          }
+        },
+        "path": "sha256:5655c35831254c9d057c1e49d58a2175b937e629fc36acbe1ed496340feccf2b",
+        "grid": "sha256:6d5acfe6907eed4464fcecb19e1ad6003cafd5ddd6c4dc02bf9cc596063d8790"
+      },
+      "route": "complete",
+      "route_details": {
+        "cold": {
+          "scores": [
+            11183.662259615881,
+            11188.693363242168,
+            11229.798016708748
+          ],
+          "branch": 1,
+          "east_north_km": [
+            6.102385874859399,
+            -7.4965751333597535
+          ],
+          "latlon": [
+            37.838463287086846,
+            -122.47552339429211
+          ],
+          "catalogue": 1472
+        },
+        "cold_clocks": {
+          "cpu_s": 2.864186802,
+          "elapsed_s": 2.864543568342924
+        },
+        "support": {
+          "full_curved": 1834,
+          "initial_curved": 1338,
+          "cold_rejected_tracks": [
+            "SCAN-RX1-CH2-T001-RF10959687500.000000",
+            "SCAN-RX1-CH3-T003-RF11209687500.000000",
+            "SCAN-RX1-CH5-T000-RF11709687500.000000",
+            "SCAN-RX1-CH6-T001-RF11959687500.000000",
+            "SCAN-RX1-CH6-T002-RF11959687500.000000",
+            "SCAN-RX1-CH7-T001-RF12209687500.000000",
+            "SCAN-RX1-CH8-T002-RF12459687500.000000",
+            "SCAN-RX2-CH4-T003-RF11459687500.000000",
+            "SCAN-RX2-CH5-T002-RF11709687500.000000",
+            "SCAN-RX2-CH7-T000-RF12209687500.000000",
+            "SCAN-RX2-CH8-T000-RF12459687500.000000"
+          ],
+          "past_distribution_qualified": true,
+          "curved_restored": 330,
+          "salvage": [
+            {
+              "component": "SCAN-RX1-CH2-T001-RF10959687500.000000",
+              "candidate_count": 31,
+              "supports_tested": 83,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 79,
+                "points": 79,
+                "candidate_index": 749,
+                "norad": 60349,
+                "phase_s": 0.5,
+                "cost": 84.38275201667501,
+                "alias": 0,
+                "rms_hz": 99.09860610938522,
+                "max_external_radio_sigma": 2.9535598874750773
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 79,
+                  "points": 79,
+                  "candidate_index": 749,
+                  "norad": 60349,
+                  "phase_s": 0.5,
+                  "cost": 84.38275201667501,
+                  "alias": 0,
+                  "rms_hz": 99.09860610938522,
+                  "max_external_radio_sigma": 2.9535598874750773
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 78,
+                  "points": 78,
+                  "candidate_index": 749,
+                  "norad": 60349,
+                  "phase_s": 0.5,
+                  "cost": 80.40676616241439,
+                  "alias": 0,
+                  "rms_hz": 97.27505896598264,
+                  "max_external_radio_sigma": 2.9839883351995207
+                },
+                {
+                  "start_index": 1,
+                  "stop_index": 79,
+                  "points": 78,
+                  "candidate_index": 749,
+                  "norad": 60349,
+                  "phase_s": 0.5,
+                  "cost": 83.96459761382798,
+                  "alias": 0,
+                  "rms_hz": 99.54937947310256,
+                  "max_external_radio_sigma": 2.943186464279441
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 77,
+                  "points": 77,
+                  "candidate_index": 749,
+                  "norad": 60349,
+                  "phase_s": 0.5,
+                  "cost": 76.68152299301799,
+                  "alias": 0,
+                  "rms_hz": 95.4048629519879,
+                  "max_external_radio_sigma": 2.9557682624953143
+                },
+                {
+                  "start_index": 2,
+                  "stop_index": 79,
+                  "points": 77,
+                  "candidate_index": 749,
+                  "norad": 60349,
+                  "phase_s": 0.5,
+                  "cost": 83.95500488420545,
+                  "alias": 0,
+                  "rms_hz": 100.19147770767435,
+                  "max_external_radio_sigma": 2.943605118159144
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX1-CH3-T003-RF11209687500.000000",
+              "candidate_count": 33,
+              "supports_tested": 12,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 28,
+                "points": 28,
+                "candidate_index": 1154,
+                "norad": 66601,
+                "phase_s": -2.25,
+                "cost": 47.983701539740686,
+                "alias": 1,
+                "rms_hz": 182.02563424261658,
+                "max_external_radio_sigma": 2.395668258400315
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 28,
+                  "points": 28,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.25,
+                  "cost": 47.983701539740686,
+                  "alias": 1,
+                  "rms_hz": 182.02563424261658,
+                  "max_external_radio_sigma": 2.395668258400315
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 27,
+                  "points": 27,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.25,
+                  "cost": 46.15314573121463,
+                  "alias": 1,
+                  "rms_hz": 179.624607949973,
+                  "max_external_radio_sigma": 2.3639555737138105
+                },
+                {
+                  "start_index": 1,
+                  "stop_index": 28,
+                  "points": 27,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.25,
+                  "cost": 46.873846870865535,
+                  "alias": 1,
+                  "rms_hz": 183.9409757912562,
+                  "max_external_radio_sigma": 2.4308908006579855
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 26,
+                  "points": 26,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.25,
+                  "cost": 45.45000549765381,
+                  "alias": 1,
+                  "rms_hz": 180.93583571101462,
+                  "max_external_radio_sigma": 2.3429716815846247
+                },
+                {
+                  "start_index": 2,
+                  "stop_index": 28,
+                  "points": 26,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.25,
+                  "cost": 46.03974035228301,
+                  "alias": 1,
+                  "rms_hz": 186.69825193850983,
+                  "max_external_radio_sigma": 2.4657608377398588
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX2-CH4-T003-RF11459687500.000000",
+              "candidate_count": 30,
+              "supports_tested": 7,
+              "selected": null,
+              "alternatives": []
+            },
+            {
+              "component": "SCAN-RX1-CH5-T000-RF11709687500.000000",
+              "candidate_count": 34,
+              "supports_tested": 134,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 50,
+                "points": 50,
+                "candidate_index": 345,
+                "norad": 55744,
+                "phase_s": 11.0,
+                "cost": 117.74117009231647,
+                "alias": 1,
+                "rms_hz": 142.19012647139698,
+                "max_external_radio_sigma": 3.357044315919719
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 50,
+                  "points": 50,
+                  "candidate_index": 345,
+                  "norad": 55744,
+                  "phase_s": 11.0,
+                  "cost": 117.74117009231647,
+                  "alias": 1,
+                  "rms_hz": 142.19012647139698,
+                  "max_external_radio_sigma": 3.357044315919719
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 49,
+                  "points": 49,
+                  "candidate_index": 345,
+                  "norad": 55744,
+                  "phase_s": 11.0,
+                  "cost": 115.39603893276771,
+                  "alias": 1,
+                  "rms_hz": 142.11952512739836,
+                  "max_external_radio_sigma": 3.39182205560156
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 48,
+                  "points": 48,
+                  "candidate_index": 345,
+                  "norad": 55744,
+                  "phase_s": 11.0,
+                  "cost": 108.47631450373736,
+                  "alias": 1,
+                  "rms_hz": 138.0098206173832,
+                  "max_external_radio_sigma": 3.4489372621134162
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 47,
+                  "points": 47,
+                  "candidate_index": 345,
+                  "norad": 55744,
+                  "phase_s": 11.0,
+                  "cost": 97.62175538903242,
+                  "alias": 1,
+                  "rms_hz": 131.32935082175956,
+                  "max_external_radio_sigma": 3.5270582736337
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 46,
+                  "points": 46,
+                  "candidate_index": 345,
+                  "norad": 55744,
+                  "phase_s": 11.0,
+                  "cost": 84.83974209686873,
+                  "alias": 1,
+                  "rms_hz": 123.1348456197654,
+                  "max_external_radio_sigma": 2.3442940028616452
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX2-CH5-T002-RF11709687500.000000",
+              "candidate_count": 30,
+              "supports_tested": 26,
+              "selected": null,
+              "alternatives": []
+            },
+            {
+              "component": "SCAN-RX1-CH6-T001-RF11959687500.000000",
+              "candidate_count": 33,
+              "supports_tested": 91,
+              "selected": {
+                "start_index": 35,
+                "stop_index": 60,
+                "points": 25,
+                "candidate_index": 1260,
+                "norad": 67998,
+                "phase_s": -1.5,
+                "cost": 35.723508980800005,
+                "alias": 1,
+                "rms_hz": 108.7566972699993,
+                "max_external_radio_sigma": 2.5570733316884
+              },
+              "alternatives": [
+                {
+                  "start_index": 35,
+                  "stop_index": 60,
+                  "points": 25,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.5,
+                  "cost": 35.723508980800005,
+                  "alias": 1,
+                  "rms_hz": 108.7566972699993,
+                  "max_external_radio_sigma": 2.5570733316884
+                },
+                {
+                  "start_index": 36,
+                  "stop_index": 60,
+                  "points": 24,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.5,
+                  "cost": 33.19539117636815,
+                  "alias": 1,
+                  "rms_hz": 107.90189475235233,
+                  "max_external_radio_sigma": 2.4935269648902425
+                },
+                {
+                  "start_index": 37,
+                  "stop_index": 60,
+                  "points": 23,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.5,
+                  "cost": 28.41100317698568,
+                  "alias": 1,
+                  "rms_hz": 103.9291135323987,
+                  "max_external_radio_sigma": 2.4018958238115173
+                },
+                {
+                  "start_index": 38,
+                  "stop_index": 60,
+                  "points": 22,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.5,
+                  "cost": 28.278311305447627,
+                  "alias": 1,
+                  "rms_hz": 106.20268655369225,
+                  "max_external_radio_sigma": 2.3899663729153264
+                },
+                {
+                  "start_index": 39,
+                  "stop_index": 60,
+                  "points": 21,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.5,
+                  "cost": 27.982283607679015,
+                  "alias": 1,
+                  "rms_hz": 108.47188717165793,
+                  "max_external_radio_sigma": 2.367203190620491
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX1-CH6-T002-RF11959687500.000000",
+              "candidate_count": 31,
+              "supports_tested": 35,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 28,
+                "points": 28,
+                "candidate_index": 1260,
+                "norad": 67998,
+                "phase_s": -0.75,
+                "cost": 178.06558634788254,
+                "alias": 0,
+                "rms_hz": 272.514761317495,
+                "max_external_radio_sigma": 5.690643450365784
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 28,
+                  "points": 28,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -0.75,
+                  "cost": 178.06558634788254,
+                  "alias": 0,
+                  "rms_hz": 272.514761317495,
+                  "max_external_radio_sigma": 5.690643450365784
+                },
+                {
+                  "start_index": 2,
+                  "stop_index": 29,
+                  "points": 27,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.0,
+                  "cost": 131.65920751963984,
+                  "alias": 0,
+                  "rms_hz": 245.98373401876148,
+                  "max_external_radio_sigma": 5.428462197438688
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 27,
+                  "points": 27,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -0.75,
+                  "cost": 175.68350082467052,
+                  "alias": 0,
+                  "rms_hz": 273.4470141649564,
+                  "max_external_radio_sigma": 5.664485614001025
+                },
+                {
+                  "start_index": 3,
+                  "stop_index": 29,
+                  "points": 26,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -1.0,
+                  "cost": 101.60823540589799,
+                  "alias": 0,
+                  "rms_hz": 206.0616023328489,
+                  "max_external_radio_sigma": 4.546181583260756
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 26,
+                  "points": 26,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -0.75,
+                  "cost": 170.07047822195622,
+                  "alias": 0,
+                  "rms_hz": 271.582289382344,
+                  "max_external_radio_sigma": 5.614726160130493
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX1-CH7-T001-RF12209687500.000000",
+              "candidate_count": 30,
+              "supports_tested": 30,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 40,
+                "points": 40,
+                "candidate_index": 1154,
+                "norad": 66601,
+                "phase_s": -2.5,
+                "cost": 63.195529650515184,
+                "alias": 1,
+                "rms_hz": 98.1086339571723,
+                "max_external_radio_sigma": 2.956706975265278
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 40,
+                  "points": 40,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.5,
+                  "cost": 63.195529650515184,
+                  "alias": 1,
+                  "rms_hz": 98.1086339571723,
+                  "max_external_radio_sigma": 2.956706975265278
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 39,
+                  "points": 39,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.5,
+                  "cost": 63.11792888932567,
+                  "alias": 1,
+                  "rms_hz": 99.2983872671404,
+                  "max_external_radio_sigma": 2.9628149052743877
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 38,
+                  "points": 38,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.5,
+                  "cost": 54.063482416384964,
+                  "alias": 1,
+                  "rms_hz": 92.24822605091435,
+                  "max_external_radio_sigma": 2.56378267434146
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 37,
+                  "points": 37,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.5,
+                  "cost": 53.146990710427865,
+                  "alias": 1,
+                  "rms_hz": 92.56419085344407,
+                  "max_external_radio_sigma": 2.5386476800709414
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 36,
+                  "points": 36,
+                  "candidate_index": 1154,
+                  "norad": 66601,
+                  "phase_s": -2.5,
+                  "cost": 52.93504983165666,
+                  "alias": 1,
+                  "rms_hz": 93.63507670580668,
+                  "max_external_radio_sigma": 2.5267629878125617
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX2-CH7-T000-RF12209687500.000000",
+              "candidate_count": 30,
+              "supports_tested": 15,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 38,
+                "points": 38,
+                "candidate_index": 1110,
+                "norad": 66273,
+                "phase_s": -3.25,
+                "cost": 21.731990250567133,
+                "alias": 0,
+                "rms_hz": 46.24485234355429,
+                "max_external_radio_sigma": 1.1885580285093282
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 38,
+                  "points": 38,
+                  "candidate_index": 1110,
+                  "norad": 66273,
+                  "phase_s": -3.25,
+                  "cost": 21.731990250567133,
+                  "alias": 0,
+                  "rms_hz": 46.24485234355429,
+                  "max_external_radio_sigma": 1.1885580285093282
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 38,
+                  "points": 38,
+                  "candidate_index": 1386,
+                  "norad": 100034,
+                  "phase_s": -9.5,
+                  "cost": 32.56028929864598,
+                  "alias": 0,
+                  "rms_hz": 48.97522112584449,
+                  "max_external_radio_sigma": 1.3975046352444942
+                },
+                {
+                  "start_index": 1,
+                  "stop_index": 38,
+                  "points": 37,
+                  "candidate_index": 1110,
+                  "norad": 66273,
+                  "phase_s": -3.25,
+                  "cost": 21.16908742054432,
+                  "alias": 0,
+                  "rms_hz": 45.61819808850692,
+                  "max_external_radio_sigma": 1.2068806198239035
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 37,
+                  "points": 37,
+                  "candidate_index": 1110,
+                  "norad": 66273,
+                  "phase_s": -3.25,
+                  "cost": 21.58545881404642,
+                  "alias": 0,
+                  "rms_hz": 46.6419623247031,
+                  "max_external_radio_sigma": 1.1979770054051453
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 37,
+                  "points": 37,
+                  "candidate_index": 1386,
+                  "norad": 100034,
+                  "phase_s": -9.5,
+                  "cost": 31.919665427901364,
+                  "alias": 0,
+                  "rms_hz": 48.46097890820007,
+                  "max_external_radio_sigma": 1.3772576328725536
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX1-CH8-T002-RF12459687500.000000",
+              "candidate_count": 34,
+              "supports_tested": 53,
+              "selected": {
+                "start_index": 0,
+                "stop_index": 42,
+                "points": 42,
+                "candidate_index": 1260,
+                "norad": 67998,
+                "phase_s": -5.75,
+                "cost": 85.68990842411623,
+                "alias": 1,
+                "rms_hz": 188.13199716740937,
+                "max_external_radio_sigma": 3.0402492027211783
+              },
+              "alternatives": [
+                {
+                  "start_index": 0,
+                  "stop_index": 42,
+                  "points": 42,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -5.75,
+                  "cost": 85.68990842411623,
+                  "alias": 1,
+                  "rms_hz": 188.13199716740937,
+                  "max_external_radio_sigma": 3.0402492027211783
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 41,
+                  "points": 41,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -5.75,
+                  "cost": 85.37706723798283,
+                  "alias": 1,
+                  "rms_hz": 189.79502838131253,
+                  "max_external_radio_sigma": 3.0506435588375287
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 40,
+                  "points": 40,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -5.75,
+                  "cost": 83.71250364282176,
+                  "alias": 1,
+                  "rms_hz": 189.22178911484846,
+                  "max_external_radio_sigma": 3.077446791376401
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 39,
+                  "points": 39,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -5.5,
+                  "cost": 65.04673771963931,
+                  "alias": 1,
+                  "rms_hz": 168.22658409391218,
+                  "max_external_radio_sigma": 2.1966263450254506
+                },
+                {
+                  "start_index": 0,
+                  "stop_index": 38,
+                  "points": 38,
+                  "candidate_index": 1260,
+                  "norad": 67998,
+                  "phase_s": -5.5,
+                  "cost": 64.04001864835173,
+                  "alias": 1,
+                  "rms_hz": 168.28603720798552,
+                  "max_external_radio_sigma": 2.1892747569644277
+                }
+              ]
+            },
+            {
+              "component": "SCAN-RX2-CH8-T000-RF12459687500.000000",
+              "candidate_count": 30,
+              "supports_tested": 11,
+              "selected": null,
+              "alternatives": []
+            }
+          ],
+          "rechecked_curved": 1469,
+          "second_curved_rejections": [
+            "SCAN-RX1-CH2-T001-RF10959687500.000000",
+            "SCAN-RX1-CH5-T000-RF11709687500.000000",
+            "SCAN-RX1-CH6-T002-RF11959687500.000000",
+            "SCAN-RX1-CH8-T002-RF12459687500.000000"
+          ],
+          "predictive_points": 533,
+          "predictive_tracks": 32,
+          "predictive_labels": [
+            [
+              "SCAN-RX1-CH1-T001-RF10709687500.000000",
+              66601,
+              0
+            ],
+            [
+              "SCAN-RX1-CH1-T003-RF10709687500.000000",
+              58038,
+              0
+            ],
+            [
+              "SCAN-RX1-CH1-T004-RF10709687500.000000",
+              59259,
+              0
+            ],
+            [
+              "SCAN-RX2-CH1-T003-RF10709687500.000000",
+              66601,
+              0
+            ],
+            [
+              "SCAN-RX2-CH1-T004-RF10709687500.000000",
+              58359,
+              0
+            ],
+            [
+              "SCAN-RX1-CH2-T002-RF10959687500.000000",
+              66601,
+              0
+            ],
+            [
+              "SCAN-RX2-CH2-T001-RF10959687500.000000",
+              58359,
+              -1
+            ],
+            [
+              "SCAN-RX2-CH2-T002-RF10959687500.000000",
+              66601,
+              0
+            ],
+            [
+              "SCAN-RX2-CH2-T003-RF10959687500.000000",
+              59259,
+              0
+            ],
+            [
+              "SCAN-RX2-CH2-T004-RF10959687500.000000",
+              59488,
+              -1
+            ],
+            [
+              "SCAN-RX2-CH2-T006-RF10959687500.000000",
+              100034,
+              -1
+            ],
+            [
+              "SCAN-RX1-CH3-T004-RF11209687500.000000",
+              59488,
+              1
+            ],
+            [
+              "SCAN-RX1-CH3-T005-RF11209687500.000000",
+              59488,
+              0
+            ],
+            [
+              "SCAN-RX1-CH3-T006-RF11209687500.000000",
+              59259,
+              0
+            ],
+            [
+              "SCAN-RX1-CH4-T002-RF11459687500.000000",
+              58038,
+              0
+            ],
+            [
+              "SCAN-RX2-CH4-T001-RF11459687500.000000",
+              66273,
+              0
+            ],
+            [
+              "SCAN-RX2-CH4-T002-RF11459687500.000000",
+              59259,
+              0
+            ],
+            [
+              "SCAN-RX1-CH5-T001-RF11709687500.000000",
+              66854,
+              0
+            ],
+            [
+              "SCAN-RX1-CH5-T004-RF11709687500.000000",
+              58359,
+              0
+            ],
+            [
+              "SCAN-RX2-CH5-T003-RF11709687500.000000",
+              66854,
+              0
+            ],
+            [
+              "SCAN-RX2-CH5-T006-RF11709687500.000000",
+              67998,
+              0
+            ],
+            [
+              "SCAN-RX1-CH6-T003-RF11959687500.000000",
+              66601,
+              0
+            ],
+            [
+              "SCAN-RX1-CH6-T006-RF11959687500.000000",
+              59488,
+              1
+            ],
+            [
+              "SCAN-RX2-CH6-T000-RF11959687500.000000",
+              58038,
+              0
+            ],
+            [
+              "SCAN-RX2-CH6-T002-RF11959687500.000000",
+              66273,
+              0
+            ],
+            [
+              "SCAN-RX1-CH7-T003-RF12209687500.000000",
+              58362,
+              0
+            ],
+            [
+              "SCAN-RX2-CH7-T001-RF12209687500.000000",
+              59488,
+              0
+            ],
+            [
+              "SCAN-RX1-CH8-T003-RF12459687500.000000",
+              58038,
+              0
+            ],
+            [
+              "SCAN-RX1-CH8-T005-RF12459687500.000000",
+              67998,
+              1
+            ],
+            [
+              "SCAN-RX1-CH8-T006-RF12459687500.000000",
+              58038,
+              1
+            ],
+            [
+              "SCAN-RX2-CH8-T002-RF12459687500.000000",
+              59488,
+              0
+            ],
+            [
+              "SCAN-RX2-CH8-T005-RF12459687500.000000",
+              59488,
+              0
+            ]
+          ]
+        },
+        "initial_gate_clocks": {
+          "cpu_s": 0.9476146239999998,
+          "elapsed_s": 0.947649042122066
+        },
+        "salvage_clocks": {
+          "cpu_s": 2.0888350000000004,
+          "elapsed_s": 2.0889112083241343
+        },
+        "predictive_clocks": {
+          "cpu_s": 0.9452888030000004,
+          "elapsed_s": 0.9453327357769012
+        },
+        "finish": {
+          "c0": {
+            "latlon": [
+              37.83584594504594,
+              -122.49468936484269
+            ],
+            "east_north_km": [
+              4.418968172251876,
+              -7.7871000999009565
+            ],
+            "rf_rms_hz": 99.59608928954148,
+            "objective": 19800.811452219317,
+            "curved_points": 1469,
+            "linear_points": 533,
+            "compatible_curved_points": 1469,
+            "compatible_linear_points": 533,
+            "failed_curved": [],
+            "failed_linear": [],
+            "phase_refreshes": 3,
+            "final_phase_change_s": 1.414956100131981e-05,
+            "phase_last_site_move_km": 0.0
+          },
+          "fitted_c": {
+            "latlon": [
+              37.8358865856456,
+              -122.49324254170119
+            ],
+            "east_north_km": [
+              4.546047971446465,
+              -7.782588993337833
+            ],
+            "rf_rms_hz": 99.43499254690433,
+            "objective": 19799.797997622423,
+            "curved_points": 1469,
+            "linear_points": 533,
+            "compatible_curved_points": 1469,
+            "compatible_linear_points": 533,
+            "failed_curved": [],
+            "failed_linear": [],
+            "phase_refreshes": 3,
+            "final_phase_change_s": 1.2599103964894276e-05,
+            "phase_last_site_move_km": 0.0
+          }
+        },
+        "finish_clocks": {
+          "cpu_s": 0.2485049239999988,
+          "elapsed_s": 0.2485448457300663
+        },
+        "pair_passes": true,
+        "candidate_pre_evidence_clocks": {
+          "cpu_s": 7.094526549000001,
+          "elapsed_s": 7.095072119496763
+        },
+        "signed": {
+          "selection": {
+            "qualified": true,
+            "kind": "age_squared",
+            "coefficient": -0.05901869947189001,
+            "prefix": {
+              "kind": "age_squared",
+              "coefficient": -0.06640845327222035,
+              "cost": 12128.306144850496,
+              "criterion": 12139.455773395626,
+              "choices": [
+                {
+                  "kind": null,
+                  "coefficient": 0.0,
+                  "cost": 12383.62482888358,
+                  "criterion": 12383.62482888358
+                },
+                {
+                  "kind": "seconds",
+                  "coefficient": -0.0908569440941179,
+                  "cost": 12254.439274546316,
+                  "criterion": 12265.59274799307
+                },
+                {
+                  "kind": "standardized",
+                  "coefficient": -0.12089927666145309,
+                  "cost": 12252.587336892528,
+                  "criterion": 12263.74717199009
+                },
+                {
+                  "kind": "age",
+                  "coefficient": -0.09889341829324122,
+                  "cost": 12162.87278521917,
+                  "criterion": 12174.027783589816
+                },
+                {
+                  "kind": "age_squared",
+                  "coefficient": -0.06640845327222035,
+                  "cost": 12128.306144850496,
+                  "criterion": 12139.455773395626
+                }
+              ]
+            },
+            "all_past": {
+              "kind": "age_squared",
+              "coefficient": -0.05901869947189001,
+              "cost": 23736.458819011837,
+              "criterion": 23748.23290405406,
+              "choices": [
+                {
+                  "kind": null,
+                  "coefficient": 0.0,
+                  "cost": 24146.63537213397,
+                  "criterion": 24146.63537213397
+                },
+                {
+                  "kind": "age_squared",
+                  "coefficient": -0.05901869947189001,
+                  "cost": 23736.458819011837,
+                  "criterion": 23748.23290405406
+                }
+              ]
+            },
+            "future_gain": 95.1925845459773,
+            "disjoint_future_gain": 21.497596749318063,
+            "training_count": 4327,
+            "future_count": 2723,
+            "disjoint_future_count": 574,
+            "correction_form_selected_on_training_only": true
+          },
+          "history_sha256": "29f2f3048c42f8477775b995ff8140206e0e0d3175029ff00418a5fe26d4b01e",
+          "status": "accepted",
+          "means_s": [
+            0.018131151649021737,
+            0.008138959573999082,
+            0.0034371482470400977,
+            -0.06439991175627549,
+            -0.12630976184783307,
+            -0.011407761571115355,
+            -0.017690012743382354,
+            -0.9053126311313442,
+            -0.7841914517966768,
+            -0.7763074228802249,
+            -0.9052196304675455,
+            -0.25668375249608566,
+            -1.0533608396329772,
+            -0.9234117459718932
+          ],
+          "ordinary_means_s": [
+            0.029781109448598565,
+            0.019529731727603517,
+            0.043951430050112796,
+            -0.02398206172434215,
+            0.0219630739766108,
+            0.02915861231441789,
+            -0.006250115097879956,
+            -0.4547564689506281,
+            -0.6596808738147804,
+            -0.6519626261872785,
+            -0.7299416307394894,
+            -0.21594112656145933,
+            -0.877392906189086,
+            -0.8200551341389999
+          ],
+          "finish": {
+            "c0": {
+              "latlon": [
+                37.83455291425868,
+                -122.49755233318494
+              ],
+              "east_north_km": [
+                4.167503130257136,
+                -7.93062651728604
+              ],
+              "rf_rms_hz": 99.59400325268228,
+              "objective": 19799.653511438035,
+              "curved_points": 1469,
+              "linear_points": 533,
+              "compatible_curved_points": 1469,
+              "compatible_linear_points": 533,
+              "failed_curved": [],
+              "failed_linear": [],
+              "phase_refreshes": 5,
+              "final_phase_change_s": 6.511966493816246e-09,
+              "phase_last_site_move_km": null
+            },
+            "fitted_c": {
+              "latlon": [
+                37.834646559859564,
+                -122.49590843860017
+              ],
+              "east_north_km": [
+                4.311892439315036,
+                -7.920231855587913
+              ],
+              "rf_rms_hz": 99.43532021520635,
+              "objective": 19798.69177713933,
+              "curved_points": 1469,
+              "linear_points": 533,
+              "compatible_curved_points": 1469,
+              "compatible_linear_points": 533,
+              "failed_curved": [],
+              "failed_linear": [],
+              "phase_refreshes": 5,
+              "final_phase_change_s": 3.852009566873704e-08,
+              "phase_last_site_move_km": null
+            }
+          }
+        },
+        "signed_qualify_clocks": {
+          "cpu_s": 0.08499633899999992,
+          "elapsed_s": 0.08499962743371725
+        },
+        "signed_prior_clocks": {
+          "cpu_s": 0.00023241499999926418,
+          "elapsed_s": 0.00023260246962308884
+        },
+        "signed_refit_clocks": {
+          "cpu_s": 0.4387870819999993,
+          "elapsed_s": 0.4387968424707651
+        },
+        "signed_total_clocks": {
+          "cpu_s": 0.5240821790000005,
+          "elapsed_s": 0.5240926435217261
+        },
+        "exterior": {
+          "bound_arms": [],
+          "evaluated": false,
+          "would_withhold": false
+        },
+        "exterior_clocks": {
+          "cpu_s": 1.6131999998947322e-05,
+          "elapsed_s": 1.614447683095932e-05
+        },
+        "standard_evidence_clocks": {
+          "cpu_s": 1.9139252659999997,
+          "elapsed_s": 1.9139915322884917
+        },
+        "decision": "complete"
+      },
+      "solve": {
+        "cpu_s": 12.341171159,
+        "elapsed_s": 12.34231797978282,
+        "orbit_policy": "stock",
+        "grid_points": 179,
+        "grid_complete": true,
+        "objective_replay": {
+          "c0": 0.0,
+          "fitted_c": 0.0
+        }
+      },
+      "selected_roles": {
+        "c0": {
+          "conditional": 1469,
+          "predictive": 533
+        },
+        "fitted_c": {
+          "conditional": 1469,
+          "predictive": 533
+        }
+      },
+      "source_sha256": {
+        "joint_publication.py": "3e8361f95d427f6e8f9ef5cfdc4caf2ebc24d2be78548daaf56d2d1ee4e4ce59",
+        "blind_joint_finish.py": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1",
+        "blind_joint_route.py": "8b65372ac2255aca4074037382e107be3b5fbaf40fac6a21f69c163381cd6a61",
+        "blind_joint_repair.py": "f89e80dd65606b065e4c8097d0d3204362993e070dc7dd3f2c2590dc2c32b2a0",
+        "blind_joint_signed.py": "8efe2551d6bf4cb1c3ff6a428fbde0919aad6111f3596a799a14afd69fc68e54"
+      },
+      "publication_cpu_s": 14.550622575,
+      "publication_elapsed_s": 14.576442246325314,
+      "archived_stock_checks": null,
+      "runner_receipt_sha256": "5bc418ce1ea691e72d4711ab62ddc960d73bd7c779c3dc547e3f20e96c96272f"
+    }
+  },
+  "owner_changes": {
+    "c0": {
+      "stock": 1976,
+      "candidate": 2002,
+      "shared": 1976,
+      "removed": 0,
+      "new": 26,
+      "changed_norad": 0,
+      "changed_role": 0
+    },
+    "fitted_c": {
+      "stock": 1976,
+      "candidate": 2002,
+      "shared": 1976,
+      "removed": 0,
+      "new": 26,
+      "changed_norad": 0,
+      "changed_role": 0
+    }
+  }
+}

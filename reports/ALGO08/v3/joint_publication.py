@@ -54,9 +54,11 @@ def artifacts(root, receipt):
     return dict(images=images)
 
 
-def run(args):
+def run(args, *, detector_override=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
+    if args.saved and detector_override is not None:
+        raise ValueError("A detector substitution requires the full raw input path")
     stock_control = getattr(args, "stock_control", False)
     signed_finish = getattr(args, "signed_finish", False)
     if stock_control and signed_finish:
@@ -102,6 +104,8 @@ def run(args):
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(algo08_scan, "solve", solve))
+            if detector_override is not None:
+                stack.enter_context(patch.object(algo08_scan, "detector", detector_override))
             if saved is not None:
                 def acquire(session, inventory_digest, _inventory, _assets):
                     found = verified_saved(saved, args.saved_digest, session, inventory_digest, spec["detector_sha256"])
@@ -124,7 +128,10 @@ def run(args):
         "joint_publication.py", "blind_joint_finish.py", "blind_joint_route.py", "blind_joint_repair.py", "blind_joint_signed.py")}
     from leo.application.localization_v3_engine import _json_value
 
-    result = dict(input="saved detector" if saved is not None else "raw recording", saved_digest=args.saved_digest,
+    input_kind = "saved detector" if saved is not None else "raw recording"
+    if detector_override is not None:
+        input_kind = "verified raw recording with archived receiver rows"
+    result = dict(input=input_kind, saved_digest=args.saved_digest,
                   reference="installed v3" if stock_control else "installed v3 with research joint repair",
                   source_sha256=pins, route="stock" if stock_control else attempts[0]["decision"],
                   signed_finish=signed_finish, stock_control=stock_control, machine=machine(),

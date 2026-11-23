@@ -78,12 +78,12 @@ def owner_changes(stock, candidate):
     return result
 
 
-def run(output, *, resume=False):
+def run(output, *, resume=False, load_case=bind, case="DS30-0374", pair_sha256=PAIR_DIGEST):
     system = machine()
     if (system["cpu"] != [2] or system["nice"] < 15 or "prio 7" not in system["ionice"]
             or any(n != "1" for n in system["threads"].values())):
         raise ValueError("Expected one low-priority numerical core")
-    pair, expected, saved, region, archive, archived_decoded = bind()
+    pair, expected, saved, region, archive, archived_decoded = load_case()
     witness = expected["witnesses"]
     if resume:
         if not (output / "stock/joint-research-receipt.json").is_file() or (output / "signed").exists() or (output / "pair.json").exists():
@@ -139,8 +139,8 @@ def run(output, *, resume=False):
                           archived_stock_checks=validation, runner_receipt_sha256=sha256(source.read_bytes()).hexdigest())
     if runs["stock"]["source_sha256"] != runs["signed"]["source_sha256"] or archive_identity(archive) != pair["archive"]:
         raise ValueError("Bounded pair used different source bytes or pre-RF archive")
-    write(output / "pair.json", dict(case="DS30-0374", machine=system, archive=pair["archive"],
-                                      original_pair_sha256=PAIR_DIGEST, saved_native_sha256=witness["detection_sha256"],
+    write(output / "pair.json", dict(case=case, machine=system, archive=pair["archive"],
+                                      original_pair_sha256=pair_sha256, saved_native_sha256=witness["detection_sha256"],
                                       order=list(runs), stock_resumed=resume, runs=runs,
                                       owner_changes=owner_changes(observers["stock"], observers["signed"])))
 
@@ -160,9 +160,9 @@ def score(output, destination):
         if any(again[key] != decision[key] for key in ("arms", "owners", "artifacts", "scientific_digests")):
             raise ValueError("Published evidence changed after sealing")
     reference_bytes = PHYSICAL.read_bytes()
-    row, = [row for row in json.loads(reference_bytes)["cases"] if row["dataset_label"] == "DS30-0374"]
+    row, = [row for row in json.loads(reference_bytes)["cases"] if row["dataset_label"] == pair["case"]]
     if not row["authority_eligible"]:
-        raise ValueError("DS30-0374 lacks an eligible archived receiver reference")
+        raise ValueError("Case lacks an eligible archived receiver reference")
     truth = [row["reference"][key] for key in ("latitude_deg", "longitude_deg")]
     errors, rf = {}, {}
     for mode, published in arms.items():
