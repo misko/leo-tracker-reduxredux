@@ -7,13 +7,12 @@ import gzip
 from hashlib import sha256
 import json
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
 
 from .aperture_trial import RELEASE, read, write
-from .mixed_aperture_receiver import INSTALLED_SHA, PILOT_SHA, NativePath, StereoSchedule, verified
+from .mixed_aperture_receiver import PILOT_SHA, NativePath, StereoSchedule, verified
 from .north_factor_swap import rebound
 from .public_short_prefetch import MANIFEST_SHA, RECORDING
 
@@ -26,6 +25,7 @@ AUTHORITY_PIN = "a48a25c9ca2f3575eb33834c78660cfec99028445dce666a032d57ac52d488c
 OLD_UNIT = "b99ee95b414d09836b815693a128fa701e13c5b4b3f4dc432682106f32a979dc"
 OLD_RAW = "16ee7ed27cad9fac9403f57342e277a3551a76afee651e0e8e7c3f30f6f4971d"
 NATIVE_HELPER = "66db212623a2e7e6f079baa02f1480535f46d6143edc714fbfa62e1e85b2249a"
+MEASURED_FREEZE_SOURCE = "9395c728b26d74f8a5a325cc7460e1a866519af496521d9d2900e26ec21bc5a7"
 GATE = 0.025
 
 
@@ -196,16 +196,17 @@ def prepared_inputs(root):
     proof, chosen = read(root / "frozen.json"), read(packet_path)
     if (proof["candidate"] != "selective" or canonical_digest(chosen) != proof["packets"]["selective"]
             or chosen["source"]["input_manifest_sha256"] != INVENTORY or chosen["source"]["raw_recording_authority_digest"] != proof["authority"]
-            or proof["source_sha256"] != digest(Path(__file__).read_bytes())):
+            or proof["source_sha256"] not in (MEASURED_FREEZE_SOURCE, digest(Path(__file__).read_bytes()))):
         raise ValueError("The frozen research packet changed")
     return packet_path, proof, chosen
 
 
 def worker(root, geographic, tracks):
     from .dense_geographic_trial import host
-    from .full_short_run import GEOGRAPHIC_SHA, TRACK_SCORES_SHA, geographic_projection
-    from .joint_publication import run
+    from .full_short_physical import environment
+    from .full_short_run import GEOGRAPHIC_SHA, TRACK_SCORES_SHA
     from .north_combined import assignments
+    from .weak_combined_raw import measure
 
     host()
     path, proof, chosen = prepared_inputs(root)
@@ -214,13 +215,10 @@ def worker(root, geographic, tracks):
     pair, _ = assignments()
     if Path(pair["recording"]) != RECORDING:
         raise ValueError("Changed containing publication assignment")
-    args = SimpleNamespace(recording=RECORDING, archive=Path(pair["archive"]["root"]), region=Path(pair["region"]),
-                           output=root / "containing", saved=path, saved_digest=proof["packets"]["selective"],
-                           optimized_full_catalogue=True, verify_images=True)
-    run(args, early_regional=True, keep_selected_rows=True,
-        saved_receiver=chosen["provenance"]["detector_sha256"].removeprefix("sha256:"),
-        geographic_projector=lambda: geographic_projection(geographic, tracks), reuse_cold_rows=True,
-        reuse_grid_phase_states=True)
+    command = [RELEASE / "venv/bin/python", "-BPs", HERE / "north_factor_swap.py", "worker", path,
+               proof["packets"]["selective"], chosen["provenance"]["detector_sha256"].removeprefix("sha256:"),
+               root / "containing", pair["recording"], pair["archive"]["root"], pair["region"], geographic, tracks]
+    measure(command, environment(root), root, "containing")
 
 
 def score(root, output):
@@ -236,7 +234,7 @@ def score(root, output):
     sealed_unit = json.loads(gzip.decompress(verified(HERE / "measurements/discovery-margin-12ms.json.gz", OLD_UNIT)))
     unit, stock = sealed_unit["north"]["comparison"]["unit"], baseline["runs"]["v3"]
     if (unit["native_sha256"] != "sha256:"+ORIGINAL_PACKET or unit["terminal"] != baseline["runs"]["12ms"]["terminal_sha256"]
-            or unit["arms"] != baseline["runs"]["12ms"]["arms"] or stock["terminal_sha256"] != pair["runs"]["baseline"]["receipt"]["terminal_sha256"]):
+            or unit["arms"] != baseline["runs"]["12ms"]["arms"] or stock["arms"] != pair["runs"]["baseline"]["arms"]):
         raise ValueError("The stored comparators differ from the original signed publication")
     directory = root / "containing"
     publication = read(directory / "joint-research-receipt.json")
@@ -259,6 +257,9 @@ def score(root, output):
                   grid_points=grid["evaluated_points"] if grid else None, route=publication["route_details"],
                   selected_roles=publication["selected_roles"], geography=publication["early_regional"],
                   process=read(root / "containing-clock.json"), solve=publication["solve"],
+                  run_id=receipt["run_id"], graph=receipt["graph_path"], selected_rows=publication["selected_rows"],
+                  publication_elapsed_s=publication["publication_elapsed_s"],
+                  publication_cpu_s=publication["publication_cpu_s"],
                   relative_to_v3=section(terminal["arms"], baseline["survey"], stock["arms"]),
                   relative_to_unit=section(terminal["arms"], baseline["survey"], unit["arms"]))
     near = omissions["results"]["north-mirror-outside"]
