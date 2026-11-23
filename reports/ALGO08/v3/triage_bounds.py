@@ -1,6 +1,7 @@
 """Time one frozen, signed DS30-0008 raw-to-publication ALGO08v3 pair on Gauss."""
 import argparse
 from hashlib import sha256
+from io import BytesIO
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ from types import SimpleNamespace
 from leo.contracts.digests import canonical_digest
 from leo.storage.fast_scan import FastScanStore, immutable_json
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+from PIL import Image
 from tools.pipeline_eval.qualification import cache_residency, paired_publication
 from tools.pipeline_eval.scoring import distance_km
 from triage_successor import (
@@ -33,9 +35,11 @@ def pair_comparison(rows, natives, terminals):
     baseline, bounds = rows
     native_base, native_bounds = natives
     terminal_base, terminal_bounds = terminals
-    equality = {name: v == bounds[name] for name, v in baseline.items() if name != "pngs"}
-    equality["pngs"] = {name: baseline["pngs"].get(name) == bounds["pngs"].get(name)
-                        for name in sorted(baseline["pngs"].keys() | bounds["pngs"].keys())}
+    figure_fields = ("pngs", "png_pixels")
+    equality = {name: v == bounds[name] for name, v in baseline.items() if name not in figure_fields}
+    for key in figure_fields:
+        left, right = baseline.get(key, {}), bounds.get(key, {})
+        equality[key] = {name: left.get(name) == right.get(name) for name in sorted(left.keys() | right.keys())}
     equality["ordered_probes"] = native_base["source"]["probes"] == native_bounds["source"]["probes"]
     equality["detection_document"] = native_base == native_bounds
     equality["terminal_document"] = terminal_base == terminal_bounds
@@ -105,7 +109,17 @@ def snapshot(root, run):
     terminal_path = scans.automatic_workspace(run_id, create=False) / "terminal.json"
     standard = FastStandardAnalysisStore(root)
     detail = standard.detail(run_id)
+    png_pixels = {}
+    for item in run["artifacts"]:
+        name = item["name"]
+        data = standard.artifact(run_id, name, item["sha256"])
+        with Image.open(BytesIO(data)) as image:
+            pixels = image.convert("RGBA")
+            png_pixels[name] = dict(width=pixels.width, height=pixels.height,
+                                    rgba_sha256=sha256(pixels.tobytes()).hexdigest())
     witness = witnesses(run, native) | dict(
+        detector_sha256=run["build"]["detector_sha256"], native_run_id=native["provenance"]["run_id"],
+        publication_run_id=run_id, png_pixels=png_pixels,
         detection_file_sha256=sha256(native_path.read_bytes()).hexdigest(),
         terminal_file_sha256=sha256(terminal_path.read_bytes()).hexdigest(),
         scan_report_sha256=canonical_digest(scans.detail(run_id)),
@@ -201,6 +215,14 @@ def measure_pair(output, first, *, preflight=False):
         comparison = pair_comparison([baseline["witnesses"], bounds["witnesses"]],
                                      [natives[name] for name in names], [terminals[name] for name in names])
         result["equality"] = comparison
+        hooks = bounds["receipt"].get("bounds_research", {})
+        layout = hooks.get("tools.pipeline_eval.variants.algo08_incremental_layout", {})
+        regional = hooks.get("tools.pipeline_eval.variants.experimental.regional_envelope_install", {})
+        result["activation"] = dict(
+            native_detector_changed=baseline["build"]["detector_sha256"] != bounds["build"]["detector_sha256"],
+            reused_fixed_constructions=layout.get("reused_fixed_constructions", 0),
+            rejected_fine_salvage_supports=sum(v.get("reject_supports", 0) for v in regional.get("solves", [])),
+        )
         if not all(comparison[key] for key in ("raw_authority", "session_id", "input_manifest_sha256", "region")):
             raise ValueError("Pair used different authenticated waveform or geography")
         result["speedup"] = {key: baseline[key] / bounds[key] for key in ("elapsed_s", "cpu_s")}

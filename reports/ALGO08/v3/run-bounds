@@ -17,9 +17,13 @@ ROOT = Path(__file__).resolve().parents[3]
 BASELINE = Path("/opt/leo-algo08/algo08v3/run")
 BASELINE_SHA256 = "fae032526227f55ca2419a0b29c69afc7fc97fa04508f33d0403802934f13448"
 FROZEN_SPEC = "6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
+BOUNDS_SPEC = "52562c4e96a53270c244971c90740eae14240c2ce8179febf217abfe94d4cf5c"
+BOUNDS_PAYLOAD = Path("/var/tmp/leo-algo08v3-bounds-physical-payload")
 OVERLAYS = {
     "tools.pipeline_eval.variants.algo08_incremental_layout":
         "c1dff1b601e64183b527cf2dfd7c7ec4b3d9ba51acbdcaaeaa66cfd193c1b37f",
+    "tools.pipeline_eval.variants.experimental.regional_envelope_install":
+        "3a75346bb2b2918d77548d5e73cadb70ee57ff12d901fe3fc5f7332a38c2cba0",
 }
 
 
@@ -54,8 +58,8 @@ def main():
     if sha256(BASELINE.read_bytes()).hexdigest() != BASELINE_SHA256:
         raise ValueError("The installed ALGO08v3 launcher changed")
     installed = runpy.run_path(str(BASELINE))
-    payload = BASELINE.parent / "payload"
-    spec = installed["checked_spec"](payload, FROZEN_SPEC)
+    payload = BOUNDS_PAYLOAD.resolve(strict=True)
+    spec = installed["checked_spec"](payload, BOUNDS_SPEC)
     if spec["startup"] != "lazy-exports" or spec["member_lookahead"] is not True:
         raise ValueError("Expected frozen lazy startup and advisory member lookahead")
     imports = [str(payload), str(installed["RELEASE"] / "src"), str(installed["RELEASE"])]
@@ -72,6 +76,7 @@ def main():
         raise ValueError("Expected the installed publication entry point")
     lean_startup.install()
     identity = dict(version="ALGO08v3 bounds research", frozen_specification="sha256:" + FROZEN_SPEC,
+                    measured_specification="sha256:" + BOUNDS_SPEC,
                     baseline_launcher_sha256=BASELINE_SHA256, overlay_sha256=OVERLAYS,
                     launcher_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
     with ExitStack() as stack:

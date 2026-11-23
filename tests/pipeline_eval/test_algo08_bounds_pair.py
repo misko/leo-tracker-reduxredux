@@ -22,14 +22,17 @@ def test_detector_provenance_does_not_hide_scientific_differences(pair):
     }
     terminal = {"native_sha256": "original native", "arms": {"fitted_c": [1, 2]}}
     rebound = terminal | {"native_sha256": "rebuilt native"}
-    baseline = {"probe_sha256": "equal", "pngs": {"position": "match", "track-rms": "one"}}
-    contender = {"probe_sha256": "equal", "pngs": {"position": "match", "ch1-4-all": "two"}}
+    baseline = {"probe_sha256": "equal", "pngs": {"position": "original", "track-rms": "one"},
+                "png_pixels": {"position": {"rgba_sha256": "same decoded pixels"}}}
+    contender = {"probe_sha256": "equal", "pngs": {"position": "rebuilt", "ch1-4-all": "two"},
+                 "png_pixels": {"position": {"rgba_sha256": "same decoded pixels"}}}
 
     comparison = pair.pair_comparison([baseline, contender], [native, rebuilt], [terminal, rebound])
     assert comparison["ordered_probes"] and comparison["detection_without_detector_identity"]
     assert comparison["terminal_without_detection_digest"] and not comparison["terminal_document"]
     assert not comparison["detection_document"]
-    assert comparison["pngs"] == {"position": True, "track-rms": False, "ch1-4-all": False}
+    assert comparison["pngs"] == {"position": False, "track-rms": False, "ch1-4-all": False}
+    assert comparison["png_pixels"] == {"position": True}
 
     rebuilt["source"] = {"probes": ["b", "a"]}
     rebound["arms"] = {"fitted_c": [2, 1]}
