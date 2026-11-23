@@ -1,4 +1,6 @@
 from importlib import import_module
+from hashlib import sha256
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -25,3 +27,20 @@ def test_precomputed_rows_must_match_verified_window(oracle):
             oracle.rows_for_window(window, [rows[0], dict(rows[1], **edits)])
     with pytest.raises(ValueError):
         oracle.rows_for_window(window, rows[:1])
+
+
+def test_measured_short_floor_binds_to_signed_pair_and_preserves_evidence(oracle):
+    folder = Path(oracle.__file__).parent / "measurements"
+    data = (folder / "signed-short-DS30-0316.json").read_bytes()
+    signed = json.loads(data)
+    floor = json.loads((folder / "short-floor-DS30-0316.json").read_bytes())
+    assert floor["saved_score_sha256"] == sha256(data).hexdigest()
+    assert floor["original_pair_sha256"] == signed["original_pair_sha256"]
+    assert floor["input"] == oracle.INPUT_LABEL
+    assert signed["triage_pass"] and all(floor["equality"].values())
+    assert floor["oracle"]["calls"] == floor["receipt"]["counts"]["processed"]
+    assert floor["oracle"]["rows"] == 2 * floor["oracle"]["calls"]
+    assert floor["oracle"]["native_file_sha256"] == oracle.NATIVE_SHA
+    assert floor["evidence"]["images"] == signed["runs"]["signed"]["evidence"]["images"]
+    assert floor["receipt"]["terminal_sha256"] == signed["runs"]["signed"]["receipt"]["terminal_sha256"]
+    assert floor["publication_cpu_s"] - floor["oracle"]["lookup_cpu_s"] > floor["historical_v3"]["cpu_s"] / 2

@@ -7,7 +7,6 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import sys
 from time import perf_counter, process_time
 from types import SimpleNamespace
 
@@ -69,7 +68,6 @@ def child(work, saved, recording, region, archive):
 
 def measure(work, score):
     from aperture_trial import BENCH, PAYLOAD, RELEASE, machine
-    from joint_publication import artifacts
     from short_recording_floor import CASE, PAIR_SHA, bind
     from signed_0374_transfer import pairs, read, write
     from tools.pipeline_eval.qualification import cache_residency
@@ -99,6 +97,8 @@ def measure(work, score):
                    env=env, check=True)
     cache = cache_residency.bound_snapshot(FastScanStore(work), recording, tuple(pins), os.sysconf("SC_PAGE_SIZE"),
                                           cache_residency.load_query(lib))
+    write(work / "launch.json", dict(cache=cache, machine=system,
+                                     measured_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
     output = work / "publication"
     cpu = pairs.child_usage()
     clock = perf_counter()
@@ -106,21 +106,57 @@ def measure(work, score):
                     str(recording), str(region), str(archive)], env=env, timeout=180, check=True)
     wall = perf_counter() - clock
     usage = {k: v - cpu[k] for k, v in pairs.child_usage().items()}
+    write(work / "outer.json", dict(elapsed_s=wall, **usage))
+    audit(work, score)
+
+
+def audit(work, score):
+    from joint_publication import artifacts
+    from short_recording_floor import CASE, PAIR_SHA, bind
+    from signed_0374_transfer import pairs, read, write
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+
+    pair, stock, _, _, _, _ = bind()
+    prior = read(score)
+    if prior["case"] != CASE or prior["original_pair_sha256"] != PAIR_SHA:
+        raise ValueError("Saved pair belongs to another case")
+    signed = prior["runs"]["signed"]
+    output = work / "publication"
     product = read(output / "joint-research-receipt.json")
+    run_digest = sha256((output / "joint-research-receipt.json").read_bytes()).hexdigest()
+    if (work / "launch.json").exists():
+        launch, outer = read(work / "launch.json"), read(work / "outer.json")
+    elif run_digest == "f5980b7ad9bca3ccf852404267dd5ed86280b7ce32df874609b9a3ae4c224310":
+        # The first verifier rejected the elapsed time embedded in the grid before saving its observer clocks.
+        launch = dict(cache=None, machine=product["machine"],
+                      measured_source_sha256="2b530ef7186a2a5fd9478c3b6942bc547812ec7fcd4f2819db06940768396114")
+        outer = None
+    else:
+        raise ValueError("Missing launch observations for an unknown run")
     evidence = pairs.evidence(output, product["receipt"], started_ns=0, read_only=True)
     decoded = artifacts(output, product["receipt"])
     matches = {k: evidence[k] == signed[k] for k in ("arms", "raw_authority", "owners", "scientific_digests", "artifacts")}
-    matches.update(images=json.loads(json.dumps(decoded)) == signed["evidence"],
+    matches.update(images=json.loads(json.dumps(decoded["images"])) == signed["evidence"]["images"],
+                   path=decoded["path"] == signed["evidence"]["path"],
                    terminal=product["receipt"]["terminal_sha256"] == signed["receipt"]["terminal_sha256"])
+    grid = FastStandardAnalysisStore(output).position_grid(product["receipt"]["run_id"])
+    from leo.contracts.digests import canonical_digest
+
+    saved_grid = FastStandardAnalysisStore(score.parent / "pubs" / "signed").position_grid(signed["receipt"]["run_id"])
+    if canonical_digest(saved_grid) != signed["evidence"]["grid"]:
+        raise ValueError("The signed control grid differs from its sealed digest")
+    matches["grid_without_elapsed"] = dict(grid, elapsed_seconds=saved_grid["elapsed_seconds"]) == saved_grid
     if (not all(matches.values()) or product["input"] != INPUT_LABEL or product["route"] != signed["route"]
             or not product["solve"]["grid_complete"] or len(decoded["images"]) != 8):
         raise ValueError(f"Raw diagnostic publication changed: {matches}")
     write(work / "floor.json", dict(case=CASE, input=INPUT_LABEL, original_pair_sha256=PAIR_SHA,
-         saved_score_sha256=sha256(score.read_bytes()).hexdigest(), machine=system, cache=cache,
+         saved_score_sha256=sha256(score.read_bytes()).hexdigest(), **launch,
          historical_v3=dict(cpu_s=stock["cpu_s"], elapsed_s=stock["elapsed_s"],
                             cache=pair["cache_observation"]["arms"]["candidate"]),
-         source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), equality=matches,
-         outer=dict(elapsed_s=wall, **usage), oracle=read(output / "oracle-cost.json"),
+         audit_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), equality=matches,
+         raw_publication_sha256=run_digest, grid_elapsed_seconds=grid["elapsed_seconds"],
+         saved_grid_elapsed_seconds=saved_grid["elapsed_seconds"],
+         outer=outer, oracle=read(output / "oracle-cost.json"),
          publication_cpu_s=product["publication_cpu_s"], publication_elapsed_s=product["publication_elapsed_s"],
          solve=product["solve"], route=product["route"], evidence=decoded, receipt=product["receipt"]))
 
@@ -128,9 +164,10 @@ def measure(work, score):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_subparsers(dest="action", required=True)
-    for name, fields in (("measure", ("work", "score")), ("child", ("work", "saved", "recording", "region", "archive"))):
+    for name, fields in (("measure", ("work", "score")), ("audit", ("work", "score")),
+                         ("child", ("work", "saved", "recording", "region", "archive"))):
         sub = actions.add_parser(name)
         for field in fields:
             sub.add_argument(field, type=Path)
     options = vars(parser.parse_args())
-    {"measure": measure, "child": child}[options.pop("action")](**options)
+    {"measure": measure, "child": child, "audit": audit}[options.pop("action")](**options)
