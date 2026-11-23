@@ -80,6 +80,7 @@ def launch(root):
 def verify(root, destination):
     from aperture_trial import read, write
     from joint_publication import artifacts
+    from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from local_future_cli_trial import native_packet
     from short_raw_diagnostic import pairs
@@ -125,11 +126,16 @@ def verify(root, destination):
             raise ValueError("The fitted-first option did not bind a no-offer zero-work policy")
         runs[mode] = dict(process=external, named=trace, research=audit, visual=visual,
                           science={key: evidence[key] for key in science}, grid_points=grid["evaluated_points"],
+                          grid_elapsed_seconds=grid["elapsed_seconds"],
+                          grid_without_elapsed_sha256=canonical_digest({
+                              key: value for key, value in grid.items() if key != "elapsed_seconds"
+                          }),
                           owners={arm: len(rows) for arm, rows in computed.items()},
                           own_receipt_sha256=sha256((output / "named-constrained-research.json").read_bytes()).hexdigest(),
                           historical_pngs_identical=visual["images"] == historical["figures"])
     stock, fitted = (runs[mode] for mode in ORDER)
-    if (stock["visual"] != fitted["visual"]
+    if (stock["visual"]["path"] != fitted["visual"]["path"] or stock["visual"]["images"] != fitted["visual"]["images"]
+            or stock["grid_without_elapsed_sha256"] != fitted["grid_without_elapsed_sha256"]
             or stock["research"]["research_sha256"] == fitted["research"]["research_sha256"]):
         raise ValueError("The option must preserve web evidence and keep separate research provenance")
     write(destination, dict(admission=read(root / "admission.json"), reference_sha256=REFERENCE_PIN,
