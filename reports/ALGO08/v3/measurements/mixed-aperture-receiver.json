@@ -1,0 +1,1296 @@
+{
+  "build": {
+    "binary": "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so",
+    "binary_sha256": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9",
+    "callback_sha256": "a2136b0a228413cfd7604176830074e78012d1bca3dc505771c396e14c6ece0e",
+    "compile": [
+      "cc",
+      "-fPIC",
+      "-O3",
+      "-std=c11",
+      "-fopenmp-simd",
+      "-ffp-contract=off",
+      "-fno-math-errno",
+      "-fno-strict-aliasing",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+      "-I",
+      "native/adaptive/detector/kernel/private/native_presence",
+      "-I",
+      "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+      "-I",
+      "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+      "-Wall",
+      "-Werror",
+      "-c",
+      "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/two_carrier_receiver.c",
+      "-o",
+      "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/two_carrier_receiver.o"
+    ],
+    "extension_sha256": "f2af84682b7878a206f9860ee606d94b00abcbc352467ca298adf16ccd985924",
+    "machine": {
+      "cpu": [
+        2
+      ],
+      "ionice": "best-effort: prio 7",
+      "nice": 15,
+      "threads": {
+        "BLIS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      }
+    },
+    "primary_disassembly": "\n/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so:     file format elf64-x86-64\n\n\nDisassembly of section .init:\n\nDisassembly of section .plt:\n\nDisassembly of section .plt.got:\n\nDisassembly of section .plt.sec:\n\nDisassembly of section .text:\n\n000000000000f1b0 <cancellation_primary_factors>:\n    f1b0:\tf3 0f 1e fa          \tendbr64\n    f1b4:\t41 56                \tpush   %r14\n    f1b6:\t41 55                \tpush   %r13\n    f1b8:\t41 54                \tpush   %r12\n    f1ba:\t55                   \tpush   %rbp\n    f1bb:\t53                   \tpush   %rbx\n    f1bc:\t48 81 ec 90 00 00 00 \tsub    $0x90,%rsp\n    f1c3:\t64 48 8b 04 25 28 00 \tmov    %fs:0x28,%rax\n    f1ca:\t00 00 \n    f1cc:\t48 89 84 24 88 00 00 \tmov    %rax,0x88(%rsp)\n    f1d3:\t00 \n    f1d4:\t31 c0                \txor    %eax,%eax\n    f1d6:\t48 85 ff             \ttest   %rdi,%rdi\n    f1d9:\t0f 84 a1 00 00 00    \tje     f280 <cancellation_primary_factors+0xd0>\n    f1df:\t48 89 cd             \tmov    %rcx,%rbp\n    f1e2:\t48 85 c9             \ttest   %rcx,%rcx\n    f1e5:\t0f 84 95 00 00 00    \tje     f280 <cancellation_primary_factors+0xd0>\n    f1eb:\t66 0f 28 d0          \tmovapd %xmm0,%xmm2\n    f1ef:\t48 89 fb             \tmov    %rdi,%rbx\n    f1f2:\t66 0f ef c0          \tpxor   %xmm0,%xmm0\n    f1f6:\t48 8b 3f             \tmov    (%rdi),%rdi\n    f1f9:\t0f 29 04 24          \tmovaps %xmm0,(%rsp)\n    f1fd:\t48 89 e1             \tmov    %rsp,%rcx\n    f200:\t49 89 f4             \tmov    %rsi,%r12\n    f203:\t41 89 d5             \tmov    %edx,%r13d\n    f206:\t0f 29 44 24 10       \tmovaps %xmm0,0x10(%rsp)\n    f20b:\t0f 29 44 24 20       \tmovaps %xmm0,0x20(%rsp)\n    f210:\t0f 29 44 24 30       \tmovaps %xmm0,0x30(%rsp)\n    f215:\t66 0f 28 c2          \tmovapd %xmm2,%xmm0\n    f219:\te8 72 17 00 00       \tcall   10990 <timing_first_detect>\n    f21e:\t85 c0                \ttest   %eax,%eax\n    f220:\t75 5e                \tjne    f280 <cancellation_primary_factors+0xd0>\n    f222:\t8b 44 24 18          \tmov    0x18(%rsp),%eax\n    f226:\t85 c0                \ttest   %eax,%eax\n    f228:\t75 26                \tjne    f250 <cancellation_primary_factors+0xa0>\n    f22a:\t48 8b 94 24 88 00 00 \tmov    0x88(%rsp),%rdx\n    f231:\t00 \n    f232:\t64 48 2b 14 25 28 00 \tsub    %fs:0x28,%rdx\n    f239:\t00 00 \n    f23b:\t75 4a                \tjne    f287 <cancellation_primary_factors+0xd7>\n    f23d:\t48 81 c4 90 00 00 00 \tadd    $0x90,%rsp\n    f244:\t5b                   \tpop    %rbx\n    f245:\t5d                   \tpop    %rbp\n    f246:\t41 5c                \tpop    %r12\n    f248:\t41 5d                \tpop    %r13\n    f24a:\t41 5e                \tpop    %r14\n    f24c:\tc3                   \tret\n    f24d:\t0f 1f 00             \tnopl   (%rax)\n    f250:\t48 8b 7b 08          \tmov    0x8(%rbx),%rdi\n    f254:\t44 89 ea             \tmov    %r13d,%edx\n    f257:\t4c 89 e6             \tmov    %r12,%rsi\n    f25a:\te8 e1 77 00 00       \tcall   16a40 <portable_verifier_load>\n    f25f:\t85 c0                \ttest   %eax,%eax\n    f261:\t75 1d                \tjne    f280 <cancellation_primary_factors+0xd0>\n    f263:\t48 8d 54 24 40       \tlea    0x40(%rsp),%rdx\n    f268:\t48 89 e9             \tmov    %rbp,%rcx\n    f26b:\t48 89 e6             \tmov    %rsp,%rsi\n    f26e:\t48 89 df             \tmov    %rbx,%rdi\n    f271:\te8 7a f4 ff ff       \tcall   e6f0 <verify_peaks.constprop.0>\n    f276:\teb b2                \tjmp    f22a <cancellation_primary_factors+0x7a>\n    f278:\t0f 1f 84 00 00 00 00 \tnopl   0x0(%rax,%rax,1)\n    f27f:\t00 \n    f280:\tb8 ff ff ff ff       \tmov    $0xffffffff,%eax\n    f285:\teb a3                \tjmp    f22a <cancellation_primary_factors+0x7a>\n    f287:\te8 74 30 ff ff       \tcall   2300 <__stack_chk_fail@plt>\n\nDisassembly of section .fini:\n",
+    "relink": [
+      "cc",
+      "-fprofile-use=/var/tmp/leo-short-signed-02/short/feedback",
+      "-fno-profile-values",
+      "-shared",
+      "-Wl,--gc-sections",
+      "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/two_carrier_receiver.o",
+      "/var/tmp/leo-short-signed-02/short/pilot_cancel.o",
+      "/var/tmp/leo-short-signed-02/short/timing_first_receiver.o",
+      "/var/tmp/leo-short-signed-02/short/delay_pgo.o",
+      "/var/tmp/leo-short-signed-02/short/portable_verifier.o",
+      "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+      "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+      "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+      "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+      "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+      "/var/tmp/leo-short-signed-02/short/delay_reference.o",
+      "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+      "/var/tmp/leo-short-signed-02/short/tile.o",
+      "-lfftw3f",
+      "-pthread",
+      "-lm",
+      "-Wl,-Bsymbolic-functions",
+      "-o",
+      "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so"
+    ],
+    "short_object_sha256": {
+      "conditioned_cfo_bank.o": "b98b950f64763c3b58476454bdbfd207889c6c86eaa8e602da99fdda1e2fa14d",
+      "delay_dispatch.o": "39ac8c1bcbea7262c2bfc9eaf8b45c8fea5dd1a9587be464549dda428b579382",
+      "delay_pgo.o": "f78c422fea5a2b5f9cda016569d5a30ec9c0010feb200297c4a0ace298c848cb",
+      "delay_reference.o": "6cfdc7ff97b60a670498eafd1aa5ce627cde72206e1a253789b4d40aa7c78b50",
+      "fft_full.o": "c4d7aac5b94daa0644c7509b5eeb8e2f0d5ac3744ec424d98c2859b02ed143a0",
+      "fine_search.o": "86ffab14b58df456e6d83db2b3eb79a87e86320595fd05145b21cb00808b731c",
+      "pilot_cancel.o": "e700294ea3cbc3ef44737313487d2e7d524f9a5994973f436c6ad23a4b6d91a3",
+      "portable_fine.o": "77ca4417c1d9fcc860cf49770b244d6e767c174b5af9282abfccc7ebaede3ce9",
+      "portable_verifier.o": "84efcba515d487369a43964f72acba6aa0997a77a510f5d8b7a1e6c87747b5fc",
+      "refine_bank.o": "177ec49d24abde6da3c253e4020d4cadb650ae10ce4f0401aa39887b7683a0e5",
+      "tile.o": "d7088aeae351609847e8ce213a04dc92c07e8e275d8c4b7c693d9d85e6f5968f",
+      "timing_first_receiver.o": "87653f82bd340b535ef7fd43d3ffe74fb92c57571fdd98c6edde4e47d30eb826",
+      "two_carrier_receiver.o": "5da4a22216750400f8cd669a4487b3d22c9458092dd4555739d59366090ef9f7"
+    },
+    "short_relink_sha256": "74464b62ae5cc5763dd62fa611e14133ef602578e11200c3152b0dc9555cd169",
+    "source_wrapper_sha256": "6f21e36a55caa489f5992a3fbae6006c2af549c30753b7053fae926d0cefb48e"
+  },
+  "panel_sha256": {
+    "dense": "01c4d5c80ed3feefbb3ee072d76b40d7566768522b5cc2cede25cb2365a10294",
+    "weak": "cd540df70741181116b57e105d87568ab554323d9687e211c7aec20f23316f6c"
+  },
+  "panels": {
+    "dense": {
+      "input_sha256": [
+        [
+          "DS30-0008:0",
+          "sha256:25ffc8a2b23638d1b3cd9e0ca85b08f3696fcfd8fa6d05c0b447581df4f3e31b"
+        ],
+        [
+          "DS30-0008:1",
+          "sha256:38a85096a138bdecb8c14da43070b7dc88d433c8ee59a23a4f153920c23d934a"
+        ],
+        [
+          "DS30-0008:2",
+          "sha256:b48ec990dda0f59bb210030c622317ba26229d17403e3279858d136b2aa12473"
+        ],
+        [
+          "DS30-0008:3",
+          "sha256:aef16b7dc410ada80cb4b9367c1abb7a2377a585ca63e90ce35383d5dd232ec3"
+        ],
+        [
+          "DS30-0008:4",
+          "sha256:6822975976374b5e2466255955d1831797c6291217a98200079fed6597fd5fab"
+        ],
+        [
+          "DS30-0008:5",
+          "sha256:229af1ac03f23712f6f702cbca2c8ad87973b84e99c36947e4c77cf6d02aec69"
+        ],
+        [
+          "DS30-0008:6",
+          "sha256:0e7093d4bbe5e95c07cd202cbaf55aaf0954ac2e564bb1805cdc05bc4ce4f885"
+        ],
+        [
+          "DS30-0008:7",
+          "sha256:0e7cf7d129e012cdc595d294e79d7bf8a6ee00582c4b34a945f1b6b4d124cd48"
+        ],
+        [
+          "DS30-0008:8",
+          "sha256:e12a86fc6c854e1be2fcf1d9abbca5fba7a5b0a95308737b8eb24c87be16cb23"
+        ],
+        [
+          "DS30-0008:9",
+          "sha256:8d2acccb0394260d21ffc19d6017c5076b76efcc4541c5d8f13af63ed7338b11"
+        ],
+        [
+          "DS30-0008:10",
+          "sha256:e87694fdb1be2e2307db2e67e9666c98a182df77318adf1fac990612db388c0b"
+        ],
+        [
+          "DS30-0008:11",
+          "sha256:2a9407e3966f3ae39d2692942629b8c1c3f1dd2834e9056f554cab671c40511f"
+        ],
+        [
+          "DS30-0008:12",
+          "sha256:fa295353cd453134533f60501cc2b2b86c99c381db4556d0bdabf9656084e7bc"
+        ],
+        [
+          "DS30-0008:13",
+          "sha256:2f87768583d0a65eae014c73b0d5fd7f593fd5d15ac8175038fd1b460e4b7fa2"
+        ],
+        [
+          "DS30-0008:14",
+          "sha256:32bf90121f12167709493ac71dde190a90ae8bc9e7661f21e87122b04f593e3e"
+        ],
+        [
+          "DS30-0008:15",
+          "sha256:1a1abec656ff2ee936222d3f309fc1a89082a79fecb64efa65662ec59de334bb"
+        ],
+        [
+          "DS30-0008:16",
+          "sha256:e66125d2a6f1615c14b71f6e0234bcb09bd19d414e59ce230bd4a483f3fae70c"
+        ],
+        [
+          "DS30-0008:17",
+          "sha256:09482e24a67857ae8dc6383441cf3526b6111797c565c7dd473d72c77f4718db"
+        ],
+        [
+          "DS30-0008:18",
+          "sha256:b6e65d2e6e49b6e490b99316008329bbe31b1d6669a31c889961502f567893a8"
+        ],
+        [
+          "DS30-0008:19",
+          "sha256:c7c66d78dd431a5406e310b07dd92f4c40dd020cf98f8fb3086f8290877c9e5a"
+        ],
+        [
+          "DS30-0008:20",
+          "sha256:41452bf8d6b92158296119dbe3b34b46cb689f19e14701aeab20101a9eb71187"
+        ],
+        [
+          "DS30-0008:21",
+          "sha256:7871ec9f7eee3441ec8a79a2c5d8df6857fde2144afacb81cbbd40403f2edd9e"
+        ],
+        [
+          "DS30-0008:22",
+          "sha256:e5d1ee51ea70e50b95eee27c06cd41beb66742c482df31098fb601ba2f186ff2"
+        ],
+        [
+          "DS30-0008:23",
+          "sha256:5e21ae176a3a854cbf707c1cd74730e22c597b99c84f8afd43f13761941821ab"
+        ],
+        [
+          "DS30-0008:24",
+          "sha256:219c906b7272a32620d47615721336419a0a1eeecfe40d51e4c3cf944f975caa"
+        ],
+        [
+          "DS30-0008:25",
+          "sha256:ee2f9fd553f081807ce68b84d78bbeb76b2bccbb3ae147b355bfd0afde9a413b"
+        ],
+        [
+          "DS30-0008:26",
+          "sha256:7e7b41c1fb34e9d0fe738ec14bbd0e78b711b98f79983c4e2b0ff95851e24c23"
+        ],
+        [
+          "DS30-0008:27",
+          "sha256:ffee9bba49ebb439736b3e74cacb3ca6c14e83ff5c5f07b118c5fa48763bbb00"
+        ],
+        [
+          "DS30-0008:28",
+          "sha256:f68ab31cf5cb56b1fee40bead22a3ae711ca4dbe5857e669935cc5314fbd3bf2"
+        ],
+        [
+          "DS30-0008:29",
+          "sha256:fcdaaa5556b105aca135119a7970b1e5512f81ecbfc2c8ca6907af19bb22629e"
+        ],
+        [
+          "DS30-0008:30",
+          "sha256:36a8d1520b1b94dc1baa3745ea3c61d2ace39fd201e7f63031cd263e8971bfa4"
+        ],
+        [
+          "DS30-0008:31",
+          "sha256:339e387591e0b2d5dc0a037576b3428088eb170a958d08e82b8977a41e1b18b6"
+        ],
+        [
+          "DS30-0008:32",
+          "sha256:7e7d2b7f6fd5f385b8ebd8e52288c77bc46d40543bd14984d2ae1556e51cd1b2"
+        ],
+        [
+          "DS30-0008:33",
+          "sha256:5140130874c80d9fceaa6d2bc8a50cb82b2a6c0d8565728f063251e70b179d9a"
+        ],
+        [
+          "DS30-0008:34",
+          "sha256:220a2f86c4a556727b48b94e62ce464fdfe617c0c6aa5b8835b676946358be67"
+        ],
+        [
+          "DS30-0008:35",
+          "sha256:b0eeb7fd8359046d33678248a16203de20b15f1341d986fb4e744de9a89ec135"
+        ],
+        [
+          "DS30-0008:36",
+          "sha256:616646935316d5d9799ca083f27cbcbbfb0c0937687a4d70a01d84ab173ee30f"
+        ],
+        [
+          "DS30-0008:37",
+          "sha256:bd9e3b29f65edf87c80d953e789dd883800e4964426a98ba0a1bec56d09d0a7f"
+        ],
+        [
+          "DS30-0008:38",
+          "sha256:29ec1cf6a61cc75b537beee5024e064573f92e7186449d3f4b0bc617acc0b933"
+        ],
+        [
+          "DS30-0008:39",
+          "sha256:4193be9c8e523b5054f2416c75554f9c43f2fb4bd8aa58dcebd4a9367461d12a"
+        ],
+        [
+          "DS30-0008:40",
+          "sha256:7c3f0f8a604ddddd28dcf715ff59149889cabaf26c80c760001e4c72b5fb0a60"
+        ],
+        [
+          "DS30-0008:41",
+          "sha256:411a375f2be5ecc583f68f88ea49761d811c425fd23052868d9a9253a99e8db2"
+        ],
+        [
+          "DS30-0008:42",
+          "sha256:20137c745975d22a2bc5dc7b90dbe3e1ac704e260085a69278728477d11aa686"
+        ],
+        [
+          "DS30-0008:43",
+          "sha256:58fdd9995521817f1fae85645fc25ff92462a3fa1eef21d722237a6821acd10b"
+        ],
+        [
+          "DS30-0008:44",
+          "sha256:2081d10cfba5faeadda67369cdea892113d3304856e4b2201fec6629f71fd347"
+        ],
+        [
+          "DS30-0008:45",
+          "sha256:cc23c69a954e8316f1945d3c566eeaa4b0b7148b94483a7af6e4bc5ed36ea526"
+        ],
+        [
+          "DS30-0008:46",
+          "sha256:69108e3756f3d2d7540da29eace5565058b8f8d2c85c1d7d3dd05b06a714f60a"
+        ],
+        [
+          "DS30-0008:47",
+          "sha256:5287985ccdd2ed7969f47aa13656c7c308ff1da8b057e16d641371fb2f82d3b3"
+        ]
+      ],
+      "machine": {
+        "cpu": [
+          2
+        ],
+        "ionice": "best-effort: prio 7",
+        "nice": 15,
+        "threads": {
+          "BLIS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        }
+      },
+      "repeats": [
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              267250686,
+              267316501
+            ],
+            "mixed_callback": [
+              101575424,
+              101584418
+            ],
+            "short_full": [
+              156397637,
+              156439363
+            ],
+            "short_primary": [
+              102949405,
+              102975246
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 48108647,
+            "short_primary": 51928627
+          },
+          "probe_document_sha256": "3924c1bc69c66af326552dfb411d778d2cc41e261ce8a1ce2f0c68dd201388d5",
+          "scheduled_calls": {
+            "full": 16,
+            "short_primary": 48
+          },
+          "scheduled_visits": {
+            "full": 8,
+            "short_primary": 24,
+            "skip": 16
+          },
+          "selected": {
+            "full": 9,
+            "short_primary": 19,
+            "skip": 0
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              265499552,
+              265559975
+            ],
+            "mixed_callback": [
+              99645243,
+              99652141
+            ],
+            "short_full": [
+              156381295,
+              156422440
+            ],
+            "short_primary": [
+              103283568,
+              103318646
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 46888488,
+            "short_primary": 51216766
+          },
+          "probe_document_sha256": "3924c1bc69c66af326552dfb411d778d2cc41e261ce8a1ce2f0c68dd201388d5",
+          "scheduled_calls": {
+            "full": 16,
+            "short_primary": 48
+          },
+          "scheduled_visits": {
+            "full": 8,
+            "short_primary": 24,
+            "skip": 16
+          },
+          "selected": {
+            "full": 9,
+            "short_primary": 19,
+            "skip": 0
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              261396890,
+              261464140
+            ],
+            "mixed_callback": [
+              100151933,
+              100159908
+            ],
+            "short_full": [
+              155137450,
+              155177229
+            ],
+            "short_primary": [
+              103185310,
+              103214238
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 47096430,
+            "short_primary": 51521481
+          },
+          "probe_document_sha256": "3924c1bc69c66af326552dfb411d778d2cc41e261ce8a1ce2f0c68dd201388d5",
+          "scheduled_calls": {
+            "full": 16,
+            "short_primary": 48
+          },
+          "scheduled_visits": {
+            "full": 8,
+            "short_primary": 24,
+            "skip": 16
+          },
+          "selected": {
+            "full": 9,
+            "short_primary": 19,
+            "skip": 0
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              256930020,
+              256986157
+            ],
+            "mixed_callback": [
+              99737600,
+              99745557
+            ],
+            "short_full": [
+              152802420,
+              152835286
+            ],
+            "short_primary": [
+              101439687,
+              101468238
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 47564605,
+            "short_primary": 50669222
+          },
+          "probe_document_sha256": "3924c1bc69c66af326552dfb411d778d2cc41e261ce8a1ce2f0c68dd201388d5",
+          "scheduled_calls": {
+            "full": 16,
+            "short_primary": 48
+          },
+          "scheduled_visits": {
+            "full": 8,
+            "short_primary": 24,
+            "skip": 16
+          },
+          "selected": {
+            "full": 9,
+            "short_primary": 19,
+            "skip": 0
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              265126066,
+              265188327
+            ],
+            "mixed_callback": [
+              99340671,
+              99348298
+            ],
+            "short_full": [
+              155098808,
+              155137696
+            ],
+            "short_primary": [
+              102921219,
+              102949496
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 45856019,
+            "short_primary": 51965457
+          },
+          "probe_document_sha256": "3924c1bc69c66af326552dfb411d778d2cc41e261ce8a1ce2f0c68dd201388d5",
+          "scheduled_calls": {
+            "full": 16,
+            "short_primary": 48
+          },
+          "scheduled_visits": {
+            "full": 8,
+            "short_primary": 24,
+            "skip": 16
+          },
+          "selected": {
+            "full": 9,
+            "short_primary": 19,
+            "skip": 0
+          }
+        }
+      ],
+      "validation": {
+        "installed_factors": 80,
+        "lanes": 96,
+        "primary_empty": 51,
+        "primary_retained": 45,
+        "relinked_short_exact": 96,
+        "short_full_factors": 65,
+        "short_residual_only": 0,
+        "suffix_exact": 96
+      }
+    },
+    "weak": {
+      "input_sha256": [
+        [
+          "DS26-0020-v2502-rx1",
+          "sha256:a7f146320e11c11aee0664a217bc502943222925a14c758ac0d0932b06388223"
+        ],
+        [
+          "DS26-0020-v6100-rx0",
+          "sha256:3aadeb889951cd2ebb53870fdbd3bbbbbfc292c96a731ad1212c9a79f791b242"
+        ],
+        [
+          "DS26-0036-v1479-rx0",
+          "sha256:2bc20f736863fec49fa5adf02f99361d8dc9d8c3ff2762a515071100b5b8567e"
+        ],
+        [
+          "DS26-0036-v1850-rx1",
+          "sha256:042bb7e353a3c985da536d2e70b6f5045fbcec4eabcb582357092e19aba6da90"
+        ],
+        [
+          "DS26-0036-v4196-rx0",
+          "sha256:f2a9296136ff1054d403f274108dea2c2eb1a55bf24a61494579bcb53dbbb604"
+        ],
+        [
+          "DS26-0036-v5358-rx1",
+          "sha256:06437f4ebd715c88782cbbc76dd34088633d90f94ab6eadd9be1f0046005a5b5"
+        ],
+        [
+          "DS26-0066-v0366-rx1",
+          "sha256:9c9805e06dde69510d9ef61155345b02659403eba09cfcf3a5740fc8783369b8"
+        ],
+        [
+          "DS26-0066-v2580-rx0",
+          "sha256:8434f4691d00eed575db150a279b2383008532e29e1892e85d5191345ea47000"
+        ],
+        [
+          "DS26-0066-v3099-rx1",
+          "sha256:5661415c18cd593a0b394b2ac5baa2d39311738f9639b414230bee0ddb656406"
+        ],
+        [
+          "DS26-0162-v1534-rx0",
+          "sha256:2ffbad6607f12aeddb1d90238dd210e911c844001825e43e0c90c02255eefd6c"
+        ],
+        [
+          "DS26-0162-v2579-rx1",
+          "sha256:435bcd0edd60e2e2e4198fe28897d23bf8d9c47122c3cf55ea00333eccc4e77c"
+        ],
+        [
+          "DS26-0162-v5631-rx1",
+          "sha256:44a8a3a6a15dd8a37928847c2d98bf0eef360b49ae325a1cb526bfa80677edb1"
+        ],
+        [
+          "DS26-0162-v5687-rx1",
+          "sha256:fd8658ee1885e04276044ae564200969a948774c7766fab92d5a0010c76c1a15"
+        ],
+        [
+          "DS26-0162-v6113-rx1",
+          "sha256:1766452453270591237ed85b1f87702cc276fb2d1530b5d0a5521d87a8a76713"
+        ],
+        [
+          "DS26-0237-v2268-rx1",
+          "sha256:34c22023efddba02ebff07a44ead34ab9614fa3f792b4385ca1f0d38a1523fa2"
+        ],
+        [
+          "DS26-0237-v4048-rx1",
+          "sha256:7a2946a48ba88d2661948286c86aa848636452080406a29b02d7d69c3f8e84a0"
+        ],
+        [
+          "DS26-0237-v4051-rx1",
+          "sha256:beba19c22e9eb2fca7a14792b405c890e59edfdc008058f9bc9db79aad53208d"
+        ],
+        [
+          "DS26-0237-v4505-rx1",
+          "sha256:7383534abe4746b12367883dd09a2d269fe349be005430b4f2e84d9e5445a0c0"
+        ]
+      ],
+      "machine": {
+        "cpu": [
+          2
+        ],
+        "ionice": "best-effort: prio 7",
+        "nice": 15,
+        "threads": {
+          "BLIS_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        }
+      },
+      "repeats": [
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              134885550,
+              134907227
+            ],
+            "mixed_callback": [
+              133272075,
+              133280166
+            ],
+            "short_full": [
+              83920019,
+              83935689
+            ],
+            "short_primary": [
+              44257039,
+              44268676
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 128697897,
+            "short_primary": 3469952
+          },
+          "probe_document_sha256": "7fdeada7ece544843f4b6409e55c30349b4513f52bcd20af9b8fa813e103fd7e",
+          "scheduled_calls": {
+            "full": 34,
+            "short_primary": 2
+          },
+          "scheduled_visits": {
+            "full": 17,
+            "short_primary": 1
+          },
+          "selected": {
+            "full": 34,
+            "short_primary": 2
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              137478925,
+              137502169
+            ],
+            "mixed_callback": [
+              132952238,
+              132959761
+            ],
+            "short_full": [
+              84484229,
+              84499344
+            ],
+            "short_primary": [
+              45101801,
+              45114703
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 128544481,
+            "short_primary": 3322775
+          },
+          "probe_document_sha256": "7fdeada7ece544843f4b6409e55c30349b4513f52bcd20af9b8fa813e103fd7e",
+          "scheduled_calls": {
+            "full": 34,
+            "short_primary": 2
+          },
+          "scheduled_visits": {
+            "full": 17,
+            "short_primary": 1
+          },
+          "selected": {
+            "full": 34,
+            "short_primary": 2
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              142189430,
+              142220538
+            ],
+            "mixed_callback": [
+              138082129,
+              138103686
+            ],
+            "short_full": [
+              86795083,
+              86817812
+            ],
+            "short_primary": [
+              46296586,
+              46314516
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 133071907,
+            "short_primary": 3613865
+          },
+          "probe_document_sha256": "7fdeada7ece544843f4b6409e55c30349b4513f52bcd20af9b8fa813e103fd7e",
+          "scheduled_calls": {
+            "full": 34,
+            "short_primary": 2
+          },
+          "scheduled_visits": {
+            "full": 17,
+            "short_primary": 1
+          },
+          "selected": {
+            "full": 34,
+            "short_primary": 2
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              143046895,
+              143083561
+            ],
+            "mixed_callback": [
+              139567560,
+              139577103
+            ],
+            "short_full": [
+              86200949,
+              86225067
+            ],
+            "short_primary": [
+              46709683,
+              46728210
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 134100213,
+            "short_primary": 3352110
+          },
+          "probe_document_sha256": "7fdeada7ece544843f4b6409e55c30349b4513f52bcd20af9b8fa813e103fd7e",
+          "scheduled_calls": {
+            "full": 34,
+            "short_primary": 2
+          },
+          "scheduled_visits": {
+            "full": 17,
+            "short_primary": 1
+          },
+          "selected": {
+            "full": 34,
+            "short_primary": 2
+          }
+        },
+        {
+          "cpu_wall_ns": {
+            "installed_full": [
+              138402267,
+              138426069
+            ],
+            "mixed_callback": [
+              135842680,
+              135849365
+            ],
+            "short_full": [
+              84664000,
+              84681607
+            ],
+            "short_primary": [
+              45696962,
+              45710805
+            ]
+          },
+          "mixed_native_cpu_ns": {
+            "full": 131024401,
+            "short_primary": 3522850
+          },
+          "probe_document_sha256": "7fdeada7ece544843f4b6409e55c30349b4513f52bcd20af9b8fa813e103fd7e",
+          "scheduled_calls": {
+            "full": 34,
+            "short_primary": 2
+          },
+          "scheduled_visits": {
+            "full": 17,
+            "short_primary": 1
+          },
+          "selected": {
+            "full": 34,
+            "short_primary": 2
+          }
+        }
+      ],
+      "validation": {
+        "installed_factors": 58,
+        "lanes": 36,
+        "primary_empty": 2,
+        "primary_retained": 34,
+        "relinked_short_exact": 36,
+        "short_full_factors": 55,
+        "short_residual_only": 0,
+        "suffix_exact": 36
+      }
+    }
+  },
+  "startup": {
+    "accounted_native_workspace_bytes": {
+      "lower": {
+        "full": 10880424,
+        "short_primary": 9852904
+      },
+      "upper": {
+        "full": 10880424,
+        "short_primary": 9852904
+      }
+    },
+    "machine": {
+      "cpu": [
+        2
+      ],
+      "ionice": "best-effort: prio 7",
+      "nice": 15,
+      "threads": {
+        "BLIS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      }
+    },
+    "scopes": [
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          51294,
+          50646
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2150240,
+          2150398
+        ],
+        "repeat": 0
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          106718,
+          105869
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2905255,
+          2906315
+        ],
+        "repeat": 0
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          96752,
+          96439
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2607041,
+          2607618
+        ],
+        "repeat": 1
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          45500,
+          45494
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          1184667,
+          1184841
+        ],
+        "repeat": 1
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          41923,
+          41673
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          1088445,
+          1088799
+        ],
+        "repeat": 2
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          95678,
+          94700
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2564031,
+          2565209
+        ],
+        "repeat": 2
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          89497,
+          89281
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2714530,
+          2714917
+        ],
+        "repeat": 3
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          41381,
+          41254
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          1093614,
+          1093832
+        ],
+        "repeat": 3
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          40182,
+          40084
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          1020144,
+          1020408
+        ],
+        "repeat": 4
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          94748,
+          94463
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2445496,
+          2445960
+        ],
+        "repeat": 4
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          86292,
+          85894
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          2458408,
+          2459020
+        ],
+        "repeat": 5
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          46103,
+          45886
+        ],
+        "edge": "lower",
+        "enter_cpu_wall_ns": [
+          1082754,
+          1083126
+        ],
+        "repeat": 5
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          45730,
+          45231
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          1366991,
+          1367025
+        ],
+        "repeat": 0
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          85958,
+          85840
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          2510238,
+          2510532
+        ],
+        "repeat": 0
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          87262,
+          86978
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          2390886,
+          2391336
+        ],
+        "repeat": 1
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          40548,
+          40335
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          1056565,
+          1056878
+        ],
+        "repeat": 1
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          40312,
+          40231
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          1006841,
+          1007116
+        ],
+        "repeat": 2
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          84945,
+          84782
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          2458507,
+          2458919
+        ],
+        "repeat": 2
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          87674,
+          87482
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          2351786,
+          2352173
+        ],
+        "repeat": 3
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          43106,
+          42887
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          1074644,
+          1074986
+        ],
+        "repeat": 3
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          41468,
+          41367
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          1032789,
+          1033019
+        ],
+        "repeat": 4
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          89026,
+          88792
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          2417103,
+          2417573
+        ],
+        "repeat": 4
+      },
+      {
+        "arm": "mixed",
+        "close_cpu_wall_ns": [
+          87628,
+          87382
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          2434853,
+          2435257
+        ],
+        "repeat": 5
+      },
+      {
+        "arm": "installed",
+        "close_cpu_wall_ns": [
+          40705,
+          40527
+        ],
+        "edge": "upper",
+        "enter_cpu_wall_ns": [
+          1099298,
+          1099579
+        ],
+        "repeat": 5
+      }
+    ],
+    "short_primary_sha256": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9"
+  },
+  "startup_summary": {
+    "lower": {
+      "installed": {
+        "first_cpu_wall_ms": [
+          2.15024,
+          2.150398
+        ],
+        "repeat_close_cpu_wall_ms": [
+          0.041923,
+          0.041673
+        ],
+        "repeat_cpu_wall_ms": [
+          1.088445,
+          1.088799
+        ]
+      },
+      "mixed": {
+        "first_cpu_wall_ms": [
+          2.905255,
+          2.906315
+        ],
+        "repeat_close_cpu_wall_ms": [
+          0.094748,
+          0.094463
+        ],
+        "repeat_cpu_wall_ms": [
+          2.564031,
+          2.565209
+        ]
+      }
+    },
+    "upper": {
+      "installed": {
+        "first_cpu_wall_ms": [
+          1.366991,
+          1.367025
+        ],
+        "repeat_close_cpu_wall_ms": [
+          0.040705,
+          0.040527
+        ],
+        "repeat_cpu_wall_ms": [
+          1.056565,
+          1.056878
+        ]
+      },
+      "mixed": {
+        "first_cpu_wall_ms": [
+          2.510238,
+          2.510532
+        ],
+        "repeat_close_cpu_wall_ms": [
+          0.087628,
+          0.087382
+        ],
+        "repeat_cpu_wall_ms": [
+          2.417103,
+          2.417573
+        ]
+      }
+    }
+  },
+  "summary": {
+    "dense": {
+      "cpu_wall_ms": {
+        "installed_full": [
+          265.126066,
+          265.188327
+        ],
+        "mixed_callback": [
+          99.7376,
+          99.745557
+        ],
+        "short_full": [
+          155.13745,
+          155.177229
+        ],
+        "short_primary": [
+          102.949405,
+          102.975246
+        ]
+      },
+      "nominal_steady_native_fraction_of_stock": 0.31915179833732377,
+      "primary_panel_cpu_ms_per_lane": 1.0723896354166667,
+      "probe_document_sha256": "3924c1bc69c66af326552dfb411d778d2cc41e261ce8a1ce2f0c68dd201388d5",
+      "scheduled_calls": {
+        "full": 16,
+        "short_primary": 48
+      },
+      "scheduled_native_cpu_ms_per_paid_lane": {
+        "full": 2.943526875,
+        "short_primary": 1.0733641875
+      },
+      "scheduled_native_cpu_ms_per_paid_stereo": {
+        "full": 5.88705375,
+        "short_primary": 2.146728375
+      },
+      "scheduled_native_fraction_of_stock": 0.37431998958461044,
+      "scheduled_visits": {
+        "full": 8,
+        "short_primary": 24,
+        "skip": 16
+      },
+      "selected": {
+        "full": 9,
+        "short_primary": 19,
+        "skip": 0
+      }
+    },
+    "weak": {
+      "cpu_wall_ms": {
+        "installed_full": [
+          138.402267,
+          138.426069
+        ],
+        "mixed_callback": [
+          135.84268,
+          135.849365
+        ],
+        "short_full": [
+          84.664,
+          84.681607
+        ],
+        "short_primary": [
+          45.696962,
+          45.710805
+        ]
+      },
+      "nominal_steady_native_fraction_of_stock": 0.2900874764934306,
+      "primary_panel_cpu_ms_per_lane": 1.2693600555555555,
+      "probe_document_sha256": "7fdeada7ece544843f4b6409e55c30349b4513f52bcd20af9b8fa813e103fd7e",
+      "scheduled_calls": {
+        "full": 34,
+        "short_primary": 2
+      },
+      "scheduled_native_cpu_ms_per_paid_lane": {
+        "full": 3.8536588529411766,
+        "short_primary": 1.734976
+      },
+      "scheduled_native_cpu_ms_per_paid_stereo": {
+        "full": 7.707317705882353,
+        "short_primary": 3.469952
+      },
+      "scheduled_native_fraction_of_stock": 0.9612934801131139,
+      "scheduled_visits": {
+        "full": 17,
+        "short_primary": 1
+      },
+      "selected": {
+        "full": 34,
+        "short_primary": 2
+      }
+    }
+  }
+}

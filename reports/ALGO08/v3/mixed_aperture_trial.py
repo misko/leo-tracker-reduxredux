@@ -7,6 +7,7 @@ import gzip
 from itertools import groupby
 import json
 from pathlib import Path
+from statistics import median
 import subprocess
 from time import process_time_ns, perf_counter_ns
 from types import SimpleNamespace
@@ -28,6 +29,10 @@ SHORT_RECEIPT_SHA = "cb369f55ceaaced0ddc87ff7c9bdff48b6cb78ea4ee7eff8ebf7754983b
 BUILD_MANIFEST_SHA = "5566ddd22345982e1b7673c7d65a8ce5799ce8229275365e1e6e237ab3f0e86d"
 REPEATS = 5
 PATHS = ("installed_full", "short_full", "short_primary", "mixed_callback")
+PANEL_SHA = {
+    "weak": "cd540df70741181116b57e105d87568ab554323d9687e211c7aec20f23316f6c",
+    "dense": "01c4d5c80ed3feefbb3ee072d76b40d7566768522b5cc2cede25cb2365a10294",
+}
 
 
 def exports(path):
@@ -227,15 +232,97 @@ def measure(work, installed, assets, weak, binding, bulk, cohort, output):
     run_panel(list(rows), installed, output, assets, original, json.loads((work / "build-receipt.json").read_bytes()))
 
 
+def setup(work, installed, assets, output):
+    from tools.pipeline_eval.qualification.blind_compact_run import detector
+
+    machine = check_machine()
+    build_receipt = json.loads((work / "build-receipt.json").read_bytes())
+    short = Path(build_receipt["binary"])
+    short_sha = build_receipt["binary_sha256"]
+    verified(installed, INSTALLED_SHA)
+    verified(short, short_sha)
+    timings = []
+    allocated = {}
+    for edge in PILOT_SHA:
+        pilot = assets / (edge + ".f32")
+        for repeat in range(6):
+            arms = ("installed", "mixed") if repeat % 2 == 0 else ("mixed", "installed")
+            for arm in arms:
+                start = process_time_ns(), perf_counter_ns()
+                prepare = detector if arm == "installed" else MixedApertureDetector(short, short_sha).detector
+                with prepare("cancellation", edge, binary=installed, pilot=pilot):
+                    timing = process_time_ns()-start[0], perf_counter_ns()-start[1]
+                close = process_time_ns()-start[0]-timing[0], perf_counter_ns()-start[1]-timing[1]
+                timings.append(dict(edge=edge, repeat=repeat, arm=arm, enter_cpu_wall_ns=timing,
+                                    close_cpu_wall_ns=close))
+        asset = np.frombuffer(verified(pilot, PILOT_SHA[edge]), dtype="<f4")
+        with ExitStack() as paths:
+            allocated[edge] = {}
+            for mode, binary in (("full", installed), ("short_primary", short)):
+                native = NativePath(binary, asset, mode)
+                paths.callback(native.close)
+                allocated[edge][mode] = native.native.bytes
+    with output.open("x") as stream:
+        print(json.dumps(dict(machine=machine, short_primary_sha256=short_sha,
+                              accounted_native_workspace_bytes=allocated, scopes=timings), indent=2), file=stream)
+
+
+def medians(panels):
+    med = lambda values: median(values) / 1e6
+    repeats = panels["repeats"]
+    first = repeats[0]
+    stock_cpu = median(row["cpu_wall_ns"]["installed_full"][0] for row in repeats)
+    primary_cpu = median(row["cpu_wall_ns"]["short_primary"][0] for row in repeats)
+    native_fraction = median(sum(row["mixed_native_cpu_ns"].values()) /
+                             row["cpu_wall_ns"]["installed_full"][0] for row in repeats)
+    per_paid_lane = {mode: med(row["mixed_native_cpu_ns"][mode] / row["scheduled_calls"][mode]
+                              for row in repeats) for mode in first["scheduled_calls"]}
+    return dict(cpu_wall_ms={mode: [med(row["cpu_wall_ns"][mode][axis] for row in repeats) for axis in (0, 1)]
+                             for mode in PATHS}, scheduled_calls=first["scheduled_calls"],
+                scheduled_visits=first["scheduled_visits"], selected=first["selected"],
+                scheduled_native_cpu_ms_per_paid_lane=per_paid_lane,
+                scheduled_native_cpu_ms_per_paid_stereo={mode: 2 * cost for mode, cost in per_paid_lane.items()},
+                primary_panel_cpu_ms_per_lane=primary_cpu / (panels["validation"]["lanes"] * 1e6),
+                scheduled_native_fraction_of_stock=native_fraction,
+                nominal_steady_native_fraction_of_stock=1 / 8 + (primary_cpu / stock_cpu) / 2,
+                probe_document_sha256=first["probe_document_sha256"])
+
+
+def score(work, output):
+    panels = {name: json.loads(verified(work / (name + ".json"), sha)) for name, sha in PANEL_SHA.items()}
+    startup = json.loads((work / "setup.json").read_bytes())
+    build_receipt = panels["weak"].pop("build")
+    if panels["dense"].pop("build") != build_receipt or startup["short_primary_sha256"] != build_receipt["binary_sha256"]:
+        raise ValueError("The two panels and setup used different compiled receivers")
+    durations = {}
+    for edge in PILOT_SHA:
+        durations[edge] = {}
+        for arm in ("installed", "mixed"):
+            rows = [row for row in startup["scopes"] if row["edge"] == edge and row["arm"] == arm]
+            durations[edge][arm] = {
+                "first_cpu_wall_ms": [ns / 1e6 for ns in rows[0]["enter_cpu_wall_ns"]],
+                "repeat_cpu_wall_ms": [median(row["enter_cpu_wall_ns"][axis] for row in rows[1:]) / 1e6
+                                       for axis in (0, 1)],
+                "repeat_close_cpu_wall_ms": [median(row["close_cpu_wall_ns"][axis] for row in rows[1:]) / 1e6
+                                             for axis in (0, 1)],
+            }
+    with output.open("x") as stream:
+        print(json.dumps(dict(build=build_receipt, panel_sha256=PANEL_SHA, panels=panels, startup=startup,
+                              summary={name: medians(panel) for name, panel in panels.items()},
+                              startup_summary=durations), indent=2, sort_keys=True, allow_nan=False), file=stream)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True)
-    building, measuring = (modes.add_parser(name) for name in ("build", "measure"))
+    building, measuring, starting, scoring = (modes.add_parser(name) for name in ("build", "measure", "setup", "score"))
     for mode, arguments in ((building, ("archive", "output")),
-                            (measuring, ("work", "installed", "assets", "weak", "binding", "bulk"))):
+                            (measuring, ("work", "installed", "assets", "weak", "binding", "bulk")),
+                            (starting, ("work", "installed", "assets", "output")),
+                            (scoring, ("work", "output"))):
         for name in arguments:
             mode.add_argument(name, type=lambda value: Path(value).resolve())
     measuring.add_argument("cohort", choices=("weak", "dense"))
     measuring.add_argument("output", type=Path)
     args = vars(parser.parse_args())
-    (build if args.pop("mode") == "build" else measure)(**args)
+    {"build": build, "measure": measure, "setup": setup, "score": score}[args.pop("mode")](**args)
