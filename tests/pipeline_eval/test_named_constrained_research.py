@@ -43,6 +43,20 @@ def test_default_is_stock_and_fitted_first_is_explicit(tmp_path):
     assert cli.options([*request, "--constrained", "fitted-first"]).constrained == "fitted-first"
 
 
+def test_wider_retry_requires_an_explicit_operator_binary_digest(tmp_path):
+    request = flags(tmp_path)
+    assert cli.options(request).wide_private_likelihood is None
+    with pytest.raises(SystemExit):
+        cli.options([*request, "--wide-private-likelihood", "library.so"])
+    with pytest.raises(SystemExit):
+        cli.options([*request, "--wide-private-likelihood-sha256", "2" * 64])
+    args = cli.options([*request, "--wide-private-likelihood", "library.so", "--wide-private-likelihood-sha256", "2" * 64,
+                        "--optimized-publication", "--constrained", "fitted-first"])
+    assert args.wide_private_likelihood == Path("library.so")
+    assert args.wide_private_likelihood_sha256 == "sha256:" + "2" * 64
+    assert args.optimized_publication and args.constrained == "fitted-first"
+
+
 @pytest.mark.parametrize("extra", [["--saved", "file"], ["--saved-digest", "invalid"], ["--saved-inventory", "file"]])
 def test_saved_options_fail_closed(tmp_path, extra):
     with pytest.raises(SystemExit):

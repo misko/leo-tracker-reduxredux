@@ -35,12 +35,17 @@ def options(argv=None):
     parser.add_argument("--constrained", choices=FIRST_ARMS, default="stock")
     parser.add_argument("--optimized-publication", action="store_true",
                         help="Reuse exact graph and orbit-history calculations and draw the reviewed web layouts")
+    parser.add_argument("--wide-private-likelihood", type=Path, help="Operator-provided wider likelihood library")
+    parser.add_argument("--wide-private-likelihood-sha256", type=saved_digest,
+                        help="Trusted binary digest for --wide-private-likelihood")
     parser.add_argument("--saved", type=Path, help="Existing signed named-v3 20 ms detections")
     parser.add_argument("--saved-digest", type=saved_digest, help="Sealed digest of --saved")
     parser.add_argument("--saved-inventory", type=Path, help="Authenticated original inventory for --saved")
     args = parser.parse_args(argv)
     if (args.saved is None) != (args.saved_digest is None) or (args.saved_inventory and args.saved is None):
         parser.error("Provide --saved and --saved-digest together, with optional --saved-inventory")
+    if (args.wide_private_likelihood is None) != (args.wide_private_likelihood_sha256 is None):
+        parser.error("Provide the wider likelihood library and its trusted binary digest together")
     return args
 
 
@@ -103,6 +108,11 @@ def analysis_scope(args, native, audit):
             family_cavity, "nominate_families", observe_nominations(family_cavity.nominate_families, audit["nominations"])
         ))
         scope.enter_context(patch.object(algo08_position, "selected_packet", selected_packet))
+        if args.wide_private_likelihood is not None:
+            from named_wide_likelihood import binding
+
+            scope.enter_context(binding(args.wide_private_likelihood, args.wide_private_likelihood_sha256,
+                                        args.output, audit["wide_private_likelihood"]))
         if native is not None:
             from leo.storage.fast_scan import FastScanStore, FastSegmentSource
             from leo.storage.short_window import ShortWindowReader
@@ -156,6 +166,11 @@ def run(args):
             "unified_short_bootstrap.py", "one_pass_web_png.py", "direct_residual_entry.py", "direct_residual_figures.py",
             "direct_orbit_entry.py", "direct_orbit_figures.py",
         ))
+    if args.wide_private_likelihood is not None:
+        from named_wide_likelihood import IMPLEMENTATION
+
+        sources.extend(IMPLEMENTATION)
+        audit["wide_private_likelihood"] = {}
     pins = {path.name: "sha256:" + sha256(path.read_bytes()).hexdigest() for path in sources}
 
     output.mkdir()
@@ -173,6 +188,8 @@ def run(args):
                     first_arm=first_arm, implementation=pins, release_ports=audit["prepared_release_sources"])
     if args.optimized_publication:
         identity["optimized_publication"] = True
+    if args.wide_private_likelihood is not None:
+        identity["wide_private_likelihood"] = audit["wide_private_likelihood"]["library_sha256"]
     audit.update(
         research_sha256=canonical_digest(identity), implementation=pins, optimized_publication=args.optimized_publication,
         named_specification=named["frozen_specification"], detector_sha256="sha256:"+named["detector_sha256"],
