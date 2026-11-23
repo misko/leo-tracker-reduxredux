@@ -28,7 +28,7 @@ def compare(publication, specification, native, inventory, archive, offer, mode,
     known_metadata = {r["visit_index"]: r for r in before if r["receiver_id"] == 0}
     plan = {v for v in skipped if v < PREFIX}
     if (canonical_digest(inventory) != source["input_manifest_sha256"]
-            or inventory["segments"][0]["windows"] < PREFIX or not plan):
+            or inventory["segments"][0]["windows"] < PREFIX or (mode == "fixed" and not plan)):
         raise ValueError("The signed inventory does not bind the bounded prefix or its mask")
     segment = inventory["segments"][0]
     prefix_inventory = dict(segments=[segment], window_count=PREFIX)
