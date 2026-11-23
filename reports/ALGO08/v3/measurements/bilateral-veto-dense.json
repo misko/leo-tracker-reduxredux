@@ -1,0 +1,235 @@
+{
+  "aperture_selection": "unfiltered",
+  "archive": {
+    "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0008/tle",
+    "snapshots_sha256": "sha256:0c9bdf4a80768161252ce2c28b4e96991276b6dc64ed3d6ff44d613a78b00ea2"
+  },
+  "case": "dense",
+  "driver": {
+    "bilateral_veto_disproof.py": "d3feeee3dac85ff960293889970e38fcf83ae67644a5bbb6141e253b8541a2d4",
+    "bilateral_veto_trial.py": "4ff3b543d6072ab4422711ca69eea0a3f024d4322865328124f50ef4b2a2680e",
+    "regional_reassignment.py": "6e7ae57a5762be3028756e3033c070de587c461707dda059692aee5d7c717b96",
+    "regional_track_scores.py": "82855abda12d1ffb563f3dbc065f3e624278228e944c4cf2342c404a4e3a4ee5"
+  },
+  "geographic_library": "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee",
+  "graph": "installed",
+  "library": "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098",
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "threads": {
+      "BLIS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "means": {
+    "one": {
+      "cpu_s": 3.0517567769999996,
+      "elapsed_s": 3.0518530877307057,
+      "shared_setup_cpu_s": 2.0157049129999995
+    },
+    "stock": {
+      "cpu_s": 3.3341968939999997,
+      "elapsed_s": 3.336167744360864,
+      "shared_setup_cpu_s": 1.9810029089999994
+    }
+  },
+  "native_pin": "sha256:ad13073239fe7e4e276debf3c667c0a997408d9efb5e07e309b5ab6fff4d0a85",
+  "offer": {
+    "center": [
+      37.906,
+      -122.545
+    ],
+    "screen_center": [
+      37.5,
+      -122.0
+    ],
+    "width_km": 25.0
+  },
+  "runs": [
+    {
+      "arm": "stock",
+      "cpu_s": 3.947599403,
+      "elapsed_s": 3.9512811033055186,
+      "partial_points": 0,
+      "projection": {
+        "calls": 25,
+        "cells": 80457300,
+        "projection_cpu_ns": 610786512
+      },
+      "result": {
+        "catalogue_orbits": 11177,
+        "complete": false,
+        "graph_points": 6461,
+        "original_points": 7336,
+        "potentially_visible_orbits": 774,
+        "probes_evaluated": 25,
+        "receiver_points": {
+          "1": 4156,
+          "2": 3180
+        },
+        "snapshots": [
+          "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+          "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+          "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+          "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+          "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+        ],
+        "stop": "inside_score",
+        "track_count": 208,
+        "would_withhold": false
+      },
+      "shared_setup_cpu_s": 2.4608234609999995,
+      "single_receiver_rows_sha256": null,
+      "stock_fallbacks": 0,
+      "stock_native": 25,
+      "stock_points": 25,
+      "stock_rows_sha256": "sha256:4d56815c2a05402aac5344434d4556546ae8e93985b8ad0844e027ba0767a29d"
+    },
+    {
+      "arm": "one",
+      "cpu_s": 3.474236552999999,
+      "elapsed_s": 3.474357530474663,
+      "partial_points": 25,
+      "partial_tracks": 122,
+      "projection": {
+        "calls": 25,
+        "cells": 80457300,
+        "projection_cpu_ns": 527589746
+      },
+      "result": {
+        "catalogue_orbits": 11177,
+        "complete": false,
+        "graph_points": 6461,
+        "original_points": 7336,
+        "potentially_visible_orbits": 774,
+        "probes_evaluated": 25,
+        "receiver_points": {
+          "1": 4156,
+          "2": 3180
+        },
+        "snapshots": [
+          "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+          "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+          "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+          "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+          "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+        ],
+        "stop": "single_receiver_inside_score",
+        "track_count": 208,
+        "would_withhold": false
+      },
+      "shared_setup_cpu_s": 2.448715623,
+      "single_receiver_rows_sha256": "sha256:f748e9f7ade9eba21fcdd468716265c8ac6d8381a618957d45f25f109b798462",
+      "stock_points": 0,
+      "stock_rows_sha256": null
+    },
+    {
+      "arm": "one",
+      "cpu_s": 2.629277001,
+      "elapsed_s": 2.6293486449867487,
+      "partial_points": 25,
+      "partial_tracks": 122,
+      "projection": {
+        "calls": 25,
+        "cells": 80457300,
+        "projection_cpu_ns": 541567978
+      },
+      "result": {
+        "catalogue_orbits": 11177,
+        "complete": false,
+        "graph_points": 6461,
+        "original_points": 7336,
+        "potentially_visible_orbits": 774,
+        "probes_evaluated": 25,
+        "receiver_points": {
+          "1": 4156,
+          "2": 3180
+        },
+        "snapshots": [
+          "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+          "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+          "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+          "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+          "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+        ],
+        "stop": "single_receiver_inside_score",
+        "track_count": 208,
+        "would_withhold": false
+      },
+      "shared_setup_cpu_s": 1.582694202999999,
+      "single_receiver_rows_sha256": "sha256:f748e9f7ade9eba21fcdd468716265c8ac6d8381a618957d45f25f109b798462",
+      "stock_points": 0,
+      "stock_rows_sha256": null
+    },
+    {
+      "arm": "stock",
+      "cpu_s": 2.7207943849999996,
+      "elapsed_s": 2.7210543854162097,
+      "partial_points": 0,
+      "projection": {
+        "calls": 25,
+        "cells": 80457300,
+        "projection_cpu_ns": 458427409
+      },
+      "result": {
+        "catalogue_orbits": 11177,
+        "complete": false,
+        "graph_points": 6461,
+        "original_points": 7336,
+        "potentially_visible_orbits": 774,
+        "probes_evaluated": 25,
+        "receiver_points": {
+          "1": 4156,
+          "2": 3180
+        },
+        "snapshots": [
+          "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+          "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+          "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+          "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+          "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+        ],
+        "stop": "inside_score",
+        "track_count": 208,
+        "would_withhold": false
+      },
+      "shared_setup_cpu_s": 1.5011823569999994,
+      "single_receiver_rows_sha256": null,
+      "stock_fallbacks": 0,
+      "stock_native": 25,
+      "stock_points": 25,
+      "stock_rows_sha256": "sha256:4d56815c2a05402aac5344434d4556546ae8e93985b8ad0844e027ba0767a29d"
+    }
+  ],
+  "saved_cpu_s": 0.28244011700000016,
+  "specification": "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
+  "stock_decision": {
+    "catalogue_orbits": 11177,
+    "complete": false,
+    "graph_points": 6461,
+    "original_points": 7336,
+    "potentially_visible_orbits": 774,
+    "probes_evaluated": 25,
+    "receiver_points": {
+      "1": 4156,
+      "2": 3180
+    },
+    "snapshots": [
+      "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+      "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+      "sha256:a087004642a8219fbac47508190338645e794b8bd467fed3afac905f2ca4cb52",
+      "sha256:b3ef92182fa6031c9f31fe4d2a00994b36207893fe9faf3f99393f8ee7940c12",
+      "sha256:efafa59616c631027349bd6f5cdb8494d4ef25edc46a15bfa5002aae2e132544"
+    ],
+    "stop": "inside_score",
+    "track_count": 208,
+    "would_withhold": false
+  }
+}
