@@ -99,13 +99,12 @@ def test_already_authenticated_compressed_and_index_bytes_do_not_prove_decoded_d
             native.check(compressed, rows, chunk)
 
 
-def test_concatenated_frames_decline_native_and_leave_canonical_decoder_available(fixture, library):
+@pytest.mark.parametrize("advertise_size", (False, True))
+def test_concatenated_frames_decline_native_and_leave_canonical_decoder_available(fixture, library, advertise_size):
     root, raw = fixture
     segment = source(root)
     chunk, rows, _ = authenticated_members(segment)
-    # Advertised content size in the first frame covers only the first window.
-    # Render it without an advertisement to exercise frame-layout detection.
-    encoder = zstd.ZstdCompressor(write_checksum=True, write_content_size=False)
+    encoder = zstd.ZstdCompressor(write_checksum=True, write_content_size=advertise_size)
     payload = b"".join(encoder.compress(window) for window in raw)
     member = segment.reader.path / chunk.payload_relative_path
     member.write_bytes(payload)

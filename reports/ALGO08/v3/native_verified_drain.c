@@ -69,11 +69,11 @@ int verified_drain_member(Drain *work, const uint8_t *compressed, size_t compres
     if (inspected) return malformed_frame;
     if (header.frameType != ZSTD_frame || header.dictID || header.windowSize > max_member)
         return unsupported;
-    if (header.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN && header.frameContentSize != decoded_size)
-        return wrong_geometry;
     const size_t frame_size = ZSTD_findFrameCompressedSize(compressed, compressed_size);
     if (ZSTD_isError(frame_size)) return malformed_frame;
     if (frame_size != compressed_size) return unsupported;
+    if (header.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN && header.frameContentSize != decoded_size)
+        return wrong_geometry;
     if (ZSTD_isError(ZSTD_DCtx_reset(work->decoder, ZSTD_reset_session_only))) return malformed_frame;
     stats->frame_header_bytes = header.headerSize;
     stats->history_bytes = header.windowSize;
