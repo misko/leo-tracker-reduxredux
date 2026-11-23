@@ -23,7 +23,7 @@ PINS = SOURCE_PINS | {
     "joint_publication.py": "9df6978f279577f972460a6b752511df9bf4c511e74d072ce4ff23ebd39ac5f7",
     "blind_joint_finish.py": "7d8d5a65ceb0e11150e28d0dbbddeabb7741ef1408ded6272500e4f0e012c708",
     "provisional_salvage.py": "69dc94c6645f4b97cb6cadf79d7d0fc57a54138fc30cec176a4b5ab4729517af",
-    "blind_joint_route.py": "f7a66aea7ed875f5de067a0125948cd51c91e329ac0ea4b4da6db5d1ca6",
+    "blind_joint_route.py": "f7a66aea7ed875f5de067a0125948cd51c91e329ac0ea4b4ab1b4da6db5d1ca6",
     "blind_joint_repair.py": "f89e80dd65606b065e4c8097d0d3204362993e070dc7dd3f2c2590dc2c32b2a0",
     "certified_salvage.py": "7ccb39db8f2f4a278b2c7b1977866e3d731601de7d759adb5541e88692917f09",
     "lighter_joint_estimator.py": "6692c234ab897ec62057b1472ed25b47392345a84d7fa5730190bbfdd27086b8",

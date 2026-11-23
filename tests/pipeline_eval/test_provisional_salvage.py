@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from reports.ALGO08.v3 import provisional_salvage as p
+from reports.ALGO08.v3 import blind_joint_finish as joint
 from reports.ALGO08.v3.blind_joint_finish import drop_failing
 
 
@@ -80,3 +81,32 @@ def test_unsafe_fit_reverts_without_a_second_fit(monkeypatch, endpoint, metrics,
     assert p.refine(scan, None, (problem, 0, 0), initial, expanded, initial, np.zeros(2), None, None,
                     support, audit, build=None, drop=drop_failing) is None
     assert audit["fit_calls"] == 1 and audit["reason"] == reason and audit["status"] == "reverted"
+
+
+def test_original_paired_gate_failure_reverts_owners_and_seed(monkeypatch):
+    scan, base, initial, expanded, _ = fixture()
+    seed, moved = np.zeros(2), np.array([1., 0.])
+    original_gate = gate(("incumbent", True, ["a"]), ("salvage", False, ["b", "c"]),
+                         ("other", False, ["d", "e"]))
+    base.keep = expanded
+    incumbent = SimpleNamespace(rows=base.rows, slices=base.slices, keep=initial)
+    monkeypatch.setattr(joint.v5_core, "scan_context", lambda *_: scan)
+    monkeypatch.setattr(joint, "history_model", lambda *_: (None, True))
+    monkeypatch.setattr(joint, "build_at", lambda *args: (base if args[2] is None or args[2].all() else incumbent, None, None))
+    monkeypatch.setattr(joint.conservative_recovery, "retained_metrics", lambda *_: original_gate)
+    monkeypatch.setattr(joint.conservative_recovery, "salvage", lambda *_: (None, expanded, []))
+    monkeypatch.setattr(joint, "select_entries", lambda *_: [])
+    finished = []
+
+    def fake_finish(scan, node, selected, problem, powers, means, model, entries, point, region, audit):
+        finished.append((selected.tolist(), point.tolist()))
+        return "old fit" if selected is not expanded else "rejected", selected is not expanded
+
+    monkeypatch.setattr(joint, "finish_pair", fake_finish)
+    rescue = lambda *_args, **_kwargs: (expanded, base, None, None, moved, original_gate)
+    audit = {}
+    result = joint.propose({"status": "inputs_prepared", "noise": []}, scan.search_region, None, audit,
+                           cold_start=lambda *_: (None, seed, {}, {}), rescue=rescue)
+    assert result == ("old fit", None)
+    assert finished == [(expanded.tolist(), moved.tolist()), (initial.tolist(), seed.tolist())]
+    assert audit["provisional_salvage"]["reason"] == "original_paired_gate"
