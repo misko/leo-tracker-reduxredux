@@ -1,7 +1,6 @@
 """Measure the complete raw combination against named v3 on one saved recording."""
 
 import argparse
-import json
 import os
 import subprocess
 from pathlib import Path
@@ -20,7 +19,7 @@ REFERENCE = Path("/var/tmp/leo-full-short-DS30-0016-pair/request.json")
 REFERENCE_PIN = "d58723098826fc7e1478f92880dffdb500bcb3f5225b4d64a4b2949cfbceab06"
 
 
-def run(output, geographic):
+def run(output, geographic, stock_first=False):
     from leo.storage.fast_scan import FastScanStore
     from tools.pipeline_eval.qualification.cache_residency import bound_snapshot, load_query
 
@@ -37,7 +36,7 @@ def run(output, geographic):
     session, digest, inventory = store.inventory(recording, verify_windows=False)
     if (session, digest, inventory["window_count"]) != (request["session"], original["inventory_sha256"], ISSUED):
         raise ValueError("Expected original inventory")
-    members = [(Path(item["path"]) / "manifest.json", item["manifest_digest"]) for item in inventory["segments"]]
+    members = tuple((Path(item["path"]) / "manifest.json", item["manifest_digest"]) for item in inventory["segments"])
     query = load_query(checked(CACHE_LIB, CACHE_SHA))
     env = environment(output)
     python = str(RELEASE / "venv/bin/python")
@@ -50,8 +49,11 @@ def run(output, geographic):
                       "--reuse-grid-phase-states", "--output", str(output / "candidate")],
         "stock": [str(STOCK), *args, "--bulk-root", str(output / "stock")],
     }
-    write(output / "binding.json", dict(machine=system, commands=commands, request=request, inventory=digest))
-    for arm, command in commands.items():
+    (output / "stock").mkdir()
+    order = ("stock", "candidate") if stock_first else ("candidate", "stock")
+    write(output / "binding.json", dict(machine=system, commands=commands, order=order, request=request, inventory=digest))
+    for arm in order:
+        command = commands[arm]
         cache = bound_snapshot(store, recording, members, os.sysconf("SC_PAGE_SIZE"), query)
         if cache["members"] != cache["observed_members"]:
             raise ValueError("Incomplete cache observation")
@@ -69,4 +71,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("geographic", type=Path)
+    parser.add_argument("--stock-first", action="store_true")
     run(**vars(parser.parse_args()))
