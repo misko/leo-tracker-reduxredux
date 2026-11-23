@@ -1,0 +1,3 @@
+# Check the unchanged exterior test on interior sparse solutions
+
+The causal follow-up receiver published a false fix on the known southern omission. Neither fitted endpoint touched a box face, which suppressed the two-receiver exterior test. Rebuild the exact sealed sparse native packet and apply the existing terminal exterior rule independently of the endpoint trigger on all three development offers. Keep its orbit catalogue, region, radii, short-circuit rule and receiver thresholds unchanged. Charge preparation and probe CPU separately. A successful screen must identify the displaced offer and preserve both containing results. This is a postfit diagnostic on public cases and cannot validate unseen-region performance.
