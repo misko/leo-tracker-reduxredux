@@ -12,7 +12,7 @@ from statistics import median, quantiles
 from acquisition_throughput import gates, minimum_rate
 from survey_owner_diagnostic import exact_owners
 
-from .full_short_cold import MEASURED, ORDERS, freeze
+from .full_short_cold import INGRESS_ORDERS, MEASURED, ORDERS, PRIOR_SHORT_DETECTION_SHA, freeze
 from .sparse_cold_input import ARCHIVED_DETECTION_SHA, WINDOWS, verified
 
 
@@ -20,6 +20,7 @@ INVENTORY_SHA = "fc46925e68437054169e2a3008388493554baf5c92f495eb3beb9434c10e620
 OWNER_SHA = "9ab0632563cc2ceacd043569956ef7fa1dfb9e24f26de370df57b8a19681221f"
 SCENARIOS = {"23.482/60.966": 23.482/60.966, "11.680/21.383": 11.680/21.383}
 PERIOD_SAMPLES = 13333
+PRIOR_SHORT_RECEIPT_SHA = "58892accfa3da056d432031d0a476ec869239963cdc5cd40cd52002c6b2553bc"
 
 
 def selected(probe):
@@ -173,8 +174,44 @@ def score(directory, summary, full):
                                              sort_keys=True, separators=(",", ":"), allow_nan=False).encode(), mtime=0))
 
 
+def score_ingress(directory, summary, full):
+    receipt = directory / "acquisition.json"
+    acquisition = json.loads(receipt.read_bytes())
+    if (acquisition["orders"] != [list(pair) for pair in INGRESS_ORDERS]
+            or acquisition["compressed_bytes"] != 232083693
+            or acquisition["archived_stock_sha256"] != ARCHIVED_DETECTION_SHA):
+        raise ValueError("Expected two reversed ingress-only pairs from the previous authenticated slice")
+    baseline = json.loads(gzip.decompress(verified(MEASURED / "full-short-cold.json.gz", PRIOR_SHORT_RECEIPT_SHA)))
+    prior = baseline["detection_documents"]["full-short"]
+    outcomes = []
+    for pair in acquisition["repeats"]:
+        left, right = sorted(pair, key=lambda row: row["arm"])
+        for row in pair:
+            content = verified(directory / row["detection_file"], PRIOR_SHORT_DETECTION_SHA)
+            if json.loads(content) != prior or row["sealed_detection_sha256"] != PRIOR_SHORT_DETECTION_SHA:
+                raise ValueError("The matched ingress measured a different detection packet")
+        outcomes.append(dict(cpu_ratio=right["cpu_ns"]/left["cpu_ns"],
+                             elapsed_ratio=right["wall_ns"]/left["wall_ns"],
+                             relative_peak_rss_ratio=right["peak_rss_kib"]/left["peak_rss_kib"],
+                             actual_read_bytes_difference=right["process_io_delta"]["read_bytes"]
+                             - left["process_io_delta"]["read_bytes"]))
+    inventory = json.loads(verified(MEASURED / "acquisition-throughput.json", INVENTORY_SHA))["rows"]
+    if len(inventory) != 55:
+        raise ValueError("The timing transfer requires every frozen published record")
+    result = dict(acquisition_sha256=sha256(receipt.read_bytes()).hexdigest(), inventory_sha256=INVENTORY_SHA,
+                  prior_receipt_sha256=PRIOR_SHORT_RECEIPT_SHA, prior_detection_sha256=PRIOR_SHORT_DETECTION_SHA,
+                  matching_sealed_documents=sum(map(len, acquisition["repeats"])),
+                  pairs=outcomes, projections=project(acquisition["repeats"], inventory))
+    freeze(summary, result)
+    with full.open("xb") as stream:
+        stream.write(gzip.compress(json.dumps(dict(acquisition=acquisition, detection=prior, scores=result),
+                                             sort_keys=True, separators=(",", ":"), allow_nan=False).encode(), mtime=0))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("directory", "summary", "full"):
         parser.add_argument(name, type=Path)
-    score(**vars(parser.parse_args()))
+    parser.add_argument("--compare-ingress", action="store_true")
+    args = vars(parser.parse_args())
+    (score_ingress if args.pop("compare_ingress") else score)(**args)
