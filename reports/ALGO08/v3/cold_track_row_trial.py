@@ -28,6 +28,11 @@ def fit_evidence(value):
     return value
 
 
+def same_proof(actual, archived):
+    # The stock proof counts by integer receiver; the sealed record has JSON keys.
+    return json.loads(json.dumps(actual)) == archived
+
+
 def rank_and_race(prepared, region, bound, reuse, share):
     from cold_finalist_race import refine
     from leo.analysis.localization_v3 import discovery
@@ -97,8 +102,13 @@ def run(raw, process, binary, replay, archived_code, output):
         tracks = prepared["tracks"]
         graphs.append(dict(status=prepared["status"], graph_points=tracks["graph_points"],
                            tracks=len(tracks["tracks"]), active_curvature=len(tracks["curved_indices"])))
+        if (graphs != [sealed["graph"]] or len(regional) != 1
+                or not same_proof(regional[0]["result"], sealed["regional"][0]["result"])):
+            raise ValueError(f"The installed graph or paid geographic proof changed: {graphs!r}, {regional!r}")
         for mode in ("reused", "released"):
-            pair[mode] = rank_and_race(prepared, region, bound, mode == "reused", share)
+            arm = rank_and_race(prepared, region, bound, mode == "reused", share)
+            write(output.with_suffix(f".{mode}.json"), arm)
+            pair[mode] = arm
         return dict(status="withheld", reason="cold_rank_pair_complete", arms={arm: {"latlon": None} for arm in ARMS})
 
     def observed(document, reader, assets, region):
@@ -116,10 +126,6 @@ def run(raw, process, binary, replay, archived_code, output):
 
     with patch.object(algo08_position, "solve", observed):
         result = solve(publication, spec, native, archive, offer)
-    if (result["reason"] != "cold_rank_pair_complete" or graphs != [sealed["graph"]]
-            or len(regional) != 1 or regional[0]["result"] != sealed["regional"][0]["result"]
-            or archive_identity(archive) != identity["archive"]):
-        raise ValueError("The installed graph, paid geographic proof or causal archive changed")
     released, reused = pair["released"], pair["reused"]
     cold, archived = released["branch"], sealed["attempts"][0]["cold"]
     comparison = dict(
@@ -128,9 +134,9 @@ def run(raw, process, binary, replay, archived_code, output):
         same_branch=fit_evidence(cold) == fit_evidence(reused["branch"]),
         archived_branch=fit_evidence({key: cold[key] for key in archived}) == fit_evidence(archived),
         rank_saved_cpu_s=released["rank"]["cpu_s"]-reused["rank"]["cpu_s"],
+        terminal_reason=result["reason"],
+        unchanged_archive=archive_identity(archive) == identity["archive"],
     )
-    if not comparison["archived_branch"] or len(released["orbits"]) != cold["catalogue"]:
-        raise ValueError("The trial did not reproduce the previously sealed genuine-short cold result")
     names = ("cold-track-row-reuse-protocol.md", "cold_track_row_reuse.py", "cold_track_row_trial.py",
              "proof_global_rank.py", "cold_finalist_race.py", "joint_publication.py")
     pins = {name: file_sha(HERE / name) for name in names}
@@ -139,6 +145,9 @@ def run(raw, process, binary, replay, archived_code, output):
                        archive=identity["archive"], offer=offer, controls={"sealed_replay": REPLAY_PIN,
                        "archived_solve": sealed["solve"], "graph_asset": TRACK_ASSET_PIN}, graph=graphs[0],
                        code=pins, pair=pair, comparison=comparison, regional=regional[0], **counts))
+    if (comparison["terminal_reason"] != "cold_rank_pair_complete" or not comparison["unchanged_archive"]
+            or not comparison["archived_branch"] or len(released["orbits"]) != cold["catalogue"]):
+        raise ValueError("The trial did not reproduce the previously sealed genuine-short cold result")
 
 
 if __name__ == "__main__":

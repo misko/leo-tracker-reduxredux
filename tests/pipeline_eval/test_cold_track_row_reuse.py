@@ -14,6 +14,7 @@ from tools.pipeline_eval.variants.algo08_sparse_rank_projection import Projected
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 from cold_track_row_reuse import CentreRows, associate_with_rows
+from cold_track_row_trial import same_proof
 
 
 @pytest.fixture
@@ -87,3 +88,9 @@ def test_original_gathers_when_binding_is_unavailable(why, table):
 def test_released_association_port_compiles_its_class_method():
     work = associate_with_rows(ScanLikelihood.association, object())
     assert work.__name__ == "association"
+
+
+def test_proof_matches_sealed_json_only_for_the_same_counts():
+    reference = {"receiver_points": {"1": 5, "2": 10}}
+    assert same_proof({"receiver_points": {1: 5, 2: 10}}, reference)
+    assert not same_proof({"receiver_points": {1: 10, 2: 5}}, reference)
