@@ -56,7 +56,8 @@ def named_rows(scan, memberships, *, predictive):
     return dict(seed=dict(rows=rows, state=zero_state(scan)), aliases=aliases), entries
 
 
-def geometry(scan, memberships):
+def geometry_rows(scan, memberships):
+    """Whiten nominal row tangents, preserving all cross-arc nuisance columns."""
     from leo.analysis.localization_v3.marginal import JointMarginal
     from leo.analysis.localization_v3.retained_position import phase_widths
     from leo.analysis.research.continuous_curve_fit import paired_phase_states, phase_frequency_from_states
@@ -87,13 +88,21 @@ def geometry(scan, memberships):
                                          features[:, :width_shared]))
         local_design = features[:, width_shared:].copy()
         local_design[:, -len(p.members):] *= .3
+        per_arm.append((p.labels, p.flat_labels, global_design.shape[1],
+                        np.column_stack((global_design, local_design)) / SIGMA_HZ))
+    return per_arm
+
+
+def geometry(scan, memberships):
+    per_arm = []
+    for labels, row_labels, shared, design in geometry_rows(scan, memberships):
         matrices = {}
-        for local_label, label in enumerate(p.labels):
-            points = p.flat_labels == local_label
-            within = local_design[points]
-            within = within[:, np.any(within != 0., axis=0)]
-            design = np.column_stack((global_design[points], within)) / SIGMA_HZ
-            matrices[int(nominal.norads[label])] = profile(design.T @ design, global_design.shape[1])
+        for local_label, label in enumerate(labels):
+            within = design[row_labels == local_label]
+            live = np.any(within != 0., axis=0)
+            live[:shared] = True
+            rows = within[:, live]
+            matrices[int(scan.norads[label])] = profile(rows.T @ rows, shared)
         per_arm.append(matrices)
     return {norad: tuple(matrices[norad] for matrices in per_arm) for norad in per_arm[0]}
 
