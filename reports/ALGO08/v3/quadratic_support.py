@@ -1,6 +1,6 @@
 """Fixed-observation incidence, causal acquisition opportunities and nominal geometry."""
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from hashlib import sha256
 
 import numpy as np
@@ -22,7 +22,7 @@ def native_rows(document):
         measured = max(eligible, key=lambda c: (c["fractional_margin"], -c["candidate_rank"]), default=None)
         if oid in rows:
             raise ValueError("Duplicate native receiver and hardware counter")
-        rows[oid] = dict(visit=row["visit_index"], time_s=(counter-anchor) / source["sample_rate_hz"],
+        rows[oid] = dict(visit=row["visit_index"], counter=counter, time_s=(counter-anchor) / source["sample_rate_hz"],
                          receiver=receiver, channel=row["channel"], rf_hz=row["actual_rf_hz"],
                          signal=None if measured is None else tuple(measured[key] for key in FACTOR_FIELDS))
     return rows
@@ -76,6 +76,31 @@ def acquisition_ceiling(full_owners, sparse_owners, full_native, paid):
                           missing_times_s=[t for t, _, _ in lost],
                           supported_visits=[visit for _, visit, history in lost if history]))
     return sorted(parts, key=lambda row: (-row["missing"], row["norad"], row["receiver"], row["epoch"]))
+
+
+def proposals(sparse, timeline, paid):
+    """Nominate unpaid family/lane queries using only paid owner rows and times."""
+    by_radio = defaultdict(list)
+    for oid, row in timeline.items():
+        by_radio[(row["receiver"], row["channel"], row["rf_hz"])].append((row["time_s"], oid))
+    opportunities = {}
+    for radio in by_radio.values():
+        history = []
+        for time, oid in sorted(radio):
+            history = [(t, label, anchor) for t, label, anchor in history if time-t <= ANCHOR_SECONDS]
+            if oid in sparse:
+                if timeline[oid]["visit"] not in paid:
+                    raise ValueError("A nomination anchor must come from an originally paid visit")
+                history.append((time, sparse[oid]["norad"], oid))
+            elif timeline[oid]["visit"] not in paid:
+                support = defaultdict(list)
+                for t, label, anchor in history:
+                    if time > t:
+                        support[label].append(anchor)
+                families = {label: support[label][-2:] for label in sorted(support) if len(support[label]) >= 2}
+                if families:
+                    opportunities[oid] = families
+    return opportunities
 
 
 def projected(matrix, keep=(0, 1), *, free=(), excluded=()):

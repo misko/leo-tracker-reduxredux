@@ -39,3 +39,15 @@ def test_projected_information_declines_when_timing_is_free(support):
     keep, held = support.validation_fold(9)
     assert not np.any(keep & held) and np.all(keep | held)
     assert keep[0] and keep[-1] and held.sum() == 3
+
+
+def test_nominations_use_two_strictly_previous_anchors_on_the_same_lane(support):
+    timeline = {}
+    for oid, slot, receiver in (("A", 0, 1), ("B", 3, 1), ("F", 4, 0), ("C", 5, 1), ("D", 9, 1)):
+        timeline[oid] = dict(visit=slot, time_s=slot, receiver=receiver, channel=6, rf_hz=12e9)
+    sparse = {"A": {"norad": 7}, "B": {"norad": 7}}
+    truth = {"C": {"norad": 7}, "F": {"norad": 7}}
+    queries = support.proposals(sparse, timeline, {0, 3})
+    assert queries == {"C": {7: ["A", "B"]}}
+    assert sum(row["past_anchor_supported"] for row in
+               support.acquisition_ceiling(truth, sparse, timeline, {0, 3})) == 1
