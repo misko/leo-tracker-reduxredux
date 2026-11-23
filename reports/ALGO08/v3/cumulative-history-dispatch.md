@@ -1,0 +1,18 @@
+# Cumulative dispatch recovered the named result at a higher cost
+
+The real cumulative-to-named dispatch recovered the **exact named v3 publication** on the staged DS30-0160 packet. The checked candidate finished in **20.428 s elapsed and 20.419 CPU s** through exit, including the failed cumulative prefix, a fresh named preparation and inference, all eight verified PNGs and the controller. The archived named retry took **15.999 s elapsed**. The corrected cumulative process finished in **14.612 s elapsed** with different owners and worse position errors. A separate named-only recovery took **11.120 s elapsed**. The dispatch restores named science on this development case with a higher measured time than either prior complete process. [Protocol](cumulative-history-dispatch-protocol.md) · [Sealed receipt](measurements/cumulative-history-dispatch-DS30-0160.json.gz)
+
+| Paid part of the dispatched candidate | CPU, s | Elapsed, s |
+|---|---:|---:|
+| First cumulative worker through verified failure and exit | 7.237 | 7.239 |
+| Named recovery worker through full publication and exit | 11.176 | 11.183 |
+| Controller, evidence handling and transition | 2.006 | 2.007 |
+| Entire dispatched process | 20.419 | 20.428 |
+
+The first worker spent 5.986 CPU s inside the intercepted solve, including 2.18 ms for the narrow causal admission. The named worker spent 7.740 CPU s inside its complete solve, with one full named preparation. Rigorous named isolation uses a fresh interpreter, so this trial charges that startup and the repeated preparation. All timed processes carried zero input blocks. The original successful comparisons are archived, and no new waveform, physical metadata or second case was opened. [Named-only timing](named-history-once.md) · [Corrected cumulative comparison](prospective-0160-solver.md)
+
+The hook ran in the installed top-level `history_support()` retry factory after the cumulative inference failed. It required the bare assertion at line 44 of the pinned function and independently reconfirmed earlier NORAD 58706 against the genuine causal inputs. It then stopped the first worker before any terminal or media commit. The independent named worker used the same sealed full packet and confirmed the same earlier orbit failure. The visible terminal declares `history_support`. A speculative assertion handled inside the cumulative branch cannot reach this hook. Other earlier-orbit assertions retain the installed retry factory, and normal successful decisions retain their original cumulative publication. Ten tests passed with boundary, ordinary and malformed failure controls. [Hook](cumulative_history_dispatch.py) · [Driver](cumulative_history_dispatch_trial.py) · [Tests](../../../tests/pipeline_eval/test_cumulative_history_dispatch.py)
+
+The selected output matched the archived named terminal, both calibration arms, all 1,037 ordered owner-role rows per arm, the complete 179-point grid and optimizer path, and all eight PNG bytes, decoded pixel digests and dimensions. Both numerical sidecars bind the actual published position PNG. Thus the fixed-zero and fitted position errors remain 0.798498 km and 1.089003 km, with RF RMS of 126.335235 Hz and 126.092687 Hz respectively. This is the single recognized `history_support` completion in the signed 100-assignment roster. There is no demonstrated case-independent trigger before the paid cumulative prefix, and this dispatch does not establish a panel speedup.
+
+The result and launch binding expand to SHA-256 `971537950eee151f914c317b4c9aeef7669e8596dd25a8c5b76b0a2ca974ae56` and `4ca88631bf255f3d1d1781dd9d0dc9b662527cbe00ae3524e1d41bd4d93203c9`. [Launch binding](measurements/cumulative-history-dispatch-DS30-0160-binding.json.gz)
