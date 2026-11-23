@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 ANCHOR = Path("/dev/shm/leo-v3-anchored-raw/reports/ALGO08/v3")
-STAGE_SHA = "08e9f0d24b0105837d38039fdb326179f9d23b3609f7d301dac5150a388de1a6"
+STAGE_SHA = "bfd63243d80639cc110f6fe6a4deb2beb140e29c471d2b5e79395203ca72ac08"
 ANCHOR_SHA = "295204e3a5f20bc642a41cbef186e587b985f02062d8789efe7190c3fed3afda"
 PACK = Path("/dev/shm/leo-anchored-cfo-raw-pack01")
 PACK_SHA = "0d590b0c7e4ffc468fb17804146362b8534d33d115d83055ae7bbc1dafd967a9"
@@ -225,13 +225,12 @@ def run(root):
         read = lambda p: json.loads(p.read_bytes())
         a, b, c = (read(p/"scope-receipt.json") for p in (AB/f"{repeat}-exact", AB/f"{repeat}-anchored", target))
         original, anchored, hybrid = (read(p/"detections.json") for p in (AB/f"{repeat}-exact", AB/f"{repeat}-anchored", target))
-        for receipt, native, archived in zip((a,b), (original,anchored), ab["arms"], strict=True):
+        for mode, receipt, archived in zip(("exact", "anchored"), (a, b), ab["arms"], strict=True):
             expected = archived["receipt"]
             keys = ("iq", "vectors", "recipe", "native_sha256", "prefix_inventory")
             if any(receipt[k] != expected[k] for k in keys):
                 raise ValueError("Archived original member run changed")
             # Production detector JSON is already the canonical serialized data.
-            mode = "exact" if receipt is a else "anchored"
             path = AB/f"{repeat}-{mode}"/"detections.json"
             checked(path, receipt["native_sha256"][7:])
         verify_partition(original, anchored, hybrid, a, b, c)
