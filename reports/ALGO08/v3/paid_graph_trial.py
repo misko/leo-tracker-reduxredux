@@ -46,6 +46,15 @@ def prepare_paid(native, rows, clocks, identity, mode, *, select_paid=None):
     return native, config, stats
 
 
+def prepared_packet(case, mode):
+    from leo.contracts.digests import canonical_digest
+
+    native, rows, _, clocks, archive, offer, identity = bound_inputs(case)
+    native, config, stats = prepare_paid(native, rows, clocks, identity, mode)
+    identity.update(mode=mode, selection=stats, native_sha256=canonical_digest(native))
+    return native, archive, offer, identity, config, paid_visits(rows)
+
+
 def run(case, mode, out, prior=None, *, observe=None, select_paid=None):
     staged = {}
 
