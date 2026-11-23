@@ -32,6 +32,11 @@ INITIAL = Path('/dev/shm/leo-v3-south-cfo-route-eligibility01.json')
 INITIAL_PIN = '80f4608196976f27f4e1ec0382ada800197b62a91747ec62f8dd18e1f57be24f'
 MAX_MISSING = 128
 CFO = 'fractional_tracking_cfo_hz'
+FAILED = Path('/dev/shm/leo-v3-south-cfo-route-01')
+FAILED_CLOCK = '072ef854cf38346335e7a93a224bed550251e6df5eb23bcbe33ab85f5a423cae'
+FAILED_CACHE = '298c2c93bd0b4b4b3891b715fbabd5e25eb115957586f7e9bff9e4d744665742'
+SMOKE = Path('/dev/shm/leo-v3-south-cfo-route-selector-smoke02.json')
+SMOKE_PIN = '2df4f8a75ce4c5c21d792c4dab91d577f8c48dc6c75882eb7157d4f3a4888e00'
 
 
 def assigned():
@@ -230,8 +235,8 @@ def saved_worker(root):
         complete_saved=dict(cpu_s=process_time()-began[0],elapsed_s=perf_counter()-began[1])))
 
 
-def launch(root):
-    from aperture_trial import RELEASE,read,write
+def recover(root):
+    from aperture_trial import RELEASE,write
     from dense_geographic_trial import host
     from empty_bootstrap import checked
     from full_short_physical import environment
@@ -240,6 +245,13 @@ def launch(root):
 
     machine = host()
     initial = json.loads(checked(INITIAL,INITIAL_PIN))
+    failed = json.loads(checked(FAILED/'containing-clock.json',FAILED_CLOCK))['timing']
+    warmed = json.loads(checked(FAILED/'cache-after.json',FAILED_CACHE))
+    smoke = json.loads(checked(SMOKE,SMOKE_PIN))
+    if (failed['exit_code'] != 1 or 'the first argument must be callable' not in failed['stderr_tail']
+            or not admissible(warmed) or not smoke['verified'] or smoke['waveform_calls']
+            or not smoke['synthetic_one_cfo_change'] or smoke['detail']['choice']['route'] != 'history'):
+        raise ValueError('Expected the one paid import failure and the reviewed saved wrapper fix')
     request,chunks = assigned()
     for path in (str(root.parent),str(RECORDING),ARCHIVE['root'],request['saved_inventory']):
         if subprocess.check_output(['findmnt','-no','FSTYPE','-T',path],text=True).strip() != 'tmpfs':
@@ -255,7 +267,8 @@ def launch(root):
     sources = ('south_cfo_route.py','held_cycle_refined.py','short_cfo_raw.py','unified_short_bootstrap.py',
                'held_anchor_route_publication.py','short_graph_guard.py','named_survivor_fit.py',PROTOCOL.name)
     request.update(libraries=libraries,library_sha256=pins,initial_eligibility_sha256=INITIAL_PIN,
-          machine=machine,paging_limit_pages=MAX_MISSING,source_sha256={n:sha256((HERE/n).read_bytes()).hexdigest() for n in sources})
+          machine=machine,paging_limit_pages=0,paid_failed_clock_sha256=FAILED_CLOCK,paid_failed_clock=failed,
+          saved_partial_class_smoke_sha256=SMOKE_PIN,source_sha256={n:sha256((HERE/n).read_bytes()).hexdigest() for n in sources})
     write(root/'binding.json',request)
     env = environment(root)
     env.update(TMPDIR=str(root/'tmp'),XDG_CACHE_HOME=str(root/'tmp'))
@@ -271,8 +284,8 @@ def launch(root):
                '--region',request['offers'][MODES[0]],'--output',target,*flags,*CURVATURE_FLAGS,*PUBLICATION_FLAGS,'--select-before-cfo']
     observed = residency(chunks)
     write(root/'cache-before.json',observed)
-    if not admissible(observed,MAX_MISSING):
-        raise ValueError('The authorized South staging deficit exceeds 128 pages or original member metadata changed')
+    if not admissible(observed):
+        raise ValueError('The one corrected launch requires already fully resident South staging')
     clock = measure(command,env,target)
     write(root/'containing-clock.json',dict(timing=clock,command=list(map(str,command))))
     write(root/'cache-after.json',residency(chunks))
@@ -292,7 +305,7 @@ def launch(root):
 if __name__ == '__main__':
     sys.path.insert(0,str(HERE))
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation',choices=('eligibility','launch','saved'))
+    parser.add_argument('operation',choices=('eligibility','recover','saved'))
     parser.add_argument('output',type=Path)
     args = parser.parse_args()
-    {'eligibility':eligibility,'launch':launch,'saved':saved_worker}[args.operation](args.output)
+    {'eligibility':eligibility,'recover':recover,'saved':saved_worker}[args.operation](args.output)

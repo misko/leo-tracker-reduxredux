@@ -22,7 +22,6 @@ def smoke(output):
     from held_cycle_refined import FrequencyChanges, select_refined
     from leo.contracts.digests import canonical_digest
     import mixed_aperture_receiver as mixed
-    from north_factor_swap import rebound
     from raw_cfo_north_trial import native_file
     from short_cfo_raw import RefinedShortDetector, recipe
     from south_cfo_route import CFO, HISTORY, INVENTORY, UNFILTERED, audit_selected
@@ -39,10 +38,15 @@ def smoke(output):
     altered_cfo = original_cfo + 0.125
     rows[index] = dict(row,candidates=[dict(factor,**{CFO:altered_cfo})])
     alternate_recipe = recipe(checked_recipe(),RECIPE_SHA)
-    alternate = rebound(original,rows,alternate_recipe)
+    pin = canonical_digest(alternate_recipe)
+    manifest = canonical_digest(['cancellation',original['source']['raw_recording_authority_digest'],pin[7:],rows])
+    alternate = dict(original,source=dict(original['source'],analysis_manifest_sha256=manifest,probes=rows),
+                     provenance=dict(original['provenance'],detector_sha256=pin,run_id='blind-compact-'+manifest[7:39]))
     changes = FrequencyChanges()
     changes.changed[row['visit_index'],row['receiver_id']] = original_cfo,altered_cfo
     changes.attempted = sum(bool(row['candidates']) and entry[4] == 'short' for row,entry in zip(rows,anchor_schedule,strict=True))
+    if any(name in sys.modules for name in ('causal_short_receiver','north_factor_swap')):
+        raise ValueError('Saved smoke must exercise the active raw wrapper before either late import')
     with patch.object(mixed,'MixedApertureDetector',partial(RefinedShortDetector,policy=SimpleNamespace())):
         packet,mapped,detector,detail = select_refined(alternate,alternate_recipe,changes,
             original['source']['session_id'],INVENTORY,output.with_suffix('.selector.json'))
