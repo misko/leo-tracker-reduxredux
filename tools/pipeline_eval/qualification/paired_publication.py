@@ -23,6 +23,27 @@ from tools.pipeline_eval.qualification import cache_residency, launcher_observat
 
 LOCK = Path("/tmp/leo-algo08v2-2x-bench/gauss.lock")
 BASELINE = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/run")
+NAMED_V3 = Path("/opt/leo-algo08/algo08v3/run")
+V3_LAUNCHER_SHA = "fae032526227f55ca2419a0b29c69afc7fc97fa04508f33d0403802934f13448"
+V3_IDENTITY = dict(version="ALGO08v3",
+                   frozen_specification="sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
+                   detector_sha256="2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5")
+
+
+def verified_v3(launcher):
+    if hashlib.sha256(launcher.read_bytes()).hexdigest() != V3_LAUNCHER_SHA:
+        raise ValueError("ALGO08v3 baseline launcher changed")
+    identity = json.loads(subprocess.check_output([str(launcher), "--verify"], text=True, timeout=60))
+    if identity != V3_IDENTITY:
+        raise ValueError("ALGO08v3 baseline payload changed")
+    return identity
+
+
+def verify_v3_publication(root, receipt):
+    marker = json.loads((root / "algo08v3-release.json").read_bytes())
+    expected = V3_IDENTITY | {key: receipt[key] for key in ("session_id", "decision")}
+    if marker != expected:
+        raise ValueError("Publication differs from the measured ALGO08v3 baseline")
 
 
 def verify_sources(launcher, sources):
@@ -208,6 +229,8 @@ def run_pair(args):
                       region=str(args.region.resolve()), runs=runs)
         pinned_config = None
         try:
+            if Path(args.baseline).resolve() == NAMED_V3.resolve():
+                result["baseline_release"] = verified_v3(NAMED_V3)
             expected_archive = getattr(args, "archive_inventory_sha256", None)
             if expected_archive is not None:
                 result["archive"] = archive_identity(args.archive)
@@ -250,6 +273,8 @@ def run_pair(args):
                     runs[name] = measure(*measurement)
                 else:
                     runs[name] = measure(*measurement, before_launch=lambda name=name: observe(name))
+                if name == "baseline" and "baseline_release" in result and "failure_observation" not in runs[name]:
+                    verify_v3_publication(args.output / name, runs[name]["receipt"])
             a, b = runs["baseline"], runs["candidate"]
             if a["raw_authority"] != b["raw_authority"] or any(
                     a["receipt"][k] != b["receipt"][k] for k in ("region","session_id","window_count")):

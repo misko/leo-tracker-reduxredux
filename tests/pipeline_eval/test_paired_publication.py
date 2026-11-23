@@ -58,6 +58,25 @@ def test_source_pins_bind_the_measured_launcher_to_the_reviewed_variant(tmp_path
         bench.verify_sources(runner, pins)
 
 
+def test_named_v3_binds_verified_launcher_and_publication_marker(tmp_path, monkeypatch):
+    launcher = tmp_path / "run"
+    launcher.write_bytes(b"fixture")
+    monkeypatch.setattr(bench, "V3_LAUNCHER_SHA", hashlib.sha256(b"fixture").hexdigest())
+    monkeypatch.setattr(bench.subprocess, "check_output", lambda *a, **kw: json.dumps(bench.V3_IDENTITY))
+    assert bench.verified_v3(launcher) == bench.V3_IDENTITY
+    receipt = dict(session_id="recording", decision="withheld")
+    (tmp_path / "algo08v3-release.json").write_text(json.dumps(bench.V3_IDENTITY | receipt))
+    bench.verify_v3_publication(tmp_path, receipt)
+    with pytest.raises(ValueError, match="Publication"):
+        bench.verify_v3_publication(tmp_path, dict(receipt, decision="complete"))
+    monkeypatch.setattr(bench.subprocess, "check_output", lambda *a, **kw: "{}")
+    with pytest.raises(ValueError, match="payload changed"):
+        bench.verified_v3(launcher)
+    launcher.write_bytes(b"other")
+    with pytest.raises(ValueError, match="launcher changed"):
+        bench.verified_v3(launcher)
+
+
 @pytest.mark.parametrize("mismatch", [False, True])
 def test_pair_uses_empty_outputs_and_only_credits_same_recording(tmp_path, monkeypatch, mismatch):
     args = SimpleNamespace(cpu=2, first="candidate", recording=tmp_path/"recording",

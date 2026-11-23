@@ -10,6 +10,7 @@ from statistics import median
 from leo.storage.fast_scan import immutable_json
 from leo.storage.short_window import ShortWindowReader
 from tools.pipeline_eval.qualification.holdout_geography import CONTAINING, EDGE_CASES, EDGE_PROTOCOL, drawn_pilot_edges
+from tools.pipeline_eval.qualification.paired_publication import V3_IDENTITY
 from tools.pipeline_eval.scoring import ARMS, distance_km, distribution, thresholds
 
 
@@ -20,7 +21,7 @@ def pinned(path, expected):
     return json.loads(data)
 
 
-def lock(panel_path, panel_sha, spec_digest, runs):
+def lock(panel_path, panel_sha, spec_digest, runs, *, require_v3=False):
     panel = pinned(panel_path, panel_sha)
     offers = [job["offer"] for job in panel["jobs"]]
     if not offers or len(set(offers)) != len(offers):
@@ -33,6 +34,8 @@ def lock(panel_path, panel_sha, spec_digest, runs):
             assignment = dict(job=job, panel_sha256=panel_sha, truth_commitment=panel["commitment"])
             if result.get("blind_assignment") != assignment or result.get("candidate_specification_digest") != spec_digest:
                 raise ValueError("Run differs from frozen assignment or candidate")
+            if require_v3 and result.get("baseline_release") != V3_IDENTITY:
+                raise ValueError("Frozen assignment lacks the verified ALGO08v3 baseline")
         else:
             result = {"failure": "Missing paired run"}
         cases.append(dict(job=job, result=result))
@@ -51,8 +54,11 @@ def lock(panel_path, panel_sha, spec_digest, runs):
             if edges not in ({"upper"}, {"lower"}):
                 raise ValueError("Fresh confirmation expects one pilot edge per recording")
             pilot_edges[recording], = edges
-    return dict(panel_sha256=panel_sha, truth_commitment=panel["commitment"], geography_protocol=protocol,
-                candidate_specification_digest=spec_digest, cases=cases, recording_pilot_edges=pilot_edges)
+    document = dict(panel_sha256=panel_sha, truth_commitment=panel["commitment"], geography_protocol=protocol,
+                    candidate_specification_digest=spec_digest, cases=cases, recording_pilot_edges=pilot_edges)
+    if require_v3:
+        document["required_baseline_release"] = V3_IDENTITY
+    return document
 
 
 def offset_km(region, point):
@@ -134,14 +140,16 @@ def score(locked, truth):
         height_field = {} if height is None else {"height_m": height}
         conditions_by_recording[job["recording"]].add(condition)
         runs = result.get("runs", {})
-        failed = "failure" in result or set(runs) != {"baseline", "candidate"}
-        failures += int(failed)
-        if locked.get("geography_protocol") == EDGE_PROTOCOL and not failed:
+        incomplete = "failure" in result or set(runs) != {"baseline", "candidate"}
+        terminal_failure = any(run.get("receipt", {}).get("decision") not in ("complete", "withheld")
+                               for run in runs.values())
+        failures += int(incomplete or terminal_failure)
+        if locked.get("geography_protocol") == EDGE_PROTOCOL and not incomplete:
             for arm in ("baseline", "candidate"):
                 receipt = runs[arm].get("receipt", {})
                 if "region" in receipt:
                     edge_offers[job["recording"], arm].append((condition, receipt["region"]))
-        matched = None if failed else (runs["baseline"]["elapsed_s"], runs["candidate"]["elapsed_s"])
+        matched = None if incomplete else (runs["baseline"]["elapsed_s"], runs["candidate"]["elapsed_s"])
         times.append(matched)
         times_by_site[site].append(matched)
         for calibration in ARMS:
@@ -218,11 +226,11 @@ def score(locked, truth):
         omission[arm] = dict(assigned=len(omitted),
                              false_fixes=sum(r["decision"] == "complete" for r in omitted),
                              withheld=sum(r["decision"] == "withheld" for r in omitted),
-                             failed=sum(r["decision"] == "failed" for r in omitted))
+                             failed=sum(r["decision"] not in ("complete", "withheld") for r in omitted))
     candidate_regions_correct = bool(coverage and not failures and all(
         r["decision"] == ("complete" if r["condition"] in CONTAINING else "withheld")
         for r in rows if r["arm"] == "candidate" and r["calibration"] == "c0"))
-    relative_pass = bool(quality and coverage and paired is not None and max(paired, summed) <= .5)
+    relative_pass = bool(quality and not failures and coverage and paired is not None and max(paired, summed) <= .5)
     expected_edges = (drawn_pilot_edges(truth.get("seed"), sites)
                       if locked.get("geography_protocol") == EDGE_PROTOCOL else {})
     observed_edges = locked.get("recording_pilot_edges", {})
@@ -253,6 +261,7 @@ def main():
     freeze.add_argument("panel_sha256")
     freeze.add_argument("candidate_spec_digest")
     freeze.add_argument("runs", type=Path)
+    freeze.add_argument("--require-algo08v3", action="store_true", help="Require the named v3 timing baseline")
     release = commands.add_parser("score")
     release.add_argument("predictions", type=Path)
     release.add_argument("predictions_sha256")
@@ -261,7 +270,8 @@ def main():
         command.add_argument("output", type=Path)
     args = parser.parse_args()
     if args.action == "lock":
-        document = lock(args.panel, args.panel_sha256, args.candidate_spec_digest, args.runs)
+        document = lock(args.panel, args.panel_sha256, args.candidate_spec_digest, args.runs,
+                        require_v3=args.require_algo08v3)
     else:
         predictions = pinned(args.predictions, args.predictions_sha256)
         document = score(predictions, pinned(args.scoring_key, predictions["truth_commitment"]))

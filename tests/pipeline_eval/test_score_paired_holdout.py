@@ -8,6 +8,7 @@ import numpy as np
 
 from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 from tools.pipeline_eval.qualification.holdout_geography import EDGE_PROTOCOL, fresh_layout, fresh_offers
+from tools.pipeline_eval.qualification.paired_publication import V3_IDENTITY
 from tools.pipeline_eval.qualification.score_paired_holdout import lock, pinned, score
 
 
@@ -54,6 +55,16 @@ def test_two_site_confirmation_requires_both_median_and_total_ratios():
                 arm["latlon"][0] -= 32
     data["cases"].extend(another)
     assert score(data,key)["passed"]
+    failed = deepcopy(data)
+    failed_arm = failed["cases"][1]["result"]["runs"]["candidate"]
+    failed_arm["receipt"]["decision"] = "solver_failed"
+    for estimate in failed_arm["arms"].values():
+        estimate["latlon"] = None
+    failed_result = score(failed, key)
+    assert failed_result["failed_pairs"] == 1
+    assert failed_result["missing_region"]["candidate"]["failed"] == 1
+    assert failed_result["summed_elapsed_ratio"] == score(data, key)["summed_elapsed_ratio"]
+    assert not failed_result["passed"]
     assert not score(data,key)["passed_geographic_holdout"]
     assert not score(data,key)["candidate_correct_on_all_region_decisions"]
     another[0]["result"]["runs"]["candidate"]["elapsed_s"] = 100.
@@ -111,6 +122,15 @@ def test_lock_binds_every_assignment_and_rejects_a_substituted_candidate(tmp_pat
     (tmp_path/"a/pair.json").write_text(json.dumps(pair))
     with pytest.raises(ValueError, match="frozen assignment"):
         lock(path,digest,"spec",tmp_path)
+    pair["candidate_specification_digest"] = "spec"
+    (tmp_path/"a/pair.json").write_text(json.dumps(pair))
+    with pytest.raises(ValueError, match="ALGO08v3 baseline"):
+        lock(path, digest, "spec", tmp_path, require_v3=True)
+    pair["baseline_release"] = V3_IDENTITY
+    (tmp_path/"a/pair.json").write_text(json.dumps(pair))
+    locked = lock(path, digest, "spec", tmp_path, require_v3=True)
+    assert locked["required_baseline_release"] == V3_IDENTITY
+    assert locked["cases"][1]["result"] == {"failure": "Missing paired run"}
     with pytest.raises(ValueError, match="Changed"):
         pinned(path, "00")
 

@@ -39,3 +39,5 @@ The plot and budget can be regenerated from this checkout on Gauss. The command 
 PYTHONPATH=.:src MPLBACKEND=Agg python -m reports.ALGO08.v3.staged_budget \
   /srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/panel.json /tmp/v3-staged-budget
 ```
+
+For a fresh blind pair, pass `--baseline /opt/leo-algo08/algo08v3/run` to `tools.pipeline_eval.qualification.paired_publication`. It verifies the named launcher and payload and checks the baseline session and decision against its publication marker. During prediction locking, pass `--require-algo08v3` to `tools.pipeline_eval.qualification.score_paired_holdout lock` to bind the comparator alongside the candidate specification. A timed solver failure counts in elapsed statistics and fails the quality verdict.
