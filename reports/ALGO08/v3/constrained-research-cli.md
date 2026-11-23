@@ -17,6 +17,8 @@ Use the sealed named 20 ms detection digest with `--saved`. The optional `--save
 
 The independent `--optimized-publication` option enables the previously measured ordered graph and polynomial fit reuse, exact causal phase forecast, and direct residual and orbit rendering. It can be combined with any constrained policy. On DS30-0402 the combined option took 53.403 s against 55.752 s for fitted-first alone and retained the original science. Two dense gray orbit layers fell below the registered-pixel acceptance threshold. [Matched scientific and figure audit](named-combined-0402.md)
 
+For a wider likelihood retry, pass the operator-built shared library with `--wide-private-likelihood` and its independently trusted digest with `--wide-private-likelihood-sha256`. This changes inference only for an unsupported original layout. The selected-packet and grid paths retain their stock implementation. DS30-0316 activated all 82 retries and reproduced the full scientific and visual publication. [Build, invocation and transfer result](named-wide-likelihood.md)
+
 ## Saved DS30-0155 transfer
 
 The [frozen test](constrained-research-cli-protocol.md) used only the prior authenticated 20 ms packet, inventory, causal archive and offer staged in tmpfs. Both fresh children ran on CPU 2 with one numerical thread, low scheduler and I/O priority and the shared Gauss lock. Stock executed first. Each child clock was persisted at exit before scoring. Both processes exited zero and produced a fix.
