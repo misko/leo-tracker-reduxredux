@@ -15,6 +15,31 @@ from aperture_trial import configuration, machine
 from blind_joint_route import make_route
 
 
+def full_catalogue_route(installed, reader, attempts):
+    from functools import partial
+    from runpy import run_path
+    from blind_joint_finish import cold_candidate
+    from certified_salvage import propose
+    from lighter_joint_estimator import update
+    from tools.pipeline_eval.variants import v5_core
+
+    rank_file = Path(__file__).resolve().parents[3] / "tools/pipeline_eval/variants/algo08_blind_rank.py"
+    share_geometry = run_path(str(rank_file))["shared_rank_preparation"]
+
+    def cold(prepared, region, bound):
+        ordinary_rank = v5_core.ranked_initial_nodes
+
+        def rank(scan):
+            with share_geometry(scan):
+                return ordinary_rank(scan)
+
+        with patch.object(v5_core, "ranked_initial_nodes", rank):
+            return cold_candidate(prepared, region, bound)
+
+    return make_route(installed, reader, attempts, repair=True, signed_finish=True,
+                      joint_proposal=partial(propose, certified=True, cold_start=cold), signed_updater=update)
+
+
 def verified_saved(native, expected, session, inventory_digest, receiver):
     from leo.contracts.digests import canonical_digest
 
@@ -62,7 +87,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     if detector_override is not None and prepare_detector is not None:
         raise ValueError("Choose a prepared detector or a detector factory")
     stock_control = getattr(args, "stock_control", False)
-    signed_finish = getattr(args, "signed_finish", False)
+    full_catalogue = getattr(args, "full_catalogue", False)
+    signed_finish = getattr(args, "signed_finish", False) or full_catalogue
     if stock_control and signed_finish:
         raise ValueError("Choose either installed stock or the signed research finish")
     publication, spec = configuration()
@@ -85,7 +111,11 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         def solve(native, reader, assets, region):
             cpu, wall = process_time(), perf_counter()
             infer = v5_core.infer
-            route = infer if stock_control else make_route(infer, reader, attempts, repair=True, signed_finish=signed_finish)
+            route = infer
+            if full_catalogue:
+                route = full_catalogue_route(infer, reader, attempts)
+            elif not stock_control:
+                route = make_route(infer, reader, attempts, repair=True, signed_finish=signed_finish)
 
             def observed(prepared, *values, **options):
                 preparations.append(observer(prepared))
@@ -134,6 +164,9 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     source = Path(__file__).resolve().parent
     pins = {name: sha256((source / name).read_bytes()).hexdigest() for name in (
         "joint_publication.py", "blind_joint_finish.py", "blind_joint_route.py", "blind_joint_repair.py", "blind_joint_signed.py")}
+    if full_catalogue:
+        for name in ("certified_salvage.py", "lighter_joint_estimator.py", "../../../tools/pipeline_eval/variants/algo08_blind_rank.py"):
+            pins[name] = sha256((source / name).read_bytes()).hexdigest()
     from leo.application.localization_v3_engine import _json_value
 
     input_kind = "saved detector" if saved is not None else "raw recording"
@@ -151,6 +184,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         result["evidence"] = artifacts(args.output, receipt)
         if saved is not None:
             result["selected_rows"] = selected_rows
+    if full_catalogue:
+        result["full_catalogue"] = True
     with (args.output / "joint-research-receipt.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False, default=_json_value)
         stream.write("\n")
@@ -166,6 +201,7 @@ def main(argv=None):
     mode = cli.add_mutually_exclusive_group()
     mode.add_argument("--stock-control", action="store_true")
     mode.add_argument("--signed-finish", action="store_true")
+    mode.add_argument("--full-catalogue", action="store_true")
     run(cli.parse_args(argv))
 
 
