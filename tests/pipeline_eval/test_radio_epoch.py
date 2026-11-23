@@ -46,3 +46,19 @@ def test_only_sharing_paid_lanes_not_nuisance_per_epoch(radio):
         direct.append(np.linalg.eigvalsh(w @ radio.profile(d.T @ d, 2, unpenalized=1) @ w)[0])
     assert best["fractions"] == pytest.approx(direct)
     assert best["fraction"] <= result["upper_bound"] + 1e-10
+
+
+def test_blind_mask_publishes_every_core_factor_and_hides_warmup(radio):
+    from radio_epoch_trial import project
+
+    probes = [dict(visit_index=i, candidates=[{"signed_cfo_hz": i}]) for i in range(9)]
+    native = dict(source=dict(probes=probes, raw_recording_authority_digest="source"),
+                  provenance=dict(detector_sha256="sha256:binary", window_count=9, run_id="source"),
+                  timeline=[{"tick": 1}])
+    packet, account = project(native, {"core_indices": [1, 2], "paid_indices": [0, 1, 2]})
+    assert packet["timeline"] == native["timeline"]
+    assert native["source"]["probes"][0]["candidates"]
+    assert not packet["source"]["probes"][0]["candidates"]
+    assert packet["source"]["probes"][1:3] == probes[1:3]
+    assert len(packet["source"]["probes"]) == len(probes)
+    assert account["retained_factors"] == 2
