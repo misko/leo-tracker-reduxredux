@@ -64,18 +64,31 @@ def weak_assignment():
     return assignment, witness, expected_build
 
 
-def warm_recording(manifests):
+def warm_recording(manifests, *, maximum_bytes=None):
     """Warm only the assigned compressed files via bounded read-only demand reads."""
-    buffer = bytearray(1024 * 1024)
+    members = []
     for path, digest in manifests:
         reader = ShortWindowReader(path.parent)
         if reader.manifest_sha256 != digest:
             raise ValueError("Sealed recording manifest changed before warming")
         for chunk in reader.manifest.chunks:
             member = confined_path(reader.path, reader.path / chunk.payload_relative_path, must_exist=True)
-            with member.open("rb", buffering=0) as stream:
-                while stream.readinto(buffer):
-                    pass
+            members.append((member, chunk.compressed_bytes))
+    total = sum(size for _, size in members)
+    if maximum_bytes is not None and total > maximum_bytes:
+        raise ValueError("Signed recording exceeds its one-pass conditioning budget")
+    buffer = memoryview(bytearray(1024 * 1024))
+    for member, size in members:
+        with member.open("rb", buffering=0) as stream:
+            if os.fstat(stream.fileno()).st_size != size:
+                raise ValueError("Compressed member differs from its signed byte count")
+            remaining = size
+            while remaining:
+                read = stream.readinto(buffer[:remaining])
+                if not read:
+                    raise ValueError("Compressed member ended during conditioning")
+                remaining -= read
+    return total
 
 
 def require_full_cache(observation):
