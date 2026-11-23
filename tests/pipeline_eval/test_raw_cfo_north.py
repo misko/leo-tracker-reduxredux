@@ -54,3 +54,29 @@ def test_saved_refined_port_rejects_the_wrong_recipe_before_publication(tmp_path
     info.write_text(json.dumps(receipt))
     with pytest.raises(ValueError,match='genuine raw handoff'):
         verified_packet(raw,request)
+
+
+def test_named_support_oracle_preserves_exact_current_factors_and_signs_derived_packet():
+    from leo.contracts.digests import canonical_digest
+    from north_cfo_contrasts import named_lane_packet
+
+    def native(cfo, extras):
+        return dict(source=dict(raw_recording_authority_digest='raw',input_manifest_sha256='index',session_id='session',
+                   probes=[dict(visit=0,candidates=[{'cfo':cfo}]),dict(visit=1,candidates=extras)]),
+                   provenance={'detector_sha256':'original'})
+
+    refined = native(45.5,[{'cfo':55.}])
+    named = native(40.,[])
+    derived, policy, counts = named_lane_packet(refined,named)
+    assert counts == {'retained':1,'removed':1}
+    assert not policy['deployable']
+    rows = derived['source']['probes']
+    assert rows == [refined['source']['probes'][0],{'visit':1,'candidates':[]}]
+    assert derived['provenance']['detector_sha256'] == canonical_digest(policy)
+    assert policy['parent_native_sha256'] == canonical_digest(refined)
+    assert policy['named_support_native_sha256'] == canonical_digest(named)
+    with pytest.raises(ValueError,match='subset'):
+        named_lane_packet(named,refined)
+    named['source']['probes'][0]['visit'] = 99
+    with pytest.raises(ValueError,match='exact original stereo opportunities'):
+        named_lane_packet(refined,named)
