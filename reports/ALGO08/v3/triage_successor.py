@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from time import time_ns
 from types import SimpleNamespace
 
 from leo.contracts.digests import canonical_digest
@@ -37,7 +38,7 @@ def checked(path, digest):
 
 def publication(root, run):
     receipt = run["receipt"]
-    terminal = read(FastScanStore(root).automatic_workspace(receipt["run_id"], create=False) / "terminal.json")
+    terminal = read(FastScanStore(root).automatic_workspace(receipt["run_id"]) / "terminal.json")
     native_path, = (root / "fast-scan-automatic-work").glob("*/detections.json")
     native = read(native_path)
     source = native["source"]
@@ -86,7 +87,7 @@ def exact(fields):
     return all(exact(value) if isinstance(value, dict) else value is True for value in fields.values())
 
 
-def measure_pair(output, first):
+def measure_pair(output, first, *, resume):
     assignment = json.loads(checked(ASSIGNMENT, ASSIGNMENT_SHA256))
     smoke = json.loads(checked(HERE / "gauss-smoke.json", SMOKE_SHA256))
     checked(CACHE, CACHE_SHA256)
@@ -98,7 +99,8 @@ def measure_pair(output, first):
     if paired_publication.archive_identity(archive) != assignment["archive"]:
         raise ValueError("The causal archive differs from the frozen DS30-0374 assignment")
 
-    output.mkdir()
+    if not resume:
+        output.mkdir()
     os.environ.update({key: "1" for key in NUMERICAL_THREADS})
     os.environ["MPLCONFIGDIR"] = str(output / "mplconfig")
     query = cache_residency.load_query(CACHE)
@@ -115,6 +117,25 @@ def measure_pair(output, first):
                   numerical_threads={key: os.environ[key] for key in NUMERICAL_THREADS},
                   cache=dict(method="linux-cachestat", library_sha256=CACHE_SHA256, page_size_bytes=page_size,
                              managed_cache=False, arms={}), runs={})
+    receipt_path = output / "pair.json"
+    if resume:
+        previous_bytes = receipt_path.read_bytes()
+        previous = json.loads(previous_bytes)
+        receipt_path = output / "pair-resumed.json"
+        if (receipt_path.exists() or (output / order[1]).exists()
+                or list(previous["runs"]) != [first] or "failure" not in previous):
+            raise ValueError("Resume requires exactly one measured arm and an absent second output")
+        for key in ("case", "recording", "archive", "region_file_sha256", "order",
+                    "assignment_sha256", "production_witness_sha256", "cpu", "nice",
+                    "ionice", "numerical_threads"):
+            if previous[key] != result[key]:
+                raise ValueError(f"Resume changes the original pair's {key}")
+        previous["resume"] = dict(
+            partial_receipt_sha256=sha256(previous_bytes).hexdigest(),
+            previous_failure=previous.pop("failure"), driver_sha256=result["driver_sha256"],
+            started_unix_ns=time_ns(),
+        )
+        result = previous
     natives, terminals, observed = {}, {}, {}
     try:
         builds = {name: json.loads(subprocess.check_output([str(path), "--verify"], text=True, timeout=30))
@@ -125,16 +146,24 @@ def measure_pair(output, first):
                     raise ValueError("The measured build differs from the installed ALGO08v3 receiver or spec")
 
         for name in order:
-            def observe_cache():
+            def observe_cache(name=name):
                 result["cache"]["arms"][name] = cache_residency.bound_snapshot(
                     store, args.recording, manifests, page_size, query,
                 )
 
-            print(f"Measuring {name} for DS30-0374", flush=True)
             root = output / name
-            run = paired_publication.measure(launchers[name], root, args, before_launch=observe_cache)
-            result["runs"][name] = run
-            run["build"] = builds[name]
+            if name in result["runs"]:
+                run = result["runs"][name]
+                restored = paired_publication.evidence(root, run["receipt"], started_ns=0)
+                restored.pop("terminal_file_s")
+                if (run["build"] != builds[name]
+                        or any(value != run[key] for key, value in restored.items())):
+                    raise ValueError("The existing publication or build differs from the measured arm")
+            else:
+                print(f"Measuring {name} for DS30-0374", flush=True)
+                run = paired_publication.measure(launchers[name], root, args, before_launch=observe_cache)
+                result["runs"][name] = run
+                run["build"] = builds[name]
             release_marker = "algo08v3-release.json" if name == "baseline" else "algo08v3-successor.json"
             marker = read(root / release_marker)
             expected = builds[name] | {k: run["receipt"][k] for k in ("session_id", "decision")}
@@ -158,18 +187,19 @@ def measure_pair(output, first):
         result["failure"] = f"{type(error).__name__}: {error}"
         raise
     finally:
-        immutable_json(output / "pair.json", result)
+        immutable_json(receipt_path, result)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path, help="new directory for the pair and its receipt")
     parser.add_argument("--first", choices=("baseline", "successor"), required=True)
+    parser.add_argument("--resume", action="store_true", help="measure only a missing second arm")
     args = parser.parse_args()
     print(f"Waiting for {paired_publication.LOCK}", flush=True)
     with paired_publication.single_core_slot(2):
-        measure_pair(args.output.resolve(), args.first)
-    print(args.output / "pair.json", flush=True)
+        measure_pair(args.output.resolve(), args.first, resume=args.resume)
+    print(args.output / ("pair-resumed.json" if args.resume else "pair.json"), flush=True)
 
 
 if __name__ == "__main__":
