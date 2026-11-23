@@ -2,11 +2,12 @@
 
 import argparse
 from hashlib import sha256
+import os
 from pathlib import Path
-from types import SimpleNamespace
+import subprocess
 
-from aperture_trial import ARMS, archive_identity, machine, read, write
-from joint_publication import artifacts, run as publish
+from aperture_trial import ARMS, PAYLOAD, RELEASE, archive_identity, machine, read, write
+from joint_publication import artifacts
 from signed_0374_transfer import bind
 from tools.pipeline_eval.qualification import paired_publication as pairs
 
@@ -20,9 +21,13 @@ def run(output):
             or any(n != "1" for n in host["threads"].values())):
         raise ValueError("Single low-priority core required")
     pair, expected, saved, region, archive, _ = bind()
-    publish(SimpleNamespace(recording=Path(pair["recording"]), region=region, archive=archive, output=output,
-                            full_catalogue=True, saved=saved, saved_digest=expected["witnesses"]["detection_sha256"],
-                            verify_images=True))
+    environment = dict(os.environ, PYTHONPATH=os.pathsep.join(map(str, (HERE, PAYLOAD, RELEASE / "src", RELEASE))))
+    for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE", "ALGO08_EXPERIMENT_CONFIG"):
+        environment.pop(key, None)
+    subprocess.run([str(RELEASE / "venv/bin/python"), "-BPs", str(HERE / "joint_publication.py"),
+                    "--recording", pair["recording"], "--archive", str(archive), "--region", str(region),
+                    "--saved", str(saved), "--saved-digest", expected["witnesses"]["detection_sha256"],
+                    "--full-catalogue", "--verify-images", "--output", str(output)], check=True, env=environment)
 
 
 def score(output, destination):
@@ -54,7 +59,10 @@ def score(output, destination):
     compare = {mode: dict(cpu_s=v["solve"]["cpu_s"], publication_cpu_s=v["publication_cpu_s"],
                           publication_elapsed_s=v["publication_elapsed_s"], error_km=official["horizontal_error_km"][mode],
                           rf_rms_hz=official["rf_rms_hz"][mode],
-                          equal_owner_digests=evidence["owners"] == v["owners"])
+                          equal_owner_digests=evidence["owners"] == v["owners"],
+                          equal_scientific_path_and_grid=evidence["scientific_digests"] == v["scientific_digests"],
+                          identical_images=[key for key, image in candidate["evidence"]["images"].items()
+                                            if image == v["evidence"]["images"].get(key)])
                for mode, v in official["runs"].items()}
     write(destination, dict(case=official["case"], sealed_receipt_sha256=sha256(path.read_bytes()).hexdigest(),
                             archive=official["archive"], saved_digest=candidate["saved_digest"], raw_authority=evidence["raw_authority"],

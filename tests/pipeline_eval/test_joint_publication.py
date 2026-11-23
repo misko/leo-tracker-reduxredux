@@ -8,6 +8,21 @@ import pytest
 from leo.contracts.digests import canonical_digest
 
 
+def test_full_catalogue_route_is_explicit_for_raw_and_saved_publication(monkeypatch, tmp_path):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
+    module = import_module("joint_publication")
+    calls = []
+    monkeypatch.setattr(module, "run", calls.append)
+    args = [piece for key in ("recording", "archive", "region", "output") for piece in ("--" + key, str(tmp_path / key))]
+    module.main(args)
+    assert not calls[-1].full_catalogue
+    for source in ([], ["--saved", str(tmp_path / "detections.json"), "--saved-digest", "ref"]):
+        module.main([*args, *source, "--full-catalogue", "--verify-images"])
+        assert calls[-1].full_catalogue and calls[-1].verify_images
+    with pytest.raises(SystemExit):
+        module.main([*args, "--stock-control", "--full-catalogue"])
+
+
 @pytest.mark.parametrize("wrong", [None, "digest", "session", "inventory", "receiver"])
 def test_replay_requires_all_saved_input_bindings(wrong, monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
