@@ -104,6 +104,35 @@ def check_fir(paths, assets):
                 required_edge_outputs=20, full_complex_outputs=SAMPLES//4)
 
 
+def check_signed_native(paths, assets):
+    """Exercise independent stereo carriers, shifted center, and the epoch wrap path."""
+    from .low_bit_pilot_screen import carrier_wave
+
+    result = []
+    for edge in sorted(PILOT_SHA):
+        asset = fv_bound(edge, assets)
+        with ExitStack() as cleanup:
+            engines = {arm: NativePath(paths[arm], asset, "short_primary") for arm in (BROAD, SELECTED)}
+            for receiver in engines.values():
+                cleanup.callback(receiver.close)
+            for phase in (1, 3071):
+                carriers = (-275_000., 325_000.)
+                iq = np.empty((SAMPLES, 2, 2), dtype=np.int16)
+                for lane, hz in enumerate(carriers):
+                    wave = 3000. * carrier_wave(asset, phase, hz, rolled=False)
+                    iq[:, lane, 0] = np.clip(np.rint(wave.real), -32768, 32767)
+                    iq[:, lane, 1] = np.clip(np.rint(wave.imag), -32768, 32767)
+                for mixer in (-100_000., 0., 100_000.):
+                    for lane, expected in enumerate(carriers):
+                        broad, selected = (receiver.run(iq, lane, mixer)[0] for receiver in engines.values())
+                        if (factor_bytes(broad) != factor_bytes(selected) or len(selected) != 1
+                                or abs(selected[0][3] - expected) > 250.):
+                            raise ValueError("The distributed primary lost a planted signed stereo carrier")
+                        result.append(dict(edge=edge, phase_third_samples=phase, mixer_hz=mixer, receiver=lane,
+                                           planted_hz=expected, measured=selected[0]))
+    return result
+
+
 def select(factors):
     return max(factors, key=lambda f: (f[4] - f[5], -f[0]), default=None)
 
@@ -252,7 +281,8 @@ def run(build_path, installed, assets, short, weak, output, *, dense_visits):
                      input_sha256=hashes)
     write(output, dict(machine=host, detector_pins=pins, build_sha256=sha256(build_path.read_bytes()).hexdigest(),
                        source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
-                       fir=check_fir(paths, assets), dense_precheck=residency, dense=dense, weak=weak_result))
+                       fir=check_fir(paths, assets), signed_controls=check_signed_native(paths, assets),
+                       dense_precheck=residency, dense=dense, weak=weak_result))
 
 
 if __name__ == "__main__":
