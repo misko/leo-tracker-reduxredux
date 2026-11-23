@@ -2,6 +2,8 @@
 
 The wider retry reduced the fitted-first named solver from **51.471 to 45.237 CPU seconds** and the complete saved publication from **55.830 to 49.712 seconds elapsed**. All **239** original unsupported likelihood calls used the wider implementation, with no secondary fallback. Both final positions and RF fits, every ordered owner and role, the 179-point grid and path, and all eight PNGs matched the named publication. [Frozen protocol](wide-private-0402-protocol.md) · [Capture and scored publication receipts](measurements/wide-private-0402.json.gz)
 
+![Matched solver and publication time and horizontal errors on all six saved DS30-0402 runs](development/wider-likelihood-0402.png)
+
 ## Why the original likelihood fell back
 
 The sampling pass ran the original fitted-first route through selected evidence. The stock likelihood paid **7.521 CPU seconds** for the 239 unsupported calls. For each of four observed shapes, the first genuine call supplied its original design, noise-group labels, priors and update budget. Each sample had a group with **five columns private to that group**. The stock C layout accepts up to two. Two conservative-fit samples had two width-five groups each. Both cavity-fit samples had one. The unchanged size and Gram-slot limits passed. The complete wider replay activated every rejected stock call after relaxing only the private-width limit, confirming that these calls encountered that limit. [Stock likelihood source](../../../src/leo/analysis/localization_v4/native_bound.c) · [Earlier 0402 named profile](named-roster-0402.md)

@@ -16,7 +16,7 @@ def load(path):
         return json.load(stream)
 
 
-def render(fitted_file, transfer_file, output):
+def render(fitted_file, transfer_file, output, wider_file=None):
     exact, transfer = load(fitted_file), load(transfer_file)
     if not exact["paired_science_equal"] or transfer["case"] != "DS30-0402":
         raise ValueError("Expected the verified named and cumulative 0402 comparisons")
@@ -48,6 +48,18 @@ def render(fitted_file, transfer_file, output):
     )
     fig.subplots_adjust(left=0.205, right=0.965, bottom=0.23, top=0.72, wspace=0.22)
     colors = ["#475569", "#236778", "#236778", "#0a7466", "#ad6523"]
+    owner_note = "The first four runs retained all 4,821 assigned observations per arm. "
+    if wider_file is not None:
+        wider = load(wider_file)["candidate"]
+        if (wider["terminal"] != exact["terminal"] or wider["old_exit"] != exact["combined_exit"]
+                or not wider["role_equality"] or not wider["sidecars_equal"] or wider["new_exit"]["exit_code"]
+                or not all(all(fields.values()) for fields in wider["figures"].values())):
+            raise ValueError("The wider run must reproduce the same named scientific and visual output")
+        labels.insert(-1, "Fitted first + wider fit")
+        clocks.insert(-1, wider["new_exit"])
+        scores.insert(-1, exact["scores"])
+        colors.insert(-1, "#0a7466")
+        owner_note = "The first five runs retained all 4,821 assigned observations per arm. "
     for i, (clock, score, color) in enumerate(zip(clocks, scores, colors, strict=True)):
         wall = clock["elapsed_s"]
         time.barh(i, wall, height=0.48, color=color)
@@ -64,7 +76,7 @@ def render(fitted_file, transfer_file, output):
                 color=ink,
                 label=("Fixed zero" if arm == "c0" else "Fitted") if i == 0 else None,
             )
-    time.set(yticks=range(5), yticklabels=labels, xlabel="Seconds", xlim=(0, 84))
+    time.set(yticks=range(len(labels)), yticklabels=labels, xlabel="Seconds", xlim=(0, 84))
     error.set(xlabel="Kilometers", xlim=(0.83, 0.982), xticks=[0.84, 0.88, 0.92, 0.96])
     error.legend(
         loc="upper left", bbox_to_anchor=(0, 1.22), ncol=2, frameon=False, fontsize=9
@@ -85,8 +97,7 @@ def render(fitted_file, transfer_file, output):
     fig.text(
         0.04,
         0.055,
-        "The first four runs retained all 4,821 assigned observations per arm. "
-        "The cumulative solver retained 4,680.",
+        owner_note + "The cumulative solver retained 4,680.",
         size=10,
         color="#334155",
     )
@@ -98,5 +109,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("fitted_receipt", "transfer_receipt", "output"):
         parser.add_argument(name, type=Path)
+    parser.add_argument("--wider-receipt", type=Path)
     args = parser.parse_args()
-    render(args.fitted_receipt, args.transfer_receipt, args.output)
+    render(args.fitted_receipt, args.transfer_receipt, args.output, args.wider_receipt)
