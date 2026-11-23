@@ -94,7 +94,7 @@ def seal(root, order=CASE.order):
     return {str(p.relative_to(root)): sha(p.read_bytes()) for p in sorted(paths)}
 
 
-def configuration(root, inputs=ORIGINAL, *, selection=None):
+def configuration(root, inputs=ORIGINAL, *, selection=None, launch_order=None):
     from aperture_trial import write
     from combined_frontier_run import BLOCK_SHA
     from dense_geographic_trial import host
@@ -158,7 +158,8 @@ def configuration(root, inputs=ORIGINAL, *, selection=None):
                     "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
                    env=env, check=True, timeout=30)
     archive["sha256"] = inputs.archive
-    admission = dict(case=workload.id, base=BASE, order=workload.order, host=machine, stock=named,
+    order = workload.order if launch_order is None else launch_order
+    admission = dict(case=workload.id, base=BASE, order=order, host=machine, stock=named,
           route_flags=FLAGS, sources=sources, driver_sha256=sha(Path(__file__).read_bytes()),
           binding=workload.binding_sha, request=case["request"]["sha256"], inventory=inputs.inventory,
           cutoff_utc_ns=signed["orbit_cutoff_ns"], manifests=cache_residency.manifest_pins(manifests),
@@ -173,13 +174,12 @@ def configuration(root, inputs=ORIGINAL, *, selection=None):
     return recording, manifests, total, libraries, residency, env
 
 
-def launch(root, inputs=ORIGINAL, *, selection=None):
+def condition(root, manifests, total, residency, inputs=ORIGINAL):
     from aperture_trial import write
-    from short_raw_diagnostic import measure, pairs, require_warm
+    from short_raw_diagnostic import require_warm
     from triage_bounds import warm_recording
 
     workload = inputs.workload
-    recording, manifests, total, libraries, residency, env = configuration(root, inputs, selection=selection)
     before = residency()
     check_extent(before, total, inputs)
     used = before["cached_pages"] != before["observed_file_pages"]
@@ -194,20 +194,36 @@ def launch(root, inputs=ORIGINAL, *, selection=None):
     if charged != (total if used else 0):
         raise ValueError("The conditioning pass changed its signed extent")
     require_warm(after)
+
+
+def measure_mode(root, mode, argv, env, residency):
+    from aperture_trial import write
+    from short_raw_diagnostic import measure, require_warm
+
+    target = root/mode
+    if mode == "stock":
+        target.mkdir()
+    start_cache = residency()
+    require_warm(start_cache)
+    clock = measure(argv, env, target)
+    end_cache = residency()
+    write(root/f"{mode}-clock.json", dict(clock=clock, cache_before=start_cache, cache_after=end_cache,
+                                          command=list(map(str, argv))))
+    if clock["exit_code"]:
+        raise RuntimeError(clock["stderr_tail"])
+    require_warm(end_cache)
+
+
+def launch(root, inputs=ORIGINAL, *, selection=None):
+    from aperture_trial import write
+    from short_raw_diagnostic import pairs
+
+    workload = inputs.workload
+    recording, manifests, total, libraries, residency, env = configuration(root, inputs, selection=selection)
+    condition(root, manifests, total, residency, inputs)
     for mode in workload.order:
-        target = root/mode
-        if mode == "stock":
-            target.mkdir()
-        start_cache = residency()
-        require_warm(start_cache)
         argv = command(mode, root, recording, libraries, pairs.NAMED_V3)
-        clock = measure(argv, env, target)
-        end_cache = residency()
-        write(root/f"{mode}-clock.json", dict(clock=clock, cache_before=start_cache, cache_after=end_cache,
-                                              command=list(map(str, argv))))
-        if clock["exit_code"]:
-            raise RuntimeError(clock["stderr_tail"])
-        require_warm(end_cache)
+        measure_mode(root, mode, argv, env, residency)
     write(root/"prediction-seal.json", seal(root, workload.order))
 
 
