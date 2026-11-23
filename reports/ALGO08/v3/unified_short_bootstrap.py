@@ -230,6 +230,13 @@ def run(args):
         mixer = StereoLaneReceiver(args.short_binary, SHORT_SHA, lane_mask)
     else:
         mixer = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True)
+    frequency_changes = None
+    if getattr(args, "select_before_cfo", False):
+        if lane_mask or getattr(args, "held_anchor_route", False) or "fixed_epoch_cfo_refinement" not in recipe:
+            raise ValueError("Selection before CFO requires a refined full-coverage receiver and a single selector")
+        from held_cycle_refined import FrequencyChanges
+
+        frequency_changes = FrequencyChanges()
     scan = staged.staged_scanner(sources, detector=mixer.detector)
     symbols = staged.receiver_symbols(sources)
     native_import = staged.RECEIVER.removesuffix(".py").replace("/", ".")
@@ -264,14 +271,23 @@ def run(args):
         session, inventory_digest, inventory = scan.FastScanStore(args.output).inventory(args.recording, verify_windows=False)
         phases["asset_and_inventory_checks"] = staged.clock(scope)
         scope = staged.now()
-        with (receiver_import(native_import, symbols), observe_acquisition(scan, mixer, effective_detector, audit),
+        with (frequency_changes.capture(mixer.policy) if frequency_changes is not None else nullcontext(),
+              receiver_import(native_import, symbols), observe_acquisition(scan, mixer, effective_detector, audit),
               compressed_input_buffer(), paired_decoded_hashes(library), fetch() as prefetch):
             native = scan.acquire(session, inventory_digest, inventory, assets)
         staged.bind_native(native, session, inventory_digest, effective_detector)
         phases["authenticated_raw_acquisition"] = staged.clock(scope)
         if args.region.read_bytes() != offer_bytes:
             raise ValueError("The offered region changed during acquisition")
-        if getattr(args, "held_anchor_route", False):
+        if frequency_changes is not None:
+            from held_cycle_refined import select_refined
+
+            scope = staged.now()
+            decision_file = args.output.with_name(args.output.name + "-held-cycle-refined.json")
+            native, recipe, effective_detector, route_selection = select_refined(
+                native, recipe, frequency_changes, session, inventory_digest, decision_file)
+            phases["held_anchor_route_selection"] = staged.clock(scope)
+        elif getattr(args, "held_anchor_route", False):
             from held_anchor_route_publication import prepare
 
             scope = staged.now()
@@ -325,6 +341,8 @@ def run(args):
         dependencies += ("lazy_scanner_detector.py",)
     if route_selection is not None:
         dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
+    if frequency_changes is not None:
+        dependencies += ("held_cycle_refined.py",)
     if lane_mask:
         dependencies += ("stereo_lane_schedule.py", "stereo_lane_receiver.py")
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
@@ -375,6 +393,8 @@ if __name__ == "__main__":
                         help="Keep named-v3 withholding precedence when every authenticated lane is shorter than 20 seconds")
     parser.add_argument("--named-survivor-finish", action="store_true",
                         help="Isolate a disputed satellite family and run the original qualified final fit on the accepted observations")
+    parser.add_argument("--select-before-cfo", action="store_true",
+                        help="Select lanes by held-anchor prediction before applying their refined carrier frequencies")
     parser.add_argument("--withhold-empty-family-calibration", action="store_true",
                         help="Withhold when the nominated family's exclusion leaves zero independent calibration observations")
     parser.add_argument("--prove-empty-graph", action="store_true",
