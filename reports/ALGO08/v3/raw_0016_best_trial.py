@@ -145,10 +145,10 @@ def configuration(root, inputs=ORIGINAL, *, selection=None):
     if pairs.archive_identity(root/"tle")["snapshots_sha256"] != inputs.archive:
         raise ValueError("Staged archive changed")
     libraries = {}
-    inputs = (("short", SHORT, SHORT_SHA), ("geographic", STAGED/"geographic_library.so", GEOGRAPHIC_SHA),
-              ("regional", STAGED/"regional_track_library.so", TRACK_SCORES_SHA),
-              ("block", STAGED/"frontier_block_library.so", BLOCK_SHA), ("projection", PROJECTION, PROJECTION_SHA))
-    for name, source, digest in inputs:
+    library_inputs = (("short", SHORT, SHORT_SHA), ("geographic", STAGED/"geographic_library.so", GEOGRAPHIC_SHA),
+                      ("regional", STAGED/"regional_track_library.so", TRACK_SCORES_SHA),
+                      ("block", STAGED/"frontier_block_library.so", BLOCK_SHA), ("projection", PROJECTION, PROJECTION_SHA))
+    for name, source, digest in library_inputs:
         destination = root / f"{name}.so"
         destination.write_bytes(checked(source, digest))
         libraries[name] = destination
@@ -164,7 +164,7 @@ def configuration(root, inputs=ORIGINAL, *, selection=None):
           cutoff_utc_ns=signed["orbit_cutoff_ns"], manifests=cache_residency.manifest_pins(manifests),
           offer=offer, offer_sha256=REGION_SHA, issued=workload.windows, admitted=case["valid_visits"],
           archive=archive, recording=str(recording), raw_authority=case["raw_authority"], session=case["session_id"],
-          library_sha256={name: pin for name, _, pin in inputs},
+          library_sha256={name: pin for name, _, pin in library_inputs},
           staging=dict(wall_s=perf_counter()-start_wall, driver_cpu_s=process_time()-start_cpu),
           raw_budget_bytes=workload.raw_limit, compressed_bytes=total)
     if selection is not None:
