@@ -77,7 +77,8 @@ def source(case):
     reader = TleArchiveReader(root / "tle")
     snapshots = reader.list_snapshots("space-track")
     cutoff = binding["orbit_cutoff_ns"]
-    if (case != binding["case"]
+    if (case != binding["case"]["id"]
+            or request["job"]["native_input"]["sha256"] != "sha256:" + binding["case"]["native"]["sha256"]
             or {s.path.name: s.sha256 for s in snapshots} != request["causal_snapshots"]
             or not all(admissible(s, cutoff, 72) for s in snapshots)):
         raise ValueError("Capture cutoff or complete snapshot inventory differs from the sealed request")
