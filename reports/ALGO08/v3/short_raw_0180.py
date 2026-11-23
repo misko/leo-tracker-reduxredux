@@ -29,6 +29,16 @@ PROOF_SOURCES = {
     "unified_short_bootstrap.py": "5cd6580673fee701854d08f337bc72678bb2aa105a3c24b79f7d46bb606a7057",
     "short_graph_guard.py": "269eaab36011523072e25798ba3bdb34a9968d49ee39eba6d89022ef08a8cffd",
 }
+REVIEWED_PROOF_LAUNCHERS = frozenset((
+    PROOF_SOURCES[BOOTSTRAP.name],
+    "226fdf3634e5e5ba9480912eed9e02e1bd28b4653100e6a83a3c38d1cc2f0bae",
+))
+
+
+def proof_sources(launcher_sha):
+    if launcher_sha not in REVIEWED_PROOF_LAUNCHERS:
+        raise ValueError("Unreviewed time-proof launcher")
+    return {**PROOF_SOURCES, BOOTSTRAP.name: launcher_sha}
 
 
 @dataclass(frozen=True)
@@ -63,6 +73,8 @@ def stage_orbits(target, source, names, cutoff, *, expected_count=50):
             raise ValueError("Invalid causal orbit entry")
         original = source / name
         size = original.stat().st_size
+        if size > ORBIT_LIMIT:
+            raise ValueError("Orbit staging exceeds the one-recording allowance")
         if distinct.setdefault(digest, (original, size))[1] != size:
             raise ValueError("Duplicate signed catalogue bodies differ in size")
     unique_bytes = sum(size for _, size in distinct.values())
@@ -154,8 +166,10 @@ def launch(root, workload=LEGACY):
                          signed["orbit_cutoff_ns"], expected_count=workload.snapshots)
     orbit.update(stage_wall_s=perf_counter()-wall, stage_cpu_s=process_time()-cpu)
     named = pairs.verified_v3(pairs.NAMED_V3)
+    pinned_sources = {}
     if workload.time_proof:
-        for name, digest in PROOF_SOURCES.items():
+        pinned_sources = proof_sources(sha256(BOOTSTRAP.read_bytes()).hexdigest())
+        for name, digest in pinned_sources.items():
             checked(HERE / name, digest)
     env = environment(root)
     env["TMPDIR"] = str(root/"tmp")
@@ -171,7 +185,7 @@ def launch(root, workload=LEGACY):
     conditioning.update(charged_bytes=charged, input_blocks=resource.getrusage(resource.RUSAGE_SELF).ru_inblock-blocks)
     write(root/"admission.json", dict(case=case["id"], binding=workload.binding_sha, request=case["request"]["sha256"],
           order=workload.order, host=machine, stock=named, conditioning=conditioning, archive=orbit,
-          offer=original_offer, offer_sha256=REGION_SHA, proof_sources=PROOF_SOURCES if workload.time_proof else {},
+          offer=original_offer, offer_sha256=REGION_SHA, proof_sources=pinned_sources,
           raw_budget_bytes=workload.raw_limit, orbit_budget_bytes=ORBIT_LIMIT, issued_visits=workload.windows))
     common = ["--recording", recording, "--region", offer, "--archive", root/"tle"]
     for mode in workload.order:
@@ -236,7 +250,7 @@ def score(root, destination, workload=LEGACY):
                     or bootstrap["frozen_specification"] != pairs.V3_IDENTITY["frozen_specification"]
                     or bootstrap["stock_launcher_sha256"] != pairs.V3_LAUNCHER_SHA
                     or bootstrap["requested_offer_sha256"] != admission["offer_sha256"]
-                    or bootstrap["source_sha256"][BOOTSTRAP.name] != PROOF_SOURCES[BOOTSTRAP.name]
+                    or proof_sources(bootstrap["source_sha256"][BOOTSTRAP.name]) != admission["proof_sources"]
                     or proof_source not in (None, PROOF_SOURCES["short_graph_guard.py"])
                     or graph_route and proof_source is None
                     or bool(proof and proof["proven"]) != graph_route):

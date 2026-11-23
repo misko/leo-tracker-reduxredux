@@ -13,6 +13,14 @@ def driver(monkeypatch):
     return import_module("short_raw_0180")
 
 
+def test_transfer_source_identity_accepts_recorded_and_integrated_builds(driver):
+    observed = sha256(driver.BOOTSTRAP.read_bytes()).hexdigest()
+    assert driver.proof_sources(observed)[driver.BOOTSTRAP.name] == observed
+    assert driver.proof_sources(driver.PROOF_SOURCES[driver.BOOTSTRAP.name]) == driver.PROOF_SOURCES
+    with pytest.raises(ValueError, match="Unreviewed"):
+        driver.proof_sources("0" * 64)
+
+
 def test_transfer_keeps_the_base_options_and_changes_only_the_new_case(driver):
     assert driver.LEGACY.id == "DS30-0180"
     assert driver.LEGACY.order == ("stock", "candidate")

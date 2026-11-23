@@ -1,3 +1,4 @@
+from dataclasses import replace
 from hashlib import sha256
 from importlib import import_module
 import json
@@ -61,8 +62,9 @@ def test_causal_stage_rejects_wrong_membership_or_unverified_bytes(trial, tmp_pa
         names[f"../{first}"] = names.pop(first)
         message = "causal orbit entry"
     else:
-        (directory/first).write_bytes(b"altered payload")
-        message = "Unreviewed bootstrap input"
+        path = directory/first
+        path.write_bytes(b"x" * path.stat().st_size)
+        message = "Signed catalogue content changed"
     with pytest.raises(ValueError, match=message):
         trial.stage_orbits(tmp_path/"stage", original, names, cutoff)
 
@@ -107,10 +109,11 @@ def admission(trial, tmp_path, monkeypatch):
             return json.dumps(offer).encode()
         return real_checked(path, pin)
 
-    def stage(target, source, entries, cutoff):
+    def stage(target, source, entries, cutoff, *, expected_count):
         events.append("orbits")
         assert source == Path(job["tle_root"]) and entries == {"snapshot": "sealed"} and cutoff == 101
-        return dict(snapshots=50)
+        assert expected_count == len(entries)
+        return dict(snapshots=expected_count)
 
     def cache_check(store, recording, manifests, pages, query):
         assert recording == bulk/"capture"
@@ -133,11 +136,11 @@ def admission(trial, tmp_path, monkeypatch):
     def launch():
         request_digest = sealed(req, dict(job=job, causal_snapshots={"snapshot": "sealed"}))
         case["request"] = {"path": req.name, "sha256": request_digest}
-        monkeypatch.setattr(trial, "BINDING_SHA", sealed(binding, dict(case=case, orbit_cutoff_ns=101)))
-        trial.launch(tmp_path/"publication")
+        digest = sealed(binding, dict(case=case, orbit_cutoff_ns=101))
+        workload = replace(trial.LEGACY, binding=binding, binding_sha=digest, snapshots=1)
+        trial.launch(tmp_path/"publication", workload)
 
     monkeypatch.setattr(trial, "BULK", bulk)
-    monkeypatch.setattr(trial, "BINDING", binding)
     monkeypatch.setattr(trial, "checked", checked)
     monkeypatch.setattr(trial, "stage_orbits", stage)
     monkeypatch.setattr(trial.subprocess, "check_output", run)
@@ -150,7 +153,12 @@ def admission(trial, tmp_path, monkeypatch):
     monkeypatch.setattr(diag.cache_residency, "bound_snapshot", cache_check)
     monkeypatch.setattr(diag.pairs, "verified_v3", lambda _: {"version": "named"})
     monkeypatch.setattr(diag, "measure", timed)
-    monkeypatch.setattr(sky, "warm_recording", lambda _: events.append("warm"))
+    def warm(manifests, *, maximum_bytes):
+        assert state.size <= maximum_bytes
+        events.append("warm")
+        return state.size
+
+    monkeypatch.setattr(sky, "warm_recording", warm)
     monkeypatch.setattr(sky, "ShortWindowReader", lambda _: SimpleNamespace(manifest=SimpleNamespace(
         chunks=[SimpleNamespace(compressed_bytes=state.size)])))
     return state, launch
