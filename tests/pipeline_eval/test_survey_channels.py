@@ -71,3 +71,16 @@ def test_budget_reproduces_frozen_paired_and_summed_projections(policy):
     assert actual == receipt
     assert actual["projected_stages"]["4"]["summed_ratio"] < 0.5
     assert actual["projected_stages"]["16"]["summed_ratio"] > 0.5
+
+
+def test_all_pairs_preserve_survey_prefix_and_distinct_owner_dimensions(policy):
+    audit = import_module("survey_pair_census")
+    probes = rows(384)
+    owners = {i: {"norad": 33 if p["channel"] < 4 else 44} for i, p in enumerate(probes)}
+    result = audit.pair_census(probes, {"c0": owners})
+    assert result["full"]["c0"] == dict(rows=768, satellites=2, first_and_last=2,
+                                        both_antennas=2, multiple_tunings=2)
+    assert len(result["pairs"]) == 16
+    chosen, = [r for r in result["pairs"] if r["survey_choice"]]
+    assert chosen["channels"] == ((2000, 2), (5000, 5))
+    assert chosen["arms"]["c0"]["rows"] == 2 * chosen["paid"] == 288
