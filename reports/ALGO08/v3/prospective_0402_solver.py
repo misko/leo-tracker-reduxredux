@@ -1,6 +1,7 @@
 """Transfer the current cumulative solver to the first signed rank-one case."""
 
 import argparse
+from collections import defaultdict
 from hashlib import sha256
 import json
 import os
@@ -232,6 +233,25 @@ def run(root):
             raise RuntimeError(f"The saved {mode} process exit was sealed before evaluation")
 
 
+def dropped_owner_lanes(native, rows, dropped):
+    """Join sealed owner identities to the original receiver lanes and visits."""
+    source = native["source"]
+    indexed = {}
+    for probe in source["probes"]:
+        key = f"{source['session_id']}:{probe['receiver_id']}:{probe['valid_start_counter']}"
+        indexed["sha256:"+sha256(key.encode()).hexdigest()] = probe
+    groups = defaultdict(list)
+    missing = set(dropped)
+    for identity, norad, role in rows:
+        if identity in missing:
+            probe = indexed[identity]
+            groups[(norad, role, probe["receiver_id"] + 1, probe["channel"], probe["actual_rf_hz"])].append(
+                probe["visit_index"])
+    return [dict(norad=norad, role=role, receiver=rx, channel=channel, rf_hz=rf,
+                 count=len(visits), first_visit=min(visits), last_visit=max(visits))
+            for (norad, role, rx, channel, rf), visits in sorted(groups.items())]
+
+
 def evaluate(root, output):
     from aperture_trial import read, write
     from tools.pipeline_eval.scoring import distance_km
@@ -267,9 +287,23 @@ def evaluate(root, output):
                                rf_rms_hz=row.get("rf_rms_hz")) for arm, row in result["terminal"]["arms"].items()}
               for mode, result in actual.items()}
     owners = {arm: owner_delta(stock["selected_rows"][arm], cumulative["selected_rows"].get(arm, [])) for arm in ARMS}
+    native = pinned(Path(request["native_file"]), SETTINGS["native_sha"])
+    for arm, delta in owners.items():
+        delta["dropped_lanes"] = dropped_owner_lanes(native, stock["selected_rows"][arm], delta["dropped"])
+    old_nomination = old["receipt"]["screened_nomination"]
+    cold = (cumulative["route_details"] or {}).get("cold", {})
+    shared_finalists = (old_nomination["screen_c0_scores"] == cold.get("scores"))
+    ranking = dict(named_zero_based=old_nomination["winning_rank"], cumulative_one_based=cold.get("branch"),
+                   identical_ordered_finalist_scores=shared_finalists,
+                   same_winner=shared_finalists and old_nomination["winning_rank"]+1 == cold.get("branch"))
+    process_cpu = stock["process"]["cpu_s"] - cumulative["process"]["cpu_s"]
+    solve_cpu = stock["worker"]["solve"]["cpu_s"] - cumulative["worker"]["solve"]["cpu_s"]
+    clocks = dict(saved_process_cpu_delta_s=process_cpu, matched_solve_cpu_delta_s=solve_cpu,
+                  residual_cpu_delta_s=process_cpu-solve_cpu)
     figure_match = {name: {key: row[key] == cumulative["figures"].get(name, {}).get(key)
                            for key in ("size", "sha256", "rgba_sha256")} for name, row in stock["figures"].items()}
-    write(output, dict(case=CASE, base=BASE, order=ORDER, inputs=request, waveform_calls=0, admission=admission,
+    write(output, dict(case=CASE, base=BASE, timing_driver_commit="ca3a64553", order=ORDER, inputs=request,
+                       waveform_calls=0, admission=admission, finalist_ranking=ranking, clocks=clocks,
                        stage_clock=read(root/"stage-clock.json"), scores=scores, runs=actual, owners=owners,
                        cairo_legends=legends, pair_figure_equality=figure_match, signed_qualification=qualification,
                        named_reproduces_historical=True, reference_sha256=REFERENCE_SHA256))
