@@ -1,4 +1,7 @@
 from importlib import import_module
+import gzip
+from hashlib import sha256
+import json
 from pathlib import Path
 
 import pytest
@@ -44,3 +47,18 @@ def test_worst_quarter_precedes_pooled_yield(policy):
         hit = (visit % 8 == 0 and visit >= 16) or (visit % 8 == 1 and probe["receiver_id"] == 0)
         probe["candidates"] = [{}] if hit else []
     assert policy.choose(probes)[1]["selected_groups"][0] == (1000, 1)
+
+
+def test_saved_decisions_match_solver_receipts_and_southern_masks():
+    folder = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/measurements"
+    cases = json.loads((folder / "survey-channels.json").read_bytes())["cases"]
+    receipts = json.loads(gzip.decompress((folder / "survey-channel-solves.json.gz").read_bytes()))
+    assert cases.keys() == receipts.keys() == {"DS30-0008", "south-containing", "south-far"}
+    assert cases["south-far"]["mask"] == cases["south-containing"]["mask"]
+    for case, entry in cases.items():
+        raw = receipts[case]
+        reference = json.loads(raw)
+        assert entry["decision"]["full_solver_receipt_sha256"] == sha256(raw.encode()).hexdigest()
+        assert reference["identity"]["native_sha256"] == entry["mask"]["packet_digest"]
+        assert reference["result"]["status"] == entry["decision"]["status"]
+        assert entry["quality_screen"] == (case == "south-far")
