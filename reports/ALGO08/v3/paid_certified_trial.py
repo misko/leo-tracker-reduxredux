@@ -64,7 +64,7 @@ def prepare(case, mode):
     return native, archive, offer, identity
 
 
-def run(case, mode, output):
+def run(case, mode, output, *, preparation_audit=None):
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
             or any(n != "1" for n in host["threads"].values())):
@@ -77,26 +77,33 @@ def run(case, mode, output):
     from lighter_joint_estimator import update
 
     native, archive, offer, identity = prepare(case, mode)
-    stock_solve, stock_prepare, factory = (algo08_position.solve, algo08_position.prepare_native_scan,
-                                          algo08_position.TrackConfig)
+    stock_solve, bare_prepare, factory = (algo08_position.solve, algo08_position.prepare_native_scan,
+                                         algo08_position.TrackConfig)
     attempts, fallback, preparation, owners = [], [], [], {}
 
-    def prepare_native(*args, **kwargs):
-        start_cpu, start_wall = process_time(), perf_counter()
-        prepared = stock_prepare(*args, **kwargs)
-        graph = prepared["tracks"]
-        preparation.append(dict(status=prepared["status"], observations=len(graph["observations"]),
-                                arcs=len(graph["tracks"]), graph_points=graph["graph_points"],
-                                curved=len(graph["curved_indices"]), cpu_s=process_time()-start_cpu,
-                                elapsed_s=perf_counter()-start_wall))
-        return prepared
-
     def observed(document, reader, assets, supplied):
+        active_prepare = algo08_position.prepare_native_scan
+        stock_prepare = bare_prepare if preparation_audit == "original-instrumentation" else active_prepare
+
+        def prepare_native(*args, **kwargs):
+            start_cpu, start_wall = process_time(), perf_counter()
+            prepared = stock_prepare(*args, **kwargs)
+            graph = prepared["tracks"]
+            preparation.append(dict(status=prepared["status"], observations=len(graph["observations"]),
+                                    arcs=len(graph["tracks"]), graph_points=graph["graph_points"],
+                                    curved=len(graph["curved_indices"]), cpu_s=process_time()-start_cpu,
+                                    elapsed_s=perf_counter()-start_wall))
+            return prepared
+
+        def inspect_only(prepared, *_args, **_kwargs):
+            preparation[-1]["prepared_sha256"] = prepared_digest(prepared)
+            return dict(status="withheld", reason="preparation_audit_only", arms={arm: {"latlon": None} for arm in ARMS})
+
         full = make_route(v5_core.infer, reader, fallback, repair=True, signed_finish=True)
         candidate = make_route(full, reader, attempts, repair=True, signed_finish=True,
                                joint_proposal=partial(propose, certified=True), signed_updater=update)
         config = (lambda **cfg: quadratic(factory(**cfg))) if mode == "quadratic" else factory
-        with (patch.object(v5_core, "infer", candidate),
+        with (patch.object(v5_core, "infer", inspect_only if preparation_audit else candidate),
               patch.object(algo08_position, "prepare_native_scan", prepare_native),
               patch.object(algo08_position, "TrackConfig", config)):
             decision, packet, policy = stock_solve(document, reader, assets, supplied)
@@ -125,7 +132,22 @@ def run(case, mode, output):
              "certified_salvage.py", "lighter_joint_estimator.py", "family_pool_closure.py", "blind_joint_route.py")
     result.update(identity=identity, host=host, attempts=attempts, fallback=fallback, prepared=preparation,
                   selected_rows=owners, sources={name: sha256((HERE / name).read_bytes()).hexdigest() for name in names})
+    if preparation_audit:
+        if attempts or fallback or result["reason"] != "preparation_audit_only":
+            raise ValueError("The preparation audit unexpectedly ran inference")
+        result["preparation_audit"] = preparation_audit
     write(output, result)
+
+
+def prepared_digest(prepared):
+    from leo.contracts.digests import canonical_digest
+
+    if prepared["status"] != "inputs_prepared":
+        return canonical_digest(prepared)
+    sky = prepared["sky"]
+    bank = {key: (str(value.dtype), list(value.shape), sha256(value.tobytes(order="C")).hexdigest())
+            for key, value in sky["bank"].items()}
+    return canonical_digest(dict(prepared, sky=dict(sky, bank=bank)))
 
 
 def matched_owners(complete, paid):
@@ -225,6 +247,7 @@ if __name__ == "__main__":
     runner.add_argument("case", choices=CASES)
     runner.add_argument("mode", choices=MODES)
     runner.add_argument("output", type=Path)
+    runner.add_argument("--preparation-audit", choices=("original-instrumentation", "released"))
     scorer = commands.add_parser("score")
     for name in ("directory", "summary", "full"):
         scorer.add_argument(name, type=Path)

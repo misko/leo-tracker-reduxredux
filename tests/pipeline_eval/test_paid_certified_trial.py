@@ -55,3 +55,15 @@ def test_exterior_requires_original_two_receiver_decision(trial):
     assert trial.actual_exterior(dict(status="withheld", reason="both_receivers_support_far_exterior"))
     assert not trial.actual_exterior(dict(status="withheld", reason="no_active_curvature"))
     assert not trial.actual_exterior(dict(status="failed", reason="both_receivers_support_far_exterior"))
+
+
+def test_preparation_correction_requires_exact_normalized_values(trial):
+    from paid_certified_preparation import compare
+
+    graph = dict(status="inputs_prepared", observations=4, arcs=1, graph_points=4, curved=1)
+    fit = dict(cpu_s=9., elapsed_s=9.5, prepared=[dict(graph, cpu_s=4., elapsed_s=4.25)])
+    before = dict(tle_records={}, prepared=[dict(fit["prepared"][0], prepared_sha256="same")])
+    after = dict(tle_records={}, prepared=[dict(graph, cpu_s=1., elapsed_s=1.25, prepared_sha256="same")])
+    assert compare(fit, before, after)["projected_solve"] == dict(cpu_s=6., elapsed_s=6.5)
+    after["prepared"][0]["prepared_sha256"] = "changed"
+    assert compare(fit, before, after)["projected_solve"] is None
