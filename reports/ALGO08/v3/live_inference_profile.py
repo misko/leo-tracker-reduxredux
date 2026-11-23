@@ -31,7 +31,7 @@ def replay(mode, output):
     publication, spec = configuration()
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
-    from tools.pipeline_eval.variants.experimental import regional_bound_guard
+    from tools.pipeline_eval.variants.experimental import regional_bound_guard, regional_reassignment
     from blind_joint_finish import elapsed
     from early_region import before_fit
     from joint_publication import full_catalogue_route
@@ -42,7 +42,7 @@ def replay(mode, output):
     if identity["detector_sha256"] != "sha256:" + spec["detector_sha256"]:
         raise ValueError("The saved detector specification changed")
     installed_solve = algo08_position.solve
-    attempts, regional, selected, grids = [], [], {}, []
+    attempts, regional, selected, grids, visited = [], [], {}, [], []
     profile = cProfile.Profile(timer=process_time) if mode == "profile" else None
     details = {}
 
@@ -55,6 +55,25 @@ def replay(mode, output):
             grid = scope.enter_context(reduced_grid())
             route = before_fit(route, reader, regional_bound_guard.causal_probes, regional, live.match)
             scope.enter_context(patch.object(v5_core, "infer", route))
+            proof_counts = None
+            if mode == "visible":
+                from visible_orbit_proof import visible_proof
+
+                proof_counts = scope.enter_context(visible_proof())
+            if profile is None:
+                prepare_scores = regional_reassignment._prepare_probe_scores
+
+                def track_probes(*args):
+                    points, score, meta = prepare_scores(*args)
+
+                    def observe_probe(point):
+                        row = score(point)
+                        visited.append(dict(row))
+                        return row
+
+                    return points, observe_probe, meta
+
+                scope.enter_context(patch.object(regional_reassignment, "_prepare_probe_scores", track_probes))
             cpu, wall = process_time(), perf_counter()
             if profile is not None:
                 profile.enable()
@@ -64,7 +83,7 @@ def replay(mode, output):
                 if profile is not None:
                     profile.disable()
             measured = elapsed(cpu, wall)
-        details.update(solve=measured, catalogue=prepared, grid_kernel=grid)
+        details.update(solve=measured, catalogue=prepared, grid_kernel=grid, proof_kernel=proof_counts)
         if packet is not None:
             if not packet["position_grid"]["complete"]:
                 raise ValueError("The complete numerical grid is required")
@@ -79,10 +98,10 @@ def replay(mode, output):
         raise ValueError("Expected one replay on the unchanged causal archive")
     result.pop("owner_rows", None)
     names = ("live_inference_profile.py", "live-inference-profile-protocol.md", "joint_publication.py",
-             "cold_finalist_race.py", "optimized_grid.py", "prepared_exterior.py", "early_region.py")
+             "cold_finalist_race.py", "optimized_grid.py", "prepared_exterior.py", "early_region.py", "visible_orbit_proof.py")
     pins = {name: sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() for name in names}
     result.update(case=CASE, mode=mode, machine=host, identity=identity, attempts=attempts, regional=regional,
-                  selected_rows=selected, grid=grids[0] if grids else None, source_sha256=pins, **details)
+                  selected_rows=selected, grid=grids[0] if grids else None, visited_probes=visited, source_sha256=pins, **details)
     if profile is not None:
         result["profile"] = attribution(profile)
     write(output, result)
@@ -90,6 +109,6 @@ def replay(mode, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("profile", "control"))
+    parser.add_argument("mode", choices=("profile", "control", "visible"))
     parser.add_argument("output", type=Path)
     replay(**vars(parser.parse_args()))
