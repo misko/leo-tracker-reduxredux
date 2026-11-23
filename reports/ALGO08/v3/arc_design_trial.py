@@ -17,8 +17,6 @@ from aperture_trial import archive_identity, configuration, inputs, machine, rea
 from arc_design import ARMS, Block, geometry, named_rows, select, union
 from mixture_trial import elapsed
 from owner_union_trial import CONTINUATION_SHA256, histories
-from survey_owner_diagnostic import exact_owners
-from survey_owner_oracle import restrict
 
 
 HERE = Path(__file__).resolve().parent
@@ -35,6 +33,8 @@ def witness(name, pin):
 
 
 def labels(case, identity, expected):
+    from survey_owner_diagnostic import exact_owners
+
     stock = witness("track-quadrature.json.gz", STOCK_WITNESS)["runs"][case]["stock"]
     aliases = witness("mixture-oracle.json.gz", ALIAS_WITNESS)["cases"][case]
     if (stock["identity"] != identity or aliases["identity"] != identity
@@ -137,6 +137,7 @@ def fit(prepared, region, bound, reader, owners, roles, result):
 
     from blind_joint_finish import build_at, digest, history_model, readout
     from blind_joint_signed import update
+    from survey_owner_diagnostic import exact_owners
 
     scan = v5_core.scan_context(prepared, region, digest(prepared["noise"]), bound, "genuine_previous")
     node, predictive = named_rows(scan, roles, predictive=True)
@@ -186,12 +187,13 @@ def fit(prepared, region, bound, reader, owners, roles, result):
 
 
 def trial(case, output, *, selection_path=None, dense_fit=False):
+    publication, specification = configuration()
     from leo.contracts.digests import canonical_digest
     from leo.operations.tle_archive import TleArchiveReader
     from tools import algo08_position, algo08_scan
     from tools.pipeline_eval.variants import v5_core
+    from survey_owner_oracle import restrict
 
-    publication, specification = configuration()
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
             or any(n != "1" for n in host["threads"].values())):
