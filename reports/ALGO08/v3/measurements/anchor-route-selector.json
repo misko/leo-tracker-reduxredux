@@ -1,0 +1,89 @@
+{
+  "kind": "archive_hindsight_comparison",
+  "source_commit": "d66b2bcbd9784484c14ac66ec552812696c9de5b",
+  "source_sha256": {
+    "reports/ALGO08/v3/measurements/causal-selection-transfer.json": "abfd12c81f5ee02c56f780b28e8717b0e64b57c81a47b09d380ae5edcbc4e97a",
+    "reports/ALGO08/v3/measurements/dense-protected-cost.json": "fa805e609662f8f0936e25f73f4f636e2684b8555e81ee25f6e9089b9cd8befb",
+    "reports/ALGO08/v3/measurements/full-short-graph-transfer.json": "1514e56ecbcd198247bec12edf862ab7e33ebd00a0f46805f72389f0fb68e034",
+    "reports/ALGO08/v3/measurements/local-future-0057.json.gz": "217fcc7ba7bbc95056ed64696c7444898138c268dbad4ced3c3f3f557f42727f",
+    "reports/ALGO08/v3/measurements/local-future-omissions.json.gz": "0623a6a30c9e94dfdfc66bb74208d995585a2d92edf2fd8cb7a8c60f527de9b4",
+    "reports/ALGO08/v3/measurements/north-causal-transfer.json": "049c47ff95d0a6d306ce4e5d2f0d10c0b8faf49a66a2b3022c8828113e32853c",
+    "reports/ALGO08/v3/measurements/north-combined.json": "871105154ab79679308cf7455ee10c236094d8735a02c17ed11bb2412283172e",
+    "reports/ALGO08/v3/measurements/regional-dense-pair.json": "7ab29f3551ec8e237dd74d38fdab05ad4cb4750d7ae6b67560cc206c99e94749",
+    "reports/ALGO08/v3/measurements/short-raw-diagnostic.json": "7b12b73f5e104a56d9da7c47641c6014e8003bed54efc4e4174b8c08abd35e67",
+    "reports/ALGO08/v3/measurements/weak-combined-raw.json": "a704861e37e40e7364fbf97bcb74e98bb9c701ca474c12821e8ed7df86cab233",
+    "tools/pipeline_eval/variants/carrier_continuation.py": "f13fc2e02be5474de37b3efb5fba195e3a45daf534e3fa4e7d60c76500cef9ee"
+  },
+  "calibration_order": ["c0", "fitted_c"],
+  "hindsight_criterion": "prefer lower horizontal error in both arms; default to unfiltered when alternate complete outcome unavailable",
+  "containing": {
+    "north": {
+      "unfiltered_packet": "sha256:2b4e1282f8205a5c90cef2ab6acb7c666d445592963634e93911160205403427",
+      "installed_error_km": [0.105689853, 0.140779366],
+      "unfiltered_error_km": [0.389654449, 0.120867945],
+      "history_error_km": [0.127778361, 0.113417635],
+      "unfiltered_rf_rms_hz": [69.400772189, 70.859687252],
+      "history_rf_rms_hz": [6.880727318, 6.763598097],
+      "hindsight": "history",
+      "raw_elapsed_s": {"installed": 18.513848927, "unfiltered": 12.872176177, "history": 12.388430483},
+      "raw_cpu_s": {"installed": 18.48044, "unfiltered": 12.817586, "history": 12.336812},
+      "zero_overhead_hindsight_elapsed_fraction": 0.669143976,
+      "unmatched_elapsed_headroom_s": 0.483745694
+    },
+    "DS30-0016": {
+      "unfiltered_packet": "sha256:c09de017909fdc6ffa9b0720b29f3a3fbb84b0785c110f15414ef3fc5bd37589",
+      "installed_error_km": [1.643668537, 1.661442763],
+      "unfiltered_error_km": [1.311046273, 1.694024796],
+      "history_error_km": [2.472856418, 2.542493924],
+      "unfiltered_rf_rms_hz": [121.526245541, 120.29086466],
+      "history_rf_rms_hz": [115.877985571, 115.358127165],
+      "hindsight": "unfiltered",
+      "raw_elapsed_s": {"installed": 10.830621691, "unfiltered": 8.900720608, "history": null},
+      "saved_history_process": {"elapsed_s": 5.875703049, "cpu_s": 5.833547}
+    },
+    "DS30-0057": {
+      "unfiltered_packet": "sha256:a9a0df0458963066bfcd11de0b22b23605ad44acdc3d3e628ccd8f40312064cd",
+      "installed_error_km": [0.426457888, 0.524687255],
+      "unfiltered_error_km": [0.240228476, 0.296935084],
+      "history_error_km": [0.378117893, 0.641471176],
+      "unfiltered_rf_rms_hz": [125.297917693, 125.310558018],
+      "history_rf_rms_hz": [120.22095561, 120.247479517],
+      "hindsight": "unfiltered",
+      "solve_cpu_s": {"unfiltered": 6.989395275, "history": 6.206165084},
+      "unmatched_solve_headroom_s": 0.783230191
+    },
+    "DS30-0008": {
+      "unfiltered_packet": "sha256:ad13073239fe7e4e276debf3c667c0a997408d9efb5e07e309b5ab6fff4d0a85",
+      "installed_error_km": [1.638978151, 1.511956085],
+      "unfiltered_error_km": [0.9190071, 0.857412914],
+      "history_error_km": null,
+      "unfiltered_rf_rms_hz": [140.961399783, 140.949801569],
+      "history_rf_rms_hz": null,
+      "hindsight": "unfiltered_default",
+      "solve_cpu_s": {"unfiltered": 26.10489322, "history": null}
+    },
+    "south": {
+      "unfiltered_packet": "sha256:a10693d167757124a036cfcd63e90966760e52b755f4bb834605ccaf74426d2e",
+      "installed_error_km": [0.816788804, 1.10140865],
+      "unfiltered_error_km": [0.45374697, 0.514580379],
+      "history_error_km": [0.577424988, 0.787478227],
+      "unfiltered_rf_rms_hz": [8.312380756, 8.188405965],
+      "history_rf_rms_hz": [7.983420723, 7.929758597],
+      "hindsight": "unfiltered",
+      "solve_cpu_s": {"unfiltered": 4.343024216, "history": 3.324588649},
+      "different_saved_boundaries_elapsed_s": {"unfiltered": 6.412054677, "history": 6.414051609}
+    }
+  },
+  "missing": {
+    "north_near": {"clearance_km": -0.1, "unfiltered": "false_fix", "history": "false_fix"},
+    "south_near": {"clearance_km": -0.1, "unfiltered": "false_fix", "history": "false_fix"},
+    "north_far": {"clearance_km": -52.5, "unfiltered": "withheld", "history": "withheld"},
+    "south_far": {"clearance_km": -52.5, "unfiltered": "withheld", "history": "withheld"}
+  },
+  "original_continuation_uses_held_anchor_cfo": true,
+  "held_graph_runs": 0,
+  "selection_graph_cpu_s": null,
+  "fresh_localization_runs": 0,
+  "raw_acquisitions": 0,
+  "component_tests_passed": 13
+}
