@@ -28,15 +28,19 @@ def assigned():
     from named_constrained_research import inventory_binding
     from unified_short_bootstrap import LAYOUT_SHA256
 
+    def checked_path(path, pin):
+        checked(path, pin)
+        return path
+
     source = json.loads(checked(STAGED / 'request.json', REQUEST_PIN))
     selected = json.loads(checked(STAGED / 'route-decision.json', source['selection_sha256']))
     native = source['original']['native_sha256']
-    packet = str(checked(Path(source['original']['file']), native[7:]))
+    packet = checked_path(Path(source['original']['file']), native[7:])
     if (selected['choice']['route'] != 'unfiltered' or source['selected']['native_sha256'] != native
             or source['original']['detector'] != RECIPE_SHA):
         raise ValueError('Expected the original unfiltered mixed receiver packet')
     inventory_path = STAGED / 'selected/fast-scan-inputs' / (source['session'] + '.json')
-    inventory = inventory_binding(Path(source['recording']), checked(inventory_path, source['inventory'][7:]),
+    inventory = inventory_binding(Path(source['recording']), checked_path(inventory_path, source['inventory'][7:]),
                                   source['session'], source['inventory'])
     if inventory(None, Path(source['recording']), verify_windows=False)[2]['window_count'] != 6772:
         raise ValueError('Unexpected signed visit count')
@@ -44,15 +48,15 @@ def assigned():
     observed = archive_identity(Path(archive['root']))
     if observed != {key: archive[key] for key in observed}:
         raise ValueError('The original causal archive changed')
-    region = checked(Path(source['offer']), source['offer_sha256'])
+    region = checked_path(Path(source['offer']), source['offer_sha256'])
     pins = dict(frontier_block_library=BLOCK_SHA, geographic_library=GEOGRAPHIC_SHA,
                 regional_track_library=TRACK_SCORES_SHA)
-    libraries = {key: str(checked(Path(source['libraries'][key]), pin)) for key, pin in pins.items()}
-    projection = checked(PREVIOUS / 'projection.so', LIBRARY_SHA)
+    libraries = {key: str(checked_path(Path(source['libraries'][key]), pin)) for key, pin in pins.items()}
+    projection = checked_path(PREVIOUS / 'projection.so', LIBRARY_SHA)
     checked(HERE / 'one_pass_web_png.py', LAYOUT_SHA256)
     return dict(recording=source['recording'], region=str(region), offer_sha256=source['offer_sha256'],
                 authority=source['authority'], session=source['session'], inventory=source['inventory'],
-                archive=archive, issued=6772, native=native, packet=packet, cutoff_utc_ns=source['cutoff_utc_ns'],
+                archive=archive, issued=6772, native=native, packet=str(packet), cutoff_utc_ns=source['cutoff_utc_ns'],
                 libraries=libraries, projection=str(projection), saved_inventory=str(inventory_path),
                 pins=dict(libraries=pins, projection=LIBRARY_SHA, layout=LAYOUT_SHA256, staging=REQUEST_PIN,
                           route=source['selection_sha256'], protocol=sha256(PROTOCOL.read_bytes()).hexdigest(),
