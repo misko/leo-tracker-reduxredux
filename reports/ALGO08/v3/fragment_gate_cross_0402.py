@@ -18,7 +18,7 @@ if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
 
 from fragment_gate_cross import factorial, fitted_fragment, local_gate, mask_influence, sections, state, state_terms
-from owner_loss_0402 import ARCHIVED, ARCHIVED_SHA, ARMS, STAGED, clocks, invoke, now, request, named_gate_witness
+from owner_loss_0402 import ARCHIVED, ARCHIVED_SHA, ARMS, REQUEST_SHA, STAGED, clocks, invoke, now, named_gate_witness
 
 
 TRACK_62735 = "SCAN-RX1-CH5-T004-RF11709687500.000000"
@@ -31,6 +31,18 @@ PROTOCOL = HERE / "fragment-cross-0402-protocol.md"
 
 class StageCapture(BaseException):
     """Never let the protected stage cuts proceed to terminal or media publication."""
+
+
+def admission(checked, archive_identity):
+    job = STAGED / "request.json"
+    req = json.loads(checked(job, REQUEST_SHA))
+    archive = Path(req["local_archive"]["root"])
+    source = [archive, Path(req["native_file"]), Path(req["offer_file"]), STAGED / "inventory.json",
+              *(Path(path) for path in req["local_libraries"].values())]
+    if (any(not path.resolve(strict=True).is_relative_to(STAGED) for path in source)
+            or archive_identity(archive)["snapshots_sha256"] != req["local_archive"]["snapshots_sha256"]):
+        raise ValueError("The assigned original inputs are no longer confined to their staged tmpfs root")
+    return job, req
 
 
 def capture_named(job, path):
@@ -289,12 +301,12 @@ def compare(named, cumulative, historical_trace):
 
 def run(root):
     import empty_bootstrap as boot
-    from aperture_trial import write
+    from aperture_trial import archive_identity, write
     from dense_geographic_trial import host
 
     machine = host()
     runtime = boot.load_runtime()
-    job, req = request()
+    job, req = admission(boot.checked, archive_identity)
     root.mkdir()
     with patch.object(boot, "load_runtime", return_value=runtime):
         named = capture_named(job, root / "named-incomplete")
