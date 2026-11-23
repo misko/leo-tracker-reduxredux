@@ -20,6 +20,7 @@ from full_short_physical import ISSUED, assigned, environment
 from full_short_run import GEOGRAPHIC_SHA, RECIPE_SHA, SHORT_SHA, TRACK_SCORES_SHA
 from joint_publication import artifacts
 from local_future_cli_trial import cache_before, native_packet
+from publication_media_checks import image_comparison_fields, verify_position_sidecars
 from short_raw_diagnostic import (
     CACHE_LIB, CACHE_SHA, CASES, HERE, FastScanStore, assignment, cache_residency, canonical_digest, checked, measure,
     pairs, require_warm,
@@ -57,10 +58,6 @@ def condition_tiny(manifests, scope):
             view = scope.enter_context(mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ))
             view[::mmap.PAGESIZE]
     return mapped
-
-
-def image_comparison_fields(images):
-    return {name: {key: image[key] for key in ("sha256", "size", "rgba_sha256")} for name, image in images.items()}
 
 
 def score(case, output, clock, reference, layout_images=None):
@@ -131,29 +128,6 @@ def score(case, output, clock, reference, layout_images=None):
                 native=canonical, input_manifest=source["input_manifest_sha256"],
                 cutoff_utc_ns=native["clock_anchor"]["before"]["realtime_ns"],
                 probes=len(probes), selected=sum(len(row["candidates"]) for row in probes))
-
-
-def verify_position_sidecars(before, current, run, original_figures, current_figures):
-    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
-
-    comparison = {}
-    for name in ("grid", "path"):
-        items, positions = [], []
-        for folder, figures in ((before, original_figures), (current, current_figures)):
-            store = FastStandardAnalysisStore(folder)
-            precise = getattr(store, "position_"+name)(run)
-            binding = dict(precise["binding"])
-            image = binding.pop("position_png_sha256")
-            if image != figures["position"]["sha256"]:
-                raise ValueError(f"{name} does not bind the currently published position PNG")
-            value = dict(precise, binding=binding)
-            value.pop("elapsed_seconds", None)
-            items.append(canonical_digest(value))
-            positions.append(image)
-        if items[0] != items[1]:
-            raise ValueError(f"Numerical {name} or its scientific binding changed")
-        comparison[name] = dict(unchanged_numerical_sha256=items[0], old_position=positions[0], direct_position=positions[1])
-    return comparison
 
 
 def run(root, short, geographic, regional, block, layout_receipt=None, layout_receipt_sha256=None, prior_unified=None):

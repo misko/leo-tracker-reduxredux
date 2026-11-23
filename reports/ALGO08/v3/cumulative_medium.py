@@ -182,8 +182,8 @@ def audit_layout(original, packet, values, output, receipt, request):
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from one_pass_web_png import render
     from one_pass_web_png_trial import observe_artists
+    from publication_media_checks import image_comparison_fields, verify_position_sidecars
     from saved_publication_trial import image_evidence
-    from unified_short_bootstrap_trial import image_comparison_fields, verify_position_sidecars
 
     start = process_time(), perf_counter()
     inventory, figures = {}, {}
@@ -201,17 +201,25 @@ def audit_layout(original, packet, values, output, receipt, request):
     run_id = receipt["run_id"]
     current = {name: image_evidence(store.artifact(run_id, name, figure["sha256"]))
                for name, figure in figures["direct"].items()}
-    if (current != figures["direct"] or figures["original"] == figures["direct"]
-            or image_comparison_fields(figures["original"]) != request["original_figures"]
-            or not verify_artist_safety(inventory["direct"], inventory["original"])
-            or any(figures["original"][name][key] != current[name][key]
-                   for name in PLOTS for key in ("size", "mode", "metadata"))):
-        raise ValueError("DS30-0057 explicit-layout artistic semantics or original archived figures differ")
+    checks = dict(direct_replay_matches_published=current == figures["direct"],
+                  changed_layout=figures["original"] != figures["direct"],
+                  original_equals_archived=image_comparison_fields(figures["original"]) == request["original_figures"],
+                  artists_and_overlap=verify_artist_safety(inventory["direct"], inventory["original"]),
+                  image_metadata=all(figures["original"][name][key] == current[name][key]
+                                     for name in PLOTS for key in ("size", "mode", "metadata")))
+    if not all(checks.values()):
+        raise ValueError(f"DS30-0057 explicit layout differs: {checks}")
     sidecars = verify_position_sidecars(Path(request["candidate_archive"]), output, run_id, figures["original"], current)
     canonical_artists = json.loads(json.dumps([row[0] for row in inventory["original"]], default=_json_value))
-    return dict(artist_sha256=canonical_digest(canonical_artists), artists=len(canonical_artists), sidecars=sidecars,
+    return dict(artist_sha256=canonical_digest(canonical_artists), artists=len(canonical_artists), sidecars=sidecars, checks=checks,
                 figures=figures, clipping={name: [row[1] for row in items] for name, items in inventory.items()},
                 verification_cost=time_since(start), audited_replays=clocks)
+
+
+def references(row):
+    a = row["runs"]["stock"]["retained_handoff"]
+    return dict(stock=dict(row["archived_stock_publication"], native_sha256=a["native_sha256"], terminal_sha256=a["terminal_sha256"]),
+                candidate=row["runs"]["candidate"])
 
 
 def saved_pair(root, admission):
@@ -222,7 +230,6 @@ def saved_pair(root, admission):
     from full_short_run import GEOGRAPHIC_SHA, TRACK_SCORES_SHA
     from combined_frontier_run import BLOCK_SHA
     from short_raw_diagnostic import checked, measure, pairs
-    from unified_short_bootstrap_trial import SURVEY
 
     settings = host()
     approved = read(admission)
@@ -232,10 +239,7 @@ def saved_pair(root, admission):
         raise ValueError("A sealed passive admission must select this bounded saved pair")
     if subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", root.parent], text=True).strip() != "tmpfs":
         raise ValueError("The saved pair requires fresh tmpfs publication")
-    refs = dict(stock=dict(row["archived_stock_publication"], **{
-                                "native_sha256": row["runs"]["stock"]["retained_handoff"]["native_sha256"],
-                                "terminal_sha256": row["runs"]["stock"]["retained_handoff"]["terminal_sha256"]}),
-                candidate=row["runs"]["candidate"])
+    refs = references(row)
     original = read(checked(HERE / "measurements/short-raw-diagnostic.json", CONTROL))
     libs = {name+"_library": str(checked(Path(original["native_libraries"][key]["path"]), pin))
             for name, key, pin in (("geographic", "geographic", GEOGRAPHIC_SHA), ("regional_track", "regional", TRACK_SCORES_SHA))}
@@ -268,25 +272,69 @@ def saved_pair(root, admission):
         if timing["exit_code"]:
             raise RuntimeError(f"{arm}: {timing['stderr_tail']}")
         result[arm] = verify_saved(output, timing, refs[arm], approved)
+    summarize(root, admission, result, settings, stock_build)
+
+
+def recover_audit(root, admission):
+    """Repeat only the sealed candidate to recover the separate artist witness."""
+    from aperture_trial import read, write
+    from dense_geographic_trial import host
+    from empty_bootstrap import RELEASE
+    from full_short_physical import environment
+    from short_raw_diagnostic import measure, pairs
+
+    settings = host()
+    authorization = read(admission)
+    row, _ = control()
+    refs = references(row)
+    clocks = {arm: read(root / f"{arm}-clock.json")["timing"] for arm in refs}
+    job = root / "binding.json"
+    original = read(root / "candidate/medium-saved-publication.json")
+    if (authorization["admission"] != "saved" or original["receipt"]["terminal_sha256"] != refs["candidate"]["terminal_sha256"]
+            or original["native"] != refs["candidate"]["native_sha256"]
+            or clocks["stock"]["exit_code"] != 0 or clocks["candidate"]["exit_code"] == 0
+            or "cannot import name 'cache_residency'" not in clocks["candidate"]["stderr_tail"]
+            or sha256(admission.read_bytes()).hexdigest() != read(job)["admission_sha256"]):
+        raise ValueError("Recovery requires the one sealed pair and the known post-publication import failure")
+    result = {"stock": verify_saved(root / "stock", clocks["stock"], refs["stock"], authorization)}
+    env = environment(root)
+    env["TMPDIR"] = str(root / "tmp")
+    replay = root / "artist-recovery"
+    command = [RELEASE / "venv/bin/python", "-IB", __file__, "saved-worker", job, "candidate", replay]
+    timing = measure(command, env, replay)
+    write(root / "artist-recovery-clock.json", dict(command=list(map(str, command)), timing=timing))
+    if timing["exit_code"]:
+        raise RuntimeError(f"Candidate artist recovery: {timing['stderr_tail']}")
+    audit = replay / "medium-layout-audit.json"
+    result["candidate"] = verify_saved(root / "candidate", clocks["candidate"], refs["candidate"], authorization, audit_path=audit)
+    summarize(root, admission, result, settings, pairs.verified_v3(pairs.NAMED_V3), recovery=timing)
+
+
+def summarize(root, admission, result, settings, stock_build, *, recovery=None):
+    from aperture_trial import read, write
+    from short_raw_diagnostic import checked
+    from unified_short_bootstrap_trial import SURVEY
     from aperture_score import PHYSICAL, distance_km
 
+    row, _ = control()
     survey, = [obj["reference"] for obj in read(checked(PHYSICAL, SURVEY))["cases"]
                if obj["dataset_label"] == row["case"] and obj["authority_eligible"]]
     truth = [survey["latitude_deg"], survey["longitude_deg"]]
     for arm in result.values():
         arm["horizontal_errors_km"] = {name: distance_km(item["latlon"], truth) for name, item in arm["evidence"]["arms"].items()}
-    write(root / "result.json", dict(case=row["case"], setting=settings, stock_build=stock_build, admission=approved,
+    write(root / "result.json", dict(case=row["case"], setting=settings, stock_build=stock_build, admission=read(admission),
           admission_digest=sha256(admission.read_bytes()).hexdigest(), boundary="fresh saved handoff through standard publication",
-          order=["stock", "candidate"], runs=result, protocol_sha256=sha256((HERE / "cumulative-medium-protocol.md").read_bytes()).hexdigest()))
+          order=["stock", "candidate"], runs=result, candidate_artist_recovery=recovery,
+          protocol_sha256=sha256((HERE / "cumulative-medium-protocol.md").read_bytes()).hexdigest()))
 
 
-def verify_saved(output, timing, archive, admitted):
+def verify_saved(output, timing, archive, admitted, *, audit_path=None):
     from aperture_trial import read
     from joint_publication import artifacts
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from local_future_cli_trial import native_packet
     from short_raw_diagnostic import pairs
-    from unified_short_bootstrap_trial import image_comparison_fields
+    from publication_media_checks import image_comparison_fields
 
     phases = read(output / "medium-saved-publication.json")
     receipt = phases["receipt"]
@@ -297,7 +345,7 @@ def verify_saved(output, timing, archive, admitted):
             or sha256(native_packet(output).read_bytes()).hexdigest() != archive["native_sha256"].removeprefix("sha256:")
             or any(actual[key] != archive[key] for key in ("arms", "owners", "scientific_digests"))):
         raise ValueError("The sealed medium publication differs from its own prior scientific outcome")
-    audit = read(output / "medium-layout-audit.json") if output.name == "candidate" else None
+    audit = read(audit_path or output / "medium-layout-audit.json") if output.name == "candidate" else None
     target = image_comparison_fields(audit["figures"]["direct"]) if audit else archive["pngs"]
     store = FastStandardAnalysisStore(output)
     grid = store.position_grid(receipt["run_id"])
@@ -311,13 +359,15 @@ if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_subparsers(dest="mode", required=True)
-    probe, pair, worker = (action.add_parser(name) for name in ("admission", "saved-pair", "saved-worker"))
+    probe, pair, worker, recovery = (action.add_parser(name) for name in ("admission", "saved-pair", "saved-worker", "recover-audit"))
     probe.add_argument("root", type=Path)
     pair.add_argument("root", type=Path)
     pair.add_argument("admission", type=Path)
     worker.add_argument("job", type=Path)
     worker.add_argument("arm", choices=("stock", "candidate"))
     worker.add_argument("output", type=Path)
+    recovery.add_argument("root", type=Path)
+    recovery.add_argument("admission", type=Path)
     values = vars(parser.parse_args())
     mode = values.pop("mode")
-    {"admission": preflight, "saved-pair": saved_pair, "saved-worker": saved_worker}[mode](**values)
+    {"admission": preflight, "saved-pair": saved_pair, "saved-worker": saved_worker, "recover-audit": recover_audit}[mode](**values)
