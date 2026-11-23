@@ -270,10 +270,11 @@ def run(args):
         scope = staged.now()
         reason = staged.empty_reason(native, frequency_evidence)
         graph_proof = None
-        if reason is None and args.prove_empty_graph:
+        time_proof = getattr(args, "prove_graph_time_support", False)
+        if reason is None and (args.prove_empty_graph or time_proof):
             from short_graph_guard import prove
 
-            graph_proof = prove(native, assets)
+            graph_proof = prove(native, assets, use_time_support=True) if time_proof else prove(native, assets)
             if graph_proof["proven"]:
                 reason = "no_active_curvature"
         before = [name for name in staged.SCIENTIFIC_IMPORTS if name in sys.modules]
@@ -350,6 +351,8 @@ if __name__ == "__main__":
     for name in ("recording", "archive", "region", "output", "short-binary", "geographic-library",
                  "regional-track-library", "frontier-block-library"):
         parser.add_argument("--"+name, type=Path, required=True)
+    parser.add_argument("--prove-graph-time-support", action="store_true",
+                        help="Prove no graph path spans the required time on small signed packets")
     parser.add_argument("--prove-empty-graph", action="store_true",
                         help="Use the pinned minimum support proof before loading the numerical solver")
     parser.add_argument("--one-pass-web-png", action="store_true",

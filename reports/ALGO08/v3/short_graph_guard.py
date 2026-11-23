@@ -1,9 +1,10 @@
 """Sufficient lane-count proof for the pinned installed track graph."""
 
-from collections import Counter
+from collections import Counter, defaultdict
 from hashlib import sha256
 import hashlib
 import json
+from math import isfinite
 from pathlib import Path
 
 
@@ -28,7 +29,36 @@ def lane_counts(rows, minimum):
                                                for (rf, rx, ch), n in sorted(counts.items())])
 
 
-def prove(native, assets):
+def time_support(rows, minimum, min_span_s, max_gap_s):
+    """Upper bound on each graph seed under the pinned time-only edge constraints."""
+    if (type(minimum) is not int or minimum < 3 or not isfinite(min_span_s)
+            or not isfinite(max_gap_s) or min_span_s <= 0 or max_gap_s <= 0):
+        raise ValueError("Invalid graph time constraints")
+    lanes = defaultdict(list)
+    for row in rows:
+        t = float(row["time_s"])
+        if not isfinite(t):
+            raise ValueError("Invalid observation time")
+        lanes[row["actual_rf_hz"], row["receiver"], row["channel"]].append(t)
+    largest_span = 0.0
+    for times in lanes.values():
+        if len(times) < minimum:
+            continue
+        times.sort()
+        start = 0
+        for index, t in enumerate(times):
+            # Match searchsorted(t, t[target] - max_gap_s) in the pinned graph.
+            if index and times[index - 1] < t - max_gap_s:
+                start = index
+            if index - start + 1 >= minimum:
+                span = t - times[start]
+                largest_span = max(largest_span, span)
+                if span >= min_span_s:
+                    return dict(proven=False, possible_time_support=True)
+    return dict(proven=True, possible_time_support=False, largest_eligible_count_span_s=largest_span)
+
+
+def prove(native, assets, *, use_time_support=False):
     import numpy as np
     import empty_bootstrap as staged
     from leo.analysis.glrt_frequency_input import frequency_evidence
@@ -44,6 +74,9 @@ def prove(native, assets):
         staged.load_definitions(sources[TRACKS], src / TRACKS, ("winning_observations",), scope)
         rows, metadata = scope["winning_observations"](native)
         counts = lane_counts(rows, config["min_points"])
+        if use_time_support and not counts["proven"] and len(rows) <= 256:
+            bounds = {key: config[key] for key in ("min_span_s", "max_gap_s")}
+            counts.update(time_support(rows, config["min_points"], **bounds), **bounds)
     except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
         return dict(proven=False, reason=f"could not certify installed graph: {exc}")
     return dict(counts, causal_cutoff_utc_ns=metadata["causal_cutoff_utc_ns"],
