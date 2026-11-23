@@ -1,0 +1,5 @@
+# One dense matched saved-publication pair
+
+Use the genuine DS30-0008 12 ms detector packet, supplied region and causal archive bound by its sealed crossover receipt. Run the complete saved pipeline twice under a single low-priority Gauss CPU 2 lock, with one numerical thread, separate interpreters and fresh output directories. Prime the shared font cache once before timing. Use the installed graph, full catalogue, fused geographic projection, cold-row reuse and predictive phase-state reuse in both arms. Run the new native regional-track kernel first and the original regional-track likelihood second. Change only the kernel option.
+
+Compare child launch through exit, publication, numerical solve and early regional proof. Verify both publications against each other and the archived complete numerical result, including each calibration arm, owner identities and roles, path and all grid samples, plus eight independently decoded PNGs. Report horizontal error separately from frequency residual. This is a single development pair with saved detections; do not extrapolate it as a measured end-to-end gain. Stop before reading any raw I/Q or widening the panel.
