@@ -9,8 +9,12 @@ from matplotlib.ticker import NullFormatter
 
 
 def figure(cases, output, method):
-    order = ("DS30-0008", "south-containing", "south-far")
-    fig, axes = plt.subplots(1, 3, figsize=(10.2, 3.15), layout="constrained")
+    labels = {"DS30-0008": "Dense DS30", "south-containing": "South inside", "south-far": "South omitted",
+              "north-containing": "North inside", "north-far": "North omitted"}
+    order = [name for name in labels if name in cases]
+    if set(order) != set(cases):
+        raise ValueError("Unknown offer in saved joint comparison")
+    fig, axes = plt.subplots(1, 3, figsize=(10.2, 2.1 + .35 * len(order)), layout="constrained")
     colors = ("#354968", "#007667")
     for index, name in enumerate(order):
         case = cases[name]
@@ -35,8 +39,8 @@ def figure(cases, output, method):
     for ax, arm in zip(axes[1:], ("fixed c = 0", "fitted c")):
         ax.set(xlabel=f"Horizontal error (km), {arm}", xlim=(0, None))
     for i, ax in enumerate(axes):
-        ax.set(yticks=range(3), yticklabels=("Dense DS30", "South inside", "South omitted") if i == 0 else [""] * 3,
-               ylim=(2.5, -.5))
+        ax.set(yticks=range(len(order)), yticklabels=[labels[k] if i == 0 else "" for k in order],
+               ylim=(len(order) - .5, -.5))
         ax.grid(axis="x", alpha=.23)
         ax.spines[["top", "right", "left"]].set_visible(False)
         ax.tick_params(axis="y", length=0)
@@ -51,5 +55,12 @@ if __name__ == "__main__":
     cli.add_argument("summary", type=Path)
     cli.add_argument("output", type=Path)
     cli.add_argument("--method", default="Joint curved and predictive fit")
+    cli.add_argument("--transfer", type=Path)
     args = cli.parse_args()
-    figure(json.loads(args.summary.read_bytes())["cases"], args.output, args.method)
+    records = json.loads(args.summary.read_bytes())["cases"]
+    if args.transfer:
+        additional = json.loads(args.transfer.read_bytes())["cases"]
+        if records.keys() & additional.keys():
+            raise ValueError("Duplicate offer across the two summaries")
+        records.update(additional)
+    figure(records, args.output, args.method)
