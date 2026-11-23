@@ -146,7 +146,7 @@ def enrolled():
         analysis = canonical_digest(["cancellation", RAW_AUTHORITY,
                                      packet["provenance"]["detector_sha256"][7:], source["probes"]])
         if (canonical_digest(packet) != result["native_sha256"] or canonical_digest(result)[7:] != terminal_sha
-                or result["region"] != offer or result["decision"] != "complete" or set(result["arms"]) != set(ARMS)
+                or result["region"] != offer or result["decision"] != "ok" or set(result["arms"]) != set(ARMS)
                 or source["raw_recording_authority_digest"] != RAW_AUTHORITY or analysis != source["analysis_manifest_sha256"]
                 or source["input_manifest_sha256"] != INVENTORY_SHA or len(source["probes"]) != 1426
                 or canonical_digest(read(metadata)) != INVENTORY_SHA):
@@ -207,7 +207,8 @@ def bind_publication(root, native, expected):
     media = json.loads(json.dumps(artifacts(root, receipt)))
     if (native != read(path) or canonical_digest(native) != terminal["native_sha256"]
             or terminal["native_sha256"] != report["saved_digest"] or canonical_digest(terminal) != receipt["terminal_sha256"]
-            or terminal["region"] != expected or terminal["decision"] != "complete" or set(terminal["arms"]) != set(ARMS)
+            or terminal["region"] != expected or terminal["decision"] != "ok" or receipt["decision"] != "complete"
+            or set(terminal["arms"]) != set(ARMS)
             or report["saved_handoff_manifest"] != INVENTORY_SHA or detail["raw_authority"] != RAW_AUTHORITY
             or report["route"] != "stock" or media != report["evidence"] or len(media["images"]) != 8
             or not grid["complete"] or grid["evaluated_points"] != grid["planned_points"]
