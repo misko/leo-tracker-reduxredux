@@ -22,7 +22,9 @@ PRIMARY = CASES[:2]
 MODES = ("control", "contrast")
 
 
-def run(case, mode, output):
+def run(case, mode, output, *, paid_south=False):
+    if paid_south and (case not in ("south-containing", "south-far") or mode != "control"):
+        raise ValueError("Paid southern transfer requires a southern offer and the original full nominations")
     host = machine()
     if (host["cpu"] != [2] or host["nice"] < 15 or "prio 7" not in host["ionice"]
             or any(n != "1" for n in host["threads"].values())):
@@ -40,7 +42,7 @@ def run(case, mode, output):
     from representative_contrast_bound import bounded_nominations
 
     shared_rank = runpy.run_path(str(SHARED_RANK))["shared_rank_preparation"]
-    paid = case == "DS30-0016"
+    paid = case == "DS30-0016" or paid_south
     if paid:
         native, archive, offer, identity = prepare(case, "quadratic")
     else:
@@ -175,6 +177,7 @@ if __name__ == "__main__":
     trial.add_argument("case", choices=CASES)
     trial.add_argument("mode", choices=MODES)
     trial.add_argument("output", type=Path)
+    trial.add_argument("--paid-south", action="store_true")
     scorer = actions.add_parser("score")
     for name in ("directory", "summary", "full"):
         scorer.add_argument(name, type=Path)
