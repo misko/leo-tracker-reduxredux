@@ -8,8 +8,9 @@ The comparison starts at sealed raw I/Q and ends at process exit after the termi
 |---|---|---|
 | Full-member prefetch and orbit-support guard | DS30-0374, 164.41 → 168.61 s. Both arms started cold. They reproduced the same detections, both fitted positions and all eight PNGs. | The orbit-support change has separate value on failures. This combination missed the latency gate. [Pair and limitations](../successor-physical-triage.md) |
 | Receiver early stopping, solver layout reuse and regional rejection during fine recovery | DS30-0008, 149.89 → 155.54 s. The prototype ran first with substantially less input cached. Both calibration arms and all PNGs matched. | The measured component opportunities are small relative to the required saving. [Pair and limitations](../bounds-physical-pair.md) |
+| Shorten the primary receiver aperture to 12 ms, retain full two-scan anchors and run the regional check before the position solve | DS30-0008, 149.89 → 95.43 s elapsed and 109.10 → 67.35 CPU s. Input cache residency differed. Fixed-zero and fitted position errors improved, and the candidate published all eight figures. | Short of the 74.94 s goal on this recording. The installed graph saved another 4.68 solver CPU s on the dense detections, while the weak recording favored the six-point graph. [Complete dense run, graph comparisons and timing model](../dense-real-transfer.md) |
 
-![Recorded elapsed time and horizontal error for two separate matched experiments](physical-pairs.png)
+![Recorded elapsed time and horizontal error for the first two matched experiments](physical-pairs.png)
 
 Each row is a different prototype on one physical recording. The paired error dots coincide horizontally where both builds returned the same location. Errors use the DS30 operator site reference. Pooling these rows would mix different algorithms.
 
