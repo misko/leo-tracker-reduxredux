@@ -2,6 +2,16 @@
 
 The three selected changes preserved the complete scientific publication and took 5.65 s longer elapsed and 2.29 s more CPU than installed ALGO08v3 in one physical pair. The candidate ran first with 0.95% of the input cached. The installed arm ran second with 76.75% cached. That difference limits attribution of elapsed time to the algorithms. [Measured pair](measurements/bounds-DS30-0008-pair.json)
 
+## How much work could the three changes remove?
+
+| Selected change | Dense DS30-0008 ceiling | What the saved tests measured |
+|---|---|---|
+| Stop refining a losing receiver hypothesis early | A free oracle that knew every losing hypothesis could save an estimated 2.5 CPU s. The tighter feasible bound priced at 1.19 CPU s before paying for the check. | The implemented check reduced native receiver CPU by 2.0% on weak lanes and 2.6% on dense lanes, preserving the selected factors. [Receiver study](refine-bound.md) |
+| Reuse the fixed part of the position solver's matrices | Repeated setup cost 1.045 CPU s. Copying and validation leave roughly 0.77 CPU s available. | Fixed constructions fell from 228 to 14 on dense and 94 to 9 in a southern simulation. All robust likelihood updates were still necessary. [Matrix reuse study](incremental-layout.md) |
+| Reject impossible satellite matches using the offered region | The entire dense fine-recovery stage cost 5.03 CPU s. Earlier ranking can use weak matches, so a regional exclusion there cannot guarantee identical results. | The check skipped 8,699 of 40,189 dense recovery trials. Recovery elapsed fell by 0.12 s. The northern omitted-region control kept its withholding decision. [Regional study](../single-core-2x/regional-doppler-envelope.md) |
+
+These estimates describe different scopes and include work the implementations still have to do. The full combination below provides the direct end-to-end test.
+
 | Measurement | Installed ALGO08v3 | Bounds candidate |
 |---|---:|---:|
 | Launch to sealed detections | 69.514 s | 79.919 s |
