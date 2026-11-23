@@ -8,7 +8,7 @@ from pathlib import Path
 from time import perf_counter, process_time
 
 from aperture_trial import RELEASE, configuration, read, write
-from anchor_exposure import enroll
+from anchor_holds import erased_rows, history_rows
 from dense_full_short_raw import checked
 from dense_geographic_trial import host
 from discovery_margin import factor_weights
@@ -70,22 +70,12 @@ def counterpart_census(full, short):
 
 def erase(document):
     """Keep the opportunity holes. Their original measurements never enter history."""
-    probes = document["source"]["probes"]
-    held = [index for index, opportunity in enumerate(enroll(document)) if opportunity[4] == "anchor"]
-    masked = list(probes)
-    for index in held:
-        masked[index] = dict(probes[index], candidates=[])
+    masked, held = erased_rows(document)
     return rebound(document, masked, ["diagnostic all full anchors erased before preparation v1"]), held
 
 
 def history_only(masked):
-    from tools.pipeline_eval.variants.carrier_continuation import Continuation
-
-    history, rows = Continuation(), []
-    for row in masked["source"]["probes"]:
-        _, keep, _ = history.select(row)
-        rows.append(dict(row, candidates=[] if keep is None else [row["candidates"][keep]]))
-    return rebound(masked, rows, ["diagnostic strictly erased carrier history v1"])
+    return rebound(masked, history_rows(masked["source"]["probes"]), ["diagnostic strictly erased carrier history v1"])
 
 
 def lane(probe):
