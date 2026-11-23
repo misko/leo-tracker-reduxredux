@@ -1,6 +1,7 @@
 """Run the repaired joint solver through the v3 publication stack in a fresh research root."""
 
 import argparse
+from collections import Counter
 from contextlib import ExitStack
 from hashlib import sha256
 from io import BytesIO
@@ -56,6 +57,10 @@ def artifacts(root, receipt):
 def run(args):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
+    stock_control = getattr(args, "stock_control", False)
+    signed_finish = getattr(args, "signed_finish", False)
+    if stock_control and signed_finish:
+        raise ValueError("Choose either installed stock or the signed research finish")
     publication, spec = configuration()
     from tools import algo08_scan
     from tools.pipeline_eval.variants import v5_core
@@ -64,20 +69,35 @@ def run(args):
     original = algo08_scan.analyze
     attempts = []
     saved = json.loads(args.saved.read_bytes()) if args.saved else None
+    saved_handoffs, solves, selected_rows = [], [], {}
 
     def analyze(*values, **kwargs):
         stock_solve = algo08_scan.solve
 
         def solve(native, reader, assets, region):
-            route = make_route(v5_core.infer, reader, attempts, repair=True)
-            with patch.object(v5_core, "infer", route):
-                return stock_solve(native, reader, assets, region)
+            cpu, wall = process_time(), perf_counter()
+            if stock_control:
+                decision, packet, policy = stock_solve(native, reader, assets, region)
+            else:
+                route = make_route(v5_core.infer, reader, attempts, repair=True, signed_finish=signed_finish)
+                with patch.object(v5_core, "infer", route):
+                    decision, packet, policy = stock_solve(native, reader, assets, region)
+            solves.append(dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall, orbit_policy=policy))
+            if packet is not None:
+                selected_rows.update({arm: [[row["observation_id"], row["norad"], row["role"]] for row in rows]
+                                      for arm, rows in packet["rows"].items()})
+                solves[-1].update(grid_points=packet["position_grid"]["evaluated_points"],
+                                  grid_complete=packet["position_grid"]["complete"],
+                                  objective_replay=packet["objective_replay"])
+            return decision, packet, policy
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(algo08_scan, "solve", solve))
             if saved is not None:
                 def acquire(session, inventory_digest, _inventory, _assets):
-                    return verified_saved(saved, args.saved_digest, session, inventory_digest, spec["detector_sha256"])
+                    found = verified_saved(saved, args.saved_digest, session, inventory_digest, spec["detector_sha256"])
+                    saved_handoffs.append(inventory_digest)
+                    return found
                 stack.enter_context(patch.object(algo08_scan, "acquire", acquire))
             return original(*values, **kwargs)
 
@@ -86,24 +106,44 @@ def run(args):
         receipt = publication.run(SimpleNamespace(recording=args.recording, archive=args.archive, region=args.region,
                                                  bulk_root=args.output), spec)
     cpu, wall = process_time() - clocks[0], perf_counter() - clocks[1]
-    if len(attempts) != 1:
-        raise ValueError("Expected exactly one execution of the research solver")
+    if len(solves) != 1 or len(attempts) != (0 if stock_control else 1):
+        raise ValueError("Expected exactly one solver invocation through the requested route")
+    if saved is not None and len(saved_handoffs) != 1:
+        raise ValueError("Expected one verified saved detection handoff")
     source = Path(__file__).resolve().parent
     pins = {name: sha256((source / name).read_bytes()).hexdigest() for name in (
-        "joint_publication.py", "blind_joint_finish.py", "blind_joint_route.py", "blind_joint_repair.py")}
+        "joint_publication.py", "blind_joint_finish.py", "blind_joint_route.py", "blind_joint_repair.py", "blind_joint_signed.py")}
+    from leo.application.localization_v3_engine import _json_value
+
     result = dict(input="saved detector" if saved is not None else "raw recording", saved_digest=args.saved_digest,
-                  reference="installed v3 with research joint repair", source_sha256=pins, route=attempts[0]["decision"],
-                  machine=machine(), publication_cpu_s=cpu, publication_elapsed_s=wall, receipt=receipt)
+                  reference="installed v3" if stock_control else "installed v3 with research joint repair",
+                  source_sha256=pins, route="stock" if stock_control else attempts[0]["decision"],
+                  signed_finish=signed_finish, stock_control=stock_control, machine=machine(),
+                  publication_cpu_s=cpu, publication_elapsed_s=wall, solve=solves[0],
+                  selected_roles={arm: dict(Counter(row[2] for row in rows)) for arm, rows in selected_rows.items()},
+                  saved_handoff_manifest=saved_handoffs[0] if saved_handoffs else None, receipt=receipt,
+                  route_details=attempts[0] if attempts else None)
     if args.verify_images:
         result["evidence"] = artifacts(args.output, receipt)
-    (args.output / "joint-research-receipt.json").write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+        if saved is not None:
+            result["selected_rows"] = selected_rows
+    with (args.output / "joint-research-receipt.json").open("x") as stream:
+        json.dump(result, stream, indent=2, allow_nan=False, default=_json_value)
+        stream.write("\n")
 
 
-if __name__ == "__main__":
+def main(argv=None):
     cli = argparse.ArgumentParser(description=__doc__)
     for name in ("recording", "archive", "region", "output"):
         cli.add_argument("--" + name, type=Path, required=True)
     cli.add_argument("--saved", type=Path)
     cli.add_argument("--saved-digest")
     cli.add_argument("--verify-images", action="store_true")
-    run(cli.parse_args())
+    mode = cli.add_mutually_exclusive_group()
+    mode.add_argument("--stock-control", action="store_true")
+    mode.add_argument("--signed-finish", action="store_true")
+    run(cli.parse_args(argv))
+
+
+if __name__ == "__main__":
+    main()
