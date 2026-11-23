@@ -1,7 +1,6 @@
 """Run early regional evidence on the three sealed mixed-aperture availability inputs."""
 
 import argparse
-from functools import partial
 import gzip
 from hashlib import sha256
 import json
@@ -27,16 +26,22 @@ def control():
 
 
 def run(case, output):
-    from leo.operations.tle_archive import TleArchiveReader
-
     base = control()[case]
-    reader = TleArchiveReader(Path(base["identity"]["archive"]["root"]))
     audit, counts = [], {}
+    def scope():
+        from leo.operations.tle_archive import TleArchiveReader
+        return preflight(TleArchiveReader(Path(base["identity"]["archive"]["root"])), audit, counts)
+
     with TemporaryDirectory() as tmp:
         path = Path(tmp) / "solver.json"
-        fit(case, "control", path, load_saved_inputs=prepare, single_attempt=True,
-            evidence_context=partial(preflight, reader, audit, counts))
+        fit(case, "control", path, load_saved_inputs=prepare,
+            evidence_context=scope)
         row = read(path)
+    entry, = audit
+    stopped = bool(entry["result"].get("complete") and entry["result"].get("would_withhold"))
+    if (len(row["attempts"]) != int(not stopped)
+            or stopped and (row["status"] != "withheld" or row["reason"] != "both_receivers_support_far_exterior")):
+        raise ValueError("Expected one regional check followed by exactly its declared route")
     if any(row["identity"][k] != base["identity"][k] for k in ("native_sha256", "archive", "offer", "graph_parameters")):
         raise ValueError("Early proof changed the saved detector or causal input")
     row.update(preflight=audit, catalogue=counts)
