@@ -56,8 +56,13 @@ if __name__ == "__main__":
     cli.add_argument("output", type=Path)
     cli.add_argument("--method", default="Joint curved and predictive fit")
     cli.add_argument("--transfer", type=Path)
+    cli.add_argument("--family-search", action="store_true", help="Read the iterative family-search score format.")
     args = cli.parse_args()
     records = json.loads(args.summary.read_bytes())["cases"]
+    if args.family_search:
+        records = {case: dict(timing=dict(stock=dict(cpu_s=row["stock_cpu_s"]), charged=row["result"]),
+                              stock=row["stock_fit"], returned=row["versus"]["signed-full"])
+                   for case, row in records.items()}
     if args.transfer:
         additional = json.loads(args.transfer.read_bytes())["cases"]
         if records.keys() & additional.keys():

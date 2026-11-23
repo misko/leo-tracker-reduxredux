@@ -1,5 +1,7 @@
 # Adding missing families to the representative catalogue
 
+![Saved solver CPU and horizontal errors against installed ALGO08v3 for the same offers](development/iterative-family-search.png)
+
 One family addition resolved the outside-pool check on each containing offer. The dense route returned a complete **30.223 CPU-second** ordinary paired fix. That was faster than the full signed control at 39.045 s and the first-pool fallback at 42.744 s. It missed the 24 s target and increased both horizontal errors by more than 0.25 km versus full signed. The southern containing result matched both full controls, and the displaced offer withheld directly. The frozen trial stopped with these three saved offers. [Protocol](family-pool-closure-protocol.md) · [Numeric summary](measurements/family-pool-closure-summary.json) · [Sealed receipts and owner rows](measurements/family-pool-closure.json.gz)
 
 | Offer | Installed CPU (s) | Full signed CPU (s) | First pool CPU (s) | Iterative pool CPU / elapsed (s) | Original evidence points | Terminal path |
