@@ -1,0 +1,92 @@
+{
+  "kind": "archive_crosscheck",
+  "fresh_saved_runs": 0,
+  "raw_acquisitions": 0,
+  "source_sha256": {
+    "reports/ALGO08/single-core-2x/measurements/DS30-0008-moments-control.json.gz": "ee960eb5b9e4428d9f5330160df41504d06428fd06a7b4975fffd26ee35002fc",
+    "reports/ALGO08/single-core-2x/measurements/solver-nomination-bound.json": "79acbe331bc1c7c501033c463f49d62a411682f9974dc40f0e66ca2e588f6898",
+    "reports/ALGO08/v3/measurements/full-family-amortized.json.gz": "f2cf9e3546bd91273d03ba87b8c5fee54e4b80f25f3bb69f5ea2a700b8612ca3",
+    "reports/ALGO08/v3/measurements/full-family-amortized-summary.json": "780366967ecc24287b0d62c42c07cd8dbc6c24f74b175202e75a76700e3fa81e",
+    "reports/ALGO08/v3/measurements/dense-assignment-reuse.json": "30ee4adefd0926d6d11a57aa6f0137c0f05627b4cf6df0232aab8f3686d23ba6",
+    "reports/ALGO08/v3/measurements/regional-dense-pair.json": "7ab29f3551ec8e237dd74d38fdab05ad4cb4750d7ae6b67560cc206c99e94749",
+    "tools/pipeline_eval/variants/algo08_track_moments.py": "1ce49102483e14cb6ba66a9b6b871d613cfd813867103d5a838306fa84485187",
+    "tools/pipeline_eval/variants/v5_core.py": "30e6f22ab4b49d03cf8536645cbdebb8fec2afa513f3cfa4a9f3163590a84407",
+    "src/leo/analysis/localization_v3/discovery.py": "7ca045c3809c8da7b57268b9d9bcc4b8a49366e88376250d0b11227ce6d7e26a"
+  },
+  "earlier_dense_moment_route": {
+    "packet_sha256": "34d0381ec59c6dc1d264292ee402adbe020ef8c6521d866dde2a83221db395c7",
+    "catalogue": 1476,
+    "curved_tracks": 111,
+    "full_observation_branches_exactly_ranked": 7,
+    "moment_branches_exactly_ranked": 7,
+    "matching_complete_signatures": 0,
+    "exact_c0_refreshed_finalists_per_route": 3,
+    "full_observation_winner_rank": 1,
+    "moment_winner_rank": 1,
+    "changed_owners_from_stock_winner_in_moment_rank_order": [12, 14, 25, 15, 10, 21, 28],
+    "accepted_points_at_full_gate": {"control": 3236, "moments": 2905},
+    "earliest_observed_loss": "before_original_exact_centre_rerank",
+    "first_learned_state_or_pruning_decision_to_diverge": null
+  },
+  "fixed_zero_state_isolation": {
+    "archive_file": "/tmp/leo-algo08v2-2x-bench/solver-streamed-nomination-DS30-0008.json",
+    "archive_sha256": "e328d33110235135f68c9966e394112f76d05dc77434397415193899a5ee991b",
+    "comparisons": 60,
+    "visibility_mask_changes": 0,
+    "alias_changes": 0,
+    "interpolation_nomination_changes": 1,
+    "max_moment_algebra_cost_delta": 8.940696716308594e-08,
+    "changed_row": {
+      "anchor_east_north_km": [-12.5, -12.5],
+      "track": "SCAN-RX1-CH7-T008-RF12209687500.000000",
+      "exact_doppler_norad": 63592,
+      "interpolated_doppler_norad": 64194,
+      "full_observation_learned_branch_norad": 64194,
+      "moment_learned_branch_norad": 63592
+    }
+  },
+  "fixed_anchor_cost_witness": {
+    "exact_nominee_and_alias_pairs": 27,
+    "changed_diagnostic_tuples": 8,
+    "median_profile_cpu_ms": {
+      "DS30-0008": {"visibility_only": 1.732579, "certified": 2.565714},
+      "north": {"visibility_only": 0.956753, "certified": 2.112646}
+    }
+  },
+  "certified_complete_route": {
+    "DS30-0008": {
+      "packet": "original complete receiver",
+      "full_profile_calls": {"control": 2621376, "certified": 10429},
+      "association_cpu_s": {"control": 1.8647128259999999, "certified": 1.7467644449999993},
+      "cold_rank_cpu_s": {"control": 5.084855650999999, "certified": 5.106375238999999},
+      "solve_cpu_s": {"control": 28.679826453, "certified": 28.642317968},
+      "equal_finalist_scores": [30650.176771507708, 31365.68832195176, 31640.28282162212],
+      "equal_paired_science": true,
+      "equal_cold_diagnostic_hashes": false
+    },
+    "DS30-0016": {
+      "packet": "paid short receiver",
+      "full_profile_calls": {"control": 92736, "certified": 23383},
+      "association_cpu_s": {"control": 0.025652130999999745, "certified": 0.028324499999999198},
+      "cold_rank_cpu_s": {"control": 0.12344746299999976, "certified": 0.12793449400000023},
+      "solve_cpu_s": {"control": 2.5735386780000002, "certified": 2.625103374},
+      "equal_finalist_scores": [342.06390836542494, 394.4934859280619, 418.35241989411253],
+      "equal_paired_science": true,
+      "equal_cold_diagnostic_hashes": false
+    }
+  },
+  "current_unfiltered_dense_budget": {
+    "packet_sha256": "sha256:ad13073239fe7e4e276debf3c667c0a997408d9efb5e07e309b5ab6fff4d0a85",
+    "solver_cpu_s": 26.10489322,
+    "target_cpu_s": 16.0,
+    "cold_cpu_s": 5.7242091550000005,
+    "association_calls": 16,
+    "association_cpu_s": 1.398745792,
+    "nested_curve_calls": 1792,
+    "nested_curve_cpu_s": 0.893472485,
+    "nested_prediction_cpu_s": 0.162078793,
+    "solver_if_associations_free_cpu_s": 24.706147428,
+    "solver_if_whole_cold_stage_free_cpu_s": 20.380684065
+  },
+  "tests_passed": 26
+}
