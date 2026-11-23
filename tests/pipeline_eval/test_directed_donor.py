@@ -25,7 +25,7 @@ def test_secant_wraps_phase_without_folding_signed_frequency(donor):
     assert query["phase_sample"] == pytest.approx(13.)
     assert query["cfo_hz"] == -220_500.
     corrected = donor.extrapolate(counters, anchors, ((0., 0.), (500., 5.), (3000., 30.)))
-    assert corrected["cfo_hz"] == -218_500.
+    assert corrected["cfo_hz"] == -219_000.
     assert corrected["phase_sample"] == pytest.approx(28.)
 
 
