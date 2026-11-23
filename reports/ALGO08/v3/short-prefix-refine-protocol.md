@@ -1,0 +1,7 @@
+# Paid exact prefix and independent gather
+
+Compare independent exact gathering with one guarded native reuse callback on the original three staged short-primary rosters. Both callbacks run immediately inside the same pinned original short detector wrapper. Charge independent gathering on any positive where seed and reported CFO bit patterns differ, pilot support is incompatible, approximate rows were used, or reuse otherwise cannot be verified. No rephasing, threshold adjustment or oscillator recurrence.
+
+The qualified upstream call makes the use of the short verifier state synchronous and binds it to the current signed primary, receiver lane, epoch, offset, tune and pilot. Copy both original eight-row pilot buffers after independently correlating all later frames at the original full reported CFO. Evaluate the exact original reduction in its original order. Require all eight diagnostics and every original or amended emitted factor field to match the already frozen exact-gather references. Empty lanes remain in the signed lane clocks, with zero second measurements. Full anchors remain outside both comparisons.
+
+Run six paired repeats with three passes in each order, serialized on the low-priority single Gauss core. Charge setup and staged intake separately. Record callback CPU, entire signed short-lane CPU and elapsed, and exact fallback counts. These clocks do not price full-recording ingestion, solver or full anchors.
