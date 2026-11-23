@@ -19,6 +19,8 @@ The valid fix used 519 observations per calibration arm and a complete 137-point
 
 ## The remaining single-core budget
 
+A subsequent graph crossover found that the 33.68 s dense control below used the installed track configuration. The candidate's quadratic configuration took 41.78 s on the same v3 detector packet, or 37.43 s with the faster native geographic projection. Charging 37.43 s in the model changes the optimistic median and summed fractions to 0.557 and 0.571. [Graph, receiver and projection measurements](short-graph-and-geography.md)
+
 The model below uses the measured complete dense solve fraction of **0.5524**, the measured signed reader rates, one seal and worker overhead per recording, and the 55 historical v3 elapsed denominators. The three failed recordings without stage instrumentation retain their observed elapsed. The historical tail through process exit stays charged. Dense solve fraction and prefix reader rate are transfers across recordings. Actual whole-recording timing for the physical short candidate remains the single DS30-0016 pair. [Matched physical pilot](full-short-physical.md) · [Seal calibration](full-short-seal-scaling.md)
 
 | Measured reader throughput | Seal assumption | Modeled median / summed elapsed fraction | Dense solve budget to pass both |

@@ -85,7 +85,7 @@ def artifacts(root, receipt):
 
 
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
-        raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None):
+        raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -98,6 +98,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     optimized = getattr(args, "optimized_full_catalogue", False)
     if early_regional and not optimized:
         raise ValueError("Early regional proof requires the optimized full catalogue")
+    if geographic_projector is not None and not early_regional:
+        raise ValueError("A geographic projector requires the regional proof")
     full_catalogue = getattr(args, "full_catalogue", False) or optimized
     signed_finish = getattr(args, "signed_finish", False) or full_catalogue
     if stock_control and signed_finish:
@@ -140,6 +142,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 return route(prepared, *values, **options)
 
             with ExitStack() as stack:
+                if geographic_projector is not None:
+                    projection_counts = stack.enter_context(geographic_projector())
                 if optimized:
                     from optimized_grid import reduced_grid
                     from prepared_exterior import handoff
@@ -162,6 +166,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
             solves.append(dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall, orbit_policy=policy))
             if optimized:
                 solves[-1].update(prepared_exterior=prepared_counts, reduced_grid=grid_counts)
+            if geographic_projector is not None:
+                solves[-1]["geographic_projector"] = dict(projection_counts)
             if observer is not None:
                 solves[-1].update(preparation=preparations, inference_metrics=decision.get("metrics"))
             if packet is not None:
