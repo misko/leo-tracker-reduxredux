@@ -9,6 +9,8 @@ The current cumulative saved publication shortened DS30-0155 through-exit elapse
 
 Each stock arm assigned 3,498 observations. Each cumulative arm assigned 3,352, retaining 3,273 original observation IDs and adding 79. It dropped 225 original IDs. Every shared observation retained the same NORAD and role. The equal input to both solves covered **6,179 admitted stereo visits out of 6,773 issued**, with the original 25 km offer, inventory and cutoff. Both publications carried a complete 179-point grid, both path/grid bindings to their own position PNGs, and all eight decoded and content-addressed PNGs. The signed prior was unqualified in the cumulative arm. The normal paired route accepted its ordinary solution after the existing common-support repair, which dropped two curved tracks. The raw receiver and the provisional salvage, held-anchor and exact phase forecast experiments were outside this pair. [Runner and evidence checks](prospective_0155_solver.py)
 
+The same two satellite families account for all 225 excluded conditional observations in either arm, with 158 from NORAD 59267 and 67 from NORAD 100030. The 79 added conditional observations split into 40 for NORAD 58979 and 39 for NORAD 100030. [Sealed selected rows and exact owner comparison](measurements/prospective-0155-solver.json.gz)
+
 | Saved process scope | Named v3 | Cumulative |
 |---|---:|---:|
 | Launch to exit elapsed | 25.571 s | 18.271 s |
