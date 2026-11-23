@@ -206,9 +206,16 @@ def replay_solver(publication, specification, native, archive, offer):
 
 def unit_cost():
     archive = pinned("directed-verifier.json.gz", VERIFIER_SHA)
-    return {case: {str(cap): {kind: row[f"{kind}_cpu_ms"]["mean"] for kind in ("positive", "negative")}
-                   for cap in (1, 2) for row in [data["checks"][f"nominal_refine_{cap}"]]}
-            for case, data in archive["groups"].items()}
+    dense_checks = archive["groups"]["dense"]["checks"]
+    rates = {}
+    for name, data in archive["groups"].items():
+        rates[name] = {}
+        for cap in (1, 2):
+            key = f"nominal_refine_{cap}"
+            row = data["checks"][key]
+            rates[name][str(cap)] = dict(positive=row["positive_cpu_ms"]["mean"],
+                                         negative=(row["negative_cpu_ms"] or dense_checks[key]["negative_cpu_ms"])["mean"])
+    return rates
 
 
 def read_charge(case, native, visits):
@@ -249,6 +256,13 @@ def replay(case, sealed_path, output):
         raise ValueError("A held factor was not obtained from its original paid-plan lane")
     report, selected = coverage(timeline, proposals)
     row_index = indices(native["source"]["probes"], native["source"]["session_id"])
+    cost = unit_cost()
+    visits = {row["metadata"]["visit_index"] for row in proposals.values()}
+    bytes_per_stereo = int(native["source"]["probe_ms"] * ADC / 1000) * 8
+    try:
+        footprint = read_charge(case, full_native, visits)
+    except (FileNotFoundError, PermissionError) as exc:
+        footprint = dict(unavailable=type(exc).__name__, path=str(exc.filename))
     results = {}
     for mode, recovered in selected.items():
         if recovered:
@@ -260,16 +274,9 @@ def replay(case, sealed_path, output):
             solved = dict(result=old["result"], charged=dict(cpu_s=0., elapsed_s=0.), fallback_cpu_s=0.,
                           reused_first_pass=True, input_sha256=identity["native_sha256"], owners={})
         results[mode] = dict(added=recovered, **solved)
-    cost = unit_cost()
     projected = {slice_name: sum(
         rates[str(len(row["queries"]))]["positive" if timeline[oid]["candidates"] else "negative"]
         for oid, row in proposals.items() if row["queries"]) / 1000 for slice_name, rates in cost.items()}
-    visits = {row["metadata"]["visit_index"] for row in proposals.values()}
-    bytes_per_stereo = int(native["source"]["probe_ms"] * ADC / 1000) * 8
-    try:
-        footprint = read_charge(case, full_native, visits)
-    except (FileNotFoundError, PermissionError) as exc:
-        footprint = dict(unavailable=type(exc).__name__, path=str(exc.filename))
     if archive_identity(archive) != identity["archive"]:
         raise ValueError("The frozen causal archive changed")
     write(output, dict(case=case, identity=identity, source_forecasts_sha256=sha256(sealed_path.read_bytes()).hexdigest(),
