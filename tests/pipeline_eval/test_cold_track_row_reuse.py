@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"
 from cold_track_row_reuse import CentreRows, associate_with_rows
 from cold_track_row_trial import same_proof
 from cold_track_row_entry import rank_with_centre_rows
+from cold_track_row_transfer import numeric_grid
 
 
 @pytest.fixture
@@ -107,3 +108,10 @@ def test_installed_fallback_can_rank_without_the_shared_centre_cache():
     rank = rank_with_centre_rows(lambda current: [current], discovery, counts)
     assert rank(scan) == [scan]
     assert counts == {"ordinary_ranks": 1}
+
+
+def test_grid_comparison_ignores_only_the_elapsed_clock():
+    grid = {"binding": {"digest": "test"}, "points": [0, 1], "elapsed_seconds": .1}
+    assert numeric_grid(grid) == numeric_grid(dict(grid, elapsed_seconds=.2))
+    assert numeric_grid(grid) != numeric_grid(dict(grid, points=[0, 2]))
+    assert numeric_grid(grid) != numeric_grid(dict(grid, binding={"digest": "other"}))

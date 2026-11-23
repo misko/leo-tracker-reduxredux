@@ -73,6 +73,16 @@ def same_route(left, right):
             and fit_evidence(left["cold"]) == fit_evidence(right["cold"]))
 
 
+def numeric_grid(document):
+    return {key: value for key, value in document.items() if key != "elapsed_seconds"} if document else None
+
+
+def small_screen(root, case):
+    output = root / case
+    verified = output / "cold-track-transfer-verified.json"
+    return read(verified if verified.exists() else output / "cold-track-transfer.json")["passed"]
+
+
 def compare(case, root, pin, proof, report, control):
     from leo.contracts.digests import canonical_digest
     from leo.contracts.fast_standard_analysis import PLOTS
@@ -97,10 +107,11 @@ def compare(case, root, pin, proof, report, control):
         source = read(small_root / "fast-scan-automatic-work" / expected["run_id"] / "terminal.json")
         if canonical_digest(source) != expected["terminal_sha256"]:
             raise ValueError("The comparable small terminal changed")
+        baseline = FastStandardAnalysisStore(small_root)
+        same_grid = numeric_grid(store.position_grid(identifier)) == numeric_grid(baseline.position_grid(expected["run_id"]))
         result.update(terminal=terminal == source, decision=receipt["decision"] == expected["decision"],
                       owners=report["selected_rows"] == control["selected_rows"],
-                      path_grid={k: evidence.get(k) for k in ("path", "grid")} == {
-                          k: control["evidence"].get(k) for k in ("path", "grid")},
+                      path_grid=evidence.get("path") == control["evidence"].get("path") and same_grid,
                       proof=same_proof(proof, control["early_regional"][0]["result"]),
                       route=report["route"] == control["route"] and same_route(report["route_details"], control["route_details"]),
                       image_pixels=all((row["size"], row["rgba_sha256"]) == (
@@ -135,12 +146,12 @@ def compare(case, root, pin, proof, report, control):
                         small_png_byte_identity=images == control["evidence"]["images"] if case in SMALL else None)
 
 
-def run(case, output, binary, screen):
+def run(case, output, binary, screen, existing):
     machine = host()
     configuration()
 
     if case == "dense":
-        if not all(read(screen / name / "cold-track-transfer.json")["passed"] for name in SMALL):
+        if not all(small_screen(screen, name) for name in SMALL):
             raise ValueError("Both earlier weak controls must pass scientific parity before dense")
         chosen, control = dense_inputs(binary)
     else:
@@ -150,8 +161,12 @@ def run(case, output, binary, screen):
         raise ValueError("The selected saved packet or causal archive changed")
     parameters = dict(recording=recording, archive=archive["root"], region=region, output=output, saved=packet,
                       saved_digest=pin, geographic_library=binary, track_graph="installed")
-    flags = [item for name, value in parameters.items() for item in ("--"+name.replace("_", "-"), str(value))]
-    subprocess.run([sys.executable, "-BPs", str(HERE / "full_short_run.py"), *flags, "--reuse-cold-track-rows"], check=True)
+    if not existing:
+        flags = [item for name, value in parameters.items() for item in ("--"+name.replace("_", "-"), str(value))]
+        subprocess.run([sys.executable, "-BPs", str(HERE / "full_short_run.py"), *flags, "--reuse-cold-track-rows"], check=True)
+    launcher = read(output / "full-short-recipe.json")
+    if launcher["saved_digest"] != pin or not launcher.get("reuse_cold_track_rows") or launcher["graph"] != "installed":
+        raise ValueError("The existing publication does not bind the expected opt-in saved path")
     report = read(output / "joint-research-receipt.json")
     proof, = report["early_regional"]
     matches, detail = compare(case, output, pin, proof["result"], report, control)
@@ -163,7 +178,8 @@ def run(case, output, binary, screen):
         scores = read(HERE / "measurements/dense-full-short-crossover-summary.json")["runs"]["short_installed"]["arms"]
     if passed and case == "physical":
         scores = read(receipt("full-short-graph-transfer.json"))[case]["score"]["arms"]
-    write(output / "cold-track-transfer.json", dict(case=case, passed=passed, checks=matches, machine=machine,
+    receipt_name = "cold-track-transfer-verified.json" if existing else "cold-track-transfer.json"
+    write(output / receipt_name, dict(case=case, passed=passed, checks=matches, machine=machine,
           input_sha256=pin, archive=archive, offer=offer, solve=report["solve"], control_solve=control["solve"],
           proof=proof, images=report["evidence"]["images"], scores_from_identical_endpoints=scores,
           publication_cpu_s=report["publication_cpu_s"], publication_elapsed_s=report["publication_elapsed_s"],
@@ -180,4 +196,5 @@ if __name__ == "__main__":
     cli.add_argument("output", type=Path)
     cli.add_argument("--binary", default=GEOGRAPHIC, type=Path)
     cli.add_argument("--screen", type=Path)
+    cli.add_argument("--existing", action="store_true", help="Verify an already published saved replay without solving")
     run(**vars(cli.parse_args()))
