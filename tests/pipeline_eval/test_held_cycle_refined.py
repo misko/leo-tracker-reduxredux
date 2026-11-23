@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 from types import SimpleNamespace
+from functools import partial
 
 import pytest
 
@@ -43,3 +44,26 @@ def test_wrong_epoch_lane_or_frequency_is_rejected():
     for rows in ([], [probe(radio=1)], [probe(visit=1)], [probe(frequency=9.)], [probe(), probe()]):
         with pytest.raises(ValueError):
             changes.original_rows(rows)
+
+
+def test_selector_runs_with_a_bound_runtime_receiver_factory(monkeypatch, tmp_path):
+    import mixed_aperture_receiver
+    from held_cycle_refined import select_refined
+    from leo.contracts.digests import canonical_digest
+
+    monkeypatch.setattr(mixed_aperture_receiver, "MixedApertureDetector",
+                        partial(mixed_aperture_receiver.MixedApertureDetector, policy=object()))
+    recipe = dict(fixed_epoch_cfo_refinement={}, installed_sha256="test")
+    pin = canonical_digest(recipe)
+    source = dict(qualified=True, raw_recording_authority_digest="test-raw", probes=[],
+                  session_id="test-session", input_manifest_sha256="test-inventory",
+                  analysis_manifest_sha256=canonical_digest(["cancellation", "test-raw", pin[7:], []]))
+    document = dict(source=source, provenance=dict(detector_sha256=pin, window_count=0, processed_windows=0,
+                                                  invalid_capture=0, excluded_windows=[]))
+    changes = FrequencyChanges()
+    changes.by_attempt = {}
+    packet, selected, detector, receipt = select_refined(document, recipe, changes, "test-session",
+                                                        "test-inventory", tmp_path / "choice.json")
+    assert receipt["choice"]["route"] == "unfiltered"
+    assert packet["source"]["probes"] == []
+    assert packet["provenance"]["detector_sha256"] == canonical_digest(selected) == "sha256:" + detector

@@ -8,6 +8,8 @@ from unittest.mock import patch
 
 
 CFO = "fractional_tracking_cfo_hz"
+FACTOR_FIELDS = ("candidate_rank", "integer_epoch_sample", "fractional_epoch_offset_samples",
+                 CFO, "fractional_exact_score", "fractional_control_score")
 
 
 class FrequencyChanges:
@@ -34,7 +36,6 @@ class FrequencyChanges:
 
     def bind_attempts(self, document):
         from anchor_exposure import enroll
-        from short_cfo_raw import FIELDS
 
         if self.by_attempt is None:
             return
@@ -45,7 +46,7 @@ class FrequencyChanges:
             if count in self.by_attempt:
                 old, final = self.by_attempt[count]
                 (factor,) = row["candidates"]
-                if tuple(factor[k] for k in FIELDS) != final:
+                if tuple(factor[k] for k in FACTOR_FIELDS) != final:
                     raise ValueError("Captured refinement and signed native result differ")
                 self.changed[row["visit_index"], row["receiver_id"]] = old, final[3]
             count += 1
@@ -81,10 +82,8 @@ def select_refined(native, recipe, changes, session, inventory, receipt_file):
         staged.checked(here / name, pin)
     from anchor_cycle_route import select_route
     from anchor_holds import history_rows
-    from causal_short_receiver import FILTER_SHA
-    from north_factor_swap import rebound
-
-    staged.checked(Path(carrier_continuation.__file__), FILTER_SHA)
+    continuation_pin = staged.EXTRA_SOURCES[staged.CONTINUATION]
+    staged.checked(Path(carrier_continuation.__file__), continuation_pin)
     if "fixed_epoch_cfo_refinement" not in recipe:
         raise ValueError("A frozen fixed-epoch measurement recipe is required")
     original_pin = canonical_digest(recipe)
@@ -102,13 +101,17 @@ def select_refined(native, recipe, changes, session, inventory, receipt_file):
         projected = refined
     else:
         raise ValueError("Unexpected held-cycle selection")
-    policy = dict(selector_sources=SELECTOR_SOURCES, continuation_sha256=FILTER_SHA,
+    policy = dict(selector_sources=SELECTOR_SOURCES, continuation_sha256=continuation_pin,
                   wrapper_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), settings=SETTINGS,
                   input="pre-refinement short and full detections",
                   output="retain refined measurement on each selected lane")
     combined = dict(recipe, held_cycle_before_cfo=policy)
     detector = canonical_digest(combined).removeprefix("sha256:")
-    packet = rebound(native, projected, combined)
+    raw = native["source"]["raw_recording_authority_digest"]
+    analysis = canonical_digest(["cancellation", raw, detector, projected])
+    packet = dict(native, source=dict(native["source"], probes=projected, analysis_manifest_sha256=analysis),
+                  provenance=dict(native["provenance"], detector_sha256="sha256:" + detector,
+                                  run_id="blind-compact-" + analysis[7:39]))
     staged.bind_native(packet, session, inventory, detector)
     detail = dict(choice=choice, input_recipe_sha256=original_pin, input_native_sha256=canonical_digest(native),
                   pre_refinement_probes_sha256=canonical_digest(rows), selected_native_sha256=canonical_digest(packet),
