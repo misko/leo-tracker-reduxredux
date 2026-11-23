@@ -32,6 +32,11 @@ def passes(arms, complete):
         rows["versus"][kind]["error_delta_km"] <= .25 for kind in ("full", "named")) for rows in arms.values())
 
 
+def has_complete_evidence(terminal, solve, evidence):
+    return (terminal["decision"] == "ok" and solve.get("grid_complete", False)
+            and len(evidence["images"]) == 8)
+
+
 def summary(root):
     from aperture_score import PHYSICAL, SIMULATED, distance_km, references
     from signed_0374_transfer import owner_changes
@@ -61,8 +66,10 @@ def summary(root):
                 endpoints[mode] = terminal["arms"]
                 details = observed["route_details"] or {}
                 counts = observed["early_regional"][0]["result"]
-                entry.update(arms=arms, decision=terminal["decision"], reason=terminal["reason"], route=observed["route"],
-                             passed=passes(arms, terminal["decision"] == "complete"),
+                complete = has_complete_evidence(terminal, solve, observed["evidence"])
+                entry.update(arms=arms, decision="complete" if complete else terminal["decision"],
+                             terminal_status=terminal["decision"], reason=terminal["reason"], route=observed["route"],
+                             passed=passes(arms, complete),
                              graph_cpu_s=sum(graph["cpu_s"] for graph in observed["graph"]),
                              narrow_graph=observed["graph_path"], preparation=solve["preparation"],
                              graph_points=counts.get("graph_points"), observations=counts.get("original_points"),
@@ -71,7 +78,7 @@ def summary(root):
                              solve_ratio=solve["cpu_s"]/full["solve"]["cpu_s"],
                              projected_acquisition_plus_saved_solve_cpu_s=run["budget"]["modeled_total_acquisition_cpu_s"]+solve["cpu_s"],
                              ablation_endpoint_separation_km=distance_km(terminal["arms"]["c0"]["latlon"],
-                                 terminal["arms"]["fitted_c"]["latlon"]) if terminal["decision"] == "complete" else None,
+                                 terminal["arms"]["fitted_c"]["latlon"]) if complete else None,
                              fallback_clocks=details.get("fallback_clocks"), proof=observed["early_regional"],
                              grid_points=solve.get("grid_points", 0), image_count=len(observed["evidence"]["images"]),
                              selected={a: len(v) for a, v in observed["selected_rows"].items()},

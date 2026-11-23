@@ -7,7 +7,7 @@ import pytest
 HERE = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"
 sys.path.insert(0, str(HERE))
 from late_prefix_stop import RECIPE_SHA, native_budget, native_signature, project, verification_budget
-from late_prefix_stop_score import passes
+from late_prefix_stop_score import has_complete_evidence, passes
 
 
 def packet():
@@ -66,3 +66,10 @@ def test_quality_gate_checks_both_arms_and_both_baselines():
     assert passes(dict(c0=good, fitted_c=good), True)
     assert not passes(dict(c0=good, fitted_c=bad), True)
     assert not passes(dict(c0=good, fitted_c=good), False)
+
+
+def test_installed_success_terminal_requires_complete_grid_and_figures():
+    images = dict(images=[None]*8)
+    assert has_complete_evidence(dict(decision="ok"), dict(grid_complete=True), images)
+    assert not has_complete_evidence(dict(decision="ok"), dict(grid_complete=False), images)
+    assert not has_complete_evidence(dict(decision="withheld"), dict(grid_complete=True), images)
