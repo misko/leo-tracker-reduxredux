@@ -116,15 +116,17 @@ def load_policy(library):
 
 def run_cli(library, argv):
     from functools import partial
-
-    from leo.contracts.digests import canonical_digest
-    import full_short_run
+    from empty_bootstrap import PAYLOAD, RELEASE
 
     incompatible = {"--held-anchor-route", "--short-lane-mask"}
     if any(option.split("=", 1)[0] in incompatible for option in argv):
         raise ValueError("Use the original unfiltered short-primary receiver for fixed-epoch CFO refinement")
     mixed.verified(library, LIBRARY_SHA256)
     mixed.verified(HERE/"short_cfo_refine.inc", EXTENSION_SHA256)
+    sys.path[:0] = map(str, (PAYLOAD, RELEASE/"src", RELEASE))
+    from leo.contracts.digests import canonical_digest
+    import full_short_run
+
     policy = load_policy(library)
     parent = full_short_run.RECIPE_SHA
     receiver = recipe(full_short_run.checked_recipe(), parent)

@@ -38,9 +38,9 @@ def launch(root):
     library.write_bytes(checked(LIBRARY, LIBRARY_SHA256))
     # The dry startup exercises source imports and the verified dynamic symbol, with no recording argument.
     startup = subprocess.run([RELEASE/"venv/bin/python", "-IB", WRAPPER, "--cfo-refinement-library", library, "--help"],
-                             env=env, check=True, capture_output=True, timeout=15)
-    if b"--exact-graph-reuse" not in startup.stdout:
-        raise ValueError("Refined receiver did not reach the original bootstrap CLI")
+                             env=env, capture_output=True, timeout=15)
+    if startup.returncode or b"--exact-graph-reuse" not in startup.stdout:
+        raise ValueError("Refined receiver did not reach the original bootstrap CLI: "+startup.stderr.decode(errors="replace"))
     condition(root, manifests, total, residency, ORIGINAL)
     argv = command("candidate", root, recording, libraries, pairs.NAMED_V3)
     argv[2] = WRAPPER
