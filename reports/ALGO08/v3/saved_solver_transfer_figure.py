@@ -9,26 +9,20 @@ from solver_transfer_budget import DATA, receipt
 
 
 def figure(output):
-    first = receipt("prospective-0316-solver.json.gz")
-    second = receipt("prospective-0160-partial-pair.json.gz")
-    confirmed = receipt("prospective-0160-confirmation.json.gz")
-    if first["case"] != "DS30-0316" or second["case"] != confirmed["case"] or confirmed["case"] != "DS30-0160":
-        raise ValueError("Prospective solver cases changed")
-    colors = ("#3d536d", "#00776d")
-    modes = ("stock", "cumulative")
-    cpu = [[first["runs"][mode]["worker"]["solve"]["cpu_s"] for mode in modes],
-           [confirmed["original_stock_solve_cpu_s"], confirmed["candidate_solve_cpu_s"]]]
-    errors = []
-    for arm in ("c0", "fitted_c"):
-        errors.append([first["scores"]["horizontal_error_km"][mode][arm] for mode in modes])
-    for arm in ("c0", "fitted_c"):
-        errors.append([second["runs"][mode]["horizontal_error_km"][arm] for mode in modes])
-    fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.55), gridspec_kw={"wspace": .62})
+    outcomes = receipt("provisional-salvage.json.gz")["cases"]
+    cases = [outcomes[case]["comparative"] for case in ("DS30-0316", "DS30-0160")]
+    colors = ("#3d536d", "#00776d", "#b55819")
+    modes = ("named", "cumulative", "provisional")
+    cpu = [[row[mode]["solve_cpu_s"] for mode in modes] for row in cases]
+    errors = [[row[mode]["horizontal_error_km"][arm] for mode in modes]
+              for row in cases for arm in ("c0", "fitted_c")]
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 5.45), gridspec_kw={"wspace": .62})
     fig.subplots_adjust(left=.11, right=.98, top=.72, bottom=.18)
-    fig.suptitle("The solver sped up on both recordings. Its position error diverged.",
+    fig.suptitle("A second fit recovered much of the lost accuracy on DS30-0160",
                  x=.018, y=.98, ha="left", fontsize=17, fontweight="bold", color="#20354a")
-    fig.legend([Patch(color=color) for color in colors], ["ALGO08v3", "Cumulative solver"],
-               loc="upper left", bbox_to_anchor=(.012, .908), ncol=2, frameon=False)
+    fig.legend([Patch(color=color) for color in colors],
+               ["ALGO08v3", "Cumulative solver", "Cumulative with track recheck"],
+               loc="upper left", bbox_to_anchor=(.012, .908), ncol=3, frameon=False)
     specs = ((axes[0], "Numerical solver CPU", "Seconds", ["DS30-0316", "DS30-0160"], cpu, 16.8),
              (axes[1], "Horizontal position error", "Kilometres",
               ["0316 · fixed c = 0", "0316 · fitted c", "0160 · fixed c = 0", "0160 · fitted c"], errors, 2.35))
@@ -43,10 +37,10 @@ def figure(output):
         ax.spines[["top", "right", "left"]].set_visible(False)
         ax.tick_params(axis="y", length=0)
         for i, pair in enumerate(rows):
-            for value, color, offset in zip(pair, colors, (-.18, .18), strict=True):
-                ax.barh(i + offset, value, height=.31, color=color)
+            for value, color, offset in zip(pair, colors, (-.25, 0., .25), strict=True):
+                ax.barh(i + offset, value, height=.22, color=color)
                 ax.text(value + .015 * limit, i + offset, f"{value:.2f}", va="center", fontsize=9)
-    fig.text(.018, .03, "Each comparison uses the same signed detector output. DS30-0160 CPU uses the separate successful candidate replay.",
+    fig.text(.018, .03, "Each recording uses its original signed detector output. Timings use successful saved replays. Both recordings are from the same physical site.",
              fontsize=9, color="#405264")
     fig.savefig(output, dpi=155)
     plt.close(fig)
