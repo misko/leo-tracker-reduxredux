@@ -20,6 +20,7 @@ OWNER_SHA = "5526927737375a150a8efd72df634c26ce08a111dc60add62d36983c596772d8"
 INPUT_SHA = "1f3ba13ff9f701faf10a46e7706c9a875c057b31aff5eeec931cd9f5f7299038"
 CFO = "fractional_tracking_cfo_hz"
 CELL = "synthetic-cfo-only"
+TRACKS_SHA = "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
 
 
 def substitute_cfo(rows):
@@ -136,10 +137,39 @@ def score(root):
          reference_numerical_sha256=NUMERICAL_SHA, reference_score_sha256=SCORED_SHA, reference_owner_sha256=OWNER_SHA))
 
 
+def audit_noise(root):
+    """Replay graph/noise inputs only, without orbit preparation or a position solve."""
+    from leo.analysis.localization_v3.noise import estimate_noise
+    from leo.analysis.localization_v3.tracks import prepare_tracks
+    from leo.analysis.polynomial_tracklets import TrackConfig
+    from leo.application.localization_v3_engine import _json_value
+    from leo.contracts.digests import canonical_digest
+    import json
+
+    result = read(root / "numerical-seal.json")
+    archival = contrast.verified(REFERENCES / "numerical-seal.json", NUMERICAL_SHA)
+    restored = "mixed-stock-matches"
+    paths = {CELL: (root / "synthetic-cfo-only-input.json", result["input"]["saved"]),
+             restored: (REFERENCES / f"{restored}-detections.json", archival["trials"][restored]["native"])}
+    config = contrast.verified(RELEASE / "assets/tracks.json", TRACKS_SHA)["config"]
+    graphs, estimates = {}, {}
+    for name, (path, expected) in paths.items():
+        document = read(path)
+        if canonical_digest(document) != expected:
+            raise ValueError("Noise audit requires the same synthetic and tuple-restoration input bytes")
+        prepared = prepare_tracks(document, TrackConfig(**config))
+        tracks = prepared["tracks"]
+        graphs[name] = canonical_digest(json.loads(json.dumps(tracks, default=_json_value, allow_nan=False)))
+        estimates[name] = {k: v for k, v in estimate_noise(tracks, prepared["observations"]).items()
+                           if k != "per_observation_noise_sigma_hz"}
+    write(root / "noise-audit.json", dict(graph_sha256=graphs, estimate=estimates,
+         synthetic_model_matches_solve=estimates[CELL] == result["noise"], scope="tracks and radio noise only"))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for command in ("run", "score"):
+    for command in ("run", "score", "audit-noise"):
         sub.add_parser(command).add_argument("root", type=Path)
     replay = sub.add_parser("worker")
     replay.add_argument("saved", type=Path)
@@ -147,4 +177,4 @@ if __name__ == "__main__":
     replay.add_argument("output", type=Path)
     replay.add_argument("inventory_path", type=Path)
     values = vars(parser.parse_args())
-    {"run": run, "worker": worker, "score": score}[values.pop("action")](**values)
+    {"run": run, "worker": worker, "score": score, "audit-noise": audit_noise}[values.pop("action")](**values)
