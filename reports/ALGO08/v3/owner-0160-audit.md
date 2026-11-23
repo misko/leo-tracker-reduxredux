@@ -24,7 +24,7 @@ Both public fixes use the same full native detector packet, offered region, arch
 | Outcome | Stock c=0 / fitted c | Cumulative c=0 / fitted c |
 |---|---:|---:|
 | Horizontal error | 0.798 / 1.089 km | 1.915 / 2.022 km |
-| RF RMS | 136.283 / 137.267 Hz | 141.662 / 137.728 Hz |
+| Published terminal RF RMS | 126.335 / 126.093 Hz | 127.012 / 126.950 Hz |
 | Offset from offer center, c=0 | (4.445, −6.072) km | (4.151, −4.723) km |
 | Offset from offer center, fitted c | (4.492, −5.498) km | (4.233, −4.550) km |
 
