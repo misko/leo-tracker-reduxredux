@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 from dataclasses import dataclass
+import gc
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -89,6 +90,7 @@ def audit(case, earlier_digests, earlier_causal, earlier_pairs):
     from leo.contracts.digests import canonical_digest
     from leo.operations.causal_tle_catalogue import causal_catalogue
     from tools.pipeline_eval.variants import algo08_causal_reuse as reuse
+    from tools.pipeline_eval.variants.experimental.preparation_gc import defer_collection
     from tools.pipeline_eval.variants.experimental.tle_records import batch_records
 
     reader, cutoff, snapshots = source(case)
@@ -125,16 +127,23 @@ def audit(case, earlier_digests, earlier_causal, earlier_pairs):
             stamp = now()
             records = original_parse(text)
             timing = elapsed(stamp)
-            calls[active] = records, timing["cpu_s"]
+            calls[active] = text, len(records), timing["cpu_s"]
             return records
 
-        with (patch.object(reader, "read", verified), patch.object(reuse, "parse_element_set_records", observed),
-              patch.object(reuse, "Satrec", SimpleNamespace(twoline2rv=reconstruct))):
-            stamp = now()
+        @defer_collection
+        def prepare():
+            if gc.isenabled():
+                raise ValueError("Expected the installed deferred-collection scope")
             parser = reuse.CausalPreparationParser()
             causal = causal_catalogue(reader, cutoff, element_parser=parser)
             for snapshot in oldest_by_content(snapshots):
                 parser(reader.read(snapshot))
+            return parser, causal
+
+        with (patch.object(reader, "read", verified), patch.object(reuse, "parse_element_set_records", observed),
+              patch.object(reuse, "Satrec", SimpleNamespace(twoline2rv=reconstruct))):
+            stamp = now()
+            parser, causal = prepare()
             stage = elapsed(stamp)
     if native["fallback"] or parser.stats["fallback_calls"] or len(calls) != len(oldest_by_content(snapshots)):
         raise ValueError("Installed native and within-solve parser must cover every source")
@@ -142,14 +151,16 @@ def audit(case, earlier_digests, earlier_causal, earlier_pairs):
                 and 0 <= cutoff-r["element_epoch_utc_ns"] <= 48 * HOUR) for r in causal.provenance):
         raise ValueError("Noncausal newest catalogue member")
 
-    counts, current_pairs = {}, set()
-    for key, (records, timing) in calls.items():
-        pairs = [(record.first_line, record.second_line) for record in records]
-        eligible = [pair for pair in pairs if parser.elements[pair][2] <= cutoff]
-        n = len(eligible)
-        counts[key] = Costs(len(records), n, n == len(records), timing)
-        # Retain only digests of exact past line pairs for overlap accounting.
-        current_pairs.update(sha256((first+"\n"+second).encode("ascii")).digest() for first, second in eligible)
+    counts = {}
+    for key, (text, records, timing) in calls.items():
+        epochs = parser.catalogues[text].epochs
+        if len(epochs) != records:
+            raise ValueError("The verified snapshot did not reconstruct every original record")
+        n = sum(epoch <= cutoff for epoch in epochs)
+        counts[key] = Costs(records, n, n == records, timing)
+    # Retain only digests of exact past line pairs for overlap accounting.
+    current_pairs = {sha256((first+"\n"+second).encode("ascii")).digest()
+                     for (first, second), (_, _, epoch) in parser.elements.items() if epoch <= cutoff}
     measurements = budget(counts, earlier_digests, earlier_causal)
     measurements.update(unique_causal_line_pairs=len(current_pairs),
                         repeated_causal_line_pairs=len(current_pairs & earlier_pairs),
@@ -169,14 +180,16 @@ def audit(case, earlier_digests, earlier_causal, earlier_pairs):
 
 def run(output):
     machine = host()
-    configuration()
-    if sha256(LIBRARY.read_bytes()).hexdigest() != LIBRARY_PIN:
-        raise ValueError("Expected installed native record validation")
+    _, specification = configuration()
+    if (sha256(LIBRARY.read_bytes()).hexdigest() != LIBRARY_PIN
+            or specification.get("defer_preparation_gc") is not True):
+        raise ValueError("Expected installed native record validation and deferred preparation GC")
     digests, causal, pairs = set(), set(), set()
     rows = [audit(case, digests, causal, pairs) for case in CASES]
     if [r["cutoff_utc_ns"] for r in rows] != sorted(r["cutoff_utc_ns"] for r in rows):
         raise ValueError("Reuses must precede the requested cutoff")
-    write(output, dict(host=machine, native_library_sha256=LIBRARY_PIN, capture_source_pins=CASES, runs=rows,
+    write(output, dict(host=machine, native_library_sha256=LIBRARY_PIN, deferred_preparation_gc=True,
+                       capture_source_pins=CASES, runs=rows,
                        persistent_cache_created=False, no_source_writes=True,
                        pins={name:sha256((HERE / name).read_bytes()).hexdigest()
                              for name in ("tle-source-cache-ceiling-protocol.md", "tle_source_cache_ceiling.py")}))
