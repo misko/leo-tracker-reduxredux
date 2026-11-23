@@ -2,6 +2,7 @@
 
 import argparse
 import ctypes as ct
+import gzip
 import json
 import math
 from collections import Counter
@@ -28,6 +29,7 @@ PEAK_RATIO = 2.0
 CUTOFF_RATIO = 1.125
 MODES = {"control": 0, "one": 3, "routed": 6, "readout": 8}
 REPEATS = 3
+DENSE_POOLS = {"short": 12.635, "full": 4.716}
 
 DECLARATIONS = """
 typedef struct { double peak[5]; int escalated; } TimingCue;
@@ -237,6 +239,37 @@ def summary(rows):
     return {name: attribution(group) for name, group in groups.items() if group}
 
 
+def axes(row):
+    scores = [cue["peaks"] for cue in row["arms"][0]["readout"]["cue"]]
+    return tuple(min(values[i] / values[4] if values[i] is not None and values[4] else 0.
+                     for values in scores) for i in (0, 3))
+
+
+def hindsight_rectangles(rows, pools):
+    """Grant both tuned thresholds, advance knowledge of the residual, and free routing."""
+    features = [(row, *axes(row)) for row in rows]
+    failures = [(p, q) for row, p, q in features if row["arms"][0]["one"]["changed_bytes"]]
+    boundaries = [-math.inf, *sorted({p for p, _ in failures})]
+    best = None
+    for peak in boundaries:
+        cutoff = max((q for p, q in failures if p > peak), default=-math.inf)
+        spend = [(row, p <= peak or q <= cutoff) for row, p, q in features]
+        false = sum(full and not row["arms"][0]["one"]["changed_bytes"] for row, full in spend)
+        saving = 0.
+        for aperture, cost in pools.items():
+            used = [(row, full) for row, full in spend if row["kind"] == aperture]
+            stock = median(sum(row["arms"][k]["control"]["cpu"] for row, _ in used)
+                           for k in range(REPEATS))
+            paid = median(sum(row["arms"][k]["control" if full else "one"]["cpu"]
+                              for row, full in used) for k in range(REPEATS))
+            saving += (1 - paid / stock) * cost
+        if best is None or saving > best["gross_saved_s"]:
+            best = dict(peak=peak if math.isfinite(peak) else None,
+                        cutoff=cutoff if math.isfinite(cutoff) else None,
+                        false_escalations=false, gross_saved_s=saving)
+    return best
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(required=True, dest="mode")
@@ -247,9 +280,17 @@ def main():
     feedback.add_argument("library", type=Path)
     feedback.add_argument("kind", choices=("full", "short"))
     feedback.add_argument("assets", type=Path)
+    analyze = modes.add_parser("analyze")
+    analyze.add_argument("receipt", type=Path)
     args = parser.parse_args()
     if args.mode == "train":
         print(json.dumps(training(args.library, args.kind, args.assets, MODES)))
+        return
+    if args.mode == "analyze":
+        data = args.receipt.read_bytes()
+        if args.receipt.suffix == ".gz":
+            data = gzip.decompress(data)
+        print(json.dumps(hindsight_rectangles(json.loads(data)["dense"]["rows"], DENSE_POOLS)))
         return
     verified(args.weak, WEAK_SHA)
     reference = packet(args.packet)
