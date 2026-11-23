@@ -53,7 +53,8 @@ def position_sides(store, receipt, media, expected_points=179):
     return dict(grid_points=grid["evaluated_points"], binding=expected, figures=plot_headers)
 
 
-def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, expected_grid_points=None):
+def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, expected_grid_points=None,
+                 modes=None, candidate_recipe=None):
     from full_short_raw import RECIPE_SHA
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
@@ -61,12 +62,12 @@ def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, exp
     from local_future_cli_trial import native_packet
     from short_raw_diagnostic import FastScanStore, pairs, require_warm
 
-    if inputs is ORIGINAL:
+    if inputs is ORIGINAL and modes is None and candidate_recipe is None:
         expected_natives = {"stock": STOCK_NATIVE, "candidate": MIXED_NATIVE}
         expected_grid_points = 179
 
     results = {}
-    for mode in inputs.workload.order:
+    for mode in inputs.workload.order if modes is None else modes:
         target = root/mode
         log = json.loads((root/f"{mode}-clock.json").read_bytes())
         require_warm(log["cache_before"])
@@ -105,7 +106,7 @@ def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, exp
         raw_bytes = raw.read_bytes()
         native = json.loads(raw_bytes)
         native_digest = canonical_digest(native)
-        expected_recipe = RECIPE_SHA if candidate else pairs.V3_IDENTITY["detector_sha256"]
+        expected_recipe = (candidate_recipe or RECIPE_SHA) if candidate else pairs.V3_IDENTITY["detector_sha256"]
         bind_native(native, admission["session"], inputs.inventory, expected_recipe,
                     expected=expected_natives[mode] if expected_natives else None)
         source = native["source"]

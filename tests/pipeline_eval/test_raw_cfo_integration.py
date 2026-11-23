@@ -1,5 +1,6 @@
 """Verify that the raw refinement keeps the original receiver evidence contract."""
 
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -8,6 +9,7 @@ import pytest
 
 import mixed_aperture_receiver as mixed
 import short_cfo_raw as refined
+from raw_cfo_0016_score import compare_factors, matched_rms
 
 
 def probe(lane):
@@ -72,3 +74,18 @@ def test_receiver_wraps_positive_short_lanes_only_and_releases_its_context(monke
 def test_unfrozen_lane_selection_cannot_enter_refined_cli():
     with pytest.raises(ValueError, match="original unfiltered short-primary"):
         refined.run_cli(Path("missing"), ["--short-lane-mask=target"])
+
+
+def test_factor_audit_uses_the_original_anchor_and_primary_on_both_radios():
+    rows = [dict(probe(lane), edge="lower", channel=3, actual_rf_hz=11209687500.0, visit_index=visit,
+                 valid_start_counter=visit*200000) for visit in (1, 2) for lane in (0, 1)]
+    baseline = dict(source=dict(session_id="fast-fixture", probes=rows))
+    updated = deepcopy(baseline)
+    updated["source"]["probes"][3]["candidates"][0][refined.CFO] += 15
+    result, labels = compare_factors(baseline, baseline, updated)
+    assert len(labels) == 4
+    assert [(row["radio"], row["visit"], row["change_hz"]) for row in result["changes"]] == [(1, 2, 15)]
+    assert matched_rms(result["reference"])["worsened"] == 1
+    updated["source"]["probes"][3]["candidates"][0]["fractional_margin"] += 0.01
+    with pytest.raises(ValueError, match="non-CFO factor"):
+        compare_factors(baseline, baseline, updated)
