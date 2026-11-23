@@ -97,6 +97,9 @@ def score(root):
         rows[arm] = dict(checks=checks, process=read(root / f"{arm}-process.json"), terminal_sha256=receipt["terminal_sha256"],
             publication_cpu_s=report["publication_cpu_s"], publication_elapsed_s=report["publication_elapsed_s"],
             solve_cpu_s=solve["cpu_s"], solve_elapsed_s=solve["elapsed_s"], proof_cpu_s=proof["cpu_s"],
+            cold_cpu_s=report["route_details"]["cold_clocks"]["cpu_s"],
+            grid_cpu_s=report["route_details"]["standard_evidence_clocks"]["cpu_s"],
+            signed_cpu_s=report["route_details"]["signed_total_clocks"]["cpu_s"],
             images=actual["images"], proof=proof["result"], projection=solve["geographic_projector"],
             arms=terminal["arms"], owners=ref["associated"], science=science,
             horizontal_error_km={a: distance_km(terminal["arms"][a]["latlon"], truth) for a in ARMS})
