@@ -1,0 +1,1114 @@
+{
+  "cache_library_sha256": "4f10e0a2e23121e184ee7d37767f55c29fefc158f4182a2dd99c4268ff2ce6ab",
+  "candidate_run_sha256": "a1052286202c24fb659f6ca8175ef678e66ac96443b0d32d0c907da3514c1c6d",
+  "candidate_source_commit": "593a2ca5f",
+  "cases": [
+    {
+      "archive": {
+        "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0227/tle",
+        "snapshots_sha256": "sha256:4efe93df53a96251908eeebacd1b65b9057646bf74c4e2aee23c574aeea13947"
+      },
+      "cache_mode": "fully_warm",
+      "calibration": {
+        "candidate": {
+          "c0": {
+            "delta_stock_error_km": null,
+            "delta_stock_rms_hz": null,
+            "horizontal_error_km": null,
+            "rf_rms_hz": null
+          },
+          "fitted_c": {
+            "delta_stock_error_km": null,
+            "delta_stock_rms_hz": null,
+            "horizontal_error_km": null,
+            "rf_rms_hz": null
+          }
+        },
+        "stock": {
+          "c0": {
+            "delta_stock_error_km": null,
+            "delta_stock_rms_hz": null,
+            "horizontal_error_km": null,
+            "rf_rms_hz": null
+          },
+          "fitted_c": {
+            "delta_stock_error_km": null,
+            "delta_stock_rms_hz": null,
+            "horizontal_error_km": null,
+            "rf_rms_hz": null
+          }
+        }
+      },
+      "case": "DS30-0227",
+      "expected_decision": "withheld",
+      "false_fix": false,
+      "issued": 18,
+      "missed_fix": false,
+      "order": [
+        "stock",
+        "candidate"
+      ],
+      "original_pair_sha256": "6c36381a1af955638a46a008d39bd309bab8cd1f46ae9d62753e84bd998edb10",
+      "recording": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261117-012835-62008efe-1-lower",
+      "region": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "screen_center": [
+          37.5,
+          -122.0
+        ],
+        "width_km": 25.0
+      },
+      "region_file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/station/region.json",
+      "runs": {
+        "candidate": {
+          "arms": {
+            "c0": {
+              "latlon": null
+            },
+            "fitted_c": {
+              "latlon": null
+            }
+          },
+          "associated": {},
+          "cache": {
+            "cached_pages": 5090,
+            "ended_unix_ns": 1795446061340462407,
+            "members": 1,
+            "observed_file_pages": 5090,
+            "observed_members": 1,
+            "started_unix_ns": 1795446061340381361,
+            "unavailable": {}
+          },
+          "cache_before_warming": {
+            "cached_pages": 5017,
+            "ended_unix_ns": 1795446061338180839,
+            "members": 1,
+            "observed_file_pages": 5090,
+            "observed_members": 1,
+            "started_unix_ns": 1795446061338091134,
+            "unavailable": {}
+          },
+          "command": [
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+            "-BPs",
+            "/var/tmp/leo-v3-short-raw-diagnostic/reports/ALGO08/v3/full_short_run.py",
+            "--recording",
+            "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261117-012835-62008efe-1-lower",
+            "--archive",
+            "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0227/tle",
+            "--region",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/station/region.json",
+            "--short-binary",
+            "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so",
+            "--geographic-library",
+            "/var/tmp/leo-dense-short-pins.0zaX7eSH/geographic.so",
+            "--regional-track-library",
+            "/var/tmp/leo-regional-track.O238AD0C/scores.so",
+            "--track-graph",
+            "installed",
+            "--reuse-cold-track-rows",
+            "--reuse-grid-phase-states",
+            "--output",
+            "/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/v3-short-raw-diagnostic-pairs/DS30-0227/candidate"
+          ],
+          "config": {
+            "geographic_sha256": "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee",
+            "graph": "installed",
+            "regional_track_sha256": "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098",
+            "reuse_cold_track_rows": true,
+            "reuse_grid_phase_states": true
+          },
+          "counts": {
+            "invalid_capture": 4,
+            "processed": 14,
+            "skipped_fast_score": 0
+          },
+          "cpu_s": 3.379071,
+          "decision": "withheld",
+          "detection_file_s": 1.331346799,
+          "detector_pin": "13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40",
+          "early_regional": [
+            {
+              "cpu_s": 2.074202687,
+              "result": {
+                "complete": false,
+                "diagnostic_error": "Expected a disjoint Graph subset of the original observations"
+              },
+              "reused": 0
+            }
+          ],
+          "elapsed_s": 13.766726701520383,
+          "exit_code": 0,
+          "grid_points": 0,
+          "input_blocks": 112152,
+          "input_manifest": "sha256:f581d64642533646e2c73040fe09046ffcea902f8e3732082d902113b689f933",
+          "involuntary_switches": 46,
+          "major_faults": 0,
+          "minor_faults": 96954,
+          "native_sha256": "sha256:9321bfb1269d3d190403cf21118223c040ef381dfcf22ea78ff5daac901f60f9",
+          "orbit_policy": "stock",
+          "output_blocks": 88,
+          "owners": {},
+          "pngs": {},
+          "probes": 28,
+          "raw_authority": "sha256:a3ea550b5834ca0728b223361e0dff5bb82e411c42f2e3bc591685eb7effd4e6",
+          "reason": "no_active_curvature",
+          "receiver": {
+            "acquire": {
+              "cpu_ns": 152382317,
+              "wall_ns": 152409610
+            },
+            "analysis_manifest": "sha256:5916d3efcebedcba613c206b1e1c0695f5a02eea0edbafa969a55c0f87dd6d8b",
+            "detector_pin": "13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40",
+            "input_manifest": "sha256:f581d64642533646e2c73040fe09046ffcea902f8e3732082d902113b689f933",
+            "issued": 18,
+            "native": {
+              "factors": {
+                "full": 7,
+                "short_primary": 6
+              },
+              "installed_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+              "native_calls": {
+                "full": 14,
+                "short_primary": 14
+              },
+              "native_cpu_ns": {
+                "full": 38635006,
+                "short_primary": 15004233
+              },
+              "native_wall_ns": {
+                "full": 38642175,
+                "short_primary": 15005435
+              },
+              "rule": [
+                "full",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary"
+              ],
+              "short_primary_sha256": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9",
+              "streams": [
+                {
+                  "admitted": 2,
+                  "channel": 1,
+                  "edge": "lower",
+                  "final_valid_counter": 33456102265413,
+                  "rf_hz": 10709687500.0
+                },
+                {
+                  "admitted": 2,
+                  "channel": 2,
+                  "edge": "lower",
+                  "final_valid_counter": 33456102706143,
+                  "rf_hz": 10959687500.0
+                },
+                {
+                  "admitted": 2,
+                  "channel": 3,
+                  "edge": "lower",
+                  "final_valid_counter": 33456103147017,
+                  "rf_hz": 11209687500.0
+                },
+                {
+                  "admitted": 2,
+                  "channel": 4,
+                  "edge": "lower",
+                  "final_valid_counter": 33456103592412,
+                  "rf_hz": 11459687500.0
+                },
+                {
+                  "admitted": 2,
+                  "channel": 5,
+                  "edge": "lower",
+                  "final_valid_counter": 33456104033114,
+                  "rf_hz": 11709687500.0
+                },
+                {
+                  "admitted": 2,
+                  "channel": 6,
+                  "edge": "lower",
+                  "final_valid_counter": 33456104478317,
+                  "rf_hz": 11959687500.0
+                },
+                {
+                  "admitted": 2,
+                  "channel": 8,
+                  "edge": "lower",
+                  "final_valid_counter": 33456105439350,
+                  "rf_hz": 12459687500.0
+                }
+              ],
+              "visits": {
+                "full": 7,
+                "short_primary": 7
+              }
+            },
+            "recording_authority": "sha256:a3ea550b5834ca0728b223361e0dff5bb82e411c42f2e3bc591685eb7effd4e6",
+            "selected": 13
+          },
+          "route": "fallback",
+          "run_id": "algo08-v2-79b7b23a2ffe404154c77fbd7a83b56c",
+          "scientific_digests": {},
+          "selected_lanes": 13,
+          "selections": 13,
+          "solve": {
+            "cold_track_rows": {
+              "ordinary_ranks": 0,
+              "shared_ranks": 0
+            },
+            "cpu_s": 2.137120222,
+            "elapsed_s": 3.858892376534641,
+            "geographic_projector": {},
+            "orbit_policy": "stock",
+            "predictive_phase_states": {
+              "grids": 0,
+              "prepared_calls": 0,
+              "prepared_views": 0
+            },
+            "prepared_exterior": {
+              "fresh_catalogue": 1
+            },
+            "reduced_grid": {}
+          },
+          "source_sha256": {
+            "../../../tools/pipeline_eval/variants/algo08_blind_rank.py": "321df8d3771fd478543e7c161a4b1c7d1a84734c8c4a0ae2768ebdf1c9038831",
+            "blind_joint_finish.py": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1",
+            "blind_joint_repair.py": "f89e80dd65606b065e4c8097d0d3204362993e070dc7dd3f2c2590dc2c32b2a0",
+            "blind_joint_route.py": "822b328c7d36da87b6022b4d2eccfe42d09b70f2fba758a7278f5ca1ea386a39",
+            "blind_joint_signed.py": "3ec955b211a1c4b48fe18c66d9374a78fd393d3b068ffed1c7a9fe42d035629b",
+            "certified_salvage.py": "7ccb39db8f2f4a278b2c7b1977866e3d731601de7d759adb5541e88692917f09",
+            "cold_finalist_race.py": "eeb7d1041f34fb7dbb805cb12eb93f66eba87e729e9cf695ff77811b51842fe7",
+            "cold_track_row_entry.py": "dfe479e9c6ed3cf9f29f207428888adb8d885aeea20bc4f9efd36e7fb8cef7ae",
+            "cold_track_row_reuse.py": "7c2633f28e5165880f3764262225e9ba6cdefdf8e1159d78ea846e2104caeb63",
+            "early_region.py": "3765d5a4ff56904156e2b3b6cb9ff39740916a652ab5127ff15c6a4e283bd5a8",
+            "grid_phase_state_reuse.py": "ed5a92406930bddcbca63ee9a18daecdce54c422a9eb0f2a5268fdb9625855f9",
+            "grid_predictive_reduction.py": "f8966de85d53072b0639f6a0d6e8450d525f950957cd67c595ac2c387606e278",
+            "installed/algo08_posterior_handoff.py": "aa5d7ab17ce82e4bd64e463de0fddf710275634cf48675cf6076eeba6c184831",
+            "joint_publication.py": "6a0a6635381a75f56ad475e8feee606abe5e5db6b09bab2de2d2bdbf0669fbed",
+            "lighter_joint_estimator.py": "6692c234ab897ec62057b1472ed25b47392345a84d7fa5730190bbfdd27086b8",
+            "optimized_grid.py": "e08509c6ecf321160cbef688b917213cbb92d687dc4ae6639d688320d396aff8",
+            "prepared_exterior.py": "f964e5ee81b97f58efc7afe06119c1606f402b2ecbf8b61b12fe6d9af1b95064"
+          },
+          "started_unix_ns": 1795446061340482718,
+          "stderr_tail": "",
+          "system_cpu_s": 0.176533,
+          "terminal_file_s": 12.457671453,
+          "terminal_sha256": "sha256:28dccf275cc03212cac539d03617fbd22415da549e3facfaa32fa29b62396c18",
+          "user_cpu_s": 3.2025379999999997,
+          "voluntary_switches": 83
+        },
+        "stock": {
+          "arms": {
+            "c0": {
+              "latlon": null
+            },
+            "fitted_c": {
+              "latlon": null
+            }
+          },
+          "associated": {},
+          "cache": {
+            "cached_pages": 5090,
+            "ended_unix_ns": 1795446047688236651,
+            "members": 1,
+            "observed_file_pages": 5090,
+            "observed_members": 1,
+            "started_unix_ns": 1795446047688128409,
+            "unavailable": {}
+          },
+          "cache_before_warming": {
+            "cached_pages": 0,
+            "ended_unix_ns": 1795446046721748793,
+            "members": 1,
+            "observed_file_pages": 5090,
+            "observed_members": 1,
+            "started_unix_ns": 1795446046721641199,
+            "unavailable": {}
+          },
+          "command": [
+            "/opt/leo-algo08/algo08v3/run",
+            "--recording",
+            "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261117-012835-62008efe-1-lower",
+            "--archive",
+            "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0227/tle",
+            "--region",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/station/region.json",
+            "--bulk-root",
+            "/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/v3-short-raw-diagnostic-pairs/DS30-0227/stock"
+          ],
+          "counts": {
+            "invalid_capture": 4,
+            "processed": 14,
+            "skipped_fast_score": 0
+          },
+          "cpu_s": 1.287781,
+          "decision": "withheld",
+          "detection_file_s": 1.068218316,
+          "detector_pin": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+          "elapsed_s": 13.64736098702997,
+          "exit_code": 0,
+          "grid_points": 0,
+          "input_blocks": 344,
+          "input_manifest": "sha256:f581d64642533646e2c73040fe09046ffcea902f8e3732082d902113b689f933",
+          "involuntary_switches": 7,
+          "major_faults": 0,
+          "minor_faults": 54334,
+          "native_sha256": "sha256:4f32879c7c94a2edd944a65f64920c35024612cd990c005885def511f3be0f55",
+          "orbit_policy": "stock",
+          "output_blocks": 64,
+          "owners": {},
+          "pngs": {},
+          "probes": 28,
+          "raw_authority": "sha256:a3ea550b5834ca0728b223361e0dff5bb82e411c42f2e3bc591685eb7effd4e6",
+          "reason": "no_active_curvature",
+          "run_id": "algo08-v2-79b7b23a2ffe404154c77fbd7a83b56c",
+          "scientific_digests": {},
+          "selected_lanes": 0,
+          "selections": 0,
+          "started_unix_ns": 1795446047688266476,
+          "stderr_tail": "",
+          "system_cpu_s": 0.095354,
+          "terminal_file_s": 7.282158449,
+          "terminal_sha256": "sha256:179c82446140470f219fa4a697e9d2e3ae8d935d64e1a8352f70d907e36f3e2b",
+          "user_cpu_s": 1.192427,
+          "voluntary_switches": 49
+        }
+      }
+    },
+    {
+      "archive": {
+        "root": "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0057/tle",
+        "snapshots_sha256": "sha256:13b807f6400592fd373001d58915492b0185e77f0fbd0423740fe08b33e9dce3"
+      },
+      "archived_stock_publication": {
+        "arms": {
+          "c0": {
+            "latlon": [
+              37.84856453049463,
+              -122.48093801652199
+            ],
+            "rf_rms_hz": 109.96744015732486
+          },
+          "fitted_c": {
+            "latlon": [
+              37.84782462711234,
+              -122.47998636882122
+            ],
+            "rf_rms_hz": 109.82892150930293
+          }
+        },
+        "owners": {
+          "c0": "sha256:57aa3e2027bae5cdfef732319fcf7aa060c3b89806e8def2ace52f5bf1ecfd23",
+          "fitted_c": "sha256:57aa3e2027bae5cdfef732319fcf7aa060c3b89806e8def2ace52f5bf1ecfd23"
+        },
+        "pngs": {
+          "ch1-4-all": {
+            "rgba_sha256": "71e8c3f9e72da1c6a9569a9611f69bf9a92e98e15be68bb6578883a86ea95cc7",
+            "sha256": "sha256:8ffcee995952c82bed2b8d0431d776a329c64e42d89b85b1c7cb942335651572",
+            "size": [
+              2400,
+              3097
+            ]
+          },
+          "ch1-4-residuals": {
+            "rgba_sha256": "3f6244ed3bc44a74252de6623c0eb419d2096500928f5680c974be69a4d41a12",
+            "sha256": "sha256:1d9ad9c457f71ab7dc95d491f818463c7ffedf6c4a976568d4276a5a7f7fb898",
+            "size": [
+              1875,
+              1375
+            ]
+          },
+          "ch1-4-unassociated": {
+            "rgba_sha256": "d265c8dcdabc6179fa64be1777200368c0d66bfe2777e7248d634918ff6202ce",
+            "sha256": "sha256:e146ae3ae557ea73548d5d1df3949037352d1b38aa49700c06897feed9bbb14f",
+            "size": [
+              2400,
+              3097
+            ]
+          },
+          "ch5-8-all": {
+            "rgba_sha256": "1f6e311df5edc4bcabb4ba43f15bc28314f090fb4ed3a490aae309a7fe249533",
+            "sha256": "sha256:adb01e175e337b07f52e01018dcdcfb92271efd3e58bae40ed268966e1485259",
+            "size": [
+              2400,
+              3097
+            ]
+          },
+          "ch5-8-residuals": {
+            "rgba_sha256": "6ff9d7739a24ac12758a2118cbf986346bba81469fff23eb76b53bece089a4e2",
+            "sha256": "sha256:e40596eba6a59a25fb601f9d806b01de6a82c1acfe730a63f6d2406707c7040f",
+            "size": [
+              1875,
+              1375
+            ]
+          },
+          "ch5-8-unassociated": {
+            "rgba_sha256": "304059e86de4fa6ab71343713db77920ee8c6f74162f796a9ef1851902e68488",
+            "sha256": "sha256:99a239f0d5703ba9df90cd8df752d5cffd52a1b20510291afd95ee8a4c86e90d",
+            "size": [
+              2400,
+              3097
+            ]
+          },
+          "position": {
+            "rgba_sha256": "6223882a09c68335641f9c3db3191948d3ce6f499de1afdf61bef489e6620b42",
+            "sha256": "sha256:a416d8fa6e04bae48c8885f1acccef2138eac3e9762ebd87176942b7a90e35f2",
+            "size": [
+              1680,
+              960
+            ]
+          },
+          "track-rms": {
+            "rgba_sha256": "eeadfe95a4983f18398998d03495a9779f939625cf06ff507e99c9fb68172b08",
+            "sha256": "sha256:b5092ca9bf251764ceec33d6b57012f40ccf2925c19db985d0fb629fb20040f3",
+            "size": [
+              2000,
+              750
+            ]
+          }
+        },
+        "publication_status": "complete",
+        "root": "/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/publications/DS30-0057/candidate",
+        "scientific_digests": {
+          "grid": "sha256:fde13ac99c474cc7fee86ecb8f908e05ffd92fae9e2bfddb5202530ab524ae70",
+          "path": "sha256:140ebfd30c0c2befbebe93238be04dc154aa78f87f57d8bff4be6709dd15ed5d"
+        }
+      },
+      "cache_mode": "fully_warm",
+      "calibration": {
+        "candidate": {
+          "c0": {
+            "delta_stock_error_km": null,
+            "delta_stock_rms_hz": null,
+            "horizontal_error_km": 0.2402284755602837,
+            "rf_rms_hz": 125.29791769260733
+          },
+          "fitted_c": {
+            "delta_stock_error_km": null,
+            "delta_stock_rms_hz": null,
+            "horizontal_error_km": 0.2969350839080765,
+            "rf_rms_hz": 125.3105580184089
+          }
+        },
+        "stock": {}
+      },
+      "calibration_through_terminal": {
+        "candidate": {
+          "c0": {
+            "delta_stock_error_km": -0.1862294126638438,
+            "delta_stock_rms_hz": 15.33047753528247,
+            "horizontal_error_km": 0.2402284755602837,
+            "rf_rms_hz": 125.29791769260733
+          },
+          "fitted_c": {
+            "delta_stock_error_km": -0.227752171164413,
+            "delta_stock_rms_hz": 15.481636509105968,
+            "horizontal_error_km": 0.2969350839080765,
+            "rf_rms_hz": 125.3105580184089
+          }
+        },
+        "stock": {
+          "c0": {
+            "delta_stock_error_km": 0.0,
+            "delta_stock_rms_hz": 0.0,
+            "horizontal_error_km": 0.4264578882241275,
+            "rf_rms_hz": 109.96744015732486
+          },
+          "fitted_c": {
+            "delta_stock_error_km": 0.0,
+            "delta_stock_rms_hz": 0.0,
+            "horizontal_error_km": 0.5246872550724895,
+            "rf_rms_hz": 109.82892150930293
+          }
+        }
+      },
+      "case": "DS30-0057",
+      "expected_decision": "complete",
+      "false_fix": false,
+      "issued": 2717,
+      "missed_fix": false,
+      "order": [
+        "candidate",
+        "stock"
+      ],
+      "original_pair_sha256": "e4a143d2c47b7e0bb41061d602780b11d37660fd65ce4b5863996d9d251f155b",
+      "recording": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261114-050338-cf421224-1-upper",
+      "region": {
+        "center": [
+          37.906,
+          -122.545
+        ],
+        "screen_center": [
+          37.5,
+          -122.0
+        ],
+        "width_km": 25.0
+      },
+      "region_file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/station/region.json",
+      "runs": {
+        "candidate": {
+          "arms": {
+            "c0": {
+              "latlon": [
+                37.846902465750816,
+                -122.4859687289704
+              ],
+              "rf_rms_hz": 125.29791769260733
+            },
+            "fitted_c": {
+              "latlon": [
+                37.84767156124009,
+                -122.48286328449203
+              ],
+              "rf_rms_hz": 125.3105580184089
+            }
+          },
+          "associated": {
+            "c0": 1542,
+            "fitted_c": 1542
+          },
+          "cache": {
+            "cached_pages": 817049,
+            "ended_unix_ns": 1795446202455737512,
+            "members": 43,
+            "observed_file_pages": 817049,
+            "observed_members": 43,
+            "started_unix_ns": 1795446202452493445,
+            "unavailable": {}
+          },
+          "cache_before_warming": {
+            "cached_pages": 773793,
+            "ended_unix_ns": 1795446195425567635,
+            "members": 43,
+            "observed_file_pages": 817049,
+            "observed_members": 43,
+            "started_unix_ns": 1795446195422219075,
+            "unavailable": {}
+          },
+          "cache_warming_observations": [
+            {
+              "cached_pages": 773793,
+              "ended_unix_ns": 1795446195425567635,
+              "members": 43,
+              "observed_file_pages": 817049,
+              "observed_members": 43,
+              "started_unix_ns": 1795446195422219075,
+              "unavailable": {}
+            },
+            {
+              "cached_pages": 817049,
+              "ended_unix_ns": 1795446202455737512,
+              "members": 43,
+              "observed_file_pages": 817049,
+              "observed_members": 43,
+              "started_unix_ns": 1795446202452493445,
+              "unavailable": {}
+            }
+          ],
+          "command": [
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+            "-BPs",
+            "/var/tmp/leo-v3-short-raw-diagnostic/reports/ALGO08/v3/full_short_run.py",
+            "--recording",
+            "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261114-050338-cf421224-1-upper",
+            "--archive",
+            "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0057/tle",
+            "--region",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/station/region.json",
+            "--short-binary",
+            "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so",
+            "--geographic-library",
+            "/var/tmp/leo-dense-short-pins.0zaX7eSH/geographic.so",
+            "--regional-track-library",
+            "/var/tmp/leo-regional-track.O238AD0C/scores.so",
+            "--track-graph",
+            "installed",
+            "--reuse-cold-track-rows",
+            "--reuse-grid-phase-states",
+            "--output",
+            "/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/v3-short-raw-diagnostic-pairs/DS30-0057/candidate"
+          ],
+          "config": {
+            "geographic_sha256": "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee",
+            "graph": "installed",
+            "regional_track_sha256": "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098",
+            "reuse_cold_track_rows": true,
+            "reuse_grid_phase_states": true
+          },
+          "counts": {
+            "invalid_capture": 413,
+            "processed": 2304,
+            "skipped_fast_score": 0
+          },
+          "cpu_s": 21.606066,
+          "decision": "complete",
+          "detection_file_s": 15.453570335,
+          "detector_pin": "13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40",
+          "early_regional": [
+            {
+              "cpu_s": 0.6197776269999995,
+              "result": {
+                "catalogue_orbits": 10953,
+                "complete": false,
+                "graph_points": 1725,
+                "original_points": 1996,
+                "potentially_visible_orbits": 715,
+                "probes_evaluated": 25,
+                "receiver_points": {
+                  "1": 1073,
+                  "2": 923
+                },
+                "snapshots": [
+                  "sha256:1148e4bc038e5bd8a8702c66425261e5a67d11b4b2427818c73fb9308fcb8deb",
+                  "sha256:20475481baa8eb4be510c955483280abd96b5ff0d2bb418aa840184b44b772e3",
+                  "sha256:36252c1f8ef4ca1fe523c1b9d1a108b6a524eed83ecd625c9f89379294e5dde5",
+                  "sha256:3f5fcdb27525ff50f384960281f32d93f74b81f83b61b8d1e95bb82b95879dc7",
+                  "sha256:8a786c72f30ad7b93150f2427de07ef78f4e2a5f3f5fbc056bbc727e9f369cea",
+                  "sha256:9bc03240be910fae41b9b5e7616656a6a3dda87c3e98ebd1fe630409306f2565"
+                ],
+                "stop": "inside_score",
+                "track_count": 60,
+                "would_withhold": false
+              },
+              "reused": 0
+            }
+          ],
+          "elapsed_s": 62.518981472589076,
+          "exit_code": 0,
+          "fully_warm": true,
+          "grid_points": 179,
+          "input_blocks": 63928,
+          "input_manifest": "sha256:5dff8a6bf2be444aeaccbc02def77693cfe864fbd0f3a9f7bfc3cc9befbed774",
+          "involuntary_switches": 62,
+          "major_faults": 0,
+          "minor_faults": 172493,
+          "native_sha256": "sha256:a9a0df0458963066bfcd11de0b22b23605ad44acdc3d3e628ccd8f40312064cd",
+          "orbit_policy": "stock",
+          "output_blocks": 21736,
+          "owners": {
+            "c0": "sha256:75a2bed100bcdf60e86cc42107109d354be2be653d4c22289b15a6106a6ea849",
+            "fitted_c": "sha256:75a2bed100bcdf60e86cc42107109d354be2be653d4c22289b15a6106a6ea849"
+          },
+          "pngs": {
+            "ch1-4-all": {
+              "rgba_sha256": "5e6734d183fb3b6813cb12c6f4879aa0bcadeb69c65f40364bb52e7125417f54",
+              "sha256": "sha256:a128790da1bd6e3b704064bc0956756a25f3b22b213ddbe92c543e35152ed340",
+              "size": [
+                2400,
+                3097
+              ]
+            },
+            "ch1-4-residuals": {
+              "rgba_sha256": "ccc0bc4fc20efe7acb7c9de7457064c4629a511886499e25b88f4776e9b4b984",
+              "sha256": "sha256:547eb5feed5de1ebfa67612953b84d5bceca7d20f49556938ddd3291a5257aa1",
+              "size": [
+                1875,
+                1375
+              ]
+            },
+            "ch1-4-unassociated": {
+              "rgba_sha256": "d5dcd01e83bb10d72fa9a0bcd409ad853b4d9976e72d171f32927126ee6c468a",
+              "sha256": "sha256:0d1f2ca5de3403cc8bf8c07bea230729582a802aa7c9b7afcb98f0c0a2889a36",
+              "size": [
+                2400,
+                3097
+              ]
+            },
+            "ch5-8-all": {
+              "rgba_sha256": "f33ddd5c90a2b726985860031e30f319951e6f92f35de4e964c4f9d964ea6d69",
+              "sha256": "sha256:21cd847a7571020578ccb906fe78c5e9fd01c68aaf026d843559bb4d5a12f7a3",
+              "size": [
+                2400,
+                3097
+              ]
+            },
+            "ch5-8-residuals": {
+              "rgba_sha256": "70aefe1c4880d0b02b4d805891789300e9086a29c4d093ee79d5ca5f2502812f",
+              "sha256": "sha256:8484f6fe1a3124feb37614879fb76d564b34034a4205b3511f1e9c4e255a3f9c",
+              "size": [
+                1875,
+                1375
+              ]
+            },
+            "ch5-8-unassociated": {
+              "rgba_sha256": "a1c0f76c6243be08000a08995e0eda32f4f7450e5cec045786a6879e4181c361",
+              "sha256": "sha256:e8f6a20f1e939fbfe1a3c066cd0c20b257ad0ba08746c097029e4f595c266996",
+              "size": [
+                2400,
+                3097
+              ]
+            },
+            "position": {
+              "rgba_sha256": "eb44b206ffbbde15931e89ec7f9be8cfbacc4b1fa24cd2cddf5c6e61d867856a",
+              "sha256": "sha256:6a02c50502a22b7c9716bb27e12b3e29ea866de2954aedc3e75e08415f2010b2",
+              "size": [
+                1680,
+                960
+              ]
+            },
+            "track-rms": {
+              "rgba_sha256": "1ed9d61d93a2caf1b0d1443f9886776b4453c18e66aceed4f8e8b70b0b7af9e9",
+              "sha256": "sha256:839ccff5923c183100aafa89aef598d3089da83e62be1e5f19c21986e35fa58c",
+              "size": [
+                2000,
+                750
+              ]
+            }
+          },
+          "probes": 4608,
+          "raw_authority": "sha256:1aef61dfa2f1a108c02b23cb170ee47ac140118f65d27696db1867eac731a92b",
+          "reason": null,
+          "receiver": {
+            "acquire": {
+              "cpu_ns": 11135660319,
+              "wall_ns": 14563308959
+            },
+            "analysis_manifest": "sha256:c1a215cc3e41ec106550758badb59834be7282225c75fd451ca602dc614117bf",
+            "detector_pin": "13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40",
+            "input_manifest": "sha256:5dff8a6bf2be444aeaccbc02def77693cfe864fbd0f3a9f7bfc3cc9befbed774",
+            "issued": 2717,
+            "native": {
+              "factors": {
+                "full": 288,
+                "short_primary": 1708
+              },
+              "installed_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+              "native_calls": {
+                "full": 584,
+                "short_primary": 4024
+              },
+              "native_cpu_ns": {
+                "full": 1448895492,
+                "short_primary": 4031221578
+              },
+              "native_wall_ns": {
+                "full": 1449206972,
+                "short_primary": 4031947579
+              },
+              "rule": [
+                "full",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary",
+                "short_primary"
+              ],
+              "short_primary_sha256": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9",
+              "streams": [
+                {
+                  "admitted": 338,
+                  "channel": 1,
+                  "edge": "upper",
+                  "final_valid_counter": 30988272048255,
+                  "rf_hz": 10940312500.0
+                },
+                {
+                  "admitted": 236,
+                  "channel": 2,
+                  "edge": "upper",
+                  "final_valid_counter": 30988272492199,
+                  "rf_hz": 11190312500.0
+                },
+                {
+                  "admitted": 331,
+                  "channel": 3,
+                  "edge": "upper",
+                  "final_valid_counter": 30988272935304,
+                  "rf_hz": 11440312500.0
+                },
+                {
+                  "admitted": 335,
+                  "channel": 4,
+                  "edge": "upper",
+                  "final_valid_counter": 30988269820432,
+                  "rf_hz": 11690312500.0
+                },
+                {
+                  "admitted": 299,
+                  "channel": 5,
+                  "edge": "upper",
+                  "final_valid_counter": 30988270264845,
+                  "rf_hz": 11940312500.0
+                },
+                {
+                  "admitted": 165,
+                  "channel": 6,
+                  "edge": "upper",
+                  "final_valid_counter": 30988270708291,
+                  "rf_hz": 12190312500.0
+                },
+                {
+                  "admitted": 279,
+                  "channel": 7,
+                  "edge": "upper",
+                  "final_valid_counter": 30988267608196,
+                  "rf_hz": 12440312500.0
+                },
+                {
+                  "admitted": 321,
+                  "channel": 8,
+                  "edge": "upper",
+                  "final_valid_counter": 30988271602939,
+                  "rf_hz": 12690312500.0
+                }
+              ],
+              "visits": {
+                "full": 292,
+                "short_primary": 2012
+              }
+            },
+            "recording_authority": "sha256:1aef61dfa2f1a108c02b23cb170ee47ac140118f65d27696db1867eac731a92b",
+            "selected": 1996
+          },
+          "route": "complete",
+          "run_id": "algo08-v2-a9f064341e3b6d1280bb03bbe6285545",
+          "scientific_digests": {
+            "grid": "sha256:1326123b7e119d20830b2bb9bceb7ba958db51aee6d2bde774221b2c9ff0c6b5",
+            "path": "sha256:ff2033f61290024ff2c0735571281491f91fee36b86d0534d47501a8d3d0d941"
+          },
+          "selected_lanes": 1996,
+          "selections": 1996,
+          "solve": {
+            "cold_track_rows": {
+              "copy_bytes": 192873747,
+              "ordinary_ranks": 0,
+              "released_requests": 156,
+              "reused_nominal_cells": 26206956,
+              "reused_requests": 468,
+              "shared_ranks": 1,
+              "shifted_cells": 263646
+            },
+            "cpu_s": 6.989395275,
+            "elapsed_s": 11.980763962492347,
+            "geographic_projector": {
+              "calls": 25,
+              "cells": 20502625,
+              "projection_cpu_ns": 111200903,
+              "track_score_fallbacks": 0,
+              "track_score_native": 25
+            },
+            "grid_complete": true,
+            "grid_points": 179,
+            "objective_replay": {
+              "c0": 0.0,
+              "fitted_c": 0.0
+            },
+            "orbit_policy": "stock",
+            "predictive_phase_states": {
+              "grids": 1,
+              "prepared_calls": 356,
+              "prepared_views": 2
+            },
+            "prepared_exterior": {
+              "catalogue_handoff": 1,
+              "prepared_catalogues": 1
+            },
+            "reduced_grid": {
+              "collapsed_biases": 5696,
+              "grid_calls": 1,
+              "omitted_zero_columns": 1068,
+              "reduced_calls": 356,
+              "reduced_cpu_ns": 191436670
+            }
+          },
+          "source_sha256": {
+            "../../../tools/pipeline_eval/variants/algo08_blind_rank.py": "321df8d3771fd478543e7c161a4b1c7d1a84734c8c4a0ae2768ebdf1c9038831",
+            "blind_joint_finish.py": "7c2e710b7bc730e43c070057a1d40e26198febcdba423030555a7fd4531238f1",
+            "blind_joint_repair.py": "f89e80dd65606b065e4c8097d0d3204362993e070dc7dd3f2c2590dc2c32b2a0",
+            "blind_joint_route.py": "822b328c7d36da87b6022b4d2eccfe42d09b70f2fba758a7278f5ca1ea386a39",
+            "blind_joint_signed.py": "3ec955b211a1c4b48fe18c66d9374a78fd393d3b068ffed1c7a9fe42d035629b",
+            "certified_salvage.py": "7ccb39db8f2f4a278b2c7b1977866e3d731601de7d759adb5541e88692917f09",
+            "cold_finalist_race.py": "eeb7d1041f34fb7dbb805cb12eb93f66eba87e729e9cf695ff77811b51842fe7",
+            "cold_track_row_entry.py": "dfe479e9c6ed3cf9f29f207428888adb8d885aeea20bc4f9efd36e7fb8cef7ae",
+            "cold_track_row_reuse.py": "7c2633f28e5165880f3764262225e9ba6cdefdf8e1159d78ea846e2104caeb63",
+            "early_region.py": "3765d5a4ff56904156e2b3b6cb9ff39740916a652ab5127ff15c6a4e283bd5a8",
+            "grid_phase_state_reuse.py": "ed5a92406930bddcbca63ee9a18daecdce54c422a9eb0f2a5268fdb9625855f9",
+            "grid_predictive_reduction.py": "f8966de85d53072b0639f6a0d6e8450d525f950957cd67c595ac2c387606e278",
+            "installed/algo08_posterior_handoff.py": "aa5d7ab17ce82e4bd64e463de0fddf710275634cf48675cf6076eeba6c184831",
+            "joint_publication.py": "6a0a6635381a75f56ad475e8feee606abe5e5db6b09bab2de2d2bdbf0669fbed",
+            "lighter_joint_estimator.py": "6692c234ab897ec62057b1472ed25b47392345a84d7fa5730190bbfdd27086b8",
+            "optimized_grid.py": "e08509c6ecf321160cbef688b917213cbb92d687dc4ae6639d688320d396aff8",
+            "prepared_exterior.py": "f964e5ee81b97f58efc7afe06119c1606f402b2ecbf8b61b12fe6d9af1b95064"
+          },
+          "started_unix_ns": 1795446202455772039,
+          "stderr_tail": "",
+          "system_cpu_s": 0.8819809999999999,
+          "terminal_file_s": 42.344103879,
+          "terminal_sha256": "sha256:6e035255ffdb7dd32d936ad68741d4227c1a9f05be9d24a43f9373384808b50c",
+          "user_cpu_s": 20.724085,
+          "voluntary_switches": 174
+        },
+        "stock": {
+          "cache": {
+            "cached_pages": 817049,
+            "ended_unix_ns": 1795446265437176848,
+            "members": 43,
+            "observed_file_pages": 817049,
+            "observed_members": 43,
+            "started_unix_ns": 1795446265433930199,
+            "unavailable": {}
+          },
+          "cache_before_warming": {
+            "cached_pages": 817049,
+            "ended_unix_ns": 1795446265437176848,
+            "members": 43,
+            "observed_file_pages": 817049,
+            "observed_members": 43,
+            "started_unix_ns": 1795446265433930199,
+            "unavailable": {}
+          },
+          "cache_warming_observations": [
+            {
+              "cached_pages": 817049,
+              "ended_unix_ns": 1795446265437176848,
+              "members": 43,
+              "observed_file_pages": 817049,
+              "observed_members": 43,
+              "started_unix_ns": 1795446265433930199,
+              "unavailable": {}
+            }
+          ],
+          "command": [
+            "/opt/leo-algo08/algo08v3/run",
+            "--recording",
+            "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261114-050338-cf421224-1-upper",
+            "--archive",
+            "/srv/bulk/leo-dev/ds30-full-20261121/snapshot/inputs/DS30-0057/tle",
+            "--region",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/station/region.json",
+            "--bulk-root",
+            "/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/v3-short-raw-diagnostic-pairs/DS30-0057/stock"
+          ],
+          "cpu_s": 29.881158,
+          "elapsed_censored_at_s": 150,
+          "elapsed_including_timeout_reap_s": 198.5224918909371,
+          "elapsed_s": null,
+          "error": "Process exited 124",
+          "exit_code": 124,
+          "fully_warm": true,
+          "input_blocks": 152,
+          "involuntary_switches": 117,
+          "major_faults": 0,
+          "minor_faults": 173079,
+          "output_blocks": 10920,
+          "retained_handoff": {
+            "arms": {
+              "c0": {
+                "latlon": [
+                  37.84856453049463,
+                  -122.48093801652199
+                ],
+                "rf_rms_hz": 109.96744015732486
+              },
+              "fitted_c": {
+                "latlon": [
+                  37.84782462711234,
+                  -122.47998636882122
+                ],
+                "rf_rms_hz": 109.82892150930293
+              }
+            },
+            "detection_file_s": 18.014148076,
+            "native_sha256": "sha256:acc41652db03722521d4e5631da6c770f499c8083b6c65ad9e28ae9a5ec60225",
+            "terminal_file_s": 39.586742248,
+            "terminal_sha256": "sha256:8de7abff7b7de959efcc6ad9117c7071380b9b0097eeb29a0fe4f508183f0c2e"
+          },
+          "started_unix_ns": 1795446265437206832,
+          "stderr_tail": "\nProcess timed out after 150 s",
+          "system_cpu_s": 0.8729459999999999,
+          "user_cpu_s": 29.008212,
+          "voluntary_switches": 45
+        }
+      },
+      "scientific_status": "candidate complete and fresh stock terminal matched archived complete stock"
+    }
+  ],
+  "cumulative": [
+    {
+      "candidate_complete": 0,
+      "candidate_elapsed_s": 13.766726701520383,
+      "candidate_failures": 0,
+      "candidate_false_fixes": 0,
+      "candidate_misses": 0,
+      "cases": [
+        "DS30-0227"
+      ],
+      "completed_elapsed_gate": false,
+      "installed_elapsed_s": 13.64736098702997,
+      "paired_median_elapsed_ratio": 1.0087464319734676,
+      "stock_complete": 0,
+      "summed_elapsed_ratio": 1.0087464319734676
+    },
+    {
+      "candidate_complete": 1,
+      "candidate_elapsed_s": 76.28570817410946,
+      "candidate_failures": 0,
+      "candidate_false_fixes": 0,
+      "candidate_misses": 0,
+      "cases": [
+        "DS30-0227",
+        "DS30-0057"
+      ],
+      "censored_paired_median_ratio_lower_bound": 0.5043732159867338,
+      "censored_paired_median_ratio_upper_bound": 0.712769820895364,
+      "censored_summed_ratio_upper_bound": 0.466159110137777,
+      "completed_elapsed_gate": null,
+      "half_time_gate_ruled_out_by_median": true,
+      "installed_elapsed_lower_bound_s": 163.64736098702997,
+      "installed_elapsed_s": null,
+      "paired_median_elapsed_ratio": null,
+      "stock_complete": 0,
+      "summed_elapsed_ratio": null
+    }
+  ],
+  "driver_sha256": "6ca8f6df060dc6440af798afb8137b91b0a75f4207022e365dfff3c6d0cacf79",
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "threads": {
+      "BLIS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "native_libraries": {
+    "geographic": {
+      "path": "/var/tmp/leo-dense-short-pins.0zaX7eSH/geographic.so",
+      "sha256": "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee"
+    },
+    "regional": {
+      "path": "/var/tmp/leo-regional-track.O238AD0C/scores.so",
+      "sha256": "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098"
+    },
+    "short": {
+      "path": "/var/tmp/leo-mixed-aperture.pdUjDb1S/build-v2/short-primary.so",
+      "sha256": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9"
+    }
+  },
+  "protocol_sha256": "22b228e97fddaa1e25ff991ec0e190db4f2150791ededdd419d4921f81e4442c",
+  "raw_receipt": {
+    "path": "/srv/bulk/leo-dev/algo08v2-ds30-100-6cdbac/v3-short-raw-diagnostic-pairs/results.json",
+    "sha256": "b5edd522c1c7484aec8bf680be6cfe19d66e2d403bc0fa2df795f86b9fb644a0"
+  },
+  "reference_audit_sha256": "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5",
+  "resumed_unmeasured_second_case": true,
+  "stock_build": {
+    "detector_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+    "frozen_specification": "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
+    "version": "ALGO08v3"
+  }
+}

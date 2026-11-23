@@ -29,3 +29,17 @@ def test_cumulative_clocks_keep_missed_and_failed_assignments(trial):
     assert result["summed_elapsed_ratio"] == 0.2
     assert (result["candidate_misses"], result["candidate_false_fixes"], result["candidate_failures"]) == (1, 0, 1)
     assert result["stock_complete"] == 1 and result["candidate_complete"] == 0
+
+
+def test_timeout_stays_in_denominator_as_a_bound(trial):
+    score = import_module("short_raw_diagnostic_score")
+    rows = [dict(runs=dict(stock=dict(elapsed_s=10, exit_code=0), candidate=dict(elapsed_s=10.1))),
+            dict(runs=dict(stock=dict(elapsed_s=None, exit_code=124), candidate=dict(elapsed_s=20)))]
+    result = score.censor_elapsed(dict(stock_complete=0), rows, cutoff=100)
+    assert result["installed_elapsed_lower_bound_s"] == 110
+    assert result["censored_paired_median_ratio_lower_bound"] == pytest.approx(.505)
+    assert result["censored_paired_median_ratio_upper_bound"] == pytest.approx(.605)
+    assert result["censored_summed_ratio_upper_bound"] == pytest.approx(30.1 / 110)
+    assert result["half_time_gate_ruled_out_by_median"]
+    assert result["completed_elapsed_gate"] is None
+    assert result["paired_median_elapsed_ratio"] is None and result["summed_elapsed_ratio"] is None
