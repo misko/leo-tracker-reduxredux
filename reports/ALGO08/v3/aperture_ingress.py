@@ -17,7 +17,7 @@ PREFIX = 128
 PATHS = ("full", "fixed", "no-dsp")
 
 
-def compare(publication, specification, native, inventory, archive, offer, mode, skipped):
+def compare(publication, specification, native, inventory, archive, offer, mode, skipped, *, expected_rows=None):
     from leo.contracts.digests import canonical_digest, sha256_digest
     from leo.storage.fast_scan import FastSegmentSource, immutable_json
     from tools import algo08_scan
@@ -97,7 +97,8 @@ def compare(publication, specification, native, inventory, archive, offer, mode,
         cpu, wall = process_time() - start_cpu, perf_counter() - start_wall
         usage = resource.getrusage(resource.RUSAGE_SELF)
         rows = bound["probes"]
-        if (mode == "full" and rows != before) or any(
+        expected = before if expected_rows is None else expected_rows
+        if (mode == "full" and rows != expected) or any(
             dict(left, candidates=[]) != dict(right, candidates=[])
             for left, right in zip(rows, before, strict=True)
         ):

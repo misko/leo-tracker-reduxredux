@@ -1,6 +1,7 @@
 """Measure a hindsight skip schedule on an authenticated installed-v3 prefix."""
 
 import argparse
+import ctypes as ct
 import json
 from pathlib import Path
 from time import process_time_ns
@@ -27,35 +28,59 @@ def historical():
     return result
 
 
-def capture(args, before, keep):
+def capture(args, before, keep, *, primary=None, first_indices=(), primary_trace=None, expected_rows=None):
     from tools.pipeline_eval.qualification import blind_compact_run as blind
 
     original = blind.Native
-    full_rows = []
+    captured = []
     costs = []
+    step = ct.sizeof(blind.Factor)
+    if (first_indices or primary_trace is not None) and primary is None:
+        raise ValueError("A first-only call requires its native verifier")
+
+    def factors(packet):
+        return [blind.Factor.from_buffer_copy(packet, offset) for offset in range(0, len(packet), step)]
+
+    def published(packet):
+        return [blind.factor_candidate(f.rank, f.integer, status="complete", offset=f.offset,
+                                       cfo=f.hz, exact=f.exact, control=f.control, margin=f.exact - f.control)
+                for f in factors(packet)]
 
     def observed(*constructor):
         receiver = original(*constructor)
         native = receiver.lib.cancellation_factors
 
         def measure(context, samples, lane, low, high, output):
-            index = len(full_rows)
+            index = len(captured)
             if before[index]["receiver_id"] != lane:
                 raise ValueError("Unexpected native antenna order")
             if not native.argtypes:
                 native.restype, native.argtypes = measure.restype, measure.argtypes
-            factors = []
-            paid = 0
-            count = 0
-            if keep is None or index in keep:
+
+            def call(kernel, out, maximum):
                 start = process_time_ns()
-                count = native(context, samples, lane, low, high, output)
-                paid = process_time_ns() - start
-                for f in output[:count]:
-                    factors.append(blind.factor_candidate(f.rank, f.integer, status="complete", offset=f.offset,
-                                                          cfo=f.hz, exact=f.exact, control=f.control,
-                                                          margin=f.exact - f.control))
-            full_rows.append(dict(before[index], candidates=factors))
+                ok = kernel(context, samples, lane, low, high, out)
+                cpu = process_time_ns() - start
+                if not 0 <= ok <= maximum:
+                    raise ValueError("Native call returned an invalid factor count")
+                return ok, cpu, ct.string_at(out, ok * step)
+
+            if primary_trace is not None:
+                scratch = (blind.Factor * 2)()
+                if index % 2:
+                    _, primary_cpu, primary_packet = call(primary, scratch, 1)
+                    count, paid, packet = call(native, output, 2)
+                else:
+                    count, paid, packet = call(native, output, 2)
+                    _, primary_cpu, primary_packet = call(primary, scratch, 1)
+                primary_trace.append((primary_packet, primary_cpu))
+            elif index in first_indices:
+                count, paid, packet = call(primary, output, 1)
+            elif keep is None or index in keep:
+                count, paid, packet = call(native, output, 2)
+            else:
+                count, paid, packet = 0, 0, b""
+            captured.append(packet)
             costs.append(paid)
             return count
 
@@ -63,9 +88,16 @@ def capture(args, before, keep):
         return receiver
 
     with patch.object(blind, "Native", observed):
-        receipt = compare(*args, "full", [])
+        receipt = compare(*args, "full", [], expected_rows=expected_rows)
     if len(costs) != len(before):
         raise ValueError("Native hook did not see every admitted lane")
+    if primary_trace is not None:
+        for index, ((packet, cpu), full) in enumerate(zip(primary_trace, captured, strict=True)):
+            rank_zero = b"".join(bytes(f) for f in factors(full) if f.rank == 0)
+            if packet != rank_zero:
+                raise ValueError(f"Primary native factor bytes differ at opportunity {index}")
+            primary_trace[index] = published(packet), cpu
+    full_rows = [dict(row, candidates=published(packet)) for row, packet in zip(before, captured, strict=True)]
     return receipt, full_rows, costs
 
 
