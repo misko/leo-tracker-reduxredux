@@ -111,7 +111,7 @@ def sample_with_cached_features(sample, event, original, prepared, counts):
 
 
 @contextmanager
-def cached_predictive_grid():
+def cached_predictive_grid(*, bind=None):
     """Reuse predictive phase states while the current publication grid callback runs."""
     from leo.presentation import localization_v3 as presentation
     from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff
@@ -121,7 +121,10 @@ def cached_predictive_grid():
             raise ValueError(f"Unexpected source for the checked grid handoff: {module.__name__}")
     event, original, prepared, _ = checked_geometry()
     counts = Counter(grids=0, prepared_views=0, prepared_calls=0)
-    grid = sample_with_cached_features(presentation.sample_position_grid, event, original, prepared, counts)
+    sample = presentation.sample_position_grid
+    if bind is not None:
+        sample, prepared = bind(sample, original, prepared)
+    grid = sample_with_cached_features(sample, event, original, prepared, counts)
     with patch.object(presentation, "sample_position_grid", grid):
         yield counts
 

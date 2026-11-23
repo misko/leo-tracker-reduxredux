@@ -1,16 +1,22 @@
 """Experimental fixed-view observer projection and selected design packing."""
 
 from collections import Counter
+from contextlib import contextmanager
 import ctypes as ct
+from functools import partial
 from hashlib import sha256
 from inspect import getsource
 from pathlib import Path
+import platform
 import subprocess
+from unittest.mock import patch
 
 import numpy as np
 
 
 PHASE_SHA = "0e067ad8d0d7a69bda355e3c46c409e3ecd3fc469447a80aabb21f7bfaeb4a63"
+LIBRARY_SHA = "7ac9f74eb08d1992bde8738dbc8f6ec9687eb7fe4f5d5f4ae3301ddfa061d0fb"
+CPU_FEATURES = frozenset(("avx", "avx2", "bmi1", "bmi2", "fma", "f16c", "movbe", "abm", "xsave"))
 FLAGS = (
     "-std=c11", "-O3", "-march=haswell", "-fno-fast-math", "-fno-math-errno",
     "-ffp-contract=off", "-shared", "-fPIC", "-Wall", "-Wextra", "-Werror",
@@ -116,3 +122,75 @@ class Native:
         self.select(rows, width, *(a.ctypes.data for a in (source, scale, keep, output)))
         self.counts["native_selection"] += 1
         return output
+
+
+def supported_cpu():
+    if platform.machine() != "x86_64":
+        return False
+    try:
+        flags = [line.partition(":")[2].split() for line in Path("/proc/cpuinfo").read_text().splitlines()
+                 if line.startswith("flags")]
+    except OSError:
+        return False
+    return bool(flags) and all(CPU_FEATURES.issubset(row) for row in flags)
+
+
+def bind_grid(native, sample, original, prepared):
+    from grid_phase_state_reuse import prepared_features
+    from leo.analysis.localization_v3 import history_position, marginal
+
+    operation = prepared
+
+    def predictive(*args):
+        return operation(*args)
+
+    def grid(*args, **kwargs):
+        nonlocal operation
+        if kwargs.get("map_batches") is not None:
+            native.counts["mapped_grid_fallbacks"] += 1
+            return sample(*args, **kwargs)
+
+        # The installed solve binds these ports after the publication scope
+        # opens. Read the current globals at the actual grid sampler.
+        calculate = marginal.JointMarginal.calculate.__globals__
+        selection = history_position.make_problem.__globals__
+        stock_phase = marginal._phase_geometry
+        select = selection.get("_select")
+        if (calculate.get("_phase_geometry") is not stock_phase or "_assemble" not in calculate
+                or not callable(select) or np.__version__ != "2.5.2"):
+            native.counts["layout_fallbacks"] += 1
+            return sample(*args, **kwargs)
+        phase = native.phase(stock_phase)
+        selected = partial(native.selected_design, fallback=select)
+        operation = prepared_features(original, phase)
+        native.counts["grids"] += 1
+        try:
+            with (patch.dict(calculate, _phase_geometry=phase), patch.dict(selection, _select=selected)):
+                return sample(*args, **kwargs)
+        finally:
+            operation = prepared
+
+    return grid, predictive
+
+
+@contextmanager
+def active_projection(path, audit):
+    """Load the reviewed kernel only for the opted-in active publication."""
+    from empty_bootstrap import checked
+    import grid_phase_state_reuse as phase_states
+
+    path = path.resolve(strict=True)
+    checked(path, LIBRARY_SHA)
+    audit.update(library_sha256=LIBRARY_SHA)
+    if not supported_cpu():
+        audit["runtime_fallbacks"] = 1
+        audit["fallback_reason"] = "unsupported CPU"
+        yield
+        return
+    native = Native(path)
+    try:
+        original = phase_states.cached_predictive_grid
+        with patch.object(phase_states, "cached_predictive_grid", partial(original, bind=partial(bind_grid, native))):
+            yield
+    finally:
+        audit["calls"] = dict(native.counts)

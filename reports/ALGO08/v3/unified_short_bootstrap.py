@@ -1,7 +1,7 @@
 """Acquire independently signed 20/12 ms stereo, then publish in one process."""
 
 import argparse
-from contextlib import contextmanager, ExitStack, nullcontext
+from contextlib import ExitStack, contextmanager
 from dataclasses import asdict
 from functools import partial
 from hashlib import sha256
@@ -109,6 +109,8 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
 
         captured = VerifiedPngReads(args.output, joint_publication.figure_evidence,
                                     png_read_audit if png_read_audit is not None else {})
+    grid_library = getattr(args, "grid_feature_projection_library", None)
+    grid_audit = {}
 
     def projection():
         return guarded_projection(args.geographic_library, args.regional_track_library,
@@ -117,9 +119,16 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
     @contextmanager
     def active_publication(scan):
         # The installed lossless renderer is bound before the analyze hook.
-        with (handoff.install(scan), layout_renderer(scan, args.one_pass_web_png, layout_audit),
-              graph_execution(enabled=getattr(args, "exact_graph_reuse", False), audit=graph_audit),
-              captured.capture(FastStandardAnalysisStore) if captured is not None else nullcontext()):
+        with ExitStack() as stack:
+            stack.enter_context(handoff.install(scan))
+            stack.enter_context(layout_renderer(scan, args.one_pass_web_png, layout_audit))
+            stack.enter_context(graph_execution(enabled=getattr(args, "exact_graph_reuse", False), audit=graph_audit))
+            if captured is not None:
+                stack.enter_context(captured.capture(FastStandardAnalysisStore))
+            if grid_library is not None:
+                from grid_feature_projection import active_projection
+
+                stack.enter_context(active_projection(grid_library, grid_audit))
             yield
 
     # Bootstrap already installed the release's lazy package facades. The
@@ -131,6 +140,11 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
         result = joint_publication.run(options, raw_context=active_publication, early_regional=True,
                                        keep_selected_rows=True, geographic_projector=projection,
                                        reuse_cold_rows=True, reuse_grid_phase_states=True)
+    if grid_library is not None:
+        result["grid_feature_projection"] = dict(grid_audit, source_sha256={
+            name: sha256((HERE / name).read_bytes()).hexdigest()
+            for name in ("grid_feature_projection.py", "grid_feature_projection.c")
+        })
     return result["receipt"], result
 
 
@@ -253,6 +267,8 @@ def run(args):
                   verified_handoffs=handoff.calls, receiver_audit=audit, phases=phases,
                   scientific_imports_before=before, scientific_imports_after=after,
                   total_before_receipt=staged.clock(started))
+    if research is not None and "grid_feature_projection" in research:
+        result["grid_feature_projection"] = research["grid_feature_projection"]
     with (args.output / "unified-short-bootstrap.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False)
         stream.write("\n")
@@ -273,4 +289,6 @@ if __name__ == "__main__":
                         help="Use reviewed ordered graph batches and exact best-piece reuse in active lanes")
     parser.add_argument("--reuse-verified-png-reads", action="store_true",
                         help="Decode each new PNG from its original verified publication read")
+    parser.add_argument("--grid-feature-projection-library", type=Path,
+                        help="Use the verified experimental grid projection and selected row library")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))

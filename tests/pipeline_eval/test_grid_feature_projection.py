@@ -1,7 +1,10 @@
 """Preserve the prepared state arithmetic and per-view feature layout."""
 
+from collections import Counter
+from hashlib import sha256
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -12,6 +15,8 @@ from leo.sky.frames import geodetic_to_ecef_km
 from tools.pipeline_eval.variants.algo08_curved_design import selected_design
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
+import grid_feature_projection as projection
+import grid_phase_state_reuse as cache
 from grid_feature_projection import Native, build, exact
 
 
@@ -58,3 +63,35 @@ def test_selected_design_keeps_row_order_and_signed_zeros(native):
     for source in (values, values[:, ::-1]):
         assert exact(native.selected_design(source, scale, keep, selected_design), selected_design(source, scale, keep))
     assert native.counts["selection_fallback"] == 1
+
+
+def test_unavailable_cpu_keeps_active_scope_on_incumbent(tmp_path, monkeypatch):
+    path = tmp_path / "verified"
+    path.write_bytes(b"reviewed")
+    monkeypatch.setattr(projection, "LIBRARY_SHA", sha256(path.read_bytes()).hexdigest())
+    monkeypatch.setattr(projection, "supported_cpu", lambda: False)
+    audit = {}
+    original = cache.cached_predictive_grid
+    with projection.active_projection(path, audit):
+        assert cache.cached_predictive_grid is original
+    assert audit["runtime_fallbacks"] == 1
+
+
+def test_unreviewed_library_fails_before_loading(tmp_path):
+    path = tmp_path / "unreviewed"
+    path.write_bytes(b"unknown")
+    with pytest.raises(ValueError, match="Unreviewed bootstrap input"):
+        with projection.active_projection(path, {}):
+            pytest.fail("The unchecked library reached the publication scope")
+
+
+def test_mapped_or_unbound_sampler_preserves_both_incumbent_operations():
+    def sample(**kwargs):
+        return tuple(kwargs)
+
+    native = SimpleNamespace(counts=Counter())
+    grid, predictive = projection.bind_grid(native, sample, None, lambda *_: "stock predictive")
+    assert grid() == ()
+    assert grid(map_batches=tuple) == ("map_batches",)
+    assert predictive(None) == "stock predictive"
+    assert native.counts == {"layout_fallbacks": 1, "mapped_grid_fallbacks": 1}
