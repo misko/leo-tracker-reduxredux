@@ -1,5 +1,6 @@
 """The exact predictive features use the same fixed phase states at each point."""
 
+from collections import Counter
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -7,9 +8,11 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from leo.analysis.localization_v3 import marginal, predictive_linear
+from leo.analysis.localization_v3 import event_position, marginal, predictive_linear
+from leo.presentation import localization_v3 as presentation
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
+import grid_phase_state_reuse as reuse
 from grid_phase_state_reuse import identical, prepared_features
 
 
@@ -80,3 +83,68 @@ def test_equivalence_includes_signed_zero_and_strides():
     changed[0, 0] = -0.
     assert not identical({"x": samples}, {"x": changed})
     assert not identical({"x": samples}, {"x": samples.copy(order="F")})
+
+
+def test_candidate_only_context_scopes_geometry_and_restores_cache(view, monkeypatch):
+    original = event_position.geometry_features
+    points = [[-2., 3.], [3., 5.]]
+    saved = [original(view, point, 0.) for point in points]
+
+    def sample():
+        assert event_position.geometry_features is not original
+        first = event_position.geometry_features(view, points[0], 0.)
+        cache = getattr(view, reuse.PHASE_CACHE)
+        second = event_position.geometry_features(view, points[1], 0.)
+        assert getattr(view, reuse.PHASE_CACHE) is cache
+        return first, second
+
+    monkeypatch.setattr(presentation, "sample_position_grid", sample)
+    with reuse.cached_predictive_grid() as counts:
+        assert event_position.geometry_features is original
+        result = presentation.sample_position_grid()
+        assert event_position.geometry_features is original
+    assert presentation.sample_position_grid is sample
+    assert not hasattr(view, reuse.PHASE_CACHE)
+    assert all(identical(left, right) for left, right in zip(result, saved, strict=True))
+    assert counts == dict(grids=1, prepared_views=1, prepared_calls=2)
+
+
+def test_read_only_no_prediction_and_custom_grid_mapper(monkeypatch):
+    original = event_position.geometry_features
+
+    def sampler(*, map_batches=None):
+        assert (event_position.geometry_features is original) == (map_batches is not None)
+        return 179
+
+    monkeypatch.setattr(presentation, "sample_position_grid", sampler)
+    with reuse.cached_predictive_grid() as counts:
+        assert presentation.sample_position_grid() == 179
+        assert presentation.sample_position_grid(map_batches=object()) == 179
+    assert counts == dict(grids=1, prepared_views=0, prepared_calls=0, ordinary_grids=1)
+
+
+def test_grid_exception_restores_geometry_and_prior_existing_view_cache():
+    before, previous, during = object(), object(), object()
+    view = SimpleNamespace(variant="radio_noise", **{reuse.PHASE_CACHE: previous})
+    event = SimpleNamespace(geometry_features=before)
+
+    def prepared(which, *_args):
+        setattr(which, reuse.PHASE_CACHE, during)
+
+    def sample():
+        event.geometry_features(view, None, 0.)
+        assert getattr(view, reuse.PHASE_CACHE) is during
+        raise RuntimeError("grid still fails")
+
+    grid = reuse.sample_with_cached_features(sample, event, before, prepared, Counter())
+    with pytest.raises(RuntimeError, match="grid still fails"):
+        grid()
+    assert event.geometry_features is before and getattr(view, reuse.PHASE_CACHE) is previous
+
+
+def test_rejects_a_changed_checked_handoff_source(monkeypatch):
+    original = presentation.sample_position_grid
+    monkeypatch.setattr(reuse, "HANDOFF_SHA256", "changed")
+    with pytest.raises(ValueError, match="checked grid handoff"), reuse.cached_predictive_grid():
+        pytest.fail("an unmatched source entered the candidate grid")
+    assert presentation.sample_position_grid is original

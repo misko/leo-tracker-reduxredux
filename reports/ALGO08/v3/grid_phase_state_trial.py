@@ -1,19 +1,23 @@
 """Audit paired predictive geometry inside one genuine dense publication grid."""
 
 import argparse
+from contextlib import ExitStack
 from pathlib import Path
 from runpy import run_path
 from unittest.mock import patch
 
-from aperture_trial import read, write
+from aperture_trial import configuration, read, solve as saved_solve, write
 from cold_track_row_transfer import DENSE, GEOGRAPHIC, PREVIOUS, RAW, same_route
 from cold_track_row_trial import REPLAY_PIN
 import dense_full_short_crossover as crossover
-from grid_phase_state_reuse import GridAudit, SOURCES
+from dense_geographic_trial import host
+from grid_phase_state_reuse import GridAudit, SOURCES, cached_predictive_grid
 
 
 SCIENCE = ("status", "reason", "orbit_policy", "arms", "owners", "selected_rows", "grid_points", "grid", "science",
            "associated", "objective_replay", "graph", "track_asset_sha256", "visited_probes")
+SOUTH = Path("/var/tmp/leo-short-graph-20261123-south-inside")
+SOUTH_SHA256 = "5d7b28ab3ce6dd3f06e09153481eb125dfad45a11486cc863fdd2fd2e018ce64"
 
 
 def run(output):
@@ -71,7 +75,75 @@ def run(output):
         raise ValueError(f"Genuine grid did not reproduce the archived evidence: {checks}")
 
 
+def run_without_predictive(output):
+    """Qualify the composable context on an existing zero-predictive saved fix."""
+    machine = host()
+    publication, specification = configuration()
+    from early_region import before_fit
+    from joint_publication import full_catalogue_route
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from optimized_grid import reduced_grid
+    from prepared_exterior import handoff
+    from proof_rank_short_transfer import saved
+    from tools import algo08_position
+    from tools.pipeline_eval.variants import v5_core
+    from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+    prior = SOUTH / "joint-research-receipt.json"
+    if crossover.file_sha(prior) != SOUTH_SHA256:
+        raise ValueError("The archived southern empty-predictive control changed")
+    control = read(prior)
+    report = control["receipt"]
+    terminal = read(SOUTH / "fast-scan-automatic-work" / report["run_id"] / "terminal.json")
+    native, archive, offer, identity = saved("south-inside")
+    if (canonical_digest(terminal) != report["terminal_sha256"] or terminal["region"] != offer
+            or terminal["native_sha256"] != identity["native_sha256"]
+            or control["route_details"]["support"]["predictive_points"] != 0):
+        raise ValueError("Expected the source-bound southern fix with no predictive rows")
+    old_solve = algo08_position.solve
+    attempts, proofs, rows, counts = [], [], {}, {}
+
+    def observed(document, reader, assets, region):
+        if (document is not native or reader.root != archive or region.document() != offer
+                or crossover.file_sha(assets / "tracks.json") != crossover.TRACK_ASSET_PIN):
+            raise ValueError("The original saved packet, offer or installed graph changed")
+        with ExitStack() as stack:
+            live, _, _ = stack.enter_context(handoff(reader))
+            stack.enter_context(reduced_grid())
+            metrics = stack.enter_context(cached_predictive_grid())
+            route = full_catalogue_route(v5_core.infer, reader, attempts, optimized=True)
+            guarded = before_fit(route, reader, regional_bound_guard.causal_probes, proofs, live.match)
+            stack.enter_context(patch.object(v5_core, "infer", guarded))
+            decision, packet, policy = old_solve(document, reader, assets, region)
+        counts.update(metrics)
+        if packet is not None:
+            for arm, selected in packet["rows"].items():
+                rows[arm] = [[row[key] for key in crossover.OWNER_KEYS] for row in selected]
+        return decision, packet, policy
+
+    with patch.object(algo08_position, "solve", observed):
+        result = saved_solve(publication, specification, native, archive, offer)
+    store = FastStandardAnalysisStore(SOUTH)
+    methods = {"path": store.position_path, "grid": store.position_grid}
+    science = {name: canonical_digest({k: v for k, v in method(report["run_id"]).items()
+                                     if k not in ("binding", "elapsed_seconds")}) for name, method in methods.items()}
+    checks = dict(route=len(attempts) == 1 and same_route(attempts[0], control["route_details"]),
+                  owners=rows == control["selected_rows"], grid_and_path=result["science"] == science,
+                  terminal=result["status"] == "ok" and result["arms"] == terminal["arms"]
+                  and result["reason"] == terminal["reason"] and result["orbit_policy"] == terminal["orbit_policy"],
+                  empty_predictive=counts == dict(grids=1, prepared_views=0, prepared_calls=0))
+    result.pop("owner_rows", None)
+    write(output, dict(identity=identity, machine=machine, control_sha256=SOUTH_SHA256, runtime=counts, checks=checks,
+                       solution=result, proof=proofs, source_sha256={name: crossover.file_sha(Path(__file__).with_name(name))
+                           for name in ("grid_phase_state_trial.py", "grid_phase_state_reuse.py")}))
+    if not all(checks.values()):
+        raise ValueError(f"The empty-predictive saved science changed: {checks}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    run(parser.parse_args().output)
+    parser.add_argument("--south-empty-predictive", action="store_true")
+    args = parser.parse_args()
+    (run_without_predictive if args.south_empty_predictive else run)(args.output)

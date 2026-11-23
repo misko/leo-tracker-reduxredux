@@ -1,11 +1,12 @@
 """Reuse exact phase interpolation in the installed predictive grid handoff."""
 
 from collections import Counter
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from hashlib import sha256
 from inspect import getsource
 from pathlib import Path
 from time import perf_counter_ns, process_time_ns
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
@@ -19,6 +20,9 @@ SOURCES = {
     "predictive_linear": "1c1930b8fc71b6fafd43fa744661a785b7d243b74b1ab39ab1f59d8fe800dcc6",
     "prepared_phase_geometry": "df57600e500f731e61b2636e03d682221b74e65b8b624ddb262942213cfbb01c",
 }
+HANDOFF_SHA256 = "aa5d7ab17ce82e4bd64e463de0fddf710275634cf48675cf6076eeba6c184831"
+PRESENTATION_SHA256 = "5dd6dbc63a4078e4b7fffcf10237d4f92429a1ea07d585eb3a49d0eca02cae2b"
+PHASE_CACHE = "_fixed_phase_geometry_cache"
 
 
 def prepared_features(original, phase_geometry):
@@ -54,6 +58,72 @@ def identical(left, right):
                 or not np.array_equal(a.view(np.uint64), b.view(np.uint64))):
             return False
     return True
+
+
+def checked_geometry():
+    from leo.analysis.localization_v3 import event_position, marginal, predictive_linear
+    from leo.analysis.research import continuous_curve_fit, orbit_uncertainty, prepared_phase_geometry
+
+    modules = (event_position, marginal, predictive_linear, continuous_curve_fit, orbit_uncertainty,
+               prepared_phase_geometry)
+    for module in modules:
+        if sha256(Path(module.__file__).read_bytes()).hexdigest() != SOURCES[module.__name__.split(".")[-1]]:
+            raise ValueError(f"Unexpected release source for predictive grid geometry: {module.__name__}")
+    original = event_position.geometry_features
+    if original is not predictive_linear.geometry_features:
+        raise ValueError("The installed grid no longer calls the original predictive geometry")
+    return event_position, original, prepared_features(original, marginal._phase_geometry), (
+        continuous_curve_fit, orbit_uncertainty, prepared_phase_geometry, marginal)
+
+
+def sample_with_cached_features(sample, event, original, prepared, counts):
+    """Install the geometry only for one invocation of the current grid sampler."""
+    def grid(*args, **kwargs):
+        if kwargs.get("map_batches") is not None or event.geometry_features is not original:
+            counts["ordinary_grids"] += 1
+            return sample(*args, **kwargs)
+        counts["grids"] += 1
+        views = {}
+        absent = object()
+
+        def geometry(view, position, altitude_m):
+            if type(view) is not SimpleNamespace or altitude_m != 0. or view.variant == "empirical":
+                counts["ordinary_calls"] += 1
+                return original(view, position, altitude_m)
+            key = id(view)
+            if key not in views:
+                views[key] = view, getattr(view, PHASE_CACHE, absent)
+                counts["prepared_views"] += 1
+            counts["prepared_calls"] += 1
+            return prepared(view, position, altitude_m)
+
+        try:
+            with patch.object(event, "geometry_features", geometry):
+                return sample(*args, **kwargs)
+        finally:
+            for view, previous in views.values():
+                if previous is absent:
+                    vars(view).pop(PHASE_CACHE, None)
+                else:
+                    setattr(view, PHASE_CACHE, previous)
+
+    return grid
+
+
+@contextmanager
+def cached_predictive_grid():
+    """Reuse predictive phase states while the current publication grid callback runs."""
+    from leo.presentation import localization_v3 as presentation
+    from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff
+
+    for module, expected in ((handoff, HANDOFF_SHA256), (presentation, PRESENTATION_SHA256)):
+        if sha256(Path(module.__file__).read_bytes()).hexdigest() != expected:
+            raise ValueError(f"Unexpected source for the checked grid handoff: {module.__name__}")
+    event, original, prepared, _ = checked_geometry()
+    counts = Counter(grids=0, prepared_views=0, prepared_calls=0)
+    grid = sample_with_cached_features(presentation.sample_position_grid, event, original, prepared, counts)
+    with patch.object(presentation, "sample_position_grid", grid):
+        yield counts
 
 
 class GridAudit:
@@ -103,18 +173,7 @@ class GridAudit:
         return evaluate
 
     def grid(self, original):
-        from leo.analysis.localization_v3 import event_position, marginal, predictive_linear
-        from leo.analysis.research import continuous_curve_fit, orbit_uncertainty, prepared_phase_geometry
-
-        modules = (event_position, marginal, predictive_linear, continuous_curve_fit, orbit_uncertainty,
-                   prepared_phase_geometry)
-        for module in modules:
-            if sha256(Path(module.__file__).read_bytes()).hexdigest() != SOURCES[module.__name__.split(".")[-1]]:
-                raise ValueError("Unexpected release source for the predictive grid audit")
-        baseline = event_position.geometry_features
-        if baseline is not predictive_linear.geometry_features:
-            raise ValueError("The installed grid no longer calls the unprepared predictive geometry")
-        candidate = prepared_features(baseline, marginal._phase_geometry)
+        event_position, baseline, candidate, interpolators = checked_geometry()
         measured = self.measure_geometry(baseline, candidate)
 
         def with_audit(score, endpoints, **kwargs):
@@ -130,7 +189,7 @@ class GridAudit:
 
             start, wall = process_time_ns(), perf_counter_ns()
             with ExitStack() as scope:
-                for module in (continuous_curve_fit, orbit_uncertainty, prepared_phase_geometry, marginal):
+                for module in interpolators:
                     scope.enter_context(patch.object(module, "paired_phase_states", self.interpolate(module.paired_phase_states)))
                 scope.enter_context(patch.object(event_position, "geometry_features", measured))
                 result = original(point, endpoints, **kwargs)
