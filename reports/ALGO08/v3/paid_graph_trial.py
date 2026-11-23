@@ -17,7 +17,7 @@ class SamePacket(Exception):
     pass
 
 
-def run(case, mode, out, prior=None, *, observe=None):
+def run(case, mode, out, prior=None, *, observe=None, select_paid=None):
     staged = {}
 
     def load():
@@ -33,11 +33,14 @@ def run(case, mode, out, prior=None, *, observe=None):
         config = TrackConfig(**json.loads(config_blob)["config"])
         source = native["source"]
         start = process_time()
-        paid = paid_visits(rows)
-        picks, stats = select(rows, paid, source["sample_rate_hz"], config, fit_lane, mode == "graph")
-        stats.update(selection_cpu_s=process_time() - start, lanes=len(rows), paid_lanes=2 * len(paid),
-                     returned=sum(map(bool, picks)), mask_sha256=canonical_digest(sorted(paid)),
-                     paid_native_cpu_s=sum(t for r, t in zip(rows, clocks, strict=True) if r["visit_index"] in paid)/1e9,
+        if select_paid is None:
+            paid = paid_visits(rows)
+            picks, stats = select(rows, paid, source["sample_rate_hz"], config, fit_lane, mode == "graph")
+            stats.update(paid_lanes=2 * len(paid), mask_sha256=canonical_digest(sorted(paid)),
+                         paid_native_cpu_s=sum(t for r, t in zip(rows, clocks, strict=True) if r["visit_index"] in paid)/1e9)
+        else:
+            picks, stats = select_paid(rows, clocks)
+        stats.update(selection_cpu_s=process_time() - start, lanes=len(rows), returned=sum(map(bool, picks)),
                      config_sha256=config_sha)
         probes = [dict(r, candidates=p) for r, p in zip(rows, picks, strict=True)]
         binding = canonical_digest(["cancellation", source["raw_recording_authority_digest"],
