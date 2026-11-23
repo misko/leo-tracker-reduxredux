@@ -34,3 +34,34 @@ def test_recipe_binds_schedule_bytes_and_parent():
     assert recipe("target", parent) != recipe("quarter", parent)
     with pytest.raises(ValueError, match="original canonical"):
         recipe("target", "e"*64)
+
+
+def test_saved_projection_never_infers_missing_data_or_changes_a_paid_lane():
+    from leo.contracts.digests import canonical_digest
+    from stereo_mask_trial import RECIPE_SHA, native_signature, project
+
+    probes = [dict(visit_index=n, receiver_id=r, edge="upper", channel=1, actual_rf_hz=11_000_000_000,
+                   valid_start_counter=n*10_000_000, payload_start_sample=0,
+                   candidates=[dict(fractional_tracking_cfo_hz=4000 + 20*n + r)])
+              for n in range(10) for r in (0, 1)]
+    source = dict(probes=probes, sample_rate_hz=10_000_000, qualified=True, session_id="fixture",
+                  raw_recording_authority_digest="sha256:"+"e"*64)
+    original = "sha256:" + RECIPE_SHA
+    source["analysis_manifest_sha256"] = native_signature(source, original, probes)
+    provenance = dict(detector_sha256=original, scope="cancellation", window_count=10,
+                      processed_windows=10, excluded_windows=[])
+    native = dict(source=source, provenance=provenance, delivery_clocks=[{} for _ in range(10)])
+
+    masked, audit = project(native, "target")
+    assert audit["skipped_native_lanes"] == {"short_primary": 6}
+    assert audit["kept_native_lanes"] == {"full": 4, "short_primary": 10}
+    assert audit["lost_factors_by_radio"] == {0: 3, 1: 3}
+    assert audit["mask_sha256"] == canonical_digest(audit["skipped_slots"])
+    assert masked["provenance"]["detector_sha256"] == canonical_digest(recipe("target", original))
+    skipped = set(audit["skipped_slots"])
+    for old, current in zip(probes, masked["source"]["probes"], strict=True):
+        if (old["visit_index"], old["receiver_id"]) in skipped:
+            assert current == dict(old, candidates=[])
+            assert old["candidates"]
+        else:
+            assert current == old
