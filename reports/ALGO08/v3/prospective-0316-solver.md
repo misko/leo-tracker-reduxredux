@@ -41,3 +41,10 @@ flock -x /tmp/leo-algo08v2-2x-bench/gauss.lock ionice -c2 -n7 nice -n15 taskset 
   BLIS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 "$release/venv/bin/python" -BPs \
   reports/ALGO08/v3/prospective_0316_solver.py /dev/shm/leo-v3-saved-0316-reproduction
 ```
+## What the earlier timing projections predicted
+
+The frozen three-size model and the historical v3 detections-to-terminal clock of 15.142 s predicted **8.901 CPU s** for the candidate. Using the dense fraction alone predicted **5.652 CPU s**. The new saved solve measured **8.659 CPU s**. Substituting the freshly measured 14.640 s stock numerical clock gives predictions of 8.749 and 5.464 s, respectively. DS30-0316 was outside the three model anchors. The measured candidate used the named 20 ms detector packet; the model anchors used genuine mixed 20/12 ms candidate packets. This is one check of a workload estimate on a shared physical site. [Earlier model and assumptions](solver-transfer-budget.md) · [Calculation from the sealed receipts](prospective_solver_budget.py)
+
+![Predicted and measured DS30-0316 solve, and conditional time available for acquisition](development/prospective-0316-budget.png)
+
+The historical complete v3 run took 40.371 s, so half its time is **20.186 s**. Holding the measured candidate solve and render elapsed at **8.662 + 1.652 s** leaves **9.871 s** for all 3,743.824 MB of signed acquisition, process startup, other publication work and exit. Even granting zero cost to those latter operations requires **379.3 MB/s** effective acquisition. At the measured warm weak rate of 292.39 MB/s, acquisition alone would consume **12.804 s**, leaving at most **5.729 s for the solve** after rendering. The two shaded intervals in the figure sum to 23.119 s before other overhead. This is a conditional same-recording budget; the release gates use the median paired ratio and ratio of totals. Fresh whole-recording mixed-aperture latency and solve complexity on its own detections remain unmeasured. [Earlier complete v3 run](short-recording-floor.md) · [Warm physical acquisition measurement](warm-recording-budget.md)
