@@ -293,9 +293,9 @@ def run(root):
     from dense_geographic_trial import host
 
     machine = host()
+    runtime = boot.load_runtime()
     job, req = request()
     root.mkdir()
-    runtime = boot.load_runtime()
     with patch.object(boot, "load_runtime", return_value=runtime):
         named = capture_named(job, root / "named-incomplete")
         cumulative = capture_cumulative(job, root / "cumulative-incomplete")
