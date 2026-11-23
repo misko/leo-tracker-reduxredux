@@ -375,6 +375,8 @@ if __name__ == "__main__":
                         help="Keep named-v3 withholding precedence when every authenticated lane is shorter than 20 seconds")
     parser.add_argument("--named-survivor-finish", action="store_true",
                         help="Isolate a disputed satellite family and run the original qualified final fit on the accepted observations")
+    parser.add_argument("--withhold-empty-family-calibration", action="store_true",
+                        help="Withhold when the nominated family's exclusion leaves zero independent calibration observations")
     parser.add_argument("--prove-empty-graph", action="store_true",
                         help="Use the pinned minimum support proof before loading the numerical solver")
     parser.add_argument("--one-pass-web-png", action="store_true",

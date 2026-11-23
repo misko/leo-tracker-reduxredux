@@ -157,6 +157,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     saved_handoffs, solves, selected_rows = [], [], {}
     observer = getattr(args, "observe_prepared", None)
     preparations, regional, returned = [], [], []
+    family_exclusions = []
 
     def analyze(*values, **kwargs):
         stock_solve = algo08_scan.solve
@@ -184,7 +185,14 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 start = len(attempts), len(regional)
                 if observer is not None:
                     preparations.append(observer(prepared))
-                answer = route(prepared, *values, **options)
+                if getattr(args, "withhold_empty_family_calibration", False):
+                    from empty_family_calibration import guarded_inference
+
+                    answer = guarded_inference(route, prepared, *values, **options)
+                    if answer.get("reason") == "no_independent_family_calibration":
+                        family_exclusions.append(answer["metrics"]["family_exclusion"])
+                else:
+                    answer = route(prepared, *values, **options)
                 returned.append(start)
                 return answer
 
@@ -227,7 +235,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                     factory = algo08_position.TrackConfig
                     stack.enter_context(patch.object(algo08_position, "TrackConfig",
                                                      lambda **cfg: track_config(factory(**cfg))))
-                if observer is not None or not stock_control:
+                if observer is not None or not stock_control or getattr(args, "withhold_empty_family_calibration", False):
                     stack.enter_context(patch.object(v5_core, "infer", observe_return))
                 if phase_forecast is not None:
                     stack.enter_context(phase_forecast())
@@ -329,6 +337,9 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         result["evidence"] = artifacts(args.output, receipt)
         if saved is not None or keep_selected_rows:
             result["selected_rows"] = selected_rows
+    if getattr(args, "withhold_empty_family_calibration", False):
+        result["empty_family_calibration"] = family_exclusions
+        pins["empty_family_calibration.py"] = sha256((source / "empty_family_calibration.py").read_bytes()).hexdigest()
     if full_catalogue:
         result["full_catalogue"] = True
     if optimized:

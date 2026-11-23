@@ -1,0 +1,17 @@
+# Withholding when one satellite owns all independent calibration evidence
+
+On DS30-0340, both original-input processes failed when the solver attempted to exclude one satellite family to measure its predictive fit. The refined 20/12 ms candidate and the separate named v3 build had no remaining curved calibration rows for that test. An opt-in candidate now produces a standard withholding decision with a reason. One saved positive-control publication preserved both position estimates, assignments and eight figures. [Original failures](raw-combined-0340.md) · [Saved replay measurements](measurements/empty-family-calibration.json)
+
+| Original detector handoff | Solver tested | Retained curved observations / independent after exclusion | Terminal | Saved publication elapsed |
+|---|---|---:|---|---:|
+| DS30-0340, refined 20/12 ms | Current candidate with guard | 36 / 0 | Withheld | 3.695 s |
+| DS30-0340, named v3 | Named inference with guard | 33 / 0 | Withheld | 3.392 s |
+| DS30-0016, refined 20/12 ms | Current candidate with guard | Guard inactive | Fix, all 8 figures identical | 3.909 s |
+
+Each 0340 proof found one contributing curved track at catalogue index 850 in that recording. The rule computes the index from the scan. The family exclusion is a check on the independent support for the assignment. The replay cannot establish the position that a different estimator would have returned. On 0016, the terminal matched byte-equivalent JSON values, including the fixed-zero and fitted estimates and RF RMS. The ordered observation assignments, full scientific grid excluding its elapsed-time field, path and all eight encoded and decoded PNG hashes matched the prior refined publication. Its previously scored horizontal errors are 1.010 km at fixed zero and 1.558 km at fitted calibration. [Original position comparison](raw-cfo-0016.md)
+
+The option runs only when inference reaches the existing family's nomination step. It checks the original Boolean mask's dimension and confirms directly that excluding all contributing slices of the single family empties it. Multiple retained families, uncovered observations and invalid masks continue to the original numerical implementation. The dedicated exception carries the witnessed counts, and the wrapper turns only that exception into a withhold. The supplied region, full calibration design and original scientific gates stay in effect. [Guard implementation](empty_family_calibration.py) · [Unit tests](../../../tests/pipeline_eval/test_empty_family_calibration.py)
+
+The three replays each used the original signed detector packet, causal catalogue and offered region, with reads of waveform samples disabled. Each ran once through the existing exclusive low-priority Gauss slot on CPU 2 with one numerical thread. Clocks cover publication from saved detections. The original 0340 raw failures remain in the raw comparison. The first 0016 offline comparison treated an in-memory image-size tuple and a persisted JSON list as different. Rechecking the already written publication against the sealed original fixed that scorer without restarting the solve.
+
+The versioned research launcher accepts `--withhold-empty-family-calibration` with the refined receiver and mixed receiver. For repeatable saved checks, run `empty_family_trial.py CASE ARM NEW_OUTPUT` in the existing single-core environment. Supported trials are `0340 candidate`, `0340 stock` and `0016 candidate`. `--score-only` checks a completed publication without a new solve. [Saved replay driver](empty_family_trial.py)
