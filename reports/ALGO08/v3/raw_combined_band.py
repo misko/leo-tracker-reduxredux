@@ -1,6 +1,7 @@
 """Select and measure the whole-raw refined receiver plus curvature proof."""
 
 import argparse
+import os
 from pathlib import Path
 
 from empty_bootstrap import checked
@@ -38,7 +39,8 @@ def receiver_configuration():
 
 
 def sealed(root, order):
-    return seal(root, order) | {"preflight.json": sha((root/"preflight.json").read_bytes())}
+    related = ("preflight.json", "failed-candidate-seal.json")
+    return seal(root, order) | {name: sha((root/name).read_bytes()) for name in related if (root/name).is_file()}
 
 
 def launch(root, selected=BAND):
@@ -60,11 +62,51 @@ def launch(root, selected=BAND):
     write(root/"preflight.json", receiver_preflight(root, candidate, env, capabilities=(CURVATURE, "--exact-graph-reuse")))
     condition(root, manifests, total, residency, inputs)
     for mode in order:
-        measure_mode(root, mode, commands[mode], env, residency)
+        measure_mode(root, mode, commands[mode], env, residency, require_success=False)
+    write(root/"prediction-seal.json", sealed(root, order))
+
+
+def remaining_named(root, selected=BAND):
+    """Retain a candidate failure and run the previously unenacted second arm once."""
+    from aperture_trial import read, write
+    from full_short_physical import environment
+    from short_raw_diagnostic import CACHE_LIB, CACHE_SHA, FastScanStore, cache_residency, pairs
+
+    inputs = selected.inputs
+    order = inputs.workload.order
+    picked = selection(selected, checkout=BASE, protocol_sha256=PROTOCOL_SHA)
+    admission = read(root/"admission.json")
+    if (order != ("candidate", "stock") or tuple(admission["order"]) != order or admission["selection"] != picked
+            or admission["receiver_configuration"] != receiver_configuration()
+            or not read(root/"candidate-clock.json")["clock"]["exit_code"]
+            or any((root/name).exists() for name in ("stock", "stock-clock.json", "prediction-seal.json", "failed-candidate-seal.json"))):
+        raise ValueError("Named second arm requires the frozen failed candidate and no previous named launch")
+    checked(root/"offer.json", admission["offer_sha256"])
+    if pairs.archive_identity(root/"tle")["snapshots_sha256"] != inputs.archive:
+        raise ValueError("Original staged catalogue changed")
+    recording = Path(admission["recording"])
+    manifests = tuple((Path(row["path"]), row["sha256"]) for row in admission["manifests"])
+    checked(CACHE_LIB, CACHE_SHA)
+    query = cache_residency.load_query(CACHE_LIB)
+    store = FastScanStore(root)
+
+    def residency():
+        return cache_residency.bound_snapshot(store, recording, manifests, os.sysconf("SC_PAGE_SIZE"), query)
+
+    write(root/"failed-candidate-seal.json", sealed(root, ("candidate",)))
+    env = environment(root)
+    env.update(TMPDIR=str(root/"tmp"), XDG_CACHE_HOME=str(root/"tmp"))
+    argv = command("stock", root, recording, {}, pairs.NAMED_V3)
+    measure_mode(root, "stock", argv, env, residency, require_success=False)
     write(root/"prediction-seal.json", sealed(root, order))
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("root", type=Path)
-    launch(cli.parse_args().root)
+    cli.add_argument("--remaining-named", action="store_true")
+    args = cli.parse_args()
+    if args.remaining_named:
+        remaining_named(args.root)
+    else:
+        launch(args.root)

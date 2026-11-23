@@ -202,7 +202,7 @@ def condition(root, manifests, total, residency, inputs=ORIGINAL, *, allow_read=
     require_warm(after)
 
 
-def measure_mode(root, mode, argv, env, residency):
+def measure_mode(root, mode, argv, env, residency, *, require_success=True):
     from aperture_trial import write
     from short_raw_diagnostic import measure, require_warm
 
@@ -215,7 +215,7 @@ def measure_mode(root, mode, argv, env, residency):
     end_cache = residency()
     write(root/f"{mode}-clock.json", dict(clock=clock, cache_before=start_cache, cache_after=end_cache,
                                           command=list(map(str, argv))))
-    if clock["exit_code"]:
+    if require_success and clock["exit_code"]:
         raise RuntimeError(clock["stderr_tail"])
     require_warm(end_cache)
 
