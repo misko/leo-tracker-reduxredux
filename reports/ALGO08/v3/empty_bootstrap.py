@@ -61,7 +61,7 @@ def load_definitions(source, filename, names, namespace):
     exec(compile(ast.Module(body=[definitions[name] for name in names], type_ignores=[]), str(filename), "exec"), namespace)
 
 
-def receiver_namespace(sources):
+def receiver_symbols(sources):
     from contextlib import contextmanager
     import numpy as np
     from tools.pipeline_eval.variants import carrier_continuation
@@ -77,6 +77,11 @@ def receiver_namespace(sources):
     for name, definitions in ((RECEIVER_ABI, ("Peak", "Native")), (FACTOR_RECORD, ("Factor",)),
                               (FACTOR_EXPORT, ("factor_candidate", "_probe")), (RECEIVER, ("detector",))):
         load_definitions(sources[name], PAYLOAD / name, definitions, scope)
+    return scope
+
+
+def receiver_namespace(sources):
+    scope = receiver_symbols(sources)
 
     def stock_cancellation(method, edge, *, binary, pilot):
         if method != "cancellation" or binary is None or pilot is None:
@@ -86,14 +91,14 @@ def receiver_namespace(sources):
     return stock_cancellation
 
 
-def staged_scanner(sources):
+def staged_scanner(sources, detector=None):
     tree = ast.parse(sources[SCANNER], filename=str(PAYLOAD / SCANNER))
     dropped = [node for node in tree.body if isinstance(node, ast.ImportFrom) and node.module in DEFER]
     if {node.module for node in dropped} != DEFER or len(dropped) != len(DEFER):
         raise ValueError("The installed scanner no longer has the reviewed import boundaries")
     tree.body = [node for node in tree.body if node not in dropped]
     scan = ModuleType("_reviewed_acquisition")
-    scan.detector = receiver_namespace(sources)
+    scan.detector = receiver_namespace(sources) if detector is None else detector
     exec(compile(tree, str(PAYLOAD / SCANNER), "exec"), vars(scan))
     return scan
 
@@ -141,11 +146,8 @@ def receipt_zeros(publication):
                 posterior_grid_handoff=dict(arithmetic=publication.POSTERIOR_GRID_ARITHMETIC))
 
 
-def run(args):
+def load_runtime():
     started = now()
-    root = args.bulk_root.resolve(strict=True)
-    if not root.is_dir() or any(root.iterdir()):
-        raise ValueError("Receiver-first publication requires a new empty directory")
     checked(BASELINE, BASELINE_PIN)
     launcher = runpy.run_path(str(BASELINE))
     specification = launcher["checked_spec"](PAYLOAD)
@@ -155,20 +157,33 @@ def run(args):
     for name in ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS"):
         os.environ[name] = "1"
     sources = {name: checked(PAYLOAD / name, digest) for name, digest in EXTRA_SOURCES.items()}
-    phases = {"source_checks": clock(started)}
-    timer = now()
+    checks = clock(started)
     from tools.pipeline_eval.variants.experimental.lean_startup import install
     install()
     from tools.pipeline_eval.qualification import experimental_publication as publication
+
+    if Path(publication.__file__).resolve() != PAYLOAD / "tools/pipeline_eval/qualification/experimental_publication.py":
+        raise ValueError("Expected the installed numerical publication entry point")
+    return launcher, specification, sources, publication, checks
+
+
+def run(args):
+    started = now()
+    root = args.bulk_root.resolve(strict=True)
+    if not root.is_dir() or any(root.iterdir()):
+        raise ValueError("Receiver-first publication requires a new empty directory")
+    timer = now()
+    launcher, specification, sources, publication, checks = load_runtime()
+    phases = {"source_checks": checks}
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
     from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
     from leo.analysis.glrt_frequency_input import frequency_evidence
 
-    if Path(publication.__file__).resolve() != PAYLOAD / "tools/pipeline_eval/qualification/experimental_publication.py":
-        raise ValueError("Expected the installed numerical publication entry point")
     scan = staged_scanner(sources)
     offer = scan.Algo08Region.parse(json.loads(args.region.read_bytes()))
-    phases["receiver_setup"] = clock(timer)
+    cumulative = clock(timer)
+    phases["receiver_setup"] = {key: cumulative[key] - checks[key] for key in cumulative}
+    timer = now()
     lookahead = {}
     digest = specification["detector_sha256"]
     with TemporaryDirectory() as temporary:
@@ -183,8 +198,7 @@ def run(args):
         library = assets / "paired-sha256.so"
         library.write_bytes(checked(Path(paired["library"]), paired["sha256"]))
         acquisition = publication._with_member_lookahead(scan.acquire, publication._checked_member_lookahead(specification), lookahead)
-        cumulative = clock(timer)
-        phases["receiver_asset_checks"] = {key: cumulative[key] - phases["receiver_setup"][key] for key in cumulative}
+        phases["receiver_asset_checks"] = clock(timer)
         timer = now()
         session, inventory_digest, inventory = scan.FastScanStore(root).inventory(args.recording, verify_windows=False)
         if args.saved is None:
