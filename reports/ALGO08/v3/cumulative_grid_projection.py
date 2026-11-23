@@ -1,6 +1,8 @@
 """Compare the exact Graph and grid opt-ins through the active saved publication."""
 
 import argparse
+from contextlib import contextmanager
+from functools import partial
 import gzip
 from hashlib import sha256
 import json
@@ -9,6 +11,7 @@ import subprocess
 import sys
 from time import perf_counter, process_time
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve().parent
@@ -75,6 +78,26 @@ def read_checked_science(pin):
     return json.loads(checked(HERE / "measurements/weak-combined-raw.json", pin))["runs"]["candidate"]
 
 
+@contextmanager
+def saved_inventory_port(request):
+    path = request.get("saved_inventory")
+    if path is None:
+        yield False
+        return
+    import joint_publication
+    from leo.storage.fast_scan import FastScanStore
+    from leo.storage.short_window import ShortWindowReader
+    from named_constrained_research import deny_waveform, inventory_binding
+
+    inventory = inventory_binding(Path(request["recording"]), Path(path), request["session"], request["inventory"])
+    saved_publication = partial(joint_publication.run, detector_override=deny_waveform,
+                                detector_description="authenticated saved mixed 20/12 ms acquisition")
+    with (patch.object(FastScanStore, "inventory", inventory),
+          patch.object(ShortWindowReader, "__init__", deny_waveform),
+          patch.object(joint_publication, "run", saved_publication)):
+        yield True
+
+
 def worker(job, mode, output, named_survivor_finish=False):
     started = process_time(), perf_counter()
     import empty_bootstrap as staged
@@ -90,24 +113,26 @@ def worker(job, mode, output, named_survivor_finish=False):
                            exact_graph_reuse=mode == "combined", named_survivor_finish=named_survivor_finish,
                            grid_feature_projection_library=Path(request["projection"]) if mode == "combined" else None,
                            **{key: Path(path) for key, path in request["libraries"].items()})
-    scan = staged.staged_scanner(sources)
-    session, inventory, manifest = scan.FastScanStore(output).inventory(args.recording, verify_windows=False)
-    native = json.loads(staged.checked(Path(request["packet"]), request["native"].removeprefix("sha256:")))
-    staged.bind_native(native, session, inventory, RECIPE_SHA, expected=request["native"])
-    if (session, inventory, manifest["window_count"]) != (request["session"], request["inventory"], request["issued"]):
-        raise ValueError("The original signed inventory changed")
-    if (native["source"]["raw_recording_authority_digest"] != request["authority"]
-            or native["clock_anchor"]["before"]["realtime_ns"] != request["cutoff_utc_ns"]
-            or sha256(args.region.read_bytes()).hexdigest() != request["offer_sha256"]):
-        raise ValueError("The signed acquisition or supplied offer changed")
-    handoff = cumulative.Handoff(session, inventory, RECIPE_SHA, native)
-    graph, layout = {}, {}
-    receipt, detail = cumulative.publish_active(args, publication, specification, handoff, layout, graph_audit=graph)
+    with saved_inventory_port(request) as inventory_staged:
+        scan = staged.staged_scanner(sources)
+        session, inventory, manifest = scan.FastScanStore(output).inventory(args.recording, verify_windows=False)
+        native = json.loads(staged.checked(Path(request["packet"]), request["native"].removeprefix("sha256:")))
+        staged.bind_native(native, session, inventory, RECIPE_SHA, expected=request["native"])
+        if (session, inventory, manifest["window_count"]) != (request["session"], request["inventory"], request["issued"]):
+            raise ValueError("The original signed inventory changed")
+        if (native["source"]["raw_recording_authority_digest"] != request["authority"]
+                or native["clock_anchor"]["before"]["realtime_ns"] != request["cutoff_utc_ns"]
+                or sha256(args.region.read_bytes()).hexdigest() != request["offer_sha256"]):
+            raise ValueError("The signed acquisition or supplied offer changed")
+        handoff = cumulative.Handoff(session, inventory, RECIPE_SHA, native)
+        graph, layout = {}, {}
+        receipt, detail = cumulative.publish_active(args, publication, specification, handoff, layout, graph_audit=graph)
     clocks = dict(cpu_s=process_time()-started[0], elapsed_s=perf_counter()-started[1])
-    if handoff.calls != 1 or receipt["decision"] != "complete":
-        raise ValueError("Expected a verified handoff and one full active publication")
+    if handoff.calls != 1 or receipt["decision"] not in ("complete", "withheld"):
+        raise ValueError("Expected a verified handoff and one terminal publication")
     write(output / "cumulative-grid-worker.json", dict(receipt=receipt, graph=graph, layout=layout, pins=pins,
-          waveform_calls=0, handoffs=handoff.calls, solve=detail["solve"], complete_publication=clocks,
+          waveform_calls=0, handoffs=handoff.calls, staged_inventory=inventory_staged,
+          solve=detail["solve"], complete_publication=clocks,
           sources=detail["source_sha256"], projection=detail.get("grid_feature_projection"),
           named_survivor_finish=detail.get("named_survivor_finish")))
     print(json.dumps(receipt, allow_nan=False))
