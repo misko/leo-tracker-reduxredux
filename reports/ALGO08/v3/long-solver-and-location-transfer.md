@@ -18,8 +18,22 @@ The median ratio across these development comparisons is **0.661** and the ratio
 
 On North, 383 of 396 matched short detections improved their estimate of the signed frequency offset. RMS disagreement with the 20 ms receiver fell from **10.602 to 1.806 Hz**. The mixed receiver also supplied **622 additional detections**. The refined candidate ultimately used 265 observations per calibration arm, versus 302 for named v3. On the containing offer the position error rose from **105.7 / 140.8 m** to **359.8 / 533.4 m** with fixed and fitted calibration. RF residual RMS after association rose from **5.41 / 5.17 Hz** to **75.60 / 77.30 Hz**. On the missing offer, both builds falsely returned a fix when the reference lay 100 m outside. The candidate solutions lay 95 m and 385 m inside the boundary. These results distinguish precision on matched waveforms from the later selection of observations and satellite assignments. [Matched data, position errors, causal inputs and PNG verification](raw-cfo-north.md)
 
+## How frequency changes and extra detections affect the northern fix
+
+Two further saved North comparisons kept the same current solver and containing offer. All three runs below reached an accepted final fit. With all 1,078 detections retained, changing frequency alone improved the fixed result by 28 m but worsened the fitted result by 412 m. It also changed the identities of the observations used in the final fit. Removing only the 622 additional detections while retaining the refined frequencies recovered both positions close to v3. That last comparison used the named receiver's already-known detection lanes. An online selection rule has to earn its own accuracy and runtime. [Two matched solver interventions](north-cfo-contrasts.md)
+
+| Northern simulated input to the same solver | Assigned observations per arm | Fixed-zero horizontal error | Fitted horizontal error |
+|---|---:|---:|---:|
+| Original short frequencies, all 1,078 selected detections | 347 | 388 m | 122 m |
+| Refined short frequencies, same 1,078 detections | 265 | 360 m | 533 m |
+| Refined short frequencies, only the 456 named-supported lanes | 304 | 113 m | 132 m |
+
+One research direction is to use the original short frequency during track formation and satellite assignment, then apply the refined frequency to the observations selected for the final position. This can test whether the measurement is useful once ownership is fixed. A deployable receiver would also have to pay for retaining or rereading the pilot samples required by that delayed measurement.
+
 ## Receiver and failure-path changes
 
 An oscillator re-anchored on each 32nd sample saved **24.36 ms CPU** on a 102-lane held physical batch, including native detection and the independent extended frequency check. The original and modified receivers kept every one of 159 native factors in the scheduled dense, weak and held panels, with the same timing, signed native frequency and verifier flags. Continuous scores differed at about 1.2 × 10⁻¹³. A dense saving of about **3.2 CPU s** transfers the held rates to a longer recording and remains a projection. [Exact fallbacks, scopes and measurements](anchored-phase.md)
+
+An independent prototype found that 99 of 100 short positives could reuse their first eight pilot correlations byte for byte. The other positive used the original independent frequency calculation. On the held member this reduced the added verification time for 45 positives from **24.917 to 11.867 ms**. Across the three saved panels every returned factor and all eight diagnostics matched bitwise. Scaling just this saving to 6,380 positive detections gives about **1.84 CPU s**. The phase recurrence and correlation reuse affect overlapping parts of computation, and their projections cannot be added. [Exact prefix reuse and returned measurements](short-prefix-correlations.md)
 
 The 555-visit DS30-0340 exposed a common crash in both raw builds. Withholding when one family's exclusion leaves zero independent calibration rows turned it into a complete raw decision in **8.024 s** on resident input. The guarded terminal and detector packet were byte-identical to their saved controls. The single fresh raw regression supplies no paired speed measurement. On DS30-0016 the option preserved both locations, all assignments, the scientific grid and all eight PNGs. [Original failure](raw-combined-0340.md) · [Saved controls](empty-family-calibration.md) · [Original-input regression](raw-empty-family-0340.md)
