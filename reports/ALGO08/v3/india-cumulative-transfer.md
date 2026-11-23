@@ -48,7 +48,7 @@ export PYTHONPATH="$PWD/reports/ALGO08/v3:$frozen:$release/src:$release:$PWD"
 for pair in matched-tile:stock matched-tile:cumulative omitted-tile:cumulative omitted-tile:stock; do
   offer=${pair%:*}
   route=${pair#*:}
-  locked timeout -s INT -k 3s 25s +    "$release/venv/bin/python" -BPs "$script" run "$offer" "$route" "$out/$offer-$route" || exit 1
+  locked timeout -s INT -k 3s 25s "$release/venv/bin/python" -BPs "$script" run "$offer" "$route" "$out/$offer-$route" || exit 1
 done
 export PYTHONPATH="$PWD/reports/ALGO08/v3:$PWD/src:$PWD:$release/src:$release"
 locked "$release/venv/bin/python" -BPs "$script" score "$out" "$out/result.json.gz" "$out/summary.json"
