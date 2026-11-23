@@ -17,9 +17,9 @@ from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit impor
 
 HERE = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"
 sys.path.insert(0, str(HERE))
+import regional_probe_block_binding as binding  # noqa: E402
 from dense_geographic_projection import Projector  # noqa: E402
 from regional_probe_block import OrderedProbeScores, ProbeBlock  # noqa: E402
-import regional_probe_block_binding as binding  # noqa: E402
 from regional_track_scores import TrackScores  # noqa: E402
 
 

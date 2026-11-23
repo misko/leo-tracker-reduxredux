@@ -6,6 +6,7 @@ from unittest.mock import patch
 from dense_geographic_projection import checked_runtime
 from regional_probe_block import OrderedProbeScores, ProbeBlock
 from regional_track_scores import TrackScores
+
 from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal
 
 
