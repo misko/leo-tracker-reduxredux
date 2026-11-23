@@ -208,7 +208,7 @@ class SparseScout(Scout):
         return dict(factors=factors, exact=exact, cpu=cpu, timing=elapsed, scouts=scouts.value)
 
 
-def training(library, kind, assets):
+def training(library, kind, assets, modes=MODES):
     """Exercise the profiling variants using both edges, pilot and noise, without saved RF."""
     rng = np.random.default_rng(4841)
     indices = np.arange(200000)
@@ -224,7 +224,7 @@ def training(library, kind, assets):
                     x = x * np.exp(2j * np.pi * (-250000 + 381000 * antenna) * indices * 1e-7)
                     iq[:, antenna, 0] += np.rint(x.real).astype(np.int16)
                     iq[:, antenna, 1] += np.rint(x.imag).astype(np.int16)
-                    for label, mode in MODES.items():
+                    for label, mode in modes.items():
                         report[label] += len(scout.evaluate(iq, antenna, center, mode)["factors"])
     return dict(report)
 
