@@ -1,6 +1,8 @@
 # Same-core compressed lookahead and one decode arena
 
-Whole-member prefetch and one reused Zstandard destination reduced complete scoped CPU by **3.8% and 4.9%** in two reversed cold pairs with the same genuine full-coverage short receiver. Sealed elapsed improved by 30% and 42%, with most of the difference after reader return. All four detection documents were byte-identical to the previous candidate. The best observed throughput, 177.40 MB/s, missed both historical half-time gates in both solver scenarios.
+Whole-member prefetch and one reused Zstandard destination reduced complete scoped CPU by **3.8% and 4.9%** in two reversed cold pairs with the same genuine full-coverage short receiver. Sealed elapsed improved by 30% and 42%, with most of the difference after reader return. All four detection documents were byte-identical to the previous candidate. The best combined reader rate was **228.27 MB/s**. It was **177.40 MB/s** with the prefix's durable detection seal included.
+
+The [corrected 55-file model](full-short-seal-scaling.md) charges the durable detection seal once per recording. At the best combined reader rate the favorable aggregate ratio is 0.491 with the optimistic seal and worker overhead excluded, 0.503 with the stressed seal, and at least 0.509 with measured worker overhead. The original through-seal extrapolation is retained below for comparison.
 
 ## Paired cold clocks
 
@@ -25,7 +27,7 @@ The borrowed output is private to the synchronous prefix runner. The native timi
 
 The speculative worker retains just one next compressed member and the normal reader holds its current compressed member. The one decoded arena adds 102.4 MB. Here complete process peak RSS rose by about 92 MiB, which includes Python, native workspaces and the prefetch worker.
 
-## Transfer to the 55 historical inventories
+## Original through-seal transfer to the 55 historical inventories
 
 The calculation repeats each observed three-member rate over each full recorded inventory, scales its solver clock and retains the publication tail. Values are proposed / historical median individual and summed elapsed ratios. The sensitivity column adds measured subprocess overhead once per recording, outside the sealing scope.
 

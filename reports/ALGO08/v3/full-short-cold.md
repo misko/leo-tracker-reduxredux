@@ -2,6 +2,8 @@
 
 The genuine 12 ms primary with full 20 ms anchors cut native receiver CPU by **52–53%** on the first 192 stereo visits of DS30-0008. From authenticated reader entry through immutable detection readback, it ran in **1.008–1.415 s** against **1.644–1.714 s** installed, a **1.21×–1.63×** paired elapsed improvement. Only the faster candidate rate met both 55-file half-time gates in the more favorable solver scenario. Adding measured worker overhead took its projected aggregate ratio to 0.504. This was a receiver prefix measurement. No whole-recording replay or geographic fix was produced.
 
+The 55-file numbers below preserve the original through-seal transfer. The [durability correction](full-short-seal-scaling.md) uses the reader rate plus one full-size detector seal per recording. The fastest prior reader remains borderline with measured worker overhead, and the slower reader misses both gates.
+
 ## Cold measurement
 
 The [protocol](full-short-cold-protocol.md) fixed all 192 visits before measurement. Installed stock used its normal continuation selector. The candidate independently measured both antennas on all visits, using 20 ms two-scan acquisition on the first and every eighth opportunity in each RF, channel and pilot-edge stream. Every other opportunity ran the locally linked true 12 ms signed primary. On full anchors it selected maximum verified margin and broke exact ties by original rank. Its recipe SHA-256 was `13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40`, binding the binaries and callback recipe under a distinct detector and analysis digest.
@@ -31,7 +33,7 @@ The 122 matched factors had median absolute changes of 0.324 timing samples and 
 
 The owner rows were read after the four detection files were sealed. Each installed arm had 4,472 owners over the recording, of which 43 belonged to this prefix across three satellite IDs. Both arms had the same prefix result. The candidate returned a factor at 42 of the 43 owner lanes and matched tolerance on 40, including all five anchors, 31 of 33 conditional owner rows, and nine of 10 predictive owner rows. The three misses were one empty predictive lane and two different factors at conditional lanes. These figures score survival of original measured support. They do not assign new owners or establish terminal position accuracy.
 
-## Historical timing transfer
+## Original timing transfer through the seal
 
 The transfer applies each throughput to the same 55 sealed inventory sizes, retaining the publication tail and scaling each historical solve clock by the stated fraction. The median inventory was 8,235 MB, with one to 106 members across the 55 records. The measured prefix spans just three members of a single recording. The table shows model output in proposed / historical elapsed ratios, with the median individual-file ratio followed by the ratio of total elapsed.
 
