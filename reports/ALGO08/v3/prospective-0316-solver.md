@@ -30,7 +30,16 @@ Transferring the earlier dense solver fraction of **0.390** to the new named CPU
 
 ## Reproduction
 
-Use a fresh tmpfs directory and the permitted original archive-read account under the one low-priority Gauss lock. The runner binds the original detector, 46 archive snapshots, sealed manifests, output packages and library bytes. Its frozen source is `51efb20dc`. Thirteen component and adjacent tests passed. The four owned tests cover owner changes, duplicate IDs, source pins and the fail-closed waveform boundary. [Tests](../../../tests/pipeline_eval/test_prospective_0316_solver.py)
+The runner verifies the measured source bytes before launch. To reproduce it after the cumulative CLI has evolved, check out the measured research base and add the frozen trial and protocol from the research branch. Use a fresh tmpfs output directory and the permitted original archive-read account under the one low-priority Gauss lock. The runner binds the original detector, 46 archive snapshots, sealed manifests, output packages and library bytes. [Tests](../../../tests/pipeline_eval/test_prospective_0316_solver.py)
+
+```sh
+git fetch origin codex/algo08v3-next
+reproduction=$(mktemp -d)
+git worktree add --detach "$reproduction" 06ece133e383ee6b3ef9e158e609e795e18acbbe
+cd "$reproduction"
+git restore --source=6ed7fbddac98478f53fb1f6224cba3f6eaf5f8be -- \
+  reports/ALGO08/v3/prospective_0316_solver.py reports/ALGO08/v3/prospective-0316-solver-protocol.md
+```
 
 ```sh
 release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c

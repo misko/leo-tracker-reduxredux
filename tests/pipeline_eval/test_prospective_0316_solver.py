@@ -1,4 +1,6 @@
+import gzip
 from hashlib import sha256
+import json
 
 import pytest
 
@@ -26,14 +28,27 @@ def test_owner_rows_reject_duplicates_and_distinguish_order():
 
 
 def test_original_execution_modules_are_hash_pinned():
+    data = (replay.HERE / "measurements/prospective-0316-solver.json.gz").read_bytes()
+    assert sha256(data).hexdigest() == "a253e1733851a84cf6cd08b619e99e82f64de5addf57dd43734ea26bf2f4963b"
+    sealed = json.loads(gzip.decompress(data))
     observed = {}
 
     def checked(path, pin):
-        observed[path.name] = sha256(path.read_bytes()).hexdigest()
-        assert observed[path.name] == pin
+        assert path.parent == replay.HERE
+        observed[path.name] = pin
 
     replay.verify_sources(checked)
-    assert set(observed) == set(replay.SOURCE_PINS)
+    assert observed == sealed["sources"]
+    assert replay.BASE == sealed["research_base"]
+
+
+def test_execution_rejects_modified_module(monkeypatch, tmp_path):
+    from reports.ALGO08.v3.empty_bootstrap import checked
+
+    monkeypatch.setattr(replay, "HERE", tmp_path)
+    (tmp_path / "unified_short_bootstrap.py").write_text("# changed execution\n")
+    with pytest.raises(ValueError, match="Unreviewed bootstrap input"):
+        replay.verify_sources(checked)
 
 
 def test_saved_reader_and_detector_guard_fails_closed():
