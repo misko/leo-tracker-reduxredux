@@ -12,6 +12,7 @@ from dense_geographic_trial import host
 from full_short_graph_transfer import HERE, inputs
 from full_short_physical import environment
 from full_short_raw import RECIPE_SHA
+from local_future_inputs import directions
 from north_combined import assignments
 from north_factor_swap import PINS, rebound
 
@@ -20,19 +21,7 @@ CASES = ("physical", "north", "south-inside")
 
 
 def supported(probes):
-    from tools.pipeline_eval.variants.carrier_continuation import Continuation
-
-    history = Continuation()
-    forward = []
-    for row in probes:
-        if len(row["candidates"]) > 1:
-            raise ValueError("Expected the single-factor signed short receiver")
-        forward.append(history.select(row)[1] is not None)
-    history = Continuation()
-    backward = [
-        history.select(dict(row, valid_start_counter=-row["valid_start_counter"]))[1] is not None
-        for row in reversed(probes)
-    ][::-1]
+    forward, backward = directions(probes)
     result = []
     counts = dict(original=0, past_only=0, future_only=0, both=0, neither=0)
     for row, past, future in zip(probes, forward, backward, strict=True):

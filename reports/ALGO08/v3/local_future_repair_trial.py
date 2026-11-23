@@ -1,13 +1,11 @@
 """Publish the fixed-owner local continuation repair using the original saved short packets."""
 
 import argparse
-from functools import partial
 from hashlib import sha256
 import json
 from pathlib import Path
 import subprocess
-from time import perf_counter, process_time
-from types import SimpleNamespace
+from time import perf_counter
 
 from aperture_trial import RELEASE, read, write
 from dense_full_short_raw import usage
@@ -18,43 +16,13 @@ from north_factor_swap import continued
 from short_stereo_trial import CASES, CONTROLS, HERE, controls, load_source, single_packet
 
 
-def observe(donor, material, prepare, native, *args, **kwargs):
-    from leo.contracts.digests import canonical_digest
-
-    started, wall = process_time(), perf_counter()
-    if canonical_digest(native) != donor:
-        raise ValueError("The local selector received the wrong authenticated short packet")
-    forward = continued(native)
-    future = future_observations(native, forward)
-    material.update(forward_sha256=canonical_digest(forward), future=future,
-                    selection=dict(cpu_s=process_time()-started, elapsed_s=perf_counter()-wall))
-    return prepare(forward, *args, **kwargs)
-
-
 def worker(saved, digest, output, recording, archive, region, geo, regional):
-    from full_short_run import geographic_projection
-    from joint_publication import run
+    from full_short_run import main
 
-    native = read(saved)
-    material = {}
-    options = SimpleNamespace(saved=saved, saved_digest=digest, output=output, recording=recording,
-                              archive=archive, region=region, verify_images=True, optimized_full_catalogue=True)
-
-    def repair(prepared, signed, measured):
-        from local_future_repair import attach
-
-        return attach(prepared, signed, measured, material["future"])
-
-    run(options, early_regional=True, keep_selected_rows=True,
-        saved_receiver=native["provenance"]["detector_sha256"][7:],
-        geographic_projector=lambda: geographic_projection(geo, regional),
-        reuse_cold_rows=True, reuse_grid_phase_states=True, postfit_repair=repair,
-        prepare_native_projection=partial(observe, digest, material))
-    files = (Path(__file__), HERE / "local_future_inputs.py", HERE / "local_future_repair.py",
-             HERE / "local-future-repair-protocol.md", HERE / "joint_publication.py", HERE / "blind_joint_route.py")
-    write(output / "local-future-policy.json", dict(native_sha256=digest, forward_sha256=material["forward_sha256"],
-          future_ids=[row["observation_id"] for row in material["future"]], selection=material["selection"],
-          implementation={p.name: sha256(p.read_bytes()).hexdigest() for p in files}))
+    main(list(map(str, ("--recording", recording, "--archive", archive, "--region", region, "--output", output,
+                        "--saved", saved, "--saved-digest", digest, "--geographic-library", geo,
+                        "--regional-track-library", regional, "--reuse-cold-track-rows", "--reuse-grid-phase-states",
+                        "--local-future-repair"))))
 
 
 def replay(root, geo, regional, case):
