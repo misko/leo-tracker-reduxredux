@@ -3,7 +3,6 @@
 import argparse
 from hashlib import sha256
 import json
-import os
 from pathlib import Path
 import subprocess
 
@@ -23,6 +22,7 @@ def run(directory):
     python = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python")
     entry = HERE / "unified_short_bootstrap.py"
     args = preflight(directory)
+    args["order"] = ["candidate", "stock"]
     common = ["--recording", args["recording"], "--region", args["region_file"], "--archive", args["archive"]["root"]]
     libraries = [item for flag, (path, pin) in PINS.items() for item in (flag, checked(path, pin))]
     commands = {"candidate": [python, "-BPs", entry, *common, *libraries, "--prove-empty-graph", "--one-pass-web-png",
@@ -77,8 +77,11 @@ def seal(directory):
                 raise ValueError("Live receiver does not reproduce the frozen offline target")
             result["acquisition"] = dict(counts=actual, time=raw["phases"]["authenticated_raw_acquisition"])
         results[arm] = result
+    order = sorted(results, key=lambda name: results[name]["clock"]["started_unix_ns"])
+    if order != ["candidate", "stock"]:
+        raise ValueError("Unexpected run order for the original-I/Q control")
     write(directory / "sealed.json", dict(binding_sha256=sha256((directory/"binding.json").read_bytes()).hexdigest(),
-                                          results=results))
+                                          actual_run_order=order, results=results))
     if all(row["decision"] == "complete" for row in results.values()):
         score(directory)
 
