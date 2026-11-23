@@ -1,11 +1,11 @@
 """Trace ready signed receiver work during two bounded original-member prefetches."""
 
 import argparse
+import json
+import os
 from contextlib import contextmanager
 from hashlib import sha256
 from importlib import import_module
-import json
-import os
 from pathlib import Path
 from threading import get_native_id
 from time import perf_counter_ns, thread_time_ns
@@ -27,8 +27,9 @@ def intersection(work, reads):
         upper += min(cpu, pending)
         before, after = row["before"], row["after"]
         samples += sum(sample is not None for sample in (before, after))
-        d_samples += sum(sample is not None and sample["state"] == "D" for sample in (before, after))
-        if before and after and before["call"] == after["call"] and before["state"] == after["state"] == "D":
+        blocked = [sample for sample in (before, after) if sample and sample["state"] == "D"]
+        d_samples += len(blocked)
+        if len(blocked) == 2 and before["call"] == after["call"]:
             bracketed += cpu
     return dict(pending_read_cpu_lower_ns=lower, pending_read_cpu_upper_ns=upper,
                 d_state_bracket_cpu_ns=bracketed, state_samples=samples, d_state_samples=d_samples)
@@ -99,11 +100,13 @@ def probe(output, short_binary):
     archived_path, = (frozen.ARCHIVE / "fast-scan-automatic-work").glob("*/detections.json")
     archived = json.loads(frozen.verified(archived_path, frozen.ARCHIVED_DETECTION_SHA))
     session = archived["source"]["session_id"]
-    inventory = json.loads((frozen.ARCHIVE / "fast-scan-inputs" / f"{session}.json").read_bytes())
+    inventory_path = frozen.ARCHIVE / "fast-scan-inputs" / f"{session}.json"
+    inventory = json.loads(inventory_path.read_bytes())
     inventory_digest = canonical_digest(inventory)
     entry = inventory["segments"][0]
     path = Path(entry["path"])
-    pin = json.loads(frozen.verified(frozen.BINDING, frozen.BINDING_SHA))["case"]["recording"]["segments"][0]
+    binding = json.loads(frozen.verified(frozen.BINDING, frozen.BINDING_SHA))
+    pin = binding["case"]["recording"]["segments"][0]
     if (inventory_digest != archived["source"]["input_manifest_sha256"]
             or path / "manifest.json" != Path("/srv/bulk") / pin["path"]
             or entry["manifest_digest"] != "sha256:" + pin["sha256"]):
@@ -140,7 +143,9 @@ def probe(output, short_binary):
 
     def frozen_function(specification, source, attribute):
         original = installed_function(specification, source, attribute)
-        return prefetch.compressed_member_prefetch if attribute == "compressed_member_lookahead" else original
+        if attribute == "compressed_member_lookahead":
+            return prefetch.compressed_member_prefetch
+        return original
 
     before = [cache_snapshot([member], page_size, query) for member in members]
     with (
@@ -164,16 +169,14 @@ def probe(output, short_binary):
     signed.freeze(output / "receipt.json", dict(
         source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), machine=machine,
         elapsed_clock="CLOCK_MONOTONIC via perf_counter_ns", compute_clock="thread_time_ns",
-        case="DS30-0008", manifest_sha256=segment.manifest_sha256, inventory_sha256=inventory_digest,
-        frozen_spec_sha256=frozen.SPEC_SHA, original_members=members_as_json(members),
+        case="DS30-0008", manifest_sha256=segment.manifest_sha256,
+        inventory_sha256=inventory_digest,
+        frozen_spec_sha256=frozen.SPEC_SHA,
+        original_members=[[str(root / name), size] for root, name, size in members],
         member_pins=[chunk.model_dump(mode="json") for chunk in chunks],
         cache_before=before, cache_after=after, cache_management=False, acquisition=row,
         overlap=intervals, reads=trace.reads, work=trace.work,
     ))
-
-
-def members_as_json(members):
-    return [[str(path / name), size] for path, name, size in members]
 
 
 if __name__ == "__main__":
