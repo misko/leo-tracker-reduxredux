@@ -83,15 +83,34 @@ def profile_preparation(ordinary, audit):
     return instrument
 
 
+def measured_preparation(ordinary, audit):
+    def measured(*values, **options):
+        cpu, wall = process_time_ns(), perf_counter_ns()
+        try:
+            return ordinary(*values, **options)
+        finally:
+            audit["preparation_ns"] = process_time_ns()-cpu, perf_counter_ns()-wall
+
+    return measured
+
+
+def scalar_preparation(ordinary, audit):
+    from scalar_causal_elements import scalar_causal_elements
+
+    def accelerated(*args, **kwargs):
+        with scalar_causal_elements(audit):
+            return ordinary(*args, **kwargs)
+
+    return measured_preparation(accelerated, audit)
+
+
 def work(mode, output):
     from aperture_trial import write
     from positive_fix_trial import worker
 
     audit = {}
-    if mode == "profile":
-        with bind_preparation(profile_preparation, audit):
-            worker(PRIOR/"binding.json", "native", output)
-    else:
+    options = {"profile": profile_preparation, "control": measured_preparation, "scalar": scalar_preparation}
+    with bind_preparation(options[mode], audit):
         worker(PRIOR/"binding.json", "native", output)
     write(output/"preparation.json", audit)
 
@@ -126,29 +145,35 @@ def launch(root, mode):
     if process["exit_code"]:
         raise RuntimeError(process["stderr_tail"])
     worker = read(target/"positive-fix.json")
+    audit = read(target/"preparation.json")
     research = read(target/"joint-research-receipt.json")
     receipt = worker["receipt"]
     matches = pairs.evidence(target, receipt, process["started_unix_ns"], read_only=True)
     media = artifacts(target, receipt)
-    if (worker["waveform_calls"] or receipt["terminal_sha256"] != reference["science"]["receipt"]["terminal_sha256"]
+    if ((mode == "scalar" and not audit.get("source_guard")) or worker["waveform_calls"]
+            or worker["decode"]["native"] != 8 or worker["decode"]["fallback"]
+            or receipt["terminal_sha256"] != reference["science"]["receipt"]["terminal_sha256"]
             or any(matches[name] != reference["science"][name] for name in
                    ("arms", "owners", "raw_authority", "scientific_digests"))
             or canonical_digest(research["selected_rows"]) != reference["owner_rows_sha256"]
             or canonical_digest(media["images"]) != canonical_digest(reference["figures"])):
         raise ValueError("The experiment changed approved science or official PNGs")
     write(root/f"{mode}-result.json", dict(worker=worker, clock=process, science=matches,
-          figures=media, profile=read(target/"preparation.json"),
+          figures=media, profile=audit,
           source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), native_decode=worker["decode"]))
 
 
 if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("profile", "control"))
+    cli.add_argument("mode", choices=("profile", "control", "scalar", "pair"))
     cli.add_argument("root", type=Path)
     cli.add_argument("--worker", action="store_true")
     args = cli.parse_args()
     if args.worker:
         work(args.mode, args.root)
+    elif args.mode == "pair":
+        launch(args.root, "scalar")
+        launch(args.root, "control")
     else:
         launch(args.root, args.mode)

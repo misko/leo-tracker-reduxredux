@@ -1,0 +1,7 @@
+# Exact causal record materialization
+
+Profile the actual cumulative positive preparation on the sealed genuine DS30-0016 mixed packet. The exact preparation, Graph, native regional proof, real original final fit, grid kernels, Cairo renderer and independent native RGBA verifier remain active. Keep the frozen inventory, archive, region and matched calibration arms. Use the single low-priority Gauss slot and private tmpfs. The diagnostic call trace does not price a change.
+
+Test one structural change after the diagnostic. Replace only the installed causal parser's per-record materializer for its accelerated mode. Make the original scalar epoch calculation directly from the actual SGP4 record instead of building a singleton element catalogue, and count the original two tuple headers without computing their sizes for each record. Keep the same original strict parser, SGP4 inputs, ordered record shapes, exact memory charge, fallback and original export/provenance logic. Pin the relevant installed sources.
+
+Run one fresh pair with the scalar candidate first. Attribute preparation CPU and wall with one handler boundary and compare fresh saved process CPU and elapsed through exit. Require the original terminal and both arm RF and position values, owner roles, grid, path and eight byte- and decoded-pixel-exact PNGs. Compare with the already sealed original. The same optional native PNG readback is active in both. Read no waveform.
