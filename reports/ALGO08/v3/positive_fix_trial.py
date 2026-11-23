@@ -228,15 +228,53 @@ def run(root):
                                   sidecars=sidecars))
 
 
+def image_clock(root):
+    from statistics import median
+
+    from aperture_trial import read, write
+    from dense_geographic_trial import host
+    from empty_bootstrap import clock, now
+    from joint_publication import figure_evidence
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from verified_rgba import RgbaEvidence
+
+    machine = host()
+    result = read(root/"result.json")
+    case = result["runs"]["control"]
+    run = case["science"]["receipt"]["run_id"]
+    store = FastStandardAnalysisStore(root/"control")
+    data = [(record["name"], store.artifact(run, record["name"], record["sha256"]), record["sha256"])
+            for record in store.detail(run)["artifacts"]]
+    audit = {}
+    start = now()
+    native = RgbaEvidence(root/"unfilter.so", result["library_sha256"], figure_evidence, audit)
+    setup = clock(start)
+    times = {mode: [] for mode in ("pillow", "native")}
+    for order in (("pillow", "native"), ("native", "pillow")):
+        for mode in order:
+            fn = native if mode == "native" else figure_evidence
+            start = now()
+            images = {name: fn(blob, digest) for name, blob, digest in data}
+            times[mode].append(clock(start))
+            # Size has historically used either a JSON array or a Python tuple.
+            if json.loads(json.dumps(images)) != case["figures"]:
+                raise ValueError("Image-only replay differs from the verified production output")
+    write(root/"image-clocks.json", dict(machine=machine, times=times, setup=setup, native=audit, images=len(data),
+          median_cpu_s={mode: median(r["cpu_s"] for r in rows) for mode, rows in times.items()},
+          compressed_bytes=sum(len(blob) for _,blob,_ in data)))
+
+
 if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("run", "worker"))
+    parser.add_argument("mode", choices=("run", "worker", "images"))
     parser.add_argument("root", type=Path)
     parser.add_argument("worker_mode", choices=MODES, nargs="?")
     parser.add_argument("output", type=Path, nargs="?")
     args = parser.parse_args()
     if args.mode == "run":
         run(args.root)
+    elif args.mode == "images":
+        image_clock(args.root)
     else:
         worker(args.root, args.worker_mode, args.output)
