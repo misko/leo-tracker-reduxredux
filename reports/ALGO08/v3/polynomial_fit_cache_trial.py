@@ -57,7 +57,7 @@ def paired_savings(rows):
             for mode in ("best", "piece", "both")}
 
 
-def graph(case, output):
+def graph(case, output, census_only=False):
     machine = host()
     publication, spec = configuration()
     publication._checked_graph_path(spec)
@@ -74,7 +74,7 @@ def graph(case, output):
     config = poly.TrackConfig(**read(checked(RELEASE / "assets/tracks.json", TRACKS_SHA256))["config"])
     prepare = defer_collection(tracks.prepare_tracks)
     rows = []
-    for mode in (*ORDER, "census"):
+    for mode in (("census",) if census_only else (*ORDER, "census")):
         counts = Counter()
         with native_paths(Path(spec["graph_path"]["library"]), required=True) as paths, reuse(mode, counts):
             cpu, wall = process_time(), perf_counter()
@@ -92,7 +92,7 @@ def graph(case, output):
                            extra_piece_original_s=counts.get("piece_duplicate_cpu_ns_outside_duplicate_best", 0)/1e9)
     write(output, dict(case=case, identity=identity, machine=machine, preparation=rows, census=census,
                        cumulative_disjoint_census_s=duplicate_costs["best_original_s"]+duplicate_costs["extra_piece_original_s"],
-                       census_original_calls=duplicate_costs, paired_savings_s=paired_savings(rows),
+                       census_original_calls=duplicate_costs, paired_savings_s=paired_savings(rows) if rows else {},
                        limits=dict(entries_per_function_per_lane=MAX_ENTRIES, array_items=MAX_ARRAY_ITEMS),
                        graph=dict(points=prepared["graph_points"], tracks=len(prepared["tracks"]),
                                   curved=len(prepared["curved_indices"]), observations=len(prepared["observations"])),
@@ -152,6 +152,8 @@ if __name__ == "__main__":
         if name == "downstream":
             sub.add_argument("dense_graph", type=Path)
             sub.add_argument("weak_graph", type=Path)
+        else:
+            sub.add_argument("--census-only", action="store_true")
         sub.add_argument("output", type=Path)
     args = vars(parser.parse_args())
     (graph if args.pop("stage") == "graph" else downstream)(**args)

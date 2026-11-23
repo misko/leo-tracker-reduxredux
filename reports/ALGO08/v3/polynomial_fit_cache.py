@@ -45,6 +45,7 @@ class LaneCache:
         self.counts = counts
         self.census = census
         self.duplicate_best = False
+        self.finishing = False
         self.prefix = {"best": None, "piece": None}
         self.entries = {"best": {}, "piece": {}}
 
@@ -82,6 +83,8 @@ class LaneCache:
             self.counts[f"{name}_original_cpu_ns"] += cpu
             if hit:
                 self.counts[f"{name}_original_duplicate_cpu_ns"] += cpu
+                if self.finishing and not saved:
+                    self.counts[f"{name}_finalization_hits_from_refinement"] += 1
                 if name == "piece" and not earlier:
                     self.counts["piece_duplicate_cpu_ns_outside_duplicate_best"] += cpu
         elif hit:
@@ -93,7 +96,7 @@ class LaneCache:
             if len(entries) >= MAX_ENTRIES:
                 entries.pop(next(iter(entries)))
                 self.counts[f"{name}_evictions"] += 1
-            entries[inputs] = True if self.census else clone(result)
+            entries[inputs] = self.finishing if self.census else clone(result)
             peak = f"{name}_peak_entries_per_lane"
             self.counts[peak] = max(self.counts[peak], len(entries))
         return result
@@ -164,4 +167,20 @@ def reuse(mode, counts):
             stack.enter_context(patch.object(poly, "_best_piece", best))
         if mode in ("piece", "both", "census"):
             stack.enter_context(patch.object(poly, "_piece", piece))
+        if mode == "census":
+            from leo.analysis import graph_tracklets
+
+            original_finish = graph_tracklets.finish_lane
+
+            def finish(*args, **kwargs):
+                state = active.get()
+                if state is None:
+                    return original_finish(*args, **kwargs)
+                state.finishing = True
+                try:
+                    return original_finish(*args, **kwargs)
+                finally:
+                    state.finishing = False
+
+            stack.enter_context(patch.object(graph_tracklets, "finish_lane", finish))
         yield

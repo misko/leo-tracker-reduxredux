@@ -82,3 +82,24 @@ def test_nonfinite_float_payload_and_strides_are_keyed_distinctly(cache):
     base = np.array([1., 99., 2.])
     assert module.array_keys(base[::2]) != module.array_keys(np.array([1., 2.]))
     assert module.array_keys(np.empty(1, dtype=object)) is None
+
+
+def test_census_counts_hits_crossing_into_finalization(cache, monkeypatch):
+    from leo.analysis import graph_tracklets
+
+    module, poly, tracks = cache
+    counts = Counter()
+
+    def fit(t, y, cfg):
+        return poly._best_piece(t, y, np.arange(len(t)), y.copy(), cfg)
+
+    def lane(t, y, cfg):
+        fit(t, y, cfg)
+        graph_tracklets.finish_lane(t, y, cfg)
+
+    monkeypatch.setattr(graph_tracklets, "finish_lane", fit)
+    monkeypatch.setattr(tracks, "fit_lane", lane)
+    with module.reuse("census", counts):
+        tracks.fit_lane(np.arange(12.), np.full(12, 6.), poly.TrackConfig())
+    assert counts["best_finalization_hits_from_refinement"] == 1
+    assert counts["best_hits"] == 1 and graph_tracklets.finish_lane is fit
