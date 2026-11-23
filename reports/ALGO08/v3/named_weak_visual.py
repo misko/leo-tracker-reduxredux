@@ -35,7 +35,7 @@ def support(left, right):
     return dict(pixels=counts, fraction=fractions)
 
 
-def registered_orbits(control, native):
+def registered_orbits(control, native, *, require_match=True):
     boxes = tuple(list(orbit_boxes(np.asarray(image))) for image in (control, native))
     rows = []
     for limits in zip(*boxes, strict=True):
@@ -46,7 +46,7 @@ def registered_orbits(control, native):
         color = support(*(data >= 32 for data in chroma))
         gray = support(*((shade == 0) & (data[..., 0] <= 172) for data, shade in zip(pixels, chroma, strict=True)))
         for layer in (color, gray):
-            if layer["fraction"] is not None and min(layer["fraction"]) < .98:
+            if require_match and layer["fraction"] is not None and min(layer["fraction"]) < .98:
                 raise ValueError("Registered orbit data differ at two-pixel tolerance")
         rows.append(dict(color=color, gray=gray))
     return dict(boxes=boxes, rows=rows)

@@ -113,9 +113,15 @@ def verify(root, output):
             store = FastStandardAnalysisStore(root/mode)
             with Image.open(BytesIO(store.artifact(run_id, name, runs[mode]["figures"][name]["sha256"]))) as image:
                 images.append(image.convert("RGB"))
-        registration[name] = registered_orbits(*images)
+        registration[name] = registered_orbits(*images, require_match=False)
+    failed_layers = [
+        dict(sheet=name, panel=i+1, layer=kind, fraction=layer["fraction"])
+        for name, sheet in registration.items() for i, row in enumerate(sheet["rows"])
+        for kind, layer in row.items() if layer["fraction"] and min(layer["fraction"]) < .98
+    ]
     write(output, dict(case=sealed["case"], admission=read(root/"admission.json"), runs=runs, sidecars=docs,
-                       registration=registration, historical_v3=named["process"], scores=sealed["scores"]["stock"],
+                       registration=registration, failed_layers=failed_layers, visual_pass=not failed_layers,
+                       historical_v3=named["process"], scores=sealed["scores"]["stock"],
                        reference=REFERENCE_PIN))
 
 
