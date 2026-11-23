@@ -96,8 +96,8 @@ def pilot_filters(asset):
     return filters
 
 
-def folded_correlations(signal, filters):
-    rows = signal[ROW_INDICES].astype(np.complex128)
+def folded_correlations(signal, filters, row_indices=ROW_INDICES):
+    rows = signal[row_indices].astype(np.complex128)
     rows -= rows.mean(axis=1, keepdims=True)
     rows /= np.maximum(np.sqrt(np.mean(abs(rows) ** 2, axis=1, keepdims=True)), 1e-12)
     results = []
