@@ -5,14 +5,18 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import subprocess
+import sys
 from time import perf_counter, process_time
 from unittest.mock import patch
+
+HERE = Path(__file__).resolve().parent
+if __name__ == "__main__":
+    sys.path.insert(0, str(HERE))
 
 from aperture_trial import ARMS, RELEASE, read, write
 from prospective_0316_solver import DETECTOR, LIBRARIES, inspect, owner_delta, saved_inventory, worker
 
 
-HERE = Path(__file__).resolve().parent
 BASE = "c0f18de19857aae6729dd7c678da8c7a2bbeb674"
 CASE = "DS30-0374"
 ORDER = ("combined", "stock")
