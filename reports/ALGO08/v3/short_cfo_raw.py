@@ -95,21 +95,37 @@ def recipe(original, parent):
     )}
 
 
-def run_cli(library, argv):
-    from functools import partial
+def load_policy(library):
+    import ast
+    import ctypes as ct
+    from math import isfinite
     from types import SimpleNamespace
 
+    import numpy as np
+    from empty_bootstrap import load_definitions
+
+    # Bind the tested definitions without importing their measurement and plotting driver.
+    path = HERE/"short_cfo_refine.py"
+    source = mixed.verified(path, POLICY_SHA256)
+    (maximum,) = [node.value for node in ast.parse(source).body if isinstance(node, ast.Assign)
+                  and any(isinstance(target, ast.Name) and target.id == "MAX_CHANGE_HZ" for target in node.targets)]
+    scope = dict(ct=ct, np=np, isfinite=isfinite, MAX_CHANGE_HZ=ast.literal_eval(maximum))
+    load_definitions(source, path, ("Refine", "amend"), scope)
+    return SimpleNamespace(refiner=scope["Refine"](library), amend=scope["amend"])
+
+
+def run_cli(library, argv):
+    from functools import partial
+
     from leo.contracts.digests import canonical_digest
-    from reports.ALGO08.v3 import short_cfo_refine as frozen
     import full_short_run
 
     incompatible = {"--held-anchor-route", "--short-lane-mask"}
     if any(option.split("=", 1)[0] in incompatible for option in argv):
         raise ValueError("Use the original unfiltered short-primary receiver for fixed-epoch CFO refinement")
     mixed.verified(library, LIBRARY_SHA256)
-    mixed.verified(Path(frozen.__file__), POLICY_SHA256)
     mixed.verified(HERE/"short_cfo_refine.inc", EXTENSION_SHA256)
-    policy = SimpleNamespace(refiner=frozen.Refine(library), amend=frozen.amend)
+    policy = load_policy(library)
     parent = full_short_run.RECIPE_SHA
     receiver = recipe(full_short_run.checked_recipe(), parent)
     pin = canonical_digest(receiver).removeprefix("sha256:")
