@@ -1,8 +1,9 @@
 """Acquire independently signed 20/12 ms stereo, then publish in one process."""
 
 import argparse
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack, nullcontext
 from dataclasses import asdict
+from functools import partial
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -93,7 +94,7 @@ def layout_renderer(scan, enabled, audit):
         yield
 
 
-def publish_active(args, publication, specification, handoff, layout_audit, *, graph_audit=None):
+def publish_active(args, publication, specification, handoff, layout_audit, *, graph_audit=None, png_read_audit=None):
     from exact_graph_execution import graph_execution
     from full_short_run import geographic_projection
     import joint_publication
@@ -101,6 +102,13 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
 
     options = SimpleNamespace(**vars(args), saved=None, saved_digest=None,
                               optimized_full_catalogue=True, verify_images=True, skip_empty_proof=True)
+    captured = None
+    if getattr(args, "reuse_verified_png_reads", False):
+        from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+        from verified_png_reads import VerifiedPngReads
+
+        captured = VerifiedPngReads(args.output, joint_publication.figure_evidence,
+                                    png_read_audit if png_read_audit is not None else {})
 
     def projection():
         return guarded_projection(args.geographic_library, args.regional_track_library,
@@ -110,12 +118,16 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
     def active_publication(scan):
         # The installed lossless renderer is bound before the analyze hook.
         with (handoff.install(scan), layout_renderer(scan, args.one_pass_web_png, layout_audit),
-              graph_execution(enabled=getattr(args, "exact_graph_reuse", False), audit=graph_audit)):
+              graph_execution(enabled=getattr(args, "exact_graph_reuse", False), audit=graph_audit),
+              captured.capture(FastStandardAnalysisStore) if captured is not None else nullcontext()):
             yield
 
     # Bootstrap already installed the release's lazy package facades. The
     # normal analyze/raw-context boundary consumes the in-memory packet once.
-    with patch.object(joint_publication, "configuration", return_value=(publication, dict(specification, startup="stock"))):
+    with ExitStack() as scope:
+        scope.enter_context(patch.object(joint_publication, "configuration", return_value=(publication, dict(specification, startup="stock"))))
+        if captured is not None:
+            scope.enter_context(patch.object(joint_publication, "artifacts", partial(joint_publication.artifacts, verified_read=captured.read)))
         result = joint_publication.run(options, raw_context=active_publication, early_regional=True,
                                        keep_selected_rows=True, geographic_projector=projection,
                                        reuse_cold_rows=True, reuse_grid_phase_states=True)
@@ -158,6 +170,7 @@ def run(args):
     scope = staged.now()
     audit, layout_audit = {}, {}
     graph_audit = {} if args.exact_graph_reuse else None
+    png_read_audit = {} if args.reuse_verified_png_reads else None
     with TemporaryDirectory() as temporary:
         assets = Path(temporary)
         anchor = specification["detector_sha256"]
@@ -198,7 +211,8 @@ def run(args):
             raise ValueError(f"Scientific imports crossed the receiver-first boundary: {before}")
         handoff = Handoff(session, inventory_digest, RECIPE_SHA, native)
         if reason is None:
-            terminal, research = publish_active(args, publication, specification, handoff, layout_audit, graph_audit=graph_audit)
+            terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
+                                                graph_audit=graph_audit, png_read_audit=png_read_audit)
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
@@ -216,6 +230,8 @@ def run(args):
         raise ValueError("Immutable publication differs from the acquired packet or offered region")
     dependencies = ("empty_bootstrap.py", "full_short_raw.py", "full_short_run.py", "combined_frontier_run.py",
                     "regional_probe_block_binding.py", "unified_short_bootstrap.py")
+    if png_read_audit:
+        dependencies += ("verified_png_reads.py",)
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
                   route=route, requested_offer_sha256=sha256(offer_bytes).hexdigest(), archive_root=str(archive),
                   frozen_specification="sha256:"+launcher["FINGERPRINT"], receiver_recipe=recipe,
@@ -227,6 +243,7 @@ def run(args):
                   solver_source_sha256=None if research is None else research["source_sha256"],
                   graph_proof=graph_proof,
                   exact_graph_reuse=dict(requested=args.exact_graph_reuse, executed=graph_audit or None),
+                  verified_png_reads=png_read_audit,
                   one_pass_web_png=dict(enabled=args.one_pass_web_png,
                                         source_sha256=LAYOUT_SHA256 if args.one_pass_web_png else None, **layout_audit),
                   solver_recipe=dict(graph="installed", block_sha256=BLOCK_SHA, scalar_track_sha256=TRACK_SCORES_SHA,
@@ -254,4 +271,6 @@ if __name__ == "__main__":
                         help="Use the reviewed explicit layout on the installed renderer when supported")
     parser.add_argument("--exact-graph-reuse", action="store_true",
                         help="Use reviewed ordered graph batches and exact best-piece reuse in active lanes")
+    parser.add_argument("--reuse-verified-png-reads", action="store_true",
+                        help="Decode each new PNG from its original verified publication read")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))

@@ -56,8 +56,15 @@ def verified_saved(native, expected, session, inventory_digest, receiver):
     return native
 
 
-def artifacts(root, receipt):
+def figure_evidence(data, digest):
     from PIL import Image
+
+    with Image.open(BytesIO(data)) as png:
+        png.load()
+        return dict(size=png.size, sha256=digest, rgba_sha256=sha256(png.convert("RGBA").tobytes()).hexdigest())
+
+
+def artifacts(root, receipt, *, verified_read=None):
     from leo.contracts.fast_standard_analysis import PLOTS
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 
@@ -68,12 +75,9 @@ def artifacts(root, receipt):
         raise ValueError("Standard publication differs from the solver receipt")
     images = {}
     for obj in detail["artifacts"]:
-        name = obj["name"]
-        data = store.artifact(run_id, name, obj["sha256"])
-        with Image.open(BytesIO(data)) as png:
-            png.load()
-            images[name] = dict(size=png.size, sha256=obj["sha256"],
-                                rgba_sha256=sha256(png.convert("RGBA").tobytes()).hexdigest())
+        name, digest = obj["name"], obj["sha256"]
+        images[name] = (verified_read(store, run_id, name, digest) if verified_read is not None
+                        else figure_evidence(store.artifact(run_id, name, digest), digest))
     if detail["state"] == "complete":
         if tuple(images) != tuple(PLOTS):
             raise ValueError("A completed fix must publish all eight figures")
