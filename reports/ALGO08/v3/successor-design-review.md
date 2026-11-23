@@ -53,6 +53,14 @@ The reserve ideas are a regional Doppler-difference surface, per-stream observat
 
 ## The next comparison
 
+### Alternating short antenna measurements
+
+On the first four enrolled recordings, the zero-wait model requires removing **36.6–37.8% of short-call CPU**, depending on whether remaining calls cost the measured dense or weak mean. The full-length dense test deliberately targeted that range, keeping both full anchors and at least one radio at every short visit. Its 4,435 omitted calls price at **4.735 CPU s**. Rebuilding the position increased fixed-zero/fitted horizontal error from **0.919/0.857 to 2.213/2.077 km**. The same rule improved both estimates on weak DS30-0016. The live normal raw entry reproduced the frozen North simulation packet exactly and produced its eight figures in **11.087 s** against v3’s **16.203 s**. North fixed-zero error grew from **106 to 973 m**. Dense fit quality and North accuracy rule out promoting the fixed schedule. [Figure and raw verification](stereo-lane-raw-north.md) · [Three saved cases](stereo-mask.md) · [Per-roster timing model](receiver-mask-budget.md)
+
+The orbit-history census detected the genuine fault on DS30-0160 in **20.6 ms after 2.052 s of preparation**. With the same faulty catalogue an ordinary fit can succeed if it never uses that orbit. Early routing on catalogue health alone would reroute such valid fits. The earliest verified exact recovery point is the three-sample check on the actually selected set. [Conditional-failure control](early-causal-history.md)
+
+Four orbit plots now have a direct Cairo drawing option. On weak DS30-0016 it reduced all-eight render CPU from **0.879 to 0.506 s**, preserving both calibration arms, owners and grid. The corrected saved publication finished in **4.718 s** against an instrumented **5.169 s** control. Subtracting the control’s measured scene-export cost leaves **0.402 CPU s** difference. The full-length dense transfer established scientific and visual compatibility; its separate timings did not establish a whole-process gain. [Corrected plots and measurements](direct-orbit-figures.md)
+
 ### Follow-up measurements
 
 ![Two physical saved-input solver comparisons](development/saved-solver-transfer.png)
