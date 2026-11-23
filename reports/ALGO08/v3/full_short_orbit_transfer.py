@@ -3,7 +3,6 @@
 import argparse
 from contextlib import ExitStack, contextmanager
 from hashlib import sha256
-import json
 import os
 from pathlib import Path
 import resource
@@ -100,9 +99,13 @@ def run(root):
     root.mkdir(exist_ok=False)
     write(root / "request.json", task_request())
     write(root / "host.json", host)
-    direct = launch(root, "current")
-    if is_interpolation_failure(direct):
-        launch(root, "guard")
+    mode = "current"
+    result = launch(root, mode)
+    if is_interpolation_failure(result):
+        mode = "guard"
+        result = launch(root, mode)
+    if result["exit_code"]:
+        raise RuntimeError(f"Saved {mode} replay failed; see {root / (mode + '-process.json')}")
 
 
 if __name__ == "__main__":
