@@ -1,0 +1,27 @@
+# Stereo evidence added no factors to causal short selection
+
+The continuation-or-stereo rule rescued **zero failed-history factors** on physical DS30-0016 or the public north and south containing offers. All three replays published both calibration arms and eight decoded PNGs. Their position estimates and RF RMS values matched causal continuation alone exactly. The north and south passed the 250 m development limit versus installed v3. DS30-0016 still worsened by **829 / 881 m**. [Frozen rule and comparison](short-stereo-evidence-protocol.md) · [Scored receipt](measurements/short-stereo-evidence.json) · [Original causal transfer](north-causal-transfer.md)
+
+| Containing offer | Both lanes had a verified factor / stereo visits | Within two wrapped samples | Passed signed CFO check | Failed-history factors rescued |
+|---|---:|---:|---:|---:|
+| DS30-0016 physical | 97 / 713 | 4 | 0 | 0 / 119 |
+| Northern simulation | 410 / 1,200 | 264 | 228 | 0 / 622 |
+| Southern simulation | 276 / 1,200 | 264 | 228 | 0 / 247 |
+
+For physical DS30-0016 the four coincident timing pairs had signed RX1−RX0 differences of **626.856 to 682.296 kHz**. The gate never had a same-stream offset learned from three preceding compatible witnesses. Dropping the frequency condition entirely can rescue only **five** of the 119 failed-history factors in the measured short packet, including three on stock-positive lanes. On the two public simulations the signed offsets were supported by prior observations on 250 stereo visits each. All 228 accepted pairs were already kept by continuation in each simulation. Removing the CFO condition would add 72 failed-history factors on stock-empty lanes in each simulation, while the tested rule added none of the northern 622. Stock-empty describes disagreement with installed v3. Consequences of a timing-only rule for ownership and position were outside the trial. [Signed waveform precedent](../single-core-2x/receiver-lanes.md) · [Lane timing authority](../single-core-2x/absolute-timing-authority.md)
+
+| Containing offer | Stock / unfiltered / retained factors | Owners per arm with stereo rule | Horizontal error km, `c = 0` / fitted | RF RMS Hz, `c = 0` / fitted |
+|---|---:|---:|---:|---:|
+| DS30-0016 physical | 440 / 475 / 356 | 107 | 2.473 / 2.542 | 115.88 / 115.36 |
+| Northern simulation | 456 / 1,078 / 456 | 304 | 0.128 / 0.113 | 6.88 / 6.76 |
+| Southern simulation | 456 / 703 / 456 | 266 | 0.577 / 0.787 | 7.98 / 7.93 |
+
+Installed v3 horizontal errors on physical, north and south were **1.644 / 1.661**, **0.106 / 0.141**, and **0.817 / 1.101 km**. The unfiltered short physical fix was **1.311 / 1.694 km** at **121.53 / 120.29 Hz** RMS. On that packet the unchanged continuation selected 350 factors on stock-positive lanes and six on stock-empty lanes. It dropped 51 on stock-positive lanes and 68 on stock-empty lanes. The cleaner frequency fit than unfiltered short came with a worse position estimate in both calibration arms. [Stock, unfiltered and filtered position and frequency scores](measurements/short-stereo-evidence.json)
+
+The candidate retained both original lane measurements only when each was independently verified and the pair passed. It learned signed offsets from previous measured timing coincidences, using actual counters and the same RF, channel and edge. It never selected a counterpart from stock data or applied a simulator calibration. The shared counter and existing two-sample tolerance allow the public generator's documented 0.42-sample delay. The unfiltered packet and final detector recipe have separate recorded digests. Per-probe equality with causal continuation was checked after publication. [Filter](short_stereo_evidence.py) · [Runner and independent scorer](short_stereo_trial.py)
+
+From the saved packet, numerical solver CPU was **2.486 / 3.560 / 3.231 s** in physical, north and south order, with **179 / 137 / 144** grid points. Entire fresh worker CPU was **5.401 / 6.937 / 6.642 s**, plus **9.4 / 11.7 / 11.3 ms** in the parent to run the filter and form its packet. All 24 candidate PNGs matched the encoded and decoded causal-only figures. The scorer also read and decoded all 24 archived stock PNGs from the standard store. These are saved-stage clocks. The trial used the original installed graph and combined geographic and solver settings from the causal study. It used no raw acquisition or missing-region replay and makes no raw speed claim. [Clocks, configuration and image digests](measurements/short-stereo-evidence.json)
+
+## Reproduce
+
+Use `short_stereo_trial.py run NEW_DIRECTORY GEOGRAPHIC_LIBRARY REGIONAL_LIBRARY` with the same authenticated inputs and pinned libraries as the [earlier northern transfer](north-causal-transfer.md). Start the candidate worker with the installed payload ahead of the checkout. Use `short_stereo_trial.py score NEW_DIRECTORY NEW_RESULT.json` with the checkout ahead of the payload to reach the saved-control scorer. Include `reports/2026_11_21_ds30_full` in a sparse checkout. Both steps use the authorized recording-readable account and shared low-priority Gauss CPU 2 lock with one numerical thread. The first scorer invocation stopped after the three runs were sealed because its import order excluded the checkout-only helper. Scoring was repeated from the sealed outputs. Ten focused and adjacent tests passed. [Component tests](../../../tests/pipeline_eval/test_short_stereo_evidence.py)
