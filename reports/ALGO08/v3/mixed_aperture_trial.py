@@ -64,9 +64,11 @@ def build(archive, output):
     if exports(candidate) != exports(original) | {"cancellation_primary_factors"}:
         raise ValueError("The research build changed the previously qualified ABI")
     body = subprocess.check_output(["objdump", "--disassemble=cancellation_primary_factors", str(candidate)], text=True)
-    if not all(f"<{name}>" in body for name in ("timing_first_detect", "portable_verifier_load")):
+    if (not all(f"<{name}>" in body for name in ("timing_first_detect", "portable_verifier_load"))
+            or "<verify_peaks" not in body):
         raise ValueError("The primary entry failed to bind the shortened scout and verifier locally")
-    if any(phrase in body for phrase in ("@plt", "pilot_cancel", "timing_first_cancel_resident")):
+    ordinary_code = body.replace("<__stack_chk_fail@plt>", "")
+    if any(phrase in ordinary_code for phrase in ("@plt", "pilot_cancel", "timing_first_cancel_resident")):
         raise ValueError("The primary entry can call a residual search or an interposable symbol")
     binary_info = subprocess.check_output(["readelf", "-dW", str(candidate)], text=True)
     if any(name in binary_info for name in ("receiver.so", "use.so")):
