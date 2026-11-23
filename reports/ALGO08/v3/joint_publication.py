@@ -54,17 +54,21 @@ def artifacts(root, receipt):
     return dict(images=images)
 
 
-def run(args, *, detector_override=None):
+def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
-    if args.saved and detector_override is not None:
+    if args.saved and (detector_override is not None or prepare_detector is not None):
         raise ValueError("A detector substitution requires the full raw input path")
+    if detector_override is not None and prepare_detector is not None:
+        raise ValueError("Choose a prepared detector or a detector factory")
     stock_control = getattr(args, "stock_control", False)
     signed_finish = getattr(args, "signed_finish", False)
     if stock_control and signed_finish:
         raise ValueError("Choose either installed stock or the signed research finish")
     publication, spec = configuration()
-    from tools import algo08_scan
+    if prepare_detector is not None:
+        detector_override = prepare_detector()
+    from tools import algo08_position, algo08_scan
     from tools.pipeline_eval.variants import v5_core
 
     args.output.mkdir(exist_ok=False)
@@ -88,6 +92,10 @@ def run(args, *, detector_override=None):
                 return route(prepared, *values, **options)
 
             with ExitStack() as stack:
+                if track_config is not None:
+                    factory = algo08_position.TrackConfig
+                    stack.enter_context(patch.object(algo08_position, "TrackConfig",
+                                                     lambda **cfg: track_config(factory(**cfg))))
                 if observer is not None or not stock_control:
                     stack.enter_context(patch.object(v5_core, "infer", observed if observer is not None else route))
                 decision, packet, policy = stock_solve(native, reader, assets, region)
@@ -130,7 +138,7 @@ def run(args, *, detector_override=None):
 
     input_kind = "saved detector" if saved is not None else "raw recording"
     if detector_override is not None:
-        input_kind = "verified raw recording with archived receiver rows"
+        input_kind = detector_description or "verified raw recording with archived receiver rows"
     result = dict(input=input_kind, saved_digest=args.saved_digest,
                   reference="installed v3" if stock_control else "installed v3 with research joint repair",
                   source_sha256=pins, route="stock" if stock_control else attempts[0]["decision"],
