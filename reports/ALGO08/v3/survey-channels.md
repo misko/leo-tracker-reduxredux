@@ -20,6 +20,8 @@ Using the measured **21.623 CPU s** outside detector callbacks and charging the 
 
 Applying the dense stage fractions to the archived four- and sixteen-recording schedules gives a separate check on the two end-to-end gates. This scenario transfers the **0.6044 acquisition CPU fraction to elapsed time**, transfers the measured **0.2194 solve elapsed fraction**, and charges original publication elapsed. The single unsplit failure in the 16-case roster retains its original full cost. At four recordings the projected median paired and summed elapsed ratios are **0.4860 and 0.4809**. At sixteen they are **0.5002 and 0.5265**. Even with the dense solve speed everywhere, the sixteen-case acquisition fraction would have to reach **0.5610** to meet both gates. The model reads archived clocks. It provides no timing verdict on either panel. [Projection receipt](measurements/survey-budget.json) · [Budget calculation](survey_budget.py)
 
+In dense CPU units, the 0.5610 acquisition allowance is **33.08 s**, leaving a **2.56 s** gap to the survey estimate. Holding the 21.62 s outside the callbacks constant, that gap amounts to about **18%** of the survey's projected detector CPU. Paying for more full receiver calls would increase this gap.
+
 ## Reproduction
 
 Use a checkout containing the signed solver trials, the installed release and the existing saved DS30 and southern receipts. The per-case commands run serially on the shared low-priority Gauss core. The scoring and plot use the research checkout.
