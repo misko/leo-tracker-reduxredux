@@ -17,6 +17,8 @@ from grid_neighbor_gamma_trial import reconstruct
 
 
 PINNED_C = "40888d6143f385c2146e5e2cb28ea99a96b2f1bb791fab4c22b5afaaa2b3a23b"
+PINNED_MARGINAL = "c80ac51249578e8a2c6c6a13a04aaa22a168353b2c758155858106b91507b609"
+PINNED_POSITION = "c3507e6ecaba0adf6d3677f56d8056afcccbcf90d6a561bca7a42b06b0daef9d"
 POINT = (0., 0.)
 ARM = "c0"
 STATIC_COLUMNS = (0, 1, 2, 3, 5, 7)
@@ -88,12 +90,14 @@ class OnePosterior:
         self.record = None
 
     def sample(self, score, endpoints, **_kwargs):
+        from leo.analysis.localization_v3 import marginal, position
         from leo.analysis.localization_v4 import native_bound
         from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff
 
         original_validate, original_run = native_bound._VALIDATE, handoff.Capture.run
         pins = {Path(native_bound.__file__): PINNED_BOUND, Path(handoff.__file__): PINNED_HANDOFF,
-                Path(native_bound.__file__).with_suffix(".c"): PINNED_C}
+                Path(native_bound.__file__).with_suffix(".c"): PINNED_C,
+                Path(marginal.__file__): PINNED_MARGINAL, Path(position.__file__): PINNED_POSITION}
         if any(file_sha(path) != digest for path, digest in pins.items()):
             raise ValueError("Installed posterior operands or assembly source changed")
         if {arm: list(point) for arm, point in endpoints.items()} != self.grid["endpoints"]:
@@ -120,15 +124,16 @@ class OnePosterior:
             raise ValueError("Expected one checked posterior and the exact archived objective")
         problem, _ = self.context["problems"][ARM]
         prefix = problem.hardware[problem.keep][:, STATIC_COLUMNS]
-        if (not same_bits(prefix, source["u"][:, STATIC_COLUMNS]).all()
-                or not same_bits(problem.point_noise[problem.keep], source["s"]).all()
-                or not np.array_equal(problem.noise_groups[problem.keep], source["g"])):
-            raise ValueError("Expected original location-independent design, noise scales and group IDs")
+        _, groups = np.unique(problem.noise_groups[problem.keep], return_inverse=True)
+        operands = dict(hardware=bool(same_bits(prefix, source["u"][:, STATIC_COLUMNS]).all()),
+                        noise=bool(same_bits(problem.point_noise[problem.keep], source["s"]).all()),
+                        groups=bool(np.array_equal(groups, source["g"])))
         start = process_time_ns()
-        rep = audit(source, prefix=prefix)
+        rep = audit(source, prefix=prefix if all(operands.values()) else None)
         self.record = dict(point=POINT, arm=ARM, objective=observed, archived_objective=expected, exported=exported,
                            native_cpu_ns=native_ns, audit_cpu_ns=process_time_ns()-start,
-                           static_columns=STATIC_COLUMNS, installed_sha256={p.name: pin for p, pin in pins.items()}, **rep)
+                           static_columns=STATIC_COLUMNS, static_operands_match=operands,
+                           installed_sha256={p.name: pin for p, pin in pins.items()}, **rep)
         return dict(points=[], complete=False, evaluated_points=1)
 
 
