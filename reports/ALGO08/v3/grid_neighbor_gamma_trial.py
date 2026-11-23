@@ -44,8 +44,8 @@ def cold_witness(prepared, region, bound, branch, original):
     return node, np.asarray(branch["east_north_km"]), {int(k): v for k, v in branch["reference"].items()}, original
 
 
-def run(output):
-    machine = host()
+def reconstruct(observer):
+    """Rebuild the checked selected fit and let the caller sample the original objective."""
     publication, specification = configuration()
     from blind_joint_repair import repair_once
     from certified_salvage import propose
@@ -73,11 +73,7 @@ def run(output):
             or any(cold[key] != old["cold"][key] for key in ("branch", "scores", "east_north_km", "overlap"))):
         raise ValueError("The chosen cold witness does not bind this checked dense control")
     source_clock = elapsed(start)
-    output.mkdir(exist_ok=False)
-    start = now()
-    binary = build(output)
-    build_clock = elapsed(start)
-    measured = Compare(binary, baseline["grid"])
+    measured = observer(baseline["grid"])
     old_solve, old_prepare = algo08_position.solve, algo08_position.prepare_packet
     observation, attempt = {}, {}
 
@@ -120,18 +116,34 @@ def run(output):
     with (patch.object(algo08_position, "solve", observed),
           patch.object(presentation, "sample_position_grid", measured.sample)):
         result = solve(publication, specification, native, archive, offer)
-    # Preserve the actual measured rows before cross-checking the old science.
-    write(output / "slice.json", dict(rows=measured.rows, clock=observation, attempt=attempt))
-    empirical = score_rows(measured.rows)
     checks = dict(owners=observation.pop("owners") == baseline["selected_rows"], arms=result["arms"] == baseline["arms"],
                   path=result["science"]["path"] == baseline["science"]["path"],
-                  objective_replay=result["objective_replay"] == baseline["objective_replay"],
-                  score_and_factor=all(a["archived_stock_exact"] and a["all_checked"] for a in empirical.values()))
-    paths = (Path(__file__), HERE / "grid_neighbor_gamma.py", HERE / "grid-neighbor-gamma-protocol.md", binary,
+                  objective_replay=result["objective_replay"] == baseline["objective_replay"])
+    return dict(checks=checks, clocks=observation, source_read=source_clock, cold_witness_sha256=COLD_PIN,
+                dense_baseline_sha256=REPLAY_PIN, input_sha256=evidence["raw_native_sha256"]), attempt
+
+
+def run(output):
+    machine = host()
+    setup = {}
+
+    def observer(grid):
+        output.mkdir(exist_ok=False)
+        start = now()
+        setup["binary"] = build(output)
+        setup["clock"] = elapsed(start)
+        setup["measured"] = Compare(setup["binary"], grid)
+        return setup["measured"]
+
+    reconstruction, attempt = reconstruct(observer)
+    measured = setup["measured"]
+    write(output / "slice.json", dict(rows=measured.rows, clock=reconstruction["clocks"], attempt=attempt))
+    empirical = score_rows(measured.rows)
+    checks = reconstruction["checks"]
+    checks["score_and_factor"] = all(a["archived_stock_exact"] and a["all_checked"] for a in empirical.values())
+    paths = (Path(__file__), HERE / "grid_neighbor_gamma.py", HERE / "grid-neighbor-gamma-protocol.md", setup["binary"],
              output / "neighbor.c", output / "stock-build.c", output / "slice.json")
-    write(output / "report.json", dict(checks=checks, measurements=empirical, clocks=observation,
-          source_read=source_clock, build=build_clock, host=machine, cold_witness_sha256=COLD_PIN,
-          dense_baseline_sha256=REPLAY_PIN, input_sha256=evidence["raw_native_sha256"],
+    write(output / "report.json", dict(**reconstruction, measurements=empirical, build=setup["clock"], host=machine,
           files={path.name: file_sha(path) for path in paths}))
     if not all(checks.values()):
         raise ValueError(f"The selected witness failed exact control replay: {checks}")
