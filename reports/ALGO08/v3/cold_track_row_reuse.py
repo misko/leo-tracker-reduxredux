@@ -14,6 +14,7 @@ import numpy as np
 SCAN_PIN = "49f1f2e9d73b967f694e48033b6d02ea2e1d66285f7941c4f282f5b238e79f89"
 SPARSE_PIN = "e381e0807e47a10091ffd9c9d1d8c0d43aa531a5e4c81acda53ddbfa922ef021"
 SHARING_PIN = "321df8d3771fd478543e7c161a4b1c7d1a84734c8c4a0ae2768ebdf1c9038831"
+PROFILE_PIN = "73c24d054d5676c7d7051779a6960f8f692ce0d97bc23d292470aa01f6110bcf"
 
 
 def reused_rows(frequency, elevation, indices, scale, nominal, visible, work):
@@ -36,7 +37,7 @@ class CentreRows:
         self.projected = projected
         self.work = work
 
-    def __call__(self, track, indices, frequency, elevation):
+    def nominal_rows(self, track, indices, frequency, elevation):
         scale = track["rf_hz"] / 11.5e9
         tables = self.tables
         cached = tables.tracks.get(track["key"])
@@ -46,24 +47,58 @@ class CentreRows:
                 or frequency.materialized is not None or elevation.materialized is not None
                 or frequency.base is not tables.nominal[0] or elevation.base is not tables.nominal[1]
                 or frequency.changed_rows is not elevation.changed_rows):
-            self.work["released_requests"] += 1
-            return scale * frequency[:, indices], elevation[:, indices].min(axis=1) >= 0
+            return None
         nominal, visible = cached[2][:2]
         if nominal.shape != (frequency.base.shape[0], len(indices)) or not nominal.flags.f_contiguous:
-            self.work["released_requests"] += 1
-            return scale * frequency[:, indices], elevation[:, indices].min(axis=1) >= 0
+            return None
         self.work["reused_requests"] += 1
         self.work["reused_nominal_cells"] += nominal.size
+        return scale, nominal, visible
+
+    def __call__(self, track, indices, frequency, elevation):
+        matched = self.nominal_rows(track, indices, frequency, elevation)
+        if matched is None:
+            self.work["released_requests"] += 1
+            return track["rf_hz"] / 11.5e9 * frequency[:, indices], elevation[:, indices].min(axis=1) >= 0
+        scale, nominal, visible = matched
         return reused_rows(frequency, elevation, indices, scale, nominal, visible, self.work)
 
+    @contextmanager
+    def borrow(self, track, indices, frequency, elevation):
+        matched = self.nominal_rows(track, indices, frequency, elevation)
+        if matched is None:
+            self.work["released_requests"] += 1
+            yield track["rf_hz"] / 11.5e9 * frequency[:, indices], elevation[:, indices].min(axis=1) >= 0
+            return
+        scale, nominal, visible = matched
+        changed = frequency.changed_rows
+        if not len(changed) or not nominal.flags.writeable:
+            yield reused_rows(frequency, elevation, indices, scale, nominal, visible, self.work)
+            return
+        backup = nominal[changed]
+        mask = visible.copy()
+        mask[changed] = elevation.values[:, indices].min(axis=1) >= 0
+        replacement = scale * frequency.values[:, indices]
+        self.work["borrow_requests"] += 1
+        self.work["borrow_backup_bytes"] += backup.nbytes + mask.nbytes
+        self.work["shifted_cells"] += replacement.size
+        try:
+            nominal[changed] = replacement
+            yield nominal, mask
+        finally:
+            nominal[changed] = backup
 
-def associate_with_rows(original, rows):
+
+def associate_with_rows(original, rows, *, borrow=False):
     """Change only the two track gathers in the pinned released association."""
     source = getsource(original)
     old = ('            terms = self.curve(i, y, t["rf_hz"] / 11.5e9 * f[:, ix], method)\n'
            '            visible = e[:, ix].min(axis=1) >= 0\n')
     new = ('            predictions, visible = _rows(t, ix, f, e)\n'
            '            terms = self.curve(i, y, predictions, method)\n')
+    if borrow:
+        new = ('            with _rows.borrow(t, ix, f, e) as (predictions, visible):\n'
+               '                terms = self.curve(i, y, predictions, method)\n')
     if source.count(old) != 1:
         raise ValueError("The released association gather changed")
     namespace = dict(original.__globals__, _rows=rows)
@@ -72,8 +107,9 @@ def associate_with_rows(original, rows):
 
 
 @contextmanager
-def shared_association_rows(scan, tables, work):
+def shared_association_rows(scan, tables, work, *, borrow=False):
     from leo.analysis.localization_v3 import scan as kernel
+    from leo.analysis.research import retained_track_likelihood as white
     from tools.pipeline_eval.variants import algo08_sparse_rank_projection as sparse
 
     association = scan.association
@@ -82,6 +118,11 @@ def shared_association_rows(scan, tables, work):
     if (getattr(association, "__func__", None) is not kernel.ScanLikelihood.association
             or any(sha256(Path(path).read_bytes()).hexdigest() != pin for path, pin in pins)):
         raise ValueError("Unexpected association, projection or centre-cache binding")
-    operation = associate_with_rows(association.__func__, CentreRows(tables, sparse.ProjectedRows, work))
+    if borrow and (getattr(scan.curve, "__func__", None) is not kernel.ScanLikelihood.curve
+                   or kernel.profile is not white.profile
+                   or sha256(Path(white.__file__).read_bytes()).hexdigest() != PROFILE_PIN):
+        work["borrow_fallbacks"] += 1
+        borrow = False
+    operation = associate_with_rows(association.__func__, CentreRows(tables, sparse.ProjectedRows, work), borrow=borrow)
     with patch.object(scan, "association", MethodType(operation, scan)):
         yield

@@ -90,6 +90,32 @@ def test_original_gathers_when_binding_is_unavailable(why, table):
 def test_released_association_port_compiles_its_class_method():
     work = associate_with_rows(ScanLikelihood.association, object())
     assert work.__name__ == "association"
+    work = associate_with_rows(ScanLikelihood.association, object(), borrow=True)
+    assert work.__name__ == "association"
+
+
+def test_borrowed_rows_match_full_copy_and_restore_after_failure(table):
+    track, indices, tables = table
+    freq, elev = tables.current
+    changed = np.array([0, 9, 20])
+    f, e = (ProjectedRows(base, changed, base[changed] - 10., Counter()) for base in (freq, elev))
+    nominal, mask = tables.tracks[track["key"]][2]
+    counts = Counter()
+    rows = CentreRows(tables, ProjectedRows, counts)
+    original, visible = rows(track, indices, f, e)
+    saved = nominal.tobytes(), mask.tobytes()
+    white, volume = whitening(track["times"])
+    expected = profile(original[2], original, white, volume)
+    with pytest.raises(RuntimeError, match="injected"):
+        with rows.borrow(track, indices, f, e) as (candidate, current):
+            assert candidate is nominal and candidate.flags.f_contiguous
+            assert candidate.tobytes() == original.tobytes() and current.tobytes() == visible.tobytes()
+            decoded = profile(original[2], candidate, white, volume)
+            assert all(expected[k].tobytes() == decoded[k].tobytes() for k in expected)
+            raise RuntimeError("injected")
+    assert (nominal.tobytes(), mask.tobytes()) == saved
+    assert counts["borrow_requests"] == 1
+    assert counts["borrow_backup_bytes"] < counts["copy_bytes"]
 
 
 def test_proof_matches_sealed_json_only_for_the_same_counts():
