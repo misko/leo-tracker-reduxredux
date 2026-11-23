@@ -1,19 +1,26 @@
 import hashlib
-from pathlib import Path
 import subprocess
 import sys
+from collections import Counter
+from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from tools.pipeline_eval.variants.experimental import regional_reassignment as regional
+from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import (
+    evaluate_terminal,
+    probe_layout,
+)
+
 HERE = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"
 sys.path.insert(0, str(HERE))
-from dense_geographic_projection import Projector
-from regional_probe_block import OrderedProbeScores, ProbeBlock
-from regional_track_scores import TrackScores
-from tools.pipeline_eval.variants.experimental import regional_reassignment as regional
-from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal
+from dense_geographic_projection import Projector  # noqa: E402
+from regional_probe_block import OrderedProbeScores, ProbeBlock  # noqa: E402
+import regional_probe_block_binding as binding  # noqa: E402
+from regional_track_scores import TrackScores  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -45,9 +52,13 @@ def test_block_matches_original_native_values_owners_and_ties(libraries, monkeyp
     dv = generator.normal(size=positions.shape) * .01
     for value in (positions, velocities, dp, dv):
         value[1] = value[0]
-    dot = lambda a, b: np.einsum("otj,otj->ot", a, b)
+    def dot(a, b):
+        return np.einsum("otj,otj->ot", a, b)
+
     grid = PreparedPhaseGeometry(
-        PreparedGeometry(positions, velocities, dot(positions, positions), dot(positions, velocities)),
+        PreparedGeometry(
+            positions, velocities, dot(positions, positions), dot(positions, velocities)
+        ),
         dp, dv, dot(dp, velocities) + dot(positions, dv), dot(positions, dp),
     )
     library = libraries["dense_geographic_projection"]
@@ -84,10 +95,12 @@ def test_block_matches_original_native_values_owners_and_ties(libraries, monkeyp
         native([*points, points[0]])
 
 
-@pytest.mark.parametrize("fault", [False, True])
-def test_early_terminal_stop_and_failed_speculative_lane(fault):
+@pytest.mark.parametrize(
+    ("fault", "guaranteed_only"),
+    [(False, False), (True, False), (False, True)],
+)
+def test_early_terminal_stop_and_failed_speculative_lane(fault, guaranteed_only):
     from tests.pipeline_eval.test_regional_exterior_veto import WIDTH, fixture
-    from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import probe_layout
 
     points = fixture()
     eligible, remaining = probe_layout(points, WIDTH)
@@ -105,7 +118,7 @@ def test_early_terminal_stop_and_failed_speculative_lane(fault):
             raise ValueError("a later speculative lane had invalid geometry")
         return rows
 
-    ordered = OrderedProbeScores(points, WIDTH, batch, stock)
+    ordered = OrderedProbeScores(points, WIDTH, batch, stock, guaranteed_only=guaranteed_only)
 
     def read(point):
         visited.append(point)
@@ -115,7 +128,70 @@ def test_early_terminal_stop_and_failed_speculative_lane(fault):
     assert answer == evaluate_terminal(points, WIDTH, lambda p: p["receiver_scores"])
     assert answer["stop"] == "inside_score"
     assert visited == [points[i] for i in (*eligible, witness)]
-    assert native_calls[-1][0] is points[witness]
-    assert len(native_calls[-1]) == 4
-    assert stock_calls == ([points[witness]] if fault else [])
+    if guaranteed_only:
+        assert [p for batch in native_calls for p in batch] == [points[i] for i in eligible]
+    else:
+        assert native_calls[-1][0] is points[witness]
+        assert len(native_calls[-1]) == 4
+    assert stock_calls == ([points[witness]] if fault or guaranteed_only else [])
     assert ordered.failed is fault
+
+
+@pytest.mark.parametrize("fault", ["packing", "geometry", "layout", "prepare"])
+def test_reusable_proof_binding_falls_back_after_one_preparation(monkeypatch, fault):
+    from tests.pipeline_eval.test_regional_exterior_veto import WIDTH, fixture
+
+    points = fixture()
+    if fault == "layout":
+        points.pop()
+    prepare_calls, visits = [], []
+
+    def original(point):
+        visits.append(point["xy_km"])
+        return point
+
+    def prepare(*args):
+        prepare_calls.append(args)
+        if fault == "prepare":
+            raise ValueError("Original causal input is invalid")
+        return points, original, {"track_count": 12}
+
+    class Scalar:
+        def __init__(self, _, scorer):
+            if fault == "packing":
+                raise ValueError("Unsupported track packing")
+            self.scorer = scorer
+            self.native = self.fallbacks = 0
+
+        def __call__(self, point):
+            self.native += 1
+            return self.scorer(point)
+
+    class Native:
+        def __init__(self, *_):
+            if fault == "geometry":
+                raise ValueError("Unsupported orbit geometry")
+            self.computed = self.calls = 0
+
+    @contextmanager
+    def projection(_):
+        yield Counter()
+
+    kernel = SimpleNamespace(_prepare_probe_scores=prepare, evaluate_veto=object())
+    monkeypatch.setattr(binding, "checked_runtime", lambda: (kernel, None))
+    monkeypatch.setattr(binding, "TrackScores", Scalar)
+    monkeypatch.setattr(binding, "ProbeBlock", Native)
+    region = SimpleNamespace(width_km=WIDTH)
+    with binding.guarded_projection(None, None, None, projection) as counts:
+        if fault == "prepare":
+            with pytest.raises(ValueError, match="Original causal input"):
+                kernel.evaluate_veto("tracks", "catalogue", region)
+            assert not counts
+        else:
+            result = kernel.evaluate_veto("tracks", "catalogue", region)
+            expected = evaluate_terminal(points, WIDTH, lambda p: p["receiver_scores"])
+            assert result == dict(expected, track_count=12)
+            assert counts["block_setup_fallbacks"] == 1
+            assert counts["block_positions"] == 0
+            assert len(visits) == expected["probes_evaluated"]
+    assert prepare_calls == [("tracks", "catalogue", region)]

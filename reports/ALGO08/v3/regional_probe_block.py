@@ -87,7 +87,7 @@ class ProbeBlock:
 
 
 class OrderedProbeScores:
-    def __init__(self, points, width_km, block, stock):
+    def __init__(self, points, width_km, block, stock, *, guaranteed_only=False):
         eligible, remaining = probe_layout(points, width_km)
         self.order = [points[i] for i in (*eligible, *remaining)]
         self.fence = len(eligible)
@@ -95,12 +95,15 @@ class OrderedProbeScores:
         self.cursor = 0
         self.pending = deque()
         self.failed = False
+        self.guaranteed_only = guaranteed_only
 
     def __call__(self, point):
         if self.cursor >= len(self.order) or self.order[self.cursor] is not point:
             raise ValueError("Unexpected terminal probe order")
         start = self.cursor
         self.cursor += 1
+        if self.guaranteed_only and start >= self.fence:
+            return self.stock(dict(point))
         if not self.pending and not self.failed:
             stop = self.fence if start < self.fence else len(self.order)
             try:

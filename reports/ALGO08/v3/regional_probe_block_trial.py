@@ -51,15 +51,17 @@ def authority(stock, block, specification):
     return dict(files={str(p): file_sha(p) for p in files}, specification=specification)
 
 
-def freeze(directory, stock, block):
+def freeze(directory, stock, block, *, guarded=False):
     host()
     _, specification = configuration()
+    candidate, repeats = ("guarded", 3) if guarded else ("block", 5)
     lock = dict(
         authority=authority(stock, block, specification),
         bindings={case: binding(case) for case in CASES},
         schedule={
-            case: [pair for repeat in range(5)
-                   for pair in (("stock", "block") if (repeat + ci) % 2 == 0 else ("block", "stock"))]
+            case: [arm for repeat in range(repeats) for arm in (
+                ("stock", candidate) if (repeat + ci) % 2 == 0 else (candidate, "stock")
+            )]
             for ci, case in enumerate(CASES)
         },
         block_width=BLOCK_WIDTH,
@@ -78,9 +80,10 @@ def stage(kernel, tracks, reader, causal, region, stock, block, mode):
         points, scalar, meta = kernel._prepare_probe_scores(prepared, catalogue, offer)
         start = process_time()
         packed = TrackScores(stock, scalar)
-        if mode == "block":
+        if mode != "stock":
             native = ProbeBlock(block, packed)
-            score = OrderedProbeScores(points, offer.width_km, native, packed)
+            score = OrderedProbeScores(points, offer.width_km, native, packed,
+                                       guaranteed_only=mode == "guarded")
         else:
             score = lambda point: packed(dict(point))
 
@@ -91,15 +94,19 @@ def stage(kernel, tracks, reader, causal, region, stock, block, mode):
 
         decision = evaluate_terminal(points, offer.width_km, visit)
         record["score_cpu_s"] = process_time() - start
-        if mode == "block":
-            if score.failed or packed.native or packed.fallbacks:
+        if mode != "stock":
+            if (score.failed or packed.fallbacks or
+                    packed.native != (len(visited) - score.fence if mode == "guarded" else 0)):
                 raise ValueError("Native block fell back during qualification")
-            evaluations, calls = native.computed, native.calls
+            evaluations, calls = native.computed + packed.native, native.calls + packed.native
             record["block_scratch_bytes"] = native.frame.nbytes + sum(a.nbytes for a in native.scratch)
+            record.update(block_evaluated=native.computed, block_calls=native.calls,
+                          scalar_calls=packed.native)
         else:
             if packed.native != len(visited) or packed.fallbacks:
                 raise ValueError("Native scalar scorer fell back during qualification")
             evaluations, calls = packed.native, packed.native
+            record.update(block_evaluated=0, block_calls=0, scalar_calls=packed.native)
         cells = packed.geometry.geometry.position_norm_squared.size
         record.update(
             evaluated=evaluations, visited=len(visited), kernel_calls=calls,
@@ -114,8 +121,7 @@ def stage(kernel, tracks, reader, causal, region, stock, block, mode):
             tracks, reader, region, catalogue=causal, terminal_only=True
         )
         record.update(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall)
-    if projection.get("original_fallback") or projection.get("calls", 0) != (
-            len(visited) if mode == "stock" else 0):
+    if projection.get("original_fallback") or projection.get("calls", 0) != record["scalar_calls"]:
         raise ValueError("Unexpected scalar projector work")
     return dict(record, arm=mode, projection=dict(projection), result=result), visited
 
@@ -198,9 +204,10 @@ if __name__ == "__main__":
     parser.add_argument("directory", type=Path)
     parser.add_argument("stock", type=Path)
     parser.add_argument("block", type=Path)
+    parser.add_argument("--guarded", action="store_true", help="Freeze only guaranteed probes in blocks")
     args = parser.parse_args()
     names = args.directory, args.stock, args.block
     if args.action == "freeze":
-        freeze(*names)
+        freeze(*names, guarded=args.guarded)
     else:
         run(args.action, *names)
