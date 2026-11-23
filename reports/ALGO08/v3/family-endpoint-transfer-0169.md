@@ -1,0 +1,21 @@
+# Independent DS30-0169 saved transfer of the combined solver
+
+The combined solver and fresh named ALGO08v3 published **identical endpoints, RF RMS and all 2,236 ordered owners per calibration arm** on DS30-0169. The combined process took **11.822 s** versus **17.893 s** on named v3, a **1.51×** saved publication speedup. The generic final signed refit ran and was accepted. The independent case did not activate an isolated-family refit or endpoint trim. [Frozen protocol](family-endpoint-transfer-protocol.md) · [Complete scored pair](measurements/family-endpoint-transfer-0169.json.gz)
+
+| Measured from one source packet | Fresh named v3 | Combined candidate |
+| --- | ---: | ---: |
+| Saved process through exit, elapsed / CPU s | 17.893 / 17.883 | 11.822 / 11.810 |
+| Numerical solve, including grid and path, CPU s | 14.081 | 8.996 |
+| Horizontal error, fixed zero / fitted, km | 0.505761 / 0.348126 | 0.505761 / 0.348126 |
+| RF RMS, fixed zero / fitted, Hz | 111.057639 / 111.056612 | 111.057639 / 111.056612 |
+| Curved / predictive owners in each arm | 1,782 / 454 | 1,782 / 454 |
+
+The combined route tried the original ordinary pair, then completed one ordinary bounded repair in **0.161 CPU s**, dropping one rejected curved track. Its independent salvage screen saw two signed contiguous offers and no qualifying isolated family, so it paid zero isolated-family fits. The shared endpoint trim stayed inactive. Each accepted signed arm then used the original unseeded refit and completed all five phase refreshes, taking **0.235 / 0.243 CPU s**. The regional proof continued after 25 probes and no solver fallback ran. This transfers the final refit on an independent recording and tests the combined selection when its two targeted recovery gates stay dormant. [Activated isolated-family and endpoint example on DS30-0402](isolated-salvage-0402.md)
+
+The fresh named result matched its original signed terminal, owner digests, science sidecars and all eight archived PNG byte digests. The new candidate terminal and numerical path were identical to fresh named. Both grids published the same 179 ordered nodes, metadata and failure fields. Two fixed-zero scores and three fitted scores changed by at most **3.64 × 10⁻¹²**. Each grid and path pointed to its own verified position PNG. All eight figures decoded in both arms, and the candidate's renderers changed each image's pixels. Inspection independently checked the actual fitted-owner legends on all four candidate orbit figures, covering 16 satellites. [Full per-arm media and grid comparison](measurements/family-endpoint-transfer-0169.json.gz)
+
+## Enrollment and measured boundary
+
+The metadata-only midpoint rule considered 95 local named receipts. After the predeclared exclusions, the eligible band by priority was DS30-0169 at **4,219 issued**, DS30-0445 at 4,312, DS30-0083 at 4,807 and DS30-0252 at 5,529. DS30-0169 was the first available and had 3,527 admitted stereo visits. No score or prior runtime entered selection. Its 50 signed causal snapshot names totaled **89,357,386 logical bytes**. All 35 distinct payloads, **62,549,089 bytes**, came from existing tmpfs snapshots and were verified while staging once. The 0.502 s staging clock is separate from the paired process clocks. Both fresh processes consumed the same original named 20 ms detector exactly once, with identical authority, cutoff, archive and operator offer. Both observed zero block reads and zero waveform calls. [Enrollment and signed availability](measurements/family-endpoint-transfer-enrollment.json)
+
+The protocol was committed at `217f83325`, and the measured entry at `93696094a` includes the generic survivor refit sourced from `b846274b9`. Candidate ran first and named second on the same low-priority CPU 2 lock, with fresh tmpfs outputs and one numerical thread. The post-run grid audit compared the sealed outputs without a further solve. Thirteen focused and adjacent tests passed. The scored receipt expands to SHA-256 `005bfd26a0e7e7da2288f214781f7261f75f9a301760d97dd2db01c198c989bf`. This is one saved transfer from the same physical roof. [Runner](family_endpoint_transfer.py) · [Tests](../../../tests/pipeline_eval/test_family_endpoint_transfer.py)

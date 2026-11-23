@@ -192,8 +192,27 @@ def launch(root):
             raise RuntimeError(f"The {mode} process did not complete; see its original measured receipt")
 
 
+def grid_delta(stock, combined):
+    """Report numeric differences separately from output bindings and clocks."""
+    fields = ("points", "binding", "elapsed_seconds")
+    metadata = [{k:v for k,v in doc.items() if k not in fields} for doc in (stock, combined)]
+    left, right = stock["points"], combined["points"]
+    coordinate = lambda point: (point["east_km"], point["north_km"], point["latlon"])
+    matching = [coordinate(x) == coordinate(y) for x,y in zip(left, right)]
+    if len(left) != len(right) or not all(matching):
+        return dict(same_metadata=metadata[0] == metadata[1], ordered_nodes_agree=False,
+                    points=[len(left),len(right)], matching_ordered_nodes=sum(matching))
+    differences = {arm:[abs(x["scores"][arm]-y["scores"][arm])
+                        for x,y in zip(left,right,strict=True) if arm in x["scores"] and arm in y["scores"]] for arm in ARMS}
+    return dict(same_metadata=metadata[0] == metadata[1], ordered_nodes_agree=True, points=len(left),
+                same_failures=all(x["failures"] == y["failures"] for x,y in zip(left,right,strict=True)),
+                deltas={arm:dict(compared_points=len(values), exact_scores=values.count(0.), max_abs_score=max(values, default=None))
+                        for arm, values in differences.items()})
+
+
 def score(root, output):
     from aperture_trial import read, write
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from tools.pipeline_eval.scoring import distance_km
     from triage_bounds import REFERENCE, REFERENCE_SHA256
 
@@ -216,7 +235,7 @@ def score(root, output):
     old = json.loads(verified(Path(case["pair"]), case["pair_sha256"]))["runs"]["candidate"]
     stock = captured["stock"]
     science = stock["science"]
-    if (any(old[k] != science[k] for k in ("arms", "owners", "raw_authority", "scientific_digests"))
+    if (any(old[k] != science[k] for k in ("arms", "owners", "raw_authority", "scientific_digests", "artifacts"))
             or old["receipt"]["terminal_sha256"] != science["receipt"]["terminal_sha256"]):
         raise ValueError("Fresh named solver differs from original signed named evidence")
     refs = json.loads(verified(REFERENCE, REFERENCE_SHA256))["cases"]
@@ -224,16 +243,20 @@ def score(root, output):
              and r["sealed_metadata_digests_verified"]]
     truth = [match[0][k] for k in ("latitude_deg", "longitude_deg")] if len(match) == 1 else None
     scores = {mode: {arm: dict(horizontal_error_km=distance_km(truth, data["latlon"])
-                      if truth and data["latlon"] else None, rf_rms_hz=data["rf_rms_hz"])
+                      if truth and data["latlon"] else None, rf_rms_hz=data.get("rf_rms_hz"))
               for arm, data in run["terminal"]["arms"].items()} for mode, run in captured.items()}
     candidate = captured["combined"]
     differences = {arm:owner_delta(stock["selected_rows"].get(arm, []), candidate["selected_rows"].get(arm, [])) for arm in ARMS}
     figures = {name: dict(equal_png=img["sha256"] == stock["figures"][name]["sha256"],
                           equal_pixels=img["rgba_sha256"] == stock["figures"][name]["rgba_sha256"])
                for name, img in candidate["figures"].items() if name in stock["figures"]}
+    grid = None
+    if all(row["sidecars"] for row in captured.values()):
+        grid = grid_delta(*(FastStandardAnalysisStore(root / mode).position_grid(captured[mode]["worker"]["receipt"]["run_id"])
+                            for mode in ("stock", "combined")))
     write(output, dict(case=case["case"], enrollment=case, request=request, launch=read(root / "launch.json"),
                        results=captured, scores=scores, scores_reference=REFERENCE_SHA256 if truth else None,
-                       owners=differences, figures=figures, named_matches_historical=True,
+                       owners=differences, figures=figures, grid=grid, named_matches_historical=True,
                        orbit_legend=orbit_legends(root / "combined", candidate) if candidate["figures"] else None,
                        waveform_calls=0))
 

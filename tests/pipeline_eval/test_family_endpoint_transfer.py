@@ -61,3 +61,13 @@ def test_staged_archive_stops_before_any_copy_if_above_cap(monkeypatch, tmp_path
     with pytest.raises(ValueError, match="Bounded causal archive"):
         transfer.stage_archive(enrollment, tmp_path / "stage")
     assert not (tmp_path / "stage").exists()
+
+
+def test_grid_audit_ignores_binding_clock_and_keeps_both_numeric_deltas():
+    point = dict(east_km=0., north_km=0., latlon=[3., 4.], failures={}, scores=dict(c0=16., fitted_c=17.))
+    stock = dict(points=[point], binding={"image": "one"}, elapsed_seconds=10)
+    cand = dict(points=[dict(point, scores=dict(c0=15., fitted_c=17.))], binding={"image": "two"}, elapsed_seconds=4)
+    result = transfer.grid_delta(stock,cand)
+    assert result["same_metadata"] and result["ordered_nodes_agree"] and result["same_failures"]
+    assert result["deltas"]["c0"] == dict(compared_points=1, exact_scores=0, max_abs_score=1.)
+    assert result["deltas"]["fitted_c"] == dict(compared_points=1, exact_scores=1, max_abs_score=0.)
