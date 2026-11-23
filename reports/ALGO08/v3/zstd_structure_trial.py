@@ -51,7 +51,7 @@ class HeldReads:
             self.pages[path.name] = [resident, expected]
             if resident != expected:
                 raise ColdPage(f"{path.name} has {resident}/{expected} resident pages")
-            if self.filesystem == "xfs":
+            if self.filesystem != "tmpfs":
                 data = bytearray(before.st_size)
                 try:
                     count = read_nowait(fd, [data], 0)
