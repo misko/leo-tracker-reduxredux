@@ -63,7 +63,9 @@ def create(reader, chunk_index, output, *, costs=None):
     manifest_bytes = (reader.path / "manifest.json").read_bytes()
     check(manifest_bytes, reader.manifest_sha256)
     original = reader.manifest.chunks[chunk_index]
-    index_bytes = reader._member(original.index_relative_path, original.index_bytes, original.index_sha256)
+    index_bytes = reader._member(
+        original.index_relative_path, original.index_bytes, original.index_sha256,
+    )
     _, chunk, rows = metadata(manifest_bytes, index_bytes, chunk_index)
     output.mkdir(mode=0o700)
     write(output / "source-manifest.json", manifest_bytes)
@@ -78,7 +80,8 @@ def create(reader, chunk_index, output, *, costs=None):
                 raise ValueError("Original window metadata differs from the sealed index")
             raw = memoryview(window.samples).cast("B").toreadonly()
             record = {"sequence": row.sequence, "parts": []}
-            for file, data in zip((prefix, tail), (raw[:PART_BYTES[0]], raw[PART_BYTES[0]:]), strict=True):
+            parts = raw[:PART_BYTES[0]], raw[PART_BYTES[0]:]
+            for file, data in zip((prefix, tail), parts, strict=True):
                 started = process_time_ns()
                 encoded = compressor.compress(data)
                 record["parts"].append([file.tell(), len(encoded), digest(encoded), digest(data)])
@@ -177,11 +180,14 @@ class Reader:
 
     def counts(self):
         return dict(metadata_bytes=self.metadata_bytes, payload_bytes=self.payload_bytes,
-                    decoded_bytes=self.decoded_bytes, frames=self.frames, full_checks=self.full_checks)
+                    decoded_bytes=self.decoded_bytes, frames=self.frames,
+                    full_checks=self.full_checks)
 
     def read(self, sequence, *, full):
+        if type(sequence) is not int:
+            raise ValueError("Requested visit must be an integer sequence")
         index = sequence - self.chunk.first_sequence
-        if type(sequence) is not int or not 0 <= index < len(self.rows):
+        if not 0 <= index < len(self.rows):
             raise ValueError("Requested visit is outside the committed member")
         parts = []
         row = self.rows[index]

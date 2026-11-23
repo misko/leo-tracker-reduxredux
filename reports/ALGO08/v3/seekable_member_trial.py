@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import os
 import resource
 from collections import Counter
 from contextlib import ExitStack
@@ -117,10 +116,14 @@ def consume(mode, receiver, source, sidecar, pin, short_binary, spec):
     start = clock()
     with ExitStack() as stack:
         if receiver == "named":
-            callback = stack.enter_context(detector("cancellation", "lower", binary=binary, pilot=pilot))
+            callback = stack.enter_context(
+                detector("cancellation", "lower", binary=binary, pilot=pilot),
+            )
         elif mode == "original":
             engine = MixedApertureDetector(short_binary, signed.SHORT_SHA, full_coverage=True)
-            callback = stack.enter_context(engine.detector("cancellation", "lower", binary=binary, pilot=pilot))
+            callback = stack.enter_context(
+                engine.detector("cancellation", "lower", binary=binary, pilot=pilot),
+            )
         else:
             schedule = StereoSchedule(full_coverage=True)
             pilot_bytes = frozen.verified(pilot, signed.PILOT_SHA["lower"])
@@ -147,9 +150,11 @@ def consume(mode, receiver, source, sidecar, pin, short_binary, spec):
                 modes.update(engine.visits)
             else:
                 modes["full"] = len(probes) // 2
-            counts = dict(payload_bytes=chunk.compressed_bytes, decoded_bytes=chunk.uncompressed_bytes,
-                          metadata_bytes=chunk.index_bytes + (Path(source["path"]) / "manifest.json").stat().st_size,
-                          frames=1, full_checks=chunk.window_count, original_member_checked=True)
+            header_size = (Path(source["path"]) / "manifest.json").stat().st_size
+            counts = dict(payload_bytes=chunk.compressed_bytes,
+                          decoded_bytes=chunk.uncompressed_bytes,
+                          metadata_bytes=chunk.index_bytes + header_size, frames=1,
+                          full_checks=chunk.window_count, original_member_checked=True)
         else:
             reader = stack.enter_context(seek.open_member(sidecar, pin))
             targets = {row["target_id"]: row for row in reader.manifest.configuration["targets"]}
@@ -206,12 +211,14 @@ def arbitrary(source, sidecar, pin, spec):
         timing = elapsed(start)
         if raw[:len(replay)] != replay:
             raise ValueError("Arbitrary seek does not reproduce the original window bytes")
-        rows["full" if full else "short"] = dict(timing=timing, reads=reads, sha256=seek.digest(replay))
+        aperture = "full" if full else "short"
+        rows[aperture] = dict(timing=timing, reads=reads, sha256=seek.digest(replay))
     return dict(visit=visit, original=original, seek=rows)
 
 
 def trial(output, short_binary):
     import zstandard
+
     from leo.storage.short_window import ShortWindowReader
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
 

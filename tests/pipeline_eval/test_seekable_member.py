@@ -15,7 +15,8 @@ def original(tmp_path, *, fail_after=False, wrong_member_digest=False):
     rows = [dict(schema_version=2, sequence=visit, target_id="target", sample_count=seek.SAMPLES,
                  receiver_count=2, payload_offset_bytes=visit * seek.WINDOW_BYTES,
                  payload_bytes=seek.WINDOW_BYTES, iq_sha256=seek.digest(samples),
-                 acquisition={"visit": visit}, powers=[{}, {}]) for visit, samples in enumerate(raw)]
+                 acquisition={"visit": visit}, powers=[{}, {}])
+            for visit, samples in enumerate(raw)]
     index = b"\n".join(json.dumps(row).encode() for row in rows) + b"\n"
     document = dict(schema_version=2, session_id="source",
                     configuration={"sample_rate_hz": 10_000_000, "window_ms": 20},
@@ -40,7 +41,8 @@ def original(tmp_path, *, fail_after=False, wrong_member_digest=False):
         if fail_after:
             raise ValueError("Original decoded seal did not pass")
 
-    reader = SimpleNamespace(path=source, manifest=manifest, manifest_sha256=seek.digest(manifest_bytes),
+    reader = SimpleNamespace(path=source, manifest=manifest,
+                             manifest_sha256=seek.digest(manifest_bytes),
                              windows=windows, _member=lambda *_: index)
     return reader, raw
 
@@ -84,15 +86,13 @@ def test_payload_omission_and_same_size_reordering_rejected(tmp_path):
     prefix = path / "prefix.zst"
     data = prefix.read_bytes()
     set_contents(prefix, data[:-1])
-    with pytest.raises(ValueError, match="omits"):
-        with seek.open_member(path, pin):
-            pytest.fail("Missing committed data was accepted")
+    with pytest.raises(ValueError, match="omits"), seek.open_member(path, pin):
+        pytest.fail("Missing committed data was accepted")
     table = json.loads((path / "seek.json").read_bytes())
     second_start = table["records"][1]["parts"][0][0]
     set_contents(prefix, data[second_start:] + data[:second_start])
-    with seek.open_member(path, pin) as member:
-        with pytest.raises(ValueError, match="digest"):
-            member.read(0, full=False)
+    with seek.open_member(path, pin) as member, pytest.raises(ValueError, match="digest"):
+        member.read(0, full=False)
 
 
 @pytest.mark.parametrize("operation", ["omission", "reorder"])
@@ -121,6 +121,6 @@ def test_full_readback_also_checks_original_member_digest(tmp_path):
     source, _ = original(tmp_path, wrong_member_digest=True)
     path = tmp_path / "sidecar"
     pin = seek.create(source, 0, path)
-    with seek.open_member(path, pin) as member:
-        with pytest.raises(ValueError, match="Original decoded member digest"):
-            member.verify_all()
+    with (seek.open_member(path, pin) as member,
+          pytest.raises(ValueError, match="Original decoded member digest")):
+        member.verify_all()
