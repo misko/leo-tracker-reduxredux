@@ -19,6 +19,8 @@ The direct adapter checks the same capture cutoff, pre-RF forecast and chronolog
 
 ## Five saved offers
 
+![Single-core solver time and paired position errors for the dense physical case and four geographic simulations](development/signed-solve.png)
+
 | Offer | Terminal error km `c = 0` / fitted, v3 → signed candidate | Curved RF RMS Hz `c = 0` / fitted, v3 → candidate | Terminal decision |
 | --- | ---: | ---: | --- |
 | DS30-0008 | 1.639 / 1.512 → 1.086 / 1.080 | 129.703 / 129.663 → 128.821 / 128.753 | Both returned |
