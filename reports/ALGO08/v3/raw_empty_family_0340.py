@@ -121,7 +121,79 @@ def launch(root):
     write(root/"prediction-seal.json", seal(root))
 
 
+def score(root, output):
+    from aperture_trial import read, write
+    from empty_bootstrap import bind_native
+    from joint_publication import artifacts
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from local_future_cli_trial import native_packet
+    from short_raw_diagnostic import pairs
+
+    admission = read(root/"admission.json")
+    if not fully_resident(admission["passive_pages"]):
+        write(output, dict(admission=admission, status="not_resident", waveform_reads=0))
+        return
+    witness = root/"prediction-seal.json"
+    if read(witness) != seal(root):
+        raise ValueError("Raw results changed after sealing")
+    previous, timed = original()
+    run = read(root/"candidate-clock.json")
+    if (run["command"] != command(root, timed["command"]) or admission["source_pins"] != source_pins(previous["sources"])
+            or admission["base"] != BASE or admission["conditioning_bytes"] != 0
+            or any(not fully_resident(run[boundary]) for boundary in ("cache_before", "cache_after"))):
+        raise ValueError("Raw run differs from its warm-only frozen admission")
+    if run["clock"]["exit_code"]:
+        write(output, dict(admission=admission, run=run, status="process_failed", pre_score_sha256=sha(witness.read_bytes())))
+        return
+    target = root/"candidate"
+    saved = json.loads(checked(SAVED/"calibration-trial.json", SAVED_SHA))
+    raw = checked(native_packet(target), NATIVE_SHA)
+    if raw != checked(native_packet(SAVED), NATIVE_SHA) or raw != checked(native_packet(PRIOR/"candidate"), NATIVE_SHA):
+        raise ValueError("The fixed receiver did not reproduce both original signed detection files")
+    data = json.loads(raw)
+    recipe_pin = previous["receiver_configuration"]["detector_recipe_sha256"]
+    bind_native(data, previous["session"], previous["inventory"], recipe_pin.removeprefix("sha256:"), expected="sha256:"+NATIVE_SHA)
+    native_source = data["source"]
+    (terminal_path,) = target.glob("fast-scan-automatic-work/*/terminal.json")
+    (saved_terminal,) = SAVED.glob("fast-scan-automatic-work/*/terminal.json")
+    raw_terminal = checked(terminal_path, TERMINAL_SHA)
+    terminal = json.loads(raw_terminal)
+    boot = read(target/"unified-short-bootstrap.json")
+    research = read(target/"joint-research-receipt.json")
+    receipt = research["receipt"]
+    stdout = json.loads(target.with_suffix(".stdout").read_text().splitlines()[-1])
+    if (raw_terminal != checked(saved_terminal, TERMINAL_SHA) or terminal != saved["terminal"]
+            or boot["raw_acquisitions"] != 1 or boot["verified_handoffs"] != 1
+            or boot["native_sha256"] != "sha256:"+NATIVE_SHA or boot["detector_recipe_sha256"] != recipe_pin
+            or boot["receiver_recipe"] != previous["receiver_configuration"]["recipe"]
+            or boot["receipt"] != receipt or receipt != stdout or receipt["terminal_sha256"] != "sha256:"+TERMINAL_SHA
+            or research["source_sha256"][GUARD] != saved["guard_sha256"]
+            or research["empty_family_calibration"] != saved["proof"] or receipt["decision"] != "withheld"
+            or native_source["raw_recording_authority_digest"] != previous["raw_authority"]
+            or data["clock_anchor"]["before"]["realtime_ns"] != previous["cutoff_utc_ns"]
+            or receipt["counts"]["processed"] != previous["admitted"] or receipt["window_count"] != previous["issued"]
+            or receipt["region"] != previous["offer"]):
+        raise ValueError("The original raw authority, route or certified saved decision changed")
+    publication = pairs.evidence(target, receipt, run["clock"]["started_unix_ns"], read_only=True)
+    media = artifacts(target, receipt)
+    store = FastStandardAnalysisStore(target)
+    if (publication["raw_authority"] != previous["raw_authority"] or media != {"images": {}}
+            or any(target.rglob("*.png")) or store.position_path(receipt["run_id"]) is not None or store.position_grid(receipt["run_id"]) is not None):
+        raise ValueError("The withheld publication changed original authority or emitted position evidence")
+    write(output, dict(admission=admission, run=run, status="verified_withheld", pre_score_sha256=sha(witness.read_bytes()),
+                       native_sha256=NATIVE_SHA, detector_recipe_sha256=recipe_pin, terminal_file_sha256=TERMINAL_SHA,
+                       detector_identical_to_prior_and_saved=True, terminal_identical_to_saved=True, terminal=terminal,
+                       verified_media=media, scientific=publication, saved=saved, original_failed_clock=timed["clock"],
+                       fresh_baseline=False, proof=research["empty_family_calibration"], phase_clock=boot["phases"],
+                       route=research["route"], raw_acquisitions=boot["raw_acquisitions"], handoffs=boot["verified_handoffs"]))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("root", type=Path)
-    launch(cli.parse_args().root)
+    cli.add_argument("--score", type=Path)
+    args = cli.parse_args()
+    if args.score is None:
+        launch(args.root)
+    else:
+        score(args.root, args.score)
