@@ -92,9 +92,6 @@ def check_trials(current, reference):
 
 
 def evaluate(root, destination):
-    import empty_bootstrap as boot
-
-    boot.load_runtime()
     from aperture_trial import read, write
 
     saved = exact.pinned(exact.BASELINE, exact.PINS["scored"])
