@@ -1,0 +1,106 @@
+#!/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python -IB
+"""Run the selected research changes against the installed ALGO08v3 payload."""
+import argparse
+from contextlib import ExitStack
+from hashlib import sha256
+from importlib.util import module_from_spec, spec_from_file_location
+import json
+import os
+from pathlib import Path
+import runpy
+import sys
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+
+
+ROOT = Path(__file__).resolve().parents[3]
+BASELINE = Path("/opt/leo-algo08/algo08v3/run")
+BASELINE_SHA256 = "fae032526227f55ca2419a0b29c69afc7fc97fa04508f33d0403802934f13448"
+FROZEN_SPEC = "6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
+OVERLAYS = {
+    "tools.pipeline_eval.variants.algo08_incremental_layout":
+        "c1dff1b601e64183b527cf2dfd7c7ec4b3d9ba51acbdcaaeaa66cfd193c1b37f",
+}
+
+
+def overlay(name, digest):
+    source = ROOT / (name.replace(".", "/") + ".py")
+    data = source.read_bytes()
+    if sha256(data).hexdigest() != digest:
+        raise ValueError(f"Research overlay changed: {source}")
+    alias = name + "_bound_trial"
+    module = module_from_spec(spec_from_file_location(alias, source))
+    sys.modules[alias] = module
+    exec(compile(data, str(source), "exec"), vars(module))
+    return module
+
+
+class ReadyToAcquire(Exception):
+    pass
+
+
+def stop_before_acquisition(*args, **kwargs):
+    raise ReadyToAcquire
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--verify", action="store_true")
+    for name in ("recording", "archive", "region", "bulk-root"):
+        parser.add_argument("--" + name, type=Path, required=name != "bulk-root")
+    args = parser.parse_args()
+    if not args.verify and args.bulk_root is None:
+        parser.error("supply a new empty --bulk-root")
+    if sha256(BASELINE.read_bytes()).hexdigest() != BASELINE_SHA256:
+        raise ValueError("The installed ALGO08v3 launcher changed")
+    installed = runpy.run_path(str(BASELINE))
+    payload = BASELINE.parent / "payload"
+    spec = installed["checked_spec"](payload, FROZEN_SPEC)
+    if spec["startup"] != "lazy-exports" or spec["member_lookahead"] is not True:
+        raise ValueError("Expected frozen lazy startup and advisory member lookahead")
+    imports = [str(payload), str(installed["RELEASE"] / "src"), str(installed["RELEASE"])]
+    sys.path[:0] = imports
+    os.environ["PYTHONPATH"] = os.pathsep.join(imports)
+    for name in ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS", "BLIS_NUM_THREADS",
+                 "NUMEXPR_NUM_THREADS"):
+        os.environ[name] = "1"
+
+    from tools.pipeline_eval.qualification import experimental_publication as publication
+    from tools.pipeline_eval.variants.experimental import lean_startup
+
+    if Path(publication.__file__).resolve() != payload / "tools/pipeline_eval/qualification/experimental_publication.py":
+        raise ValueError("Expected the installed publication entry point")
+    lean_startup.install()
+    identity = dict(version="ALGO08v3 bounds research", frozen_specification="sha256:" + FROZEN_SPEC,
+                    baseline_launcher_sha256=BASELINE_SHA256, overlay_sha256=OVERLAYS,
+                    launcher_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(lean_startup, "install", lambda: None))
+        if args.verify:
+            args.bulk_root = Path(stack.enter_context(TemporaryDirectory()))
+        statistics = {
+            name: stack.enter_context(overlay(name, digest).install(publication, spec, args))
+            for name, digest in OVERLAYS.items()
+        }
+        identity["detector_sha256"] = spec["detector_sha256"]
+        if args.verify:
+            from tools import algo08_scan
+
+            with patch.object(algo08_scan, "analyze", stop_before_acquisition):
+                try:
+                    publication.run(args, spec)
+                except ReadyToAcquire:
+                    print(json.dumps(identity))
+                    return
+            raise RuntimeError("Preflight did not reach the installed acquisition entry")
+        result = publication.run(args, spec)
+    result["bounds_research"] = statistics
+    marker = dict(identity, session_id=result["session_id"], decision=result["decision"])
+    with (args.bulk_root / "algo08v3-bounds.json").open("x") as stream:
+        json.dump(marker, stream)
+        stream.write("\n")
+    print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    main()
