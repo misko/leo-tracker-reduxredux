@@ -5,8 +5,12 @@ import json
 from hashlib import sha256
 from pathlib import Path
 
-from constrained_pair_veto import incompatible_tracks
-from paired_veto_history import ARMS, PIN, SOURCE
+if __package__:
+    from .constrained_pair_veto import incompatible_tracks
+    from .paired_veto_history import ARMS, PIN, SOURCE
+else:
+    from constrained_pair_veto import incompatible_tracks
+    from paired_veto_history import ARMS, PIN, SOURCE
 
 
 def enrollment(trials):
