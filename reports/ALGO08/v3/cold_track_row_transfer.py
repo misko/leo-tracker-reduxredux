@@ -4,6 +4,8 @@ import argparse
 from math import isclose
 from pathlib import Path
 from runpy import run_path
+import subprocess
+import sys
 
 from aperture_trial import ARMS, archive_identity, configuration, inputs, read, write
 from cold_track_row_trial import REPLAY_PIN, fit_evidence
@@ -136,7 +138,6 @@ def compare(case, root, pin, proof, report, control):
 def run(case, output, binary, screen):
     machine = host()
     configuration()
-    from full_short_run import main
 
     if case == "dense":
         if not all(read(screen / name / "cold-track-transfer.json")["passed"] for name in SMALL):
@@ -149,8 +150,8 @@ def run(case, output, binary, screen):
         raise ValueError("The selected saved packet or causal archive changed")
     parameters = dict(recording=recording, archive=archive["root"], region=region, output=output, saved=packet,
                       saved_digest=pin, geographic_library=binary, track_graph="installed")
-    main([item for name, value in parameters.items() for item in ("--"+name.replace("_", "-"), str(value))]
-         + ["--reuse-cold-track-rows"])
+    flags = [item for name, value in parameters.items() for item in ("--"+name.replace("_", "-"), str(value))]
+    subprocess.run([sys.executable, "-BPs", str(HERE / "full_short_run.py"), *flags, "--reuse-cold-track-rows"], check=True)
     report = read(output / "joint-research-receipt.json")
     proof, = report["early_regional"]
     matches, detail = compare(case, output, pin, proof["result"], report, control)
