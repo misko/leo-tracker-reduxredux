@@ -22,7 +22,7 @@ PRIMARY = CASES[:2]
 MODES = ("control", "contrast")
 
 
-def run(case, mode, output, *, paid_south=False):
+def run(case, mode, output, *, paid_south=False, load_saved_inputs=None, single_attempt=False):
     if paid_south and (case not in ("south-containing", "south-far") or mode != "control"):
         raise ValueError("Paid southern transfer requires a southern offer and the original full nominations")
     host = machine()
@@ -34,6 +34,7 @@ def run(case, mode, output, *, paid_south=False):
     from leo.contracts.digests import canonical_digest
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core
+    from tools.pipeline_eval.variants.experimental import regional_bound_guard
     from blind_joint_finish import cold_candidate, elapsed
     from blind_joint_route import make_route
     from certified_salvage import propose
@@ -43,14 +44,16 @@ def run(case, mode, output, *, paid_south=False):
 
     shared_rank = runpy.run_path(str(SHARED_RANK))["shared_rank_preparation"]
     paid = case == "DS30-0016" or paid_south
-    if paid:
+    if load_saved_inputs is not None:
+        native, archive, offer, identity, paid = load_saved_inputs(case)
+    elif paid:
         native, archive, offer, identity = prepare(case, "quadratic")
     else:
         native, archive, offer, _, identity = inputs(case)
         if identity["detector_sha256"] != "sha256:" + spec["detector_sha256"]:
             raise ValueError("Saved detector specification changed")
     original, config = algo08_position.solve, algo08_position.TrackConfig
-    attempts, ranks, chosen, rows = [], [], [], {}
+    attempts, ranks, chosen, rows, preparation, exterior = [], [], [], {}, [], []
 
     def cold(prepared, region, bound):
         installed = v5_core.ranked_initial_nodes
@@ -70,11 +73,32 @@ def run(case, mode, output, *, paid_south=False):
         return node, point, phases, details
 
     def observed(document, reader, assets, supplied):
+        original_prepare = algo08_position.prepare_native_scan
+        original_exterior = regional_bound_guard.inspect_boundary
+
+        def observe_prepare(*args, **kwargs):
+            cpu, wall = process_time(), perf_counter()
+            prepared = original_prepare(*args, **kwargs)
+            clocks = elapsed(cpu, wall)
+            graph = prepared["tracks"]
+            preparation.append(dict(status=prepared["status"], observations=len(graph["observations"]),
+                                    arcs=len(graph["tracks"]), graph_points=graph["graph_points"],
+                                    curved=len(graph["curved_indices"]), **clocks))
+            return prepared
+
+        def observe_exterior(*args, **kwargs):
+            cpu, wall = process_time(), perf_counter()
+            result = original_exterior(*args, **kwargs)
+            exterior.append(dict(result=result, **elapsed(cpu, wall)))
+            return result
+
         proposal = partial(propose, certified=True, cold_start=cold)
         candidate = make_route(v5_core.infer, reader, attempts, repair=True, signed_finish=True,
                                joint_proposal=proposal, signed_updater=update)
         factory = (lambda **values: quadratic(config(**values))) if paid else config
-        with patch.object(v5_core, "infer", candidate), patch.object(algo08_position, "TrackConfig", factory):
+        with (patch.object(v5_core, "infer", candidate), patch.object(algo08_position, "TrackConfig", factory),
+              patch.object(algo08_position, "prepare_native_scan", observe_prepare),
+              patch.object(regional_bound_guard, "inspect_boundary", observe_exterior)):
             decision, packet, orbit_policy = original(document, reader, assets, supplied)
         if packet is not None:
             if not packet["position_grid"]["complete"]:
@@ -84,6 +108,8 @@ def run(case, mode, output, *, paid_south=False):
 
     with patch.object(algo08_position, "solve", observed):
         result = solve(publication, spec, native, archive, offer)
+    if single_attempt and len(attempts) != 1:
+        raise ValueError("The saved one-pass protocol needs exactly one solver invocation")
     if archive_identity(archive) != identity["archive"]:
         raise ValueError("Causal archive changed during the saved fit")
 
@@ -104,7 +130,8 @@ def run(case, mode, output, *, paid_south=False):
     source = {name: sha256((HERE / name).read_bytes()).hexdigest() for name in names}
     source[SHARED_RANK.name] = sha256(SHARED_RANK.read_bytes()).hexdigest()
     result.update(identity=identity, mode=mode, host=host, attempts=attempts, ranks=ranks, chosen=chosen,
-                  selected_rows=rows, source_sha256=source)
+                  selected_rows=rows, source_sha256=source, prepared=preparation, exterior_checks=exterior,
+                  single_attempt=single_attempt)
     write(output, result)
 
 
