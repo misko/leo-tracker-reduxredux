@@ -49,7 +49,7 @@ class LocalFuturePolicy:
         from leo.storage.fast_scan import FastScanStore
 
         receipt = report["receipt"]
-        workspace = FastScanStore(output).automatic_workspace(receipt["run_id"], create=False)
+        workspace = FastScanStore(output).automatic_workspace(receipt["run_id"])
         terminal = read(workspace / "terminal.json")
         if (self.native is None or canonical_digest(terminal) != receipt["terminal_sha256"]
                 or terminal["native_sha256"] != self.native_sha256):

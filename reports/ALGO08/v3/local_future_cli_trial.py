@@ -49,10 +49,12 @@ def policy_evidence(root, mode, expected_native, expected_terminal):
     return policy
 
 
-def run(root, short, geo, region_tracks):
+def run(root, short, geo, region_tracks, resume_stock=False):
     settings = host()
-    if root.exists() or subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", root.parent], text=True).strip() != "tmpfs":
-        raise ValueError("Use a fresh experiment directory on tmpfs")
+    if subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", root.parent], text=True).strip() != "tmpfs":
+        raise ValueError("Use separate experiment roots on tmpfs")
+    if resume_stock and ({p.name for p in root.iterdir()} != {"stock", "fonts", "stock.stdout", "stock.stderr", "stock-clock.json"}):
+        raise ValueError("Resume requires one already sealed stock arm and an untouched candidate directory")
     case, pin, decision, visits, order = CASES[0]
     if (case, visits, order) != ("DS30-0227", 18, ("stock", "candidate")):
         raise ValueError("Only the frozen tiny physical case is enrolled")
@@ -63,8 +65,9 @@ def run(root, short, geo, region_tracks):
     libraries = {kind: dict(path=str(checked(path, LIBRARIES[kind])), sha256=LIBRARIES[kind])
                  for kind, path in (("short", short), ("geographic", geo), ("regional", region_tracks))}
     cache_query = cache_residency.load_query(checked(CACHE_LIB, CACHE_SHA))
-    root.mkdir()
-    (root / "stock").mkdir()
+    if not resume_stock:
+        root.mkdir()
+        (root / "stock").mkdir()
     env = environment(root)
     python = RELEASE / "venv/bin/python"
     subprocess.run([python, "-Bc", "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
@@ -83,10 +86,17 @@ def run(root, short, geo, region_tracks):
                     candidate=[*research, "--short-binary", short, "--output", root / "candidate"])
     raw = {}
     for arm in order:
-        cache = cache_before(store, recording, manifests, cache_query)
-        timing = measure(commands[arm], env, root / arm)
-        raw[arm] = dict(timing=timing, cache=cache, command=list(map(str, commands[arm])))
-        write(root / f"{arm}-clock.json", raw[arm])
+        if arm == "stock" and resume_stock:
+            raw[arm] = read(root / "stock-clock.json")
+            timing = raw[arm]["timing"]
+            require_warm(raw[arm]["cache"]["at_launch"])
+            if raw[arm]["command"] != list(map(str, commands[arm])):
+                raise ValueError("The resumed stock invocation differs from the frozen launch")
+        else:
+            cache = cache_before(store, recording, manifests, cache_query)
+            timing = measure(commands[arm], env, root / arm)
+            raw[arm] = dict(timing=timing, cache=cache, command=list(map(str, commands[arm])))
+            write(root / f"{arm}-clock.json", raw[arm])
         if timing["exit_code"]:
             raise RuntimeError(f"{arm} failed: {timing['stderr_tail']}")
         raw[arm]["verified"] = science(root, arm, timing, archived, inventory_pin)
@@ -116,6 +126,7 @@ def run(root, short, geo, region_tracks):
         raise ValueError("Saved handoff changed the original raw/bound policy or issued a waveform callback")
     write(root / "result.json", dict(case=case, machine=settings, storage=dict(publication="tmpfs", input="original signed recording"),
           order=order, issued=visits, raw=raw, original_pair_sha256=pin, stock_build=stock_build, libraries=libraries,
+          resumed_unstarted_candidate=resume_stock,
           compared_probe_metadata=len(metadata["stock"]), percent_elapsed=100*raw["candidate"]["timing"]["elapsed_s"]/raw["stock"]["timing"]["elapsed_s"],
           solver_policy=policy, saved=dict(timing=smoke, command=list(map(str, command)), policy=saved_policy,
                                          receipt=saved_report["receipt"], solve=saved_report["solve"], receiver_callbacks=0),
@@ -127,4 +138,5 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     for name in ("root", "short", "geo", "region_tracks"):
         cli.add_argument(name, type=Path)
+    cli.add_argument("--resume-stock", action="store_true", help="Validate the sealed stock arm and run the unstarted candidate")
     run(**vars(cli.parse_args()))
