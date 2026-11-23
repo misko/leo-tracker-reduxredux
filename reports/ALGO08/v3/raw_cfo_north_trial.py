@@ -80,9 +80,10 @@ def workload(root):
     return dict(recording=str(recording),session=session,inventory=inventory,issued=1200, authority=AUTHORITY,
                 archive=pair['archive'],cutoff_utc_ns=CUTOFF,saved_inventory=str(named_inventory),
                 compressed_bytes=COMPRESSED_BYTES,decoded_bytes=sum(chunk['uncompressed_bytes'] for chunk in chunks),
+                indexes=[[chunk['index_relative_path'],chunk['index_bytes']] for chunk in chunks],
                 manifests=[dict(path=str(path),digest=pin) for path,pin in pins],
                 inside_offer=str(pair['region']),inside_offer_sha256=OFFER_SHA,
-                mirror_offer=omissions['results'][ORDER[1]]['offer']), pins
+                mirror_offer=omissions['results'][ORDER[1]]['offer']), tuple(pins)
 
 
 def verified_packet(raw, request):
@@ -162,7 +163,7 @@ def launch(root):
     from full_short_physical import CACHE_LIB, CACHE_SHA, environment
     from leo.storage.fast_scan import FastScanStore
     from short_raw_diagnostic import measure, require_warm
-    from tools.pipeline_eval.qualification.cache_residency import bound_snapshot, load_query
+    from tools.pipeline_eval.qualification.cache_residency import bound_snapshot, cache_snapshot, load_query
 
     machine = host()
     request, manifests = workload(root)
@@ -175,11 +176,14 @@ def launch(root):
     store, recording = FastScanStore(root), Path(request['recording'])
 
     def cache():
-        result = bound_snapshot(store,recording,manifests,os.sysconf('SC_PAGE_SIZE'),query)
-        if result['members'] != MEMBERS:
-            raise ValueError('Expected exactly 19 original staged compressed members')
-        require_warm(result)
-        return result
+        page_size = os.sysconf('SC_PAGE_SIZE')
+        payload = bound_snapshot(store,recording,manifests,page_size,query)
+        indexes = cache_snapshot([(recording,name,size) for name,size in request['indexes']],page_size,query)
+        for result in (payload,indexes):
+            if result['members'] != MEMBERS:
+                raise ValueError('Expected exactly 19 original staged compressed members and indexes')
+            require_warm(result)
+        return dict(payload=payload,indexes=indexes)
 
     root.mkdir()
     for name in ('tmp','fonts'):
