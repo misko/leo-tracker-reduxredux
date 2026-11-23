@@ -52,7 +52,7 @@ def build_primary(work):
     original = ref.verified(source, archive["source_wrapper_sha256"]).decode()
     old_object = archive["compile"][-1]
     for f in archive["relink"]:
-        if f.endswith(".o"):
+        if f.endswith(".o") and f != old_object:
             ref.verified(f, archive["short_object_sha256"][Path(f).name])
     at = original.index("int cancellation_primary_factors(")
     method = original[at:]
