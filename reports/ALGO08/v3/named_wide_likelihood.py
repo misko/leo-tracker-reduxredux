@@ -79,7 +79,7 @@ def binding(path, expected, output, audit):
     start = now()
     overlay = load_overlay()
     binary, manifest = checked_library(path, expected, overlay)
-    with TemporaryDirectory(prefix=".wide-private-", dir=output) as isolated:
+    with TemporaryDirectory(prefix=".wide-private-", dir=output.parent) as isolated:
         directory = Path(isolated)
         private = directory / "private_width.so"
         private.write_bytes(binary)

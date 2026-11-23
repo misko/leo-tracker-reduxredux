@@ -38,6 +38,27 @@ def test_builder_imports_the_named_runtime_in_isolated_python():
     assert "Build the wider private likelihood" in result.stdout
 
 
+def test_binding_keeps_the_publication_root_empty_before_the_named_guard(tmp_path, monkeypatch):
+    library_folder = tmp_path / "build"
+    library_folder.mkdir()
+    library = library_folder / "private_width.so"
+    binary = b"operator-trusted build"
+    library.write_bytes(binary)
+    fingerprint = sha256(binary).hexdigest()
+    library.with_name("manifest.json").write_text(json.dumps(dict(
+        binary_sha256=fingerprint, source_sha256=sha256(b"approved C").hexdigest(), parent_source_sha256="approved parent"
+    )))
+    builder = SimpleNamespace(SOURCE_SHA256="approved parent", expanded_source=lambda: "approved C")
+    monkeypatch.setattr(wide, "load_overlay", lambda: builder)
+    output = tmp_path / "publication"
+    output.mkdir()
+    with wide.binding(library, "sha256:" + fingerprint, output, {}):
+        assert not list(output.iterdir())
+        [scratch] = tmp_path.glob(".wide-private-*")
+        assert (scratch / "private_width.so").read_bytes() == binary
+    assert not list(tmp_path.glob(".wide-private-*"))
+
+
 def test_widened_binding_limits_retry_to_inference_and_restores_stock_for_selected_packet():
     class Bound:
         def __call__(self):
