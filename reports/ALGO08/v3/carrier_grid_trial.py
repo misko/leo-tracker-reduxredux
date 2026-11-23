@@ -27,7 +27,7 @@ SOURCES = {
     "timing_first_receiver": (
         "936b67cbb9af0201a7e65281756cc9c16f042ac2ad5e84201b1577131c67044a",
         ("bins = 4096", "w->rate = 10000000 / stride",
-         "(i < bins / 2 ? i : i - bins) * (double)w->rate / bins"),
+         "carrier_bin_at_rate(i, w->rate)", "bin_hz(w, selected.bin) + center"),
     ),
     "two_carrier_receiver": (
         "4f3326eee5522f02ee05a236f22a41fc1af5bb0f21b6e3fe337711a66226f5f7",
@@ -50,10 +50,17 @@ def verify_grid():
         sources[name] = dict(path=str(path), sha256=pin)
     exporter = PAYLOAD / "tools/pipeline_eval/qualification/blind_compact_run.py"
     mapper = exporter.with_name("full_v5_check.py")
+    installed_timing = PAYLOAD / "tools/pipeline_eval/variants/timing_first_receiver.c"
+    signed_index = "(i < bins / 2 ? i : i - bins) * (double)w->rate / bins"
+    installed_timing_sha = sha256(installed_timing.read_bytes()).hexdigest()
+    if (installed_timing_sha != "97fa6202fc24f8aea639b096921ff87e5aedf5a26540827ace5b56ac366bd954"
+            or signed_index not in installed_timing.read_text()):
+        raise ValueError("The installed timing source no longer documents signed bin indices")
     if "cfo=v.hz," not in exporter.read_text() or f"{CFO}=cfo," not in mapper.read_text():
         raise ValueError("The released exporter no longer uses the native signed CFO")
     return dict(receiver_sha256=RECEIVER_SHA, bins=BINS, stride=STRIDE, sample_rate_hz=RATE,
                 spacing_hz=GRID_HZ, sources=sources,
+                installed_timing_source_sha256=installed_timing_sha,
                 exporter_sha256=sha256(exporter.read_bytes()).hexdigest(),
                 mapper_sha256=sha256(mapper.read_bytes()).hexdigest())
 
