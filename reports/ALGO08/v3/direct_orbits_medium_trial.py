@@ -52,7 +52,7 @@ def inspect_orbits(store_a, store_b, run_id, pictures, owners):
     import numpy as np
     from matplotlib import colormaps
     from PIL import Image
-    from direct_orbit_figures import DPI, GRAY, WIDTH, legend, legend_columns, library, surface
+    from direct_orbit_figures import GRAY, geometry, legend, legend_columns, library, surface
     from direct_orbit_figures_trial import NAMES, pixels
 
     satellite_ids = sorted({str(row[1]) for row in owners})
@@ -62,6 +62,7 @@ def inspect_orbits(store_a, store_b, run_id, pictures, owners):
     rows = math.ceil(len(entries)/6)
     results = {}
     c = library()
+    expected_height, boxes = geometry(dict(rows=[None]*8, legend_rows=rows))
     for name in NAMES:
         raw_a = store_a.artifact(run_id, name, pictures["control"][name]["sha256"])
         raw_b = store_b.artifact(run_id, name, pictures["native"][name]["sha256"])
@@ -69,9 +70,15 @@ def inspect_orbits(store_a, store_b, run_id, pictures, owners):
         with Image.open(BytesIO(raw_a)) as a, Image.open(BytesIO(raw_b)) as b:
             first, second = (np.array(img.convert("RGB")) for img in (a, b))
         height = first.shape[0]
-        footer = (.5 + .25*rows + .62)*DPI + max(0., .025*height-.50*DPI)
-        lane = np.s_[int(1.37*DPI)+2:int(height-footer)-2, int(WIDTH*.07)+2:int(WIDTH*.97)-2]
-        support = neighborhood_match(first[lane], second[lane])
+        if height != expected_height:
+            raise ValueError("The official orbit raster uses another lane layout")
+        # Cairo can color the edges of a nominally black glyph. The data
+        # rectangles exclude titles, labels and all other text.
+        supports = [neighborhood_match(first[region], second[region]) for region in (
+            np.s_[math.ceil(y)+2:math.floor(y+h)-2, math.ceil(x)+2:math.floor(x+w)-2]
+            for x, y, w, h in boxes
+        )]
+        support = [min(values) for values in zip(*supports, strict=True)]
         if min(support) < .98:
             raise ValueError(f"Visible colored orbit footprints disagree for {name}: {support!r}")
 
@@ -87,29 +94,32 @@ def inspect_orbits(store_a, store_b, run_id, pictures, owners):
                           for (x0, group), (x1, _) in zip(columns, columns[1:])]
             if (min(separation) < 20 or not np.array_equal(output[banner, :, 2::-1], second[banner])):
                 raise ValueError(f"Native legend for {name} does not reproduce its sealed owner labels")
-        results[name] = dict(**result, neighborhood_fraction=support, minimum_legend_gap_px=min(separation))
+        results[name] = dict(**result, minimum_lane_neighborhood_fraction=support,
+                             minimum_legend_gap_px=min(separation))
     return dict(figures=results, legend_satellites=satellite_ids)
+
+
+def enrolled():
+    from empty_bootstrap import checked
+
+    return tuple(json.loads(checked(PRIOR / name, pin)) for name, pin in PINS.items())
 
 
 def run(output):
     from aperture_trial import RELEASE, archive_identity, read, write
     from combined_frontier_run import BLOCK_SHA
-    from cumulative_grid_projection import proof_fields
     from dense_geographic_trial import host
-    from direct_orbit_figures_trial import NAMES
     from empty_bootstrap import checked
     from full_short_physical import environment
     from full_short_run import GEOGRAPHIC_SHA, TRACK_SCORES_SHA
-    from joint_publication import artifacts
-    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from local_future_cli_trial import native_packet
-    from short_raw_diagnostic import measure, pairs
+    from short_raw_diagnostic import measure
     from unified_short_bootstrap import LAYOUT_SHA256
 
-    machine = host()
+    host()
     if subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", output.parent], text=True).strip() != "tmpfs":
         raise ValueError("Use new private tmpfs outputs for both medium launches")
-    job, witness, original = (json.loads(checked(PRIOR / name, pin)) for name, pin in PINS.items())
+    job, witness, original = enrolled()
     original_arm = witness["runs"]["candidate"]
     admission = witness["admission"]
     expected = original_arm["evidence"]
@@ -147,7 +157,28 @@ def run(output):
         write(output / f"{mode}-clock.json", dict(clock=timings[mode], command=list(map(str, command))))
         if timings[mode]["exit_code"]:
             raise RuntimeError(timings[mode]["stderr_tail"])
+    verify(output)
 
+
+def verify(output):
+    from aperture_trial import read, write
+    from cumulative_grid_projection import proof_fields
+    from dense_geographic_trial import host
+    from direct_orbit_figures_trial import NAMES
+    from joint_publication import artifacts
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from local_future_cli_trial import native_packet
+    from short_raw_diagnostic import pairs
+
+    machine = host()
+    _, witness, original = enrolled()
+    request = read(output / "binding.json")
+    original_arm = witness["runs"]["candidate"]
+    expected = original_arm["evidence"]
+    native_sha = request["native"]
+    timings = {mode: read(output / f"{mode}-clock.json")["clock"] for mode in MODES}
+    if any(clock["exit_code"] for clock in timings.values()):
+        raise ValueError("Both original clean saved processes must have exited successfully")
     results = {}
     stores = {mode: FastStandardAnalysisStore(output / mode) for mode in MODES}
     for mode, store in stores.items():
@@ -184,7 +215,7 @@ def run(output):
     visual = inspect_orbits(*(stores[mode] for mode in MODES), run_id, {mode: results[mode]["figures"] for mode in MODES},
                             original["selected_rows"]["fitted_c"])
     write(output / "result.json", dict(case="DS30-0057", machine=machine, order=MODES, prior_sources=PINS,
-          runs=results, visual=visual, input=read(request), source_sha256={name: sha256((HERE/name).read_bytes()).hexdigest()
+          runs=results, visual=visual, input=request, source_sha256={name: sha256((HERE/name).read_bytes()).hexdigest()
           for name in ("direct_orbits_medium_trial.py", "direct-orbits-medium-protocol.md", "direct_orbit_entry.py",
                        "direct_orbit_figures.py", "direct_residual_entry.py", "unified_short_bootstrap.py")}))
 
@@ -192,7 +223,10 @@ def run(output):
 if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
     parser = argparse.ArgumentParser(description=__doc__)
-    if sys.argv[1:2] == ["worker"]:
+    if sys.argv[1:2] == ["verify"]:
+        parser.add_argument("output", type=Path)
+        verify(parser.parse_args(sys.argv[2:]).output)
+    elif sys.argv[1:2] == ["worker"]:
         parser.add_argument("job", type=Path)
         parser.add_argument("mode", choices=MODES)
         parser.add_argument("output", type=Path)
