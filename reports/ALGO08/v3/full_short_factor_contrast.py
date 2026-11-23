@@ -16,7 +16,7 @@ from dense_geographic_trial import host
 
 HERE = Path(__file__).resolve().parent
 PAIR = Path("/dev/shm/leo-v3-raw-0016-best-results-01")
-ARCHIVE = PAIR / "tle/archive"
+ARCHIVE = PAIR / "tle"
 ARCHIVE_SHA = "sha256:25bf630b8588a27a23f90de971041ce95b249ce5e1fd2f72144aa8b73945fafc"
 OFFER_SHA = "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236"
 INVENTORY_SHA = "sha256:e22b918df63370a0590757b70f71a0e620792cf90cf78a833e601af7a0b395a6"
