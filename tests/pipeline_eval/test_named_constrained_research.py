@@ -102,7 +102,8 @@ def test_nomination_observation_respects_original_no_offer_and_returns_same_obje
     assert observations[-1]["positive_offers"] == 1
 
 
-def test_genuine_named_withheld_preserves_identity_reason_and_empty_media(tmp_path, monkeypatch):
+@pytest.mark.parametrize("optimized_publication", [False, True])
+def test_genuine_named_withheld_preserves_identity_reason_and_empty_media(tmp_path, monkeypatch, optimized_publication):
     # The byte-pinned named DS30-0227 stock withholding has no trailing line break.
     archived = (Path(__file__).parent / "constrained-cli-withheld-0227.json").read_bytes().rstrip(b"\n")
     assert sha256(archived).hexdigest() == "c7b876c0e3a6633cce62f78043ac2d4eb2ccccd6accc23b0ed50659107b77e99"
@@ -110,10 +111,10 @@ def test_genuine_named_withheld_preserves_identity_reason_and_empty_media(tmp_pa
     offer = tmp_path / "offer.json"
     offer.write_text(json.dumps(released["region"]))
 
-    request = cli.options(flags(tmp_path))
+    request = cli.options(flags(tmp_path) + (["--optimized-publication"] if optimized_publication else []))
 
     def archived_publication(args, *, optimized, saved, expected, analysis_scope):
-        assert not optimized
+        assert optimized is optimized_publication
         assert saved is expected is None
         store = FastStandardAnalysisStore(args.bulk_root)
         folder = store.folder(released["run_id"])
@@ -128,6 +129,8 @@ def test_genuine_named_withheld_preserves_identity_reason_and_empty_media(tmp_pa
     cli.run(request)
     receipt = json.loads((request.output / "named-constrained-research.json").read_text())
     assert receipt["publication"]["decision"] == "withheld"
+    assert receipt["optimized_publication"] is optimized_publication
+    assert ("direct_orbit_figures.py" in receipt["implementation"]) is optimized_publication
     assert receipt["selected_rows"] == {}
     assert receipt["raw_authority"] == released["raw_authority"]
     assert receipt["named_input_sha256"] == released["input_sha256"]

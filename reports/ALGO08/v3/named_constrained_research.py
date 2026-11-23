@@ -33,6 +33,8 @@ def options(argv=None):
     for name in ("recording", "archive", "region", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--constrained", choices=FIRST_ARMS, default="stock")
+    parser.add_argument("--optimized-publication", action="store_true",
+                        help="Reuse exact graph and orbit-history calculations and draw the reviewed web layouts")
     parser.add_argument("--saved", type=Path, help="Existing signed named-v3 20 ms detections")
     parser.add_argument("--saved-digest", type=saved_digest, help="Sealed digest of --saved")
     parser.add_argument("--saved-inventory", type=Path, help="Authenticated original inventory for --saved")
@@ -148,11 +150,17 @@ def run(args):
         sources.append(HERE / "prepared_constrained_checks.py")
     if first_arm is not None:
         sources.append(HERE / "constrained_pair_veto.py")
+    if args.optimized_publication:
+        sources.extend(HERE / name for name in (
+            "exact_graph_execution.py", "vector_graph_edges.py", "polynomial_fit_cache.py", "exact_phase_forecast.py",
+            "unified_short_bootstrap.py", "one_pass_web_png.py", "direct_residual_entry.py", "direct_residual_figures.py",
+            "direct_orbit_entry.py", "direct_orbit_figures.py",
+        ))
     pins = {path.name: "sha256:" + sha256(path.read_bytes()).hexdigest() for path in sources}
 
     output.mkdir()
     launch = SimpleNamespace(recording=args.recording, archive=args.archive, region=args.region, bulk_root=output)
-    named_publication(launch, optimized=False, saved=args.saved, expected=args.saved_digest,
+    named_publication(launch, optimized=args.optimized_publication, saved=args.saved, expected=args.saved_digest,
                       analysis_scope=lambda: analysis_scope(args, native, audit))
 
     from leo.contracts.digests import canonical_digest
@@ -163,8 +171,10 @@ def run(args):
     detail = FastStandardAnalysisStore(output).detail(publication["run_id"])
     identity = dict(named_specification=named["frozen_specification"], mode=args.constrained,
                     first_arm=first_arm, implementation=pins, release_ports=audit["prepared_release_sources"])
+    if args.optimized_publication:
+        identity["optimized_publication"] = True
     audit.update(
-        research_sha256=canonical_digest(identity), implementation=pins,
+        research_sha256=canonical_digest(identity), implementation=pins, optimized_publication=args.optimized_publication,
         named_specification=named["frozen_specification"], detector_sha256="sha256:"+named["detector_sha256"],
         saved_input_sha256=args.saved_digest, named_input_sha256=detail["input_sha256"],
         raw_authority=detail["raw_authority"], region_file_sha256="sha256:"+sha256(offer).hexdigest(),
