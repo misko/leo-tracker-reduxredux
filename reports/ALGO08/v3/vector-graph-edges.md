@@ -1,0 +1,13 @@
+# Batching the possible connections between Doppler observations
+
+On dense DS30-0008, constructing all **90,746** time- and alias-compatible graph edges took **10–11 ms** with batched arrays, down from **119–120 ms**. Complete track construction saved **0.116 and 0.123 CPU s** in forward and reverse order. Each edge, incoming/outgoing index, fitted curve, observation assignment and track diagnostic matched. The 0.25 s standalone target applies to the whole track step, so the edge-only implementation stopped before a full solve. [Frozen protocol](vector-graph-edges-protocol.md) · [Measurements](measurements/vector-graph-edges.json)
+
+| Complete signed detector input | Observations / edges | Original → batched edge CPU, ms, first pair | Original → batched full graph CPU, s, first pair | Whole graph saving in reverse order |
+|---|---:|---:|---:|---:|
+| DS30-0008 | 7,336 / 90,746 | 119.2 → 10.6 | 1.470 → 1.354 | 0.123 s |
+| DS30-0016 | 475 / 4,137 | 6.7 → 1.2 | 0.065 → 0.059 | 0.005 s |
+| Northern simulation | 1,078 / 2,652 | 14.0 → 1.6 | 0.153 → 0.141 | 0.012 s |
+
+For each receiver, channel and actual RF, form pairs inside the original maximum time gap. Apply the original floating-point minimum duration and the 48-predecessor cap. Calculate allowed slopes in each signed alias branch, then use stable ordering to recover exactly the original target, branch and predecessor order. This matters because equally scored alternatives can resolve differently when their order changes. The algorithm indexes edges by source and target once. The existing native path finder still chooses the tracks, and the polynomial stage still fits each accepted path. All three receipts used the original signed measurements and installed graph configuration. No waveform samples or evaluation locations were needed. [Implementation](vector_graph_edges.py) · [Tie, alias and fallback tests](../../../tests/pipeline_eval/test_vector_graph_edges.py)
+
+These timings use the exclusive low-priority Gauss CPU and one numerical thread. The verification pass compared individual graph arrays before a separate original, batched, batched, original timing sequence. Zero fallbacks occurred. On dense, 199 native path calls ran in each arm; most of the 1.35 s remaining in track construction lies outside edge generation and native path search. For scale, the full unfiltered dense numerical solver previously took 26.105 CPU s. A factor-of-eleven improvement in the edge operation addresses less than half a percent of that clock. [Trial and original packet digests](vector_graph_edges_trial.py) · [Dense full-solve boundary](regional-dense-pair.md)
