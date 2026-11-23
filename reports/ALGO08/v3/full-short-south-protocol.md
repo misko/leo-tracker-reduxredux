@@ -1,0 +1,7 @@
+# Full-short receiver on the southern development waveform
+
+Use the existing 1,200-visit public southern simulated recording, its historical causal catalogue, and its original containing and far-offered squares. The source assignment has SHA-256 `48fed3c62639ef81fb99e4b76921bcacd999e769a78ebb607b2b886b6f0951f0` and the previously published displaced-offer receipt has SHA-256 `5181abf1c8a36d45dfe140e8851f0a423b69ec69b8ca231a3f87bcc9fdcecca9`.
+
+Run the exact DS30-0016 candidate once on saved raw I/Q using the containing offer. Replay its authenticated detector packet on the far offer. Use a location-independent entry point with required recording, archive and region arguments, the same 20/12 ms recipe and graph, the region check before inference, and official publication through all eight figures on a fix. Withholding must use the ordinary terminal path. Use one low-priority Gauss core under the shared lock. Record acquisition, numerical, publication and process timings with their boundaries. No paired speed claim against archived v3 clocks.
+
+Use the archived installed-build decisions as controls. Score after both runs finish. Report both calibration arms with horizontal error and RF RMS separately, an allowed increase of 250 m per arm for this development screen, whether the offered region contains the reference, selected support and grid completeness, and whether the far offer withholds. These public development cases are outside the held-out set.
