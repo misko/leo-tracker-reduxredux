@@ -149,6 +149,7 @@ class Compare:
 
 
 def weak(observer):
+    publication, specification = configuration()
     from early_region import before_fit
     from joint_publication import full_catalogue_route
     from leo.contracts.digests import canonical_digest
@@ -160,7 +161,6 @@ def weak(observer):
     from tools.pipeline_eval.variants import v5_core
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
 
-    publication, specification = configuration()
     picked, control = small_inputs("physical")
     _, archive, _, packet, pin, offer = picked
     archive_path = Path(archive["root"])
