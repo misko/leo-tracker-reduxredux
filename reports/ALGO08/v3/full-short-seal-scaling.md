@@ -32,6 +32,8 @@ The apparent throughput advantage of the combined ingress in both sealed-prefix 
 
 ## Corrected 55-file projections
 
+The 23.482 s scenario below used the finalist-race experiment. A later run timed the full live route, including its unconditional regional check, at 33.677 CPU s on the same dense detector input. With that measurement, the fastest signed-reader scenario projects 0.539 median and 0.553 summed elapsed with optimistic sealing and worker overhead. [Complete-route budget and both reader rates](full-short-transfer.md)
+
 Each instrumented attempt now uses recorded compressed MB divided by the observed reader rate, one common detector seal, the historical solve time times the supplied fraction, and the original terminal-to-exit time. The three failures without stage instrumentation keep their original elapsed. Historical denominators are unchanged. The table gives median individual and summed elapsed relative to their measured historical totals. Each gate requires at most 0.5.
 
 | Solve scaling | Path and reader MB/s | Former through-seal transfer | Optimistic once | Stressed once | Optimistic once + worker | Stressed once + worker |

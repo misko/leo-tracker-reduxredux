@@ -85,11 +85,13 @@ def artifacts(root, receipt):
 
 
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
-        raw_context=None, early_regional=False, keep_selected_rows=False):
+        raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
         raise ValueError("A detector substitution requires the full raw input path")
+    if saved_receiver is not None and not args.saved:
+        raise ValueError("An alternate saved receiver needs a verified detector packet")
     if detector_override is not None and prepare_detector is not None:
         raise ValueError("Choose a prepared detector or a detector factory")
     stock_control = getattr(args, "stock_control", False)
@@ -170,8 +172,13 @@ def run(args, *, detector_override=None, detector_description=None, track_config
             if raw_context is not None:
                 stack.enter_context(raw_context(algo08_scan))
             if saved is not None:
+                stack.enter_context(patch.dict(algo08_scan.PINS, {}))
                 def acquire(session, inventory_digest, _inventory, _assets):
-                    found = verified_saved(saved, args.saved_digest, session, inventory_digest, spec["detector_sha256"])
+                    pin = spec["detector_sha256"] if saved_receiver is None else saved_receiver
+                    found = verified_saved(saved, args.saved_digest, session, inventory_digest, pin)
+                    # The stock asset is already verified. Bind the persisted packet
+                    # to the recipe that produced it for analyze's independent check.
+                    algo08_scan.PINS["cancellation-factors.so"] = pin
                     saved_handoffs.append(inventory_digest)
                     return found
                 stack.enter_context(patch.object(algo08_scan, "acquire", acquire))
