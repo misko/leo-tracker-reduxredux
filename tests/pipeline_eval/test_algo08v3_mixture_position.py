@@ -47,7 +47,7 @@ def test_mixture_retains_correct_signed_alias_and_can_use_null():
 
 
 def test_no_visible_candidates_use_null_instead_of_reporting_an_owner():
-    empty = dict(design=np.empty((7, 9)), raw=np.empty((0, 7)), tangent=np.empty((0, 7)),
+    empty = dict(design=np.arange(63, dtype=float).reshape(7, 9), raw=np.empty((0, 7)), tangent=np.empty((0, 7)),
                  labels=np.empty(0, int), phase=np.empty(0), widths=np.empty(0), sample=np.ones(7))
     loss, records, gram, step = mixture.update([empty], 100., np.zeros(8), derivatives=True)
     assert np.isfinite(loss) and records == [None]
