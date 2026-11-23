@@ -1,7 +1,7 @@
 """Compare current and named v3 solvers on one authenticated full-aperture packet."""
 
 import argparse
-from contextlib import ExitStack
+from contextlib import nullcontext
 from functools import partial
 from hashlib import sha256
 import json
@@ -70,8 +70,28 @@ def verify_sources(checked, source_pins=SOURCE_PINS):
         checked(HERE / name, pin)
 
 
+def saved_inventory(request, path):
+    from leo.contracts.digests import canonical_digest
+
+    inventory = json.loads(path.read_bytes())
+    digest = canonical_digest(inventory)
+    session = "fast-" + digest.removeprefix("sha256:")[:32]
+    recording = Path(request["recording"])
+    manifests = [[str(Path(row["path"]) / "manifest.json"), row["manifest_digest"]] for row in inventory["segments"]]
+    if (digest != request["inventory"] or session != request["session"] or inventory["recording_name"] != recording.name
+            or manifests != request["manifests"]):
+        raise ValueError("The saved inventory must bind to the original path and manifest order")
+
+    def inventory_only(_store, path, *, verify_windows=True):
+        if verify_windows or Path(path) != recording:
+            raise ValueError("Saved inventory cannot authorize waveform access or another recording")
+        return session, digest, inventory
+
+    return inventory_only
+
+
 def worker(job, mode, output, *, source_pins=SOURCE_PINS, native_sha=NATIVE_SHA,
-           windows=3042, admitted=2702, audit_name="saved-0316-worker.json"):
+           windows=3042, admitted=2702, audit_name="saved-0316-worker.json", inventory_file=None):
     begin = process_time(), perf_counter()
     import empty_bootstrap as staged
     import unified_short_bootstrap as cumulative
@@ -90,7 +110,10 @@ def worker(job, mode, output, *, source_pins=SOURCE_PINS, native_sha=NATIVE_SHA,
     native = json.loads(staged.checked(packet, native_sha))
     source = native["source"]
     recording = Path(req["recording"])
-    session, inventory, original = FastScanStore(output).inventory(recording, verify_windows=False)
+    inventory_scope = (nullcontext() if inventory_file is None else
+                       patch.object(FastScanStore, "inventory", saved_inventory(req, inventory_file)))
+    with inventory_scope:
+        session, inventory, original = FastScanStore(output).inventory(recording, verify_windows=False)
     if (specification["detector_sha256"] != DETECTOR or req["inventory"] != inventory or req["session"] != session
             or original["window_count"] != windows or native["provenance"]["processed_windows"] != admitted
             or source["raw_recording_authority_digest"] != req["raw_authority"]
@@ -106,7 +129,7 @@ def worker(job, mode, output, *, source_pins=SOURCE_PINS, native_sha=NATIVE_SHA,
     # The sentinel ensures the saved input label in the normal research receipt
     # describes the actual boundary; invoking it would also abort this worker.
     run_saved = partial(joint.run, detector_override=denied, detector_description=INPUT_DESCRIPTION)
-    with (patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
+    with (inventory_scope, patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
           patch.object(joint, "configuration", return_value=(publication, dict(specification, startup="stock")))):
         if mode == "stock":
             options = SimpleNamespace(**vars(opts), stock_control=True, saved=None, saved_digest=None, verify_images=True)

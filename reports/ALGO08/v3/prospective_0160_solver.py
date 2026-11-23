@@ -10,7 +10,11 @@ from pathlib import Path
 from resource import RUSAGE_SELF, getrusage
 import stat
 import subprocess
+import sys
 from time import perf_counter, process_time
+
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from prospective_0316_solver import ARMS, DETECTOR, INPUT_DESCRIPTION, LIBRARIES, ORDER, SOURCE_PINS
 from prospective_0316_solver import elapsed, inspect, owner_delta, verify_sources, worker
@@ -39,6 +43,7 @@ PINS = dict(SOURCE_PINS, **{
     "unified_short_bootstrap.py": "025b727d423c0b7b33f5d7036dc0e9bc97ba30fcc07d454599679958e140adca",
     "short_graph_guard.py": "ef145279a8e9930ab4ff0268b0f47256ad89800e91cfb3440babfc485d30ab08",
 })
+FIX_PINS = PINS | {"joint_publication.py": "2f9c5636d710edb35b038d63b37b46f375c4a2ab390efa90124fd3cc35982d71"}
 
 
 def assignment():
@@ -291,6 +296,127 @@ def run(root, admission_file):
     write(root / "result.json", result)
 
 
+def audit_published(root, admission_file, output):
+    """Verify immutable files from the original process exits without invoking a solver."""
+    from aperture_trial import read, write
+    from joint_publication import artifacts
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_scan import FastScanStore
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from tools.pipeline_eval.qualification import paired_publication as pp
+    from tools.pipeline_eval.scoring import distance_km
+    from triage_bounds import REFERENCE, REFERENCE_SHA256
+
+    admission, req = read(admission_file), read(root / "request.json")
+    clocks = {mode: read(root / f"{mode}-clock.json")["timing"] for mode in ORDER}
+    historical = json.loads(checked(LOCAL_PANEL / CASE / "pair.json", PAIR_SHA))["runs"]["candidate"]
+    if clocks["stock"]["exit_code"] != 0 or clocks["cumulative"]["exit_code"] != 1:
+        raise ValueError("The archived process exits do not match the incomplete comparison")
+    ref, = (row["reference"] for row in json.loads(checked(REFERENCE, REFERENCE_SHA256))["cases"]
+            if row["dataset_label"] == CASE and row["authority_eligible"] and row["sealed_metadata_digests_verified"])
+    truth = [ref[key] for key in ("latitude_deg", "longitude_deg")]
+    score = {}
+    for mode in ORDER:
+        destination = root / mode
+        receipt = historical["receipt"].copy()
+        run_id = receipt["run_id"]
+        store = FastStandardAnalysisStore(destination)
+        detail = store.detail(run_id)
+        workspace = FastScanStore(destination).automatic_workspace(run_id, create=False)
+        terminal_path = workspace / "terminal.json"
+        terminal = read(terminal_path)
+        native_path, = workspace.parent.glob("*/detections.json")
+        if (sha256(native_path.read_bytes()).hexdigest() != NATIVE_SHA or terminal["native_sha256"] != "sha256:"+NATIVE_SHA
+                or detail["raw_authority"] != req["raw_authority"] or detail["session_id"] != req["session"]
+                or detail["region"] != receipt["region"] or terminal["orbit_policy"] != "history_support"):
+            raise ValueError("Published files do not bind the signed recording or documented orbit support")
+        receipt.update(terminal_sha256=detail["terminal_sha256"], decision=detail["state"])
+        if receipt["decision"] != "complete":
+            raise ValueError("The reported science must match the published complete fix")
+        event = clocks[mode]["started_unix_ns"]
+        science = pp.evidence(destination, receipt, event, read_only=True)
+        if mode == "stock" and any(science[k] != historical[k]
+                                   for k in ("arms", "owners", "raw_authority", "scientific_digests", "artifacts")):
+            raise ValueError("Named replay does not reproduce the historical signed evidence")
+        figures = artifacts(destination, receipt)["images"]
+        grid, path = store.position_grid(run_id), store.position_path(run_id)
+        if (grid["evaluated_points"] != 179 or not grid["complete"] or len(figures) != 8
+                or any(doc["binding"]["position_png_sha256"] != figures["position"]["sha256"] for doc in (grid, path))):
+            raise ValueError("Published grid, path or figure binding is incomplete")
+        audit_file = destination / SETTINGS["audit_name"]
+        authenticated = read(audit_file) if audit_file.is_file() else None
+        score[mode] = dict(process=clocks[mode], worker=authenticated, terminal=terminal, science=science, pngs=figures,
+                           candidate_route_available=(destination / "joint-research-receipt.json").is_file(),
+                           associated={arm: detail["arms"][arm]["associated_points"] for arm in ARMS},
+                           scopes=dict(launch_to_native_mtime_s=(native_path.stat().st_mtime_ns-event)/1e9,
+                                       native_to_terminal_mtime_s=(terminal_path.stat().st_mtime_ns-native_path.stat().st_mtime_ns)/1e9),
+                           horizontal_error_km={a: distance_km(truth, terminal["arms"][a]["latlon"]) for a in ARMS},
+                           rf_rms_hz={a: terminal["arms"][a]["rf_rms_hz"] for a in ARMS},
+                           sidecars=dict(grid=canonical_digest(grid), path=canonical_digest(path),
+                                         position_png_sha256=figures["position"]["sha256"]))
+    stock, candidate = (score[mode] for mode in ORDER)
+    if candidate["candidate_route_available"] or candidate["worker"] is not None:
+        raise ValueError("The candidate exit must retain the missing route/solve receipt limitation")
+    png_equality = {name: {key: item[key] == candidate["pngs"][name][key] for key in ("sha256", "rgba_sha256", "size")}
+                    for name, item in stock["pngs"].items()}
+    write(output, dict(case=CASE, status="candidate_verifier_failed_after_publication", no_waveform=True, waveform_calls=0,
+                       original_inputs=req, admission=admission, stage=read(root / "stage-clock.json"),
+                       reference_sha256=REFERENCE_SHA256, runs=score, identical_png_fields=png_equality,
+                       candidate_owner_rows_available=False, candidate_numerical_solve_cpu_available=False))
+
+
+def confirm(first_root, audit_file, destination):
+    from aperture_trial import read, RELEASE, write
+    from dense_geographic_trial import host
+    from full_short_physical import environment
+    from short_raw_diagnostic import measure
+
+    machine = host()
+    verify_sources(checked, FIX_PINS)
+    request_file = first_root / "request.json"
+    request, audit = read(request_file), read(audit_file)
+    if (audit["case"] != CASE or request != audit["original_inputs"]
+            or audit["runs"]["cumulative"]["process"]["exit_code"] != 1):
+        raise ValueError("Verification requires the preserved original candidate exit and scientific audit")
+    inventory = first_root / "stock/fast-scan-inputs" / f"{request['session']}.json"
+    paths = [inventory, Path(request["native_file"]), Path(request["offer_file"]), Path(request["local_archive"]["root"]),
+             *(Path(path) for path in request["local_libraries"].values())]
+    if any(not path.resolve(strict=True).is_relative_to(first_root) for path in paths):
+        raise ValueError("Verification may use only the previously staged saved inputs")
+    if subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", destination.parent], text=True).strip() != "tmpfs":
+        raise ValueError("Verification output must use a fresh tmpfs root")
+    destination.mkdir()
+    (destination / "tmp").mkdir()
+    env = environment(first_root)
+    env["TMPDIR"] = str(destination / "tmp")
+    output = destination / "cumulative"
+    command = [RELEASE / "venv/bin/python", "-IB", __file__, "worker", request_file, "cumulative", output,
+               "--staged-inventory", inventory]
+    clock = measure(command, env, output)
+    write(destination / "cumulative-clock.json", dict(timing=clock, command=list(map(str, command))))
+    if clock["exit_code"]:
+        raise RuntimeError("Corrected candidate worker failed; its process exit is sealed")
+    own = read(output / SETTINGS["audit_name"])
+    checked_run = inspect(output, "cumulative", own["receipt"], clock, request, **SETTINGS)
+    research = read(output / "joint-research-receipt.json")
+    original = audit["runs"]["cumulative"]
+    numerical = ("arms", "owners", "raw_authority", "scientific_digests", "artifacts")
+    if (not research.get("recovered_inference") or research["recovered_inference"]["orbit_policy"] != "history_support"
+            or any(checked_run["science"][key] != original["science"][key] for key in numerical)
+            or checked_run["figures"] != original["pngs"] or checked_run["terminal"] != original["terminal"]):
+        raise ValueError("Corrected candidate must audit the history retry and reproduce the first published science")
+    stock_rows = read(first_root / "stock/joint-research-receipt.json")["selected_rows"]
+    stock_cpu = audit["runs"]["stock"]["worker"]["solve"]["cpu_s"]
+    solve_cpu = own["solve"]["cpu_s"]
+    prior = audit["admission"]["forecast"]["predicted_solve_cpu_s"]
+    write(destination / "result.json", dict(case=CASE, first_audit_sha256=sha256(audit_file.read_bytes()).hexdigest(),
+          corrected_source=FIX_PINS, machine=machine, waveform_calls=0, input_staged=True, original_clock=original["process"],
+          candidate=checked_run, recovered_inference=research["recovered_inference"], reproduced_first_publication=True,
+          original_stock_solve_cpu_s=stock_cpu, candidate_solve_cpu_s=solve_cpu,
+          candidate_minus_frozen_forecast_s={name: solve_cpu-seconds for name, seconds in prior.items()},
+          owners={arm: owner_delta(stock_rows[arm], checked_run["selected_rows"][arm]) for arm in ARMS}))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     modes = cli.add_subparsers(dest="operation", required=True)
@@ -302,10 +428,24 @@ if __name__ == "__main__":
     job.add_argument("request", type=Path)
     job.add_argument("mode", choices=ORDER)
     job.add_argument("output", type=Path)
+    job.add_argument("--staged-inventory", type=Path)
+    audit = modes.add_parser("audit")
+    audit.add_argument("root", type=Path)
+    audit.add_argument("preflight", type=Path)
+    audit.add_argument("output", type=Path)
+    corrected = modes.add_parser("confirm")
+    corrected.add_argument("root", type=Path)
+    corrected.add_argument("audit", type=Path)
+    corrected.add_argument("output", type=Path)
     args = cli.parse_args()
     if args.operation == "preflight":
         print(json.dumps(preflight(), indent=2, allow_nan=False))
     elif args.operation == "pair":
         run(args.root, args.preflight)
+    elif args.operation == "audit":
+        audit_published(args.root, args.preflight, args.output)
+    elif args.operation == "confirm":
+        confirm(args.root, args.audit, args.output)
     else:
-        worker(args.request, args.mode, args.output, source_pins=PINS, **SETTINGS)
+        pins = FIX_PINS if args.staged_inventory else PINS
+        worker(args.request, args.mode, args.output, source_pins=pins, inventory_file=args.staged_inventory, **SETTINGS)

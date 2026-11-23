@@ -89,6 +89,31 @@ def artifacts(root, receipt, *, verified_read=None):
     return dict(images=images)
 
 
+def completed_route(solves, attempts, regional, returned, *, stock, early_regional, decision):
+    if len(solves) != 1:
+        raise ValueError("Expected one completed public solve")
+    solve = solves[0]
+    empty = solve.get("empty_receiver_withhold", False)
+    recovered = None
+    if not (stock or empty):
+        if len(returned) != 1:
+            raise ValueError("Expected one returned research inference")
+        attempt_start, regional_start = returned[0]
+        if attempt_start or regional_start:
+            if solve["orbit_policy"] not in ("history_support", "orbit_support") or max(attempt_start, regional_start) != 1:
+                raise ValueError("Unexpected prior inference before the completed research route")
+            recovered = dict(orbit_policy=solve["orbit_policy"], attempts=attempts[:attempt_start],
+                             early_regional=regional[:regional_start])
+            attempts, regional = attempts[attempt_start:], regional[regional_start:]
+    early = (len(regional) == 1 and regional[0]["result"].get("complete") is True
+             and regional[0]["result"].get("would_withhold") is True)
+    if (len(attempts) != (0 if stock or early or empty else 1)
+            or early_regional and len(regional) != int(not empty)
+            or (early or empty) and decision != "withheld"):
+        raise ValueError("Expected exactly one solver invocation through the requested route")
+    return attempts, regional, early, empty, recovered
+
+
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
         raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
         reuse_cold_rows=False, profiled_gamma_library=None, reuse_grid_phase_states=False,
@@ -131,7 +156,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     saved = json.loads(args.saved.read_bytes()) if args.saved else None
     saved_handoffs, solves, selected_rows = [], [], {}
     observer = getattr(args, "observe_prepared", None)
-    preparations, regional = [], []
+    preparations, regional, returned = [], [], []
 
     def analyze(*values, **kwargs):
         stock_solve = algo08_scan.solve
@@ -155,9 +180,13 @@ def run(args, *, detector_override=None, detector_description=None, track_config
             elif not stock_control:
                 route = make_route(infer, reader, attempts, repair=True, signed_finish=signed_finish)
 
-            def observed(prepared, *values, **options):
-                preparations.append(observer(prepared))
-                return route(prepared, *values, **options)
+            def observe_return(prepared, *values, **options):
+                start = len(attempts), len(regional)
+                if observer is not None:
+                    preparations.append(observer(prepared))
+                answer = route(prepared, *values, **options)
+                returned.append(start)
+                return answer
 
             with ExitStack() as stack:
                 if local_future_policy is not None:
@@ -193,7 +222,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                     stack.enter_context(patch.object(algo08_position, "TrackConfig",
                                                      lambda **cfg: track_config(factory(**cfg))))
                 if observer is not None or not stock_control:
-                    stack.enter_context(patch.object(v5_core, "infer", observed if observer is not None else route))
+                    stack.enter_context(patch.object(v5_core, "infer", observe_return))
                 decision, packet, policy = stock_solve(native, reader, assets, region)
             solves.append(dict(cpu_s=process_time() - cpu, elapsed_s=perf_counter() - wall, orbit_policy=policy))
             if optimized:
@@ -244,13 +273,9 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         receipt = publication.run(SimpleNamespace(recording=args.recording, archive=args.archive, region=args.region,
                                                  bulk_root=args.output), spec)
         cpu, wall = process_time() - clocks[0], perf_counter() - clocks[1]
-    stopped_early = (len(regional) == 1 and regional[0]["result"].get("complete") is True
-                     and regional[0]["result"].get("would_withhold") is True)
-    empty = len(solves) == 1 and solves[0].get("empty_receiver_withhold", False)
-    if (len(solves) != 1 or len(attempts) != (0 if stock_control or stopped_early or empty else 1)
-            or early_regional and len(regional) != int(not empty)
-            or (stopped_early or empty) and receipt["decision"] != "withheld"):
-        raise ValueError("Expected exactly one solver invocation through the requested route")
+    attempts, regional, stopped_early, empty, recovered = completed_route(
+        solves, attempts, regional, returned, stock=stock_control, early_regional=early_regional,
+        decision=receipt["decision"])
     if saved is not None and len(saved_handoffs) != 1:
         raise ValueError("Expected one verified saved detection handoff")
     source = Path(__file__).resolve().parent
@@ -302,6 +327,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         result["optimized_full_catalogue"] = True
     if early_regional:
         result["early_regional"] = regional
+    if recovered is not None:
+        result["recovered_inference"] = recovered
     if gamma is not None:
         result["profiled_gamma"] = gamma
         pins["profiled_gamma_live.py"] = sha256((source / "profiled_gamma_live.py").read_bytes()).hexdigest()
