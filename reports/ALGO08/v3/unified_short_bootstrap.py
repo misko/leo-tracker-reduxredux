@@ -188,6 +188,8 @@ def run(args):
         raise ValueError("Expected the causal archive directory")
     scope = staged.now()
     audit, layout_audit = {}, {}
+    route_selection = None
+    effective_detector = RECIPE_SHA
     graph_audit = {} if args.exact_graph_reuse else None
     png_read_audit = {} if args.reuse_verified_png_reads else None
     detector_import_audit = {} if args.lazy_scanner_detector else None
@@ -217,6 +219,13 @@ def run(args):
         phases["authenticated_raw_acquisition"] = staged.clock(scope)
         if args.region.read_bytes() != offer_bytes:
             raise ValueError("The offered region changed during acquisition")
+        if getattr(args, "held_anchor_route", False):
+            from held_anchor_route_publication import prepare
+
+            scope = staged.now()
+            decision_file = args.output.with_name(args.output.name + "-held-anchor-route.json")
+            native, recipe, effective_detector, route_selection = prepare(native, recipe, session, inventory_digest, decision_file)
+            phases["held_anchor_route_selection"] = staged.clock(scope)
         scope = staged.now()
         reason = staged.empty_reason(native, frequency_evidence)
         graph_proof = None
@@ -229,7 +238,7 @@ def run(args):
         before = [name for name in staged.SCIENTIFIC_IMPORTS if name in sys.modules]
         if before:
             raise ValueError(f"Scientific imports crossed the receiver-first boundary: {before}")
-        handoff = Handoff(session, inventory_digest, RECIPE_SHA, native)
+        handoff = Handoff(session, inventory_digest, effective_detector, native)
         if reason is None:
             terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
                                                 graph_audit=graph_audit, png_read_audit=png_read_audit,
@@ -255,10 +264,12 @@ def run(args):
         dependencies += ("verified_png_reads.py",)
     if detector_import_audit:
         dependencies += ("lazy_scanner_detector.py",)
+    if route_selection is not None:
+        dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
                   route=route, requested_offer_sha256=sha256(offer_bytes).hexdigest(), archive_root=str(archive),
                   frozen_specification="sha256:"+launcher["FINGERPRINT"], receiver_recipe=recipe,
-                  detector_recipe_sha256="sha256:"+RECIPE_SHA, stock_launcher_sha256=staged.BASELINE_PIN,
+                  detector_recipe_sha256="sha256:"+effective_detector, stock_launcher_sha256=staged.BASELINE_PIN,
                   native_sha256=native_sha, clock_anchor=native["clock_anchor"],
                   causal_cutoff_utc_ns=native["clock_anchor"]["before"]["realtime_ns"], receipt=terminal,
                   source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in dependencies},
@@ -279,6 +290,8 @@ def run(args):
                   total_before_receipt=staged.clock(started))
     if research is not None and "grid_feature_projection" in research:
         result["grid_feature_projection"] = research["grid_feature_projection"]
+    if route_selection is not None:
+        result["held_anchor_route"] = route_selection
     with (args.output / "unified-short-bootstrap.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False)
         stream.write("\n")
@@ -303,4 +316,6 @@ if __name__ == "__main__":
                         help="Use the verified experimental grid projection and selected row library")
     parser.add_argument("--lazy-scanner-detector", action="store_true",
                         help="Load the installed detector adapter on first detector use in active publication")
+    parser.add_argument("--held-anchor-route", action="store_true",
+                        help="Choose unfiltered or full chronological carrier history by held full-anchor log scores")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
