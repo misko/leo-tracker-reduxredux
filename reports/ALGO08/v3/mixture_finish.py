@@ -26,7 +26,7 @@ def reason_points(arm):
     return arm["families"] < 3 or arm["sampled_owner_points"] < 32 or arm["receivers"] != 2
 
 
-def finish(prepared, region, bound, proposal):
+def finish(prepared, region, bound, proposal, *, observation_masks=None, include_rejected=False):
     reasons = []
     if proposal["status"] != "complete":
         return dict(decision="fallback", reasons=[proposal["status"]]), None
@@ -46,9 +46,14 @@ def finish(prepared, region, bound, proposal):
         aliases.append(nomination["alias"])
         confidence.append(nomination["weight"])
     node = dict(seed=dict(rows=rows, state=state), aliases=aliases)
-    base = problem(scan, node, "c0", None)
+    explicit = None if observation_masks is None else np.array([
+        oid in observation_masks[scan.tracks[i]["key"]]
+        for i in scan.curved for oid in scan.tracks[i]["observation_ids"]
+    ], dtype=bool)
+    base = problem(scan, node, "c0", explicit)
     keep = base.keep
-    powers, _, _ = family_weights(rows, base.members, scan.tracks, confidence, "cross_rx_support")
+    counts = None if explicit is None else [int(keep[sl].sum()) for sl in base.slices]
+    powers, _, _ = family_weights(rows, base.members, scan.tracks, confidence, "cross_rx_support", counts)
     history = prepared["phase_history"]
     history_sha = digest(history)
     raw_forecast = prepared["phase_forecast"]
@@ -94,4 +99,4 @@ def finish(prepared, region, bound, proposal):
         reasons.append("original_pair_gate")
     report = dict(decision="fallback" if reasons else "complete", reasons=reasons, arms=displays)
     signed = dict(scan=scan, node=node, keep=keep, entries=[], means=means, powers=powers, model=model, arms=paired)
-    return report, (None if reasons else signed)
+    return report, (None if reasons and not include_rejected else signed)
