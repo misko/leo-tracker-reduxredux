@@ -186,8 +186,9 @@ def run(root):
     digest = sha256(decoder.read_bytes()).hexdigest()
     job = root/"binding.json"
     write(job, dict(recording=admission["recording"], session=admission["session"], inventory=admission["inventory"],
-                    native=expected["native_sha256"], packet=packet, inventory_file=inventory, archive=archive,
-                    offer=offer, libraries=libraries, decoder=decoder, decoder_pin=digest))
+                    native=expected["native_sha256"], packet=str(packet), inventory_file=str(inventory), archive=str(archive),
+                    offer=str(offer), libraries={k: str(p) for k, p in libraries.items()},
+                    decoder=str(decoder), decoder_pin=digest))
     env = environment(root)
     env.update(TMPDIR=str(root/"tmp"), XDG_CACHE_HOME=str(root/"tmp"))
     python = RELEASE/"venv/bin/python"
@@ -198,7 +199,7 @@ def run(root):
         out = root/mode
         command = [python, "-IB", __file__, "worker", job, mode, out]
         clocks = measure(command, env, out)
-        write(root/f"{mode}-clock.json", dict(process=clocks, command=command))
+        write(root/f"{mode}-clock.json", dict(process=clocks, command=list(map(str, command))))
         if clocks["exit_code"]:
             raise RuntimeError(clocks["stderr_tail"])
         worker = read(out/"positive-fix.json")
@@ -220,7 +221,7 @@ def run(root):
     a, b = ("control", "native")
     sidecars = verify_position_sidecars(root/a, root/b, runs[a]["science"]["receipt"]["run_id"],
                                        runs[a]["figures"], runs[b]["figures"])
-    write(root/"result.json", dict(machine=machine, runs=runs, build=build, library_sha256=digest,
+    write(root/"result.json", dict(machine=machine, runs=runs, build=list(map(str, build)), library_sha256=digest,
                                   original_raw_sha256=RAW_PIN, source_sha256={
                                       p: sha256((HERE/p).read_bytes()).hexdigest() for p in
                                       ("positive_fix_trial.py", "verified_rgba.py", "verified_rgba_rows.c")},
