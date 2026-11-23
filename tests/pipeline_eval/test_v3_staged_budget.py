@@ -1,8 +1,23 @@
 from math import isclose
+import json
+from pathlib import Path
 
 import pytest
 
 from reports.ALGO08.v3.staged_budget import acquisition_allowance, gates, observed, stage_rows
+
+
+def test_signed_transfer_uses_matched_elapsed_and_keeps_unsplit_failure():
+    root = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"
+    summary = json.loads((root / "measurements/blind-joint-signed-summary.json").read_bytes())
+    timing = summary["cases"]["DS30-0008"]["timing"]
+    stages = json.loads((root / "development/stages.json").read_bytes())["stages"]
+    assert stages["16"]["unsplit_failures_charged_in_full"]["DS30-0022"] > 110
+    for stage in stages.values():
+        scenario = stage["dense_signed_transfer"]
+        assert scenario["solve_fraction"] == timing["charged"]["elapsed_s"] / timing["stock"]["elapsed_s"]
+        assert 0 < scenario["max_acquisition_fraction"] < .5
+        assert min(scenario["ratios_if_acquisition_halved"]) > .5
 
 
 def test_binding_timing_gate_depends_on_duration_mix():

@@ -52,6 +52,21 @@ One bounded repair admitted a dense fix without fallback. The same research buil
 
 Feeding the same repaired solver with saved covariance detections produced a 41.60-second dense solve and 1.093 km fitted error. The alternate receiver's historical warm acquisition alone took 56.20 seconds. With the historical publication cost, the projected dense total is 101.14 seconds against v3's observed 113.02 seconds. [Matched detector packets, both calibration fits and timing boundaries](../receiver-crossover.md)
 
+## How fast would acquisition need to be with the signed position fit?
+
+On dense DS30-0008 the signed phase fit reduced solve time from 54.52 to 38.06 elapsed seconds and improved the two horizontal errors from 1.639 / 1.512 km to 1.086 / 1.080 km. On the two containing simulated offers it reproduced both v3 positions exactly, including the northern result that regressed with the earlier fit. Both distant omissions withheld. The northern containing solve took 6.66 CPU s against 5.65 for v3. [Matched measurements and explanation](../blind-joint-signed.md)
+
+The following sensitivity calculation applies the measured dense solve fraction (0.698) to the historical split clocks. Publication retains its measured duration, and the 110.77-second unsplit failure in the 16-case stage retains its entire cost. The calculation uses saved timings only. Individual solver costs vary with track density, fallbacks and the offered region. [Assigned clocks and projected ratios](stages.json)
+
+| Assigned recordings | Acquisition speedup needed for both half-time gates | Median paired elapsed ratio if acquisition halves | Summed elapsed ratio if acquisition halves |
+|---|---:|---:|---:|
+| First 4 | 2.75× | 0.585 | 0.584 |
+| First 16 | 3.05× | 0.577 | 0.605 |
+
+Dense DS30-0008 also exposes a cost outside the signal search. Its complete v3 acquisition used 21.62 CPU s outside the detector callbacks. Adding the new 38.06 CPU s solve gives **59.68 CPU s** before charging anything for signal search or image publication. Half of historical warm v3 CPU was **55.54 s**. These costs come from separate runs on the same recording. The gap identifies an opportunity in acquisition overhead or solving even if a much cheaper receiver is found. Elapsed qualification still requires matched raw runs. [Acquisition timers and boundaries](../acquisition-split.md) · [Historical dense CPU](../first-55/stage-clocks.csv)
+
+A faster alternative replaced the initial satellite search with a mixture fit. It took 30.27 CPU s on the dense recording, but each calibration arm lost a net 495 assigned observations and both position errors rose, despite slightly lower RF residuals. A separate pilot-frequency scout found two of 54 dense factors and one of 58 weak factors with its larger aperture. Both alternatives stopped at their saved-input checks. [Mixture initialization and position errors](../mixture-joint-start.md) · [Carrier scout and planted controls](../cyclic-carrier.md)
+
 ## Frozen scoring rules
 
 1. Use the recorded 4-case prefix and then the 16-case prefix in [the assignment manifest](stages.json). Retain complete pairs from the first four only for the identical frozen implementation and timing boundary. Alternate first build according to the assignments. Record cache residence immediately before each build, charged reads, CPU, elapsed, exit and artifacts. Use a single shared lock across each pair, one pinned core, nice 15, best-effort I/O priority 7 and one numerical thread. Keep failed attempts in the ledger.

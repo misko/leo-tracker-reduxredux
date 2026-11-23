@@ -15,6 +15,7 @@ PANEL_SHA = "147886973a6419baa925263c02e7b8d37e13737c94518bba69a023f47389d399"
 CLOCK_SHA = "dc046009db376b6655886d73755d61a8bad5d14b2a7c99b1231ad2cfff74e2f9"
 TIMES_SHA = "bb85ff40071ec84405135d723bc6b35ca17971f1e62d6759816be511569bcd11"
 REFERENCE_SHA = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
+SIGNED_SHA = "eb9d6ed45efc24e12855a8046ba38eb3f710130b1437fe77c17dcf3c158204ef"
 PAIRS = (
     ("successor-DS30-0374-pair.json", "b49af1ff154c7123574ffe6190e394c2d4ed7e29ea3da8d0da6dce479f3be82b",
      "Prefetch + orbit guard", "successor"),
@@ -139,6 +140,9 @@ def main():
         fixed[row["case"]] = float(elapsed)
     result = dict(source_panel_sha256=PANEL_SHA, source_clocks_sha256=CLOCK_SHA, source_times_sha256=TIMES_SHA,
                   stages={}, observed=observed())
+    signed = json.loads(checked(ROOT / "measurements/blind-joint-signed-summary.json", SIGNED_SHA))
+    timing = signed["cases"]["DS30-0008"]["timing"]
+    fraction = timing["charged"]["elapsed_s"] / timing["stock"]["elapsed_s"]
     for size in (4, 16):
         cases = panel["cases"][:size]
         stages = stage_rows(cases, clocks)
@@ -148,6 +152,11 @@ def main():
             max_acquisition_fraction_by_solver_speed={speed: acquisition_allowance(stages, 1/speed)
                                                        for speed in (1, 1.5, 2, 3)},
             ratios_with_zero_solver_time=gates(stages, 1, 0),
+            dense_signed_transfer=dict(
+                source_sha256=SIGNED_SHA, solve_fraction=fraction,
+                max_acquisition_fraction=acquisition_allowance(stages, fraction),
+                ratios_if_acquisition_halved=gates(stages, .5, fraction),
+            ),
         )
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "stages.json").write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
