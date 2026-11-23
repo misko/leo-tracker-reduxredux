@@ -133,10 +133,18 @@ def capture_sparse(case, receipt):
     return saved[0]
 
 
-def trial(case, receipt, output):
+def trial(case, receipt, output, *, signed_ceiling=None):
     frozen = json.loads(check_file(FROZEN_BLOCK, BLOCK_SHA256))["cases"][case]
     check_file(HERE / "rf_block_trial.py", TRIAL_SHA256)
-    sparse, _, _ = capture_sparse(case, receipt)
+    if signed_ceiling is not None:
+        previous = read(signed_ceiling)
+        if previous["case"] != "DS30-0008" or previous["frozen_block_sha256"] != BLOCK_SHA256:
+            raise ValueError("Expected the dense metadata-only gate receipt")
+        for arm in ARMS:
+            held = previous["recall"][arm]["missing"]["unpaid_held"]
+            if held["coverage"]["satellite_receiver"]["within_60_s"] * 2 < held["full_owner_rows"]:
+                raise ValueError("The dense metadata-only receiver ceiling did not pass")
+    sparse, context, states = capture_sparse(case, receipt)
     observed = read(receipt)
     decision = observed["decision"]
     if (observed["input"] != frozen["input"] or observed["mask"] != frozen["mask"]
@@ -145,14 +153,35 @@ def trial(case, receipt, output):
         raise ValueError("Sparse experiment no longer matches its frozen results")
     native, _, _, expected, identity = inputs(case)
     meta = metadata(native)
+    predicted = {}
+    if signed_ceiling is not None:
+        from sparse_rf_carrier import propose
+
+        predicted = {arm: propose(context["scan"], states[arm], meta, sparse[arm]) for arm in ARMS}
     # The archive of full owners serves only this scoring boundary.
     archive = pinned_aperture()[case]["full"]
     full = canonical_owners(native, archive, identity, expected)
     result = coverage(meta, sparse, full)
+    signed = {}
+    if predicted:
+        from leo.contracts.digests import canonical_digest
+        from sparse_rf_carrier import score
+
+        probes = native["source"]["probes"]
+        for arm, proposed in predicted.items():
+            held = {row["observation_id"]: (row["norad"], probes[index]["candidates"][0]["fractional_tracking_cfo_hz"])
+                    for index, row in full[arm].items() if not meta[index]["paid"]}
+            proposals = proposed.pop("proposals")
+            signed[arm] = dict(
+                **proposed, all_unpaid_lanes=sum(not row["paid"] for row in meta),
+                proposal_sha256=canonical_digest(proposals),
+                rules={rule: score(rows, held) for rule, rows in proposals.items()},
+            )
     write(output, dict(case=case, identity=identity, mask=observed["mask"], sparse=decision,
                        frozen_block_sha256=BLOCK_SHA256, trial_sha256=TRIAL_SHA256,
                        source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
-                       recall=result))
+                       signed_source_sha256=sha256((HERE / "sparse_rf_carrier.py").read_bytes()).hexdigest()
+                       if signed else None, recall=result, signed=signed))
 
 
 if __name__ == "__main__":
@@ -160,4 +189,5 @@ if __name__ == "__main__":
     cli.add_argument("case", choices=CASES)
     cli.add_argument("receipt", type=Path)
     cli.add_argument("output", type=Path)
+    cli.add_argument("--signed-ceiling", type=Path)
     trial(**vars(cli.parse_args()))
