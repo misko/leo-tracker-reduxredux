@@ -20,6 +20,12 @@ The supplied RF schedule had eight groups. Sorting the groups assigned three to 
 
 The experiment used authenticated, previously exported selections on those visits. The native continuation looks only at earlier candidate lists and counters, so paying for the required warmup recovers its state on each retained row. A component test verifies that property using the released continuation over competing carriers and real timing gaps. The solver kept the complete timeline, raw authority, archive and supplied region. Ground truth entered only in the scorer. These clocks measure solving and grid construction. They exclude raw reading, detector execution, and PNG rendering. Initial invocations had a study-runner initialization error before solver entry. The successful invocations initialized the pinned release before loading the packets. [Mask and runner](rf_block_trial.py) · [Scorer](rf_block_score.py)
 
+## Cost of revisiting a sparse first pass
+
+The dense first fit enabled a follow-up search that predicted at most two signed carrier frequencies per antenna opportunity. With a 4.55 kHz tolerance it identified 234 of the 2,920 omitted v3-owned factors with the correct satellite and frequency. This comparison grants perfect timing and does not include any waveform false alarms. The southern follow-up identified zero of 152. [Prediction protocol, costs and output](sparse-rf-recall.md)
+
+The predicted dense candidates occupy 1,620 distinct stereo visits. Their original I/Q occupies **2.592 GB**. Until the first solve finishes, a receiver that keeps every unpaid stereo window for potential confirmation would retain **7.123 GB**. Alternatively, revisiting just the predicted visits through the original verified storage members touches **77 of 106 members**, covering **5.954 GB compressed**, with 7.885 GB of decoded member contents. In the south the predictions touch 28 stereo visits, 44.8 MB of I/Q, and five members totaling 419 MB compressed. These figures count bytes and storage members. Actual disk traffic depends on cache and access method. The calculation read signed index metadata without decoding any I/Q. [Visit and member counts](measurements/rf-block-storage.json) · [Inventory calculation](rf_block_storage.py)
+
 ## Reproduce on Gauss
 
 ```sh
