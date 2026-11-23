@@ -103,7 +103,8 @@ def run(mode, route, output):
     audit = dict(graph={}, grid={}, forecast={})
     result = {}
     args = SimpleNamespace(
-        recording=output.parent / "raw-input-is-absent", archive=archive, region=region, output=output,
+        recording=output.parent / "raw-input-is-absent",
+        archive=archive, region=region, output=output,
         saved=None, saved_digest=None, verify_images=False, stock_control=not cumulative,
         optimized_full_catalogue=cumulative, skip_empty_proof=True,
     )
@@ -116,15 +117,21 @@ def run(mode, route, output):
             if cumulative:
                 stack.enter_context(graph_execution(enabled=True, audit=audit["graph"]))
                 stack.enter_context(active_projection(paths["grid"], audit["grid"]))
-            decision, packet, policy = algo08_scan.solve(native, TleArchiveReader(archive), assets, offer)
-        if decision["status"] not in ("ok", "withheld") or (decision["status"] == "ok") != (packet is not None):
+            decision, packet, policy = algo08_scan.solve(
+                native, TleArchiveReader(archive), assets, offer
+            )
+        status = decision["status"]
+        if status not in ("ok", "withheld") or (status == "ok") != (packet is not None):
             raise ValueError("Expected a complete numerical decision")
         evidence, _ = summarize(decision, packet, policy)
         result.update(evidence)
         if packet is not None:
             grid = packet["position_grid"]
-            if (not grid["complete"] or not grid["matched_c_grid"] or set(packet["arms"]) != set(ARMS)
-                    or any(abs(v) > 1e-5 for v in packet["objective_replay"].values())):
+            if (
+                not grid["complete"] or not grid["matched_c_grid"]
+                or set(packet["arms"]) != set(ARMS)
+                or any(abs(v) > 1e-5 for v in packet["objective_replay"].values())
+            ):
                 raise ValueError("A fix needs a complete paired grid and objective replay")
             result["selected_rows"] = {
                 arm: [[r["observation_id"], r["norad"], r["role"]] for r in packet["rows"][arm]]
@@ -178,7 +185,7 @@ def score_rows(runs, prior, truth):
             if (row["identity"] != stock["identity"] or row["mode"] != mode or row["route"] != route
                     or row["solver"] != "sha256:" + FROZEN or row["candidate_base"] != BASE
                     or row["identity"]["document_sha256"] != NATIVE_SHA):
-                raise ValueError("Both methods must bind the same original packet, archive and offer")
+                raise ValueError("Methods must bind the same original packet, archive and offer")
         signed_stock_match(prior[mode]["stock"], stock)
         clearance = face_clearance_km(stock["identity"]["offer"], truth)
         expected = 3.5764712370156406 if mode == "matched-tile" else -1.5
@@ -187,11 +194,13 @@ def score_rows(runs, prior, truth):
         scores = {}
         for name, row in pair.items():
             scores[name] = dict(
-                status=row["status"], reason=row["reason"], correct=(row["status"] == "ok") == (clearance >= 0),
+                status=row["status"], reason=row["reason"],
+                correct=(row["status"] == "ok") == (clearance >= 0),
                 arms={arm: dict(value, error_km=distance_km(value["latlon"], truth))
                       for arm, value in row["arms"].items()},
             )
-        stock_rows, cumulative_rows = stock.get("selected_rows", {}), cumulative.get("selected_rows", {})
+        stock_rows = stock.get("selected_rows", {})
+        cumulative_rows = cumulative.get("selected_rows", {})
         results[mode] = dict(
             truth_clearance_km=clearance, scores=scores,
             owners={arm: owner_delta(stock_rows.get(arm, ()), cumulative_rows.get(arm, ()))
@@ -205,10 +214,13 @@ def score(directory, output, summary):
     transfer = run_path(str(HISTORY / "covariance_transfer_trial.py"))
     public = transfer["public"]
     scores = public("truth-after-lock.json.gz", TREE)
-    if digest(scores) != json.loads(public("score-lock.json", TREE))["files"]["truth-after-lock.json.gz"]:
+    pins = json.loads(public("score-lock.json", TREE))["files"]
+    if digest(scores) != pins["truth-after-lock.json.gz"]:
         raise ValueError("Published India scoring authority changed")
     truth = json.loads(gzip.decompress(scores))["scene"]["coordinate"]
-    paths = {(mode, route): directory / f"{mode}-{route}" / "numerical.json" for mode, route in ORDER}
+    paths = {
+        (mode, route): directory / f"{mode}-{route}" / "numerical.json" for mode, route in ORDER
+    }
     runs = {mode: {route: read(paths[mode, route]) for route in ROUTES} for mode in MODES}
     prior = json.loads(gzip.decompress(checked(PRIOR, PRIOR_SHA)))["runs"]
     cases = score_rows(runs, prior, truth)
