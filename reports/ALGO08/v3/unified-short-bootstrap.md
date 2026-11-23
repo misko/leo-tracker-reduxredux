@@ -1,0 +1,36 @@
+# One receiver-first raw CLI for short acquisition and full publication
+
+The unified research CLI runs the verified mixed-aperture receiver on every original admitted stereo visit and hands its authenticated packet to publication in the same process. On the guarded tiny replay, it published all **13 real selected factors** and the original withheld files in **0.450 s**, versus **1.297 s** for named ALGO08v3, a 2.88× speedup. On the weak physical replay, the complete unfiltered short pipeline took **8.972 s** versus **11.651 s**, produced both calibration outputs and reproduced all eight original short-candidate figures. [Raw protocol](unified-short-bootstrap-protocol.md) · [Exact graph protocol](short-graph-guard-protocol.md)
+
+| Warm original I/Q replay | Named v3 CPU → unified CPU | Named v3 elapsed → unified elapsed | Decision |
+| --- | ---: | ---: | --- |
+| DS30-0227, literal zero guard, stock first | 1.457896 → 1.406669 s | 1.467796 → 1.415452 s | Withheld in both arms |
+| DS30-0016, literal zero guard, candidate first | 11.645106 → 8.966333 s | 11.650622 → 8.971642 s | Complete in both arms |
+| DS30-0227, exact graph guard, candidate first | 1.294512 → 0.446050 s | 1.296739 → 0.449797 s | Withheld in both arms |
+
+The first two rows are the same CLI configuration and yield a 0.867 median paired elapsed ratio and 0.792 summed ratio. The third row uses the additional exact guard. The available active guard check used saved detections. The two-case gate with the exact guard enabled therefore remains unmeasured. [Literal zero pair receipt](measurements/unified-short-bootstrap.json.gz) · [Exact graph receipt](measurements/unified-short-graph-guard.json.gz)
+
+## Input, handoff and proof
+
+Acquisition uses one independently measured stereo 20 ms full anchor followed by seven independently measured stereo 12 ms primaries per RF stream. Both branches use the same signed receiver cadence and aperture assets, native margin gates, paired decoded hashes, full original compressed verification and one-member authenticated read-ahead. The candidate publishes with the verified 20/12 ms recipe digest and records the frozen installed specification, source and native dependencies, causal archive path, raw clock cutoff, original inventory, region digest, one raw traversal and one authenticated handoff. The trial binds both recordings to their original causal archive snapshot inventories and offers. [CLI](unified_short_bootstrap.py)
+
+Only authenticated zero-factor inputs use the original withheld terminal before the solver loads by default. The optional `--prove-empty-graph` also covers nonempty packets whose installed graph cannot form a track. It uses the exact installed clock validator and winning-observation builder and counts those rows by actual RF, receiver and channel. Every group must fall strictly below the pinned `tracks.json` minimum of eight. The pinned lane fitter starts its graph only after meeting that minimum, and its finalization requires an existing model. Any lane reaching the minimum, or an unavailable proof, takes the normal optimized installed-graph solver, with the original regional, signed and plot paths. [Graph proof](short_graph_guard.py)
+
+DS30-0227 had 18 original visits, 14 admitted stereo visits, and four exclusions in every arm. The named detector selected zero factors and the actual mixed detector selected 13. The literal guard sent those 13 into the ordinary solver, which used the existing no-track regional bypass before withholding. For the exact guard, the 13 rows occupied eight original RF/radio/channel groups of one or two rows. The saved check and the raw proof run preserved the mixed candidate's exact detections, inventory, scan report, terminal and withheld sidecar bytes. Both calibration positions remained null. The exact raw proof completed acquisition in 0.099 s and decision through immutable publication in 0.012 s internally. It avoided importing SciPy, the solver and the renderer. The sealed weak packet had 475 winning rows, up to 69 in one lane, so it correctly stayed on the numerical path. Both saved proof checks together took 8.7 ms CPU, excluding process startup and the later saved publication.
+
+## Active result
+
+The 808-visit DS30-0016 replay retained 713 admitted stereo visits and 95 original exclusions in both arms. Named ALGO08v3 selected 440 signed factors and the mixed candidate selected 475. Each arm reproduced its corresponding archived detector, terminal, owner digests, 179-point grid, optimizer path and all eight encoded PNGs and decoded RGBA arrays. In the candidate, 1,426 native calls included 186 full and 1,240 short. Prefetch and guaranteed regional block counters confirm those paths ran. The actual candidate spent 3.541 CPU s on authenticated acquisition and 4.915 CPU s on the handoff and complete publication. It used the installed graph, full catalogue, bounded guarded regional blocks and scalar fallback, exact cold rows and reused predictive phase states.
+
+| Calibration | Horizontal error km, named v3 → mixed | Conditional RF RMS Hz, named v3 → mixed |
+| --- | ---: | ---: |
+| `c = 0` | 1.644 → 1.311 | 109.375 → 121.526 |
+| fitted `c` | 1.661 → 1.694 | 109.479 → 120.291 |
+
+## Timing and reproduction
+
+Every raw clock covers fresh CLI start, source and asset checks, original waveform reads, publication and verification through process exit. Both launches of each pair started with all compressed input pages resident, 5,090 for DS30-0227 and 242,128 for DS30-0016. The output roots were fresh tmpfs directories. Host input blocks and major faults still differed on the tiny pairs because compressed recording residency does not govern all dependency pages. The guard's observed CPU and elapsed savings were 0.848 s and 0.847 s. No other recording, cold run or larger panel was enrolled.
+
+Use `reports/ALGO08/v3/unified_short_bootstrap.py` with `--recording`, `--archive`, `--region`, `--output` and the `--short-binary`, `--geographic-library`, `--regional-track-library` and `--frontier-block-library` paths in the receipt. Add `--prove-empty-graph` for the exact guard. The raw drivers `unified_short_bootstrap_trial.py` and `short_graph_guard_trial.py` record the commands and verify fresh outputs. Run them using the installed release environment, a private tmpfs result parent writable by `leo`, and the shared `/tmp/leo-algo08v2-2x-bench/gauss.lock` with `ionice -c2 -n7 nice -n15 taskset -c 2` and one numerical thread. The graph trial reads the literal trial directory for its saved checks before it opens I/Q. Twelve component tests passed under the same lock.
+
+The first literal trial preflight compared the complete pinned request to a historical record of only the common assignment fields. It stopped before either raw arm and was corrected to check the shared assignment, original inventory, and outer request separately. Both subsequent raw pairs finished and sealed verification files before post-score assembly encountered a sparse-checkout omission of the DS30 survey file. Restoring the tracked survey and scoring those sealed results required no repeated raw execution. The receipts record the original timing driver and the distinct post-score source.
