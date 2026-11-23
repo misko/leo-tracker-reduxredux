@@ -93,7 +93,8 @@ def layout_renderer(scan, enabled, audit):
         yield
 
 
-def publish_active(args, publication, specification, handoff, layout_audit):
+def publish_active(args, publication, specification, handoff, layout_audit, *, graph_audit=None):
+    from exact_graph_execution import graph_execution
     from full_short_run import geographic_projection
     import joint_publication
     from regional_probe_block_binding import guarded_projection
@@ -108,7 +109,8 @@ def publish_active(args, publication, specification, handoff, layout_audit):
     @contextmanager
     def active_publication(scan):
         # The installed lossless renderer is bound before the analyze hook.
-        with handoff.install(scan), layout_renderer(scan, args.one_pass_web_png, layout_audit):
+        with (handoff.install(scan), layout_renderer(scan, args.one_pass_web_png, layout_audit),
+              graph_execution(enabled=getattr(args, "exact_graph_reuse", False), audit=graph_audit)):
             yield
 
     # Bootstrap already installed the release's lazy package facades. The
@@ -155,6 +157,7 @@ def run(args):
         raise ValueError("Expected the causal archive directory")
     scope = staged.now()
     audit, layout_audit = {}, {}
+    graph_audit = {} if args.exact_graph_reuse else None
     with TemporaryDirectory() as temporary:
         assets = Path(temporary)
         anchor = specification["detector_sha256"]
@@ -195,7 +198,7 @@ def run(args):
             raise ValueError(f"Scientific imports crossed the receiver-first boundary: {before}")
         handoff = Handoff(session, inventory_digest, RECIPE_SHA, native)
         if reason is None:
-            terminal, research = publish_active(args, publication, specification, handoff, layout_audit)
+            terminal, research = publish_active(args, publication, specification, handoff, layout_audit, graph_audit=graph_audit)
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
@@ -223,6 +226,7 @@ def run(args):
                   installed_acquisition_sources=staged.EXTRA_SOURCES,
                   solver_source_sha256=None if research is None else research["source_sha256"],
                   graph_proof=graph_proof,
+                  exact_graph_reuse=dict(requested=args.exact_graph_reuse, executed=graph_audit or None),
                   one_pass_web_png=dict(enabled=args.one_pass_web_png,
                                         source_sha256=LAYOUT_SHA256 if args.one_pass_web_png else None, **layout_audit),
                   solver_recipe=dict(graph="installed", block_sha256=BLOCK_SHA, scalar_track_sha256=TRACK_SCORES_SHA,
@@ -248,4 +252,6 @@ if __name__ == "__main__":
                         help="Use the pinned minimum support proof before loading the numerical solver")
     parser.add_argument("--one-pass-web-png", action="store_true",
                         help="Use the reviewed explicit layout on the installed renderer when supported")
+    parser.add_argument("--exact-graph-reuse", action="store_true",
+                        help="Use reviewed ordered graph batches and exact best-piece reuse in active lanes")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
