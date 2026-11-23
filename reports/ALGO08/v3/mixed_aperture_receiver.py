@@ -14,6 +14,7 @@ PILOT_SHA = {
     "upper": "eef7b89526adb80fc64cd0be61f35b7cc5edceb3eb293d72066378e751b4467c",
 }
 RULE = ("full", "short_primary", "skip", "short_primary", "skip", "short_primary", "skip", "short_primary")
+FULL_RULE = ("full",) + ("short_primary",) * 7
 
 
 def verified(path, expected):
@@ -26,7 +27,8 @@ def verified(path, expected):
 
 
 class StereoSchedule:
-    def __init__(self):
+    def __init__(self, *, full_coverage=False):
+        self.rule = FULL_RULE if full_coverage else RULE
         self.streams = {}
 
     def visit(self, edge, target, capture):
@@ -39,7 +41,7 @@ class StereoSchedule:
         if last is not None and counter <= last:
             raise ValueError("Chronological native opportunity required for each RF and edge")
         self.streams[key] = (index + 1, counter)
-        return index, RULE[index % len(RULE)]
+        return index, self.rule[index % len(self.rule)]
 
 
 def strongest(candidates):
@@ -83,10 +85,10 @@ class NativePath:
 
 
 class MixedApertureDetector:
-    def __init__(self, short_binary, short_sha256):
+    def __init__(self, short_binary, short_sha256, *, full_coverage=False):
         self.short_binary = Path(short_binary).resolve()
         self.short_sha256 = short_sha256
-        self.schedule = StereoSchedule()
+        self.schedule = StereoSchedule(full_coverage=full_coverage)
         self.active = set()
         self.visits = Counter()
         self.native_calls = Counter()
@@ -153,7 +155,7 @@ class MixedApertureDetector:
             full.close()
 
     def receipt(self):
-        return dict(rule=list(RULE), installed_sha256=INSTALLED_SHA, short_primary_sha256=self.short_sha256,
+        return dict(rule=list(self.schedule.rule), installed_sha256=INSTALLED_SHA, short_primary_sha256=self.short_sha256,
                     visits=dict(self.visits), native_calls=dict(self.native_calls),
                     factors=dict(self.factors), native_cpu_ns=dict(self.native_cpu_ns),
                     native_wall_ns=dict(self.native_wall_ns),
