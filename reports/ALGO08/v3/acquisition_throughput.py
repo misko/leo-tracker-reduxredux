@@ -8,27 +8,27 @@ from statistics import median
 from retained_wait import read_rows
 
 
-def gates(rows, rate, fraction):
+def gates(rows, rate, fraction, *, startup_s=0.):
     """Rate is effective compressed MB per second through sealed detections."""
     before, after = [], []
     for r in rows:
         acquisition, solve, tail = r["stages"]
         total = acquisition + solve + tail
-        new = r["compressed_MB"]/rate + fraction * solve + tail if acquisition else total
+        new = startup_s + r["compressed_MB"]/rate + fraction * solve + tail if acquisition else total
         before.append(total)
         after.append(new)
     return median(a/b for a, b in zip(after, before, strict=True)), sum(after)/sum(before)
 
 
-def minimum_rate(rows, fraction, gate):
-    if gates(rows, float("inf"), fraction)[gate] >= .5:
+def minimum_rate(rows, fraction, gate, *, startup_s=0.):
+    if gates(rows, float("inf"), fraction, startup_s=startup_s)[gate] >= .5:
         return None
     lo, hi = 0., 1.
-    while gates(rows, hi, fraction)[gate] > .5:
+    while gates(rows, hi, fraction, startup_s=startup_s)[gate] > .5:
         hi *= 2
     for _ in range(48):
         mid = (lo+hi)/2
-        if gates(rows, mid, fraction)[gate] > .5:
+        if gates(rows, mid, fraction, startup_s=startup_s)[gate] > .5:
             lo = mid
         else:
             hi = mid
