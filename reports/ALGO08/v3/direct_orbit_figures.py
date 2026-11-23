@@ -7,7 +7,7 @@ import sys
 
 import numpy as np
 
-from direct_residual_figures import Canvas, cairo_library, ticks
+from direct_residual_figures import Canvas, TextExtent, cairo_library, ticks
 
 
 DPI, WIDTH = 150, 2400
@@ -72,6 +72,12 @@ class OrbitCanvas(Canvas):
 
     def alpha(self, color, alpha):
         self.c.cairo_set_source_rgba(self.ctx, *color, alpha)
+
+    def text_width(self, body, points):
+        extent = TextExtent()
+        self.c.cairo_set_font_size(self.ctx, points * DPI / 72)
+        self.c.cairo_text_extents(self.ctx, body.encode("utf-8"), ct.byref(extent))
+        return extent.width
 
 
 def library():
@@ -184,12 +190,17 @@ def base_lane(canvas, plot, row, box, *, bottom):
     return xt, yt
 
 
+def legend_columns(entries, text_width):
+    groups = np.array_split(np.arange(len(entries)), min(len(entries), 6))
+    widths = [max(text_width(entries[i][0], 8) for i in group) + 72 for group in groups]
+    span = sum(widths)
+    if span > WIDTH * .9:
+        raise ValueError("The orbit legend exceeds the reviewed footer width")
+    return zip((WIDTH - span)/2 + np.r_[0., np.cumsum(widths[:-1])], groups, strict=True)
+
+
 def legend(canvas, entries, height):
-    columns = np.array_split(np.arange(len(entries)), min(len(entries), 6))
-    w = 138
-    start = (WIDTH - len(columns)*w)/2.
-    for col, group in enumerate(columns):
-        x = start + col*w
+    for x, group in legend_columns(entries, canvas.text_width):
         for row, index in enumerate(group[::-1]):
             name, color = entries[index]
             y = height*.975 - 24 - row*22

@@ -9,7 +9,7 @@ import pytest
 from leo.presentation.orbit_plot import OrbitCurve, OrbitLane, OrbitPeak
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
-from direct_orbit_figures import geometry, lane_ticks, scene
+from direct_orbit_figures import geometry, lane_ticks, legend_columns, scene
 
 
 def lanes():
@@ -53,3 +53,11 @@ def test_empty_band_and_invalid_period_are_ineligible():
         scene(lanes()[:8], title="Missing high channels", alias_period_hz=227272.7272727)
     with pytest.raises(ValueError, match="wrapped frequency"):
         scene(lanes(), title="Unsupported frequency", alias_period_hz=0.)
+
+
+def test_legend_reserves_width_for_longest_label_in_each_column():
+    entries = [("Unassociated", None), ("63717", None), ("63841", None)]
+    measure = lambda label, _: len(label) * 10
+    (start, _), (middle, _), (last, _) = legend_columns(entries, measure)
+    assert middle - start == 192
+    assert last - middle == 122

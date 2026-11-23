@@ -1,7 +1,8 @@
 """Measure one weak orbit pair and, after the gate, a saved full-length transfer."""
 
 import argparse
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
+from functools import partial
 import gzip
 from hashlib import sha256
 from io import BytesIO
@@ -19,7 +20,7 @@ RESIDUAL_PIN = "4761ebfc204fbe4fadee953ac7f7976c6a64e1739c4e39645a27581b8fa08b77
 NAMES = tuple(f"ch{prefix}-{view}" for prefix in ("1-4", "5-8") for view in ("all", "unassociated"))
 
 
-def worker(job, case, mode, output):
+def worker(job, case, mode, output, no_capture=False):
     from aperture_trial import write
     from cumulative_grid_projection import worker as saved
     import unified_short_bootstrap as entry
@@ -57,9 +58,13 @@ def worker(job, case, mode, output):
         args.direct_orbit_figures = mode == "native"
         return original(args, *values, **keywords)
 
-    with patch.object(entry, "publish_active", options), patch.object(entry, "layout_renderer", observe):
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(entry, "publish_active", options))
+        if not no_capture:
+            stack.enter_context(patch.object(entry, "layout_renderer", observe))
         saved(job, "installed", output)
-    write(output / "orbit-capture.json", captured)
+    if not no_capture:
+        write(output / "orbit-capture.json", captured)
 
 
 def compare(label, reference, direct):
@@ -150,6 +155,133 @@ def pixels(raw_a, raw_b):
     return dict(changed_pixel_fraction=float(np.any(delta, axis=2).mean()),
                 mean_absolute_rgb_error=float(np.abs(delta[..., :3]).mean()),
                 bytes=[len(raw_a), len(raw_b)])
+
+
+def replay(capture, output):
+    """Repaint the immutable live scene without opening the numerical pipeline."""
+    import empty_bootstrap as staged
+    from aperture_trial import write
+
+    _, spec, _, _, _ = staged.load_runtime()
+    from tools.pipeline_eval.variants.experimental import lossless_png, raster_layout
+    from direct_orbit_entry import native_orbits
+    from direct_orbit_figures import legend_columns, library, surface
+
+    libs = {}
+    for key in ("png_filter", "png_deflate"):
+        pin = spec[key]
+        path = Path(pin["library"])
+        staged.checked(path, pin["sha256"])
+        libs[key] = path
+    encoder = lossless_png.LosslessPng(libs["png_filter"], deflate_library=libs["png_deflate"])
+    installed = partial(lossless_png.render_lossless_png, encoder=encoder)
+    with capture.open("rb") as stream:
+        lanes, options = pickle.load(stream)
+    timing = {}
+    with native_orbits(installed, timing):
+        figures = raster_layout.render_shared(lanes, **options, reuse_pixels=True)
+    if timing.get("native_orbit_figures") != 4 or "native_orbit_fallback" in timing:
+        raise ValueError("The corrected scene did not retain all four native images")
+    from direct_orbit_figures import scene
+
+    gaps = {}
+    with surface(library(), 20) as (canvas, _, _):
+        for band, plot in scene(lanes, **options).items():
+            columns = list(legend_columns(plot["legend"], canvas.text_width))
+            separation = [b-a - 46 - max(canvas.text_width(plot["legend"][i][0], 8) for i in group)
+                          for (a, group), (b, _) in zip(columns, columns[1:])]
+            if not separation or min(separation) < 20:
+                raise ValueError("The corrected orbit legend did not reserve label spacing")
+            gaps[band] = min(separation)
+    output.mkdir()
+    for name, data in figures.items():
+        (output / f"{name}.png").write_bytes(data)
+    write(output / "replay.json", dict(timing=timing, minimum_legend_gap_px=gaps))
+
+
+def correct(root, weak, dense):
+    """One corrected weak native process and a no-solve repaint at both sizes."""
+    from aperture_trial import RELEASE, read, write
+    from dense_geographic_trial import host
+    from full_short_physical import environment
+    from joint_publication import artifacts
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from short_raw_diagnostic import measure, pairs
+
+    machine = host()
+    if subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", root.parent], text=True).strip() != "tmpfs":
+        raise ValueError("Use a fresh private tmpfs parent")
+    weak_data, dense_data = (read(folder / "result.json") for folder in (weak, dense))
+    if not weak_data["passed"]:
+        raise ValueError("The measured weak trial was ineligible for the correction")
+    root.mkdir()
+    (root / "tmp").mkdir()
+    env, python = environment(root), RELEASE / "venv/bin/python"
+    env["TMPDIR"] = str(root / "tmp")
+    subprocess.run([python, "-Bc", "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
+                   check=True, env=env, timeout=30)
+    output = root / "native"
+    clock = measure([python, "-IB", __file__, "worker", weak / "binding.json", "weak", "native", output,
+                     "--no-capture"], env, output)
+    write(root / "clock.json", clock)
+    if clock["exit_code"]:
+        raise RuntimeError(clock["stderr_tail"])
+    executed = read(output / "cumulative-grid-worker.json")
+    receipt = executed["receipt"]
+    work = executed["layout"]["work"]
+    control = weak_data["runs"]["control"]
+    science = pairs.evidence(output, receipt, clock["started_unix_ns"], read_only=True)
+    research = read(output / "joint-research-receipt.json")
+    old = read(weak / "control/joint-research-receipt.json")
+    figures = json.loads(json.dumps(artifacts(output, receipt)["images"]))
+    store = FastStandardAnalysisStore(output)
+    run_id = receipt["run_id"]
+    grid = store.position_grid(run_id)
+    if (any(science[key] != control["science"][key] for key in ("arms", "owners", "scientific_digests"))
+            or receipt["terminal_sha256"] != control["worker"]["receipt"]["terminal_sha256"]
+            or research["selected_rows"] != old["selected_rows"]
+            or work.get("native_orbit_figures") != 4 or work.get("native_residual_figures") != 2
+            or "native_orbit_fallback" in work or not grid["complete"] or grid["evaluated_points"] != 179
+            or len(figures) != 8 or (output / "orbit-lanes.pickle").exists()):
+        raise ValueError("Corrected weak output changed its signed result or invoked instrumentation")
+    if any(v != control["figures"][name] for name, v in figures.items() if name not in NAMES):
+        raise ValueError("Correction changed an unrelated official image")
+    for name in ("path", "grid"):
+        sidecar = getattr(store, "position_" + name)(run_id)
+        if sidecar["binding"]["position_png_sha256"] != figures["position"]["sha256"]:
+            raise ValueError("The official position image lost its numerical sidecar")
+
+    corrected = {}
+    for name, prior, folder, original_root in (
+        ("weak", weak_data, weak, weak / "control"),
+        ("dense", dense_data, dense, Path("/dev/shm/leo-cumulative-grid-projection-01/dense-pair/installed")),
+    ):
+        stage = root / f"corrected-{name}"
+        capture = folder / "native/orbit-lanes.pickle"
+        if sha256(capture.read_bytes()).hexdigest() != prior["scene"]["capture_sha256"]:
+            raise ValueError("The sealed live plot scene changed")
+        subprocess.run([python, "-IB", __file__, "replay", capture, stage], check=True, env=env, timeout=30)
+        native = prior["runs"]["native"]["worker"]["receipt"]["run_id"]
+        original = FastStandardAnalysisStore(original_root)
+        before = prior["runs"].get("control", prior["runs"]["native"])["figures"]
+        visual, digests = {}, {}
+        for key in NAMES:
+            raw = (stage / f"{key}.png").read_bytes()
+            if name == "weak" and store.artifact(run_id, key, figures[key]["sha256"]) != raw:
+                raise ValueError("Production-shaped weak rendering used a different corrected live scene")
+            original_raw = original.artifact(native, key, before[key]["sha256"]) if name == "weak" else original.artifact(native, key)
+            visual[key] = pixels(original_raw, raw)
+            digests[key] = sha256(raw).hexdigest()
+        corrected[name] = dict(**read(stage / "replay.json"), visual=visual, sha256=digests)
+    write(root / "result.json", dict(machine=machine, control_process=control["process"], native_process=clock,
+          earlier_control_capture_cpu_ns=control["capture"]["capture_cpu_ns"],
+          outcome=executed, science=science, figures=figures, corrected=corrected,
+          prior_result_sha256={name: sha256((folder / "result.json").read_bytes()).hexdigest()
+                              for name, folder in (("weak", weak), ("dense", dense))},
+          source_sha256={name: sha256((HERE/name).read_bytes()).hexdigest() for name in (
+              "direct_orbit_figures.py", "direct_orbit_entry.py", "direct_orbit_figures_trial.py",
+              "unified_short_bootstrap.py", "direct-orbit-figures-protocol.md",
+          )}))
 
 
 def run(case, root, weak):
@@ -266,12 +398,19 @@ if __name__ == "__main__":
     member.add_argument("case", choices=("weak", "dense"))
     member.add_argument("mode", choices=("control", "native"))
     member.add_argument("output", type=Path)
+    member.add_argument("--no-capture", action="store_true")
     exact = modes.add_parser("audit")
     exact.add_argument("capture", type=Path)
     exact.add_argument("output", type=Path)
+    render = modes.add_parser("replay")
+    render.add_argument("capture", type=Path)
+    render.add_argument("output", type=Path)
+    correction = modes.add_parser("correct")
+    for name in ("root", "weak", "dense"):
+        correction.add_argument(name, type=Path)
     pair = modes.add_parser("run")
     pair.add_argument("case", choices=("weak", "dense"))
     pair.add_argument("root", type=Path)
     pair.add_argument("--weak", type=Path)
     args = vars(parser.parse_args())
-    {"worker": worker, "audit": audit, "run": run}[args.pop("action")](**args)
+    {"worker": worker, "audit": audit, "replay": replay, "run": run, "correct": correct}[args.pop("action")](**args)
