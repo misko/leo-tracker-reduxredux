@@ -1,0 +1,29 @@
+# Complete inside/outside evidence on the two public India offers
+
+Both receivers put their best sampled location **inside** the containing offer and **3.125 km outside the north face** of the 1.5 km omitted offer. The pooled score agreed on both. The omitted optimum lies closer than the released veto's 25 km minimum exterior clearance, so both solver routes still return the historical false fix. Reusing the prepared causal catalogue cut the full-catalogue route's actual omitted-offer guard from **1.901 CPU seconds in the prior run to 0.314 seconds in this replay**, with identical terminal probe evidence and scientific outputs. [Frozen protocol](india-regional-diagnostic-protocol.md) · [Scored probe summary](measurements/india-regional-diagnostic-summary.json) · [Full score grids and fit receipts](measurements/india-regional-diagnostic.json.gz)
+
+## Original 96-point diagnostic
+
+The original all-track orbit-mixture score uses 48 inside and 48 exterior coordinates. The replay evaluates all 96 on both previously published offers. At fixed RF, centering each track cancels the additive receiver-dependent `c` term. The diagnostic therefore takes the same raw Graph and causal orbit predictions for both calibration arms, independently of the fitted endpoints and satellite labels. Stock and full catalogue consumed the same complete normalized Graph and pre-screen **10,938-orbit** catalogue on each offer. That identity allows one paid full-probe result per offer to serve both fits. [Original score and probes](../../../tools/pipeline_eval/variants/experimental/regional_reassignment.py) · [Observation and catalogue fingerprints](measurements/india-regional-diagnostic-summary.json)
+
+| Original India offer | Best sampled inside point (east, north km) | Best sampled exterior point (east, north km) | Exterior minus inside, pooled | Exterior minus inside, receiver 1 / receiver 2 | Best of all probes |
+|---|---:|---:|---:|---:|---|
+| Containing | (0, 9.375) | (0, 12.598) | −0.017440 | −0.017802 / −0.017079 | Inside |
+| Omitted by 1.5 km | (0, 12.402) | (0, 15.625) | +0.010373 | +0.010267 / +0.010478 | Exterior |
+
+Every pooled and receiver comparison selects the same points within its offer. On the omission, the best exterior point exceeds the second-best exterior point by 0.008492 pooled and 0.008381 / 0.008602 per receiver. This establishes a unique exterior maximum among the sampled locations. The independently published 50 km widened original fit also put the released zero and fitted estimates outside the original omitted north face by **0.758 and 1.029 km**, while keeping both estimates inside the original containing face. Together the two measures support an outside direction on this recording. They sample a discrete diagnostic and an earlier widened position likelihood, leaving the global continuous optimum and the performance of a new withholding threshold unmeasured. [Original widened continuation](../single-core-2x/widened-offer-membership.md) · [Complete per-point scores](measurements/india-regional-diagnostic.json.gz)
+
+The authoritative terminal guard checks far-exterior eligibility. On omission an inside probe meets or exceeds a best eligible far probe after 26 evaluations. The separate complete diagnostic finds its stronger exterior evidence in the first 3.125 km beyond the face, which lies below the original eligibility distance. No threshold changed. The historical false fixes remain **1.580 / 1.534 km** for stock and **1.586 / 1.538 km** for full catalogue in zero/fitted order. The containing fixes remain **1.017 / 0.751 km** and **1.035 / 0.766 km**. Both routes exactly reproduced their own sealed endpoint, RF, owner/role, numerical grid and path, and guard fields after the catalogue handoff. [Original paired fixes and artefacts](india-saved-transfer.md) · [Checked replay](measurements/india-regional-diagnostic.json.gz)
+
+## Cost of retaining the prepared catalogue
+
+| Saved offer | Complete diagnostic CPU s, fresh → prepared | Stock saved solve CPU s | Full-catalogue saved solve CPU s | Actual guard CPU s, stock / full catalogue with handoff |
+|---|---:|---:|---:|---:|
+| Containing | 2.272 → 0.806 | 5.641 | 3.855 | Endpoints interior |
+| Omitted | 2.329 → 0.876 | 5.809 | 4.053 | 0.307 / 0.314 |
+
+Fresh and prepared scoring gave exactly equal coordinates, pooled and receiver scores, owners and snapshot evidence on all 192 probe rows. The handoff checks the normalized Graph object's identity, the archive root and the causal cutoff before passing along the original entire catalogue. It preserves the stock guard's own supplied catalogue and the original fresh path when the guard has no match. Reuse skips duplicate catalogue parsing and selection. It still pays all geometric propagation and numerics in each actual guard. The complete diagnostic is separately timed, and the saved solve clock includes its authoritative check. The report retains the previous renderer artifacts and measures no new drawing, raw acquisition or web-store publication. [Scoped handoff](prepared_exterior.py) · [Exact witness and timings](measurements/india-regional-diagnostic.json.gz)
+
+## Reproduce
+
+Use `india_regional_diagnostic.py run MODE ROUTE OUTPUT` on the same default staged India input and the pinned release from the original replay. For `matched-tile` run `stock` then `full-catalogue`. For `omitted-tile` reverse their order. Keep the four outputs named `MODE-ROUTE.json`, then call `score DIR SUMMARY FULL` under the same Gauss lock. The runner verifies the exact prior seals before collecting the complete diagnostic. Sixty-seven focused tests passed, including the separately reusable catalogue handoff test that uses no India inputs. [Runner](india_regional_diagnostic.py) · [Standalone handoff tests](../../../tests/pipeline_eval/test_prepared_exterior.py) · [Release and lock commands](india-saved-transfer.md#reproduce)
