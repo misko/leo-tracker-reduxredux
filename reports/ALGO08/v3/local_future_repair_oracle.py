@@ -8,7 +8,7 @@ from aperture_trial import read, write
 from bidirectional_selection import assignment_changes, supported
 from dense_geographic_trial import host
 from north_factor_swap import continued
-from short_stereo_trial import CASES, HERE, load_source
+from short_stereo_trial import CASES, HERE, load_source, single_packet
 
 
 FUTURE = Path("/var/tmp/leo-bidirectional-transfer-nov23")
@@ -76,7 +76,11 @@ def run():
         after = read(FUTURE / case / "joint-research-receipt.json")
         sealed = north["cases"]["containing"]["images"] if case == "north" else causal[case]["images"]
         restored = earlier[case]
-        if (before["evidence"]["images"] != sealed or before["saved_digest"] != canonical_digest(forward)
+        readback = read(single_packet(directory))
+        terminal = read(directory / "fast-scan-automatic-work" / before["receipt"]["run_id"] / "terminal.json")
+        if (before["evidence"]["images"] != sealed or readback["source"]["probes"] != forward["source"]["probes"]
+                or terminal["native_sha256"] != canonical_digest(readback)
+                or before["receipt"]["terminal_sha256"] != canonical_digest(terminal)
                 or after["receipt"]["terminal_sha256"] != restored["terminal"]
                 or before["receipt"]["region"] != after["receipt"]["region"] or after["receipt"]["region"] != offer):
             raise ValueError("The sealed owner maps differ from their published forward/two-sided evidence")
