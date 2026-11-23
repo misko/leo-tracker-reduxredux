@@ -226,9 +226,12 @@ def launch(root, driver=None):
 
 
 def compare(actual, old):
-    for field in ("terminal", "selected_rows", "figures", "sidecars"):
+    for field in ("terminal", "selected_rows", "sidecars"):
         if actual[field] != old[field]:
             raise ValueError(f"The complete named publication changed at {field}")
+    figures = [{name: dict(row, size=tuple(row["size"])) for name, row in run["figures"].items()} for run in (actual, old)]
+    if figures[0] != figures[1]:
+        raise ValueError("The complete named publication changed at figures")
     for field in ("arms", "artifacts", "owners", "raw_authority", "reason", "scientific_digests"):
         if actual["science"][field] != old["science"][field]:
             raise ValueError(f"The complete named science changed at {field}")

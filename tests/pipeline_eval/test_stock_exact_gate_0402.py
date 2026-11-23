@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 from exact_noise_gate_0402 import parity
-from stock_exact_gate_0402 import GateWork, gate_binding
+from stock_exact_gate_0402 import GateWork, compare, gate_binding
 from leo.analysis.localization_v3 import feasible
 from leo.analysis.research import retained_track_likelihood as likelihood
 
@@ -74,3 +74,15 @@ def test_binding_enables_only_the_original_optimizer_callback_and_restores():
     assert port.feasible_fit is fit
     assert port.batch_noise_screen is stock_noise
     assert counts["phase_fits"] == counts["visits"] == counts["screen_calls"] == 1
+
+
+def test_publication_comparison_handles_pil_and_json_sizes_but_checks_hashes():
+    science = dict(arms={}, artifacts={}, owners={}, raw_authority="original", reason=None, scientific_digests={})
+    receipt = dict(terminal_sha256="original", screened_nomination={"winning_rank": 1})
+    core = dict(terminal={}, selected_rows={}, sidecars={}, science=science, worker={"receipt": receipt})
+    candidate = dict(core, figures={"position": dict(size=(1680, 960), sha256="same", rgba_sha256="same")})
+    archived = dict(core, figures={"position": dict(size=[1680, 960], sha256="same", rgba_sha256="same")})
+    compare(candidate, archived)
+    candidate["figures"]["position"]["rgba_sha256"] = "different"
+    with pytest.raises(ValueError, match="changed at figures"):
+        compare(candidate, archived)
