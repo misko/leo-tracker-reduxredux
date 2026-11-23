@@ -10,6 +10,22 @@ The opt-in curvature certificate completed the 405-visit authenticated raw publi
 
 The observed elapsed ratios are **0.7144** to named v3 and **0.5986** to the previous cumulative candidate. The authenticated acquisition took **1.916 s** CPU and the solve took **0.0966 s** CPU. The previous cumulative solve spent **2.1762 s** CPU, including **2.0800 s** in its pre-fit regional scorer. It evaluated 24 regional probes on 22 graph tracks before returning the original named reason. The saved preflight and the single raw run used the existing staged offer, causal archive and native libraries, under the shared low-priority Gauss CPU 2 lock with one numerical thread. The named and previous cumulative stopwatch values come from the same earlier pair. [Candidate-only driver](named_curvature_0306_trial.py)
 
+## Remaining raw budget
+
+| Disjoint elapsed interval | Seconds |
+|---|---:|
+| Receiver readiness from CLI entry, including initial imports and source checks | 0.259810 |
+| Asset and signed inventory preparation | 0.005309 |
+| Authenticated acquisition and detector binding | 1.916148 |
+| Named solver validation, Graph and withheld decision | 0.096617 |
+| Remaining decision/publication interval, including active imports, proof and publication | 0.698927 |
+| Process clock outside reported phases | 0.225405 |
+| **Through exit** | **3.202216** |
+
+The installed Graph takes **0.039132 s** within the validated solver interval. Native search accounts for **1.127220 CPU s** of acquisition. The decision/publication interval outside the solve combines imports, checks and writes, and the original run did not separately time these. File timestamps relative to launch put the native detector, terminal, withheld contract and standard scan report at **2.910**, **3.012**, **3.012** and **3.013 s**. These timestamps show about 1.6 ms from terminal to scan report and about 184 ms from the final bootstrap receipt to process exit. They do not allocate elapsed time to individual writes or cleanup functions. [Archive-only time accounting](measurements/named-curvature-0306-budget.json)
+
+Half named-v3 time is **2.241215 s**, leaving a **0.961002 s** gap. At the measured acquisition rate only **0.325066 s** remains for all other work. Receiver readiness, asset/inventory prep and the validated named solver alone account for **0.361736 s**. Even giving away every other interval would leave a 0.036670 s overrun with those phases held fixed. The $0.0966$ s validated solve and the final write interval cannot supply the required saving. No measured shortcut supports another 0.961 s while retaining signed acquisition and named error and receipt behavior. A larger reduction would need to change actual acquisition or startup/preparation cost and independently preserve those checks.
+
 ## Exact criterion and precedence
 
 The original graph constructs tracks from subsets of one actual RF, receiver and channel lane. Their time coordinates come from the pinned winning-observation reader and remain binary64. A subset's maximum cannot exceed the lane maximum, and its minimum cannot be below the lane minimum. Monotone binary64 subtraction preserves the upper bound on `np.ptp`. When every lane's full extent is strictly below 20 seconds, no subset reaches the named `active_curvature` criterion. Equality, nonfinite time, overflow or unreviewed source bytes leave ordinary handling in place. The proof does not use the smaller Graph seed-span threshold and has no 256-row limit. [Winning-observation and graph bindings](short_graph_guard.py)
