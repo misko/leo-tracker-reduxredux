@@ -62,7 +62,7 @@ def subset(native):
     return packet, stats
 
 
-def run(case, output):
+def run(case, output, *, project=subset):
     from aperture_trial import machine
 
     system = machine()
@@ -72,7 +72,7 @@ def run(case, output):
 
     def load():
         native, archive, offer, control, identity = inputs(case)
-        packet, stats = subset(native)
+        packet, stats = project(native)
         derived = dict(identity, original_native_sha256=identity["native_sha256"], native_sha256=stats["packet_digest"])
         bound.update(identity=identity, stats=stats, control=control, derived=derived)
         return packet, archive, offer, control, derived

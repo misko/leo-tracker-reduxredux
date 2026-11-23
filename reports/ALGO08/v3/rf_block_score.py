@@ -16,7 +16,7 @@ FULL = Path(__file__).parent / "measurements/blind-joint-signed.json.gz"
 PIN = "de4a1be32d35c5b4c7ae6164ae663f450f8408937f4eb6de46c3977436dcfc54"
 
 
-def score(directory, output, archive):
+def score(directory, output, archive, label="block"):
     original = FULL.read_bytes()
     if sha256(original).hexdigest() != PIN:
         raise ValueError("Full-recording comparator changed")
@@ -42,10 +42,10 @@ def score(directory, output, archive):
         arms = row["decision"].get("arms", {})
         stock = full["control"]["arms"]
         row["scores"] = {name: section(values, truth[case], stock) for name, values in
-                         (("block", arms), ("full_signed", full["result"]["arms"]), ("v3", stock))}
+                         ((label, arms), ("full_signed", full["result"]["arms"]), ("v3", stock))}
         row["baseline_clocks"] = dict(v3=full["control_clocks"], full_signed=full["charged"])
         contained = face_clearance_km(row["input"]["offer"], truth[case]) >= 0
-        changes = [arm["delta_error_km"] for arm in row["scores"]["block"]["arms"].values()]
+        changes = [arm["delta_error_km"] for arm in row["scores"][label]["arms"].values()]
         status = row["decision"]["status"]
         row["quality_screen"] = (status == "ok" and all(d is not None and d <= .25 for d in changes)
                                  if contained else status == "withheld")
@@ -63,4 +63,5 @@ if __name__ == "__main__":
     parser.add_argument("directory", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("archive", type=Path)
+    parser.add_argument("--label", default="block")
     score(**vars(parser.parse_args()))
