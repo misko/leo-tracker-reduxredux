@@ -235,7 +235,7 @@ def score(root):
             raise ValueError("The sealed geographic control does not match its classification")
         historic = assignment["historic_terminal"]["arms"]
         stock = pair["forward"][1]["arms"]
-        result = dict(clearance_km=clearance, owners=owners, repair=repair, forward_policy=before_policy,
+        result = dict(clearance_km=clearance, owners=owners, local_repair=repair, forward_policy=before_policy,
                       repair_policy={k: v for k, v in after_policy.items() if k != "future_ids"},
                       future_count=len(future), historical=section(historic, truth, historic),
                       historical_decision=assignment["historic_terminal"]["decision"])
@@ -246,6 +246,15 @@ def score(root):
                                evidence=report["evidence"], solve=report["solve"], process=clocks,
                                publication_cpu_s=report["publication_cpu_s"], proof=report["early_regional"],
                                route=report["route"], signed=(report["route_details"] or {}).get("signed"))
+        result["early_regional_proof_equal"] = [row["result"] for row in before["early_regional"]] == [
+            row["result"] for row in after["early_regional"]
+        ]
+        result["identical_figures"] = dict(
+            bytes=sum(a["sha256"] == after["evidence"]["images"][name]["sha256"]
+                      for name, a in before["evidence"]["images"].items() if name in after["evidence"]["images"]),
+            pixels=sum(a["rgba_sha256"] == after["evidence"]["images"][name]["rgba_sha256"]
+                       for name, a in before["evidence"]["images"].items() if name in after["evidence"]["images"]),
+        )
         if clearance >= 0.:
             original_repair, original_terminal, _ = publication(DONOR_ROOT / ("north" if site == "north" else "south-inside"))
             result["matches_donor_containing"] = (original_terminal == pair["repair"][1]
