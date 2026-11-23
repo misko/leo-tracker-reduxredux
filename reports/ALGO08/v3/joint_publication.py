@@ -84,15 +84,18 @@ def artifacts(root, receipt):
     return dict(images=images)
 
 
-def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None):
+def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
+        raw_context=None, early_regional=False, keep_selected_rows=False):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
-    if args.saved and (detector_override is not None or prepare_detector is not None):
+    if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
         raise ValueError("A detector substitution requires the full raw input path")
     if detector_override is not None and prepare_detector is not None:
         raise ValueError("Choose a prepared detector or a detector factory")
     stock_control = getattr(args, "stock_control", False)
     optimized = getattr(args, "optimized_full_catalogue", False)
+    if early_regional and not optimized:
+        raise ValueError("Early regional proof requires the optimized full catalogue")
     full_catalogue = getattr(args, "full_catalogue", False) or optimized
     signed_finish = getattr(args, "signed_finish", False) or full_catalogue
     if stock_control and signed_finish:
@@ -109,7 +112,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
     saved = json.loads(args.saved.read_bytes()) if args.saved else None
     saved_handoffs, solves, selected_rows = [], [], {}
     observer = getattr(args, "observe_prepared", None)
-    preparations = []
+    preparations, regional = [], []
 
     def analyze(*values, **kwargs):
         stock_solve = algo08_scan.solve
@@ -132,8 +135,14 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                     from optimized_grid import reduced_grid
                     from prepared_exterior import handoff
 
-                    _, prepared_counts, _ = stack.enter_context(handoff(reader))
+                    live_catalogue, prepared_counts, _ = stack.enter_context(handoff(reader))
                     grid_counts = stack.enter_context(reduced_grid())
+                    if early_regional:
+                        from early_region import before_fit
+                        from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+                        route = before_fit(route, reader, regional_bound_guard.causal_probes, regional,
+                                           live_catalogue.match)
                 if track_config is not None:
                     factory = algo08_position.TrackConfig
                     stack.enter_context(patch.object(algo08_position, "TrackConfig",
@@ -158,6 +167,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
             stack.enter_context(patch.object(algo08_scan, "solve", solve))
             if detector_override is not None:
                 stack.enter_context(patch.object(algo08_scan, "detector", detector_override))
+            if raw_context is not None:
+                stack.enter_context(raw_context(algo08_scan))
             if saved is not None:
                 def acquire(session, inventory_digest, _inventory, _assets):
                     found = verified_saved(saved, args.saved_digest, session, inventory_digest, spec["detector_sha256"])
@@ -171,7 +182,10 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         receipt = publication.run(SimpleNamespace(recording=args.recording, archive=args.archive, region=args.region,
                                                  bulk_root=args.output), spec)
     cpu, wall = process_time() - clocks[0], perf_counter() - clocks[1]
-    if len(solves) != 1 or len(attempts) != (0 if stock_control else 1):
+    stopped_early = (len(regional) == 1 and regional[0]["result"].get("complete") is True
+                     and regional[0]["result"].get("would_withhold") is True)
+    if (len(solves) != 1 or len(attempts) != (0 if stock_control or stopped_early else 1)
+            or early_regional and len(regional) != 1 or stopped_early and receipt["decision"] != "withheld"):
         raise ValueError("Expected exactly one solver invocation through the requested route")
     if saved is not None and len(saved_handoffs) != 1:
         raise ValueError("Expected one verified saved detection handoff")
@@ -187,14 +201,17 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         for name in ("cold_finalist_race.py", "prepared_exterior.py", "grid_predictive_reduction.py", "optimized_grid.py"):
             pins[name] = sha256((source / name).read_bytes()).hexdigest()
         pins["installed/algo08_posterior_handoff.py"] = HANDOFF_SHA256
+    if early_regional:
+        pins["early_region.py"] = sha256((source / "early_region.py").read_bytes()).hexdigest()
     from leo.application.localization_v3_engine import _json_value
 
     input_kind = "saved detector" if saved is not None else "raw recording"
     if detector_override is not None:
         input_kind = detector_description or "verified raw recording with archived receiver rows"
+    route_decision = "stock" if stock_control else "withheld_early" if stopped_early else attempts[0]["decision"]
     result = dict(input=input_kind, saved_digest=args.saved_digest,
                   reference="installed v3" if stock_control else "installed v3 with research joint repair",
-                  source_sha256=pins, route="stock" if stock_control else attempts[0]["decision"],
+                  source_sha256=pins, route=route_decision,
                   signed_finish=signed_finish, stock_control=stock_control, machine=machine(),
                   publication_cpu_s=cpu, publication_elapsed_s=wall, solve=solves[0],
                   selected_roles={arm: dict(Counter(row[2] for row in rows)) for arm, rows in selected_rows.items()},
@@ -202,12 +219,14 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                   route_details=attempts[0] if attempts else None)
     if args.verify_images:
         result["evidence"] = artifacts(args.output, receipt)
-        if saved is not None:
+        if saved is not None or keep_selected_rows:
             result["selected_rows"] = selected_rows
     if full_catalogue:
         result["full_catalogue"] = True
     if optimized:
         result["optimized_full_catalogue"] = True
+    if early_regional:
+        result["early_regional"] = regional
     with (args.output / "joint-research-receipt.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False, default=_json_value)
         stream.write("\n")
