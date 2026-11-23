@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve().parent
+LAYOUT_SHA256 = "0be5c8a2f90d36691d1bb20a1e3dee0fe17eae7a70b66b732a560cf0257c88aa"
 
 
 @contextmanager
@@ -69,7 +70,30 @@ def withhold(scan, args, offer, assets, handoff, reason, *, graph_proof=None):
         return scan.analyze(args.recording, args.output, assets, args.archive, offer)
 
 
-def publish_active(args, publication, specification, handoff):
+@contextmanager
+def layout_renderer(scan, enabled, audit):
+    if not enabled:
+        yield
+        return
+
+    from empty_bootstrap import clock, now
+    from one_pass_web_png import render
+
+    if Path(render.__code__.co_filename).resolve() != HERE / "one_pass_web_png.py":
+        raise ValueError("Expected the reviewed one-pass publication renderer")
+    installed = scan.render
+
+    def opted_in(packet, **options):
+        start = now()
+        images, detail = render(installed, packet, enabled=True, **options)
+        audit.update(work=detail, render=clock(start))
+        return images
+
+    with patch.object(scan, "render", opted_in):
+        yield
+
+
+def publish_active(args, publication, specification, handoff, layout_audit):
     from full_short_run import geographic_projection
     import joint_publication
     from regional_probe_block_binding import guarded_projection
@@ -81,10 +105,16 @@ def publish_active(args, publication, specification, handoff):
         return guarded_projection(args.geographic_library, args.regional_track_library,
                                   args.frontier_block_library, geographic_projection)
 
+    @contextmanager
+    def active_publication(scan):
+        # The installed lossless renderer is bound before the analyze hook.
+        with handoff.install(scan), layout_renderer(scan, args.one_pass_web_png, layout_audit):
+            yield
+
     # Bootstrap already installed the release's lazy package facades. The
     # normal analyze/raw-context boundary consumes the in-memory packet once.
     with patch.object(joint_publication, "configuration", return_value=(publication, dict(specification, startup="stock"))):
-        result = joint_publication.run(options, raw_context=handoff.install, early_regional=True,
+        result = joint_publication.run(options, raw_context=active_publication, early_regional=True,
                                        keep_selected_rows=True, geographic_projector=projection,
                                        reuse_cold_rows=True, reuse_grid_phase_states=True)
     return result["receipt"], result
@@ -110,6 +140,8 @@ def run(args):
               (args.regional_track_library, TRACK_SCORES_SHA), (args.frontier_block_library, BLOCK_SHA))
     for path, pin in inputs:
         staged.checked(path, pin)
+    if args.one_pass_web_png:
+        staged.checked(HERE / "one_pass_web_png.py", LAYOUT_SHA256)
     recipe = checked_recipe()
     mixer = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True)
     scan = staged.staged_scanner(sources, detector=mixer.detector)
@@ -122,7 +154,7 @@ def run(args):
     if not archive.is_dir():
         raise ValueError("Expected the causal archive directory")
     scope = staged.now()
-    audit = {}
+    audit, layout_audit = {}, {}
     with TemporaryDirectory() as temporary:
         assets = Path(temporary)
         anchor = specification["detector_sha256"]
@@ -163,7 +195,7 @@ def run(args):
             raise ValueError(f"Scientific imports crossed the receiver-first boundary: {before}")
         handoff = Handoff(session, inventory_digest, RECIPE_SHA, native)
         if reason is None:
-            terminal, research = publish_active(args, publication, specification, handoff)
+            terminal, research = publish_active(args, publication, specification, handoff, layout_audit)
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
@@ -191,6 +223,8 @@ def run(args):
                   installed_acquisition_sources=staged.EXTRA_SOURCES,
                   solver_source_sha256=None if research is None else research["source_sha256"],
                   graph_proof=graph_proof,
+                  one_pass_web_png=dict(enabled=args.one_pass_web_png,
+                                        source_sha256=LAYOUT_SHA256 if args.one_pass_web_png else None, **layout_audit),
                   solver_recipe=dict(graph="installed", block_sha256=BLOCK_SHA, scalar_track_sha256=TRACK_SCORES_SHA,
                                      geographic_sha256=GEOGRAPHIC_SHA, reuse_cold_rows=True,
                                      reuse_grid_phase_states=True, skip_empty_proof=True),
@@ -212,4 +246,6 @@ if __name__ == "__main__":
         parser.add_argument("--"+name, type=Path, required=True)
     parser.add_argument("--prove-empty-graph", action="store_true",
                         help="Use the pinned minimum support proof before loading the numerical solver")
+    parser.add_argument("--one-pass-web-png", action="store_true",
+                        help="Use the reviewed explicit layout on the installed renderer when supported")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))

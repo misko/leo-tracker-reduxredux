@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from importlib import import_module
 from pathlib import Path
 import runpy
@@ -76,3 +77,30 @@ def test_qualified_receiver_shim_is_scoped_and_fails_if_already_imported():
             with BOOTSTRAP["receiver_import"](name, symbols):
                 pytest.fail("replaced an active receiver")
     assert name not in sys.modules
+
+
+def test_publication_layout_uses_existing_renderer_on_unsupported_packet(monkeypatch):
+    monkeypatch.syspath_prepend(str(BOOTSTRAP["HERE"]))
+    layout = import_module("one_pass_web_png")
+    seen = []
+
+    @contextmanager
+    def unsupported(*, enabled):
+        assert enabled
+        raise layout.UnsupportedWebLayout("unrecognized template")
+        yield
+
+    def installed(packet, **options):
+        seen.append((packet, options))
+        return {"position": b"installed"}
+
+    monkeypatch.setattr(layout, "one_pass_layout", unsupported)
+    scan, audit = SimpleNamespace(render=installed), {}
+    with BOOTSTRAP["layout_renderer"](scan, False, audit):
+        assert scan.render is installed
+    with BOOTSTRAP["layout_renderer"](scan, True, audit):
+        assert scan.render("packet", title="signed recording") == {"position": b"installed"}
+    assert scan.render is installed
+    assert seen == [("packet", {"title": "signed recording"})]
+    assert audit["work"] == {"layout_fallback": "unrecognized template"}
+    assert audit["render"]["cpu_s"] >= 0
