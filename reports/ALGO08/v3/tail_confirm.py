@@ -55,7 +55,7 @@ def since(start):
     return [after-before for after, before in zip(clock(), start, strict=True)]
 
 
-def build(work, installed):
+def build(work, installed, extension_path=HOLDOUT):
     verified(installed, INSTALLED_SHA)
     verified(TWO_CARRIER, SOURCE_SHA)
     original = verified(RELEASE_BUILD.with_name("portable_verifier.c"), SOURCE)
@@ -70,7 +70,7 @@ def build(work, installed):
             overlays[str(include)] = digest(verified(include, pin))
     work.mkdir()
     source, binary = work / "tail.c", work / "tail.so"
-    extension = HOLDOUT.read_bytes()
+    extension = extension_path.read_bytes()
     source.write_bytes(original+b"\n"+extension)
     command = [*flags, "-shared", str(source), str(installed), "-Wl,-Bsymbolic-functions", "-Wl,-z,defs", "-lm", "-o", str(binary)]
     subprocess.run(command, cwd=recipe["cwd"], check=True)
