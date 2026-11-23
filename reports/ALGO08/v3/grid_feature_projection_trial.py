@@ -8,12 +8,10 @@ from pathlib import Path
 from time import process_time_ns
 from unittest.mock import patch
 
-import numpy as np
-
 from aperture_trial import write
 from dense_full_short_crossover import file_sha
 from dense_geographic_trial import elapsed, host, now
-from grid_feature_projection import Design, Native, build, exact
+from grid_feature_projection import FLAGS, Native, build, exact
 from grid_neighbor_gamma import clear_grid_cache
 from grid_neighbor_gamma_trial import reconstruct
 from grid_phase_state_reuse import checked_geometry, identical, prepared_features, sample_with_cached_features
@@ -57,21 +55,10 @@ class Census:
             rows.append(dict(east_km=point[0], north_km=point[1], scores=results, failures={}))
         return dict(points=rows, complete=True, evaluated_points=len(rows))
 
-    def candidate(self, stack, calculate, stock_phase, original, history, direct):
-        layout = Design(direct)
-        assembly = calculate["_assemble"]
+    def candidate(self, stack, calculate, stock_phase, original, history):
         select_globals = history.make_problem.__globals__
         select = select_globals["_select"]
         phase = self.native.phase(stock_phase, verify=self.edge_sample)
-
-        def design(problem, frequency, derivative, modes, scales, geometry_only):
-            if not geometry_only or problem.variant != "radio_noise":
-                layout.counts["design_fallback"] += 1
-                return assembly(problem, frequency, derivative, modes, scales, geometry_only)
-            value = layout.assemble(problem, derivative, modes, scales)
-            if self.edge_sample and not exact(value, assembly(problem, frequency, derivative, modes, scales, geometry_only)):
-                raise ValueError("Expected bit-identical curved features")
-            return value
 
         def select_rows(features, scale, keep):
             value = self.native.selected_design(features, scale, keep, select)
@@ -82,26 +69,19 @@ class Census:
         curved, linear = self.phase("curved", phase), self.phase("predictive", phase)
         released_linear = prepared_features(original, linear)
         check_linear = prepared_features(original, stock_phase) if self.edge_sample else None
-        timed_design = self.observe(lambda: (self.arm, "curved"), "candidate_design", design)
         timed_selection = self.observe(lambda: (self.arm, "curved"), "candidate_selection", select_rows)
-        stack.enter_context(patch.dict(calculate, _phase_geometry=curved, _assemble=timed_design))
+        stack.enter_context(patch.dict(calculate, _phase_geometry=curved))
         stack.enter_context(patch.dict(select_globals, _select=timed_selection))
 
         def predictive(view, position, altitude):
-            if view.variant != "radio_noise" or altitude != 0.:
-                return released_linear(view, position, altitude)
-            frequency, elevation, derivative, modes = linear(view, np.asarray(position)[:2])
-            intercept = frequency - derivative * view.reference[view.flat_labels]
-            scales = np.ones(3)
-            result = dict(features=layout.assemble(view, derivative, modes, scales), elevation=elevation,
-                          scales=scales, frequency=frequency, intercept=intercept, derivative=derivative)
+            result = released_linear(view, position, altitude)
             if check_linear is not None:
                 expected = check_linear(view, position, altitude)
                 if not identical(result, expected):
                     raise ValueError("Expected bit-identical predictive features")
             return result
 
-        return predictive, layout.counts
+        return predictive
 
     def observe(self, bucket, name, operation):
         def measured(*args, **kwargs):
@@ -146,7 +126,7 @@ class Census:
         from leo.analysis.localization_v3 import history_position, marginal
         from leo.analysis.position_grid import sample_position_grid
         from leo.analysis.research import prepared_phase_geometry as geometry
-        from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff, algo08_curved_design
+        from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff
 
         event, original, _, _ = checked_geometry()
         calculate = marginal.JointMarginal.calculate.__globals__
@@ -172,14 +152,11 @@ class Census:
                 handoff, "np", Packing(handoff.np, lambda operation: self.observe(
                     lambda: (self.arm, "predictive"), "pack", operation)),
             ))
-            layout = {}
             if self.native is None:
                 stack.enter_context(patch.dict(calculate, _phase_geometry=self.phase("curved", stock_phase)))
                 predictive = prepared_features(original, self.phase("predictive", stock_phase))
             else:
-                predictive, layout = self.candidate(
-                    stack, calculate, stock_phase, original, history_position, algo08_curved_design.direct_features,
-                )
+                predictive = self.candidate(stack, calculate, stock_phase, original, history_position)
             grid = sample_with_cached_features(
                 self.exercise_edges if self.edge_sample else sample_position_grid, event, original,
                 self.observe(lambda: (self.arm, "predictive"), "geometry", predictive), counters,
@@ -189,7 +166,7 @@ class Census:
             clocks = elapsed(start)
         self.rows = result["points"]
         self.output = dict(clocks=clocks, complete=result["complete"], prepared=dict(counters),
-                           assembly=dict(assembly - previous), template=dict(layout),
+                           assembly=dict(assembly - previous),
                            native={} if self.native is None else dict(self.native.counts))
         return result
 
@@ -214,8 +191,7 @@ class Census:
             for name in ("nominal", "offset_projection", "physical_modes", "phase_other")
         }
         stage["disjoint_ns"].update(
-            curved_design=assembly.get("direct_assembly_ns", 0) + assembly.get("released_assembly_ns", 0)
-            if self.native is None else by_view["curved"]["candidate_design_ns"],
+            curved_design=assembly.get("direct_assembly_ns", 0) + assembly.get("released_assembly_ns", 0),
             curved_selection=sum(assembly.get(name + "_selection_ns", 0) for name in ("history", "normal"))
             if self.native is None else by_view["curved"]["candidate_selection_ns"],
             predictive_design=by_view["predictive"]["geometry_design_ns"],
@@ -235,17 +211,22 @@ def run(output, candidate, edge_sample):
     machine = host()
     observers = []
     native = None
+    source = Path(__file__).with_name("grid_feature_projection.py")
+    paths = [Path(__file__), source, source.with_suffix(".c")]
     if candidate:
         library = output.with_suffix(".so")
         build(library)
         native = Native(library)
+        paths.append(library)
 
     def observer(grid):
         audit = Census(grid, native, edge_sample=edge_sample)
         observers.append(audit)
         return audit
 
+    start = now()
     reconstruction, _ = reconstruct(observer)
+    wall = elapsed(start)
     audit, = observers
     timing = audit.report()
     checks = reconstruction["checks"]
@@ -262,10 +243,9 @@ def run(output, candidate, edge_sample):
     if native is not None:
         checks["candidate"] = (native.counts["exact_projection_checks"] == (4 * fresh if edge_sample else 4)
                                and native.counts["native_selection"] == 2 * fresh
-                               and native.counts["projection_fallback"] == native.counts["selection_fallback"] == 0
-                               and timing["template"] == {"design_views": 4, "template_design": 4 * fresh})
-    write(output, dict(**reconstruction, machine=machine, timing=timing, points=audit.rows,
-                       source_sha256=file_sha(Path(__file__))))
+                               and native.counts["projection_fallback"] == native.counts["selection_fallback"] == 0)
+    write(output, dict(**reconstruction, machine=machine, timing=timing, points=audit.rows, reconstruction=wall,
+                       flags=FLAGS, source_sha256={p.name: file_sha(p) for p in paths}))
     if not all(checks.values()):
         raise ValueError(f"The measured exact grid did not match the saved replay: {checks}")
 

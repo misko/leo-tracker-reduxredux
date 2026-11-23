@@ -1,4 +1,4 @@
-"""Experimental fixed-view observer projection and curved design preparation."""
+"""Experimental fixed-view observer projection and selected design packing."""
 
 from collections import Counter
 import ctypes as ct
@@ -15,7 +15,6 @@ FLAGS = (
     "-std=c11", "-O3", "-march=haswell", "-fno-fast-math", "-fno-math-errno",
     "-ffp-contract=off", "-shared", "-fPIC", "-Wall", "-Wextra", "-Werror",
 )
-MATRIX_SOURCES = ("hardware", "smooth", "constants", "flat_labels")
 
 
 def build(output):
@@ -76,6 +75,7 @@ class Native:
         def projected(center, shifts, *coordinates):
             key = id(center)
             if key in checked and not checked[key][1]:
+                self.counts["projection_fallback"] += 1
                 return baseline_projection(center, shifts, coordinates)
             candidate = self.projection(center, shifts, *coordinates)
             if candidate is not None and not verify and key in checked:
@@ -103,6 +103,9 @@ class Native:
         return scope[original.__name__]
 
     def selected_design(self, source, scale, keep, fallback):
+        if type(source) is not np.ndarray or source.ndim != 2:
+            self.counts["selection_fallback"] += 1
+            return fallback(source, scale, keep)
         rows, width = source.shape
         if (not contiguous(source, (rows, width)) or not contiguous(scale, (width,))
                 or not contiguous(keep, (rows,), np.bool_)
@@ -113,49 +116,3 @@ class Native:
         self.select(rows, width, *(a.ctypes.data for a in (source, scale, keep, output)))
         self.counts["native_selection"] += 1
         return output
-
-
-class Design:
-    """Own input snapshots and a template per view for one sampler call."""
-
-    def __init__(self, original):
-        self.original = original
-        self.views = {}
-        self.counts = Counter()
-
-    def assemble(self, problem, derivative, modes, scales):
-        rows = len(derivative)
-        arrays = tuple(getattr(problem, key) for key in MATRIX_SOURCES)
-        supported = tuple(problem.supported_local)
-        labels = problem.flat_labels
-        if (len(problem.supported) != len(supported)
-                or len(set(supported)) != len(supported)
-                or len(problem.labels) != len(problem.phase_sigma)
-                or not contiguous(derivative, (rows,))
-                or not contiguous(modes, (rows, 3))
-                or not contiguous(labels, (rows,), np.int64)
-                or not np.array_equal(scales, [1., 1., 1.])
-                or any(a.dtype != np.float64 for a in (*arrays[:3], problem.q, problem.phase_sigma))):
-            self.counts["design_fallback"] += 1
-            return self.original(problem, derivative, modes, scales)
-        key = id(problem)
-        if key not in self.views:
-            matrix = self.original(problem, np.zeros_like(derivative), np.zeros_like(modes), scales)
-            first_phase = problem.hardware.shape[1] + problem.smooth.shape[1]
-            slots = np.full(len(problem.labels), -1, dtype=np.intp)
-            slots[list(supported)] = np.arange(len(supported))
-            column = slots[labels]
-            active = np.flatnonzero(column >= 0)
-            orbit = first_phase + len(problem.labels) + 3 * column[active, None] + np.arange(3)
-            self.views[key] = (problem, matrix, tuple(a.copy() for a in arrays), supported,
-                               np.arange(rows), first_phase + labels, active, orbit)
-            self.counts["design_views"] += 1
-        _, template, snapshot, current, index, phase, active, orbit = self.views[key]
-        if supported != current or not all(exact(a, b) for a, b in zip(arrays, snapshot, strict=True)):
-            self.counts["design_fallback"] += 1
-            return self.original(problem, derivative, modes, scales)
-        features = template.copy()
-        features[index, phase] = problem.q * derivative * problem.phase_sigma[labels]
-        features[active[:, None], orbit] = problem.q[active, None] * modes[active] * scales[2]
-        self.counts["template_design"] += 1
-        return features
