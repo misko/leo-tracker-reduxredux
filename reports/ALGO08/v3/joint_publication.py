@@ -85,7 +85,8 @@ def artifacts(root, receipt):
 
 
 def run(args, *, detector_override=None, detector_description=None, track_config=None, prepare_detector=None,
-        raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None):
+        raw_context=None, early_regional=False, keep_selected_rows=False, saved_receiver=None, geographic_projector=None,
+        reuse_cold_rows=False):
     if bool(args.saved) != bool(args.saved_digest):
         raise ValueError("A saved detection packet needs its canonical digest")
     if args.saved and (detector_override is not None or prepare_detector is not None or raw_context is not None):
@@ -100,6 +101,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         raise ValueError("Early regional proof requires the optimized full catalogue")
     if geographic_projector is not None and not early_regional:
         raise ValueError("A geographic projector requires the regional proof")
+    if reuse_cold_rows and not optimized:
+        raise ValueError("Cold track-row reuse requires the optimized full catalogue")
     full_catalogue = getattr(args, "full_catalogue", False) or optimized
     signed_finish = getattr(args, "signed_finish", False) or full_catalogue
     if stock_control and signed_finish:
@@ -142,6 +145,10 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 return route(prepared, *values, **options)
 
             with ExitStack() as stack:
+                if reuse_cold_rows:
+                    from cold_track_row_entry import cold_track_rows
+
+                    cold_row_counts = stack.enter_context(cold_track_rows())
                 if geographic_projector is not None:
                     projection_counts = stack.enter_context(geographic_projector())
                 if optimized:
@@ -168,6 +175,8 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                 solves[-1].update(prepared_exterior=prepared_counts, reduced_grid=grid_counts)
             if geographic_projector is not None:
                 solves[-1]["geographic_projector"] = dict(projection_counts)
+            if reuse_cold_rows:
+                solves[-1]["cold_track_rows"] = dict(cold_row_counts)
             if observer is not None:
                 solves[-1].update(preparation=preparations, inference_metrics=decision.get("metrics"))
             if packet is not None:
@@ -225,6 +234,9 @@ def run(args, *, detector_override=None, detector_description=None, track_config
         pins["installed/algo08_posterior_handoff.py"] = HANDOFF_SHA256
     if early_regional:
         pins["early_region.py"] = sha256((source / "early_region.py").read_bytes()).hexdigest()
+    if reuse_cold_rows:
+        for name in ("cold_track_row_reuse.py", "cold_track_row_entry.py"):
+            pins[name] = sha256((source / name).read_bytes()).hexdigest()
     from leo.application.localization_v3_engine import _json_value
 
     input_kind = "saved detector" if saved is not None else "raw recording"

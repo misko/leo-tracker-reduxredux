@@ -43,6 +43,8 @@ def main(argv=None):
     mode.add_argument("--saved", type=Path, help="Frozen full-short detections from the same recording")
     parser.add_argument("--saved-digest", help="Canonical detector packet digest from its original terminal")
     parser.add_argument("--geographic-library", type=Path, help="Use the reviewed native projection in regional checks")
+    parser.add_argument("--reuse-cold-track-rows", action="store_true",
+                        help="Reuse nominal centre rows in full-catalogue cold rank")
     parser.add_argument("--track-graph", choices=("quadratic", "installed"), default="quadratic",
                         help="Track configuration to use after the signed receiver handoff")
     args = parser.parse_args(argv)
@@ -59,10 +61,12 @@ def main(argv=None):
         track_config=graph_config if quadratic else None, early_regional=True, keep_selected_rows=True,
         raw_context=(lambda scan: observe_acquisition(scan, receiver, RECIPE_SHA, audit)) if receiver else None,
         saved_receiver=None if receiver else RECIPE_SHA,
-        geographic_projector=(lambda: geographic_projection(args.geographic_library)) if args.geographic_library else None)
+        geographic_projector=(lambda: geographic_projection(args.geographic_library)) if args.geographic_library else None,
+        reuse_cold_rows=args.reuse_cold_track_rows)
     write(args.output / "full-short-recipe.json", dict(recipe=identity, graph=GRAPH if quadratic else "installed",
              receiver_audit=audit,
-             saved_digest=args.saved_digest, geographic_sha256=GEOGRAPHIC_SHA if args.geographic_library else None))
+             saved_digest=args.saved_digest, geographic_sha256=GEOGRAPHIC_SHA if args.geographic_library else None,
+             **({"reuse_cold_track_rows": True} if args.reuse_cold_track_rows else {})))
 
 
 if __name__ == "__main__":
