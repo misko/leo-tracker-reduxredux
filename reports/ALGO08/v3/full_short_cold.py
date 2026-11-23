@@ -24,8 +24,10 @@ from .scout_readout_trial import check_machine
 HERE = Path(__file__).resolve().parent
 SHORT_SHA = "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9"
 ORDERS = (("stock", "full-short"), ("full-short", "stock"))
+INGRESS_ORDERS = (("advice", "prefetch-arena"), ("prefetch-arena", "advice"))
 MEASURED = HERE / "measurements"
 PRIOR_RECEIPT_SHA = "9b08991d255d82217e7447dd87c211aaf08221f652381a785c2c6e5a0a990847"
+PRIOR_SHORT_DETECTION_SHA = "fa087af8dad3a919cad433aa23a44341d974fe5b85cfd0bfdc600f86c3fc089b"
 
 
 def freeze(path, data):
@@ -41,7 +43,7 @@ def recipe(installed):
                 selection="maximum verified fractional margin, lower native rank on tie; verified rank zero at nonanchors")
 
 
-def scope(arm, assets, short_binary, spec, request, output):
+def scope(arm, assets, short_binary, spec, request, output, *, ingress_mode=None):
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_scan import FastSegmentSource, immutable_json
     from tools import algo08_scan
@@ -50,6 +52,17 @@ def scope(arm, assets, short_binary, spec, request, output):
 
     buffer = cold.frozen_function(spec, "receiver_ingress.py", "compressed_input_buffer")
     advice = cold.frozen_function(spec, "receiver_member_lookahead.py", "compressed_member_lookahead")
+    hasher = cold.PAYLOAD / "paired-sha256.so"
+    if ingress_mode is None:
+        @contextmanager
+        def selected_ingress():
+            with paired_decoded_hashes(hasher), advice() as hints:
+                yield hints, None, None
+    else:
+        from functools import partial
+        from .full_short_arena import ingress
+
+        selected_ingress = partial(ingress, ingress_mode, hasher, advice)
     installed_sha = spec["detector_sha256"]
     base = algo08_scan.detector
     stock_native = blind.Native
@@ -92,7 +105,11 @@ def scope(arm, assets, short_binary, spec, request, output):
         with selected(*args, **kwargs) as receive:
             def visit(window):
                 start = process_time_ns(), perf_counter_ns()
-                rows = receive(window)
+                if arena is None:
+                    rows = receive(window)
+                else:
+                    with arena.consume(window.samples):
+                        rows = receive(window)
                 callback_clocks.append((process_time_ns()-start[0], perf_counter_ns()-start[1]))
                 return rows
 
@@ -101,7 +118,7 @@ def scope(arm, assets, short_binary, spec, request, output):
     before_io = cold.io_snapshot()
     before = resource.getrusage(resource.RUSAGE_SELF)
     cpu, wall = process_time_ns(), perf_counter_ns()
-    with (buffer(), paired_decoded_hashes(cold.PAYLOAD / "paired-sha256.so"), advice() as hints,
+    with (buffer(), selected_ingress() as (hints, arena, verified_members),
           patch.object(algo08_scan, "FastSegmentSource", Bounded),
           patch.object(algo08_scan, "detector", observe), patch.object(blind, "Native", TimedNative if mix is None else stock_native),
           patch.dict(algo08_scan.PINS, {"cancellation-factors.so": detector_pin})):
@@ -134,18 +151,23 @@ def scope(arm, assets, short_binary, spec, request, output):
                 callback_cpu_ns=callback_cpu, callback_wall_ns=callback_wall,
                 resource_input_blocks=after.ru_inblock-before.ru_inblock,
                 resource_output_blocks=after.ru_oublock-before.ru_oublock,
+                peak_rss_kib=after.ru_maxrss, verified_members=verified_members,
                 process_io_delta={key: after_io[key]-value for key, value in before_io.items()})
 
 
-def worker(arm, request_path, short_binary, output):
+def worker(arm, request_path, short_binary, output, *, ingress_mode=None):
     machine = check_machine()
     spec = json.loads(cold.verified(cold.PAYLOAD / "spec.json", cold.SPEC_SHA))
     request = json.loads(request_path.read_bytes())
-    row = scope(arm, request_path.parent / "assets", short_binary, spec, request, output)
+    if ingress_mode is not None:
+        from .full_short_arena import check_pins
+
+        check_pins()
+    row = scope(arm, request_path.parent / "assets", short_binary, spec, request, output, ingress_mode=ingress_mode)
     freeze(output.with_suffix(".receipt.json"), dict(row, machine=machine))
 
 
-def run(parent, short_binary, output):
+def run(parent, short_binary, output, *, compare_ingress=False):
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.qualification.cache_residency import load_query, pages
     from tools.pipeline_eval.variants.experimental.paired_sha256 import PairedSha256
@@ -167,6 +189,7 @@ def run(parent, short_binary, output):
     cold.verified(hasher, spec["paired_sha256"]["sha256"])
     if not PairedSha256(hasher).hardware:
         raise ValueError("Expected the installed hardware paired SHA-256")
+    orders = INGRESS_ORDERS if compare_ingress else ORDERS
     cold.verified(cold.CACHE_LIBRARY, cold.CACHE_SHA)
     query = load_query(cold.CACHE_LIBRARY)
     native_path, = (cold.ARCHIVE / "fast-scan-automatic-work").glob("*/detections.json")
@@ -198,7 +221,7 @@ def run(parent, short_binary, output):
         request = private / "request.json"
         freeze(request, dict(entry=entry, session=session, inventory_digest=inventory_digest))
         pairs, common_metadata = [], None
-        for index, order in enumerate(ORDERS):
+        for index, order in enumerate(orders):
             pair = []
             for arm in order:
                 copy_cpu, copy_wall = process_time_ns(), perf_counter_ns()
@@ -208,9 +231,12 @@ def run(parent, short_binary, output):
                     raise ValueError("Cold-establishment left payload cache pages resident")
                 eviction = dict(coordinator_cpu_ns=process_time_ns()-copy_cpu, wall_ns=perf_counter_ns()-copy_wall)
                 prefix = private / f"{index}-{arm}.json"
+                detector_arm = "full-short" if compare_ingress else arm
+                command = [sys.executable, "-P", "-m", __spec__.name, "worker", detector_arm, request, short_binary, prefix]
+                if compare_ingress:
+                    command.extend(["--ingress-mode", arm])
                 outer = perf_counter_ns()
-                subprocess.run([sys.executable, "-P", "-m", __spec__.name, "worker", arm, request, short_binary, prefix],
-                               check=True)
+                subprocess.run(command, check=True)
                 dispatch_ns = perf_counter_ns()-outer
                 end_cache = [cold.cache_pages(path, private, info, query, cold=False)
                              for path, info in zip(members, identities, strict=True)]
@@ -223,15 +249,35 @@ def run(parent, short_binary, output):
                 if (common_metadata is not None and metadata != common_metadata
                         or document["delivery_clocks"] != native["delivery_clocks"][:cold.WINDOWS]
                         or document["clock_anchor"] != native["clock_anchor"]
-                        or arm == "stock" and probes != cold.expected_prefix(native, cold.WINDOWS)):
+                        or detector_arm == "stock" and probes != cold.expected_prefix(native, cold.WINDOWS)):
                     raise ValueError("Fresh ingress or installed output differs from the original prefix")
                 common_metadata = metadata
                 hints = row["overlap"]
-                if (hints["submitted"], hints["submitted_bytes"]) != (cold.MEMBERS-1, 2 * 16*1024**2):
+                if arm == "prefetch-arena":
+                    expected_bytes = sum(chunk.compressed_bytes for chunk in chunks[1:])
+                    if (hints["submitted"], hints["hits"], hints["submitted_bytes"], hints["hit_bytes"], hints["fallback"]) != (
+                            cold.MEMBERS-1, cold.MEMBERS-1, expected_bytes, expected_bytes, 0):
+                        raise ValueError("The worker did not supply both complete compressed members")
+                elif (hints["submitted"], hints["submitted_bytes"]) != (cold.MEMBERS-1, 2 * 16*1024**2):
                     raise ValueError("The released path did not issue both capped hints")
+                if compare_ingress:
+                    checked = row["verified_members"]
+                    expected_members = [[name, size, digest] for chunk in chunks for name, size, digest in (
+                        (chunk.index_relative_path, chunk.index_bytes, chunk.index_sha256),
+                        (chunk.payload_relative_path, chunk.compressed_bytes, chunk.compressed_sha256),
+                    )]
+                    if (checked["compressed_and_index"] != expected_members
+                            or checked["decoded_members"] != [chunk.uncompressed_sha256 for chunk in chunks]
+                            or row["sealed_detection_sha256"] != PRIOR_SHORT_DETECTION_SHA):
+                        raise ValueError("The previous full-short receiver science or signed member checks changed")
+                    if arm == "prefetch-arena" and (
+                            checked["prefetch_cpu_affinity"] != [2]
+                            or checked["arena"] != dict(allocation=1, reuse=cold.MEMBERS-1, completed_frames=cold.MEMBERS,
+                                                       released_callbacks=cold.WINDOWS, destination_bytes=chunks[0].uncompressed_bytes)):
+                        raise ValueError("The same-core worker or exclusive decode arena contract changed")
                 with (output / prefix.name).open("xb") as stream:
                     stream.write(content)
-                row.update(start_cache_pages=start_cache, end_cache_pages=end_cache, eviction=eviction,
+                row.update(arm=arm, detector_arm=detector_arm, start_cache_pages=start_cache, end_cache_pages=end_cache, eviction=eviction,
                            subprocess_wall_ns=dispatch_ns, omitted_subprocess_wall_ns=dispatch_ns-row["wall_ns"],
                            effective_compressed_MB_per_s=payload*1000/row["wall_ns"], detection_file=prefix.name,
                            selected=sum(bool(probe["candidates"]) for probe in probes))
@@ -241,11 +287,11 @@ def run(parent, short_binary, output):
         if any(row["decoded_iq_hashes"] != flat[0]["decoded_iq_hashes"] or row["raw_authority"] != flat[0]["raw_authority"]
                for row in flat):
             raise ValueError("Receiver arms did not decode identical signed waveforms")
-        pins = {arm: {row["sealed_detection_sha256"] for row in flat if row["arm"] == arm} for arm in ORDERS[0]}
-        if any(len(hash_set) != 1 for hash_set in pins.values()) or pins["stock"] == pins["full-short"]:
-            raise ValueError("Expected reproducible within-arm evidence and distinct algorithm provenance")
+        pins = [{row["sealed_detection_sha256"] for row in flat if row["arm"] == arm} for arm in orders[0]]
+        if any(len(hash_set) != 1 for hash_set in pins) or (pins[0] == pins[1]) != compare_ingress:
+            raise ValueError("Expected reproducible evidence with the intended algorithm provenance")
     freeze(output / "acquisition.json", dict(machine=host, filesystem=filesystem, kernel=os.uname().release,
-            orders=ORDERS, repeats=pairs, staged=staging, expected_pages=expected_pages, decoded_bytes=sum(
+            orders=orders, repeats=pairs, staged=staging, expected_pages=expected_pages, decoded_bytes=sum(
                 chunk.uncompressed_bytes for chunk in chunks), compressed_bytes=payload, spec_sha256=cold.SPEC_SHA,
             reader_sha256=cold.RUNTIME, archived_stock_sha256=cold.ARCHIVED_DETECTION_SHA, inventory_sha256=inventory_digest,
             prior_same_slice_sha256=PRIOR_RECEIPT_SHA, research_recipe=recipe(spec["detector_sha256"]),
@@ -259,6 +305,8 @@ if __name__ == "__main__":
     stage.add_argument("parent", type=Path)
     child.add_argument("arm", choices=ORDERS[0])
     child.add_argument("request_path", type=Path)
+    child.add_argument("--ingress-mode", choices=INGRESS_ORDERS[0])
+    stage.add_argument("--compare-ingress", action="store_true")
     for sub in (stage, child):
         for name in ("short_binary", "output"):
             sub.add_argument(name, type=lambda value: Path(value).resolve())
