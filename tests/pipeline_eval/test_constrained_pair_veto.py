@@ -30,10 +30,12 @@ def ports():
             p = feasible._problem(None, node, None, arm)
             record = feasible.summary(p, arm)
             record.update(
-                history=[{}] * node.get("rounds", 5),
+                history=[{"fit": {"evaluations": 9 if arm == "c0" else 2}}] * node.get("rounds", 5),
                 final_phase_change_s=0.001,
                 minimum_gate_slack=-0.3,
             )
+            if node.get("missing_witness"):
+                del record["minimum_gate_slack"]
             results[arm] = record
         return results
 
@@ -53,45 +55,62 @@ def ports():
 
 
 @pytest.mark.parametrize("role", ["conditional", "predictive"])
-def test_completed_gate_rejects_and_next_trial_can_still_win(role):
+@pytest.mark.parametrize("first, second", [("c0", "fitted_c"), ("fitted_c", "c0")])
+def test_completed_gate_rejects_and_next_trial_can_still_win(role, first, second):
     family, feasible, calls = ports()
     audit = {}
-    with guard(family, feasible, audit):
+    with guard(family, feasible, audit, first_arm=first):
         rejected = family.fit_configuration(None, {role: False}, [], {})
         accepted = family.fit_configuration(None, {}, [], {})
-    assert rejected["paired_valid"] is False and set(rejected["arms"]) == {"c0"}
-    assert accepted["paired_valid"] and set(accepted["arms"]) == {"c0", "fitted_c"}
-    assert calls == ["c0", "c0", "fitted_c"]
+    assert rejected["paired_valid"] is False and list(rejected["arms"]) == [first]
+    assert accepted["paired_valid"] and list(accepted["arms"]) == ["c0", "fitted_c"]
+    assert calls == [first, first, second]
     assert audit["rejected_trials"][0]["failed_tracks"] == [(role, 0)]
+    assert audit["rejected_trials"][0]["skipped_arm"] == second
+    assert audit["arms"][first] == dict(phase_fits_started=2, recorded_visits=90 if first == "c0" else 20)
+    assert audit["arms"][second] == dict(phase_fits_started=1, recorded_visits=45 if second == "c0" else 10)
     assert audit["rescues"] == 2 and audit["second_arms_started"] == 1
 
 
-def test_incomplete_first_arm_keeps_original_execution():
+@pytest.mark.parametrize("unresolved", [{"rounds": 4}, {"missing_witness": True}])
+@pytest.mark.parametrize("first, second", [("c0", "fitted_c"), ("fitted_c", "c0")])
+def test_incomplete_first_arm_executes_both_original_arms(unresolved, first, second):
     family, feasible, calls = ports()
-    with guard(family, feasible, {}):
+    with guard(family, feasible, {}, first_arm=first):
         result = family.fit_configuration(
-            None, {"conditional": False, "rounds": 4}, [], {}
+            None, {"conditional": False, **unresolved}, [], {}
         )
-    assert calls == ["c0", "fitted_c"] and not result["paired_valid"]
+    assert calls == [first, second] and not result["paired_valid"]
+    assert list(result["arms"]) == ["c0", "fitted_c"]
 
 
 @pytest.mark.parametrize("arm", ["c0", "fitted_c"])
-def test_actual_numerical_failures_propagate_and_ports_restore(arm):
+@pytest.mark.parametrize("first_arm", ["c0", "fitted_c"])
+def test_actual_numerical_failures_propagate_and_ports_restore(arm, first_arm):
     family, feasible, _ = ports()
     original = (
         family.constrained,
         family.fit_configuration,
         feasible.summary,
         feasible._problem,
+        feasible.ARMS,
     )
-    with pytest.raises(ArithmeticError), guard(family, feasible, {}):
+    with pytest.raises(ArithmeticError), guard(family, feasible, {}, first_arm=first_arm):
         family.fit_configuration(None, {"error": arm}, [], {})
     assert original == (
         family.constrained,
         family.fit_configuration,
         feasible.summary,
         feasible._problem,
+        feasible.ARMS,
     )
+
+
+def test_unknown_calibration_order_is_rejected_before_installation():
+    family, feasible, calls = ports()
+    with pytest.raises(ValueError, match="Unknown first"), guard(family, feasible, {}, first_arm="other"):
+        family.fit_configuration(None, {}, [], {})
+    assert not calls
 
 
 def test_named_adoption_can_select_a_later_successful_trial():
