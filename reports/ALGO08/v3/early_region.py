@@ -5,12 +5,18 @@ from time import process_time
 from unittest.mock import patch
 
 
-def before_fit(fit, reader, check, audit, catalogue_for):
+def before_fit(fit, reader, check, audit, catalogue_for, *, skip_empty=False):
     from tools.pipeline_eval.variants.experimental import regional_bound_guard as guard
 
     def route(prepared, region, bound, stages, **kwargs):
         tracks = prepared["tracks"]
         clocks = process_time()
+        if skip_empty and len(tracks["tracks"]) == 0:
+            # The regional likelihood cannot score an empty graph. Let the original
+            # inference path decide whether this input warrants a position.
+            audit.append(dict(result=dict(complete=False, reason="no_graph_tracks_to_score"),
+                              cpu_s=process_time()-clocks, reused=0, skipped_empty_graph=True))
+            return fit(prepared, region, bound, stages, **kwargs)
         try:
             proof = check(tracks, reader, region, terminal_only=True)
         except (OSError, ValueError) as exc:

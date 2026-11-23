@@ -11,6 +11,27 @@ def research(monkeypatch):
     return import_module
 
 
+def test_regional_prerequisite_only_skips_an_empty_graph(research):
+    early = research("early_region")
+    calls = []
+
+    def check(tracks, *args, **kwargs):
+        calls.append(tracks)
+        return dict(complete=False)
+
+    def fit(prepared, region, bound, stages, **options):
+        return prepared["tracks"]
+
+    audit = []
+    route = early.before_fit(fit, None, check, audit, None, skip_empty=True)
+    for graph in ([], [{"observation_ids": ["a", "b"]}]):
+        tracks = {"tracks": graph}
+        assert route({"tracks": tracks}, None, None, {}) is tracks
+    assert calls == [{"tracks": [{"observation_ids": ["a", "b"]}]}]
+    assert audit[0]["skipped_empty_graph"]
+    assert "skipped_empty_graph" not in audit[1]
+
+
 def test_mask_is_local_to_each_rf_and_includes_partial_cycles(research):
     factors = [dict(candidate_rank=n, fractional_margin=n + 0.5, passed_fractional_margin_gate=True) for n in (0, 1)]
     rows = [dict(receiver_id=rx, channel=i % 2, actual_rf_hz=100 + i % 2, edge="lower",

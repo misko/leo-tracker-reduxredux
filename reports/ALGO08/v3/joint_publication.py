@@ -170,7 +170,7 @@ def run(args, *, detector_override=None, detector_description=None, track_config
                         from tools.pipeline_eval.variants.experimental import regional_bound_guard
 
                         route = before_fit(route, reader, regional_bound_guard.causal_probes, regional,
-                                           live_catalogue.match)
+                                           live_catalogue.match, skip_empty=getattr(args, "skip_empty_proof", False))
                 if track_config is not None:
                     factory = algo08_position.TrackConfig
                     stack.enter_context(patch.object(algo08_position, "TrackConfig",

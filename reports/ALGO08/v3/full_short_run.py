@@ -65,6 +65,7 @@ def main(argv=None):
     mode.add_argument("--short-binary", type=Path, help="Pinned 12 ms primary library for raw acquisition")
     mode.add_argument("--saved", type=Path, help="Frozen full-short detections from the same recording")
     parser.add_argument("--causal-selection", action="store_true", help="Apply the existing causal carrier-history filter")
+    parser.add_argument("--skip-empty-proof", action="store_true", help="Bypass catalogue propagation when there are no graph tracks to score")
     parser.add_argument("--saved-digest", help="Canonical detector packet digest from its original terminal")
     parser.add_argument("--geographic-library", type=Path, help="Use the reviewed native projection in regional checks")
     parser.add_argument("--regional-track-library", type=Path, help="Use the native track likelihood on fused regional projections")
@@ -107,6 +108,7 @@ def main(argv=None):
         **({"profiled_gamma_library": args.profiled_gamma_library} if args.profiled_gamma_library is not None else {}))
     write(args.output / "full-short-recipe.json", dict(recipe=identity, graph=GRAPH if quadratic else "installed",
              receiver_audit=audit,
+             **({"skip_empty_proof": True} if args.skip_empty_proof else {}),
              saved_digest=args.saved_digest, geographic_sha256=GEOGRAPHIC_SHA if args.geographic_library else None,
              **({"reuse_cold_track_rows": True} if args.reuse_cold_track_rows else {}),
              **({"reuse_grid_phase_states": True} if args.reuse_grid_phase_states else {}),
