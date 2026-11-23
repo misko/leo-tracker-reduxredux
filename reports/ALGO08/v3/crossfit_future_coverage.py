@@ -74,7 +74,7 @@ def count_blocks(native, forward, future, potential, owner_ids):
         result.append(dict(block=block, seconds=[block*BLOCK_S, (block+1)*BLOCK_S], held=len(held),
                            held_ids=sorted(held_ids), held_metadata_eligible=held_labels, training=len(train),
                            training_metadata_eligible=training_potential, forward_changed=len(changed),
-                           forward_owners_affected=len(owner_ids.intersection(changed)), forward_packet_unchanged=not changed,
+                           forward_owners_affected=len(owner_ids & set(changed)), forward_packet_unchanged=not changed,
                            training_unchanged=training == train,
                            eligible=not changed and training == train and bool(held_labels) and training_potential > 0))
     return result

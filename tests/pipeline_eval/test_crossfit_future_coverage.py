@@ -33,7 +33,7 @@ def test_forward_selection_can_use_rejected_future_only_rows(monkeypatch):
     forward, future = tool.selection(packet)
     owner_ids = {tool.identifier("session", row) for row in forward["source"]["probes"] if row["candidates"]}
     assert len(future) == 3 and len(owner_ids) == 4
-    fold, = tool.count_blocks(packet, forward, future, {}, owner_ids)
+    fold, = tool.count_blocks(packet, forward, future, {}, dict.fromkeys(owner_ids).keys())
     assert fold["forward_changed"] == fold["forward_owners_affected"] == 3
     assert not fold["eligible"]
     assert all(row["candidates"] for row in packet["source"]["probes"])
