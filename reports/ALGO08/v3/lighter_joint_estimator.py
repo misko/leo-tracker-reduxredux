@@ -83,13 +83,15 @@ def minimum_confidence(scan, node, keep, baseline, *, receipts):
     return confidence
 
 
-def propose(prepared, region, bound, measured, *, repair):
+def propose(prepared, region, bound, measured, *, repair, cold_start=None):
     receipts = []
     measured["sensitive_confidence"] = receipts
     function = partial(minimum_confidence, receipts=receipts)
     with (patch.object(blind_joint_finish, "confidence_for", function),
           patch.object(blind_joint_repair, "confidence_for", function)):
-        return family_pool_closure.propose(prepared, region, bound, measured, repair=repair)
+        if cold_start is None:
+            return family_pool_closure.propose(prepared, region, bound, measured, repair=repair)
+        return blind_joint_finish.propose(prepared, region, bound, measured, repair=repair, cold_start=cold_start)
 
 
 def warm_arm(candidate, means, arm):

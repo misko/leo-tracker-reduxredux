@@ -194,7 +194,7 @@ class CommonProjection:
             self.counts["coarse_projection_cpu_s"] += process_time() - start
 
 
-def propose(prepared, region, bound, measured, *, repair, certified):
+def propose(prepared, region, bound, measured, *, repair, certified, cold_start=None):
     counts = Counter()
     measured["certified_salvage"] = counts
     stock_coarse = conservative_recovery.salvage
@@ -218,4 +218,4 @@ def propose(prepared, region, bound, measured, *, repair, certified):
     fine = partial(fine_alternatives, stock_fine, counts) if certified else stock_fine
     with (patch.object(conservative_recovery, "salvage", salvage),
           patch.object(v5_tiled_salvage, "fine_alternatives", fine)):
-        return lighter_joint_estimator.propose(prepared, region, bound, measured, repair=repair)
+        return lighter_joint_estimator.propose(prepared, region, bound, measured, repair=repair, cold_start=cold_start)
