@@ -94,8 +94,7 @@ def grid_port(original, native, template, observed, *, probe):
     """Compose the released grid wrapper with one exact candidate call."""
     from functools import partial
 
-    from grid_feature_projection import bind_grid
-    from leo.analysis.localization_v3 import marginal
+    from grid_design_template import bind_projected_design
     from leo.presentation import localization_v3 as presentation
     from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff
 
@@ -104,13 +103,7 @@ def grid_port(original, native, template, observed, *, probe):
         sample = presentation.sample_position_grid
 
         def bind(base, geometry, prepared):
-            accelerated, replace_geometry = bind_grid(native, base, geometry, prepared)
-
-            def run(*args, **kwargs):
-                with template.binding(marginal.JointMarginal.calculate.__globals__):
-                    return accelerated(*args, **kwargs)
-
-            return run, replace_geometry
+            return bind_projected_design(native, template, base, geometry, prepared)
 
         with original(bind=bind) as counters:
             accelerated = presentation.sample_position_grid

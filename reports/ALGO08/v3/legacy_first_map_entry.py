@@ -24,6 +24,9 @@ def parser():
     cli.add_argument("--legacy-first-map-plan", type=Path,
                      help="Optional independent replay plan for byte-parity qualification")
     cli.add_argument("--legacy-first-map-plan-sha256")
+    cli.add_argument("--legacy-first-map-fast", type=Path,
+                     help="Research-only exact first-use acceleration artifact roster")
+    cli.add_argument("--legacy-first-map-fast-sha256")
     cli.add_argument("--first-map-setup-only", action="store_true")
     return cli
 
@@ -49,9 +52,14 @@ def run(args):
         raise ValueError("Expected the ordinary 20/8 history-risk path with first-use map production")
     if bool(args.legacy_first_map_plan) != bool(args.legacy_first_map_plan_sha256):
         raise ValueError("Provide the optional qualification plan and external pin together")
+    fast = getattr(args, "legacy_first_map_fast", None)
+    fast_pin = getattr(args, "legacy_first_map_fast_sha256", None)
+    if bool(fast) != bool(fast_pin):
+        raise ValueError("Provide the optional exact acceleration roster and external pin together")
     old = boot.load_runtime
     audit, pending = {}, {}
     state = {}
+    acceleration, solver_audit = {}, {}
     if args.first_map_setup_only:
         def forbid(event, call):
             if event == "open" and str(call[0]).endswith(".ci16.zst"):
@@ -59,6 +67,13 @@ def run(args):
         sys.addaudithook(forbid)
 
     with ExitStack() as stack:
+        if fast is not None:
+            from legacy_first_map_acceleration import checked_artifacts, solver_ports
+
+            # Bind the publisher before the ordinary raw entry hands its
+            # callback to the scanner. The libraries are checked in load.
+            stack.enter_context(solver_ports(acceleration, solver_audit))
+
         def installed():
             runtime = old()
             began = boot.now()
@@ -79,6 +94,12 @@ def run(args):
             paired = spec["paired_sha256"]
             hasher = Path(paired["library"])
             boot.checked(hasher, paired["sha256"])
+            options = {}
+            if fast is not None:
+                acceleration.update(checked_artifacts(fast, fast_pin))
+                hasher = Path(acceleration["hasher"]["path"])
+                audit["acceleration"] = dict(pin=fast_pin, artifacts=acceleration, solver=solver_audit)
+                options["accelerate"] = True
             history = fused.load(args.legacy_first_map_history)
             replay = core.load(args.legacy_first_map_replay)
             if args.first_map_setup_only:
@@ -91,7 +112,7 @@ def run(args):
                     raise ReachedScanner
 
                 stack.enter_context(patch.object(boot, "staged_scanner", stop))
-            stack.enter_context(producing.binding(boot, plan, history, hasher, replay, pending, audit))
+            stack.enter_context(producing.binding(boot, plan, history, hasher, replay, pending, audit, **options))
             state["publish"] = producing.publish_bundle
             audit["setup"] = boot.clock(began)
             return runtime

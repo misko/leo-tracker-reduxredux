@@ -51,7 +51,7 @@ def reopen(member, expected, raw, codec, replay):
                     original_encoded_reused=len(member.compressed))
 
 
-def member_windows(source, chunk, declared, name, history, hasher, replay, hashes):
+def member_windows(source, chunk, declared, name, history, hasher, replay, hashes, *, accelerate=False):
     """Yield one complete installed-source member and return its verified map evidence."""
     from leo.scanner.fast_scan_analysis import VerifiedFastWindow
 
@@ -62,7 +62,8 @@ def member_windows(source, chunk, declared, name, history, hasher, replay, hashe
     member, reason, snapshots = None, None, []
     try:
         with legacy.one_member(reader.path, chunk, snapshots=snapshots):
-            member = fused.FusedMember(reader, chunk, history, hasher, allow_literal=True)
+            member = fused.FusedMember(reader, chunk, history, hasher, allow_literal=True,
+                                       owned_windows=accelerate, hash_prefix=accelerate)
     except multi.UnsupportedExceptionLayout as error:
         reason = str(error)
     if len(snapshots) > 1:
@@ -104,7 +105,7 @@ def member_windows(source, chunk, declared, name, history, hasher, replay, hashe
                     map_reopen=elapsed(began), **member.audit()), raw
 
 
-def first_windows(source, parts, history, hasher, replay, pending, audit, hashes):
+def first_windows(source, parts, history, hasher, replay, pending, audit, hashes, *, accelerate=False):
     if source.start_sequence or source.stop_sequence != source.reader.manifest.window_count:
         raise ValueError("First-use maps require the complete original segment")
     for chunk in source.reader.manifest.chunks:
@@ -113,7 +114,8 @@ def first_windows(source, parts, history, hasher, replay, pending, audit, hashes
         name = port.map_name(len(audit))
         if name in pending:
             raise BundleCorruptionError("Original first-use acquisition repeated a member")
-        evidence, raw = yield from member_windows(source, chunk, declared, name, history, hasher, replay, hashes)
+        evidence, raw = yield from member_windows(source, chunk, declared, name, history, hasher, replay, hashes,
+                                                  accelerate=accelerate)
         if raw is not None:
             pending[name] = raw
         audit.append(evidence)
@@ -129,8 +131,9 @@ def map_names(plan):
 
 
 @contextmanager
-def binding(boot, expected, history, hasher, replay, pending, audit):
+def binding(boot, expected, history, hasher, replay, pending, audit, *, accelerate=False):
     staged = boot.staged_scanner
+    options = {"accelerate": True} if accelerate else {}
     with ExitStack() as stack:
         def prepare(sources, detector=None):
             scan = staged(sources, detector=detector)
@@ -141,7 +144,8 @@ def binding(boot, expected, history, hasher, replay, pending, audit):
 
             def windows(item):
                 return stock(item) if parts is None else first_windows(
-                    item, parts, history, hasher, replay, pending, audit["members"], hashes)
+                    item, parts, history, hasher, replay, pending, audit["members"], hashes,
+                    **options)
 
             def checked(session, digest, inventory, assets):
                 nonlocal parts

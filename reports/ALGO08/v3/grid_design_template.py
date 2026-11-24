@@ -18,6 +18,19 @@ def build(path):
                    check=True, timeout=15)
 
 
+def bind_projected_design(native, template, sample, geometry, prepared):
+    from grid_feature_projection import bind_grid
+    from leo.analysis.localization_v3 import marginal
+
+    accelerated, replace_geometry = bind_grid(native, sample, geometry, prepared)
+
+    def run(*args, **kwargs):
+        with template.binding(marginal.JointMarginal.calculate.__globals__):
+            return accelerated(*args, **kwargs)
+
+    return run, replace_geometry
+
+
 class Designs:
     def __init__(self, library):
         self.fill = ct.CDLL(str(library)).grid_design_template
