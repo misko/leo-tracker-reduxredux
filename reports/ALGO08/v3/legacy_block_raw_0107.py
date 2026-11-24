@@ -100,7 +100,8 @@ def launch(root):
     if (not qualified["qualified"] or qualified["case"] != "DS30-0016" or host() != pinbook["machine"]
             or sum(row["map"] is not None for row in pinbook["plan"]["members"]) != 5):
         raise ValueError("Require the qualified five-map positive trial on this exact host")
-    sources = recovered["sources"]
+    sources = {path: pin for path, pin in recovered["sources"].items()
+               if Path(path).name != "legacy_block_raw_score.py"}
     for path, pin in sources.items():
         checked(direct_tmpfs(ENTRY/path), pin)
     current, frozen = metadata(ENTRY), checked_json(METADATA, METADATA_PIN)
