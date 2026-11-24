@@ -1,3 +1,7 @@
+import gzip
+from hashlib import sha256
+import json
+
 import pytest
 
 from reports.ALGO08.v3 import signed_peak_0163 as p
@@ -32,3 +36,20 @@ def test_waveform_access_is_limited_to_exact_enrolled_member():
     for path in ("/srv/bulk/recording/manifest.json", "/tmp/other/iq-000000.ci16.zst", "/mnt/qnap01/wave"):
         with pytest.raises(PermissionError, match="enrolled resident original"):
             p.allow_local_waveform("open", (path,))
+
+
+def test_sealed_physical_grid_preserves_all_cells_and_same_complete_support():
+    from reports.ALGO08.v3.plot_signed_peak_0163 import PIN
+
+    raw = (p.HERE / "measurements/0163-signed-peak-neighbourhood.json.gz").read_bytes()
+    assert sha256(raw).hexdigest() == PIN
+    runs = json.loads(gzip.decompress(raw))["results"]
+    for run in runs.values():
+        assert len(run["fixed_verifier_checks"]) == len(run["native_full"]) == 2
+        for comparison in run["neighborhoods"].values():
+            assert len(comparison["cells"]) == 561
+            assert {c["frames"] for c in comparison["cells"]} == {15}
+            assert sum(c["inside"] for c in comparison["cells"]) == comparison["inside_count"]
+    peak = runs["61"]["neighborhoods"]
+    assert peak["named"]["best_margin"]["margin"] > p.MARGIN_GATE
+    assert all(not c["flags"] & 2 for c in peak["integrated"]["cells"])
