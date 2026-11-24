@@ -1,0 +1,5 @@
+# Reuse the authenticated CI16 prefix SHA-256 state
+
+Use the signed original North and DS30-0008 first 64-window members from the grouped codec experiment. Take the shared low-priority Gauss CPU 2 slot. Authenticate and load exactly the two resident members. Compare original SHA calculations to finalization of a snapshot of the prefix state followed by the original tail update. Record CPU for the prefix, tail, concatenation, window and member independently. Use opposite repeated orders and require exact signed part, window and rolling-member digests.
+
+Run one writer and complete-readback pair per case to price the same optimization in the private direct-capture source, in opposite orders. Use the original codec and every original check, including encoded parts, decoded extents, root and index, standalone part and window pins and ordered aggregate. Require identical root and seek bytes. The full decoder retains its contiguous output. Test opt-in and ordinary behavior on independently validated shortened and empty parts, and fail closed on damaged encodings and incorrect raw digests. No full recording, numerical solve or new source staging.

@@ -166,9 +166,10 @@ def read_metadata(root, name):
 
 class Reader:
     def __init__(self, root, expected_pin, *, codec=None, prefix_samples=PREFIX_SAMPLES,
-                 parse_metadata=metadata, variable_extents=False):
+                 parse_metadata=metadata, variable_extents=False, reuse_prefix_sha=False):
         schema, self.parts = layout(prefix_samples, codec, variable_extents=variable_extents)
         self.variable_extents = variable_extents
+        self.reuse_prefix_sha = reuse_prefix_sha
         self.files = []
         self.payload_bytes = self.decoded_bytes = 0
         self.metadata_bytes = self.frames = self.full_checks = 0
@@ -257,6 +258,7 @@ class Reader:
         if not 0 <= index < len(self.rows):
             raise ValueError("Requested visit is outside the committed member")
         parts = []
+        window_sha = None
         row = self.rows[index]
         extents = self.extents(row)
         for i, expected in enumerate(extents if full else extents[:1]):
@@ -278,14 +280,25 @@ class Reader:
                 raw = self.codec.decode(encoded, expected)
             if len(raw) != expected:
                 raise ValueError("Frame returned a different decoded extent")
-            check(raw, raw_pin)
+            if self.reuse_prefix_sha and full and i == 0:
+                window_sha = sha256(raw)
+                # hashlib finalizes a snapshot. Keep this context for the whole window.
+                if "sha256:" + window_sha.hexdigest() != raw_pin:
+                    raise ValueError("Seekable member digest mismatch")
+            else:
+                check(raw, raw_pin)
             self.decoded_bytes += expected
             self.frames += 1
             parts.append(raw)
         if not full:
             return parts[0]
         raw = b"".join(parts)
-        check(raw, row.iq_sha256)
+        if window_sha is None:
+            check(raw, row.iq_sha256)
+        else:
+            window_sha.update(parts[1])
+            if "sha256:" + window_sha.hexdigest() != row.iq_sha256:
+                raise ValueError("Seekable member digest mismatch")
         self.full_checks += 1
         return raw
 
@@ -301,9 +314,9 @@ class Reader:
 
 @contextmanager
 def open_member(root, pin, *, codec=None, prefix_samples=PREFIX_SAMPLES, parse_metadata=metadata,
-                variable_extents=False):
+                variable_extents=False, reuse_prefix_sha=False):
     reader = Reader(root, pin, codec=codec, prefix_samples=prefix_samples,
-                    parse_metadata=parse_metadata, variable_extents=variable_extents)
+                    parse_metadata=parse_metadata, variable_extents=variable_extents, reuse_prefix_sha=reuse_prefix_sha)
     try:
         yield reader
     finally:
