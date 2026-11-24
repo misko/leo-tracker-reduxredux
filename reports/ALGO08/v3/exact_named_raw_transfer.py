@@ -92,19 +92,23 @@ def named(root, binding):
         installed=installed, checks=checks, verification=boot.clock(started), native_sha256=STOCK_PACKET))
 
 
-def omitted(root, binding):
+def omitted(root, binding, *, positive=None):
     import empty_bootstrap as boot
     from cumulative_grid_projection import saved_inventory_port
     from raw_cfo_north_trial import native_file
     from unified_short_bootstrap import Handoff
 
-    req, positive = binding["request"], root/"candidate"
+    req = binding["request"]
+    positive = root/"candidate" if positive is None else positive
     raw = read(positive/"unified-short-bootstrap.json")
     if (raw["native_sha256"] != RAW_PACKET or raw["raw_acquisitions"] != 1
             or raw["verified_handoffs"] != 1):
         raise ValueError("The omission must reuse exactly the real authenticated containing packet")
     sys.addaudithook(entry.deny_backing(Path(req["recording"])))
     _, specification, _, publication, _ = boot.load_runtime()
+    from leo.storage.fast_scan import FastSegmentSource
+    from named_constrained_research import deny_waveform
+
     detector = raw["detector_recipe_sha256"].removeprefix("sha256:")
     native = authenticate_packet(positive, req, RAW_PACKET, detector)
     offer_path = root/"omitted-offer.json"
@@ -112,7 +116,8 @@ def omitted(root, binding):
     args = entry.parser().parse_args(binding["candidate_args"])
     args.output, args.region = root/"north-far-saved", offer_path
     handoff = Handoff(req["session"], req["inventory"], detector, native)
-    with saved_inventory_port(req | {"receiver": "native-20-8-held-history"}) as inventory:
+    with (saved_inventory_port(req | {"receiver": "native-20-8-held-history"}) as inventory,
+          patch.object(FastSegmentSource, "windows", deny_waveform)):
         terminal, _ = entry.publish_active(args, publication, specification, handoff)
     if (not inventory or handoff.calls != 1
             or native_file(args.output).read_bytes() != native_file(positive).read_bytes()):

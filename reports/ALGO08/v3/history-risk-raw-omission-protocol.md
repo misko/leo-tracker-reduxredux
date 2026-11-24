@@ -1,0 +1,3 @@
+# Routed North omission check
+
+After confirming successful publication on the North containing offer, reuse its authenticated native bytes and signed inventory once. Select the already published North far-omitted offer by its frozen original digest before seeing the routed result. Use the successful raw run's numerical flags, cold causal source index and ordinary renderer, with the saved handoff guarding out waveform reads. Run one low-priority worker. Verify the terminal against the disclosed offer and one unchanged handoff. Report both arm values, actual terminal regional proof and standard media policy. The original exact-only far holdout is an independent control. This is a saved publication on the same simulation.

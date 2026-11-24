@@ -81,7 +81,7 @@ def launch(root):
         raise RuntimeError(result["stderr_tail"])
 
 
-def score(root):
+def score(root, destination=None):
     from eight_ms_held_score import geographic_reference, owner_differences
     from empty_bootstrap import load_runtime
     from exact_named_raw import ARM_NAMES, write
@@ -96,7 +96,7 @@ def score(root):
     qualification.__path__.append(str(HERE.parents[2]/"tools/pipeline_eval/qualification"))
     from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
 
-    controls, _, reference = prior_controls()
+    controls, previous, reference = prior_controls()
     binding, clock, after = (read(root/name) for name in ("binding.json", "clock.json", "cache-after.json"))
     output = root/"candidate"
     witness, raw = (read(output/name) for name in ("exact-named-raw-witness.json", "unified-short-bootstrap.json"))
@@ -146,17 +146,88 @@ def score(root):
              owners={arm: owner_differences(control["owner_rows"][arm], evidence["owner_rows"][arm]) for arm in ARM_NAMES},
              same_ordered_owners=control["owner_rows"] == evidence["owner_rows"],
              same_grids_and_paths=control["sidecars"] == evidence["sidecars"],
+             same_fit_path=control["sidecars"]["path"] == evidence["sidecars"]["path"],
              encoded_and_decoded_images_equal=sum(row == control["images"][name] for name, row in evidence["images"].items()))
-    write(root/"verified-result.json", dict(clock=clock, setup=binding["setup"], signed_native=RAW_PACKET, arms=arms,
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+
+    prev_args = previous["candidate_args"]
+    exact_output = Path(prev_args[prev_args.index("--output")+1])
+    run_id = raw["receipt"]["run_id"]
+    exact_grid = FastStandardAnalysisStore(exact_output).position_grid(run_id)
+    current_grid = FastStandardAnalysisStore(output).position_grid(run_id)
+    for grid, digest in ((exact_grid, controls["candidate/exact-named-raw-witness.json"]["value"]["evidence"]["sidecars"]["grid"]),
+                         (current_grid, evidence["sidecars"]["grid"])):
+        if canonical_digest(grid) != digest:
+            raise ValueError("The grid must match its respective independently verified receipt")
+    comparison["exact"]["grid_differences"] = sorted(key for key in exact_grid if exact_grid[key] != current_grid[key])
+    comparison["exact"]["all_ordered_point_values_equal"] = exact_grid["points"] == current_grid["points"]
+    write(destination or root/"verified-result.json", dict(clock=clock, setup=binding["setup"], signed_native=RAW_PACKET, arms=arms,
         region=offer, clearance_km=clearance, reference_sha256=reference_sha, controls=comparison, witness=witness,
         raw_phases=raw["phases"], receiver=raw["receiver_audit"], route=risk, raw_archive_index=binding["index"],
         optional_prefit_exterior_probe=False, actual_exterior_calls=history["exterior_proof"],
         paid_omission=False, binding_sha256=sha256((root/"binding.json").read_bytes()).hexdigest()))
 
 
+def launch_omission(root, raw_root):
+    from dense_geographic_trial import host
+    from eight_ms_south_transfer import environment_for
+    from empty_bootstrap import clock
+    from exact_named_raw import staged_path, write
+    from exact_named_raw_transfer import read
+    from portable_orbit_index_trial import local_launcher_tools
+
+    start = process_time(), perf_counter()
+    local_launcher_tools()
+    from short_raw_diagnostic import measure
+
+    raw_job, raw_clock = (read(raw_root/name) for name in ("binding.json", "clock.json"))
+    verdict = read(raw_root/"verified-result.json")
+    staged_path(root.parent)
+    _, previous, _ = prior_controls()
+    if (raw_clock["exit_code"] or raw_job["request"] != previous["request"]
+            or verdict["binding_sha256"] != sha256((raw_root/"binding.json").read_bytes()).hexdigest()
+            or "--history-risk-route" not in raw_job["command"]):
+        raise ValueError("Require the successfully verified actual routed North packet")
+    machine = host()
+    if machine != raw_job["machine"]:
+        raise ValueError("The saved check must use the original low-priority single core")
+    root.mkdir()
+    (root/"tmp").mkdir()
+    shutil.copytree(raw_root/"fonts", root/"fonts")
+    offer = root/"omitted-offer.json"
+    write(offer, previous["original_omitted"]["offer"])
+    offer_sha = sha256(offer.read_bytes()).hexdigest()
+    if offer_sha != previous["omitted_offer_sha256"]:
+        raise ValueError("The original non-containing offer changed")
+    args = ["/usr/bin/timeout", "--kill-after=2s", "45s", sys.executable, "-IB", __file__, "omitted-worker", str(root)]
+    write(root/"binding.json", dict(request=raw_job["request"], candidate_args=raw_job["command"][7:],
+        source=str(raw_root/"candidate"), source_raw_receipt=verdict["binding_sha256"], omitted_offer_sha256=offer_sha,
+        source_native=verdict["signed_native"], machine=machine, setup=clock(start), command=args))
+    measured = measure(args, environment_for(root), root/"north-far-saved")
+    write(root/"clock.json", measured)
+    if measured["exit_code"]:
+        raise ValueError(measured["stderr_tail"])
+
+
+def omitted_worker(root):
+    from exact_named_raw_transfer import omitted, read
+
+    binding = read(root/"binding.json")
+    omitted(root, binding, positive=Path(binding["source"]))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("launch", "score"))
+    parser.add_argument("action", choices=("launch", "score", "omitted", "omitted-worker"))
     parser.add_argument("root", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--raw-root", type=Path)
     args = parser.parse_args()
-    {"launch": launch, "score": score}[args.action](args.root)
+    if args.action == "score":
+        score(args.root, args.output)
+    elif args.action == "omitted":
+        if args.raw_root is None:
+            parser.error("The saved check requires --raw-root")
+        launch_omission(args.root, args.raw_root)
+    else:
+        {"launch": launch, "omitted-worker": omitted_worker}[args.action](args.root)
