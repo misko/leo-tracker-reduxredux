@@ -130,6 +130,20 @@ def guard(paths):
     return access
 
 
+def detection_hook(root, live, windows, scientific_imports, immutable_json):
+    def publish(native, _specific):
+        state = live["source"]
+        if (state["authority_mode"] != "verified-once" or state["verified_source"]["windows"] != windows
+                or native["source"]["raw_recording_authority_digest"] != state["finished_raw_authority"]
+                or any(name in sys.modules for name in scientific_imports)):
+            raise ValueError("Signed detector publication must follow exact prefix EOF")
+        immutable_json(root / "detections.json", native)
+        live["detector_published_unix_ns"] = time_ns()
+        raise DetectionPublished
+
+    return publish
+
+
 def worker(root, binding, size):
     import empty_bootstrap as boot
     from exact_named_raw import staged_path
@@ -218,20 +232,11 @@ def worker(root, binding, size):
                 live["selection"] = output[3]
                 return output
 
-            def publish(native, _specific):
-                state = live["source"]
-                if (state["authority_mode"] != "verified-once" or state["verified_source"]["windows"] != assigned["stop"]
-                        or native["source"]["raw_recording_authority_digest"] != state["finished_raw_authority"]
-                        or any(name in sys.modules for name in boot.SCIENTIFIC_IMPORTS)):
-                    raise ValueError("Signed detector publication must follow exact prefix EOF")
-                immutable_json(root / "detections.json", native)
-                live["detector_published_unix_ns"] = time_ns()
-                raise DetectionPublished
-
             for module, name, patch_value in (
                 (once, "binding", bound), (once, "first_windows", selected), (port, "ordered_members", ordered),
                 (full_short_raw, "observe_acquisition", observe), (selector, "prepare", chosen),
-                (boot, "empty_reason", publish),
+                (boot, "empty_reason", detection_hook(root, live, assigned["stop"], boot.SCIENTIFIC_IMPORTS,
+                                                     immutable_json)),
             ):
                 patches.enter_context(patch.object(module, name, patch_value))
             return runtime
