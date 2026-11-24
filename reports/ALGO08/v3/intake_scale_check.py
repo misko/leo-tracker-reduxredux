@@ -5,8 +5,9 @@ import gzip
 import json
 from math import isfinite
 from pathlib import Path
+from statistics import median
 
-from reports.ALGO08.v3.release_intake_rate import required_rate
+from reports.ALGO08.v3.release_intake_rate import STAGES, required_rate
 from reports.ALGO08.v3.release_stage_budget import checked
 
 
@@ -39,6 +40,26 @@ def receipt(name, pin):
     directory = Path(__file__).resolve().parent / "measurements"
     content = checked(directory / name, pin)
     return json.loads(gzip.decompress(content) if name.endswith(".gz") else content)
+
+
+def cpu_budget(rows, off_cpu_retained):
+    """Price a uniform CPU speedup at a fixed fraction of original off-CPU time."""
+    if not rows or not 0 <= off_cpu_retained <= 1:
+        raise ValueError("Expected timing rows and a retained fraction from zero to one")
+    if not all(0 < r["cpu_s"] <= r["elapsed_s"] and isfinite(r["elapsed_s"]) for r in rows):
+        raise ValueError("Expected single-core CPU and wall clocks from each process")
+    fractions = {
+        "sum": sum(r["cpu_s"] for r in rows) / sum(r["elapsed_s"] for r in rows),
+        "median": median(r["cpu_s"] / r["elapsed_s"] for r in rows),
+    }
+    # Paired ratios are affine in each row's CPU fraction, so the same
+    # transformation applies to the median, including an even-sized panel.
+    required = {}
+    for gate, fraction in fractions.items():
+        remaining = .5 - (1 - fraction) * off_cpu_retained
+        required[gate] = fraction / remaining if remaining > 0 else None
+    return dict(off_cpu_retained=off_cpu_retained, cpu_fractions=fractions,
+                required_cpu_speedup=required)
 
 
 def blind_rows():
@@ -165,6 +186,8 @@ if __name__ == "__main__":
     rows = blind_rows()
     gates = {bound: required_rate(rows, bound, post_speedup=1, startup_s=0)
              for bound in ("byte_low", "byte_high")}
+    original = receipt("release-stage-budget.json", STAGES)["rows"]
     print(json.dumps(dict(prefix_orders=load(), blind_rows=rows, blind_intake_gates=gates,
+                          release_cpu_scenarios=[cpu_budget(original, kept) for kept in (0, .5, 1)],
                           numerical_solve_scenarios=solve_intake_tradeoff(rows)),
                      indent=2, allow_nan=False))

@@ -1,6 +1,6 @@
 import pytest
 
-from reports.ALGO08.v3.intake_scale_check import blind_rows, check_order, load, solve_intake_tradeoff
+from reports.ALGO08.v3.intake_scale_check import blind_rows, check_order, cpu_budget, load, solve_intake_tradeoff
 from reports.ALGO08.v3.release_intake_rate import required_rate
 
 
@@ -12,6 +12,14 @@ def test_transfer_charges_intercept_and_reports_whole_case_error():
     assert result["full_error_percent"] == -25
     assert result["projected_transfer_s"] == [11, 12]
     assert result["transfer_headroom_s"] == [-2, -1]
+
+
+def test_cpu_budget_charges_every_case_and_detects_unattainable_time():
+    rows = [dict(cpu_s=1, elapsed_s=4), dict(cpu_s=2, elapsed_s=2)]
+    assert cpu_budget(rows, 1)["required_cpu_speedup"] == {"sum": None, "median": 5.}
+    assert cpu_budget(rows, 0)["required_cpu_speedup"] == {"sum": 1., "median": 1.25}
+    with pytest.raises(ValueError):
+        cpu_budget([dict(cpu_s=4, elapsed_s=3)], 0)
 
 
 def test_keep_negative_intercepts_and_disallow_nonpositive_time_slopes():

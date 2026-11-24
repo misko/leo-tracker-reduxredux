@@ -18,6 +18,18 @@ Both the median of paired candidate-to-v3 time ratios and the ratio of summed ti
 
 Even making the entire interval after detections instantaneous gives at most **1.46× on the paired median and 1.54× on the summed gate**. Conversely, work before detections includes launch, file access, verification and publication of the native packet as well as the two-scan detector. A 2.4× improvement to a detector kernel alone would save only its share of this interval.
 
+### How much can faster storage contribute?
+
+The 100 v3 processes used **7,665.81 CPU s in 10,413.92 elapsed s** on one core. Removing every second spent off CPU would give at most **1.36×** by either timing gate with unchanged CPU work. On 99 recordings the original CPU time alone exceeded half of elapsed time. Of 49 with zero input pages resident at launch, 67.5% of aggregate elapsed time was CPU time. For the 23 with every page resident, the share was 97.5%. Other recordings started partly resident. The off-CPU interval includes scheduling and other waits as well as storage.
+
+| Off-CPU time retained | Uniform CPU speedup needed for 2× on both gates |
+|---|---:|
+| All | 3.12× |
+| Half | 2.00× |
+| None | 1.48× (rounded up) |
+
+These scenarios scale the original process clocks and include all five jobs that failed. A change in fix rate can also change the work performed. Single-core CPU and wall time on matched inputs therefore both matter when evaluating the next candidate. [Original 100 timing pairs](measurements/release-stage-budget.json) · [Calculate both gates](intake_scale_check.py)
+
 ### A throughput target for small receiver trials
 
 ![Throughput through detection publication on archived v3 jobs, complete DS30-0016 and the first 64 visits of DS30-0008](development/release-intake-rate.png)
