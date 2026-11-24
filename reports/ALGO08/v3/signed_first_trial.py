@@ -6,10 +6,12 @@ from pathlib import Path
 import sys
 from unittest.mock import patch
 
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
 from signed_first_finish import binding
 
 
-HERE = Path(__file__).resolve().parent
 PINS = dict(blind_joint_finish="7d8d5a65ceb0e11150e28d0dbbddeabb7741ef1408ded6272500e4f0e012c708",
             blind_joint_route="f7a66aea7ed875f5de067a0125948cd51c91e329ac0ea4b4ab1b4da6db5d1ca6",
             blind_joint_signed="3ec955b211a1c4b48fe18c66d9374a78fd393d3b068ffed1c7a9fe42d035629b",
