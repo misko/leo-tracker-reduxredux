@@ -209,6 +209,12 @@ def omitted_score(root):
     earlier = json.loads(gzip.decompress(checked(archived, OMITTED_12MS_SHA)))
     bound = read(root/"omitted-binding.json")
     clock = read(root/"omitted-clock.json")
+    activation = read(root/"omitted-execution.json")
+    transfer, = activation["orbit"]["transfers"]
+    if (activation["rank_status"] != "compacted" or not activation["rank"]["counts"]["compact_calls"]
+            or transfer["compatibility"]["fallback"] or transfer["loading"]["fallback"]
+            or not transfer["counts"]["sidecar_hit_bodies"]):
+        raise ValueError("The omitted replay must exercise the same portable and block solver options")
     target = root/"omitted"
     published = read(target/"eight-ms-omitted.json")
     native = bound["native_sha256"]
@@ -229,7 +235,7 @@ def omitted_score(root):
         raise ValueError("The fixed mirror offer must omit reference by 100 m")
     write(root/"omitted-score.json", dict(published=published, decision=receipt["decision"], clock=clock,
           reason=verified["reason"], truth_face_km=clearance, score=outcome(verified["arms"], receipt["region"], truth),
-          science=scientific, false_fix=full, earlier=earlier["score"],
+          execution=activation, science=scientific, false_fix=full, earlier=earlier["score"],
           score_source_sha256=pin, earlier_sha256=OMITTED_12MS_SHA))
 
 

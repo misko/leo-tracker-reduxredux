@@ -1,4 +1,5 @@
 import importlib
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -72,3 +73,43 @@ def test_image_inventory_compares_decoded_hash_and_canonical_dimensions(modules)
     archived = {"position": dict(native["position"], size=[1680, 960])}
     assert check(native, archived)
     assert not check(native, {"position": dict(archived["position"], rgba_sha256="different")})
+
+
+def test_omitted_saved_handoff_uses_runtime_rebound_inside_combined_scope(modules, tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    import eight_ms_native_live as live
+    import empty_bootstrap as staged
+    import raw_cfo_north_trial as saved
+
+    _, combined, _, _ = modules
+    request = dict(session="s", inventory="i", mirror_offer={})
+    raw = dict(detector_recipe_sha256="sha256:recipe")
+    files = {"omitted-binding.json": {"native_sha256": "sha256:detector", "containing_sha256": "seal"},
+             "binding.json": {"libraries": {}}, "science-seal.json": {"request": request, "raw": raw},
+             "detections.json": {"signed": True}}
+    monkeypatch.setattr(live, "read", lambda path: files[path.name])
+    monkeypatch.setattr(live, "checked", lambda path, _: json.dumps(files.get(path.name, {})))
+    monkeypatch.setattr(saved, "native_file", lambda path: path/"detections.json")
+    monkeypatch.setattr(staged, "bind_native", lambda *_: None)
+
+    def original():
+        raise AssertionError("The unbound runtime cannot reach omitted inference")
+
+    monkeypatch.setattr(staged, "load_runtime", original)
+    sentinel = object()
+
+    @contextmanager
+    def together(orbit, rank, portable, *, use_blocks):
+        assert use_blocks and portable
+        with monkeypatch.context() as scope:
+            scope.setattr(staged, "load_runtime", lambda: sentinel)
+            yield
+        rank["counts"] = {"compact_calls": 2}
+
+    def publish(request, target, offer, packet, native, raw, *, runtime, **_):
+        assert runtime is sentinel and target == tmp_path/"omitted" and native == {"signed": True}
+
+    monkeypatch.setattr(combined, "combined_runtime", together)
+    monkeypatch.setattr(saved, "publish_saved", publish)
+    live.omitted_worker(tmp_path)
+    assert json.loads((tmp_path/"omitted-execution.json").read_bytes())["rank_status"] == "compacted"

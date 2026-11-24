@@ -135,10 +135,10 @@ def omitted_run(root):
 
 def omitted_worker(root):
     from time import perf_counter, process_time
+    import empty_bootstrap as staged
     from combined_raw_research import combined_runtime, rank_status
     from combined_raw_trial import PRODUCER
     from continued_cfo_north_mirror import MIRROR, MIRROR_SHA
-    from empty_bootstrap import bind_native, load_runtime
     from raw_cfo_north_trial import ORDER as OFFERS, native_file, publish_saved
 
     started = process_time(), perf_counter()
@@ -156,8 +156,8 @@ def omitted_worker(root):
     native = json.loads(checked(packet, binding["native_sha256"][7:]))
     orbit, rank = {}, {}
     with combined_runtime(orbit, rank, PRODUCER, use_blocks=True):
-        runtime = load_runtime()
-        bind_native(native, request["session"], request["inventory"], raw["detector_recipe_sha256"][7:])
+        runtime = staged.load_runtime()
+        staged.bind_native(native, request["session"], request["inventory"], raw["detector_recipe_sha256"][7:])
         publish_saved(request, root/"omitted", MIRROR, packet, native, raw, started=started, runtime=runtime,
                       receipt_name="eight-ms-omitted.json")
     write(root/"omitted-execution.json", dict(orbit=orbit, rank=rank, rank_status=rank_status(True, rank)))
