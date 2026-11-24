@@ -1,4 +1,9 @@
+import sys
+from pathlib import Path
+
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
 from adaptive_receiver_budget import receiver_budget
 
