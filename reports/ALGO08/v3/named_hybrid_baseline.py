@@ -1,7 +1,7 @@
 """Publish the archived dense hybrid once through the unchanged named launcher."""
 
 import argparse
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from hashlib import sha256
 from io import BytesIO
 import json
@@ -94,16 +94,16 @@ def detector_handoff(scan, request, native, audit):
                 or scan.PINS["cancellation-factors.so"] != INSTALLED_NATIVE):
             raise ValueError("The verified installed scanner requested a different saved acquisition")
         detector = request["detector"][7:]
-        bind_native(native, session, digest, detector, expected=INPUT)
+        bind_native(native, session, digest, detector, expected=request["native"])
         scan.PINS["cancellation-factors.so"] = detector
-        audit.update(clock(started), native=INPUT, detector=request["detector"], original_asset=INSTALLED_NATIVE)
+        audit.update(clock(started), native=request["native"], detector=request["detector"], original_asset=INSTALLED_NATIVE)
         return native
 
     with patch.dict(scan.PINS, {}), patch.object(scan, "acquire", acquire):
         yield
 
 
-def media_and_grid(output, receipt, native, selected):
+def media_and_grid(output, receipt, native, selected, *, verified_read=None):
     from leo.contracts.digests import canonical_digest
     from leo.contracts.fast_standard_analysis import PLOTS
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -116,13 +116,16 @@ def media_and_grid(output, receipt, native, selected):
             or detail["state"] != receipt["decision"]):
         raise ValueError("The installed publication did not bind the measured hybrid terminal")
     if detail["state"] == "withheld":
-        if detail["artifacts"] or selected or not detail.get("decision"):
+        if detail["artifacts"] or selected or not detail.get("reason"):
             raise ValueError("Expected a real withheld reason and no Figures")
         return dict(images={}, grid=None, owner_rows={})
     if detail["state"] != "complete" or tuple(image["name"] for image in detail["artifacts"]) != tuple(PLOTS):
         raise ValueError("The complete standard named publication must emit eight figures")
     images = {}
     for item in detail["artifacts"]:
+        if verified_read is not None:
+            images[item["name"]] = verified_read(store, run, item["name"], item["sha256"])
+            continue
         media = store.artifact(run, item["name"], item["sha256"])
         with Image.open(BytesIO(media)) as picture:
             picture.load()
@@ -147,21 +150,22 @@ def media_and_grid(output, receipt, native, selected):
                 owner_maps=owners, owner_observations=len(selected))
 
 
-def worker(job_path, output):
+def worker(job_path, output, *, input_sha=INPUT, counts=(6772, 13530, 7342), ports=None):
     started = now()
     job = read(job_path)
     request = job["request"]
     checked(BASELINE, BASELINE_PIN)
     launcher = runpy.run_path(str(BASELINE))
-    if launcher["FINGERPRINT"] != FINGERPRINT or launcher["RELEASE"] != RELEASE or request["native"] != INPUT:
+    if launcher["FINGERPRINT"] != FINGERPRINT or launcher["RELEASE"] != RELEASE or request["native"] != input_sha:
         raise ValueError("The trusted named launch or hybrid packet changed")
-    native = json.loads(checked(Path(request["packet"]), INPUT[7:]))
+    native = json.loads(checked(Path(request["packet"]), input_sha[7:]))
     inventory = json.loads(checked(Path(request["saved_inventory"]), request["inventory"][7:]))
     raw = native["source"]
     checked(Path(request["region"]), request["offer_sha256"])
-    if (inventory["window_count"] != 6772 or inventory["recording_name"] != Path(request["recording"]).name
-            or raw["raw_recording_authority_digest"] != request["authority"] or len(raw["probes"]) != 13530
-            or sum(len(row["candidates"]) for row in raw["probes"]) != 7342
+    issued, lanes, factors = counts
+    if (inventory["window_count"] != issued or inventory["recording_name"] != Path(request["recording"]).name
+            or raw["raw_recording_authority_digest"] != request["authority"] or len(raw["probes"]) != lanes
+            or sum(len(row["candidates"]) for row in raw["probes"]) != factors
             or native["clock_anchor"]["before"]["realtime_ns"] != request["cutoff_utc_ns"]):
         raise ValueError("The original dense hybrid opportunity count or authority changed")
     paths = [str(PAYLOAD), str(RELEASE/"src"), str(RELEASE)]
@@ -203,6 +207,8 @@ def worker(job_path, output):
                 or canonical_digest(job["recipe"]) != request["detector"]
                 or canonical_digest(inventory) != request["inventory"]):
             raise ValueError("Named release sources or signed request bindings changed")
+        if ports is not None:
+            scope.enter_context(ports.before_publication())
         selected, analysis, archive_read = algo08_position.selected_packet, algo08_scan.analyze, TleArchiveReader.read
         archive = Path(request["archive"]["root"])
 
@@ -230,7 +236,8 @@ def worker(job_path, output):
         def analyze(*args, **kwargs):
             with (detector_handoff(algo08_scan, request, native, acquire),
                   patch.object(algo08_scan, "solve", timed(algo08_scan.solve, "solve")),
-                  patch.object(algo08_scan, "render", timed(algo08_scan.render, "render"))):
+                  patch.object(algo08_scan, "render", timed(algo08_scan.render, "render")),
+                  ports.analyze() if ports is not None else nullcontext()):
                 return analysis(*args, **kwargs)
 
         for owner, name, value in (
@@ -249,11 +256,12 @@ def worker(job_path, output):
     receipt = calls["receipt"]
     from raw_cfo_north_trial import native_file
 
-    checked(native_file(output), INPUT[7:])
+    checked(native_file(output), input_sha[7:])
     if not acquire or inventories != [request["inventory"]] or len(timings["solve"]) != 1:
         raise ValueError("The original named solver must use exactly one saved handoff")
     start_verify = now()
-    verified = media_and_grid(output, receipt, INPUT, chosen)
+    verified = media_and_grid(output, receipt, input_sha, chosen,
+                              verified_read=ports.verify_image if ports is not None else None)
     write(output/"named-saved-witness.json", dict(receipt=receipt, named_identity=read(output/"algo08v3-release.json"),
                                                  handoff=acquire, stock_specification=calls["settings"], timing=timings,
                                                  verification=clock(start_verify), evidence=verified, full=clock(started)))
