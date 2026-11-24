@@ -56,8 +56,9 @@ ORIGINAL = StagedMember("DS30-0016", SOURCE, MANIFEST, COMPRESSED, DECODED, INDE
 class ApertureWriter:
     """The existing capture writer's private payload backend for one seek table."""
 
-    def __init__(self, filename, level, records, costs, codec=None):
+    def __init__(self, filename, level, records, costs, codec=None, prefix_samples=seek.PREFIX_SAMPLES):
         self.paths = [filename.parent / name for name in seek.part_files(codec)]
+        _, self.extents = seek.layout(prefix_samples, codec)
         self.compressor = zstd.ZstdCompressor(level=level, write_checksum=True) if codec is None else codec
         with ExitStack() as stack:
             self.files = [stack.enter_context(path.open("xb")) for path in self.paths]
@@ -69,7 +70,7 @@ class ApertureWriter:
         if len(chunk) != seek.WINDOW_BYTES:
             raise ValueError("Expected one complete capture window")
         parts = []
-        chunks = chunk[:seek.PART_BYTES[0]], chunk[seek.PART_BYTES[0]:]
+        chunks = chunk[:self.extents[0]], chunk[self.extents[0]:]
         for stream, raw in zip(self.files, chunks, strict=True):
             start = clock()
             encoded = self.compressor.compress(raw)
@@ -96,13 +97,13 @@ class ApertureWriter:
         self.streams.close()
 
 
-def capture(root, mode, template, windows, *, codec=None):
+def capture(root, mode, template, windows, *, codec=None, prefix_samples=seek.PREFIX_SAMPLES):
     from leo.storage import short_window
     from leo.storage.writer import _fsync_directory
 
     records, costs = [], Counter()
     def factory(filename, *, level):
-        return ApertureWriter(filename, level, records, costs, codec=codec)
+        return ApertureWriter(filename, level, records, costs, codec=codec, prefix_samples=prefix_samples)
 
     split = mode != "ordinary"
     if not split and codec is not None:
@@ -135,7 +136,8 @@ def capture(root, mode, template, windows, *, codec=None):
             raise ValueError("Split encoder returned incomplete capture coverage")
         manifest.rename(directory / "source-manifest.json")
         (directory / chunk.index_relative_path).rename(directory / "source-index.jsonl")
-        document = dict(schema=seek.SCHEMA if codec is None else codec.schema, original_manifest=pin,
+        schema, _ = seek.layout(prefix_samples, codec)
+        document = dict(schema=schema, original_manifest=pin,
                         original_index=chunk.index_sha256,
                         chunk_index=0, records=records)
         seal = json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
