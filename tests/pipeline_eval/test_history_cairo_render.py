@@ -77,6 +77,37 @@ def test_residual_layout_keeps_the_original_orbit_factory():
     assert "native_orbit_figures" not in audit and "orbit_figures" not in audit
 
 
+def test_unsupported_native_residual_keeps_the_original_orbit_factory():
+    from leo.contracts.fast_scan_orbits import PLOT_NAMES
+    from tools.pipeline_eval.variants.experimental import raster_layout
+
+    factory = raster_layout._OrbitFigure
+    original_orbits = dict.fromkeys(PLOT_NAMES, b"original-orbit")
+
+    def render_orbits(_packet, **_options):
+        assert raster_layout._OrbitFigure is factory
+        return original_orbits
+
+    def ordinary(packet, **options):
+        return raster_layout.render_shared(packet, **options)
+
+    scan, audit = SimpleNamespace(render=ordinary), {}
+    with patch.object(raster_layout, "render_shared", render_orbits), binding(scan, audit, orbit_sheets=False):
+        assert scan.render("packet") == original_orbits
+    assert audit["ordinary_orbit_draws"][0]["figures"] == 4
+    assert "native_residual_fallback" in audit and "native_residual_figures" not in audit
+
+
+def test_saved_and_live_media_compare_with_normalized_dimensions():
+    from reports.ALGO08.v3.history_risk_residual_layout_0402 import media_identity
+
+    current = {"position": {"sha256": "file", "rgba_sha256": "pixels", "size": (1680, 960)}}
+    saved = {"position": dict(current["position"], size=[1680, 960])}
+    assert media_identity(current) == media_identity(saved)
+    saved["position"]["rgba_sha256"] = "different pixels"
+    assert media_identity(current) != media_identity(saved)
+
+
 def test_artist_limits_are_sealed_but_residual_ticks_may_change():
     from copy import deepcopy
 
