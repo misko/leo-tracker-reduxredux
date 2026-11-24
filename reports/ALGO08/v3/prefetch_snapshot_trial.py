@@ -129,7 +129,7 @@ def score(root):
                          detector=full.boundaries(clock, live, path.stat().st_mtime_ns),
                          prefetch=accounting, leaf_cost=categories,
                          worker_cpu_other_ns=stats["worker_cpu_ns"] - sum(r["cpu_ns"] for r in calls),
-                         main_encoded_cpu_ns=sum(r["complete_encoded_auth"]["cpu_ns"] for r in inventory))
+                         process_encoded_envelope_cpu_ns=sum(r["complete_encoded_auth"]["cpu_ns"] for r in inventory))
     write(root / "result.json", dict(qualified=True, case=full.CASE, order=ORDER, bytes=full.COMPRESSED,
         members=full.MEMBERS, windows=full.WINDOWS, binding_sha256=order["binding_sha256"],
         source_pins=book["sources"], request=request, arms=arms, solver_children=0, backing_waveform_bytes=0))

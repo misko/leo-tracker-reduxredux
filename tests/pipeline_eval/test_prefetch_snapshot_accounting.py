@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from leo.storage.errors import BundleCorruptionError
+from reports.ALGO08.v3.prefetch_archive_accounting import characterize, PREFETCH_PIN
 from reports.ALGO08.v3.prefetch_snapshot_accounting import AlternatingSnapshots, PrefetchAccounting
 
 
@@ -58,3 +59,30 @@ def test_pinned_attribution_preserves_check_failure_and_exact_retry(tmp_path, re
         ("descriptor_fstat", None), ("allocate", None), ("readv", 20),
         ("eof_read", None), ("descriptor_fstat", None),
     ]
+
+
+def test_archived_grouping_requires_measured_successful_prefetch(tmp_path):
+    from json import dumps
+
+    def member(index, size):
+        return dict(chunk_index=index, encoded=size, complete_encoded_auth=dict(cpu_ns=10, wall_ns=20, input_blocks=1))
+
+    def write(name, value):
+        (tmp_path / name).write_text(dumps(value))
+
+    stats = dict(submitted=1, hits=1, hit_bytes=40, fallback=0)
+    source = dict(finished_raw_authority="id", members=[member(0, 30), member(1, 40), member(0, 50)])
+    write("legacy-original-acquisition.json", source)
+    audit = dict(native_sha256="signed", prefetch_sources=dict(receiver_member_prefetch=PREFETCH_PIN),
+                 phases=dict(authenticated_raw_acquisition={}), prefetch=stats,
+                 receiver_audit=dict(recording_authority="id", native=dict(native_cpu_ns={}, native_wall_ns={})))
+    write("unified-short-bootstrap.json", audit)
+    accepted = characterize(tmp_path, identity=("id", "signed"))
+    assert accepted["demand"]["bytes"] == 80
+    assert accepted["speculative"]["positive_input_block_members"] == 1
+    with pytest.raises(ValueError, match="changed source"):
+        characterize(tmp_path, identity=("wrong", "signed"))
+    stats["fallback"] = 1
+    write("unified-short-bootstrap.json", audit)
+    with pytest.raises(ValueError, match="Cannot identify"):
+        characterize(tmp_path)
