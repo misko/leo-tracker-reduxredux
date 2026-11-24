@@ -49,10 +49,18 @@ def price(publication, field, donors):
         raise ValueError("Opportunity counts differ between the field and saved runs")
     installed, candidate = field["paid_installed_s"], field["paid_candidate_s"]
     deficit = candidate - installed / 2
+    original_native_s = sum(v["elapsed_ns"] for v in field["modes"].values()) / 1e9
+    outside_s = candidate - original_native_s
+    if not 0. <= outside_s < candidate:
+        raise ValueError("Native callback scope cannot exceed the field wall clock")
     modeled = {case: additional_work(inserted, replaced, times) for case, times in donors.items()}
     return dict(case=field["case"], short_lanes=lanes, inserted=inserted, replaced=replaced,
                 measured_installed_s=installed, measured_candidate_s=candidate, half_installed_s=installed / 2,
                 measured_s_over_half=deficit, donors=modeled,
+                measured_outside_native_s=outside_s, available_for_all_native_s=installed / 2 - outside_s,
+                other_saving_if_only_retries_cost_time_s=[
+                    max(0., outside_s + fn(t["after_short_s"] for t in modeled.values()) - installed / 2)
+                    for fn in (min, max)],
                 additional_reduction_needed_s={
                     mode: [deficit + fn(t[mode] for t in modeled.values()) for fn in (min, max)]
                     for mode in ("after_short_s", "scheduled_instead_s")})

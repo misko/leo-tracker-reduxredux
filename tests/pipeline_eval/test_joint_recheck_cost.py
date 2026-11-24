@@ -20,6 +20,10 @@ def test_receipts_require_same_field_packet_opportunities_and_disjoint_edits():
     result = price(publication, case, donors)
     assert result["short_lanes"] == 1622 and result["inserted"] + result["replaced"] == 176
     assert result["additional_reduction_needed_s"]["after_short_s"][0] > result["measured_s_over_half"]
+    assert result["available_for_all_native_s"] < 0.
+    floor = result["measured_outside_native_s"] - result["half_installed_s"]
+    assert result["other_saving_if_only_retries_cost_time_s"][0] == pytest.approx(
+        floor + min(d["after_short_s"] for d in result["donors"].values()))
     with pytest.raises(ValueError, match="different inputs"):
         price(publication, dict(case, native_sha256="unrelated"), donors)
     duplicate = deepcopy(publication)
