@@ -91,20 +91,20 @@ def prepare(root, session, inventory_pin, inventory, expected, census):
     build["compiler_cpu_s"] = (final.ru_utime - usage.ru_utime) + (final.ru_stime - usage.ru_stime)
     from leo.contracts.digests import canonical_json_bytes
     from leo.storage.writer import _fsync_directory
+    from sparse_cold_input import frozen_function
 
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
-    from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
 
     boot.checked(boot.BASELINE, boot.BASELINE_PIN)
     spec = run_path(str(boot.BASELINE))["checked_spec"](boot.PAYLOAD)
-    for operation in (paired_decoded_hashes, compressed_input_buffer):
-        path = Path(getfile(unwrap(operation)))
-        boot.checked(path, spec["sources"][str(path.relative_to(ROOT))])
+    path = Path(getfile(unwrap(paired_decoded_hashes)))
+    boot.checked(path, spec["sources"][str(path.relative_to(ROOT))])
+    ingress = frozen_function(spec, "receiver_ingress.py", "compressed_input_buffer")
     paired = spec["paired_sha256"]
     paired_library = Path(paired["library"])
     boot.checked(paired_library, paired["sha256"])
     members, ordered, results, writes = [], [], [], Counter()
-    with compressed_input_buffer(), paired_decoded_hashes(paired_library):
+    with ingress(), paired_decoded_hashes(paired_library):
         for n, ((reader, chunk), seen) in enumerate(
             zip(port.ordered_members(inventory), census, strict=True)
         ):
