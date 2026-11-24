@@ -18,15 +18,24 @@ authority, result digests, recipe, process scope and generation. Treat
 worker and common verifier as sequential, and retain source-backed wall
 and CPU separately. Do not subtract wall from CPU. An installed native
 publication timestamp within that exact worker may mark launcher start
-through first completed `detections.json` write. The installed scanner
+through the `detections.json` data write. The installed scanner
 source places this before solver and render. This elapsed prefix includes
 startup, checks, inventory, whole authenticated receive and native write.
 It is a prefix observation, not a separately instrumented receiver wall
 clock. Require the observed first write to fall between worker start and
 that worker's terminal write or exit. Prefer already-authenticated
 metadata. Use only output file metadata when that boundary is absent from
-the sealed summaries. A corresponding stock CPU prefix is unmeasured
-unless source-backed receipt gives that exact scope.
+the sealed summaries. File modification time stamps the final data write
+to the immutable inode before fsync/link, so post-write persistence falls
+outside the observed elapsed prefix. A corresponding stock CPU prefix is
+unmeasured unless source-backed receipt gives that exact scope. If the
+sealed launcher pins the child to one processor and the realtime span
+agrees with the monotonic charge to within 10 ms, additionally report the
+conditional capacity bound on CPU before the timestamp. At most one CPU
+second can accrue per second of pre-write or post-write wall. Use 10 ms
+clock slack in both directions and label this a bound from total child
+CPU, not a direct detector CPU observation. Keep the necessary CPU
+envelope even when this bound cannot be derived.
 
 For the charted full-detector saved cell, use the inner charted
 `solve` plus `render` as the primary reusable disjoint measured charge.
