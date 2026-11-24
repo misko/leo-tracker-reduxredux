@@ -20,3 +20,22 @@ def test_unknown_receipt_bytes_fail_binding(monkeypatch, tmp_path):
     changed.write_bytes(b"{}")
     with pytest.raises(ValueError, match="sealed source changed"):
         screen.checked_bytes(changed, "a"*64)
+
+
+def test_history_overlap_checks_signed_cfo_and_wrapped_epoch(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
+    screen = importlib.import_module("aperture_route_screen")
+    history = importlib.import_module("anchor_holds")
+    monkeypatch.setattr(history, "history_rows", lambda rows: rows)
+    factor = dict(candidate_rank=0, integer_epoch_sample=1, fractional_epoch_offset_samples=.5,
+                  fractional_tracking_cfo_hz=-950.0)
+
+    def packet(candidate):
+        return dict(source=dict(probes=[dict(candidates=[candidate])]))
+
+    wrapped = factor | dict(integer_epoch_sample=13_334, fractional_tracking_cfo_hz=-947.0)
+    comparison = screen.history_comparison(packet(factor), packet(wrapped))
+    assert comparison["counts"]["rank_zero_timing_cfo_match"] == 1
+    assert comparison["signed_cfo_delta_rms_hz"] == 3.0
+    invalid = wrapped | dict(fractional_tracking_cfo_hz=-600.0)
+    assert screen.history_comparison(packet(factor), packet(invalid))["counts"]["rank_zero_timing_cfo_match"] == 0
