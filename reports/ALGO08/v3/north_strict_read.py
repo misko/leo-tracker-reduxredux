@@ -167,19 +167,21 @@ def run(root):
     write(root/"packed-after.json", resident_packed(Path(strict["map"]).parent, dirs, codec))
     if clock["exit_code"]:
         return
-    named(root/"named")
+    named(root/"named", verify_after=False)
 
 
 def score(root):
     from adaptive_raw_trial import score as adaptive_score
     from aperture_trial import read, write
+    from current_north_control import score as named_score
 
     plan, conversion = (read(root/f"{name}.json") for name in ("plan", "conversion"))
     candidate = adaptive_score(root/"candidate")
     if not candidate["passed"]:
         write(root/"result.json", dict(candidate=candidate, elapsed_ratio=None, packed_exact=False))
         return
-    named = read(root/"named/verified-comparison.json")
+    named_receipt = root/"named/verified-comparison.json"
+    named = read(named_receipt) if named_receipt.exists() else named_score(root/"named")
     old, old_raw, _ = frozen()
     raw = read(root/"candidate/containing/unified-short-bootstrap.json")
     usage = raw["packed_ci16_input"]

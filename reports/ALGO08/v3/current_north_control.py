@@ -29,7 +29,7 @@ def comparison(old, new):
                 images=images(old) == images(new))
 
 
-def run(root):
+def run(root, *, verify_after=True):
     from leo.storage.fast_scan import FastScanStore
     from tools.pipeline_eval.qualification.cache_residency import load_query
     from tools.pipeline_eval.qualification.paired_publication import NAMED_V3, verified_v3
@@ -65,7 +65,7 @@ def run(root):
         raise ValueError(clock["stderr_tail"])
     after = cache_snapshot_for_run(store, request, manifests, query)
     write(root/"after.json", after)
-    return score(root)
+    return score(root) if verify_after else clock
 
 
 def score(root):
