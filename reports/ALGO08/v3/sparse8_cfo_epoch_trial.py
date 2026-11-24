@@ -52,44 +52,50 @@ def attrs():
     return dict(cpu=2, nice=15, ionice=priority, threads={key: 1 for key in THREADS})
 
 
-def run(stage, requested_mode):
+def launch(stage, mode, admission=None):
     config = attrs()
     worker = HERE / "sparse8_cfo_epoch_saved.py"
-    stages = {}
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        for mode in (requested_mode,):
-            if mode == "centroid":
-                control = ordinary_receipt(stage)
-                if document(stage / "ordinary-clock.json")["exit_code"] and not document(control).get("recovered"):
-                    raise ValueError("The ordinary saved publication must complete first")
-            scratch = stage / f"{mode}-scratch"
-            scratch.mkdir()
-            environment = os.environ | dict(
-                TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch), XDG_CACHE_HOME=str(scratch))
-            result = stage / f"{mode}-receipt.json"
-            with (stage / f"{mode}.stdout").open("x") as out, (stage / f"{mode}.stderr").open("x") as err:
-                usage0 = getrusage(RUSAGE_CHILDREN)
-                unix, start = time_ns(), perf_counter_ns()
-                command = [sys.executable, "-IB", str(worker), mode, str(stage)]
-                try:
-                    completed = subprocess.run(command, stdout=out, stderr=err, check=False, timeout=120,
-                                               env=environment, stdin=subprocess.DEVNULL)
-                    exit_code = completed.returncode
-                except subprocess.TimeoutExpired:
-                    exit_code = 124
-                elapsed = (perf_counter_ns()-start)*1e-9
-                finished = time_ns()
-                usage1 = getrusage(RUSAGE_CHILDREN)
-            clock = dict(started_unix_ns=unix, finished_unix_ns=finished, elapsed_s=elapsed, exit_code=exit_code,
-                         cpu_s=usage1.ru_utime-usage0.ru_utime+usage1.ru_stime-usage0.ru_stime,
-                         major_faults=usage1.ru_majflt-usage0.ru_majflt, command=command,
-                         input_blocks=usage1.ru_inblock-usage0.ru_inblock)
-            clock_pin = write(stage / f"{mode}-clock.json", clock)
-            if exit_code:
-                raise RuntimeError(f"{mode} exited {exit_code}. See {stage / (mode+'.stderr')}")
-            result.chmod(0o400)
-            stages[mode] = dict(clock_sha256=clock_pin, receipt_sha256=identifier(result))
+        scratch = stage / f"{mode}-scratch"
+        scratch.mkdir()
+        environment = os.environ | dict(
+            TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch), XDG_CACHE_HOME=str(scratch))
+        result = stage / f"{mode}-receipt.json"
+        command = [sys.executable, "-IB", str(worker), mode, str(stage)]
+        if admission is not None:
+            command.extend(("--admission", admission))
+        with (stage / f"{mode}.stdout").open("x") as out, (stage / f"{mode}.stderr").open("x") as err:
+            usage0 = getrusage(RUSAGE_CHILDREN)
+            unix, start = time_ns(), perf_counter_ns()
+            try:
+                completed = subprocess.run(command, stdout=out, stderr=err, check=False, timeout=120,
+                                           env=environment, stdin=subprocess.DEVNULL)
+                exit_code = completed.returncode
+            except subprocess.TimeoutExpired:
+                exit_code = 124
+            elapsed = (perf_counter_ns()-start)*1e-9
+            finished = time_ns()
+            usage1 = getrusage(RUSAGE_CHILDREN)
+        clock = dict(started_unix_ns=unix, finished_unix_ns=finished, elapsed_s=elapsed, exit_code=exit_code,
+                     cpu_s=usage1.ru_utime-usage0.ru_utime+usage1.ru_stime-usage0.ru_stime,
+                     major_faults=usage1.ru_majflt-usage0.ru_majflt, command=command,
+                     input_blocks=usage1.ru_inblock-usage0.ru_inblock)
+        clock_pin = write(stage / f"{mode}-clock.json", clock)
+        if exit_code:
+            raise RuntimeError(f"{mode} exited {exit_code}. See {stage / (mode+'.stderr')}")
+        result.chmod(0o400)
+        products = dict(clock_sha256=clock_pin, receipt_sha256=identifier(result))
+    return products, config
+
+
+def run(stage, requested_mode, *, admission=None, case=CASE, protocol=PROTOCOL):
+    if requested_mode == "centroid":
+        control = ordinary_receipt(stage)
+        if document(stage / "ordinary-clock.json")["exit_code"] and not document(control).get("recovered"):
+            raise ValueError("The ordinary saved publication must complete first")
+    products, config = launch(stage, requested_mode, admission)
+    stages = {requested_mode: products}
     if requested_mode == "ordinary":
         print(stages[requested_mode]["receipt_sha256"], flush=True)
         return
@@ -97,8 +103,9 @@ def run(stage, requested_mode):
     stages["ordinary"] = dict(clock_sha256=identifier(stage / "ordinary-clock.json"), receipt_file=control.name,
                               receipt_sha256=identifier(control))
     seal = write(stage / "prediction-seal.json", dict(
-        case=CASE, protocol_sha256=identifier(PROTOCOL), driver_sha256=identifier(Path(__file__)),
-        stage_order=MODES, score_reads=0, acquisition="verified saved packet", host=config, products=stages))
+        case=case, protocol_sha256=identifier(protocol), driver_sha256=identifier(Path(__file__)),
+        stage_order=MODES, score_reads=0, acquisition="verified saved packet", host=config, products=stages,
+        admission_sha256=admission))
     print(seal, flush=True)
 
 
@@ -138,24 +145,24 @@ def recover_ordinary(stage):
     print(write(stage / "ordinary-recovered.json", result))
 
 
-def geography():
+def geography(case=CASE):
     root = HERE.parents[2]
     body = subprocess.check_output([
         "git", "-c", f"safe.directory={root}", "-C", str(root), "show",
         "2d0ad2dfd:reports/2026_11_21_ds30_full/reference-audit.json"])
     if sha256(body).hexdigest() != REFERENCES:
         raise ValueError("The reviewed survey audit differs")
-    row, = (row for row in json.loads(body)["cases"] if row["dataset_label"] == CASE
+    row, = (row for row in json.loads(body)["cases"] if row["dataset_label"] == case
             and row["authority_eligible"] and row["sealed_metadata_digests_verified"])
     return [row["reference"][name] for name in ("latitude_deg", "longitude_deg")]
 
 
-def score(stage, seal_sha):
+def score(stage, seal_sha, *, case=CASE, protocol=PROTOCOL, native_pin=NATIVE, pair_pin=PAIR, require_grid_parity=False):
     from tools.pipeline_eval.scoring import distance_km
     from prospective_0316_solver import owner_delta
 
     seal = document(stage / "prediction-seal.json", seal_sha)
-    if (seal["case"] != CASE or seal["score_reads"] != 0 or seal["protocol_sha256"] != identifier(PROTOCOL)
+    if (seal["case"] != case or seal["score_reads"] != 0 or seal["protocol_sha256"] != identifier(protocol)
             or seal["stage_order"] != list(MODES) or set(seal["products"]) != set(MODES)):
         raise ValueError("Expected both frozen predictions before survey scoring")
     stages = {}
@@ -167,15 +174,16 @@ def score(stage, seal_sha):
         result = receipt["terminal"]
         terminal = document(stage / mode / "fast-scan-automatic-work" / result["run_id"] / "terminal.json",
                             result["terminal_sha256"])
-        if (terminal["native_sha256"] != "sha256:"+NATIVE or receipt["acquisition_handoffs"] != 1
+        if (terminal["native_sha256"] != "sha256:"+native_pin or receipt["acquisition_handoffs"] != 1
                 or receipt["waveform_reads"] or (clock["exit_code"] and not receipt.get("recovered"))
                 or set(terminal["arms"]) != set(ARMS)):
             raise ValueError("Prediction does not bind to the saved-graph comparison")
         evidence = receipt["evidence"]["evidence"]
-        document(stage / mode / "exact-named-raw-witness.json", receipt["witness_sha256"])
-        stages[mode] = dict(terminal=terminal, saved_receipt=receipt, evidence=evidence, clock=clock)
-    home = CAMPAIGN / "cases" / CASE
-    pair = document(home / "pair.json", PAIR)
+        witness = document(stage / mode / "exact-named-raw-witness.json", receipt["witness_sha256"])
+        stages[mode] = dict(terminal=terminal, saved_receipt=receipt, evidence=evidence, clock=clock,
+                            route=witness["solver_recipe"]["history_risk"])
+    home = CAMPAIGN / "cases" / case
+    pair = document(home / "pair.json", pair_pin)
     archive = home / "successor" / f"attempt-{pair['generation']:06d}"
     published = document(archive / "result.json", pair["attempt_result_sha256"]["successor"])
     result = published["evidence"]["receipt"]
@@ -188,18 +196,24 @@ def score(stage, seal_sha):
         arms=ordinary["terminal"]["arms"] == archived_terminal["arms"],
         graph_digest_changed=ordinary["saved_receipt"]["graph_time"]["graph_input_digests"]
         != corrected["saved_receipt"]["graph_time"]["graph_input_digests"])
+    if require_grid_parity:
+        archived_witness = document(archive / "publication/exact-named-raw-witness.json")
+        a, b = archived_witness["evidence"], ordinary["evidence"]
+        reproduction.update(images=a["images"] == b["images"], ordered_owners=a["owner_rows"] == b["owner_rows"],
+                            path=a["sidecars"]["path"] == b["sidecars"]["path"],
+                            scientific_grid=scientific_grid(stage / "ordinary") == scientific_grid(archive / "publication"))
     if not all(reproduction.values()):
         raise ValueError(f"Archived ordinary scientific evidence differs: {reproduction}")
     stop = corrected["saved_receipt"]["terminal"]["decision"] != "complete"
-    result = dict(case=CASE, seal_sha256=seal_sha, archived_reproduction=reproduction, stop=stop)
+    result = dict(case=case, seal_sha256=seal_sha, archived_reproduction=reproduction, stop=stop)
     if not stop:
-        reference = geography()
+        reference = geography(case)
         deltas, outcomes = {}, {}
         for mode, state in stages.items():
             evidence = state["evidence"]
             if len(evidence["images"]) != 8 or not evidence["grid"]:
                 raise ValueError("Expected complete figures and position grid")
-            outcomes[mode] = dict(clock=state["clock"], figures=evidence["images"], grid=evidence["grid"],
+            outcomes[mode] = dict(clock=state["clock"], figures=evidence["images"], grid=evidence["grid"], route=state["route"],
                                   owner_maps=evidence["owner_maps"], arms={
                                       arm: dict(position=arm_state["latlon"], rf_rms_hz=arm_state["rf_rms_hz"],
                                                 error_m=1e3*distance_km(arm_state["latlon"], reference))
@@ -215,6 +229,11 @@ def score(stage, seal_sha):
                       stop=any(row["error_m"] > 250. for row in deltas.values()),
                       correction=corrected["saved_receipt"]["graph_time"])
     print(write(stage / "score.json", result))
+
+
+def scientific_grid(root):
+    (path,) = root.glob("fast-scan-standard-v2/*/*/position-grid.json")
+    return {key: value for key, value in document(path)["document"].items() if key != "elapsed_seconds"}
 
 
 if __name__ == "__main__":
