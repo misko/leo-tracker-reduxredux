@@ -21,7 +21,8 @@ PRODUCER = Portable(Path("/dev/shm/leo-v3-portable-orbit-prep-02/dense-orbits.bi
 ENTRY = HERE/"combined_raw_research.py"
 SOURCES = (ENTRY.name, Path(__file__).name, "combined-raw-protocol.md", "north_orbit_index_raw.py",
            "historical_orbit_index.py", "portable_orbit_index.py", "portable_orbit_compatibility.py",
-           "catalogue_block_port.py", "catalogue_block_rank.py", "catalogue_block_bound.py", "cold_track_row_entry.py")
+           "catalogue_block_port.py", "catalogue_block_rank.py", "catalogue_block_bound.py", "cold_track_row_entry.py",
+           "continued_cfo.py")
 
 
 def flags(portable):
@@ -67,12 +68,20 @@ def north_launch(root):
 def north_score(root):
     from aperture_trial import read, write
     from empty_bootstrap import checked
-    from north_orbit_index_trial import score
+    from north_orbit_index_trial import admitted_inputs, score
 
-    score(root)
+    archived, _ = admitted_inputs()
+    expected_source = archived["sealed"]["raw"]["receiver_recipe"]["continued_cfo"]["wrapper_sha256"]
+    binding = read(root/"binding.json")
+    raw = read(root/"containing/unified-short-bootstrap.json")
+    source_at(binding["commit"], "continued_cfo.py", expected_source)
+    if raw["receiver_recipe"]["continued_cfo"]["wrapper_sha256"] != expected_source:
+        raise ValueError("The executed continuation source differs from the prior guarded receiver")
+    # Early launch receipts pinned the combined shim and the actual receiver
+    # recipe, but did not separately enumerate its continuation import.
+    score(root, receiver_source_pin=expected_source)
     observed = read(root/"result.json")
     prior = json.loads(checked(BASELINE, BASELINE_PIN))
-    raw = read(root/"containing/unified-short-bootstrap.json")
     rank = read(root/"catalogue-block-rank.json")
     preparation = observed["audit"]
     transfer, = preparation["transfers"]
@@ -121,9 +130,35 @@ def physical_launch(root, stage, *, portable=None):
            verify_historical_source=source_at, combined_raw_sources=plan["combined_raw_sources"])
 
 
+def small_launch(root):
+    from guarded_cfo_small_raw import launch
+
+    sources = {name: sha256((HERE/name).read_bytes()).hexdigest() for name in SOURCES}
+    launch(root, candidate_entry=ENTRY, candidate_options=flags(PRODUCER), verify_historical_source=source_at,
+           combined_raw_sources=sources)
+
+
+def small_score(root):
+    from aperture_trial import read, write
+    from guarded_cfo_small_raw import verify
+
+    verified = root/"verified.json"
+    verify(root, verified, verify_historical_source=source_at)
+    result = read(verified)
+    orbit = read(root/"orbits-indexed.json")
+    rank = read(root/"catalogue-block-rank.json")
+    raw = read(root/"candidate/unified-short-bootstrap.json")
+    if (orbit["requested"] != "portable" or "transfers" in orbit or orbit.get("attempts")
+            or rank["status"] != "no_compatible_rank_scope" or not rank["requested"]
+            or any(rank.get("counts", {}).values()) or raw["raw_acquisitions"] != 1 or raw["verified_handoffs"] != 1):
+        raise ValueError("The withheld path unexpectedly paid preparation, portable loading or rank work")
+    write(root/"combined-raw-result.json", dict(result=result, orbit=orbit, rank=rank, raw=raw,
+          verifier_sha256=sha256(verified.read_bytes()).hexdigest()))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("north-launch", "north-score", "physical-plan", "physical-launch"))
+    cli.add_argument("mode", choices=("north-launch", "north-score", "physical-plan", "physical-launch", "small-launch", "small-score"))
     cli.add_argument("root", type=Path)
     cli.add_argument("--stage", type=Path, default=Path("/dev/shm/leo-v3-guarded-selective-0016-stage01"))
     cli.add_argument("--with-portable", action="store_true")
@@ -134,5 +169,7 @@ if __name__ == "__main__":
         north_score(args.root)
     elif args.mode == "physical-plan":
         print(json.dumps(physical_plan(args.root, args.stage, portable=PRODUCER if args.with_portable else None), indent=2))
-    else:
+    elif args.mode == "physical-launch":
         physical_launch(args.root, args.stage, portable=PRODUCER if args.with_portable else None)
+    else:
+        (small_launch if args.mode == "small-launch" else small_score)(args.root)

@@ -31,7 +31,7 @@ LIBRARIES = {
 }
 
 
-def controls():
+def controls(*, verify_historical_source=None):
     from aperture_trial import read
     from joint_held_north_raw import PACK, PACK_SHA
     from leo.contracts.digests import canonical_digest
@@ -54,7 +54,10 @@ def controls():
         raise ValueError("The previously sealed matched inputs or the guarded North recipe changed")
     checked(PRIOR / "offer.json", admission["offer_sha256"])
     for each, digest in north["source_sha256"].items():
-        checked(HERE / each, digest)
+        if verify_historical_source is None:
+            checked(HERE / each, digest)
+        else:
+            verify_historical_source(north["commit"], each, digest)
     for flag, name in LIBRARIES.items():
         pin = north["libraries"][flag]["sha256"]
         if admission["library_sha256"][name] != pin:
@@ -67,8 +70,9 @@ def controls():
     return previous, north, north_recipe
 
 
-def command(output, pack):
-    argv = [RELEASE / "venv/bin/python", "-IB", HERE / "continued_cfo.py", "--anchored-cfo-pack", pack,
+def command(output, pack, *, candidate_entry=None, candidate_options=()):
+    entry = candidate_entry or HERE / "continued_cfo.py"
+    argv = [RELEASE / "venv/bin/python", "-IB", entry, "--anchored-cfo-pack", pack, *candidate_options,
             "--recording", RECORDING, "--archive", PRIOR / "tle", "--region", PRIOR / "offer.json",
             "--output", output / "candidate"]
     for flag, name in LIBRARIES.items():
@@ -79,11 +83,14 @@ def command(output, pack):
 def candidate_seal(root):
     paths = [root / name for name in ("binding.json", "candidate-clock.json", "candidate-held-cycle-refined.json",
                                      "candidate.stdout", "candidate.stderr")]
+    binding = json.loads((root/"binding.json").read_bytes())
+    if "combined_raw_sources" in binding:
+        paths.extend(root / name for name in ("orbits-indexed.json", "catalogue-block-rank.json"))
     paths.extend(path for path in (root / "candidate").rglob("*") if path.is_file())
     return {str(path.relative_to(root)): sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
 
-def launch(root):
+def launch(root, *, candidate_entry=None, candidate_options=(), verify_historical_source=None, combined_raw_sources=None):
     from aperture_trial import write
     from dense_geographic_trial import host
     from full_short_physical import environment
@@ -92,7 +99,7 @@ def launch(root):
     from short_raw_diagnostic import require_warm
 
     machine = host()
-    previous, north, recipe = controls()
+    previous, north, recipe = controls(verify_historical_source=verify_historical_source)
     staged = PRIOR / RECORDING.name
     if (not os.path.ismount(RECORDING) or os.stat(RECORDING)[:2] != os.stat(staged)[:2]
             or not os.statvfs(RECORDING).f_flag & os.ST_RDONLY
@@ -113,16 +120,18 @@ def launch(root):
     (root / "tmp").mkdir()
     env = environment(root)
     env.update(TMPDIR=str(root / "tmp"), XDG_CACHE_HOME=str(root / "tmp"))
+    additions = {} if combined_raw_sources is None else {"combined_raw_sources": combined_raw_sources}
     write(root / "binding.json", dict(case=CASE.id, prior_result_sha256=PRIOR_RESULT,
           prior_prediction_sha256=PRIOR_SEAL, north_binding_sha256=NORTH_BINDING, north_seal_sha256=NORTH_SEAL,
           pack_sha256=PACK_SHA, machine=machine, offer=admission["offer"], archive=admission["archive"],
           original_session=session, expected_north_recipe=recipe, sources=north["source_sha256"],
-          driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
-    measure_mode(root, "candidate", command(root, PACK), env, resident, require_success=False)
+          driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), **additions))
+    measure_mode(root, "candidate", command(root, PACK, candidate_entry=candidate_entry, candidate_options=candidate_options),
+                 env, resident, require_success=False)
     write(root / "prediction-seal.json", candidate_seal(root))
 
 
-def verify(root, result):
+def verify(root, result, *, verify_historical_source=None):
     from aperture_trial import read, write
     from continued_cfo_north_trial import compare_rows
     from joint_held_north_raw import compare_factors
@@ -133,7 +142,7 @@ def verify(root, result):
     seal = root / "prediction-seal.json"
     if read(seal) != candidate_seal(root):
         raise ValueError("The sealed guarded publication changed")
-    previous, north, recipe = controls()
+    previous, north, recipe = controls(verify_historical_source=verify_historical_source)
     saved = previous["runs"]
     binding = read(root / "binding.json")
     admission = previous["admission"] | {"sources": north["source_sha256"]}

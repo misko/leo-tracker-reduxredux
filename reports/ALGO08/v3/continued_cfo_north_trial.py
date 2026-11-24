@@ -61,7 +61,7 @@ def compare_rows(actual, previous):
                 max_changed_cfo_hz=max_delta, signed_probe_sha256=canonical_digest(actual))
 
 
-def seal(root, *, verified_source=None, allow_resident_process_paging=False):
+def seal(root, *, verified_source=None, allow_resident_process_paging=False, receiver_source_pin=None):
     from anchor_exposure import enroll
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -102,7 +102,8 @@ def seal(root, *, verified_source=None, allow_resident_process_paging=False):
 
     receiver = dict(bootstrap["receiver_recipe"])
     continued = receiver.pop("continued_cfo")
-    if (continued["wrapper_sha256"] != binding["source_sha256"]["continued_cfo.py"]
+    recorded_source = binding["source_sha256"].get("continued_cfo.py", receiver_source_pin)
+    if (continued["wrapper_sha256"] != recorded_source
             or receiver != old["raw"]["receiver_recipe"]):
         raise ValueError("Only the signed continuation wrapper may change the receiver recipe")
     old_native = json.loads(checked(Path(old["packet"]), old["candidate"]["native_sha256"][7:]))

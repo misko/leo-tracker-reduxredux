@@ -76,7 +76,7 @@ def diagnostics(research):
                 orbit_policy=research["solve"]["orbit_policy"])
 
 
-def score(root, *, retain_broken=False):
+def score(root, *, retain_broken=False, receiver_source_pin=None):
     from aperture_trial import read, write
     from continued_cfo_north_trial import control, score as existing_score, seal as existing_seal
     from empty_bootstrap import checked
@@ -99,7 +99,8 @@ def score(root, *, retain_broken=False):
     for port in ("recording", "inside_offer"):
         tmpfs(Path(binding["request"][port]))
     tmpfs(Path(binding["request"]["archive"]["root"]))
-    existing_seal(root, verified_source=verified_source, allow_resident_process_paging=True)
+    existing_seal(root, verified_source=verified_source, allow_resident_process_paging=True,
+                  receiver_source_pin=receiver_source_pin)
     existing_score(root)
     new, old = read(root/"sealed.json"), archives["sealed"]
     fallback = json.loads(checked(FALLBACK/"sealed.json", FALLBACK_PIN))
