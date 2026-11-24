@@ -122,10 +122,13 @@ class FusedMember:
             self.context = None
         self._previous_owned = None
 
+    def owned_output(self):
+        return np.empty(self.owned_capacity, dtype=np.uint8)
+
     def read_window(self, row):
         shape = row.sample_count, row.receiver_count, 2
         if self.owned_capacity:
-            data = np.empty(self.owned_capacity, dtype=np.uint8)
+            data = self.owned_output()
             status = self.library.fused_history_read_owned(self.context, data.ctypes.data, data.nbytes)
             # The preceding allocation stays live until libzstd has installed
             # the new prefix. Any already yielded ndarray keeps its own owner.

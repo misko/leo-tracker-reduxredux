@@ -15,6 +15,7 @@ from reports.ALGO08.v3 import legacy_block_seek as core
 from reports.ALGO08.v3 import legacy_fused_map as fused
 from reports.ALGO08.v3 import legacy_block_input as port
 from reports.ALGO08.v3 import legacy_first_map_input as first
+from reports.ALGO08.v3.owned_window_recycle import WindowArena
 
 
 @pytest.fixture(scope="module")
@@ -65,6 +66,35 @@ def capture(tmp_path, *, fault=None, literal_only=False, empty_tail=False, unifo
     manifest.write_bytes(canonical_json_bytes(document))
     original = ShortWindowReader(path)
     return original, original.manifest.chunks[0], bytes(frame), windows
+
+
+@pytest.mark.parametrize("fault", [None, "checksum", "window", "member"])
+def test_recycled_owned_slots_preserve_unindexed_history_and_all_checks(tmp_path, native, fault):
+    reader, chunk, _, expected = capture(tmp_path, uniform=True, fault=fault)
+    member = fused.FusedMember(reader, chunk, native, None, owned_windows=True, build_maps=False)
+    arena = WindowArena()
+    assert member.owned_capacity > 0
+    original = member.owned_output
+
+    def allocate():
+        borrowed = arena.borrow(member.owned_capacity)
+        return original() if borrowed is None else borrowed
+
+    with patch.object(member, "owned_output", allocate):
+        try:
+            visits = member.windows()
+            if fault:
+                with pytest.raises(core.MapError):
+                    for result in visits:
+                        assert not result.samples.flags.writeable
+                assert not member.eof
+            else:
+                for result, values in zip(visits, expected, strict=True):
+                    np.testing.assert_array_equal(result.samples, values)
+                assert member.eof
+        finally:
+            member.close()
+    assert arena.receipt()["reuses"] > 0
 
 
 @pytest.mark.parametrize("fault", [None, "checksum"])
