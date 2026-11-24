@@ -1,0 +1,17 @@
+# DS30-0220 three-of-four regression challenge
+
+The fixed member schedule failed both geographic gates. DS30-0220 retained a complete original-offer fix and 1,324 of 1,961 previous observation/satellite assignments per arm. Its `c0` and fitted-`c` errors nevertheless rose to **5.491 and 5.329 km**, exceeding installed by **5.173 and 4.960 km**. DS30-0144 remains unscored. This result stops the three-of-four branch at the saved regression challenge.
+
+| Publication | Horizontal error `c0` / fitted `c` | Terminal RF RMS `c0` / fitted `c` |
+|---|---:|---:|
+| Installed original field | 0.318 / 0.369 km | 138.101 / 137.798 Hz |
+| Field 20/8 ms successor, reproduced by ordinary saved replay | 1.412 / 1.371 km | 159.782 / 159.682 Hz |
+| Three-of-four saved replay | 5.491 / 5.329 km | 167.547 / 167.474 Hz |
+
+The saved projection omitted 1,664 of 6,767 issued visits and preserved both radios at all 3,753 retained admitted visits. The original strongest tape had 3,700 selected factors. The mask removed 908, including 488 original owners per arm. The resulting solve had 1,603 owners and 23 satellites in each arm. Of 1,473 original owner assignments physically retained by the mask, 1,324 survived with the same observation and satellite after re-solving. The retained-support floor passed independently of the position threshold. The signed deterioration was above +0.250 km in both arms.
+
+Both saved children ran under separate naturally idle Gauss leases and kept the original signed recording authority, exact detached inventory and original offer. The 50 original causal TLE snapshots came from two existing local tmpfs copies. Their exact canonical roster matched the field digest and every body passed its SHA-256 check. No backing waveform or catalogue body was read. The ordinary saved control reproduced both original field arms, owner digests and grid/path scientific digests exactly. Both saved outputs had 179 unique locations from the configured 81-point coarse and two 49-point local grids. The independent verifier generated the actual configured location sets using the same clipping and de-duplication and verified the complete path and all eight decoded PNGs. The fixed challenge would also accept a different cardinality when the configured grid produces one. Survey scoring opened only after both predictions sealed.
+
+The ordinary and sampled saved solvers took **10.490 and 8.335 s wall** and **10.401 and 8.124 s CPU**. The full child clocks were 14.33 and 12.04 s wall. These are saved measurements. With all original encoded member, full decoded member and decoded-window authentication still charged, the 0220 wall model gives **50.247 s** against the actual 117.961 s installed raw clock. The optimistic changed-contract calculation that skips omitted payloads gives 44.308 s. Neither model is a raw result. The existing full-authentication model also remains above both ten-pair thresholds. The initial staging check assumed the historical installed/successor pair shared a lease. The sealed field receipt establishes a verified chronological pair across separate leases, which supplies the required scientific controls. This check stopped before either saved child and was corrected at the admission boundary.
+
+[Frozen challenge](three-quarter-challenge-protocol.md) · [DS30-0086 development and authentication obligations](three-quarter-members.md) · [Sealed DS30-0220 inputs, predictions and scores](measurements/three-quarter-challenge.json.gz)

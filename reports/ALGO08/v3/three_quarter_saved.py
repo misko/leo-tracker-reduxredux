@@ -1,6 +1,7 @@
 """Pass one sealed three-of-four strongest packet through the frozen field solver."""
 
 import argparse
+from contextlib import nullcontext
 from functools import partial
 from hashlib import sha256
 import os
@@ -52,7 +53,8 @@ def validate_receipts(inputs, authority, archived, candidate, recipe, member_pla
     return expected
 
 
-def worker(inputs, output, *, probe=False):
+def worker(inputs, output, *, probe=False, case=CASE, stage=STAGE, authority_pin=BOUND,
+           validate=validate_receipts, ordinary=False):
     started = process_time(), perf_counter()
     sys.path[:0] = [str(CHARTED / "reports/ALGO08/v3"), str(CHARTED)]
     from sparse8_cfo_epoch_saved import deny_backing
@@ -77,20 +79,22 @@ def worker(inputs, output, *, probe=False):
     from prospective_0316_solver import denied
     from unified_short_bootstrap import Handoff
     with patch.object(sys, "path", list(sys.path)):
-        from three_quarter_members import checked, digest, read, report_adapter, write
+        from three_quarter_members import HELD, checked, digest, read, report_adapter, write
 
-    authority = read(STAGE / "authority.json", BOUND)
-    inventory = read(STAGE / "inventory.json", authority["inventory_sha256"])
-    prior = read(STAGE / "native.json")
-    native, recipe, members = (read(inputs / f"{CASE}-{name}.json") for name in ("native", "recipe", "members"))
-    source = validate_receipts(inputs, authority, prior, native, recipe, members)
+    authority = read(stage / "authority.json", authority_pin)
+    inventory = read(stage / "inventory.json", authority["inventory_sha256"])
+    prior = read(stage / "native.json")
+    sampled, recipe, members = (read(inputs / f"{case}-{name}.json") for name in ("native", "recipe", "members"))
+    source = validate(inputs, authority, prior, sampled, recipe, members)
+    native = prior if ordinary else sampled
     session, inventory_digest = authority["session_id"], authority["inventory_sha256"]
-    recording, archive, offer = Path(authority["recording"]), STAGE / "tle", STAGE / "offer.json"
+    recording, archive, offer = Path(authority["recording"]), stage / "tle", stage / "offer.json"
     chart.validate_case(authority, SimpleNamespace(recording=recording, region=offer))
     chart.match_inventory(authority, session, inventory_digest, inventory)
     chart.match_native(authority, native)
-    detector = digest(recipe)[7:]
-    boot.bind_native(native, session, inventory_digest, detector, expected=source["proposed_native_sha256"])
+    detector = HELD[7:] if ordinary else digest(recipe)[7:]
+    native_pin = source["historical_final_native_sha256"] if ordinary else source["proposed_native_sha256"]
+    boot.bind_native(native, session, inventory_digest, detector, expected=native_pin)
     cutoff = authority["causal_cutoff_utc_ns"]
     refs = TleArchiveReader(archive).list_snapshots("space-track")
     if not refs or producer_cutoff >= cutoff or chart.archive_digest(archive, cutoff) != authority["archive_sha256"]:
@@ -113,25 +117,28 @@ def worker(inputs, output, *, probe=False):
                               cairo_six_sheets=True, cairo_residual_layout=False)
     raw.request_from_handoff(options, handoff)
     if probe:
-        print(f"Ready {CASE} with {source['physical']['retained_admitted']} retained original visits")
+        print(f"Ready {case} with {native['provenance']['processed_windows']} retained original visits")
         return
     if os.sched_getaffinity(0) != {2} or os.nice(0) < 15:
         raise ValueError("Require a naturally acquired shared low-priority CPU2 lease")
     output.mkdir(mode=0o700)
-    write(output / "admission.json", dict(case=CASE, build_sha256=BUILD_PIN, scope=source,
+    write(output / "admission.json", dict(case=case, build_sha256=BUILD_PIN, scope=source, ordinary=ordinary,
           authority=authority, residence=cache, archive_clocks=source_clocks,
           worker_sha256=sha256(checked(Path(__file__))).hexdigest(), inputs={file: sha256(checked(inputs / file)).hexdigest()
-          for file in ("audit.json", "index-proof.json", f"{CASE}-native.json", f"{CASE}-members.json", f"{CASE}-recipe.json")}))
+          for file in ("audit.json", "index-proof.json", f"{case}-native.json", f"{case}-members.json", f"{case}-recipe.json")}))
     positive = {}
+    report = (nullcontext() if ordinary else
+              patch.object(algo08_scan, "scan_report", partial(report_adapter, algo08_scan.scan_report)))
     with (patch.object(FastScanStore, "inventory", saved_inventory),
           patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
-          patch.object(algo08_scan, "scan_report", partial(report_adapter, algo08_scan.scan_report)),
+          report,
           integrated.positive_ports(combined.solver_ports, acceleration, positive)):
         terminal, witness = raw.publish_active(options, publication, specification, handoff)
     saved_native, = options.output.glob("fast-scan-automatic-work/*/detections.json")
-    checked(saved_native, source["proposed_native_sha256"])
+    checked(saved_native, native_pin)
     checked(options.output / "fast-scan-inputs" / f"{session}.json", inventory_digest)
-    if (terminal["counts"].get("skipped_acquisition") != source["physical"]["omitted_visits"] or handoff.calls != 1
+    expected_skipped = 0 if ordinary else source["physical"]["omitted_visits"]
+    if (terminal["counts"].get("skipped_acquisition", 0) != expected_skipped or handoff.calls != 1
             or resident([str(ref.path) for ref in refs]) != cache):
         raise ValueError("The saved handoff lost original custody, indexing or its skipped-acquisition census")
     timing = dict(cpu_s=process_time()-started[0], elapsed_s=perf_counter()-started[1])
