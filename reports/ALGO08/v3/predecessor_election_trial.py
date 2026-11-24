@@ -59,7 +59,7 @@ def audit(output):
     request = read(Path(bound["request"]))
     archive, _ = checked_catalogue(bound, request, TleArchiveReader, canonical_digest)
     document, offer = (read(Path(request[key])) for key in ("native_file", "offer_file"))
-    bind_native(document, request["session"], request["inventory"], request["detector_sha256"][7:],
+    bind_native(document, request["session"], request["inventory"], request["detector_sha256"],
                 expected="sha256:"+request["native_sha256"])
     if document["clock_anchor"]["before"]["realtime_ns"] != request["causal_cutoff_utc_ns"]:
         raise ValueError("Original cutoff changed")
