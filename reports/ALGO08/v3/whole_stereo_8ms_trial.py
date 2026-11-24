@@ -115,7 +115,7 @@ def followup(north):
     return "weak"
 
 
-def launch(root, label):
+def launch(root, label, *, next_case=followup):
     from dense_geographic_trial import host
     from empty_bootstrap import RELEASE
     from full_short_physical import environment
@@ -125,7 +125,7 @@ def launch(root, label):
     verified_plan(binding)
     if binding["host"] != host():
         raise ValueError("One original frozen worker and CPU assignment is required")
-    if label != "north" and (not (root/"north-score.json").is_file() or label != followup(read(root/"north-score.json"))):
+    if label != "north" and (not (root/"north-score.json").is_file() or label != next_case(read(root/"north-score.json"))):
         raise ValueError("The sealed North accuracy branch did not admit this follow-up")
     case = "north" if label == "omitted" else label
     census = root/case/"plan.json"
