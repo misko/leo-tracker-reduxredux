@@ -16,7 +16,7 @@ import numpy as np
 import zstandard as zstd
 
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
-from leo.contracts.multirate_window_recording import ShortWindowIndexV2
+from leo.contracts.multirate_window_recording import ShortWindowChunkV2, ShortWindowIndexV2
 from leo.storage import short_window
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.writer import _CompressedFileWriter, _DigestingSink, _fsync_directory
@@ -101,13 +101,27 @@ def write_capture(directory, header, windows, mode):
     return pin, side_pin, chunk
 
 
-def read_table(reader, pin):
-    path = reader.path / SIDE
+def bound_chunk(reader, chunk):
+    chunks = reader.manifest.chunks
+    if chunk is None and len(chunks) == 1:
+        chunk = chunks[0]
+    if (not isinstance(chunk, ShortWindowChunkV2) or not 0 <= chunk.chunk_index < len(chunks)
+            or chunk != chunks[chunk.chunk_index]):
+        raise BundleCorruptionError("visit table requires a chunk bound to the installed manifest")
+    return chunk
+
+
+def read_table(reader, pin, *, chunk=None, side_name=SIDE):
+    """Accept one externally pinned table for the declared segment member."""
+    chunk = bound_chunk(reader, chunk)
+    if (not isinstance(side_name, str) or not side_name or side_name in (".", "..")
+            or Path(side_name).name != side_name):
+        raise BundleCorruptionError("visit sidecar name must stay inside the segment")
+    path = reader.path / side_name
     data = short_window.ScannerIqStore._read_regular(path, MAX_SIDE_BYTES)
     if sha256_digest(data) != pin:
         raise BundleCorruptionError("visit sidecar differs from its frozen pin")
     document = json.loads(data)
-    (chunk,) = reader.manifest.chunks
     if (not isinstance(document, dict) or set(document) != {
             "schema", "manifest_sha256", "index_sha256", "compressed_sha256", "records"}
             or [document[key] for key in ("schema", "manifest_sha256", "index_sha256",
@@ -116,10 +130,10 @@ def read_table(reader, pin):
             or not isinstance(document["records"], list)
             or len(document["records"]) != chunk.window_count
             or reader.manifest.schema_version != 2 or reader.manifest.receiver_ids != (0, 1)
-            or reader.manifest.sample_rate_hz != 10_000_000 or chunk.first_sequence != 0):
+            or reader.manifest.sample_rate_hz != 10_000_000):
         raise BundleCorruptionError("visit sidecar identity or geometry differs from the member")
     offset = 0
-    for sequence, record in enumerate(document["records"]):
+    for sequence, record in enumerate(document["records"], start=chunk.first_sequence):
         names = ("sequence", "offset", "frame_bytes", "prefix_end", "prefix_bytes")
         if (not isinstance(record, dict) or set(record) != {*names, "prefix_sha256"}
                 or any(type(record[key]) is not int for key in names)):
@@ -146,11 +160,11 @@ def check_raw(raw, count, pin):
 class SelectiveMember:
     """Verify the whole encoded file before exposing any checked decoded span."""
 
-    def __init__(self, reader, side_pin):
+    def __init__(self, reader, side_pin, *, chunk=None, side_name=SIDE):
         self.reader = reader
-        (self.chunk,) = reader.manifest.chunks
+        self.chunk = bound_chunk(reader, chunk)
         stage = clock()
-        self.records, side_bytes = read_table(reader, side_pin)
+        self.records, side_bytes = read_table(reader, side_pin, chunk=self.chunk, side_name=side_name)
         data = reader._member(self.chunk.index_relative_path, self.chunk.index_bytes, self.chunk.index_sha256)
         self.rows = [ShortWindowIndexV2.model_validate_json(line) for line in data.splitlines()]
         offset = 0
@@ -171,14 +185,17 @@ class SelectiveMember:
             self.chunk.payload_relative_path, self.chunk.compressed_bytes, self.chunk.compressed_sha256))
         self.authentication = elapsed(stage)
         self.decoder = zstd.ZstdDecompressor()
-        if not offset:
-            if self.decoder.decompress(self.encoded, allow_extra_data=False):
-                raise BundleCorruptionError("all-empty visit member decodes to nonempty CI16")
+        if not offset and (zstd.frame_content_size(self.encoded) != 0
+                           or self.decoder.decompress(self.encoded, allow_extra_data=False)):
+            raise BundleCorruptionError("all-empty visit member decodes to nonempty CI16")
         self.counts = Counter(metadata_bytes=side_bytes + len(data) + (reader.path/"manifest.json").stat().st_size,
                               authenticated_encoded_bytes=len(self.encoded))
 
     def read(self, row, *, full):
-        record = self.records[row.sequence]
+        index = row.sequence - self.chunk.first_sequence
+        if not 0 <= index < len(self.rows) or row != self.rows[index]:
+            raise BundleCorruptionError("requested visit is outside the verified chunk index")
+        record = self.records[index]
         start = record["offset"]
         if full:
             end = start + record["frame_bytes"]
