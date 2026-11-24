@@ -10,6 +10,9 @@ from grid_feature_projection import exact, supported_cpu
 from paired_secant_geometry import Experiment, PairedProjection, build
 
 
+pytestmark = [pytest.mark.hardware, pytest.mark.frozen_v5_numerics]
+
+
 @pytest.fixture(scope="module")
 def native(tmp_path_factory):
     if not supported_cpu():
