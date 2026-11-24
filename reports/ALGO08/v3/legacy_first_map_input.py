@@ -51,64 +51,72 @@ def reopen(member, expected, raw, codec, replay):
                     original_encoded_reused=len(member.compressed))
 
 
-def first_windows(source, parts, history, hasher, replay, pending, audit, hashes):
+def member_windows(source, chunk, declared, name, history, hasher, replay, hashes):
+    """Yield one complete installed-source member and return its verified map evidence."""
     from leo.scanner.fast_scan_analysis import VerifiedFastWindow
 
+    reader = source.reader
+    if (chunk not in reader.manifest.chunks or chunk.first_sequence < source.start_sequence
+            or chunk.first_sequence + chunk.window_count > source.stop_sequence):
+        raise BundleCorruptionError("First-use member lies outside the declared original source slice")
+    member, reason, snapshots = None, None, []
+    try:
+        with legacy.one_member(reader.path, chunk, snapshots=snapshots):
+            member = fused.FusedMember(reader, chunk, history, hasher, allow_literal=True)
+    except multi.UnsupportedExceptionLayout as error:
+        reason = str(error)
+    if len(snapshots) > 1:
+        raise BundleCorruptionError("First-use reader authenticated the same compressed member repeatedly")
+    snapshot = borrow_snapshot(reader, chunk, snapshots[0]) if member is None and snapshots else nullcontext()
+    check = closing(member) if member is not None else nullcontext()
+    with check, snapshot:
+        count = 0
+        windows = member.windows() if member is not None else port.stock_scope(reader, chunk)
+        with closing(windows):
+            for window in windows:
+                index = window.index
+                if index.sequence != chunk.first_sequence + count:
+                    raise BundleCorruptionError("First-use reader changed signed window order")
+                count += 1
+                hashes.append(index.iq_sha256)
+                yield VerifiedFastWindow(index.sequence, index.iq_sha256, index.acquisition,
+                                         source.targets[index.target_id], window.samples,
+                                         sample_rate_hz=reader.manifest.sample_rate_hz)
+        if count != chunk.window_count:
+            raise BundleCorruptionError("First-use reader did not exhaust the original member")
+        observed = dict(port.member_identity(reader, chunk), map=None, map_kind="ordinary", map_sha256=None)
+        if member is None:
+            check_expected(declared, observed)
+            return dict(observed, fallback=reason, map_bytes=0), None
+        began = clock()
+        try:
+            raw, pin = member.sidecar()
+        except legacy.UnsupportedLayout as error:
+            check_expected(declared, observed)
+            return dict(observed, verified_without_map=str(error), map_bytes=0, **member.audit()), None
+        kind = "exception" if member.exceptions else "literal"
+        observed.update(map=name, map_kind=kind, map_sha256=pin)
+        check_expected(declared, observed)
+        serialization = elapsed(began)
+        began = clock()
+        proof = reopen(member, observed, raw, multi if member.exceptions else legacy, replay)
+        return dict(observed, map_bytes=len(raw), proof=proof, map_serialize=serialization,
+                    map_reopen=elapsed(began), **member.audit()), raw
+
+
+def first_windows(source, parts, history, hasher, replay, pending, audit, hashes):
     if source.start_sequence or source.stop_sequence != source.reader.manifest.window_count:
         raise ValueError("First-use maps require the complete original segment")
     for chunk in source.reader.manifest.chunks:
-        reader = source.reader
-        identity = reader.manifest_sha256, chunk.chunk_index
+        identity = source.reader.manifest_sha256, chunk.chunk_index
         declared = parts[identity]
         name = port.map_name(len(audit))
         if name in pending:
             raise BundleCorruptionError("Original first-use acquisition repeated a member")
-        member, reason, snapshots = None, None, []
-        try:
-            with legacy.one_member(reader.path, chunk, snapshots=snapshots):
-                member = fused.FusedMember(reader, chunk, history, hasher, allow_literal=True)
-        except multi.UnsupportedExceptionLayout as error:
-            reason = str(error)
-        if len(snapshots) > 1:
-            raise BundleCorruptionError("First-use reader authenticated the same compressed member repeatedly")
-        replay_snapshot = borrow_snapshot(reader, chunk, snapshots[0]) if member is None and snapshots else nullcontext()
-        check = closing(member) if member is not None else nullcontext()
-        with check, replay_snapshot:
-            count = 0
-            with closing(member.windows() if member is not None else port.stock_scope(reader, chunk)) as windows:
-                for window in windows:
-                    index = window.index
-                    if index.sequence != chunk.first_sequence + count:
-                        raise BundleCorruptionError("First-use reader changed signed window order")
-                    count += 1
-                    hashes.append(index.iq_sha256)
-                    yield VerifiedFastWindow(index.sequence, index.iq_sha256, index.acquisition,
-                                             source.targets[index.target_id], window.samples,
-                                             sample_rate_hz=reader.manifest.sample_rate_hz)
-            if count != chunk.window_count:
-                raise BundleCorruptionError("First-use reader did not exhaust the original member")
-            if member is None:
-                observed = dict(port.member_identity(reader, chunk), map=None, map_kind="ordinary", map_sha256=None)
-                check_expected(declared, observed)
-                audit.append(dict(observed, fallback=reason, map_bytes=0))
-                continue
-            began = clock()
-            try:
-                raw, pin = member.sidecar()
-            except legacy.UnsupportedLayout as error:
-                observed = dict(port.member_identity(reader, chunk), map=None, map_kind="ordinary", map_sha256=None)
-                check_expected(declared, observed)
-                audit.append(dict(observed, verified_without_map=str(error), map_bytes=0, **member.audit()))
-                continue
-            kind = "exception" if member.exceptions else "literal"
-            observed = dict(port.member_identity(reader, chunk), map=name, map_kind=kind, map_sha256=pin)
-            check_expected(declared, observed)
-            serialization = elapsed(began)
-            began = clock()
-            proof = reopen(member, observed, raw, multi if member.exceptions else legacy, replay)
+        evidence, raw = yield from member_windows(source, chunk, declared, name, history, hasher, replay, hashes)
+        if raw is not None:
             pending[name] = raw
-            audit.append(dict(observed, map_bytes=len(raw), proof=proof, map_serialize=serialization,
-                              map_reopen=elapsed(began), **member.audit()))
+        audit.append(evidence)
 
 
 def check_expected(declared, observed):
