@@ -1,0 +1,22 @@
+# DS30-0049 substitution of disagreeing short winners
+
+Replacing the 72 original short winners outside the signed carrier-match window improved horizontal error by **530 m fixed-zero and 262 m fitted**. Both clear the frozen 250 m gate. The fitted result cleared it by 12 m and recovered **9.99%** of the original 2.620 km gap, leaving **2.358 km** over installed. This saved mechanism depends on knowing the genuine installed winner at the same opportunity. [Frozen protocol](ds30-0049-shifted-winner-repair-protocol.md) · [Sealed receipt](measurements/ds30-0049-shifted-winner-repair.json.gz)
+
+| Publication | Horizontal error fixed / fitted | Conditional RF RMS fixed / fitted | All-owned RF RMS fixed / fitted | Owners per arm | Saved wall / CPU |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Installed 20 ms | 1.826 / 1.420 km | 129.663 / 129.671 Hz | 145.914 / 141.298 Hz | 320 | 8.65 / 8.06 s |
+| Original sparse 20/8 | 4.472 / 4.040 km | 168.634 / 168.814 Hz | 168.634 / 168.814 Hz | 268 | 6.36 / 6.31 s |
+| Matched 20 ms tuple replacement | 4.196 / 3.847 km | 152.677 / 152.869 Hz | 152.677 / 152.869 Hz | 269 | 7.561 / 6.973 s |
+| Sparse-only exclusion | 4.254 / 3.900 km | 169.166 / 169.334 Hz | 169.166 / 169.334 Hz | 258 | 6.855 / 6.713 s |
+| Empty-lane restoration | 4.148 / 3.663 km | 167.462 / 167.610 Hz | 182.887 / 175.211 Hz | 317 | 6.633 / 6.516 s |
+| Shifted-winner substitution | 3.942 / 3.779 km | 145.861 / 145.927 Hz | 145.861 / 145.927 Hz | 283 | 7.099 / 6.911 s |
+
+All four experimental publications independently start from the original sparse packet. The matched and shifted variants keep sparse detection membership while replacing different measured tuples. The empty-lane and sparse-only variants change membership. These are separate measured effects. The shifted run reduced RF RMS by 22.772 and 22.887 Hz relative to sparse on changed owner sets. [Matched replacement](ds30-0049-matched-donor.md) · [Sparse-only exclusion](ds30-0049-sparse-only-drop.md) · [Empty-lane restoration](ds30-0049-empty-recovery.md)
+
+The ordered packet retains all 1,864 original opportunity rows, 600 positive lanes and every original anchor. The 72 selected changes comprise 59 RX0 and 13 RX1 short opportunities. All 72 original signed CFO differences exceed 250 Hz. The median absolute difference is 492.12 Hz and the RMS difference is 184.716 kHz. The native rank changes on 15 replacements. The complete installed tuple changes per eligibility. The 284 strictly matched short factors, 104 installed-only short lanes and 161 sparse-only short lanes all retain their original sparse state. Selection used no owners or survey.
+
+Graph marked 407 assigned rows across 14 pieces, compared with 399/15 on original sparse. The final arms each have two satellites and seven tracks. They keep 263 original owners with identical satellite and role, gain 20 and drop five. The changed tuples support 46 of 283 final owners, 43 on RX0 and three on RX1, versus 32 before substitution and 48 in installed. Nineteen of the 20 gains and all five losses use overwritten tuples. The final runs share 269 owner IDs, satellites and roles with installed. All 46 used replacements have the same installed owner.
+
+The one saved child used CPU2, nice 15, idle I/O and one numerical thread in a naturally available lease. It published a lean interior fix with the ordinary signed offer and verified portable index, zero fallback, the complete 179-point grid and zero endpoint replay difference, the position path, and eight independently decoded PNGs. It charged 42,232 process input blocks and 74 major faults. The elapsed table includes full saved process startup, solve and output through exit. Historical controls occupied different leases. Deriving the packet separately took 0.056 s wall / 0.053 s CPU. The timing supplies no raw acquisition credit. No waveform access, repeated candidate solve or original campaign change occurred.
+
+The protocol is `95bec1328`, the code was `e177edd77`, and twelve component and adjacent tests passed. The packet SHA-256 is `4003cddc1cf374763b3b53cc7459caebfa6b5b5dd7ae8a9e46ca6b92b97807d6` with research recipe `32a4e5e5bc5dc2589f5f38ebf0c97f9827e33ae9defea20eb48847579b68568b`. The prediction seal is `60deb148cd561d2ae471a00a04664201c8b09950429199ed389885ab696f686e`, the independent score is `ce1c395f74545056a2e6c654fbfdcf4da5149f89f3b872fd0568e00d0ba17503`, and the compressed receipt is `d5d07b8134c3a2e4c3f06745e6899f8ad02207b0997f5bab39332083887f3b87`. [Opt-in saved launcher](matched_donor_0049_trial.py)

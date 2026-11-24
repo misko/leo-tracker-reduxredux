@@ -21,7 +21,7 @@ sys.path[:0] = [str(HERE), str(HERE.parents[2])]
 from sparse8_cfo_epoch_challenge import ADMISSION, CASE, CROSSOVER, PAIR, PARITY, ordinary
 from sparse8_cfo_epoch_saved import BUILD, BUILD_PIN, CHARTED, deny_backing
 from sparse8_cfo_epoch_trial import ARMS, CAMPAIGN, LOCK, attrs, document, identifier, write
-from matched_donor_0049 import derive, owner_counts
+from matched_donor_0049 import derive, owner_counts, replace_disagreement
 from sparse_only_drop_0049 import exclude_sparse_only
 from empty_recovery_0049 import restore_empty_lanes
 import signed_cfo_time_readout as authority
@@ -37,10 +37,14 @@ EXCLUSION = SimpleNamespace(stem="ds30-0049-sparse-only-drop", derive=exclude_sp
 RESTORATION = SimpleNamespace(stem="ds30-0049-empty-recovery", derive=restore_empty_lanes,
                               ledger="inserted", ledger_digest="insertion_sha256", label="inserted",
                               option="--restore-empty-lanes", source="empty_recovery_0049.py", priority="idle")
+DISAGREEMENT = SimpleNamespace(stem="ds30-0049-shifted-winner-repair", derive=replace_disagreement,
+                               ledger=DONOR.ledger, ledger_digest=DONOR.ledger_digest, label="replaced",
+                               option="--replace-shifted-winners", source=None, priority="idle")
 
 PREVIOUS = {
     DONOR.stem: "9e129a016bdd533d7c82706b402665bea6cd2d34c0628c0bda62fe414cae1a6a",
     EXCLUSION.stem: "dcbc89c91c03b302343057f982207a90684c956e8d2d12e3d198119ebf1836bb",
+    RESTORATION.stem: "3e2a420f155cecc3193a13834122294230ec2de7aecd46fa75d06ec9881c4f38",
 }
 
 
@@ -84,6 +88,12 @@ def prepare(root, experiment):
                          "rx0/anchor": (121, 65, 0), "rx1/anchor": (121, 94, 0)}
                 or change["original_winners"] != 600):
             raise ValueError("Empty-lane enrolment differs from the freeze")
+    if experiment is DISAGREEMENT:
+        measured = {key: (value["opportunities"], value["carrier_disagreement"], value["substitutions"])
+                    for key, value in change["coverage"].items()}
+        if measured != {"rx0/short": (811, 59, 59), "rx1/short": (811, 13, 13),
+                        "rx0/anchor": (121, 0, 0), "rx1/anchor": (121, 0, 0)}:
+            raise ValueError("Both-positive disagreement enrolment differs from the freeze")
     root.mkdir(mode=0o700)
     payload = root/"derived-native.json"
     payload.write_bytes(json.dumps(derived, sort_keys=True, ensure_ascii=False, allow_nan=False,
@@ -228,9 +238,11 @@ def launch(root, plan_pin, experiment):
             raise ValueError(f"Single candidate exit {status}; measured stderr and clock retained")
 
 
-def compare_previous(plan, arms):
+def compare_previous(plan, arms, experiment):
     results = {}
     for stem, pin in PREVIOUS.items():
+        if stem == experiment.stem:
+            continue
         path = HERE/"measurements"/(stem+".json.gz")
         previous = authority.document(path, pin)["score"]
         if (previous["decision"] != "complete"
@@ -315,10 +327,10 @@ def score(root, seal_pin, experiment):
         gap = arms["fitted_c"]["sparse_m"]-arms["fitted_c"]["installed_m"]
         useful = fitted <= -250 and fixed <= 250
         advance = -fitted >= gap/2 and fixed <= 250
-        if experiment is RESTORATION:
+        if experiment in (RESTORATION, DISAGREEMENT):
             useful = advance = fitted <= -250 and fixed <= -250
             stock_detail = FastStandardAnalysisStore(CROSSOVER/"installed-installed").detail(named_receipt["run_id"])
-            result.update(prior_separate_interventions=compare_previous(plan, arms),
+            result.update(prior_separate_interventions=compare_previous(plan, arms, experiment),
                           installed_all_owned_rf_hz={a:stock_detail["arms"][a]["residual_rms_hz"] for a in ARMS},
                           installed_saved_clock=crossover["cells"]["installed-installed"]["clocks"])
         result.update(arms=arms, position=position, media=media["images"], grid_replay=grid["endpoint_objective_replay"],
@@ -334,7 +346,7 @@ if __name__ == "__main__":
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
     options = parser.add_mutually_exclusive_group()
-    for choice in (EXCLUSION, RESTORATION):
+    for choice in (EXCLUSION, RESTORATION, DISAGREEMENT):
         options.add_argument(choice.option, dest="experiment", action="store_const", const=choice)
     parser.set_defaults(experiment=DONOR)
     args = parser.parse_args()
