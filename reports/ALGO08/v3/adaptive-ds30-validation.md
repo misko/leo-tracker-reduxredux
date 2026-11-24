@@ -1,6 +1,6 @@
 # ALGO08v3 successor validation on saved DS30 recordings
 
-**The current solver cut total time from 136.03 to 68.02 s on four physical DS30 fixes starting from saved detections.** One expensive recording supplied 46 s of the 68 s saved. The median paired speedup was **1.58×**, including candidate launcher checks. All four known positives returned fixes, and the largest increase in horizontal error was **4.2 m** across both calibration arms. Full waveform-to-position timing on a physical fix with this receiver and solver together remains open. [Four-recording comparison](#choosing-the-solver-from-earlier-orbit-quality)
+**The current solver cut total time from 153.93 to 80.50 s on five physical DS30 fixes starting from saved detections.** Including candidate launcher checks, the speedups were **1.47× on the median pair and 1.91× by total time**. All five known positives returned fixes. The largest increase in horizontal error was **4.2 m** across both calibration arms. DS30-0107's archived withholding precedes the solver and is outside these five timings. [Five-recording comparison](history-risk-held-0169.md)
 
 The following earlier experiments explain why the candidate checks orbit quality before choosing a solver. On DS30-0160, the original lean approach increased fitted-calibration error by 236 m. The new routing rule recovered the installed answer.
 
@@ -70,25 +70,29 @@ On the fourth recording, DS30-0402, the lean branch took **27.655 s** with entry
 
 The largest saving also held in a fresh, single-core pair on DS30-0402. With input admission charged to each method, installed v3 took **76.904 s**, followed by **27.247 s** for the candidate (**2.82×**). Shared controller startup was outside both clocks. The fresh installed run reproduced its archived scientific outputs and all eight PNGs. The panel above retains its original enrolled runs. [Fresh paired controls and scientific comparison](history-risk-0402-pair.md)
 
+The next enrolled physical recording, DS30-0169, took **12.485 s** with input checks versus **17.893 s** for archived installed v3. Both calibration arms reproduced all 2,236 ordered satellite assignments, the full grid and all eight PNGs. The horizontal errors were **506 m fixed and 348 m fitted** for both methods. Across the expanded panel, the candidate divided by installed elapsed was **0.6804 at the median and 0.5230 by totals**. Both exceed the 0.5000 target. This recording was previously studied for other localization methods and held out for routing. [Enrollment, outcomes and timings](history-risk-held-0169.md)
+
+![Time from saved detections and change in position error for the five enrolled DS30 recordings](development/history-risk-five-case.png)
+
 Transferring each measured downstream saving, including launcher checks, to that recording's historical raw clock gives acquisition budgets of **7.43, 8.47 and 25.40 s** respectively for a per-recording 2× improvement. A receiver sustaining one rate across the three would need **442 MB/s** for the median gate and **406 MB/s** for the summed gate, measured from launch through sealed detections in original compressed MB. These are targets derived from separate launches. Reproduce them with `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --routed-cases` in the project environment. [Calculation](adaptive_receiver_budget.py) · [Measured physical receiver prefixes](seekable-eight-raw.md)
 
 Adding DS30-0402 gives it a **35.72 s** acquisition budget. The four-recording thresholds become **377 MB/s** for the median gate and **324 MB/s** for the summed gate. The difference from the three-case thresholds illustrates how much the target depends on including one expensive solve. Use `--routed-cases 4` to reproduce the four-case estimate. The raw 20/8 ms receiver can produce different detections from the original packet used to measure these saved-solver improvements.
 
-### How representative are those four recordings?
+### How representative are the saved recordings?
 
-The four account for **4.98%** of installed v3 elapsed on the historical 55 recordings and **7.31%** of post-detection time among the 52 with stage clocks. Ordered by increasing post-detection time, DS30-0160 ranks 2nd, DS30-0316 6th, DS30-0374 19th and DS30-0402 52nd of 52. The largest measured saving came from the single most expensive post-detection case. Three of the four were among the eight shortest complete raw runs.
+The first four accounted for **4.98%** of installed v3 elapsed on the historical 55 recordings and **7.31%** of post-detection time among the 52 with stage clocks. The fifth brings those shares to **6.28% and 8.26%**. Ordered by increasing post-detection time, DS30-0160 ranks 2nd, DS30-0169 5th, DS30-0316 6th, DS30-0374 19th and DS30-0402 52nd of 52. The largest measured saving came from the single most expensive post-detection case. Four of the five were among the eight shortest complete raw runs.
 
-The table prices the remaining work across the original 55. It transfers the four matched solver time differences, charges the three unsplit recordings their entire installed clocks, and asks how much faster the other **48** post-detection stages would have to run. Each column gives the minimum common reduction across those 48 that would satisfy **both** the median and summed elapsed gates at the stated acquisition rate.
+The table prices the remaining work across the original 55. It transfers the five matched solver time differences, charges the three unsplit recordings their entire installed clocks, and asks how much faster the other **47** post-detection stages would have to run. Each column gives the minimum common reduction across those 47 that would satisfy **both** the median and summed elapsed gates at the stated acquisition rate.
 
 | Assumed effective acquisition on all 52 split cases, original compressed MB/s | Remaining downstream reduction for 1.6× | Remaining downstream reduction for 2× |
 |---:|---:|---:|
-| 225 | 12.4% | 54.7% |
-| 250 | 1.4% | 43.8% |
-| 325 | 0% | 21.0% |
-| 375 | 0% | 10.9% |
-| 400 | 0% | 6.8% |
+| 225 | 12.2% | 55.0% |
+| 250 | 1.1% | 43.9% |
+| 325 | 0% | 20.9% |
+| 375 | 0% | 10.7% |
+| 400 | 0% | 6.5% |
 
-The acquisition rate includes startup, storage waits, verification, DSP and sealing detections. Uniform rates and uniform downstream savings are assumptions. These rows neither measure a candidate on the 55 recordings nor predict their position accuracy. They show why timing only DS30-0402 provides little evidence for a release. Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --historical-transfer` in the project environment for the two gates separately. [Historical stage and input-size ledger](measurements/acquisition-throughput.json) · [Paired calculation](adaptive_receiver_budget.py)
+The acquisition rate includes startup, storage waits, verification, DSP and sealing detections. Uniform rates and uniform downstream savings are assumptions. The remaining 47 recordings still need observed candidate timings and accuracy measurements. Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --historical-transfer 5` in the project environment for the two gates separately. [Historical stage and input-size ledger](measurements/acquisition-throughput.json) · [Paired calculation](adaptive_receiver_budget.py)
 
 ## Keeping ALGO08v3's original position solution
 
@@ -175,9 +179,13 @@ On the complete physical DS30-0107 original input, the same entry point withheld
 
 The opt-in orbit-quality rule now runs through the same raw entry point. On the North simulation it took **11.992 s** through verified publication of both positions, the 137-point grid and eight figures, or **12.256 s** including launcher checks. That is **1.629×** against the instrumented 19.967 s installed control and **1.316×** against a separate 16.133 s installed control. The fixed and fitted errors were **112 / 128 m**, versus **106 / 141 m** for installed v3. The first attempt exited with an audit serialization error after publishing and took 15.103 s. The successful clock follows the fix. Replaying its detections with the true location 52.5 km outside the region withheld both positions after 96 probes. [Raw timing, failure, omission and output checks](history-risk-raw.md)
 
+With the verified split archive already built, the same routed raw worker took **11.647 s** on North versus **18.201 s** for fresh installed v3. Charging the candidate's specific setup gives **11.698 s (1.556×)**. Acquisition saved **0.879 s** against the earlier original-format run with the same receiver and solver. The gain through process exit was **0.345 s**. All 342 assignments per arm, the scientific grid, path and eight PNGs matched that earlier routed run. Including the independently measured **8.258 s** conversion and readback for first use of an existing archive gives **19.956 s (0.912×)**. [Fresh paired run and accounting](strict-history-raw.md)
+
 Two narrower writer experiments timed one physical member and one simulated member. Grouping fixed-width samples cost 2.6 ms extra on DS30-0008 and saved 4.0 ms on North. Reusing the SHA-256 prefix state preserved every original digest and saved 15.3 ms and 30.2 ms respectively. Isolated hash timings support about 16–18 ms of savings per 64-window member. [Packing experiment](ci16-grouped.md) · [Digest reuse](ci16-sha-reuse.md)
 
 The harder South omission exposed a shared failure. With the true simulated position **100 m outside** the search region, both v3 and the candidate published a false fix in both calibration arms. The candidate's fitted points were inside its search boundary, so the exterior check made zero probes. The timed candidate exited with an error while writing an additional audit record after publishing its terminal, path and eight figures. The recovered published evidence establishes the false fix. [South near-boundary test](exact-named-south-omitted.md)
+
+A proposed withholding rule checked whether competitive points on each saved position grid reached a face of the search box. On eight matched offers it flagged all four omissions, including South's 100 m miss. It also rejected **both valid 100 m boundary fixes**, retaining only the two wider valid controls. No common threshold on this score separated the tested omissions from the valid fixes. The rule stays outside the candidate. [Frozen decision and per-offer evidence](grid-face-abstention.md)
 
 The cheaper physical-fixture check used saved detections before transferring any waveform bytes. The two-member and three-member crops of DS30-0008 both failed the original curvature gate. The first eight contiguous members contained two eligible curved tracks, but would require another 543 MB from the archive. Passing that track gate alone would not guarantee a fix. The complete DS30-0016 input, which has an established v3 fix and a matched 20/8 ms saved fix, still requires 891 MB of staging. [Crop definitions, custody and tested track counts](cropped-physical-iq-census.md)
 

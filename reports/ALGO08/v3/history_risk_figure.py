@@ -15,7 +15,9 @@ HERE = Path(__file__).resolve().parent
 
 def load_rows(size=3):
     rows = []
-    for entry in read_sealed_panel(size)["enrolled"].values():
+    panel = read_sealed_panel(size)
+    for key in panel.get("case_order", panel["enrolled"]):
+        entry = panel["enrolled"][key]
         result = entry["result"]
         runs = result["scientific"]["runs"]
         error = {arm: 1000 * (runs["routed"]["horizontal_error_km"][arm] - runs["named"]["horizontal_error_km"][arm])
@@ -55,7 +57,7 @@ def render(output, size=3):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument("--cases", type=int, choices=(3, 4), default=3)
+    parser.add_argument("--cases", type=int, choices=(3, 4, 5), default=3)
     size = parser.parse_args().cases
-    slug = {3: "three", 4: "four"}[size]
+    slug = {3: "three", 4: "four", 5: "five"}[size]
     render(HERE / f"development/history-risk-{slug}-case.png", size)

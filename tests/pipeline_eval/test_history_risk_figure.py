@@ -16,3 +16,10 @@ def test_dense_fourth_case_keeps_submillimetre_error_changes():
     assert case == "DS30-0402"
     assert (original, charged) == pytest.approx((73.351, 27.655), abs=0.001)
     assert errors == pytest.approx({"c0": 0.000045, "fitted_c": 0.000013}, abs=0.000001)
+
+
+def test_fifth_enrolled_fix_keeps_its_order_and_exact_zero_error_change():
+    case, original, charged, errors = load_rows(5)[-1]
+    assert case == "DS30-0169"
+    assert (original, charged) == pytest.approx((17.893, 12.485), abs=0.001)
+    assert errors == {"c0": 0, "fitted_c": 0}

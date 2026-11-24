@@ -165,8 +165,8 @@ def unseen_cut(rows, matched, rate, target):
     return costs
 
 
-def historical_transfer_report():
-    matched = routed_case_report(4)["cases"]
+def historical_transfer_report(size=4):
+    matched = routed_case_report(size)["cases"]
     rows = json.loads(checked(DATA / "acquisition-throughput.json", RAW_CLOCKS_SHA))["rows"]
     split = [r for r in rows if r["stages"][0] > 0]
     included = select(split, list(matched))
@@ -192,13 +192,13 @@ if __name__ == "__main__":
     kind = cli.add_mutually_exclusive_group()
     kind.add_argument("--exact-cases", type=int, nargs="?", const=3, choices=(3, 4),
                      help="Use the three- or four-recording panel's measured solver savings (default 3)")
-    kind.add_argument("--routed-cases", type=int, nargs="?", const=3, choices=(3, 4),
-                      help="Charge orbit-risk launch checks for the three- or four-recording panel")
-    kind.add_argument("--historical-transfer", action="store_true",
-                      help="Price the unmeasured downstream saving required across the historical 55")
+    kind.add_argument("--routed-cases", type=int, nargs="?", const=3, choices=(3, 4, 5),
+                      help="Charge orbit-risk launch checks on the selected saved panel")
+    kind.add_argument("--historical-transfer", type=int, nargs="?", const=4, choices=(4, 5),
+                      help="Price unmeasured downstream savings across the historical 55 after four or five cases")
     args = cli.parse_args()
     if args.historical_transfer:
-        result = historical_transfer_report()
+        result = historical_transfer_report(args.historical_transfer)
     elif args.routed_cases:
         result = routed_case_report(args.routed_cases)
     elif args.exact_cases:
