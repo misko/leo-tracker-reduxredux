@@ -1,11 +1,13 @@
 """The selective full recheck depends only on established past continuation."""
 
 from pathlib import Path
+import json
 import sys
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports" / "ALGO08" / "v3"))
 from selective_full_recheck import replace, shortlist
+from selective_full_recheck_score import stats
 
 
 def row(visit, counter, values, radio=0):
@@ -39,3 +41,11 @@ def test_full_temporal_rule_can_keep_second_candidate_or_emit_empty():
     output, _ = replace(rows, {(1, 0): [10, 11], (3, 0): []}, history)
     assert [probe["candidates"] for probe in output] == [[1], [11], [], []]
     assert [probe["candidates"] for probe in history.rows] == [[1], [10, 11], [], []]
+
+
+def test_named_lane_agreement_and_exact_measurement_agreement_are_distinct():
+    named = {(0, 0): [{"cfo": -0.0}], (1, 0): []}
+    candidate = {(0, 0): [{"cfo": 0.0}], (1, 0): [{"cfo": 3.0}]}
+    result = stats(named, candidate, json.dumps)
+    assert result["lane"]["recall"] == 1.0 and result["lane"]["precision"] == .5
+    assert result["factor"]["recall"] == 0 and result["factor"]["shared"] == 0
