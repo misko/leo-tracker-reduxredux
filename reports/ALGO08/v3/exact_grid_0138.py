@@ -13,11 +13,13 @@ import sys
 from time import perf_counter_ns, process_time_ns, time_ns
 from unittest.mock import patch
 
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
 import history_risk_0138 as active
 from inference_0138_profile import ORIGINAL, ORIGINAL_SEAL
 
 
-HERE = Path(__file__).resolve().parent
 PROJECTION = Path("/dev/shm/leo-grid-feature-projection-02/native-map.so")
 TEMPLATE = "template.so"
 PROTOCOL = HERE/"exact-grid-0138-protocol.md"
