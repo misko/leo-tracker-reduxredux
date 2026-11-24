@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 from named_cold_owner_trace import observe as installed_observer
 from pre_screen_owner import Curve, activate, alternative_ids, nominate
 from second_curve_gate_trace import ReachedSecondGate, instrumented_gate, observe as charted_observer, read_gates
+from second_curve_gate_grade import row_headroom
 
 
 def alternatives(points, index=0, norad=12345, alias=-1):
@@ -124,3 +125,14 @@ def test_original_gate_instrumentation_recovers_family_and_local_failure(monkeyp
         trace, = read_gates(candidate)
         assert trace["actual_tests"]["profile_noise"] is passing
         assert trace["family_support_groups"] == (1 if passing else None)
+
+
+def test_derive_unsigned_slope_at_exact_original_floor():
+    row = dict(conditional=dict(compatible=False,rms_hz=12.,mean_hz=3.,diagnostics=dict(
+        mean_z=.1,slope_z=3.01,quadratic_bic_gain=-1.,maximum_step_z=1.,lag1_acf=.2)))
+    measured = row_headroom(row,[10.,11.,12.,13.])
+    assert measured["span_s"] == 3.
+    assert measured["conditional_sigma_from_moments_hz"] == 75.
+    assert measured["absolute_slope_from_z_hz_per_s"] == pytest.approx(3.01*75./5**.5)
+    assert measured["conditional_failed"] == ["slope_z"]
+    assert measured["signed_slope_hz_per_s"] is None

@@ -167,6 +167,7 @@ def saved_worker(case, root, proof, pin, fd):
 def event_admits(event):
     path = CAMPAIGN/event["event"]
     if (path.parent!=CAMPAIGN/"cases"/event["case"]/"events"
+            or int(path.name.split("-",1)[0])!=event["unix_ns"]
             or "sha256:"+sha(path)!=event["event_sha256"]
             or json.loads(path.read_bytes())["state"]!="deferred_storage_busy"):
         raise ValueError("Expected a verified official storage deferral")
