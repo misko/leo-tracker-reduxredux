@@ -18,3 +18,14 @@ def test_signed_partition_preserves_partial_and_empty_visit():
     rows[2]["payload_offset_bytes"] -= 1
     with pytest.raises(ValueError, match="partition"):
         index_counts(rows, header)
+
+
+def test_two_recording_gate_requires_both_median_and_summed(monkeypatch):
+    from pathlib import Path
+
+    monkeypatch.syspath_prepend(str(Path(__file__).parents[2]/"reports/ALGO08/v3"))
+    from legacy_block_0107_score import speedup_gate
+
+    measured = speedup_gate({"fix": 10, "tiny": 1}, {"fix": 7, "tiny": .5})
+    assert measured["gates"]["1.6x"] == dict(median=True, sum=False, both=False)
+    assert measured["gates"]["2x"] == dict(median=False, sum=False, both=False)
