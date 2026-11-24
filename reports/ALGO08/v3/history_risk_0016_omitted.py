@@ -157,8 +157,8 @@ def worker(root):
         raise ValueError("The saved worker received a different scientific binding")
     bundle_sha(CHECKOUT, binding["sources"])
     checked(root/"offer.json", OFFER_PIN)
-    data, native = packet(binding)
     _, specification, _, publication, _ = boot.load_runtime()
+    data, native = packet(binding)
     from cumulative_grid_projection import saved_inventory_port
     from leo.storage.fast_scan import FastScanStore, FastSegmentSource
     from raw_cfo_north_trial import native_file
