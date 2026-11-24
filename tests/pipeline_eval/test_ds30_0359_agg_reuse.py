@@ -18,4 +18,7 @@ def test_cost_ceiling_keeps_required_compression_and_includes_setup():
     assert result["complete"] == 1.25
     assert result["first_restores"] == .008
     assert result["optimistic_shared_layout_and_buffers"] == pytest.approx(.17)
+    assert result["optimistic_second_band_layout_and_buffers"] == pytest.approx(.1)
     assert result["encoder_cpu_except_deflate"] == pytest.approx(.036)
+    spans["restore"] = [clock(.006), clock(.006)]
+    assert budget(spans, encodes, clock(1.25), "cpu_s")["first_restores"] == 0.0

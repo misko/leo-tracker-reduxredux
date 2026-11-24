@@ -27,9 +27,11 @@ def budget(spans, encodes, full, metric):
     construction, draw = (seconds(key) for key in ("make_figure", "base_draw"))
     copying, encoding = seconds("copy") + seconds("restore"), seconds("encode")
     layout = seconds("tight_layout")
+    second_band = spans["tight_layout"][1][metric] + spans["subplots"][1][metric]
     result = dict(complete=full[metric], scoped_orbit=spans["whole_orbit"][0][metric], figure_including_layout=construction,
                   base_draw=draw, copies_and_restores=copying, encode=encoding, all_layout=layout,
-                  first_restores=sum(row[metric] for row in spans["restore"][::2]),
+                  first_restores=sum(row[metric] for row in spans["restore"][::2]) if len(spans["restore"]) == 4 else 0.0,
+                  optimistic_second_band_layout_and_buffers=copying + second_band,
                   optimistic_shared_layout_and_buffers=copying + layout + seconds("subplots"))
     if metric == "cpu_s":
         result["encoder_breakdown"] = {key: sum(phase[key] for phase in encodes) for key in (
