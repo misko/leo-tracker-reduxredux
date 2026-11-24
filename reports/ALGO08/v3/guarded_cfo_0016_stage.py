@@ -114,9 +114,12 @@ def average_read_ms(before, after):
 
 
 class Pacing:
-    def __init__(self, root, total, reused, *, idle=False):
-        dev = RECORDING.stat().st_dev
-        self.device = Path(f"/sys/dev/block/{os.major(dev)}:{os.minor(dev)}/stat")
+    def __init__(self, root, total, reused, *, idle=False, device=None, deadline=None):
+        if device is None:
+            dev = RECORDING.stat().st_dev
+            device = Path(f"/sys/dev/block/{os.major(dev)}:{os.minor(dev)}/stat")
+        self.device = device
+        self.deadline = deadline
         self.total, self.copied, self.wait_s, self.slowest = total, reused, 0.0, 0.0
         self.start, self.sample_time = perf_counter(), perf_counter()
         self.sample, self.high, self.pauses = reads(self.device), 0, 0
@@ -162,11 +165,12 @@ class Pacing:
         self.pauses += 1
         self.high = 0
         self.record(event="pause", reason="device_read_stalls", read_await_ms=mean)
-        sleep(20)
+        sleep(20 if self.deadline is None else min(20, max(0, self.deadline - perf_counter())))
         self.sample, self.sample_time = reads(self.device), perf_counter()
 
 
-def copy_member(source, target, size, digest, lock, pacing, *, partial=None, journal=None, admission=None):
+def copy_member(source, target, size, digest, lock, pacing, *, partial=None, journal=None, admission=None,
+                required_device=None):
     completed = partial.offset if partial else 0
     checksum = partial.checksum.copy() if partial else sha256()
     digest = "sha256:" + digest.removeprefix("sha256:")
@@ -182,9 +186,14 @@ def copy_member(source, target, size, digest, lock, pacing, *, partial=None, jou
                 if admission is None:
                     pacing.wait_s += beginning - waiting
                 if entry is None:
-                    entry = stack.enter_context(source.open("rb", buffering=0))
+                    if required_device is None:
+                        entry = stack.enter_context(source.open("rb", buffering=0))
+                    else:
+                        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+                        entry = stack.enter_context(os.fdopen(os.open(source, flags), "rb", buffering=0))
                     incoming = os.fstat(entry.fileno())
-                    if not stat.S_ISREG(incoming.st_mode) or incoming.st_size != size:
+                    if (not stat.S_ISREG(incoming.st_mode) or incoming.st_size != size
+                            or (required_device is not None and incoming.st_dev != required_device)):
                         raise ValueError("Original member is not the expected bounded regular file")
                     member_identity = identity(incoming)
                     if partial and partial.source_identity is not None and partial.source_identity != member_identity:
