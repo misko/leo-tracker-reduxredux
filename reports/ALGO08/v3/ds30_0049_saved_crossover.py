@@ -160,7 +160,9 @@ def stock(publication, spec, args, handoff, authority, inventory):
                               archive=args.archive, bulk_root=args.output)
     with (patch.object(FastScanStore, "inventory", inventory_hook(authority, inventory)),
           handoff.install(algo08_scan), selected_rows(rows)):
-        receipt = publication.run(request, spec)
+        # The released lazy facade was installed by the checked bootstrap
+        # before binding the saved handoff.
+        receipt = publication.run(request, dict(spec, startup="stock"))
     return receipt, rows, {}
 
 
