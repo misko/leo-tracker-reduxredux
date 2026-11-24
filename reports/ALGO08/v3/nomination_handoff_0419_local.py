@@ -81,7 +81,7 @@ def nvme_read_bytes():
                     if line.startswith("read_bytes:")))
 
 
-def launch(root):
+def launch(root, *, assign=assigned):
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from dense_geographic_trial import host
@@ -98,7 +98,7 @@ def launch(root):
             or disk_usage(root.parent).free < 350_000_000):
         raise ValueError("Require a fresh private tmpfs root with room for archive and both publications")
     machine = host()
-    assignment = assigned()
+    assignment = assign()
     if not 0 < assignment["estimated_worker_ceiling_s"] < 120:
         raise ValueError("The originally frozen worker timing budget was exceeded")
     pins = remediation_pins()
@@ -106,8 +106,10 @@ def launch(root):
     if old["admission"]["source_pins"] != pins:
         raise ValueError("The post-holdout candidate source changed")
     release = verified_v3(NAMED_V3)
-    pair = checked(tmpfs(PANEL / "pair.json"), PAIR_PIN)
-    bound = input_binding(pair)
+    case = assignment["case"]
+    panel = PANEL.parent / case
+    pair = checked(tmpfs(panel / "pair.json"), assignment["release_pair_sha256"])
+    bound = input_binding(pair, panel)
     offer = boot.checked(Path(pair["region"]), OFFER_PIN)
     if offer != boot.checked(tmpfs(OFFER), OFFER_PIN):
         raise ValueError("The original installed offer and resident offer differ")
@@ -138,7 +140,7 @@ def launch(root):
     inventory = json.loads(files["inventory"].read_bytes())
     manifests = [[str(Path(row["path"]) / "manifest.json"), row["manifest_digest"]] for row in inventory["segments"]]
     request = prior_request | dict(
-        case=CASE, session=bound["session"], inventory="sha256:" + bound["inventory_sha256"],
+        case=case, session=bound["session"], inventory="sha256:" + bound["inventory_sha256"],
         issued=bound["issued"], admitted=bound["admitted"], raw_authority=bound["raw_authority"],
         causal_cutoff_utc_ns=bound["cutoff_utc_ns"], recording=pair["recording"], manifests=manifests,
         native_file=str(files["native"]), native_sha256=bound["native_sha256"], offer_file=str(files["offer"]),
@@ -151,7 +153,7 @@ def launch(root):
         boot.checked(tmpfs(Path(name)), prior_job["packets"][name])
     packets = {str(path): digest(path.read_bytes()) for path in (*files.values(), request_file)}
     packets.update({name: prior_job["packets"][name] for name in libraries})
-    binding = dict(case=CASE, stage=str(root), archive=str(local), request=str(request_file),
+    binding = dict(case=case, stage=str(root), archive=str(local), request=str(request_file),
                    inventory=str(files["inventory"]), issued=bound["issued"], admitted=bound["admitted"],
                    portable=None, packets=packets, sources=pins)
     job = root / "job.json"
@@ -179,6 +181,8 @@ def launch(root):
             metadata_clock=roster_clock, verified_copy_clock=copy_clock, staged_residency=availability,
             names=[{"filename": name, "sha256": pin, "bytes": count} for name, pin, count, _ in roster]),
         commands=commands, installed_release=release, machine=machine, detector_waveform_reads=0,
+        controller_commit=subprocess.check_output(
+            ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip(),
         original_backing_archive_reads=0, use_live_orbit_support=True, portable=None))
     env = environment(root) | {"TMPDIR": str(root / "tmp"), "XDG_CACHE_HOME": str(root / "tmp")}
     for mode in assignment["order"]:
@@ -187,7 +191,7 @@ def launch(root):
     write(root / "prediction-seal.json", output_seal(root))
 
 
-def score(root):
+def score(root, *, assign=assigned, previous_blind=None, pool_blind=None):
     import unseen_saved_holdout_score as known
     from aperture_trial import write
     import empty_bootstrap as boot
@@ -198,6 +202,9 @@ def score(root):
     started = boot.now()
     admission = json.loads((root / "admission.json").read_bytes())
     row = admission["original_inputs"]
+    assignment = assign()
+    case = assignment["case"]
+    panel = PANEL.parent / case
     result = {}
 
     def reference():
@@ -205,9 +212,9 @@ def score(root):
                                         "2d0ad2dfd:reports/2026_11_21_ds30_full/reference-audit.json"])
         if digest(body) != known.REFERENCE_PIN:
             raise ValueError("The previously sealed reference changed")
-        (case,) = (p for p in json.loads(body)["cases"] if p["dataset_label"] == CASE
+        (reference_row,) = (p for p in json.loads(body)["cases"] if p["dataset_label"] == case
                    and p["authority_eligible"] and p["sealed_metadata_digests_verified"])
-        return [case["reference"][key] for key in ("latitude_deg", "longitude_deg")]
+        return [reference_row["reference"][key] for key in ("latitude_deg", "longitude_deg")]
 
     def collect(path, value):
         if path != root / "result.json":
@@ -215,13 +222,13 @@ def score(root):
         result.update(value)
 
     with (patch("aperture_trial.write", collect),
-          patch.multiple(known, CASE=CASE, PANEL=PANEL, ADMITTED=row["admitted"], ISSUED=row["issued"],
+          patch.multiple(known, CASE=case, PANEL=panel, ADMITTED=row["admitted"], ISSUED=row["issued"],
                          NATIVE_PIN=row["native_sha256"], runtime_sources=remediation_pins,
-                         enrollment=assigned, reference=reference)):
+                         enrollment=assign, reference=reference)):
         known.score(root)
 
-    original = checked(tmpfs(PANEL / "pair.json"), PAIR_PIN)["runs"]["candidate"]
-    historical, fresh = PANEL / "candidate", root / "installed/candidate"
+    original = checked(tmpfs(panel / "pair.json"), assignment["release_pair_sha256"])["runs"]["candidate"]
+    historical, fresh = panel / "candidate", root / "installed/candidate"
     evidence = artifacts(tmpfs(historical), original["receipt"])
     installed = result["jobs"]["installed"]["publication"]
     result["archived_installed_products"] = dict(figures=evidence["images"], equal_pngs=(
@@ -240,14 +247,21 @@ def score(root):
         for mode, report in result["jobs"].items() if report["publication"]
         for saved_report in (json.loads((root / mode / "candidate/joint-research-receipt.json").read_bytes()),)}
     previous = checked(tmpfs(HANDOFF_RESULT), HANDOFF_RESULT_PIN)
-    result["cumulative_development_and_blind"] = {
-        metric: pooled(previous["controls"]["installed"][metric], previous["clock"][metric],
-                       timing["installed"], timing["routed"], admission["setup"][metric])
-        for metric, timing in result["time"].items()
-    }
+    if previous_blind is None:
+        result["cumulative_development_and_blind"] = {
+            metric: pooled(previous["controls"]["installed"][metric], previous["clock"][metric],
+                           timing["installed"], timing["routed"], admission["setup"][metric])
+            for metric, timing in result["time"].items()
+        }
+    else:
+        result["independent_pool"] = pool_blind(previous_blind, result)
+        result["development_only"] = dict(case="DS30-0255", installed=previous["controls"]["installed"],
+                                          routed=previous["clock"], geographic=previous["original_geographic"])
     result["study_scope"] = dict(
-        frozen_development_cases=["DS30-0255"], blind_cases=[CASE],
-        new_waveform_reads=0, production_changes=0, timed_runtime_source="76b28b6ebfd911a67ac1fc48f9127ced05eecae9",
+        frozen_development_cases=["DS30-0255"], blind_cases=(
+            [case] if previous_blind is None else [previous_blind["case"], case]),
+        new_waveform_reads=0, production_changes=0, timed_runtime_source=admission.get(
+            "controller_commit", "76b28b6ebfd911a67ac1fc48f9127ced05eecae9"),
         release_handoff_source="3a49c5f1241f935d30f3348eed77c8d3c7e4a919",
         new_scoring_clock=boot.clock(started))
     write(root.with_name(root.name + "-comparison.json"), result)
