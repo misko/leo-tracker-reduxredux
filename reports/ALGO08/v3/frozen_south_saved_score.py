@@ -18,7 +18,8 @@ IMAGES = {"ch1-4-all", "ch5-8-all", "ch1-4-unassociated", "ch5-8-unassociated", 
           "ch5-8-residuals", "track-rms", "position"}
 
 
-def publication(target, clock, mode, offer, authority, packet_sha, *, worker_name="saved-south-worker.json"):
+def publication(target, clock, mode, offer, authority, packet_sha, *, worker_name="saved-south-worker.json",
+                expected_counts=None):
     from reports.ALGO08.v3.history_risk_0016_cairo import active_renderer
     import integrated_original_batch as batch
     from leo.presentation.localization_v3 import owner_digest
@@ -33,11 +34,14 @@ def publication(target, clock, mode, offer, authority, packet_sha, *, worker_nam
     batch.checked(native, packet_sha)
     store = FastStandardAnalysisStore(target)
     detail = store.detail(run_id)
+    if expected_counts is None:
+        expected_counts = {"processed": authority["window_count"]}
     if (clock["exit_code"] or worker["mode"] != mode or worker["waveform_reads"] or worker["verified_handoffs"] != 1
             or worker["submitted_native_sha256"] != detail["input_sha256"] or detail["input_sha256"] != packet_sha
             or terminal["native_sha256"] != packet_sha or terminal["region"] != offer
             or receipt["region"] != offer or set(terminal["arms"]) != set(ARMS)
-            or receipt["counts"]["processed"] != authority["window_count"]
+            or receipt["window_count"] != authority["window_count"]
+            or any(receipt["counts"][key] != value for key, value in expected_counts.items())
             or detail["terminal_sha256"] != receipt["terminal_sha256"] or detail["state"] != receipt["decision"]
             or detail["raw_authority"] != authority["raw_authority_sha256"]):
         raise ValueError("The standard terminal and publication must bind both calibration arms to the authenticated offer")
