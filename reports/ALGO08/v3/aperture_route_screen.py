@@ -5,6 +5,7 @@ from collections import Counter
 import gzip
 from hashlib import sha256
 import json
+from math import remainder, sqrt
 from pathlib import Path
 import sys
 
@@ -77,6 +78,27 @@ def native_from_saved(run):
     return packet
 
 
+def history_comparison(original, short):
+    from anchor_holds import history_rows
+
+    counts, cfo_values = Counter(), []
+    for left, right in zip(*(history_rows(packet["source"]["probes"]) for packet in (original, short)), strict=True):
+        a, b = left["candidates"], right["candidates"]
+        counts.update(only_12=bool(a and not b), only_8=bool(b and not a), shared=bool(a and b))
+        if a and b:
+            (x,), (y,) = a, b
+            delta = y["fractional_tracking_cfo_hz"]-x["fractional_tracking_cfo_hz"]
+            dx = y["integer_epoch_sample"]+y["fractional_epoch_offset_samples"]
+            dx -= x["integer_epoch_sample"]+x["fractional_epoch_offset_samples"]
+            counts["rank_zero_timing_cfo_match"] += (x["candidate_rank"] == y["candidate_rank"] == 0
+                                                     and abs(delta) <= 250 and abs(remainder(dx, 13_333)) <= 2)
+            counts["exact_shared"] += x == y
+            cfo_values.append(delta)
+    rms = sqrt(sum(d*d for d in cfo_values)/len(cfo_values)) if cfo_values else None
+    return dict(counts=counts, signed_cfo_delta_rms_hz=rms,
+                max_abs_cfo_delta_hz=max(map(abs, cfo_values), default=None))
+
+
 def run(path):
     from anchor_exposure import bind, enroll
     from empty_bootstrap import CONTINUATION, EXTRA_SOURCES
@@ -95,7 +117,7 @@ def run(path):
             raise ValueError("The full-anchor schedule changed")
         compare = {arm: held(packet) | {"native_sha256": runs[arm]["native_sha256"]} for arm, packet in files.items()}
         price = cost(*(runs[arm]["native"]["native_cpu_ns"]["short_primary"]/1e9 for arm in labels))
-        cases[case] = dict(held=compare, costs=price)
+        cases[case] = dict(held=compare, costs=price, comparison=history_comparison(*files.values()))
     dense = archived("dense-full-short-raw.json.gz")
     dense_pool = dense["candidate"]["recipe"]["receiver_audit"]["native"]["native_cpu_ns"]["short_primary"]/1e9
     ratio = max(case["costs"]["whole_primary_retry_break_even"] for case in cases.values())
