@@ -108,7 +108,7 @@ def producer(root):
           total=timing(start), original_waveform_calls=0, position_solves=0))
 
 
-def work(root, mode, pin):
+def work(root, mode, pin, *, artifact_path=None, compatibility_check=None):
     from active_preparation_trial import bind_preparation
     from aperture_trial import write
     from empty_bootstrap import checked
@@ -132,9 +132,9 @@ def work(root, mode, pin):
             method = ordinary
             if mode == "portable":
                 step = begin()
-                compatible = versions()
+                compatible = (compatibility_check or versions)()
                 version_time = timing(step)
-                artifact, load = load_index(root/ARTIFACT, pin, compatible)
+                artifact, load = load_index(artifact_path or root/ARTIFACT, pin, compatible)
                 if artifact is None:
                     raise ValueError("Frozen cache did not activate: "+load["fallback"])
                 counters.update(loading=load, compatibility=version_time, index_sha256=pin,
