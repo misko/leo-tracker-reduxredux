@@ -801,8 +801,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "(https://github.com/misko/leo-tracker-reduxredux/blob/0488b1f9f405458c829b3d05b84e5db6213e07bb/"
               "reports/ALGO08/v3/ds30-0086-joint-recovery.md)", "",
               "ALGO08v3 used 44 of the 104 missing measurements on DS30-0049 and 323 of the 564 on DS30-0086 "
-              "in its final satellite assignments. Removing those measurements from the installed tracks took away "
-              "13.8% and 13.0% of their observations. Because of where they fell in time, support for measuring "
+              "in its final satellite assignments. Those measurements made up 13.8% and 13.0% of the assigned "
+              "observations. Grouping observations by satellite, radio and tuning, the timing support for measuring "
               "Doppler curvature fell by "
               "23.6% and 15.7%. The calculation held the satellite assignments fixed. "
               "[Missing observations and their times](https://github.com/misko/leo-tracker-reduxredux/blob/"
