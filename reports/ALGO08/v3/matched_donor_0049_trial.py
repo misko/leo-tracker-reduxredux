@@ -1,4 +1,4 @@
-"""Measure one sealed counterfactual using the exact original 0049 saved route."""
+"""Measure a sealed nonanchor intervention using the exact original 0049 saved route."""
 
 import argparse
 import fcntl
@@ -21,14 +21,29 @@ from sparse8_cfo_epoch_challenge import ADMISSION, CASE, CROSSOVER, PAIR, PARITY
 from sparse8_cfo_epoch_saved import BUILD, BUILD_PIN, CHARTED, deny_backing
 from sparse8_cfo_epoch_trial import ARMS, CAMPAIGN, LOCK, attrs, document, identifier, write
 from matched_donor_0049 import derive, owner_counts
+from sparse_only_drop_0049 import exclude_sparse_only
 import signed_cfo_time_readout as authority
 
 
 STAGE = Path("/dev/shm/leo-v3-cfo-epoch-0049-saved01")
-PROTOCOL = HERE/"ds30-0049-matched-donor-protocol.md"
+DONOR = SimpleNamespace(stem="ds30-0049-matched-donor", derive=derive,
+                        ledger="donations", ledger_digest="donation_sha256", label="donated")
+EXCLUSION = SimpleNamespace(stem="ds30-0049-sparse-only-drop", derive=exclude_sparse_only,
+                            ledger="removed", ledger_digest="exclusion_sha256", label="removed")
 
 
-def prepare(root):
+def protocol(experiment):
+    return identifier(HERE/f"{experiment.stem}-protocol.md")
+
+
+def source_pins(experiment):
+    names = ["matched_donor_0049.py"]
+    if experiment is EXCLUSION:
+        names.append("sparse_only_drop_0049.py")
+    return {name: identifier(HERE/name) for name in names}
+
+
+def prepare(root, experiment):
     if root.exists() or root.parent.resolve() != Path("/dev/shm"):
         raise ValueError("Use a fresh private output in local tmpfs")
     sys.addaudithook(deny_backing)
@@ -43,20 +58,26 @@ def prepare(root):
             or stock_result["raw_identity"]["region_sha256"].removeprefix("sha256:") != offer.removeprefix("sha256:")
             or stock["provenance"]["detector_sha256"] != "sha256:"+authority.FULL):
         raise ValueError("Require the exact authentic sparse/installed pair and identical original offer")
-    derived, donation = derive(stock, sparse)
+    derived, change = experiment.derive(stock, sparse)
+    if experiment is EXCLUSION:
+        measured = {key: (value["opportunities"], value["removed"], value["original_winners"])
+                    for key, value in change["coverage"].items()}
+        if measured != {"rx0/short": (811, 78, 374), "rx1/short": (811, 83, 143),
+                        "rx0/anchor": (121, 0, 56), "rx1/anchor": (121, 0, 27)}:
+            raise ValueError("Sparse-only enrolment differs from the freeze")
     root.mkdir(mode=0o700)
     payload = root/"derived-native.json"
     payload.write_bytes(json.dumps(derived, sort_keys=True, ensure_ascii=False, allow_nan=False,
                                    separators=(",", ":")).encode())
     payload.chmod(0o400)
-    if "sha256:"+identifier(payload) != donation["derived_native_sha256"]:
+    if "sha256:"+identifier(payload) != change["derived_native_sha256"]:
         raise ValueError("The sealed counterfactual differs from its canonical identity")
-    print(write(root/"plan.json", dict(case=CASE, protocol=identifier(PROTOCOL), worker=identifier(Path(__file__)),
-          substitution_source=identifier(HERE/"matched_donor_0049.py"), archived_parity=previous["parity"],
+    print(write(root/"plan.json", dict(case=CASE, protocol=protocol(experiment), worker=identifier(Path(__file__)),
+          sources=source_pins(experiment), archived_parity=previous["parity"],
           original_native_sha256=previous["terminal"]["native_sha256"], installed_native_sha256=stock_result["native_sha256"],
           original_archive=stock_result["raw_identity"]["archive_sha256"],
           original_saved_clock=previous["timed_saved_clock"], original_terminal=previous["witness"]["evidence"]["detail"]["terminal_sha256"],
-          donor=donation, cpu_s=(process_time_ns()-started[1])/1e9, elapsed_s=(perf_counter_ns()-started[0])/1e9,
+          change=change, cpu_s=(process_time_ns()-started[1])/1e9, elapsed_s=(perf_counter_ns()-started[0])/1e9,
           score_reads=0, waveform_reads=0)))
 
 
@@ -68,7 +89,7 @@ def start_runtime():
     return boot
 
 
-def worker(root, plan_pin, *, smoke=False):
+def worker(root, plan_pin, experiment, *, smoke=False):
     boot = start_runtime()
     import integrated_original_batch as chart
 
@@ -89,21 +110,21 @@ def worker(root, plan_pin, *, smoke=False):
            for label,module in (("position", algo08_position),("scan",algo08_scan))):
         raise ValueError("Saved solver must bind genuine installed scanner and position modules")
     plan = document(root/"plan.json", plan_pin)
-    if (plan["case"] != CASE or plan["protocol"] != identifier(PROTOCOL) or plan["worker"] != identifier(Path(__file__))
-            or plan["substitution_source"] != identifier(HERE/"matched_donor_0049.py")):
+    if (plan["case"] != CASE or plan["protocol"] != protocol(experiment) or plan["worker"] != identifier(Path(__file__))
+            or plan["sources"] != source_pins(experiment)):
         raise ValueError("Changed frozen worker, plan or source recipe")
     admission = chart.document(STAGE/"admission.json", ADMISSION)
     signed = chart.document(STAGE/"authority.json", admission["authority_pin"])
     session, input_pin = signed["session_id"], signed["inventory_sha256"]
-    native = document(root/"derived-native.json", plan["donor"]["derived_native_sha256"])
-    detector = plan["donor"]["recipe_sha256"]
-    recipe = plan["donor"]["recipe"]
+    change = plan["change"]
+    native = document(root/"derived-native.json", change["derived_native_sha256"])
+    detector, recipe = change["recipe_sha256"], change["recipe"]
     if (authority.canonical(recipe) != detector or plan["original_native_sha256"] != "sha256:"+admission["native_pin"]
             or recipe["sparse_native_sha256"] != plan["original_native_sha256"]
             or recipe["installed_native_sha256"] != plan["installed_native_sha256"]
-            or authority.canonical(plan["donor"]["donations"]) != recipe["donation_sha256"]):
+            or authority.canonical(change[experiment.ledger]) != recipe[experiment.ledger_digest]):
         raise ValueError("The derived packet's original measurements or recipe are no longer bound")
-    boot.bind_native(native, session, input_pin, detector[7:], expected=plan["donor"]["derived_native_sha256"])
+    boot.bind_native(native, session, input_pin, detector[7:], expected=change["derived_native_sha256"])
     if detector in ("sha256:"+spec["detector_sha256"], "sha256:"+authority.SPARSE):
         raise ValueError("Counterfactual must carry its own detector identity")
     inventory = chart.document(STAGE/"inventory.json", input_pin)
@@ -112,7 +133,7 @@ def worker(root, plan_pin, *, smoke=False):
     recording, archive, offer = Path(signed["recording"]), STAGE/"tle", STAGE/"offer.json"
     chart.validate_case(signed, SimpleNamespace(recording=recording, region=offer))
     cutoff = signed["causal_cutoff_utc_ns"]
-    if chart.archive_digest(archive, cutoff) != signed["archive_sha256"] or earlier >= cutoff:
+    if chart.archive_digest(archive, cutoff) != signed["archive_sha256"] or plan["original_archive"] != signed["archive_sha256"] or earlier >= cutoff:
         raise ValueError("Exact original causal catalogue and earlier portable producer required")
     refs = TleArchiveReader(archive).list_snapshots("space-track")
     paths = [str(ref.path) for ref in refs]
@@ -140,23 +161,24 @@ def worker(root, plan_pin, *, smoke=False):
           patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
           positive_ports(solver_ports, acceleration, ports)):
         if smoke:
-            print(json.dumps(dict(case=CASE, substitutions=plan["donor"]["substituted"], refs=len(refs),
+            print(json.dumps(dict(case=CASE, changed=len(change[experiment.ledger]), refs=len(refs),
                                   acquired=handoff.calls, waveform_reads=0, solver_runs=0)))
             return
         receipt, _ = raw.publish_active(args, publication, spec, handoff)
     published, = args.output.glob("fast-scan-automatic-work/*/detections.json")
-    document(published, plan["donor"]["derived_native_sha256"])
+    document(published, change["derived_native_sha256"])
     document(args.output/"fast-scan-inputs"/(session+".json"), input_pin)
     if handoff.calls != 1:
         raise ValueError("Expected one non-waveform handoff through the original signed solver")
-    print(write(root/"receipt.json", dict(case=CASE, input=plan["donor"]["derived_native_sha256"], receipt=receipt,
+    print(write(root/"receipt.json", dict(case=CASE, input=change["derived_native_sha256"], receipt=receipt,
         witness=identifier(args.output/"exact-named-raw-witness.json"), plan_sha256=plan_pin, handoffs=handoff.calls,
         waveform_reads=0, graph_replayed=True, receiver_rerun=False, selector_rerun=False)))
 
 
-def launch(root, plan_pin):
+def launch(root, plan_pin, experiment):
     config = attrs()
-    document(root/"plan.json", plan_pin)
+    if document(root/"plan.json", plan_pin)["protocol"] != protocol(experiment):
+        raise ValueError("Launch flag differs from frozen protocol")
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         scratch = root/"scratch"
@@ -166,6 +188,8 @@ def launch(root, plan_pin):
             copyfile(font, scratch/font.name)
         environment = os.environ | dict(TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch), XDG_CACHE_HOME=str(scratch))
         command = [sys.executable, "-IB", str(Path(__file__)), "worker", str(root), "--pin", plan_pin]
+        if experiment is EXCLUSION:
+            command.append("--exclude-sparse-only")
         with (root/"worker.stdout").open("x") as out, (root/"worker.stderr").open("x") as err:
             cpu, began, unix = getrusage(RUSAGE_CHILDREN), perf_counter_ns(), time_ns()
             try:
@@ -179,13 +203,13 @@ def launch(root, plan_pin):
             major_faults=final.ru_majflt-cpu.ru_majflt, exit_code=status))
         print(write(root/"prediction-seal.json", dict(
             clock=clock, receipt=identifier(root/"receipt.json") if status==0 else None,
-            machine=config, plan_sha256=plan_pin, protocol=identifier(PROTOCOL), source=identifier(Path(__file__)),
+            machine=config, plan_sha256=plan_pin, protocol=protocol(experiment), source=identifier(Path(__file__)),
             survey_reads=0, waveform_reads=0)))
         if status:
             raise ValueError(f"Single candidate exit {status}; measured stderr and clock retained")
 
 
-def score(root, seal_pin):
+def score(root, seal_pin, experiment):
     from sparse8_cfo_epoch_trial import geography
 
     seal = document(root/"prediction-seal.json", seal_pin)
@@ -197,8 +221,9 @@ def score(root, seal_pin):
     receipt = run["receipt"]
     terminal = document(directory/"fast-scan-automatic-work"/receipt["run_id"]/"terminal.json", receipt["terminal_sha256"])
     old = ordinary(STAGE)
-    if (clock["exit_code"] or run["handoffs"] != 1 or terminal["native_sha256"] != plan["donor"]["derived_native_sha256"]
-            or terminal["region"] != old["terminal"]["region"] or seal["protocol"] != identifier(PROTOCOL)):
+    if (clock["exit_code"] or run["handoffs"] != 1 or terminal["native_sha256"] != plan["change"]["derived_native_sha256"]
+            or terminal["region"] != old["terminal"]["region"] or seal["protocol"] != protocol(experiment)
+            or receipt["window_count"] != 986 or receipt["counts"]["processed"] != 932 or receipt["counts"]["invalid_capture"] != 54):
         raise ValueError("The sealed candidate does not bind its original receiver mechanism and offer")
     start_runtime().load_runtime()
     from joint_publication import artifacts
@@ -215,10 +240,13 @@ def score(root, seal_pin):
     stock = document(CROSSOVER/"installed-installed"/"fast-scan-automatic-work"/named_receipt["run_id"]/"terminal.json",
                      named_receipt["terminal_sha256"])
     old_owners, new_owners = (w["evidence"]["owner_rows"] for w in (old["witness"], witness))
-    support = {label: owner_counts(roster, plan["donor"]["donations"]) for label,roster in (
+    support = {label: owner_counts(roster, plan["change"][experiment.ledger], label=experiment.label) for label,roster in (
         ("installed",stock_worker["ordered_owners"]), ("sparse",old_owners), ("counterfactual",new_owners))}
+    if experiment is EXCLUSION and any(arm["removed"] for arm in support["counterfactual"].values()):
+        raise ValueError("An excluded observation was still submitted in final ownership")
     result = dict(decision=receipt["decision"], clock=clock, old_saved_clock=plan["original_saved_clock"], scope=receipt,
-                  crossover_inputs=plan["donor"]["recipe"], support=support, seals=dict(prediction=seal_pin), advance=False)
+                  crossover_inputs=plan["change"]["recipe"], support=support, seals=dict(prediction=seal_pin),
+                  geographic=witness["ports"]["history_risk"].get("boundary_checks", []), advance=False, useful=False)
     if receipt["decision"] == "complete":
         media = artifacts(directory, receipt)
         store = FastStandardAnalysisStore(directory)
@@ -258,12 +286,14 @@ if __name__ == "__main__":
     parser.add_argument("action", choices=("prepare","smoke","launch","worker","score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
+    parser.add_argument("--exclude-sparse-only", action="store_true")
     args = parser.parse_args()
+    experiment = EXCLUSION if args.exclude_sparse_only else DONOR
     if args.action=="prepare":
-        prepare(args.root)
+        prepare(args.root, experiment)
     elif not args.pin:
         parser.error("Supply the frozen input or prediction SHA-256")
     elif args.action in ("smoke","worker"):
-        worker(args.root, args.pin, smoke=args.action=="smoke")
+        worker(args.root, args.pin, experiment, smoke=args.action=="smoke")
     else:
-        {"launch":launch, "score":score}[args.action](args.root,args.pin)
+        {"launch":launch, "score":score}[args.action](args.root, args.pin, experiment)

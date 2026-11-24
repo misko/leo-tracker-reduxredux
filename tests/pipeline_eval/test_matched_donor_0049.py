@@ -4,6 +4,7 @@ import pytest
 
 from matched_donor_0049 import derive, owner_counts, same_carrier
 from signed_cfo_time_readout import canonical, opportunities
+from sparse_only_drop_0049 import exclude_sparse_only
 
 
 def factor(hz, samples=0.0, *, margin=4.0, rank=0):
@@ -81,3 +82,39 @@ def test_refuse_different_clock_or_conditioned_sparse_lane():
     sparse['source']['probes'][2]['candidates'].append(factor(-1000.0, rank=1))
     with pytest.raises(ValueError, match='exactly one'):
         derive(stock, sparse)
+
+
+def test_sparse_only_exclusion_keeps_all_other_measured_factors_verbatim():
+    stock, sparse = native_pair()
+    stock['source']['probes'][0]['candidates'] = []  # full anchor stays positive
+    stock['source']['probes'][7]['candidates'] = [dict(factor(-1800), passed_fractional_margin_gate=False)]
+    originals = deepcopy((stock, sparse))
+    derived, audit = exclude_sparse_only(stock, sparse)
+    assert (stock, sparse) == originals
+    before, after = opportunities(sparse), opportunities(derived)
+    assert list(before) == list(after)
+    removed_id, = [oid for oid, a in before.items() if a['row']['visit_index'] == 3 and a['radio'] == 0]
+    for oid in before:
+        old, new = before[oid], after[oid]
+        if oid == removed_id:
+            assert new['factor'] is None
+            assert new['row'] == dict(old['row'], candidates=[])
+        else:
+            assert old == new
+    assert audit['removed_count'] == 1
+    assert audit['removed'][0]['observation_id'] == removed_id
+    assert audit['removed'][0]['original'] == before[removed_id]['factor']
+    assert audit['recipe']['exclusion_sha256'] == canonical(audit['removed'])
+    assert audit['derived_native_sha256'] == canonical(derived)
+    assert audit['recipe_sha256'] == derived['provenance']['detector_sha256'] != sparse['provenance']['detector_sha256']
+    assert audit['replaced'] == 0
+    assert owner_counts({'c0': [[removed_id, 4, 0.0]]}, audit['removed'], label='removed') == {
+        'c0': dict(total=1, removed=1)}
+
+
+def test_never_silently_derives_the_same_packet():
+    stock, sparse = native_pair()
+    for probe in stock['source']['probes']:
+        probe['candidates'] = [factor(400000)]
+    with pytest.raises(ValueError, match='literally empty'):
+        exclude_sparse_only(stock, sparse)
