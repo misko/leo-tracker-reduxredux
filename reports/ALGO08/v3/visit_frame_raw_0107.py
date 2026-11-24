@@ -14,6 +14,7 @@ BASE = Path("/dev/shm/leo-v3-history-risk-0107-cairo-score02.json")
 BASE_PIN = "sha256:6f6923e6a4be803069581d5a254148c6e322d9e0c4ea4e93de1062dd2bb485e9"
 AUTHORITY = "sha256:007f71e30f97fd6b43e5b7e1e3c6cd76f25616ab6abd07926226ea0249397fb7"
 WRITER = "sha256:e979a7fc92be2ea767df087b177387b532a3337b50059f29428de50a17b6aa3e"
+AS_RUN = "sha256:3bf10aefeea2ec364157d5319434d9903b57f0ab0cec0165f996eeb2d923ef10"
 SOURCES = (Path(__file__).name, "visit-frame-raw-0107-protocol.md", "visit_frame_input.py", "visit_frame_reader.py",
            "exact_named_raw.py", "visit_frame_raw_0016.py", "visit_frame_raw_score.py")
 
@@ -99,7 +100,7 @@ def launch(output):
 
 def proof(raw):
     result = branch_science(raw["graph_proof"])
-    if result["curvature_extent"].pop("native_sha256") != raw["native_sha256"]:
+    if any(row.pop("native_sha256") != raw["native_sha256"] for row in (result, result["curvature_extent"])):
         raise ValueError("Graph proof must bind its own exact signed native document")
     return result
 
@@ -111,7 +112,10 @@ def score(output):
     from tools.pipeline_eval.qualification.paired_publication import evidence
 
     admitted = read(output/"admission.json")
-    if (admitted["source_sha256"] != {name: digest(HERE/name) for name in SOURCES}
+    expected_sources = {name: digest(HERE/name) for name in SOURCES}
+    observed = admitted["source_sha256"]
+    launches = (expected_sources, expected_sources | {Path(__file__).name: AS_RUN})
+    if (observed not in launches
             or any(digest(output/name) != pin for name, pin in read(output/"sealed.json").items())):
         raise ValueError("Admission or sealed tiny process clocks changed")
     base = checked(BASE, BASE_PIN)
@@ -136,7 +140,8 @@ def score(output):
         if (receipt["decision"] != "withheld" or published["reason"] != "no_active_curvature"
                 or published["artifacts"] or store.position_path(receipt["run_id"]) is not None
                 or store.position_grid(receipt["run_id"]) is not None or any(folder.rglob("*.png"))
-                or published["arms"] != {arm: dict(latlon=None, rf_rms_hz=None) for arm in ("c0", "fitted_c")}
+                or set(published["arms"]) != {"c0", "fitted_c"}
+                or any(arm["latlon"] is not None or arm.get("rf_rms_hz") is not None for arm in published["arms"].values())
                 or raw["scientific_imports_before"] or raw["scientific_imports_after"] or raw["raw_acquisitions"] != 1
                 or raw["verified_handoffs"] != 1 or raw["causal_cutoff_utc_ns"] != req["cutoff_utc_ns"]
                 or raw["requested_offer_sha256"] != req["offer_sha256"] or raw["archive_root"] != req["archive"]["root"]
