@@ -48,10 +48,10 @@ def run(output):
     order = list(dict.fromkeys(record["arm"] for record in past))
     if len(order) != 2:
         raise ValueError("Both calibration arms are required")
-    admission = json.loads(boot.checked(ROOT / "admission.json", ADMISSION_PIN))
+    admission = boot.checked(ROOT / "admission.json", ADMISSION_PIN)
     output.mkdir(mode=0o700)
     (output / "routed").mkdir()
-    write(output / "admission.json", admission)
+    (output / "admission.json").write_bytes(admission)
     counts, records = Counter(), []
     active_arm = None
     original_load = boot.load_runtime
