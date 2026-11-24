@@ -3,6 +3,7 @@
 import argparse
 import gzip
 import json
+from collections import Counter
 from pathlib import Path
 import sys
 from unittest.mock import patch
@@ -18,6 +19,7 @@ from live_full_recheck import FIELD, SOURCES
 BASE = Path("/dev/shm/leo-v3-integrated-original-02") / original.CASE
 ARCHIVED = "eb115ec1dd7a734693e21d8be49e2f7de87fe48936b8db8d51e1216cf37a0dff"
 STOCK = "e852ffcf8b887e7cab66bcb5f8ad4911caaaa9398264d3b5f351b02862b17850"
+SCORED_LAUNCHER = "84d420af055a8b2882095b27c87d7e65220fbb7bc66d56e94fc06fda77c7bae0"
 EXTRA = (*SOURCES, Path(__file__).name, "live-full-recheck-protocol.md")
 
 
@@ -75,6 +77,8 @@ def replay(reference, current, native):
     previous = {lane(row): row for row in rows}
     if (json.loads(json.dumps(wanted)) != [item["decision"] for item in actual]
             or expected != {tuple(item["decision"]["lane"]) for item in actual}
+            or receipt["opportunities"] != Counter(event[4] for event in events)
+            or any(receipt[key] != sum(item[key] for item in actual) for key in ("native_cpu_ns", "native_wall_ns"))
             or any(item["base"] != previous[tuple(item["decision"]["lane"])] for item in actual)
             or any(receipt[name] for name in ("extra_ci16_retained_bytes", "extra_native_contexts",
                                              "additional_recording_traversals"))):
@@ -92,7 +96,8 @@ def replay(reference, current, native):
 
     projected, witness = select(preheld, parent)
     final = rebinding(projected, projected["source"]["probes"], held["receiver_recipe"])
-    if (final != native or witness["choice"] != held["choice"] or canonical_digest(final) != current["native_sha256"]
+    if (final != native or canonical_digest(witness["choice"]) != canonical_digest(held["choice"])
+            or canonical_digest(final) != current["native_sha256"]
             or current["detector_recipe_sha256"] != canonical_digest(held["receiver_recipe"])):
         raise ValueError("The same frozen held selection did not reproduce the entire published packet")
     return dict(typed_outputs=True, whole_record_held_selection=held["choice"],
@@ -102,7 +107,7 @@ def replay(reference, current, native):
                 published_factors=held["selected"], preheld_factors=held["observed"])
 
 
-def score(root):
+def score(root, output=None):
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from legacy_block_raw_score import snapshot
@@ -114,19 +119,26 @@ def score(root):
 
     candidates, stock = controls()
     folder = root / original.CASE
+    output = folder/"result.json" if output is None else output
+    if output.resolve().is_relative_to((folder/"candidate").resolve()):
+        raise ValueError("Review output must not change the sealed publication")
     book, log, startup = (read(folder / name) for name in ("admission.json", "candidate-clock.json", "startup.json"))
+    launcher_path = str(original.ordinary.SCOPE / Path(__file__).name)
+    source_now = sources(None)
+    source_then = source_now | {launcher_path: SCORED_LAUNCHER}
     if (read(folder/"prediction-seal.json") != output_seal(folder) or book["command"] != log["command"]
-            or book["sources"] != sources(None)):
+            or book["sources"] not in (source_now, source_then)):
         raise ValueError("Measured source, argv or sealed output changed")
     comparisons = {name: old["process"] for name, old in candidates.items()}
     comparisons["fresh_installed"] = stock["stock"]["process"]["clock"]
     comparisons["archived_installed"] = candidates["positive_first"]["installed"]
     process = log["clock"]
     result = dict(qualified=False, case=original.CASE, process=process, setup=book["setup"], startup=startup,
+                  scorer_sha256=source_now[launcher_path],
                   sources=book["sources"], process_reference=comparisons,
                   original_references=dict(integrated_sha256=ARCHIVED, fresh_installed_sha256=STOCK))
     if process["exit_code"]:
-        write(folder/"result.json", result | dict(decision="failed", stderr=log.get("stderr")))
+        write(output, result | dict(decision="failed", stderr=log["clock"]["stderr_tail"]))
         return
     candidate = folder/"candidate"
     receiver, witness = (read(candidate/name) for name in ("unified-short-bootstrap.json", "exact-named-raw-witness.json"))
@@ -137,6 +149,8 @@ def score(root):
     acquisition = inspect_once(candidate, req, sealed["acquisition"])
     previous_source = sealed["admission"]["case_source"]
     if (req != previous_source["request"] or acquisition["acceleration"]["artifacts"] != sealed["acquisition"]["acceleration"]["artifacts"]
+            or any(receiver["receiver_audit"]["native"][key] != sealed["receiver"]["receiver_audit"]["native"][key]
+                   for key in ("installed_sha256", "short_primary_sha256", "rule", "streams", "visits", "native_calls", "factors"))
             or book["raw_conditioning_bytes"] or not all(m["complete_encoded_auth"] for m in acquisition["members"])):
         raise ValueError("The measured authenticated raw scope or causal solver artifacts differ")
     recheck = replay(old_native, receiver, native)
@@ -145,7 +159,7 @@ def score(root):
                   speeds={name: {key: then[key]/process[key] for key in ("elapsed_s", "cpu_s")}
                           for name, then in comparisons.items()})
     if result["decision"] != "complete":
-        write(folder/"result.json", result)
+        write(output, result)
         return
     rebound = dict(req, detector=receiver["detector_recipe_sha256"], native=receiver["native_sha256"])
     science = snapshot(candidate, log, rebound, book["case_source"]["producer"],
@@ -176,12 +190,26 @@ def score(root):
                                                  for arm, row in sealed["witness"]["evidence"]["detail"]["arms"].items()}))
     if result["installed_owner_digests"] != fresh["science"]["owners"]:
         raise ValueError("Archived named rows do not match the fresh verified installed owner binding")
-    write(folder/"result.json", result)
+    result["outcomes"] = dict(
+        raw_wall_beats_fresh_installed=process["elapsed_s"] < comparisons["fresh_installed"]["elapsed_s"],
+        raw_wall_meets_1p6x_installed=result["speeds"]["fresh_installed"]["elapsed_s"] >= 1.6,
+        raw_wall_meets_2x_installed=result["speeds"]["fresh_installed"]["elapsed_s"] >= 2,
+        both_arms_beat_integrated_error=all(
+            result["geographic"]["runs"]["recheck"]["horizontal_error_km"][arm]
+            <= result["geographic"]["runs"]["original_integrated"]["horizontal_error_km"][arm]
+            for arm in ("c0", "fitted_c")))
+    write(output, result)
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("operation", choices=("launch", "score"))
     cli.add_argument("root", type=Path)
+    cli.add_argument("--output", type=Path, help="Exclusive-create destination for offline review only")
     args = cli.parse_args()
-    {"launch": launch, "score": score}[args.operation](args.root)
+    if args.operation == "launch":
+        if args.output is not None:
+            cli.error("--output requires score")
+        launch(args.root)
+    else:
+        score(args.root, args.output)
