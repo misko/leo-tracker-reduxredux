@@ -341,6 +341,7 @@ def compare_centers(pairs, assigned, offer):
 
 def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None,
                  prior=None, capture_days=None):
+    from reports.ALGO08.v3.accuracy_repair_budget import repair_budget
     from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
@@ -377,6 +378,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
     metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
+    metadata["accuracy_repair_budget"] = [
+        repair_budget(pairs, tolerance, fraction) for tolerance in (0., .25) for fraction in (1., .8, .75, .5, 0.)]
     metadata["empirical_accuracy_gap"] = {arm: empirical_accuracy_gap(pairs, arm) for arm in ARMS}
     if capture_days is not None:
         metadata["capture_day_sensitivity"] = capture_days
@@ -683,6 +686,24 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "[Held and prospective tests of the retry rule](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "51d8522310d81deac483b657769d5cea9ad091b9/reports/ALGO08/v3/ds30-second-screen-attrition.md)"]
     lines += ["", "### What would another speedup require?", "",
+              "Suppose a perfect selector knew which recordings to send to ALGO08v3 before spending any time. "
+              "To use the candidate on a recording, both calibration arms must retain every baseline fix and "
+              "stay within the stated increase in error. Each row assumes the same proportional time saving "
+              "on every candidate run. A repair makes one more recording meet the accuracy condition at that "
+              "assumed time. ALGO08v3 keeps its measured time throughout.", "",
+              "| Fraction of current candidate time | Recordings needing repair for 2×, zero excess error | "
+              "Recordings needing repair for 2×, up to 250 m excess |", "|---:|---:|---:|"]
+    budgets = metadata["accuracy_repair_budget"]
+    for strict, relaxed in zip(budgets[:5], budgets[5:], strict=True):
+        cells = []
+        for budget in (strict, relaxed):
+            low, high = budget["joint_lower_bound"], budget["joint_upper_bound"]
+            cells.append("Unreachable" if low is None else str(low) if low == high else f"{low}–{high}")
+        lines.append(f"| {strict['candidate_time_fraction']:.0%} | {cells[0]} | {cells[1]} |")
+    lines += ["", "A single number is the exact minimum for both summed and paired-median wall time. A range "
+              "gives a proven lower bound and an attainable count. Unreachable means that even perfect accuracy "
+              "on every recording would miss a timing target at that speed. This calculation uses the surveyed "
+              "errors only to price these scenarios.", "",
               "On the first 30 pairs, halving everything ALGO08v3 did before writing its detector packet "
               "would give **1.48× summed** end-to-end speedup. Keeping the original solver and subsequent "
               "work at their measured costs would require a **4.29×** speedup across that whole initial "

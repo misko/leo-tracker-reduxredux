@@ -216,6 +216,9 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
                  renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior,
                  capture_days=capture_day_sensitivity(pairs, assigned))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    budgets = report["accuracy_repair_budget"]
+    assert len(budgets) == 10 and all(item["pairs"] == 455 for item in budgets)
+    assert {item["tolerance_km"] for item in budgets} == {0., .25}
     days = report["capture_day_sensitivity"]
     assert len(days) == 8 and days["2026-11-13"]["on_day"]["pairs"] == 44
     assert sum(row["on_day"]["pairs"] for row in days.values()) == 455
@@ -263,6 +266,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
+    assert "Recordings needing repair for 2×" in markdown and "| 100% | Unreachable | Unreachable |" in markdown
     assert "| 2026-11-13 | 44 |" in markdown
     receipts = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/measurements"
     prefix = json.loads(gzip.decompress((receipts / "installed-receiver-first30.json.gz").read_bytes()))["aggregate"]
