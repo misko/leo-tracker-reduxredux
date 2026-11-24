@@ -23,6 +23,8 @@ MIRROR_REQUEST_SHA = "5920a50abc8aec8956eb2c96b16b21702e2b689000f4d1d4bb2919817c
 FONT_SHA = "07189bbdc3694211155db6c4c6f677b7de06867976a2c4e2d8a57c228cb7688b"
 TMPFS_MOUNTS = (Path("/tmp"), Path("/dev/shm"))
 PROTOCOL = HERE/"nomination-handoff-south-protocol.md"
+CONTROL = Path("/tmp/leo-v3-nomination-offsite-south01")
+CONTROL_SEAL = "61a680e4f098c9d3aa3c25b44df87c29063f9d68d1456c4c9b4c7528fb752312"
 
 
 def digest(path):
@@ -41,13 +43,21 @@ def staged(path):
     return path
 
 
+def single_segment_manifest(original, request):
+    manifests = request["manifests"]
+    if len(manifests) == 1 and Path(manifests[0][0]) == Path(request["recording"])/"manifest.json":
+        return request
+    return original(request)
+
+
 @contextmanager
 def staged_saved_ports():
     import exact_named_route as exact
 
     # Only extend the physical worker's mount admission. Its own catalogue
     # roster, cutoff, each read, entire inventory and pinned worker stay active.
-    with (patch.object(exact, "resident_path", staged),
+    with (patch.object(exact, "manifest_paths", partial(single_segment_manifest, exact.manifest_paths)),
+          patch.object(exact, "resident_path", staged),
           patch.object(exact, "exact_ports", partial(exact.exact_ports, resident=staged))):
         yield
 
@@ -90,6 +100,8 @@ def warm_staged(refs):
 
     started = now()
     names = [str(staged(ref.path)) for ref in refs]
+    if any(ref.path.stat().st_uid != os.geteuid() for ref in refs):
+        raise ValueError("Cache admission must run as the owner of the pre-staged files")
     counters = json.loads(subprocess.check_output(["fincore", "--json", "--bytes", "-o", "RES,SIZE,FILE", *names]))["fincore"]
     if set(names) != {row["file"] for row in counters}:
         raise ValueError("The existing tmpfs catalogue census changed")
@@ -103,7 +115,35 @@ def warm_staged(refs):
                 check=clock(started), residency=resident(names))
 
 
-def launch(root):
+def checked_control(root, expected):
+    from clean_saved_0169_trial import output_seal
+    from empty_bootstrap import checked
+
+    control = json.loads(checked(staged(root/"prediction-seal.json"), CONTROL_SEAL))
+    if (control != output_seal(root) or read(root/"request.json") != expected
+            or read(root/"installed/clock.json")["exit_code"] != 0
+            or "The saved inventory must bind to the original path" not in read(root/"routed/clock.json")["stderr_tail"]
+            or (root/"routed/candidate").exists()):
+        raise ValueError("Require the exact completed installed control and earlier pre-solve route abort")
+    return control
+
+
+def cache(root):
+    from empty_bootstrap import checked
+    from isolated_salvage_south import ORIGINAL, PAIR_SHA
+    from leo.contracts.digests import canonical_digest
+    from leo.operations.tle_archive import TleArchiveReader
+
+    archive = json.loads(checked(staged(ORIGINAL/"pair.json"), PAIR_SHA))["archive"]
+    references = TleArchiveReader(staged(Path(archive["root"]))).list_snapshots("space-track")
+    if canonical_digest({r.path.name: r.sha256 for r in references}) != archive["snapshots_sha256"]:
+        raise ValueError("The resident owner census must bind the original archive")
+    data = dict(archive=archive, **warm_staged(references))
+    with root.open("x") as output:
+        json.dump(data, output, sort_keys=True, allow_nan=False)
+
+
+def launch(root, owner_cache, *, retry):
     from empty_bootstrap import RELEASE, clock, now
     from portable_orbit_index_trial import local_launcher_tools
 
@@ -127,10 +167,15 @@ def launch(root):
                  request=str(root/"request.json"), inventory=str(inventory), issued=1200, admitted=1200,
                  portable=None, packets=packets, sources=sources)
     _, refs = checked_catalogue(bound, request, TleArchiveReader, canonical_digest, resident=staged)
-    residency = warm_staged(refs)
+    residency = read(staged(owner_cache))
+    if (residency["archive"] != request["original_archive"] or residency["residency"]["members"] != len(refs)
+            or residency["residency"]["bytes"] != sum(ref.byte_size for ref in refs)):
+        raise ValueError("Require the measured owner cache check for this exact archive")
+    control = checked_control(CONTROL, request) if retry else None
+    running = ("routed",) if retry else MODES
 
     root.mkdir(mode=0o700)
-    for name in (*MODES, "fonts", "tmp"):
+    for name in (*running, "fonts", "tmp"):
         (root/name).mkdir()
     from empty_bootstrap import checked
 
@@ -142,16 +187,18 @@ def launch(root):
     write(job, dict(binding=bound, original_archive=request["original_archive"]))
     job_sha = digest(job)
     commands = {}
-    for mode in MODES:
+    for mode in running:
         output = root/mode
         write(output/"binding.json", {"input": bound})
         commands[mode] = ["/usr/bin/timeout", "--kill-after=2s", "45s", str(RELEASE/"venv/bin/python"),
                           "-IB", __file__, "worker", str(output), "--mode", mode, "--job-sha256", job_sha]
     write(root/"admission.json", dict(source_pins=sources, job_sha256=job_sha, roles=list(MODES),
           adapter=digest(Path(__file__)), protocol=digest(PROTOCOL), commands=commands, machine=machine,
-          archive_residency=residency, setup=clock(begin), historical_installed=controls, waveform_reads=0))
+          archive_residency=residency, owner_cache_sha256=digest(owner_cache), installed_control=str(CONTROL) if control else None,
+          installed_control_seal=CONTROL_SEAL if control else None, running=running,
+          setup=clock(begin), historical_installed=controls, waveform_reads=0))
     env = environment(root) | {"TMPDIR": str(root/"tmp"), "XDG_CACHE_HOME": str(root/"tmp")}
-    for mode in MODES:
+    for mode in running:
         output = root/mode
         timing = measure(commands[mode], env, output/"candidate")
         write(output/"clock.json", timing)
@@ -186,15 +233,19 @@ if __name__ == "__main__":
 
     sys.addaudithook(deny_original)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("launch", "worker", "score"))
+    parser.add_argument("operation", choices=("cache", "launch", "worker", "score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--mode", choices=MODES)
     parser.add_argument("--job-sha256")
+    parser.add_argument("--owner-cache", type=Path)
+    parser.add_argument("--retry", action="store_true")
     args = parser.parse_args()
     if args.operation == "worker":
         worker(args.mode, args.root, args.job_sha256)
     elif args.operation == "launch":
-        launch(args.root)
+        launch(args.root, args.owner_cache, retry=args.retry)
+    elif args.operation == "cache":
+        cache(args.root)
     else:
         from nomination_handoff_south_score import score
 

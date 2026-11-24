@@ -25,7 +25,7 @@ def score(root):
     from held_adaptive_0160_score import verified
     from isolated_salvage_south import TRUTH_SHA
     from leo.contracts.digests import canonical_digest
-    from nomination_handoff_south import PROTOCOL, source_pins
+    from nomination_handoff_south import CONTROL_SEAL, PROTOCOL, checked_control, source_pins
     from prospective_0316_solver import owner_delta
     from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
     from tools.pipeline_eval.scoring import distance_km
@@ -36,8 +36,16 @@ def score(root):
             or admission["adapter"] != digest(HERE/"nomination_handoff_south.py") or admission["protocol"] != digest(PROTOCOL)):
         raise ValueError("Score only the complete and frozen South replay")
     request = read(root/"request.json")
-    clocks = {mode: read(root/mode/"clock.json") for mode in MODES}
-    runs = {mode: verified(root/mode/"candidate", timing, "worker.json", request) for mode, timing in clocks.items()}
+    locations = {mode: root/mode for mode in MODES}
+    failed_clock = None
+    if admission.get("installed_control") is not None:
+        previous = Path(admission["installed_control"])
+        if admission["installed_control_seal"] != CONTROL_SEAL or not checked_control(previous, request):
+            raise ValueError("Expected the pre-existing sealed installed control")
+        locations["installed"] = previous/"installed"
+        failed_clock = read(previous/"routed/clock.json")
+    clocks = {mode: read(folder/"clock.json") for mode, folder in locations.items()}
+    runs = {mode: verified(locations[mode]/"candidate", timing, "worker.json", request) for mode, timing in clocks.items()}
     site_key = HERE.parent/"regional-release/scoring-key.json"
     import json
 
@@ -79,4 +87,4 @@ def score(root):
           pubs=pubs, owner_delta={arm: owner_delta(installed["rows"].get(arm, []), runs["routed"]["rows"].get(arm, [])) for arm in ARMS},
           route=routed, render=read(root/"routed/render-usage.json"),
           orbit_recovery=read(root/"routed/live-corner.json"), ports=read(root/"routed/candidate/ports.json"),
-          waveform_reads=0, backing_reads=0))
+          attempted_pre_solve_bridge=failed_clock, waveform_reads=0, backing_reads=0))
