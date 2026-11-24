@@ -1,7 +1,8 @@
 """Measure exact owned-window leases at the current signed detector boundary."""
 
 import argparse
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
+from dataclasses import asdict
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -38,10 +39,12 @@ def delta(start, end):
 
 
 class Trace:
-    def __init__(self, arena):
+    def __init__(self, arena, *, demand=False):
         self.arena = arena
+        self.demand = demand
         self.members = []
         self.prefetch = []
+        self.prefetch_stats = None
         self.addresses = {}
         self.active = None
 
@@ -127,8 +130,14 @@ class Trace:
 
             @contextmanager
             def scoped():
-                with patch.dict(scope, {"prefetch_member": measure}), fetch() as stats:
-                    yield stats
+                context = nullcontext(scope["MemberPrefetchStats"]()) if self.demand else fetch()
+                stats = None
+                try:
+                    with patch.dict(scope, {"prefetch_member": measure}), context as stats:
+                        yield stats
+                finally:
+                    if stats is not None:
+                        self.prefetch_stats = asdict(stats)
 
             return scoped
 
