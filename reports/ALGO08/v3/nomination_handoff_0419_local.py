@@ -81,7 +81,7 @@ def nvme_read_bytes():
                     if line.startswith("read_bytes:")))
 
 
-def launch(root, *, assign=assigned, execute=True, expected_inputs=None):
+def launch(root, *, assign=assigned, execute=True, expected_inputs=None, resident_refs=None):
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from dense_geographic_trial import host
@@ -121,7 +121,19 @@ def launch(root, *, assign=assigned, execute=True, expected_inputs=None):
     if expected_inputs and any(observed_inputs.get(key) != value for key, value in expected_inputs.items()):
         raise ValueError("Admitted data differs from the frozen input metadata")
     roster_start = boot.now()
-    roster, size = collector_roster(COLLECTOR, COLLECTOR_DEVICE, capture_ns, bound["cutoff_utc_ns"], expected)
+    if resident_refs is None:
+        roster, size = collector_roster(COLLECTOR, COLLECTOR_DEVICE, capture_ns, bound["cutoff_utc_ns"], expected)
+        archive_source, archive_device = str(COLLECTOR), COLLECTOR_DEVICE
+    else:
+        refs = resident_refs(capture_ns, bound["cutoff_utc_ns"], expected)
+        names = {ref.path.name: ref.sha256 for ref in refs}
+        if len(names) != len(refs) or canonical_digest(names) != expected:
+            raise ValueError("The signed existing tmpfs roster differs")
+        roster = [(ref.path.name, ref.sha256, ref.byte_size, None) for ref in refs]
+        size = sum(row[2] for row in roster)
+        if not 0 < size <= MAX_ARCHIVE_BYTES:
+            raise ValueError("The signed existing tmpfs roster exceeds the archive cap")
+        archive_source, archive_device = "existing tmpfs hard links", root.parent.stat().st_dev
     roster_clock = boot.clock(roster_start)
 
     root.mkdir(mode=0o700)
@@ -129,7 +141,18 @@ def launch(root, *, assign=assigned, execute=True, expected_inputs=None):
     archive = local / "archive/space-track"
     copying = boot.now()
     before_read_bytes = nvme_read_bytes()
-    copy_archive(COLLECTOR, archive, roster, COLLECTOR_DEVICE)
+    if resident_refs is None:
+        copy_archive(COLLECTOR, archive, roster, COLLECTOR_DEVICE)
+    else:
+        archive.mkdir(parents=True)
+        for ref in refs:
+            path = tmpfs(ref.path)
+            if not path.is_relative_to(root.parent) or path.stat().st_dev != archive_device:
+                raise ValueError("Unexpected source outside the ready tmpfs device")
+            body = boot.checked(path, ref.sha256)
+            if len(body) != ref.byte_size:
+                raise ValueError("The signed local body extent changed")
+            os.link(path, archive / path.name, follow_symlinks=False)
     copy_clock = boot.clock(copying)
     backing_bytes = nvme_read_bytes() - before_read_bytes
     availability = resident([archive / row[0] for row in roster])
@@ -180,8 +203,9 @@ def launch(root, *, assign=assigned, execute=True, expected_inputs=None):
     write(root / "admission.json", dict(
         assignment=assignment, source_pins=pins, sources=pins, job_sha256=job_pin, original_inputs=bound,
         setup=boot.clock(started), archive=dict(
-            source=str(COLLECTOR), device=COLLECTOR_DEVICE, filename_roster_sha256=expected,
+            source=archive_source, device=archive_device, filename_roster_sha256=expected,
             nominal_capture_ns=capture_ns, snapshots=len(roster), bytes=size, charged_io_bytes=backing_bytes,
+            new_archive_payload_copies=0 if resident_refs is not None else size,
             metadata_clock=roster_clock, verified_copy_clock=copy_clock, staged_residency=availability,
             names=[{"filename": name, "sha256": pin, "bytes": count} for name, pin, count, _ in roster]),
         commands=commands, installed_release=release, machine=machine, detector_waveform_reads=0,

@@ -47,10 +47,13 @@ def summed(controls, candidates):
 
 
 def independent_pool(earlier, current):
-    studies = (earlier, current)
+    return pool_cases((earlier, current), ("DS30-0163", CASE))
+
+
+def pool_cases(studies, expected_cases):
     modes = ("installed", "routed")
-    if ([row["case"] for row in studies] != ["DS30-0163", CASE]
-            or any(row["admission"]["sources"] != earlier["admission"]["sources"] for row in studies)):
+    if (tuple(row["case"] for row in studies) != expected_cases
+            or any(row["admission"]["sources"] != studies[0]["admission"]["sources"] for row in studies)):
         raise ValueError("The combined blind pool changed its cases or computational source")
     timings = {}
     for metric in ("elapsed_s", "cpu_s"):

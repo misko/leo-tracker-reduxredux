@@ -26,3 +26,19 @@ all admitted work and any failure in the actual denominators.
 Pool only the independent cases on this exact combined build and
 keep the DS30-0163 order deviation and failed startup visible.
 [Same-build independent pair](ds30-0173-combined.md)
+
+## Frozen original input
+
+The original packet SHA-256 is
+`d3e6871b303bc664a06165cf5acf3aaf8da56648bfa239b8d8076b5de0a10ddf`.
+Its inventory SHA-256 is
+`8b83a568e5dfd8bc43cfd580ec042d1860ac194983f147549634ea8140021e6b`.
+The original 25 km offer pin is
+`2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236`.
+The signed cutoff is **1795065144724213783 UTC ns** and the
+original catalogue hash is
+`sha256:f1b5b96b2d99eb4b42f45d156763d0fd278e74cf6e0413eb5deb58674841215f`.
+The installed comparison terminal is
+`sha256:ab78a4454eb5d89b4840352284fc07fe4345552e17af95ca53fe7027414b1e07`.
+Its historical 27.867 s post-detection clock produces a
+**60.733 s** admission estimate under the unchanged rule.
