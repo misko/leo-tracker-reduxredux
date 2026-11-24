@@ -1,0 +1,27 @@
+# Durable packed capture through complete first analysis
+
+An offline rehearsal on the same authenticated 64 physical DS30-0008 windows saved **128.832–182.207 ms elapsed** from durable capture through the first verified native 20/8 ms result across two paired orders. Both sides read back and verified all **102,400,000 decoded bytes** on the first analysis. The packed route kept all signed 70 factors and the actual EOF selection unchanged. Its first-use improvement survives both orders on this resident member. The full-recording and recorder deployment costs remain unmeasured. [Frozen protocol](eight-first-use-protocol.md) · [Machine receipt](measurements/eight-first-use.json.gz)
+
+| Capture and receiver | Durable writer CPU / wall ms | First acquire CPU / wall ms | Through verified signed output CPU / wall ms |
+| --- | ---: | ---: | ---: |
+| Ordinary Zstandard, named 20 ms | 157.026 / 157.030 | 603.242 / 604.090 | 764.063 / 764.913 |
+| Ordinary Zstandard, 20/8 ms, order 1 | 157.505 / 159.734 | 421.041 / 421.055 | 592.842 / 595.085 |
+| Packed 8/12 layout, 20/8 ms, order 1 | 123.985 / 123.987 | 284.133 / 284.139 | 412.869 / 412.878 |
+| Packed 8/12 layout, 20/8 ms, order 2 | 120.433 / 120.436 | 281.894 / 281.899 | 407.039 / 407.048 |
+| Ordinary Zstandard, 20/8 ms, order 2 | 153.228 / 153.235 | 377.865 / 377.884 | 535.853 / 535.879 |
+
+The whole clock includes the original writer's durable archive finalization, the durable external root commitment, metadata admission, first verified scanner and detector pass, required 20/8 EOF step, exact native verification and immutable packet write. The named run is a distinct receiver comparator, with 19 signed factors. It saw the same 128 signed opportunities, full input windows, cutoff and clock metadata. The named run incurred one major fault and 192 process input blocks, included in its elapsed. No waveform backing reads occurred because the starting source and all emitted archives were on tmpfs and verified resident. Both same-receiver pairs recorded zero process input blocks and major faults.
+
+## Whole first-use integrity
+
+The writer was the released ShortWindowWriter. The packed arm switched just the private payload backend and preserved the released index, per-window raw digest, whole decoded digest, original signed hardware support, and durable close. All conventional captures reproduced the original 77,442,779-byte compressed member digest exactly. Packed stored 76,440,256 payload bytes, and a total of 76,639,369 bytes with its manifest, index and new seek table. Ordinary stored 77,618,763 bytes. This is a **979,394-byte** reduction including archive metadata. Both formats durably wrote the additional external trust receipt, which is outside these archive sizes.
+
+The packed first analysis verified all 128 current encoded blocks before invoking the scanner. It decoded every block for every visit, checked all 64 complete CI16 window digests and independently reproduced the ordered whole raw SHA-256. The released native receiver used the verified arrays in the same pass. Each freshly captured archive has its own custody digest. All signed opportunities, mixed native factors, full/short schedules and the unfiltered EOF choice match across the two formats. This first pass pays both the verification and acquisition work. Later partial decode under an already checked root has a separate amortized scope. [Previously measured strict and demand reads](seekable-eight-raw.md)
+
+## Throughput boundary
+
+Packing cut the measured write CPU by 32.795–33.520 ms across the same-receiver orders. Part of the larger first-analysis difference came from the ordinary compressed retrieval and digest clock, at 130.904–168.556 ms here. In the earlier clean named case that same descriptor boundary took 32.146 ms. Substituting that faster time alone would reduce the new first-use advantage to about 30–44 CPU ms per member. This is an arithmetic sensitivity, not a fresh matched observation. The two measured orders establish a gain on the stated resident workload. A cold-device, capture-service, longer-run or multi-recording claim would need matching evidence.
+
+The emulator hydrated the original complete member once at 223.713 CPU ms. That charge is outside the offline capture clocks, which begin with already owned physical CI16. Adding it gives 630.752–636.582 CPU ms for migrating this already-collected member through the packed write and first verified output. The earlier conversion plus independent readback analysis reached the same direction. Retaining ordinary archives and recoding once for a single analysis remains slower. A future capture service with already owned raw words can avoid that original decode. The shared reactor setup took 88.856 CPU ms, lean runtime bind 6.487 ms, and codec compilation 60.038 child CPU ms. Those are explicitly separate from the repeated writer/receiver clocks and would have to be charged where first paid.
+
+The first focused fixture omitted its mandatory native window duration and the extracted test writer initially lacked its OS import. Both failures occurred in the synthetic checks before the physical rehearsal. The corrected 28-test suite passed. The physical measurement ran once with the frozen 64-visit input and two same-receiver orders. There was no RF collection, deployment, cold waveform access, geographic solve or expansion to a second recording. [Capture and verification runner](eight_first_use.py)

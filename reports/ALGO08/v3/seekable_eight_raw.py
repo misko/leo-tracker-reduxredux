@@ -88,7 +88,7 @@ def original_member_only(entry, chunk, counters, read_clocks=None):
 
 
 @contextmanager
-def member_source(scan, entry, chunk, reader, loads, io_costs):
+def member_source(scan, entry, chunk, reader, loads, io_costs, *, full_readback=False):
     original = scan.FastSegmentSource
     call = NativePath.run
 
@@ -102,9 +102,20 @@ def member_source(scan, entry, chunk, reader, loads, io_costs):
             if value != entry:
                 raise ValueError("The packed input provider is bound to one original segment")
             start = clocks()
-            super().__init__(value, stop_sequence=chunk["window_count"])
-            if self.reader.manifest.chunks[0].model_dump(mode="json") != chunk:
-                raise ValueError("The original complete-member extent changed")
+            if full_readback:
+                header = reader.manifest
+                self.reader = reader
+                self.manifest_digest = reader.manifest_sha256
+                self.receiver_ids, self.radio = header.receiver_ids, header.radio
+                self.targets = {target["target_id"]: target for target in header.configuration["targets"]}
+                if (header.configuration["sample_rate_hz"] != header.sample_rate_hz
+                        or self.manifest_digest != entry["manifest_digest"]
+                        or len(self.targets) != len(header.configuration["targets"])):
+                    raise ValueError("Detached capture changed its bound source geometry")
+            else:
+                super().__init__(value, stop_sequence=chunk["window_count"])
+                if self.reader.manifest.chunks[0].model_dump(mode="json") != chunk:
+                    raise ValueError("The original complete-member extent changed")
             if reader is not None and (reader.manifest_sha256 != self.manifest_digest
                     or reader.chunk.model_dump(mode="json") != chunk or any(r.target_id not in self.targets for r in reader.rows)):
                 raise ValueError("The rooted object is bound to a different original manifest, target or member")
@@ -123,15 +134,27 @@ def member_source(scan, entry, chunk, reader, loads, io_costs):
                 return
             # The manifest and index bind the complete logical signal geometry.
             # Invalid captures never request a buffer from either C engine.
+            whole = sha256() if full_readback else None
             for row in reader.rows:
+                if whole is None:
+                    samples = CommittedSamples(reader, row.sequence, loads)
+                else:
+                    raw = reader.read(row.sequence, full=True)
+                    whole.update(raw)
+                    samples = np.frombuffer(raw, dtype="<i2").reshape(ORIGINAL_SAMPLES, 2, 2)
                 yield SimpleNamespace(
                     acquisition=row.acquisition, target=self.targets[row.target_id], receiver_ids=self.receiver_ids,
                     sample_rate_hz=reader.manifest.sample_rate_hz, iq_sha256=row.iq_sha256,
-                    samples=CommittedSamples(reader, row.sequence, loads),
+                    samples=samples,
                 )
+            if whole is not None:
+                digest = "sha256:" + whole.hexdigest()
+                if digest != chunk["uncompressed_sha256"]:
+                    raise ValueError("The independently decoded complete archived member changed")
+                io_costs["verified_whole_decoded_sha256"] = digest
 
     with patch.object(scan, "FastSegmentSource", Member):
-        with (patch.object(NativePath, "run", with_aperture) if reader is not None else nullcontext()):
+        with (patch.object(NativePath, "run", with_aperture) if reader is not None and not full_readback else nullcontext()):
             yield
 
 
@@ -183,9 +206,10 @@ def receive(entry, chunk, mode, scope):
     import empty_bootstrap as staged
     import seekable_member as seek
 
-    if mode not in (*ORDERS[0], "named"):
+    if mode not in (*ORDERS[0], "named", "full_first_readback"):
         raise ValueError("Unrecognized verification boundary")
     named = mode == "named"
+    first = mode == "full_first_readback"
     pin, loads, originals = scope.named_pin if named else scope.detector, {}, Counter()
     io_costs, descriptor_costs, index_costs = {}, {}, Counter()
     original_index = ShortWindowIndexV2.model_validate_json
@@ -217,30 +241,31 @@ def receive(entry, chunk, mode, scope):
         before_reader = clocks()
         reader = None
         encoded = None
-        if mode in ("complete_encoded", "on_demand"):
+        if mode in ("complete_encoded", "on_demand", "full_first_readback"):
             reader = stack.enter_context(seek.open_member(scope.split, scope.root_pin,
                                                          codec=scope.codec, prefix_samples=PREFIX))
-            if mode == "complete_encoded":
+            if mode != "on_demand":
                 begin = clocks()
                 reader.verify_encoded()
                 encoded = elapsed(begin)
         ready = elapsed(before_reader)
-        stack.enter_context(member_source(scan, entry, chunk, reader, loads, io_costs))
+        stack.enter_context(member_source(scan, entry, chunk, reader, loads, io_costs, full_readback=first))
         start_acquire = clocks()
         native = scan.acquire(session, inventory_digest, inventory, scope.assets)
         acquire = elapsed(start_acquire)
-        counts = {"metadata_bytes": chunk["index_bytes"] + (Path(entry["path"])/"manifest.json").stat().st_size,
-                  "payload_bytes": originals[chunk["payload_relative_path"]],
-                  "decoded_bytes": chunk["uncompressed_bytes"], "full_checks": chunk["window_count"]}
         if reader is None:
+            counts = {"metadata_bytes": chunk["index_bytes"] + (Path(entry["path"])/"manifest.json").stat().st_size,
+                      "payload_bytes": originals[chunk["payload_relative_path"]],
+                      "decoded_bytes": chunk["uncompressed_bytes"], "full_checks": chunk["window_count"]}
             if counts["payload_bytes"] != chunk["compressed_bytes"] or originals[chunk["index_relative_path"]] != chunk["index_bytes"]:
                 raise ValueError("The ordinary path did not authenticate the complete original")
         else:
             visits = Counter(loads.values())
-            if originals or visits != mixer.visits or reader.full_checks != visits["full"]:
+            if originals or (first and reader.full_checks != chunk["window_count"]) or (
+                    not first and (visits != mixer.visits or reader.full_checks != visits["full"])):
                 raise ValueError("A derivative visit either fell through or omitted its native aperture")
             counts = reader.counts() | {"encoded_blocks_preverified": reader.verified_encoded_frames,
-                                        "original_manifest_bytes": (Path(entry["path"])/"manifest.json").stat().st_size}
+                                        "original_manifest_bytes": 0 if first else (Path(entry["path"])/"manifest.json").stat().st_size}
     start_bind = clocks()
     bind_native(native, session, inventory_digest, pin[7:])
     bind_cost = elapsed(start_bind)
@@ -359,44 +384,16 @@ def archived_named_held():
     return dict(case="DS30-0169", source=entry, original_member=chunk, arms=rows)
 
 
-def run(root, case, *, clean_dense=False, named_dense=False):
+def pinned_runtime(root, specification, source_files, binary, *, named=False):
     import empty_bootstrap as staged
-
-    start = clocks()
-    _, specification, source_files, _, _ = staged.load_runtime()
-    runtime_startup = elapsed(start)
-
-    from aperture_trial import write
-    from combined_frontier_run import PREFETCH_FILES, load_prefetch
-    from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
-    from dense_geographic_trial import host
-    from eight_ms_native_receiver import prepare
+    from combined_frontier_run import load_prefetch
     from empty_bootstrap import checked, receiver_namespace, receiver_symbols, staged_scanner
     from full_short_run import EIGHT_MS_SHA, checked_recipe
     from leo.contracts.digests import canonical_digest
+    from reports.ALGO08.v3.ci16_packing import Packing
     from reports.ALGO08.v3.sparse_cold_input import frozen_function
     from tools.pipeline_eval.variants.experimental.paired_sha256 import PairedSha256, paired_decoded_hashes
 
-    if root.parent.resolve(strict=True) != Path("/dev/shm"):
-        raise ValueError("Stage the private derivative in tmpfs")
-    checkout = HERE.parents[2]
-    git = ["git", "-c", f"safe.directory={checkout}", "-C", str(checkout)]
-    if subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True).strip():
-        raise ValueError("Commit the source and protocol before converting the original member")
-    revision = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
-    machine = host()
-    entry, chunk = source(case)
-    observer = run_path(str(checkout/"tools/pipeline_eval/qualification/cache_residency.py"))
-    before = residency(entry, chunk, observer)
-    root.mkdir()
-    start = clocks()
-    binary = root / "packing.so"
-    compiled = resource.getrusage(resource.RUSAGE_CHILDREN)
-    subprocess.run([*BUILD, str(SOURCE), "-o", str(binary)], check=True)
-    after = resource.getrusage(resource.RUSAGE_CHILDREN)
-    compilation = elapsed(start) | {"compiler_cpu_s": after.ru_utime + after.ru_stime - compiled.ru_utime - compiled.ru_stime,
-                                    "compiler_input_blocks": after.ru_inblock - compiled.ru_inblock}
-    start = clocks()
     checked(SHORT, EIGHT_MS_SHA)
     geometry = json.loads(checked(SHORT.parent.parent/"build.json", SHORT_BUILD))["geometry"]["8ms"]
     if (geometry["short_samples"] != PREFIX or geometry["stored_samples"] != ORIGINAL_SAMPLES
@@ -420,9 +417,48 @@ def run(root, case, *, clean_dense=False, named_dense=False):
     scope = SimpleNamespace(scan=scan, detector=detector, symbols=receiver_symbols(source_files), prefetch=load_prefetch(),
                             assets=assets, codec=Packing(binary), hasher=hasher, paired=paired_decoded_hashes,
                             buffer=frozen_function(specification, "receiver_ingress.py", "compressed_input_buffer"))
-    if named_dense:
+    if named:
         scope.named_detector = receiver_namespace(source_files)
         scope.named_pin = "sha256:" + specification["detector_sha256"]
+    return scope, recipe, geometry
+
+
+def run(root, case, *, clean_dense=False, named_dense=False):
+    import empty_bootstrap as staged
+
+    start = clocks()
+    _, specification, source_files, _, _ = staged.load_runtime()
+    runtime_startup = elapsed(start)
+
+    from aperture_trial import write
+    from combined_frontier_run import PREFETCH_FILES
+    from reports.ALGO08.v3.ci16_packing import SOURCE
+    from dense_geographic_trial import host
+    from eight_ms_native_receiver import prepare
+    from empty_bootstrap import checked
+    from leo.contracts.digests import canonical_digest
+
+    if root.parent.resolve(strict=True) != Path("/dev/shm"):
+        raise ValueError("Stage the private derivative in tmpfs")
+    checkout = HERE.parents[2]
+    git = ["git", "-c", f"safe.directory={checkout}", "-C", str(checkout)]
+    if subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True).strip():
+        raise ValueError("Commit the source and protocol before converting the original member")
+    revision = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
+    machine = host()
+    entry, chunk = source(case)
+    observer = run_path(str(checkout/"tools/pipeline_eval/qualification/cache_residency.py"))
+    before = residency(entry, chunk, observer)
+    root.mkdir()
+    start = clocks()
+    binary = root / "packing.so"
+    compiled = resource.getrusage(resource.RUSAGE_CHILDREN)
+    subprocess.run([*BUILD, str(SOURCE), "-o", str(binary)], check=True)
+    after = resource.getrusage(resource.RUSAGE_CHILDREN)
+    compilation = elapsed(start) | {"compiler_cpu_s": after.ru_utime + after.ru_stime - compiled.ru_utime - compiled.ru_stime,
+                                    "compiler_input_blocks": after.ru_inblock - compiled.ru_inblock}
+    start = clocks()
+    scope, recipe, geometry = pinned_runtime(root, specification, source_files, binary, named=named_dense)
     startup = elapsed(start)
     write(root/"binding.json", dict(case=case, original=entry, member=chunk, machine=machine, recipe=recipe,
          detector=scope.detector, source_pins={name: sha256((HERE/name).read_bytes()).hexdigest()
