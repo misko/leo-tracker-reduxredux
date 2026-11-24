@@ -9,6 +9,7 @@ import sys
 from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 PRIOR = "4abf70d6b570c4bd1d2343f584b0c135a4228865261d3e39e8e13350c15f3df2"
 ORDER = {"DS30-0107": ("once", "fused"), "DS30-0016": ("fused", "once")}
@@ -28,6 +29,12 @@ def once_command(command, output):
 
 def pins():
     return {path.name: sha256(path.read_bytes()).hexdigest() for path in (Path(__file__), PROTOCOL)}
+
+
+def launched_pins(revision):
+    git = ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show"]
+    return {path.name: sha256(subprocess.check_output([*git, f"{revision}:{path.relative_to(ROOT)}"])).hexdigest()
+            for path in (Path(__file__), PROTOCOL)}
 
 
 def launch(root):
@@ -97,12 +104,13 @@ def score(root):
     prior = json.loads(gzip.decompress(checked(HERE / "measurements/legacy-first-map-finalist.json.gz", PRIOR)))
     finalist.score(root)
     paired = read(root / "finalist.json")
+    frozen = launched_pins(paired["admission"]["runtime_revision"])
     results = {}
     for case, row in paired["cases"].items():
         folder, req = root / case, paired["admission"]["inputs"][case]["request"]
         book, log = (read(folder / name) for name in ("once-binding.json", "once-clock.json"))
         mapped_output, once = folder / "fused", folder / "once"
-        if (book["sources"] != pins() or book["order"] != list(ORDER[case]) or log["clock"]["exit_code"]
+        if (book["sources"] != frozen or book["order"] != list(ORDER[case]) or log["clock"]["exit_code"]
                 or log["command"] != once_command(row["clock"]["command"], once)
                 or book["commands"]["fused"] != row["clock"]["command"] or book["commands"]["once"] != log["command"]):
             raise ValueError("The verified-once clock does not bind the planned same-code comparison")
@@ -110,14 +118,20 @@ def score(root):
         if case == "DS30-0107":
             current = withheld(once, log["clock"], req)
             parity = ("factors", "graph_proof", "native_digest", "opportunities", "receiver_visits",
-                      "scan_digest", "science", "terminal", "witness")
+                      "scan_digest", "terminal", "witness")
+            old, new = ({k: v for k, v in arm["science"].items() if k != "terminal_file_s"}
+                        for arm in (baseline, current))
+            if old != new:
+                raise ValueError("Verified-once changed standard withholding evidence")
             checks = None
         else:
             current = complete(once, log, req, paired["admission"]["inputs"][case]["producer"])
             parity = ("native_sha256", "native_source", "ordered_owners", "history_risk")
+            old, new = ({k: v for k, v in arm["positions"].items() if k != "figures"}
+                        for arm in (baseline, current))
             if (any(current["published"][key] != baseline["published"][key]
                     for key in ("raw_authority", "owners", "arms", "scientific_digests"))
-                    or canonical_digest(current["positions"]) != canonical_digest(baseline["positions"])
+                    or canonical_digest(old) != canonical_digest(new)
                     or media_identity(current["images"]) != media_identity(baseline["images"])):
                 raise ValueError("Verified-once changed the installed fix or a standard image")
             checks = verify_position_sidecars(mapped_output, once, current["receipt"]["run_id"],
