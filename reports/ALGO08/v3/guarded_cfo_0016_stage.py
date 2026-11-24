@@ -1,7 +1,7 @@
 """Stage the complete signed physical DS30-0016 once at a controlled device rate."""
 
 import argparse
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import fcntl
 import gzip
 from hashlib import sha256
@@ -21,6 +21,7 @@ if __name__ == "__main__":
 from raw_0016_best_trial import ORIGINAL
 from short_raw_0180 import BULK, enrollment
 from guarded_stage_checkpoint import Extent, checkpoint, checked_local, identity, staging_lock, verified_extents, write_checkpoint
+from guarded_stage_idle import IdleAdmission, IdleWindowExpired
 
 
 RECORDING = BULK / "leo/fast-scan-recordings/fast8-auto-20261113-112146-b04f5461-1-lower"
@@ -113,7 +114,7 @@ def average_read_ms(before, after):
 
 
 class Pacing:
-    def __init__(self, root, total, reused):
+    def __init__(self, root, total, reused, *, idle=False):
         dev = RECORDING.stat().st_dev
         self.device = Path(f"/sys/dev/block/{os.major(dev)}:{os.minor(dev)}/stat")
         self.total, self.copied, self.wait_s, self.slowest = total, reused, 0.0, 0.0
@@ -124,7 +125,7 @@ class Pacing:
         self.baseline = average_read_ms(self.sample, measured)
         self.sample, self.sample_time = measured, perf_counter()
         self.limit = max(50.0, 2 * (self.baseline or 0) + 10)
-        self.log = root / "copy-progress.jsonl"
+        self.log = root / ("copy-idle-progress.jsonl" if idle else "copy-progress.jsonl")
         self.record(event="begin", device=str(self.device), baseline_read_ms=self.baseline,
                     rate_limit_bytes_s=RATE, read_stall_limit_ms=self.limit, reused_verified_bytes=reused)
 
@@ -165,57 +166,60 @@ class Pacing:
         self.sample, self.sample_time = reads(self.device), perf_counter()
 
 
-def copy_member(source, target, size, digest, lock, pacing, *, partial=None, journal=None):
+def copy_member(source, target, size, digest, lock, pacing, *, partial=None, journal=None, admission=None):
     completed = partial.offset if partial else 0
     checksum = partial.checksum.copy() if partial else sha256()
     digest = "sha256:" + digest.removeprefix("sha256:")
     extent = Extent(Path(target.parent.name) / target.name, size, digest)
     if partial and partial.extent != extent:
         raise ValueError("The recovered prefix belongs to a different signed extent")
-    with source.open("rb", buffering=0) as entry:
-        incoming = os.fstat(entry.fileno())
-        if not stat.S_ISREG(incoming.st_mode) or incoming.st_size != size:
-            raise ValueError("Original member is not the expected bounded regular file")
-        member_identity = identity(incoming)
-        if partial and partial.source_identity is not None and partial.source_identity != member_identity:
-            raise ValueError("Original source identity changed since the sealed checkpoint")
-        entry.seek(completed)
-        os.posix_fadvise(entry.fileno(), completed, size - completed, os.POSIX_FADV_RANDOM)
-        if journal is not None:
-            write_checkpoint(journal, checkpoint(extent, member_identity, [(completed, "sha256:" + checksum.hexdigest())]))
-        mode = "r+b" if completed or partial and target.exists() else "xb"
-        with target.open(mode, buffering=0) as staged:
-            if os.fstat(staged.fileno()).st_size != completed:
-                raise ValueError("Checked local prefix changed before resume")
-            staged.seek(completed)
-            while completed < size:
-                waiting = perf_counter()
-                with source_slot(lock):
-                    beginning = perf_counter()
+    with ExitStack() as stack:
+        entry, staged, member_identity = None, None, None
+        while completed < size:
+            waiting = perf_counter()
+            with admission.slot(lock) if admission is not None else source_slot(lock):
+                beginning = perf_counter()
+                if admission is None:
                     pacing.wait_s += beginning - waiting
-                    data = entry.read(min(BLOCK, size - completed))
-                    read_s = perf_counter() - beginning
-                if not data:
-                    raise ValueError("Original member ended before its signed extent")
-                prior_pin = "sha256:" + checksum.hexdigest()
-                checksum.update(data)
-                following = completed + len(data)
-                if journal is not None:
-                    write_checkpoint(journal, checkpoint(extent, member_identity,
-                                     [(completed, prior_pin), (following, "sha256:" + checksum.hexdigest())]))
-                if staged.write(data) != len(data):
-                    raise OSError("Short write to staged recording")
-                completed = following
-                pacing.progress(read_s, len(data))
-                sleep(max(.025, len(data) / RATE - (perf_counter() - beginning)))
-        if identity(os.fstat(entry.fileno())) != member_identity:
+                if entry is None:
+                    entry = stack.enter_context(source.open("rb", buffering=0))
+                    incoming = os.fstat(entry.fileno())
+                    if not stat.S_ISREG(incoming.st_mode) or incoming.st_size != size:
+                        raise ValueError("Original member is not the expected bounded regular file")
+                    member_identity = identity(incoming)
+                    if partial and partial.source_identity is not None and partial.source_identity != member_identity:
+                        raise ValueError("Original source identity changed since the sealed checkpoint")
+                    entry.seek(completed)
+                    os.posix_fadvise(entry.fileno(), completed, size - completed, os.POSIX_FADV_RANDOM)
+                data = entry.read(min(BLOCK, size - completed))
+                read_s = perf_counter() - beginning
+            if not data:
+                raise ValueError("Original member ended before its signed extent")
+            prior_pin = "sha256:" + checksum.hexdigest()
+            checksum.update(data)
+            following = completed + len(data)
+            if journal is not None:
+                write_checkpoint(journal, checkpoint(extent, member_identity,
+                                 [(completed, prior_pin), (following, "sha256:" + checksum.hexdigest())]))
+            if staged is None:
+                mode = "r+b" if completed or partial and target.exists() else "xb"
+                staged = stack.enter_context(target.open(mode, buffering=0))
+                if os.fstat(staged.fileno()).st_size != completed:
+                    raise ValueError("Checked local prefix changed before resume")
+                staged.seek(completed)
+            if staged.write(data) != len(data):
+                raise OSError("Short write to staged recording")
+            completed = following
+            pacing.progress(read_s, len(data))
+            sleep(max(.025, len(data) / RATE - (perf_counter() - beginning)))
+        if entry is None or identity(os.fstat(entry.fileno())) != member_identity:
             raise ValueError("Original source changed while copying its signed extent")
     if checksum.hexdigest() != digest.removeprefix("sha256:"):
         raise ValueError(f"Original member digest mismatch for {source.name}")
     checked_local(target, size, digest)
 
 
-def stopped_admission(root):
+def stopped_receipt(root):
     data = gzip.decompress(STOPPED_RECEIPT.read_bytes())
     if sha256(data).hexdigest() != STOPPED_SHA:
         raise ValueError("The original stopped-stage receipt differs from its seal")
@@ -223,6 +227,11 @@ def stopped_admission(root):
     if (root / RECORDING.name != Path(saved["partial"]) or saved["inventory_sha256"] != ORIGINAL.inventory
             or saved["completed_signed_stage"] or saved["launches"]):
         raise ValueError("The sealed stopped stage does not match the requested root")
+    return saved
+
+
+def stopped_admission(root):
+    saved = stopped_receipt(root)
     rows = [(Extent(Path(row["relative"]), row["signed_bytes"], row["signed_sha256"]), row)
             for row in saved["files"]]
     (extent, row), = [(extent, row) for extent,row in rows if 0 < row["staged_bytes"] < extent.size]
@@ -270,18 +279,32 @@ def inspect_stopped(root):
                     stopped_receipt_sha256=STOPPED_SHA, original_payload_reads=0)
 
 
-def stage(root, *, resume=False):
+def stage(root, *, resume=False, idle_seconds=None):
     if sorted(os.sched_getaffinity(0)) != [2] or os.getpriority(os.PRIO_PROCESS, 0) < 15:
         raise ValueError("Expected the low-priority CPU2 pacing worker")
+    if idle_seconds is not None and not 1 < idle_seconds <= 900:
+        raise ValueError("Idle opportunity must be bounded to 2–900 seconds")
+    deadline = perf_counter() + idle_seconds if idle_seconds is not None else None
     with staging_lock(STAGING_LOCK):
-        stage_locked(root, resume=resume)
+        stage_locked(root, resume=resume, idle_deadline=deadline)
 
 
-def stage_locked(root, *, resume):
+def stage_locked(root, *, resume, idle_deadline=None):
     if resume and not root.is_dir():
         raise ValueError("Resume requires an existing stage")
-    signed, _, files, extents = signed_members()
-    before = cache_states(files)
+    if idle_deadline is None:
+        signed, _, files, extents = signed_members()
+        raw_authority = signed["case"]["raw_authority"]
+        before = cache_states(files)
+    else:
+        # The already authenticated copy manifest gives both signed segments
+        # without opening any file in the source before the idle gate.
+        receipt = stopped_receipt(STOPPED_ROOT)
+        raw_authority = receipt["raw_authority"]
+        files = {kind: [(RECORDING / row["relative"], row["signed_bytes"], row["signed_sha256"])
+                        for row in receipt["files"] if row["kind"] == kind] for kind in COPY_ORDER}
+        extents = {kind: sum(size for _, size, _ in rows) for kind, rows in files.items()}
+        before = None
     total = sum(extents.values())
     enrolled = [Extent(source.relative_to(RECORDING), size, pin)
                 for kind in COPY_ORDER for source,size,pin in files[kind]]
@@ -296,26 +319,35 @@ def stage_locked(root, *, resume):
     if (root / "staging.json").is_file():
         previous = json.loads((root / "staging.json").read_text())
         if (previous["inventory"] == ORIGINAL.inventory and
-                (previous["copied_bytes"] == total == reused or previous["copied_bytes"] == 0 and fully_resident(before))):
+                (previous["copied_bytes"] == total == reused
+                 or previous["copied_bytes"] == 0 and before is not None and fully_resident(before))):
             return
         raise ValueError("The existing staging receipt differs from the current complete input")
     if available.f_bavail * available.f_frsize < total - reused + 512*MB:
         raise ValueError("Expected enough tmpfs capacity for the remaining signed input")
-    count, pacing = 0, None
-    if reused or resume or not fully_resident(before):
-        pacing = Pacing(root, total, reused) if reused < total else None
+    count, pacing, admission = 0, None, None
+    if reused or resume or before is None or not fully_resident(before):
+        pacing = Pacing(root, total, reused, idle=idle_deadline is not None) if reused < total else None
+        if idle_deadline is not None and pacing is not None:
+            admission = IdleAdmission(pacing.device, idle_deadline, pacing.record)
         staged = root / RECORDING.name
-        with LOCK.open("rb") as lock:
-            for kind in COPY_ORDER:
-                for source, size, digest in files[kind]:
-                    relative = source.relative_to(RECORDING)
-                    if relative in complete:
-                        continue
-                    destination = staged / relative
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    prior = partial if partial and relative == partial.extent.relative else None
-                    copy_member(source, destination, size, digest, lock, pacing,
-                                partial=prior, journal=root / "copy-checkpoint.json")
+        try:
+            with LOCK.open("rb") as lock:
+                for kind in COPY_ORDER:
+                    for source, size, digest in files[kind]:
+                        relative = source.relative_to(RECORDING)
+                        if relative in complete:
+                            continue
+                        destination = staged / relative
+                        destination.parent.mkdir(parents=True, exist_ok=True)
+                        prior = partial if partial and relative == partial.extent.relative else None
+                        copy_member(source, destination, size, digest, lock, pacing, partial=prior,
+                                    journal=root / "copy-checkpoint.json", admission=admission)
+        except IdleWindowExpired:
+            pacing.record(event="idle_expired", admitted_reads=admission.reads, reused_verified_bytes=reused,
+                          new_copied_bytes=pacing.copied-reused, cpu_s=process_time()-clocks[1],
+                          input_blocks=resource.getrusage(resource.RUSAGE_SELF).ru_inblock-clocks[2])
+            return
         count = pacing.copied if pacing else total
         if count != total:
             raise ValueError("The completed copy differed from the authenticated input extent")
@@ -327,11 +359,12 @@ def stage_locked(root, *, resume):
     staged_cache = cache_states(staged_files)
     if not fully_resident(staged_cache):
         raise ValueError("The complete benchmark input must be resident")
-    receipt = dict(case=ORIGINAL.workload.id, recording=str(RECORDING), raw_authority=signed["case"]["raw_authority"],
+    receipt = dict(case=ORIGINAL.workload.id, recording=str(RECORDING), raw_authority=raw_authority,
                    inventory=ORIGINAL.inventory, files={kind: [[str(p), n, d] for p,n,d in rows] for kind,rows in files.items()},
                    extents=extents, original_before=before, original_after=cache_states(files), benchmark_cache=staged_cache,
                    copied_bytes=count, max_payload_read_bytes=ORIGINAL.workload.compressed_bytes, input_blocks=blocks,
                    reused_verified_bytes=reused, new_copied_bytes=count-reused,
+                   idle_admitted_reads=admission.reads if admission else None, idle_wait_s=admission.wait_s if admission else None,
                    stopped_receipt_sha256=STOPPED_SHA if resume and root == STOPPED_ROOT else None,
                    elapsed_s=perf_counter()-clocks[0], cpu_s=process_time()-clocks[1], lock_wait_s=pacing.wait_s if pacing else 0,
                    pauses=pacing.pauses if pacing else 0, rate_limit_bytes_s=RATE)
@@ -346,8 +379,11 @@ if __name__ == "__main__":
     mode = cli.add_mutually_exclusive_group()
     mode.add_argument("--resume", action="store_true", help="Read only the missing suffixes after a verified checkpoint")
     mode.add_argument("--inspect-stopped", action="store_true", help="Verify the sealed stopped stage without original reads")
+    cli.add_argument("--idle-seconds", type=int, help="Wait for measured idle admission for at most 900 seconds")
     options = cli.parse_args()
     if options.inspect_stopped:
+        if options.idle_seconds is not None:
+            cli.error("Idle admission applies to staging only")
         print(json.dumps(inspect_stopped(options.root), sort_keys=True))
     else:
-        stage(options.root, resume=options.resume)
+        stage(options.root, resume=options.resume, idle_seconds=options.idle_seconds)

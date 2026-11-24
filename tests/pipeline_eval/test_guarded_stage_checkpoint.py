@@ -134,7 +134,7 @@ def test_finished_stage_invocation_verifies_local_files_without_source_copy(tmp_
     (root / "staging.json").write_text(json.dumps({"inventory": stage.ORIGINAL.inventory,
                                                    "copied_bytes": sum(extents.values())}))
     monkeypatch.setattr(stage, "RECORDING", recording)
-    monkeypatch.setattr(stage, "signed_members", lambda: (None, None, files, extents))
+    monkeypatch.setattr(stage, "signed_members", lambda: ({"case": {"raw_authority": "signed"}}, None, files, extents))
     monkeypatch.setattr(stage, "cache_states", lambda _: {})
     monkeypatch.setattr(stage, "copy_member", lambda *args, **kwargs: pytest.fail("completed copy repeated"))
     stage.stage_locked(root, resume=True)
