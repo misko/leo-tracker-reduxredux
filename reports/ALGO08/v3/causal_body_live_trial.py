@@ -127,7 +127,7 @@ def score(root):
           clocks=table, sealed_control=SAVED_SHA, sealed_worker_owners=OWNERS_SHA, published_science=candidate["science"]["successor"],
           owned_by_arm={key: len(rows) for key, rows in new["selected_rows"].items()}, election=actual,
           live=candidate["traces"]["live-corner.json"], native_sha256=proposal["terminal"]["native_sha256"],
-          sources=pins(), prediction_seal_sha256=candidate["prediction_seal_sha256"])))
+          sources=pins(), prediction_seal_sha256=candidate["prediction_seal_sha256"]))
     if not all(checks.values()):
         raise ValueError("The source-bound live compatibility comparison failed")
 
