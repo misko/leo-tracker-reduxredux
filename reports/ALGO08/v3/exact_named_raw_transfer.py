@@ -5,6 +5,7 @@ from contextlib import ExitStack
 from hashlib import sha256
 import json
 from pathlib import Path
+import runpy
 import shutil
 import sys
 from unittest.mock import patch
@@ -46,34 +47,46 @@ def named(root, binding):
     from raw_cfo_north_trial import STOCK_PACKET
 
     sys.addaudithook(entry.deny_backing(Path(binding["request"]["recording"])))
-    launcher, specification, _, publication, checks = boot.load_runtime()
-    from tools import algo08_position, algo08_scan
+    started = boot.now()
+    boot.checked(boot.BASELINE, boot.BASELINE_PIN)
+    launcher = runpy.run_path(str(boot.BASELINE))
+    sys.path[:0] = [str(boot.PAYLOAD), str(boot.RELEASE/"src"), str(boot.RELEASE)]
+    from tools.pipeline_eval.qualification import experimental_publication as publication
+    from tools.pipeline_eval.variants.experimental import lean_startup
+
+    checks = boot.clock(started)
 
     req, output = binding["request"], root/"named"
     timings, owners = {name: [] for name in ("analyze", "acquire", "solve", "render")}, []
-    original_run = publication.run
+    original_run, install = publication.run, lean_startup.install
     receipts = []
 
     def observed_run(args, spec):
-        if spec != specification:
+        if spec["startup"] != "lazy-exports" or receipts:
             raise ValueError("The original named launcher must use its unchanged scientific specification")
         result = original_run(args, spec)
-        receipts.append(result)
+        receipts.append((result, spec["detector_sha256"]))
         return result
+
+    def observed_startup():
+        install()
+        from tools import algo08_position, algo08_scan
+
+        entry.observe(algo08_scan, algo08_position, stack, timings, owners)
 
     output.mkdir()
     started = boot.now()
     with ExitStack() as stack:
-        entry.observe(algo08_scan, algo08_position, stack, timings, owners)
+        stack.enter_context(patch.object(lean_startup, "install", observed_startup))
         stack.enter_context(patch.object(publication, "run", observed_run))
         launcher["main"](["--recording", req["recording"], "--archive", req["archive"]["root"],
                           "--region", req["inside_offer"], "--bulk-root", str(output)])
     installed = boot.clock(started)
-    (receipt,) = receipts
+    ((receipt, detector),) = receipts
     if any(len(scopes) != 1 for scopes in timings.values()) or read(output/"algo08v3-release.json")["decision"] != "complete":
         raise ValueError("Expected one real complete raw named acquisition, solve and rendering")
     started = boot.now()
-    authenticate_packet(output, req, STOCK_PACKET, specification["detector_sha256"])
+    authenticate_packet(output, req, STOCK_PACKET, detector)
     verified = entry.evidence(output, receipt, STOCK_PACKET, owners)
     entry.write(output/"named-raw-witness.json", dict(receipt=receipt, evidence=verified, timing=timings,
         installed=installed, checks=checks, verification=boot.clock(started), native_sha256=STOCK_PACKET))

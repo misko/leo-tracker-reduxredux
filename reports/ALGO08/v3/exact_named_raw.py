@@ -163,7 +163,8 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
     with ExitStack() as stack:
         audit["history"] = stack.enter_context(named_solve(True, boot.RELEASE, boot.PAYLOAD))
         observe(algo08_scan, algo08_position, stack, times, owners, active=active, timed_acquire=False)
-        terminal = publication.run(launch, specification)
+        # The shared raw bootstrap already installed this exact lazy facade.
+        terminal = publication.run(launch, dict(specification, startup="stock"))
     installed = boot.clock(started)
     if handoff.calls != 1 or len(times["solve"]) != 1 or len(times["render"]) != int(terminal["decision"] == "complete"):
         raise ValueError("The measured exact route did not perform one ordinary named solve")
