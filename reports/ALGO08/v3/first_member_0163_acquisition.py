@@ -12,7 +12,6 @@ from unittest.mock import patch
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path[:0] = [str(HERE), str(ROOT)]
-from first_member_0163_resume import ADDITIONAL_BYTES, PREFIX_BYTES, SIZE, TARGET, bindings
 import original_dense_intake as stock
 import original_prefix_scaling as prefix
 
@@ -39,6 +38,7 @@ def enrolled_options(argv, offer, archive):
 
 
 def admit():
+    from first_member_0163_resume import ADDITIONAL_BYTES, PREFIX_BYTES, SIZE, TARGET, bindings
     from leo.contracts.digests import canonical_digest
 
     request, first, member, original_source, _ = bindings()
