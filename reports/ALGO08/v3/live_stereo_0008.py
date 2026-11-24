@@ -48,7 +48,7 @@ def residency(query):
     return state
 
 
-def receive(arm, short, manifest_pin, ingress):
+def receive(arm, short, manifest_pin, ingress, *, create_mixer=None, detector_pin=None):
     from full_short_raw import RECIPE_SHA
     from live_stereo_blocks import bind
     from mixed_aperture_receiver import MixedApertureDetector
@@ -57,13 +57,14 @@ def receive(arm, short, manifest_pin, ingress):
     probes, windows, exclusions = [], [], []
     callbacks = Counter()
     start = clock()
-    mixer = MixedApertureDetector(short, SHORT_SHA, full_coverage=True)
-    recipe = {"detector": "sha256:" + RECIPE_SHA}
+    mixer = MixedApertureDetector(short, SHORT_SHA, full_coverage=True) if create_mixer is None else create_mixer()
+    recipe = {"detector": detector_pin or "sha256:" + RECIPE_SHA}
     if arm == "masked":
         recipe = bind(mixer, recipe["detector"])
     with (ingress(), paired_decoded_hashes(original.PAYLOAD / "paired-sha256.so"),
           mixer.detector("cancellation", "lower", binary=original.PAYLOAD / "receiver.so",
                          pilot=original.RELEASE / "assets/lower.f32") as identify):
+        entered = clock()
         raw = FastSegmentSource({"path": str(MEMBER), "manifest_digest": manifest_pin}, stop_sequence=64)
         chunk = raw.reader.manifest.chunks[0]
         for window in raw.windows():
@@ -84,8 +85,12 @@ def receive(arm, short, manifest_pin, ingress):
         probe_digest = canonical_digest(probes)
         ancestry = recipe["detector"] if arm == "unmasked" else canonical_digest(recipe)
         analysis = canonical_digest([manifest_pin, ordered_input, ancestry, probe_digest])
+        member_work = elapsed(entered)
+        leaving = clock()
+    cleanup = elapsed(leaving)
     spent = elapsed(start)
-    return dict(arm=arm, timing=spent, callback=dict(callbacks), receiver=mixer.receipt(), recipe=recipe,
+    details = dict(member_work=member_work, context_cleanup=cleanup) if create_mixer is not None else {}
+    return dict(arm=arm, timing=spent, callback=dict(callbacks), receiver=mixer.receipt(), recipe=recipe, **details,
                 probe_sha256=probe_digest, analysis_sha256=analysis, ordered_input_sha256=ordered_input,
                 chunk=chunk.model_dump(mode="json"), issued=len(windows), exclusions=exclusions,
                 admitted=len(probes)//2, probes=len(probes), selected=sum(len(row["candidates"]) for row in probes)), probes
