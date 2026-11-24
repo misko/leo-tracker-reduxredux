@@ -24,16 +24,34 @@ EARLIER = (Path("/dev/shm/leo-v3-early-causal-history-run/census/result.json"),
 EXACT = {
     "0160": (Path("/dev/shm/leo-v3-exact-named-0160-result01"), "dd1f4a2f3891bba9a5ae9985f87273117223b137e398f39334e5b6edb3e1016b"),
     "0316": (Path("/dev/shm/leo-v3-exact-named-0316-result02"), "f53bfaad5a6b849398dce78bd7669c6d845f6bd886474a96ce71981c49464bc8"),
+    "0374": (Path("/dev/shm/leo-v3-exact-named-0374-result01"), "cdc50f9118442a98be515c57115a351f83464476920f83356f4d8bf6140cd99a"),
 }
 LEAN = Path("/dev/shm/leo-v3-final-0316-transfer-result02")
 LEAN_WITNESS_SHA = "ebbaed6c90a1d03b229b4199835bcc399984eee2524755b8b2e7d0470c907d1f"
+EXACT_ROUTE_SHA256 = "8799f632207d4a1b65954e454766605dcad109a799b9b81a08158c3a2ebc26ff"
+DENSE_LEAN_CLOCK_SHA256 = "06eb41d41537adb0783b049258f0964e1fce5b744093a79b1994b4d1ff346c02"
+DENSE_LEAN_WITNESS_SHA256 = "46080930eec33cf3586d8dc226c86d56324b734ef18349445b502bd31556d4e9"
 EXPECTED = {"0160": "named", "0316": "lean"}
 
 
-def sources():
+def request_binding(case):
+    if case != "0374":
+        bound = exact.bind(case)
+        return bound, exact.read(Path(bound["request"]))
+    import exact_named_dense as dense
+
+    # Reuse the earlier authenticated request adapter with this trial's exact
+    # route source pinned explicitly. Neither admission changes the saved input.
+    with patch.object(dense, "SOURCE_SHA256", EXACT_ROUTE_SHA256):
+        return dense.binding(case)
+
+
+def sources(case):
     names = ("history_risk_route.py", "history_risk_route_trial.py", "history-risk-route-protocol.md", "early_causal_history.py",
              "prepared_exterior.py", "cold_finalist_race.py", "certified_salvage.py", "isolated_salvage.py", "named_survivor_fit.py",
              "blind_joint_route.py", "blind_joint_finish.py", "blind_joint_repair.py", "blind_joint_signed.py")
+    if case == "0374":
+        names += ("history-risk-0374-protocol.md", "exact_named_dense.py")
     return {name: exact.digest(HERE/name) for name in names}
 
 
@@ -49,7 +67,7 @@ def worker(case, output):
     import named_history_once as history
 
     enrollment = exact.read(output/"route-binding.json")
-    if enrollment["sources"] != sources():
+    if enrollment["sources"] != sources(case):
         raise ValueError("The frozen risk route sources changed")
     original_named, original_ports = history.named_solve, exact.exact_ports
     audit = dict(solves=[])
@@ -83,7 +101,17 @@ def worker(case, output):
 
     try:
         with patch.object(history, "named_solve", named), patch.object(exact, "exact_ports", exact_ports):
-            exact.worker(case, output)
+            if case != "0374":
+                exact.worker(case, output)
+            else:
+                bound, request = request_binding(case)
+                guard_read = exact.read
+
+                def request_view(path):
+                    return request if path == Path(bound["request"]) else guard_read(path)
+
+                with patch.object(exact, "bind", return_value=bound), patch.object(exact, "read", request_view):
+                    exact.worker(case, output)
     finally:
         write(output/"risk-route.json", audit)
 
@@ -98,14 +126,17 @@ def launch(case, output):
 
     started = process_time_ns(), perf_counter_ns()
     machine = host()
-    entry = exact.bind(case)
-    request = exact.read(Path(entry["request"]))
+    entry, request = request_binding(case)
     archive, archive_pin = EXACT[case]
     if not pinned(archive/"result.json", archive_pin)["exact"]:
         raise ValueError("The ordinary exact reference was not verified")
     pinned(*EARLIER)
     if case == "0316":
         pinned(LEAN/"candidate/joint-research-receipt.json", LEAN_WITNESS_SHA)
+    elif case == "0374":
+        stage = Path(entry["stage"])
+        pinned(stage/"combined/joint-research-receipt.json", DENSE_LEAN_WITNESS_SHA256)
+        pinned(stage/"combined-clock.json", DENSE_LEAN_CLOCK_SHA256)
     if exact.resident_path(output.parent) != Path("/dev/shm") or output.exists():
         raise ValueError("Expected a fresh tmpfs root")
     _, refs = exact.checked_catalogue(entry, request, TleArchiveReader, canonical_digest)
@@ -122,7 +153,7 @@ def launch(case, output):
                "-IB", HERE/Path(__file__).name, "worker", case, output]
     write(output/"binding.json", dict(input=entry, machine=machine, command=list(map(str, command)),
           resident_bytes=sum(row["size"] for row in residence), resident_snapshots=len(refs)))
-    write(output/"route-binding.json", dict(sources=sources(), cutoff_utc_ns=request["causal_cutoff_utc_ns"],
+    write(output/"route-binding.json", dict(sources=sources(case), cutoff_utc_ns=request["causal_cutoff_utc_ns"],
           earlier_reference=str(EARLIER[0]), earlier_sha256=EARLIER[1], control_sha256=archive_pin,
           preflight=dict(cpu_ns=process_time_ns()-started[0], elapsed_ns=perf_counter_ns()-started[1])))
     env = environment(output) | {"TMPDIR": str(output/"tmp"), "XDG_CACHE_HOME": str(output/"tmp")}
@@ -146,7 +177,8 @@ def score(case, output):
     route, = exact.read(output/"risk-route.json")["solves"]
     ports = exact.read(output/"candidate/ports.json")
     proof = route["choice"]
-    if proof["route"] != EXPECTED[case] or proof["census"]["cutoff_utc_ns"] != req["causal_cutoff_utc_ns"]:
+    if (case in EXPECTED and proof["route"] != EXPECTED[case]
+            or "census" in proof and proof["census"]["cutoff_utc_ns"] != req["causal_cutoff_utc_ns"]):
         raise ValueError("The risk flag did not choose the frozen authentic branch")
     if (len(ports["history"]["prepare"]) != 1 or route["inference_calls"] != 1
             or ports["history"]["solves"] != 1 or len(actual["products"]["images"]) != 8
@@ -157,7 +189,7 @@ def score(case, output):
     if case == "0160":
         if not all(matches.values()) or route["lean_attempts"] or not ports["history"]["events"]:
             raise ValueError("The flagged packet must preserve ordinary named decisions and media")
-    else:
+    elif case == "0316":
         archived = LEAN/"candidate"
         prior_clock = exact.read(LEAN/"candidate-clock.json")["timing"]
         lean = verified(archived, prior_clock, "saved-0316-worker.json", req)
@@ -165,13 +197,26 @@ def score(case, output):
         if (trial["decision"] != "complete" or trial["named_survivor_fit"]["status"] != "accepted"
                 or actual["terminal"] != lean["terminal"] or actual["rows"] != lean["rows"]):
             raise ValueError("The clear branch did not reproduce the genuine lean named-survivor publication")
+    else:
+        stage = Path(assignment["stage"])
+        prior_clock = pinned(stage/"combined-clock.json", DENSE_LEAN_CLOCK_SHA256)
+        pinned(stage/"combined/joint-research-receipt.json", DENSE_LEAN_WITNESS_SHA256)
+        lean = verified(stage/"combined", prior_clock, "named-final-0374-worker.json", req)
+        if proof["route"] == "named" and (not all(matches.values()) or route["lean_attempts"]):
+            raise ValueError("Flagged held transfer differs from the named publication")
     original = {"named": named["science"], "routed": actual["science"]}
+    if lean is not None:
+        original["lean"] = lean["science"]
     summaries = {k: {arm: data["arms"][arm] for arm in ("c0", "fitted_c")} for k, data in original.items()}
     write(output/"result.json", dict(case=req["case"], route=proof, preparation=ports["history"],
           exterior_handoff=route["exterior_handoff"], named_parity=matches,
           lean_terminal_equal=bool(lean and actual["terminal"] == lean["terminal"]),
           clock=clock, archived_exact_clock=control["clocks"]["candidate"], archive_stock_clock=control["clocks"]["named"],
           archived_lean_clock=lean["clock"] if lean else None,
+          lean_parity=parity(lean, actual) if lean else None,
+          lean_owner_delta={arm: owner_delta(lean["rows"][arm], actual["rows"][arm]) for arm in ("c0", "fitted_c")} if lean else None,
+          lean_attempts=[{k: row[k] for k in ("candidate_pre_evidence_clocks", "named_survivor_fit", "exterior_clocks",
+                                             "standard_evidence_clocks", "decision") if k in row} for row in route["lean_attempts"]],
           owners={arm: owner_delta(named["rows"][arm], actual["rows"][arm]) for arm in ("c0", "fitted_c")},
           published=dict(worker=actual["worker"], terminal=actual["terminal"], products=actual["products"], science=actual["science"]),
           scientific=calibration_comparison({k: dict(arms=v) for k, v in summaries.items()}, req["case"]),
@@ -182,7 +227,7 @@ def score(case, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("launch", "worker", "score"))
-    parser.add_argument("case", choices=EXPECTED)
+    parser.add_argument("case", choices=EXACT)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     {"launch": launch, "worker": worker, "score": score}[args.action](args.case, args.output)
