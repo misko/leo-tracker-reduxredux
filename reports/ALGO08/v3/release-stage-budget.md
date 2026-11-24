@@ -106,6 +106,16 @@ The groups contain different recordings. For example, on median-sized DS30-0004 
 
 ### What the new first-use candidate would still need
 
+The complete first-use process audits time the two native receiver modes independently. Subtracting those wall clocks from their enclosing acquisition interval separates the real cost of detecting signals from reading and verifying original samples. The table partitions entire candidate processes. The last column includes launch, setup, selection and teardown outside the two measured stages.
+
+| Original input | Full receiver calls (s) | Short receiver calls (s) | Remaining acquisition (s) | Decision and publication (s) | Other through-exit work (s) |
+|---|---:|---:|---:|---:|---:|
+| DS30-0107, withhold | 0.036 | 0.030 | 0.068 | 0.014 | 0.415 |
+| DS30-0016, fix | 0.561 | 1.094 | 1.764 | 4.206 | 0.618 |
+| North simulation, fix | 0.843 | 1.843 | 2.482 | 5.799 | 0.638 |
+
+Halving the time spent in short receiver calls, with unchanged downstream work, would move the two physical recordings from **1.39× to 1.48×** by total elapsed time. Even giving every full and short receiver call zero cost yields only **1.73×** by total time on this pair. If short calls instead take half their time and decision plus publication gets 1.5× faster, the remaining acquisition work must also get **1.64× faster** to meet both physical timing gates. The same half-short and 1.5× publication assumptions alone would give **2.08×** on North against the installed control with figure readback. These are one-core accounting scenarios. Changing the selected detections can change solver workload, fix availability and error. [Calculation and source checks](https://github.com/misko/leo-tracker-reduxredux/blob/5199daaa675f3230329cf5e0db149d78b71a6d42/reports/ALGO08/v3/first_use_native_budget.py) · [Measured partition and modeled totals](https://github.com/misko/leo-tracker-reduxredux/blob/5199daaa675f3230329cf5e0db149d78b71a6d42/reports/ALGO08/v3/measurements/first-use-native-budget.json)
+
 The same file boundary can be observed in the two small, complete candidate runs that generated their own indexes. On DS30-0016, 4.565 s elapsed before the detection file and 3.678 s after it. On DS30-0107 those intervals were 0.488 s and 0.075 s. In total the candidate spent **5.053 s before detections and 3.753 s after**. Holding its post-detection time fixed, halving its current pre-detection time would give 6.280 s, still 0.159 s above half of installed v3. The pre-detection interval would have to get **2.13× faster again** to meet the summed gate under this assumption. These two original-file recordings have 808 and 29 visits and were outside the historical 100. [Matched normal first-use runs](https://github.com/misko/leo-tracker-reduxredux/blob/f881655010564064b4f584e99232694581ac58f2/reports/ALGO08/v3/legacy-first-use-original-panel.md)
 
 The two intervals use the archived child `started_unix_ns` and elapsed clocks. The corresponding native `detections.json` modification times were `1795515024035109142` ns for DS30-0016 and `1795515019391747799` ns for DS30-0107. The positive case independently records its launch-to-detections interval in the scored scientific receipt.
