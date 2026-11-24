@@ -4,7 +4,10 @@ from contextlib import contextmanager
 import json
 from pathlib import Path
 import pickle
+import sys
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import exact_named_raw as route
 import history_cairo_render
@@ -50,6 +53,4 @@ def run(command):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
