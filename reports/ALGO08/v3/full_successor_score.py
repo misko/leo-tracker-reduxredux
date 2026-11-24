@@ -286,6 +286,15 @@ def write_report(pairs, output, enrollment, receipt_digest):
         lines.append("| " + labels[a] + " | " + " | ".join(str(joint[a, b]) for b in states) +
                      f" | {full['installed']['outcomes'][a]} |")
     lines.append("| Total | " + " | ".join(str(full["successor"]["outcomes"][b]) for b in states) + f" | {k} |")
+    recovered = next((b for a, b in pairs if a["case"] == "DS30-0397" and a["outcome"] == "solver_failed"
+                      and b["outcome"] == "complete" and b["fitted_c_error_km"] is not None), None)
+    if recovered:
+        lines += ["", "On DS30-0397 the installed solver and its retry stopped at the orbit interpolator's "
+                  "time boundary. The candidate extended its orbit grid with states propagated from the "
+                  "causal orbital elements and retried the interpolation inside that grid. Its fitted "
+                  f"position was {recovered['fitted_c_error_km']:.3f} km from the reference. "
+                  "[DS30-0397 solver and publication audit](https://github.com/misko/leo-tracker-reduxredux/blob/"
+                  "5bb0489d85435688e05c1b6f6419620e5565fe33/reports/ALGO08/v3/ds30-0397-orbit-support-audit.md)"]
     lines += ["", "[Per-recording results](recordings.csv) · [Machine-readable summary and provenance](summary.json)", ""]
     (output / "README.md").write_text("\n".join(lines))
 
