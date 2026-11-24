@@ -90,3 +90,22 @@ def test_bad_binary_pin_retains_the_original_verifier(unfilter):
     read = RgbaEvidence(unfilter[0], "bad-pin", lambda data, digest: result, audit)
     assert read(b"anything", "sha256:original") is result
     assert audit["unavailable"] and audit["fallback"] == 1
+
+
+def test_native_recognizes_only_well_formed_publisher_ancillary_chunks(unfilter):
+    compressed = zlib.compress(b"\x00\x11\x22\x33\xff")
+    marker = chunk(b"tEXt", b"Software\0ALGO08")
+    density = chunk(b"pHYs", struct.pack(">IIB", 4921, 4921, 1))
+    admitted = png(1, 1, compressed, ancillary=marker+density)
+    audit = {}
+    reader = RgbaEvidence(*unfilter, original, audit)
+    assert reader(admitted, "encoded") == original(admitted, "encoded")
+
+    for unusual in (marker+marker, density+density, chunk(b"pHYs", b"x"), chunk(b"tEXt", b"Description\0text"),
+                    chunk(b"tEXt", b"Software-no-separator"), chunk(b"tEXt", b"Software\0x\0y")):
+        assert layout(png(1, 1, compressed, ancillary=unusual)) is None
+
+    truncated = png(8, 8, b"unreadable-zlib-data")[:-24]
+    with pytest.raises(OSError):
+        reader(truncated, "encoded")
+    assert audit["native"] == 1 and audit["fallback"] == 1
