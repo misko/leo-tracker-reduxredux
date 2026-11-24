@@ -51,8 +51,8 @@ def reopen(member, expected, raw, codec, replay):
                     original_encoded_reused=len(member.compressed))
 
 
-def member_windows(source, chunk, declared, name, history, hasher, replay, hashes, *, accelerate=False):
-    """Yield one complete installed-source member and return its verified map evidence."""
+def member_windows(source, chunk, declared, name, history, hasher, replay, hashes, *, accelerate=False, build_maps=True):
+    """Yield one complete verified original member and optionally derive its replay map."""
     from leo.scanner.fast_scan_analysis import VerifiedFastWindow
 
     reader = source.reader
@@ -63,7 +63,7 @@ def member_windows(source, chunk, declared, name, history, hasher, replay, hashe
     try:
         with legacy.one_member(reader.path, chunk, snapshots=snapshots):
             member = fused.FusedMember(reader, chunk, history, hasher, allow_literal=True,
-                                       owned_windows=accelerate, hash_prefix=accelerate)
+                                       owned_windows=accelerate, hash_prefix=accelerate, build_maps=build_maps)
     except multi.UnsupportedExceptionLayout as error:
         reason = str(error)
     if len(snapshots) > 1:
@@ -85,7 +85,12 @@ def member_windows(source, chunk, declared, name, history, hasher, replay, hashe
                                          sample_rate_hz=reader.manifest.sample_rate_hz)
         if count != chunk.window_count:
             raise BundleCorruptionError("First-use reader did not exhaust the original member")
-        observed = dict(port.member_identity(reader, chunk), map=None, map_kind="ordinary", map_sha256=None)
+        observed = port.member_identity(reader, chunk)
+        if not build_maps:
+            check_expected(declared, observed)
+            audit = {"fallback": reason} if member is None else member.audit()
+            return observed | audit, None
+        observed.update(map=None, map_kind="ordinary", map_sha256=None)
         if member is None:
             check_expected(declared, observed)
             return dict(observed, fallback=reason, map_bytes=0), None
@@ -105,17 +110,17 @@ def member_windows(source, chunk, declared, name, history, hasher, replay, hashe
                     map_reopen=elapsed(began), **member.audit()), raw
 
 
-def first_windows(source, parts, history, hasher, replay, pending, audit, hashes, *, accelerate=False):
+def first_windows(source, parts, history, hasher, replay, pending, audit, hashes, *, accelerate=False, build_maps=True):
     if source.start_sequence or source.stop_sequence != source.reader.manifest.window_count:
         raise ValueError("First-use maps require the complete original segment")
     for chunk in source.reader.manifest.chunks:
         identity = source.reader.manifest_sha256, chunk.chunk_index
         declared = parts[identity]
-        name = port.map_name(len(audit))
+        name = port.map_name(len(audit)) if build_maps else None
         if name in pending:
             raise BundleCorruptionError("Original first-use acquisition repeated a member")
         evidence, raw = yield from member_windows(source, chunk, declared, name, history, hasher, replay, hashes,
-                                                  accelerate=accelerate)
+                                                  accelerate=accelerate, build_maps=build_maps)
         if raw is not None:
             pending[name] = raw
         audit.append(evidence)
@@ -131,9 +136,13 @@ def map_names(plan):
 
 
 @contextmanager
-def binding(boot, expected, history, hasher, replay, pending, audit, *, accelerate=False):
+def binding(boot, expected, history, hasher, replay, pending, audit, *, accelerate=False, build_maps=True):
+    if not build_maps and expected is not None:
+        raise ValueError("A replay map plan requires map collection")
     staged = boot.staged_scanner
     options = {"accelerate": True} if accelerate else {}
+    if not build_maps:
+        options["build_maps"] = False
     with ExitStack() as stack:
         def prepare(sources, detector=None):
             scan = staged(sources, detector=detector)
@@ -160,16 +169,19 @@ def binding(boot, expected, history, hasher, replay, pending, audit, *, accelera
                     result = acquire(session, digest, inventory, assets)
                     observed = [(row["manifest_sha256"], row["chunk_index"]) for row in audit["members"]]
                     raw = port.raw_authority(digest, hashes)
-                    plan = dict(schema=port.SCHEMA, session=session, inventory=digest, windows=len(hashes),
-                                raw_authority=raw, members=[
-                                    {key: row[key] for key in (*parts[identity], "map", "map_kind", "map_sha256")}
-                                    for identity, row in zip(observed, audit["members"], strict=True)])
-                    if (observed != list(parts) or list(pending) != map_names(plan)
-                            or len(hashes) != inventory["window_count"]
-                            or result["source"]["raw_recording_authority_digest"] != raw
-                            or expected is not None and expected != plan):
+                    if (observed != list(parts) or len(hashes) != inventory["window_count"]
+                            or result["source"]["raw_recording_authority_digest"] != raw):
                         raise BundleCorruptionError("The fused path did not finish the original signed receiver")
-                    audit["verified_plan"] = plan
+                    verified = dict(session=session, inventory=digest, windows=len(hashes), raw_authority=raw)
+                    if build_maps:
+                        plan = dict(**verified, schema=port.SCHEMA, members=[
+                            {key: row[key] for key in (*parts[identity], "map", "map_kind", "map_sha256")}
+                            for identity, row in zip(observed, audit["members"], strict=True)])
+                        if list(pending) != map_names(plan) or expected is not None and expected != plan:
+                            raise BundleCorruptionError("The fused path did not finish the replay map plan")
+                        audit["verified_plan"] = plan
+                    else:
+                        audit["verified_source"] = verified
                     audit["finished_raw_authority"] = raw
                     return result
                 except BaseException:
