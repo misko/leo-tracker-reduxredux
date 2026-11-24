@@ -1,4 +1,5 @@
 from copy import deepcopy
+from errno import EAGAIN
 
 import pytest
 
@@ -6,6 +7,7 @@ from anchor_only_0049 import prove_graph_rows, source_views
 from empty_recovery_0049 import restore_empty_lanes
 from joint_recovery_0049 import interaction, restore_coverage_and_winner
 from joint_recovery_0049_admission import device_stats
+import joint_recovery_0049_direct as direct
 from matched_donor_0049 import derive, owner_counts, replace_disagreement, same_carrier
 from signed_cfo_time_readout import canonical, opportunities
 from sparse_only_drop_0049 import exclude_sparse_only
@@ -94,6 +96,30 @@ def test_device_gate_uses_only_the_exact_hot_storage_mounts():
     assert str(devs["/srv/bulk"]) == "/sys/dev/block/252:5/stat"
     with pytest.raises(ValueError, match="changed"):
         device_stats(["22 1 252:5 / /srv/bulk rw"])
+
+
+def test_direct_busy_lease_attempt_never_calls_admission_or_retries(tmp_path, monkeypatch):
+    watch = tmp_path/"watch.json"
+    pin = direct.write(watch, dict(
+        status="no_fresh_official_storage_deferral", plan_sha256=direct.PLAN_PIN,
+    ))
+    monkeypatch.setattr(direct, "WATCH_PIN", pin)
+    attempts = []
+
+    def busy(root, plan_pin, experiment, *, admission):
+        attempts.append((root, plan_pin, experiment))
+        raise BlockingIOError(EAGAIN, "Resource temporarily unavailable")
+
+    monkeypatch.setattr(direct, "launch", busy)
+    direct.attempt(tmp_path, 99)
+    assert attempts == [(tmp_path, direct.PLAN_PIN, direct.JOINT)]
+    assert direct.identifier(watch) == pin
+    ledger = direct.document(tmp_path/"direct-admission.json")
+    assert not ledger["worker_started"]
+    assert ledger["attempts"] == 1 and "[Errno 11]" in ledger["reason"]
+    assert ledger["evidence"] == {}
+    with pytest.raises(ValueError, match="already been used"):
+        direct.attempt(tmp_path, 99)
 
 
 def test_only_matching_nonanchors_change_and_maintain_original_opportunity_metadata():
