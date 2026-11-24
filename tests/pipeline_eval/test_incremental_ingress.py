@@ -59,7 +59,7 @@ def test_feed_requires_complete_length_and_matches_hash_before_commit(tmp_path, 
     assert path.read_bytes() == contents
 
 
-@pytest.mark.parametrize("failure", (None, "decoded_window", "decoded_member", "late_checksum"))
+@pytest.mark.parametrize("failure", (None, "decoded_window", "decoded_member", "late_checksum", "cancel"))
 def test_original_decoded_checks_and_late_failure_precede_packet_return(tmp_path, monkeypatch, failure):
     monkeypatch.setattr(trial, "BLOCK", 128)
     writer = ShortWindowWriter(tmp_path, "signed", configuration={"window_ms": 20},
@@ -90,11 +90,19 @@ def test_original_decoded_checks_and_late_failure_precede_packet_return(tmp_path
 
     def acquire():
         with trial.provisional_decoder(directory / member["payload_relative_path"], member, delivery):
-            for item in reader.windows():
-                windows.append(item.samples)
+            stream = reader.windows()
+            if failure == "cancel":
+                windows.append(next(stream).samples)
+                stream.close()
+            else:
+                windows.extend(item.samples for item in stream)
         seal.write_text("complete")
 
-    if failure:
+    if failure == "cancel":
+        with pytest.raises(ValueError, match="escaped without final compressed verification"):
+            acquire()
+        assert not seal.exists() and len(windows) == 1
+    elif failure:
         with pytest.raises(BundleCorruptionError):
             acquire()
         assert not seal.exists() and len(windows) >= 1
