@@ -12,13 +12,14 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 DENSE = Path("/dev/shm/leo-v3-mixed-final-0008-01")
 OMITTED = Path("/dev/shm/leo-v3-portable-omitted-0016-guarded-02")
+REPAIRED = Path("/dev/shm/leo-v3-portable-repaired-0016-translated-01")
 PINS = {
     "dense_binding": "71bb3459952cf21760764690f54e6536c154151257ba2cf854b1fa11b29870a5",
     "dense_control": "da352d9b4b08a7d79be2fb46735afc7b63f2fee8bb29c1c886e268fae012dd1d",
     "omitted_binding": "84a31908181a540fa305b90f6920b28ff61e50c1179606b400faf64ef4113861",
     "omitted_offer": "063764d149b15b5a61c86a7f02b2a639a564327afdb3dbb32f1ff236e4f5ca6c",
-    "omitted_control": "e2a46cb5c3f4d41465cb0cf39b22c9a5309a6fba563655fb0a66c9338051a0f9",
-    "omitted_research": "074754aa8ad2ba6113d51d376b3fb626339888b28df002b13d05890bde2b75ba",
+    "omitted_control": "246568330488c0cc61ec7f0d5137ebd0fe0278983b2b8787dda4e774ea62fdfc",
+    "omitted_research": "f399c830c51e554c83da309bc548c7530a2ed4223b3657061456e64aae38e623",
 }
 
 
@@ -136,19 +137,24 @@ def score(dense, omitted, output):
     # Geographic truth and existing terminal positions are opened only in this
     # separate, post-seal command.
     reference = json.loads(checked(HERE.parents[1]/"2026_11_21_ds30_full/reference-audit.json",
-                    "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc5e3ecea32637840b5"))
+                    "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"))
     scores = {}
     for snapshot in (dense_seal, omitted_seal):
         case = snapshot["case"]
         if case == "dense":
             earlier = json_pin(DENSE/"result.json", PINS["dense_control"])
+            if earlier["inputs"]["native"] != snapshot["original"]["detector"] or not earlier["same_regional_proof"]:
+                raise ValueError("The accepted original-final-fit control must use the same full dense packet and regional path")
             stock = earlier["solution"]
             coast = earlier["stages"]["cold_clocks"]["cpu_s"]
             solver = earlier["worker"]["solve"]["cpu_s"]
         else:
-            earlier = json_pin(OMITTED/"complete-scope.json", PINS["omitted_control"])
-            stock = earlier["runs"]["portable"]["science"]["arms"]
-            archived = json_pin(OMITTED/"ordinary/selective/joint-research-receipt.json", PINS["omitted_research"])
+            earlier = json_pin(REPAIRED/"complete-scope.json", PINS["omitted_control"])
+            if (earlier["native_sha256"] != snapshot["original"]["detector"] or not earlier["same_regional_evidence"]
+                    or earlier["offer"] != json_pin(OMITTED/"offer.json", PINS["omitted_offer"])):
+                raise ValueError("The repaired translated control must use the exact training-input authority and offer")
+            stock = earlier["runs"]["portable"]["science"]["terminal"]["arms"]
+            archived = json_pin(REPAIRED/"portable/selective/joint-research-receipt.json", PINS["omitted_research"])
             coast = archived["route_details"]["cold_clocks"]["cpu_s"]
             solver = archived["solve"]["cpu_s"]
         tag = "DS30-0008" if case == "dense" else "DS30-0016"
@@ -157,8 +163,10 @@ def score(dense, omitted, output):
                       current_error_km=distance_km(truth, stock[arm]["latlon"]), current_rf_rms_hz=stock[arm]["rf_rms_hz"])
                 for arm, item in snapshot["proposal"]["arms"].items()}
         charged = snapshot["total"]["cpu_s"]
+        prepared = snapshot["training_controls"]["cpu_s"]
         scores[case] = dict(current_cold_cpu_s=coast, current_solve_cpu_s=solver, paid_proposal_cpu_s=charged,
                            fallback_cpu_s=charged+solver, even_if_admitted_cold_headroom_cpu_s=coast-charged, arms=arms,
+                           optimistic_headroom_if_training_preparation_were_free_cpu_s=coast-(charged-prepared),
                            gate=snapshot["proposal"]["gate"], support=snapshot["proposal"]["support"],
                            reasons=snapshot["proposal"]["gate_failures"])
     retained = [name for name, item in scores.items() if item["gate"] == "admit"]
