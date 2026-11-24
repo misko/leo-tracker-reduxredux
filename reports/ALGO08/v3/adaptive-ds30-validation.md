@@ -11,6 +11,17 @@
 
 The last three rows cannot supply a cohort runtime or fix-rate estimate for a new end-to-end release. In particular, charging the index construction to the dense case addresses one cost. It still leaves original waveform processing outside both saved clocks. The candidate used an adaptive grid and all eight figures were verified on each saved positive. On DS30-0160 the omitted grid locations have no same-fit full-grid reference. The physical DS30 cases also share a site.
 
+## Keeping ALGO08v3's original position solution
+
+The next solver experiment kept the original satellite selection, repairs, fits, and standard figures and reused repeated computations. Both physical recordings returned exactly the original ordered satellite assignments, both calibration endpoints and RF residuals, the 179-location grid, the path and all eight PNGs. Each comparison starts with the same original signed 20 ms detections. The named comparison clocks are historical. [Exact solver and paired receipts](exact-named-route.md)
+
+| Recording | Named v3 elapsed | Exact solver elapsed | Speedup | Horizontal error for both methods, fixed / fitted |
+|---|---:|---:|---:|---:|
+| DS30-0160 | 15.999 s | 10.330 s | 1.55× | 798 / 1,089 m |
+| DS30-0316 | 18.358 s | 16.887 s | 1.09× | 1,945 / 1,863 m |
+
+The two completed saved publications took **34.357 → 27.217 s**, a **1.26×** speedup by total time and **1.28×** by the median paired time ratio. DS30-0316 also required a one-time fix for its legacy manifest path convention. Including that rejected 1.127 s startup gives **1.21×** for the total experiment. DS30-0160 avoided repeating a fit after recovering a missing prior orbit. DS30-0316 took the ordinary inference path and had no such retry. This difference makes an ordinary fix the more informative case for the next optimization.
+
 ## How much faster must acquisition become?
 
 The table gives the **minimum uniform effective compressed MB/s** from launch until sealed detections that would satisfy both existing time gates. A run passes those gates when both the median paired candidate/v3 elapsed ratio and the ratio of summed elapsed times are at most 0.5. Higher required rates leave less time to read, authenticate, decode and detect the same recordings.
@@ -26,4 +37,4 @@ These are sensitivity calculations using the enrolled v3 recordings and elapsed 
 
 Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py` from the repository root. The output gives each timing gate separately. The calculation verifies the hashes of both saved comparisons, the enrolled subsets and the historical stage data. [Calculation](adaptive_receiver_budget.py)
 
-The held case changes the next experiment. Reuse computation while keeping the original satellite assignments and both fitted endpoints, then compare on a second packet before expanding the roster. The receiver experiment checks how much work can be removed from processing the same pilot samples while preserving ordered detections. The first qualification that can establish a speedup on a physical fix remains a paired launch from identical original samples through verified publication and exit.
+The receiver experiment checks how much work can be removed from processing the same pilot samples while preserving ordered detections. The next transfer for the exact solver uses the authenticated 20/8 ms detections from a weak physical fix. A paired launch from identical original samples through verified publication and exit is still needed. The latest opportunity to copy the rest of DS30-0016 expired under storage load after zero new archive reads. [Staging receipt](guarded-cfo-0016-idle-a16.md)
