@@ -177,10 +177,11 @@ def compare(pairs, prior):
 
 
 def run(root):
-    from empty_bootstrap import bind_native, load_runtime
+    from combined_successor_raw_entry import solver_ports
+    from empty_bootstrap import PAYLOAD, bind_native, load_runtime
 
     _, specification, _, publication, _ = load_runtime()
-    from combined_successor_raw_entry import solver_ports
+    from tools import algo08_position, algo08_scan
     from cumulative_grid_projection import saved_inventory_port
     from dense_geographic_trial import host
     import exact_named_raw as raw
@@ -192,6 +193,9 @@ def run(root):
     from leo.storage.fast_scan import FastSegmentSource
     from two_centre_seeds import elapsed, now
 
+    if any(Path(module.__file__).resolve() != PAYLOAD/"tools"/f"algo08_{name}.py"
+           for name, module in (("position", algo08_position), ("scan", algo08_scan))):
+        raise ValueError("The installed scan and scientific modules must bind before research imports")
     sys.addaudithook(forbid_raw)
     stage_seal = checked(STAGE/"prediction-seal.json", SEAL)
     source = checked(STAGE/"result.json", RESULT)
