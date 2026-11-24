@@ -45,7 +45,7 @@ def resident(request, chunks):
     return dict(wave=recorded, causal=causal_cache(request))
 
 
-def launch(root, mode, physical_admission):
+def launch(root, mode, controls):
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from dense_geographic_trial import host
@@ -67,9 +67,9 @@ def launch(root, mode, physical_admission):
                 or prior["seal_sha256"] != sha256((containing / "prediction-seal.json").read_bytes()).hexdigest()
                 or json.loads((containing / "prediction-seal.json").read_bytes()) != output_seal(containing)):
             raise ValueError("Near-omitted depends on a qualified sealed containing transfer")
-    physical = json.loads(checked(physical_admission, PHYSICAL_PIN))
+    physical = json.loads(checked(staged_path(controls / "physical-admission.json", root=controls), PHYSICAL_PIN))
     request, chunks = assigned()
-    prior = json.loads(checked(PRIOR / "result.json", CONTROL_PIN))
+    prior = json.loads(checked(staged_path(controls / "south-result.json", root=controls), CONTROL_PIN))
     current = host()
     if not prior["qualified"] or request != prior["admission"]["request"] or current != physical["machine"]:
         raise ValueError("The signed South controls or Gauss boundary changed")
@@ -87,7 +87,7 @@ def launch(root, mode, physical_admission):
     before = resident(request, chunks)
     root.mkdir(mode=0o700)
     (root / "tmp").mkdir()
-    copytree(PRIOR / "fonts", root / "fonts")
+    copytree(staged_path(controls / "fonts", root=controls), root / "fonts")
     write(root / "admission.json", dict(mode=mode, command=argv, request=request, chunks=chunks, machine=current,
           baseline_sources=physical["sources"], physical_admission_sha256=PHYSICAL_PIN, controls_sha256=CONTROL_PIN,
           portable=portable, original_conditioning_bytes=0, prior_map_files_used=0, installed_children=0,
@@ -114,9 +114,9 @@ def main():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("root", type=Path)
     cli.add_argument("mode", choices=MODES)
-    cli.add_argument("physical_admission", type=Path)
+    cli.add_argument("controls", type=Path)
     args = cli.parse_args()
-    launch(args.root, args.mode, args.physical_admission)
+    launch(args.root, args.mode, args.controls)
 
 
 if __name__ == "__main__":
