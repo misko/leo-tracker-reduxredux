@@ -1,5 +1,9 @@
+from collections import Counter
+from contextlib import contextmanager
 from importlib import import_module
 from pathlib import Path
+import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -102,3 +106,36 @@ def test_prototype_falls_back_near_signed_alias_tie(block):
     orbit = np.full((2, len(observed)), block.PERIOD / 2, order="F")
     assert prototype.reduced_profile(observed, orbit, np.array([0, 2]), np.full(40, 1/block.NOISE),
                                      np.empty((4, 40), order="F")) is None
+
+
+def test_publication_port_admits_exact_scopes_and_restores_original(block, monkeypatch):
+    port = import_module("catalogue_block_port")
+    changes = []
+
+    @contextmanager
+    def original(*_args, borrow=False):
+        changes.append(("original", borrow))
+        yield
+
+    @contextmanager
+    def guarded(scan, _tables, counts, *, borrow=False):
+        if borrow:
+            raise ValueError("not a measured scope")
+        changes.append((scan, borrow))
+        counts["calls"] += 1
+        yield
+
+    entry = SimpleNamespace(shared_association_rows=original)
+    monkeypatch.setitem(sys.modules, "cold_track_row_entry", entry)
+    monkeypatch.setattr(port, "install", guarded)
+    with port.use_catalogue_blocks() as counts:
+        with entry.shared_association_rows("cached cold", None, Counter()):
+            pass
+        with entry.shared_association_rows("borrowed cold", None, Counter(), borrow=True):
+            pass
+        with pytest.raises(RuntimeError, match="inside rank"):
+            with entry.shared_association_rows("solver exception", None, Counter()):
+                raise RuntimeError("inside rank")
+    assert entry.shared_association_rows is original
+    assert changes == [("cached cold", False), ("original", True), ("solver exception", False)]
+    assert counts == dict(admitted_ranks=2, original_ranks=1, calls=2)
