@@ -65,12 +65,12 @@ def radio_design(track, scan, i):
 
 class Slate:
     def __init__(self, scan, model):
+        from leo.analysis.localization_v3 import scan as scan_kernel
         from leo.analysis.localization_v3.history_position import forecast_phase_mean
         from leo.analysis.localization_v3.retained_position import phase_widths
-        from leo.analysis.research.phase_linear_geometry import phase_linear_frequency, prepare_phase_geometry
         from leo.analysis.research.retained_track_likelihood import PERIOD
 
-        self.scan, self.core = scan, phase_linear_frequency
+        self.scan, self.core = scan, scan_kernel.phase_linear_frequency
         self.region = scan.search_region
         self.half = self.region.half_width_km
         self.period = PERIOD
@@ -117,7 +117,7 @@ class Slate:
         phase_width, evidence = phase_widths(scan, self.labels.tolist())
         self.mean = forecast_phase_mean(evidence, model["shrinkage"])
         self.width = phase_width*float(model["multiplier"])
-        self.geometry = prepare_phase_geometry(subset(scan.sky, self.labels), scan.times, self.mean)
+        self.geometry = scan_kernel.prepare_phase_geometry(subset(scan.sky, self.labels), scan.times, self.mean)
         f, _, _ = self.core(self.geometry, *self.region.latlon(np.zeros(2)))
         for row in rows:
             row["local"] = np.searchsorted(self.labels, row["labels"])
