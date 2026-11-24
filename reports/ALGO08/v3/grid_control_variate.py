@@ -225,6 +225,33 @@ def preserves_fidelity(row):
                     and c["sampled_hausdorff_km"] <= CONTOUR_LIMIT_KM for c in row["contours"].values()))
 
 
+def interpolation_readout(points, reference, result, width):
+    """Price unguarded errors after the frozen schedule. This never asks the callback."""
+    initial = {p: result["paid"][p] for p, source in result["sources"].items()
+               if source in ("endpoint", "coarse_training", "edge_sentinel", "cell_sentinel")}
+    if len(initial) < 49:
+        return None
+    coarse = np.asarray([-width/2. + width*i/8 for i in range(0, 9, 2)])
+    training = np.asarray([[initial[(x, y)] for y in coarse] for x in coarse], dtype=float)
+    guess = dict(zip(points, tensor_cubic(coarse, training, points), strict=True))
+    held = [p for p in points if p not in initial]
+    if not held:
+        return None
+    raw = dict(paid=initial, estimated={p: (guess[p], (0., 0.)) for p in held})
+    checks = audit(points, reference, raw)
+    errors = np.abs(np.array([guess[p] for p in held]) - np.array([reference[p] for p in held], dtype=float))
+    sentinels = [p for p, purpose in result["sources"].items() if purpose in ("edge_sentinel", "cell_sentinel")]
+    for index, arm in enumerate(ARMS):
+        sentinel_error = [abs(float(guess[p][index])-initial[p][index]) for p in sentinels
+                          if initial[p][index] is not None]
+        checks[arm]["raw_sentinel_errors"] = dict(finite=len(sentinel_error), min=min(sentinel_error, default=None),
+                                                  median=float(np.median(sentinel_error)) if sentinel_error else None,
+                                                  max=max(sentinel_error, default=None))
+    return dict(paid_locations=len(initial), raw_predictions=len(held), arms=checks,
+                lucky_joint_scores_within_tolerance=int(np.count_nonzero(np.all(errors <= ABS_LIMIT, axis=1))),
+                all_original_errors_read_after_schedule=True)
+
+
 def archived_case(root, pin):
     if not root.resolve(strict=True).is_relative_to(Path("/dev/shm")):
         raise ValueError("Use only original staged publication metadata")
@@ -284,6 +311,7 @@ def screen_case(root, pin):
                         failures=row["failures"] if point in research["paid"] else {},
                         empirical_error_radius=dict(zip(ARMS, radius, strict=True))))
     checks = audit(points, exact, research)
+    unchecked = interpolation_readout(points, exact, research, grid["box_width_km"])
     cost = source["route_details"]["standard_evidence_clocks"]["cpu_s"]
     posterior = source["receipt"]["posterior_grid_handoff"]
     count = len(research["estimated"])
@@ -291,21 +319,18 @@ def screen_case(root, pin):
     return dict(source_sha256=pin, exact_grid_binding=grid["binding"], exact_grid_digest=source["evidence"]["grid"],
                 exact_path_digest=source["evidence"]["path"], original_figures=source["evidence"]["images"],
                 original_terminal_arms=terminal["arms"], region=source["receipt"]["region"],
-                original_terminal=receipt_digest(source), original_points=len(points), paid_locations=len(order),
+                original_terminal=source["receipt"]["terminal_sha256"], original_points=len(points), paid_locations=len(order),
                 estimated_locations=count, paid_sources=dict(sources), charged_order=order,
                 archive_standard_evidence_cpu_s=cost, archive_native_grid_calls=posterior.get("factor_calls", 0),
                 archive_curved_cpu_s=posterior.get("curved_cpu_ns", 0)/1e9,
                 archive_predictive_cpu_s=posterior.get("predictive_kernel_cpu_ns", 0)/1e9,
                 proportional_saved_cpu_less_schedule_s=candidate_budget,
                 interpolation_schedule=dict(cpu_s=cost_cpu, elapsed_s=cost_wall), arms=checks,
+                unguarded_for_analysis_only=unchecked,
                 fidelity=all(preserves_fidelity(row) for row in checks.values()),
                 research_map=dict(kind="research-only position score estimates", original_planned_points=grid["planned_points"],
                                   endpoints=grid["endpoints"], region_center=grid["region_center"],
                                   box_width_km=grid["box_width_km"], points=out))
-
-
-def receipt_digest(source):
-    return source["receipt"]["terminal_sha256"]
 
 
 def run(output):
