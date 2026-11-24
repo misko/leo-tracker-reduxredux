@@ -21,6 +21,7 @@ ORDER = ("containing", "near-omitted")
 ARMS = ("c0", "fitted_c")
 CONTAINING_REQUEST = "975c8b3bf5c6c30a358eb974772cd00e917a9e98fc998bfe9a8fcfad22d48f91"
 PROTOCOL = HERE/"combined-successor-south-protocol.md"
+TIMED_ADAPTER = "10fdc6861812e4a7a8003cac26056f5d85ca9f76374bff69fbd19a69a0945542"
 
 
 def own_sources():
@@ -173,14 +174,18 @@ def worker(root):
 def figures_and_grid(run, offer):
     if run["terminal"]["region"] != offer or set(run["terminal"]["arms"]) != set(ARMS):
         raise ValueError("The published region and calibration arms must be the original ones")
+    published = run["science"]["receipt"]["decision"]
+    numerical = run["terminal"]["decision"]
+    if not (published == "withheld" == numerical or published == "complete" and numerical in ("ok", "complete")):
+        raise ValueError("The numerical terminal and public decision disagree")
     figures = run["products"]["images"]
     sample, path = run["sample"], run["path"]
-    if run["terminal"]["decision"] == "withheld":
+    if published == "withheld":
         if figures or sample is not None or path is not None or run["rows"] or any(
             arm["latlon"] is not None or arm.get("rf_rms_hz") is not None for arm in run["terminal"]["arms"].values()):
             raise ValueError("Withholding requires two null arms and zero position products")
         return None
-    if (run["terminal"]["decision"] != "complete" or len(figures) != 8 or sample is None or path is None or not sample["complete"]
+    if (len(figures) != 8 or sample is None or path is None or not sample["complete"]
             or not sample["matched_c_grid"] or sample["evaluated_points"] != len(sample["points"]) or not path["stages"]
             or any(item["binding"]["position_png_sha256"] != figures["position"]["sha256"] for item in (sample, path))):
         raise ValueError("A fix requires the entire verified common grid, path and eight official images")
@@ -201,7 +206,8 @@ def score(root, output):
     from tools.pipeline_eval.scoring import distance_km
 
     book, seal = read(root/"admission.json"), root/"prediction-seal.json"
-    if read(seal) != output_seal(root) or book["sources"] != own_sources():
+    timed_sources = own_sources() | {Path(__file__).name: TIMED_ADAPTER}
+    if read(seal) != output_seal(root) or book["sources"] not in (own_sources(), timed_sources):
         raise ValueError("Only the sealed, unchanged scientific runs can be scored")
     requests, _, _, installed = controls()
     clocks = {mode: read(root/mode/"routed/clock.json") for mode in ORDER if (root/mode/"routed/clock.json").is_file()}
@@ -236,7 +242,7 @@ def score(root, output):
                     conditional_rf_rms_hz=value.get("rf_rms_hz"), all_owned_rf_rms_hz=detail["arms"].get(arm, {}).get("residual_rms_hz"),
                     owners=detail["arms"].get(arm, {}).get("associated_points", 0))
             timing = run["clock"] | {k: run["trace"][k] for k in ("publication_elapsed_s", "publication_cpu_s", "solve")} if "trace" in run else run["clock"]
-            reports[name] = dict(decision=decision(terminal["decision"], signed_distance > 0), arms=arms, timing=timing,
+            reports[name] = dict(decision=decision(run["science"]["receipt"]["decision"], signed_distance > 0), arms=arms, timing=timing,
                 timing_scope=run.get("timing_scope", "saved worker through exit"), owners=run["science"]["owners"],
                 numerical=run["science"]["scientific_digests"], figures=run["products"]["images"], grid_points=points)
         old, new = installed[mode], trial[mode]
@@ -245,6 +251,7 @@ def score(root, output):
               route=read(folder/"risk-route.json"), native_grid=read(folder/"combined-grid.json"),
               live_orbit=read(folder/"live-corner.json"), render=read(folder/"render-usage.json"))
     write(output, dict(qualified=True, case="South simulation", results=result, admission=book,
+          correct_geography={mode: value["reports"]["candidate"]["decision"] in ("fix", "withheld") for mode, value in result.items()},
           prediction_sha256=digest(seal), control_seal=CONTROL_SEAL, scoring_key_sha256=TRUTH_SHA,
           new_candidate_children=2, new_installed_children=0, native_sha256=requests["containing"]["native_sha256"],
           source_archive=requests["containing"]["local_archive"], waveform_reads=0))

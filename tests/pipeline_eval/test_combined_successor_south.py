@@ -25,10 +25,24 @@ def test_saved_guard_blocks_recording_metadata_and_waveforms(tmp_path):
 def test_publication_must_have_null_arms_and_no_products_when_withheld():
     offer = {"width_km": 25}
     term = dict(decision="withheld", region=offer, arms={k: {"latlon": None} for k in ("c0", "fitted_c")})
-    run = dict(terminal=term, products={"images": {}}, sample=None, path=None, rows={})
+    run = dict(terminal=term, products={"images": {}}, sample=None, path=None, rows={},
+               science={"receipt": {"decision": "withheld"}})
     assert figures_and_grid(run, offer) is None
 
     with pytest.raises(ValueError, match="zero position products"):
         figures_and_grid(run | {"products": {"images": {"position": "unexpected"}}}, offer)
     with pytest.raises(ValueError, match="original ones"):
         figures_and_grid(run, {"width_km": 20})
+
+
+def test_complete_legacy_numerical_terminal_keeps_public_contract():
+    offer = {"width_km": 25}
+    image = {"sha256": "position"}
+    binding = {"position_png_sha256": "position"}
+    run = {"terminal": {"decision": "ok", "arms": {"c0": {}, "fitted_c": {}}, "region": offer},
+           "science": {"receipt": {"decision": "complete"}}, "products": {"images": {"position": image} | {str(i): {} for i in range(7)}},
+           "path": {"binding": binding, "stages": [{}]},
+           "sample": {"binding": binding, "matched_c_grid": True, "complete": True, "evaluated_points": 1, "points": [{}]}}
+    assert figures_and_grid(run, offer) == 1
+    with pytest.raises(ValueError, match="public decision disagree"):
+        figures_and_grid(run | {"science": {"receipt": {"decision": "withheld"}}}, offer)
