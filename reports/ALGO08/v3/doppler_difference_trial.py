@@ -30,8 +30,6 @@ def checked(path, digest):
 
 
 def enrollment(case):
-    from aperture_trial import archive_identity
-
     name, request_pin = REQUESTS[case]
     job = Path(f"/dev/shm/leo-v3-owned-cfo-{name}01/request.json")
     request = json.loads(checked(job, request_pin))
@@ -40,8 +38,6 @@ def enrollment(case):
     if any(subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", path.resolve(strict=True)], text=True).strip() != "tmpfs"
            for path in paths):
         raise ValueError("Every original sampled input must be staged on tmpfs")
-    if archive_identity(archive) != request["archive"]:
-        raise ValueError("The original chronological causal archive changed")
     for field, pin in (("packet", "native"), ("region", "offer_sha256"), ("saved_inventory", "inventory")):
         checked(Path(request[field]), request[pin])
     return job, request, request_pin
@@ -98,11 +94,14 @@ def trial(case, output):
     run = joint.run
 
     def capture(*args, **kwargs):
+        from aperture_trial import archive_identity
         from leo.operations.tle_archive import TleArchiveReader
         from leo.storage.fast_scan import FastSegmentSource
         from named_constrained_research import deny_waveform
 
         archive = Path(request["archive"]["root"]).resolve(strict=True)
+        if archive_identity(archive) != request["archive"]:
+            raise ValueError("The original chronological causal archive changed")
         read = TleArchiveReader.read
 
         def local(reader, snapshot):
