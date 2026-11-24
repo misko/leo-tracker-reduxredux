@@ -104,3 +104,41 @@ def test_figure_panels_keep_own_legends_and_error_extents(tmp_path, rows):
         with Image.open(path) as image:
             assert image.size == size
             image.verify()
+
+
+@pytest.mark.parametrize(("runtime", "full_counts", "subset_counts"), (
+    (True, [3, 3], [1, 1]), (False, [1, 1], [1, 0]),
+))
+def test_histograms_use_shared_edges_and_count_actual_samples(tmp_path, rows, runtime, full_counts, subset_counts):
+    pairs = figures._read_pairs(scored_file(tmp_path, rows[::-1]), ENROLLED)
+    plot = figures._histogram_figure(pairs, runtime=runtime)
+    assert len(plot.axes) == 4
+    for metric in (0, 1):
+        full, subset = plot.axes[metric], plot.axes[metric + 2]
+        base_edges = full.patches[0].get_data().edges.tolist()
+        for panel, expected in ((full, full_counts), (subset, subset_counts)):
+            assert panel.get_legend() is not None
+            histograms = [patch.get_data() for patch in panel.patches]
+            assert [data.edges.tolist() for data in histograms] == [base_edges, base_edges]
+            assert [sum(data.values) for data in histograms] == expected
+        if runtime:
+            assert base_edges[0] > 0
+            assert any("3 timed exits" in text.get_text() for text in full.get_legend().get_texts())
+        else:
+            assert base_edges[0] == 0
+            labels = [text.get_text() for text in full.get_legend().get_texts()]
+            assert "1/3 scored" in labels[0] and "0 withheld · 2 failed · 0 unscored fixes" in labels[0]
+            assert "1/3 scored" in labels[1] and "1 withheld · 0 failed · 1 unscored fixes" in labels[1]
+
+
+def test_histograms_keep_extremes_and_render_empty_error_cohort():
+    edges = figures._histogram_edges([0, .0001, 2500], runtime=False)
+    assert min(edges) == 0 and max(edges) == 2500
+    equal_clocks = figures._histogram_edges([3, 3], runtime=True)
+    assert min(equal_clocks) < 3 < max(equal_clocks)
+
+    cases = [dict(release_100=True, installed=dict(outcome="withheld", c0_error_km=None, fitted_c_error_km=None),
+                  successor=dict(outcome="solver_failed", c0_error_km=None, fitted_c_error_km=None))]
+    error = figures._histogram_figure(cases, runtime=False)
+    assert all(ax.texts[0].get_text() == "No scored fixes" for ax in error.axes)
+    assert all(sum(patch.get_data().values) == 0 for ax in error.axes for patch in ax.patches)

@@ -210,6 +210,9 @@ def write_report(pairs, output, enrollment, receipt_digest):
              f"ALGO08v3 returned **{full['installed']['fitted_c']['fixes']}/{k}** fitted positions "
              f"and the candidate returned **{full['successor']['fitted_c']['fixes']}/{k}**.", "",
              "## Runtime", "", "![Runtime distributions and run order](runtime.png)", "",
+             "![Wall and CPU time histograms](runtime-histogram.png)", "",
+             "The runtime histograms count all measured exits, including withheld and failed attempts. "
+             "Each metric uses the same bin edges for both builds and cohorts.", "",
              "| Cohort | Pairs | Summed wall speedup | Median paired wall speedup | Summed CPU speedup |",
              "|---|---:|---:|---:|---:|"]
     for name, obj in summaries.items():
@@ -220,6 +223,9 @@ def write_report(pairs, output, enrollment, receipt_digest):
               "ALGO08v3 seconds by total candidate seconds. The paired measure is the reciprocal of the median candidate-to-ALGO08v3 time ratio. "
               "The second worker can benefit from pages cached by the first.", "", "## Position error", "",
               "![Position errors with all assigned recordings in the denominator](position-error.png)", "",
+              "![Horizontal error histograms for fixed-zero and fitted calibration](position-error-histogram.png)", "",
+              "The position histograms count scored fixes in shared bins. The legends report the assigned totals "
+              "and the numbers withheld, failed or fixed without a scored reference.", "",
               "| Calibration | Build | Fixes | Within 1 km | Within 2 km | Median / P90 error among scored fixes (km) | Median RF RMS (Hz) |",
               "|---|---|---:|---:|---:|---:|---:|"]
     for arm in ARMS:

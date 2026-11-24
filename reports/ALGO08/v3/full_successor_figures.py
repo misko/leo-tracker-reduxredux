@@ -55,6 +55,7 @@ def _read_pairs(path, enrollment):
             if role in pair or pair["first"] != first:
                 raise ValueError(f"Duplicate role or inconsistent first launch for {case}")
             row = {key: _measure(raw[key].strip(), positive=True) for key in ("elapsed_s", "cpu_s")}
+            row["outcome"] = outcome
             for arm in ("c0", "fitted_c"):
                 error = _measure(raw[arm+"_error_km"].strip(), positive=False)
                 fix = _fix(raw[arm+"_fix"].strip())
@@ -181,11 +182,95 @@ def _write_figures(pairs, output_dir):
     return paths
 
 
+def _histogram_edges(values, *, runtime):
+    from numpy import geomspace, linspace, unique
+
+    if runtime:
+        low, high = min(values, default=1.), max(values, default=1.)
+        if low == high:
+            low, high = low / 1.12, high * 1.12
+        return unique(geomspace(low, high, 23))
+
+    # Keep exact zero and small errors visible before switching to logarithmic bins.
+    linear = linspace(0., .1, 5)
+    high = max(.1, max(values, default=0.))
+    return linear if high == .1 else unique([*linear, *geomspace(.1, high, 19)[1:]])
+
+
+def _histogram_series(pairs, metric, *, runtime):
+    for role in ROLES:
+        rows = [pair[role] for pair in pairs]
+        if runtime:
+            yield role, [row[metric] for row in rows], f"{NAMES[role]} · {len(rows)} timed exits"
+        else:
+            errors = [row[metric + "_error_km"] for row in rows if row[metric + "_error_km"] is not None]
+            counts = Counter(row["outcome"] for row in rows)
+            failed = len(rows) - counts["complete"] - counts["withheld"]
+            unscored = counts["complete"] - len(errors)
+            label = (f"{NAMES[role]} · {len(errors)}/{len(rows)} scored\n"
+                     f"{counts['withheld']} withheld · {failed} failed · {unscored} unscored fixes")
+            yield role, errors, label
+
+
+def _histogram_figure(pairs, *, runtime):
+    from matplotlib.colors import to_rgba
+    from matplotlib.figure import Figure
+    from matplotlib.ticker import MaxNLocator
+    from numpy import histogram
+
+    metrics = (("elapsed_s", "Wall time through exit"), ("cpu_s", "CPU time through exit")) if runtime else (
+        ("c0", "Fixed c = 0"), ("fitted_c", "Fitted c"))
+    figure = Figure(figsize=(10.2, 8.4), dpi=150, layout="constrained")
+    figure.suptitle("DS30 runtime histograms" if runtime else "DS30 horizontal error histograms",
+                    fontsize=19, fontweight="bold")
+    edges = {metric: _histogram_edges([value for _, values, _ in _histogram_series(pairs, metric, runtime=runtime)
+                                       for value in values], runtime=runtime) for metric, _ in metrics}
+    historical = [pair for pair in pairs if pair["release_100"]]
+    for row, (cohort, subset) in zip(figure.subfigures(nrows=2, ncols=1),
+                                     (("Full DS30", pairs), ("Historical release subset", historical)), strict=True):
+        row.suptitle(f"{cohort} · {len(subset)} assigned recordings", fontsize=13, fontweight="bold")
+        for ax, (metric, title) in zip(row.subplots(nrows=1, ncols=2), metrics, strict=True):
+            included = 0
+            for role, values, label in _histogram_series(subset, metric, runtime=runtime):
+                counts, _ = histogram(values, bins=edges[metric])
+                included += len(values)
+                ax.stairs(counts, edges[metric], label=label, fill=True, edgecolor=COLORS[role],
+                          facecolor=to_rgba(COLORS[role], .16), linewidth=1.4,
+                          linestyle="-" if role == "installed" else "--")
+            if runtime:
+                ax.set_xscale("log")
+                ax.set(xlabel="Seconds (log scale)", ylabel="Timed exits per bin")
+            else:
+                ax.set_xscale("symlog", linthresh=.1)
+                ax.set(xlabel="Horizontal error (km, log scale above 0.1 km)", ylabel="Scored fixes per bin")
+            ax.set(title=title, xlim=(edges[metric][0], edges[metric][-1]), ylim=(0, None))
+            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.grid(axis="y", color="#dbe1e5", linewidth=.7)
+            ax.set_axisbelow(True)
+            ax.spines[["top", "right"]].set_visible(False)
+            ax.tick_params(labelsize=8)
+            ax.legend(loc="upper left", bbox_to_anchor=(0, -.22), frameon=False, fontsize=8, borderaxespad=0)
+            if not included:
+                ax.text(.5, .55, "No timed exits" if runtime else "No scored fixes",
+                        transform=ax.transAxes, ha="center", va="center", fontsize=9)
+    return figure
+
+
+def _write_histograms(pairs, output_dir):
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+    for runtime, name in ((True, "runtime-histogram.png"), (False, "position-error-histogram.png")):
+        FigureCanvasAgg(_histogram_figure(pairs, runtime=runtime)).print_png(output_dir / name)
+
+
 def render_distribution_figures(
     scored_csv: Path, output_dir: Path, *, enrollment: Mapping[str, bool],
 ) -> tuple[Path, Path]:
-    """Write two report PNGs from a CSV bound to the exact sealed case/subset mapping."""
+    """Write the ECDFs and companion histograms using the exact sealed enrollment."""
     if (len(enrollment) != 455 or any(type(flag) is not bool for flag in enrollment.values())
             or sum(enrollment.values()) != 100):
         raise ValueError("Full DS30 figures require the exact 455-case and historical 100-case enrollment")
-    return _write_figures(_read_pairs(scored_csv, enrollment), output_dir)
+    pairs = _read_pairs(scored_csv, enrollment)
+    ecdfs = _write_figures(pairs, output_dir)
+    _write_histograms(pairs, output_dir)
+    return ecdfs

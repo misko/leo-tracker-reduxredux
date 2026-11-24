@@ -2,6 +2,7 @@ import csv
 import json
 
 import pytest
+from PIL import Image
 
 from full_successor_score import PINS, outcomes_summary, paired_rows, paired_timing, roster, score_arms, write_report
 
@@ -106,6 +107,11 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
-    for figure in ("runtime.png", "position-error.png"):
-        assert (tmp_path / figure).read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
-        assert figure in (tmp_path / "README.md").read_text()
+    markdown = (tmp_path / "README.md").read_text()
+    for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png"):
+        with Image.open(tmp_path / figure) as png:
+            assert png.format == "PNG"
+            png.verify()
+        assert f"]({figure})" in markdown
+    assert "including withheld and failed attempts" in markdown
+    assert "assigned totals and the numbers withheld, failed or fixed without a scored reference" in markdown
