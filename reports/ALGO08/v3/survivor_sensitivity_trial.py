@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve().parent
-SPLITS = {"development": ("0016", "0316"), "held": ("0008", "0402")}
+SPLITS = {"development": ("0016", "0316"), "held": ("0008", "0402"), "held-0402-recovery": ("0402",)}
 STAGED = {
     "0016": ("leo-v3-portable-repaired-0016-containing-01/ordinary/binding.json",
              "6883cb60e777fcb223862c765d2e4f1cc1a579fa126704f71c64be06c3368f82"),
@@ -21,7 +21,7 @@ STAGED = {
     "0402": ("leo-v3-saved-0402-pair-01/request.json",
              "a2d730f64833eafd096877650e24b5c250b3bcfbef69d6bb5a44b70f0cbf1274"),
 }
-MEDIUM_SOURCE_UPDATES = {
+SAVED_SOURCE_UPDATES = {
     "unified_short_bootstrap.py": "d2c4d213008ce2f1ca3ce29d2d755eeb9fb1b5c0fcef603bbc0f87cf688c3c27",
 }
 
@@ -62,9 +62,13 @@ def run_case(case, root, request):
 
         worker(request, "combined", root / "published", named_survivor_finish=True)
     elif case == "0402":
+        import isolated_salvage_0402_trial as isolated
+        import prospective_0402_solver as prior
         from named_survivor_0402_trial import fixed_worker
 
-        fixed_worker(root / "published")
+        with (patch.object(isolated, "POLICY_PINS", isolated.POLICY_PINS | SAVED_SOURCE_UPDATES),
+              patch.object(prior, "PINS", prior.PINS | SAVED_SOURCE_UPDATES)):
+            fixed_worker(root / "published")
     else:
         raise ValueError("Unenrolled saved diagnostic")
 
@@ -80,7 +84,7 @@ def worker(case, root):
     request = root / "binding.json"
     if case == "0316":
         data = json.loads(raw)
-        data["source_pins"].update(MEDIUM_SOURCE_UPDATES)
+        data["source_pins"].update(SAVED_SOURCE_UPDATES)
         raw = json.dumps(data).encode()
     request.write_bytes(raw)
     result, handoffs = {}, []
@@ -141,10 +145,10 @@ def launch(split, root):
         clock = measure(command, env, target)
         write(root / f"{case}-clock.json", clock)
         clocks[case] = clock
-    if any(clock["exit_code"] != 0 for clock in clocks.values()):
-        raise ValueError("Saved diagnostic failed; standalone worker clocks and logs are sealed")
     write(root / "feature-seal.json", {case: sha256((root / case / "probe.json").read_bytes()).hexdigest()
-                                     for case in cases})
+                                     for case in cases if clocks[case]["exit_code"] == 0})
+    if any(clock["exit_code"] != 0 for clock in clocks.values()):
+        raise ValueError("Saved diagnostic failed; standalone worker clocks and successful features are sealed")
 
 
 if __name__ == "__main__":
