@@ -756,6 +756,12 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "satellite and role. Its fitted error still exceeded ALGO08v3 by 1.783 km. "
               "[Joint saved-input test](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "3435ca510dced361269178f61757cf192be4e46a/reports/ALGO08/v3/ds30-0049-joint-recovery.md)", "",
+              "The identical rule on DS30-0086 restored 564 missing detections and replaced 464 disagreeing "
+              "winners. Fixed-zero error fell from 371 to 219 m and fitted error from 382 to 299 m. "
+              "This second recording came from the same roof. The measured gains on both recordings required "
+              "the original full-length receiver outputs as a reference. [DS30-0086 transfer test]"
+              "(https://github.com/misko/leo-tracker-reduxredux/blob/0488b1f9f405458c829b3d05b84e5db6213e07bb/"
+              "reports/ALGO08/v3/ds30-0086-joint-recovery.md)", "",
               "Restoring all 104 detections recovered 41 of the 44 missing installed assignments with the "
               "same satellite and role. Fitted error improved by 377 m and remained 2.243 km above ALGO08v3. "
               "The four changes were tested independently. "

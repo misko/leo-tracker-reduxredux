@@ -340,6 +340,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
     assert "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |" in markdown
+    assert "ds30-0086-joint-recovery.md)" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
     assert "DS30-0210 solver and publication audit" not in markdown
