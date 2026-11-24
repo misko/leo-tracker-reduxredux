@@ -19,7 +19,7 @@ DIAGNOSTIC_CHANGES = {"combined-raw-protocol.md", "combined-raw.md", "combined_r
                       "continued_cfo_north_trial.py", "guarded_cfo_small_raw.py", "north_orbit_index_trial.py"}
 
 
-def bindings(root, request):
+def bindings(root, request, offer="containing"):
     from anchored_cfo_raw import verified_pack
     from combined_raw_trial import checked_producer
     from empty_bootstrap import checked
@@ -60,8 +60,8 @@ def bindings(root, request):
     producer = checked_producer(request["cutoff_utc_ns"], census["72"]["body_digests"])
     if not producer["overlapping_bodies"]:
         raise ValueError("The earlier causal producer cannot transfer any source bodies to South")
-    for flag, val in (("--recording", request["recording"]), ("--region", request["offers"]["containing"]),
-                      ("--output", str(root / "containing"))):
+    for flag, val in (("--recording", request["recording"]), ("--region", request["offers"][offer]),
+                      ("--output", str(root / offer))):
         command[command.index(flag) + 1] = val
     return dict(command=command, request=request, north_binding_sha256=NORTH_BINDING, original_commit=old,
                 execution_checkout_commit=head, changed_launch_and_score_sources=drift, producer=producer, archive_census=census,
@@ -69,7 +69,7 @@ def bindings(root, request):
                 runtime_source_sha256=north["source_sha256"], protocol_sha256=sha256((HERE / "combined-raw-south-protocol.md").read_bytes()).hexdigest())
 
 
-def run(root):
+def run(root, offer="containing"):
     from aperture_trial import RELEASE, write
     from dense_geographic_trial import host
     from full_short_physical import environment
@@ -78,10 +78,13 @@ def run(root):
 
     machine = host()
     request, chunks = assigned()
-    filesystems = (root.parent, Path(request["recording"]), Path(request["archive"]["root"]), Path(request["offers"]["containing"]))
+    filesystems = (root.parent, Path(request["recording"]), Path(request["archive"]["root"]), Path(request["offers"][offer]))
     if any(subprocess.check_output(["findmnt", "-no", "FSTYPE", "-T", path], text=True).strip() != "tmpfs" for path in filesystems):
         raise ValueError("Original South inputs and output must be on verified tmpfs")
-    binding = bindings(root, request)
+    binding = bindings(root, request, offer)
+    if offer == "near-omitted":
+        from south_raw_offer_control import preflight
+        binding["paired_control"] = preflight(binding)
     root.mkdir()
     for name in ("fonts", "tmp"):
         (root / name).mkdir()
@@ -95,10 +98,14 @@ def run(root):
     if not admissible(before):
         write(root / "admission.json", dict(raw_admissible=False, cache=before, warmed_pages=0, raw_launches=0))
         return
-    clock = measure(binding["command"], env, root / "containing")
+    clock = measure(binding["command"], env, root / offer)
     write(root / "clock.json", clock)
     write(root / "cache-after.json", residency(chunks))
-    score(root)
+    if offer == "containing":
+        score(root)
+    else:
+        from south_raw_offer_control import score_omitted
+        score_omitted(root)
 
 
 def probe_delta(previous, current):
@@ -218,10 +225,14 @@ if __name__ == "__main__":
     parser.add_argument("mode", choices=("run", "score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--receipt", type=Path, help="Write a separate archive-only comparison")
+    parser.add_argument("--offer", choices=("containing", "near-omitted"), default="containing")
     args = parser.parse_args()
     if args.mode == "run":
         if args.receipt is not None:
             parser.error("--receipt applies only to score")
-        run(args.root)
+        run(args.root, args.offer)
+    elif args.offer == "near-omitted":
+        from south_raw_offer_control import score_omitted
+        score_omitted(args.root, args.receipt)
     else:
         score(args.root, args.receipt)

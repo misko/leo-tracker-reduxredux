@@ -1,0 +1,5 @@
+# South original-input missing-region control
+
+Replay the resident South original samples once under the previously signed offer that excludes truth by 100 m. Change only the operator offer and output directory from the complete combined South raw command. Bind the historical containing publication, all input identities, causal index and native libraries before launch. The child receives no truth. Use one low-priority core, the shared Gauss lock, and fully resident tmpfs payloads and indexes. Stop if admission fails.
+
+After exit compare the actual signed receiver probes, calibrated decisions, assignments, horizontal errors and RF residuals against the same build on the containing offer. Verify the terminal, matched position grid and path and all eight PNGs on publication. Check the region used by the plotted position sidecars. Report a complete position as a false fix on this omitted offer regardless of error or image quality. The separate historical omitted controls used their own clocks. Do not count this repeated recording as another positive in either speed gate.
