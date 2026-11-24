@@ -234,9 +234,10 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
-    assert "from 0.410 to 0.378 km. With the candidate solver, it changed from 0.457 to 0.382 km." in markdown
+    assert "| DS30-0086 | 0.410 | 0.457 | 0.378 | 0.382 |" in markdown
     assert "field-receiver-solver-cross-0086.md)" in markdown
-    assert "increased fitted error from 0.369 to 1.371 km" in markdown
+    assert "| DS30-0220 | 0.369 | 0.369 | 0.546 | 1.371 |" in markdown
+    assert "3258963eb3aa9c134c0081ae4ab40287a9c16668" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown

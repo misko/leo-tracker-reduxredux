@@ -565,21 +565,26 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         lines.append(f"| {label} | {rf['comparable']} | {rf['rf_lower_closer']} | {rf['rf_lower_farther']} | "
                      f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
     lines += ["", "### Does the receiver effect repeat?", "",
-              "On DS30-0086, each solver also processed both saved detector packets. "
-              "With the ALGO08v3 solver, switching to the mixed 20/8 ms receiver changed fitted position error "
-              "from 0.410 to 0.378 km. With the candidate solver, it changed from 0.457 to 0.382 km. "
-              "At fixed-zero calibration the corresponding changes were 0.402 to 0.399 km and 0.451 to 0.371 km. "
-              "All four combinations returned a position. Conditional RF RMS increased by about 49–50 Hz "
-              "when switching receivers, even though the estimated positions moved closer to survey. "
-              "The mixed receiver improved accuracy on this recording and degraded it on DS30-0049. "
+              "Both solvers processed the same two saved detector packets on each of three recordings. "
+              "The table gives horizontal position error in km with fitted calibration. "
+              "These targeted replays explain particular recordings. The runtime distributions use the original "
+              "end-to-end runs.", "",
+              "| Recording | 20 ms receiver, ALGO08v3 solver | 20 ms receiver, candidate solver | Mixed receiver, ALGO08v3 solver | Mixed receiver, candidate solver |",
+              "|---|---:|---:|---:|---:|", "| DS30-0049 | 1.420 | 1.420 | 4.040 | 4.040 |",
+              "| DS30-0086 | 0.410 | 0.457 | 0.378 | 0.382 |", "| DS30-0220 | 0.369 | 0.369 | 0.546 | 1.371 |", "",
+              "On DS30-0049 the error followed the receiver packet under either solver. On DS30-0086 the "
+              "mixed receiver placed both estimates closer to survey. At fixed-zero calibration its gains were "
+              "3 m with the ALGO08v3 solver and 80 m with the candidate solver. Conditional RF RMS increased "
+              "by about 49–50 Hz despite the geographic improvement. "
               "[Paired solver inputs, position shifts and RF fits](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "021fc1bca199524db12f05f5da233ab0a5dda0e8/reports/ALGO08/v3/field-receiver-solver-cross-0086.md)"]
-    lines += ["", "On DS30-0220, holding the candidate solver fixed and switching to the mixed receiver "
-              "increased fitted error from 0.369 to 1.371 km. Fixed-zero error increased by 1.094 km. "
-              "The fitted position moved 1.174 km between the two detector packets. Both solvers gave the same "
-              "position on the original 20 ms packet. "
-              "[DS30-0220 matched inputs and controls](https://github.com/misko/leo-tracker-reduxredux/blob/"
-              "9a444b2bcdb1a78be72be713506ce4b154f91fa6/reports/ALGO08/v3/field-receiver-solver-cross-0220.md)"]
+    lines += ["", "On DS30-0220, switching receivers with the ALGO08v3 solver added 178 m of fitted error. "
+              "Switching to the candidate solver on that same mixed packet added another 825 m. Both solvers "
+              "gave exactly the same position on the original 20 ms packet, so the 825 m measures a "
+              "receiver–solver interaction on this recording. At fixed-zero calibration the two steps added "
+              "275 m and 819 m. The fitted estimate moved 1.625 km when switching solvers on the mixed packet. "
+              "[DS30-0220 four-way comparison](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "3258963eb3aa9c134c0081ae4ab40287a9c16668/reports/ALGO08/v3/field-receiver-solver-cross-0220.md)"]
     lines += ["", "### Changing the offered search region", "",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
