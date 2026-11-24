@@ -20,17 +20,17 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-import seekable_member as seek
 from mixed_aperture_receiver import NativePath
 
 
 SHORT = Path("/var/tmp/leo-v3-eight-ms-build-padded/8ms/short-primary.so")
+SHORT_BUILD = "3ee8b9ceb4ec5b8b910520a673309f1799e632618b525d8234058c63d22f86b1"
 DENSE = Path("/dev/shm/leo-seekable-member-0008-case1/result.json")
 DENSE_SHA = "b1f310a05ade750be8e6dbf09f455baa27b71cb7dcd03334130a285a852d6cd6"
 HELD = Path("/dev/shm/leo-receiver-ceiling-0169-results01/scope.json")
 HELD_SHA = "95a438f0904e4568b6f2a3618b7fbf691c29d0e2d352fd3727cc83d35b72aa9a"
 ORDERS = (("ordinary", "complete_encoded", "on_demand"), ("on_demand", "complete_encoded", "ordinary"))
-PREFIX = seek.EIGHT_MS_SAMPLES
+PREFIX, ORIGINAL_SAMPLES = 80_000, 200_000
 TRANSFER_CPU_MS = 25
 
 
@@ -39,7 +39,7 @@ class CommittedSamples:
 
     dtype = np.dtype("<i2")
     flags = SimpleNamespace(c_contiguous=True)
-    shape = (seek.SAMPLES, 2, 2)
+    shape = (ORIGINAL_SAMPLES, 2, 2)
 
     def __init__(self, reader, sequence, loads):
         self.reader, self.sequence, self.loads = reader, sequence, loads
@@ -49,7 +49,7 @@ class CommittedSamples:
         if self.samples is None:
             raw = self.reader.read(self.sequence, full=full)
             self.full = full
-            self.samples = np.frombuffer(raw, dtype=self.dtype).reshape(seek.SAMPLES if full else PREFIX, 2, 2)
+            self.samples = np.frombuffer(raw, dtype=self.dtype).reshape(ORIGINAL_SAMPLES if full else PREFIX, 2, 2)
             self.loads[self.sequence] = "full" if full else "short_primary"
         elif full != self.full:
             raise ValueError("The fixed visit cannot switch its declared native aperture")
@@ -160,6 +160,7 @@ def receive(root, entry, chunk, mode, objects):
     from mixed_aperture_receiver import MixedApertureDetector
     from unified_short_bootstrap import receiver_import
     import empty_bootstrap as staged
+    import seekable_member as seek
 
     if mode not in ORDERS[0]:
         raise ValueError("Unrecognized verification boundary")
@@ -213,6 +214,7 @@ def receive(root, entry, chunk, mode, objects):
 
 def convert(root, entry, chunk, scope):
     from leo.storage.short_window import ShortWindowReader
+    import seekable_member as seek
 
     counters = Counter()
     encoder = dict(split_encode_and_hash_cpu_ns=0)
@@ -236,6 +238,8 @@ def convert(root, entry, chunk, scope):
 
 @contextmanager
 def corrupt_tail(root, scope, sequence):
+    import seekable_member as seek
+
     path = root / "split" / scope.codec.part_files[1]
     with seek.open_member(root / "split", scope.root_pin, codec=scope.codec, prefix_samples=PREFIX) as reader:
         offset = reader.records[sequence]["parts"][1][0]
@@ -257,6 +261,8 @@ def corrupt_tail(root, scope, sequence):
 
 
 def exercise_corruption(root, entry, chunk, scope, reference, skipped):
+    import seekable_member as seek
+
     def rejects(call):
         try:
             call()
@@ -277,16 +283,22 @@ def exercise_corruption(root, entry, chunk, scope, reference, skipped):
 
 
 def run(root, case):
+    import empty_bootstrap as staged
+
+    start = clocks()
+    _, specification, source_files, _, _ = staged.load_runtime()
+    runtime_startup = elapsed(start)
+
     from aperture_trial import write
     from reports.ALGO08.v3.ci16_packed_storage_trial import BUILD
     from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
     from dense_geographic_trial import host
     from eight_ms_native_receiver import prepare
-    from empty_bootstrap import checked, load_runtime, receiver_symbols
+    from empty_bootstrap import checked, receiver_symbols
     from full_short_run import EIGHT_MS_SHA, checked_recipe
     from leo.contracts.digests import canonical_digest
     from reports.ALGO08.v3.sparse_cold_input import frozen_function
-    import empty_bootstrap as staged
+    from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
 
     if root.parent.resolve(strict=True) != Path("/dev/shm"):
         raise ValueError("Stage the private derivative in tmpfs")
@@ -307,10 +319,11 @@ def run(root, case):
     compilation = elapsed(start) | {"compiler_cpu_s": after.ru_utime + after.ru_stime - compiled.ru_utime - compiled.ru_stime,
                                     "compiler_input_blocks": after.ru_inblock - compiled.ru_inblock}
     start = clocks()
-    _, specification, source_files, _, _ = load_runtime()
-    from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
-
     checked(SHORT, EIGHT_MS_SHA)
+    geometry = json.loads(checked(SHORT.parent.parent/"build.json", SHORT_BUILD))["geometry"]["8ms"]
+    if (geometry["short_samples"] != PREFIX or geometry["stored_samples"] != ORIGINAL_SAMPLES
+            or any(v > PREFIX for k, v in geometry.items() if k.startswith("first_unused"))):
+        raise ValueError("The audited fixed ABI does not fit in the requested 8 ms samples")
     original_abi = Path(specification["detector"])
     checked(original_abi, specification["detector_sha256"])
     hasher = staged.PAYLOAD / "paired-sha256.so"
@@ -328,7 +341,8 @@ def run(root, case):
     write(root/"binding.json", dict(case=case, original=entry, member=chunk, machine=machine, recipe=recipe,
          detector=scope.detector, source_pins={name: sha256((HERE/name).read_bytes()).hexdigest()
               for name in ("seekable_eight_raw.py", "seekable_member.py", "seekable-eight-raw-protocol.md", "mixed_aperture_receiver.py")},
-         codec=scope.codec.programme(), checkout=revision, initial_residency=before))
+         codec=scope.codec.programme(), checkout=revision, initial_residency=before, short_geometry=geometry,
+         original_short_build_sha256=SHORT_BUILD))
     creation = convert(root, entry, chunk, scope)
     # Commit the digest independently of the private sidecar before any read.
     write(root/"attested-root.json", dict(bound_original=entry["manifest_digest"], **creation))
@@ -360,6 +374,7 @@ def run(root, case):
     ending = residency(entry, chunk)
     write(root/"original-native.json", reference)
     write(root/"result.json", dict(case=case, orders=ORDERS, records=records, startup=startup, compilation=compilation,
+         runtime_startup=runtime_startup,
          creation=creation, corrupt_tail=corrupt, final_residency=ending,
          original_analysis_sha256=reference["source"]["analysis_manifest_sha256"],
          original_authority=reference["source"]["raw_recording_authority_digest"],
