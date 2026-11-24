@@ -1,3 +1,4 @@
+import json
 from math import remainder
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from reports.ALGO08.v3.odd_short_interpolation import (
     ADC, HERTZ, PERIOD, evaluation, interpolate, mask, nominate, signed,
 )
+from reports.ALGO08.v3 import odd_short_interpolation_readout as readout
 
 
 def probe(visit, radio, counter, channel, candidates):
@@ -90,3 +92,35 @@ def test_all_omitted_denominator_keeps_empty_wrong_alias_and_uncovered_lanes():
     assert tight["both"] == tight["carrier_only"] == 1
     assert tight["unmatched_nominations"] == 2
     assert tight["recall"] == tight["precision"] == 1/3
+
+
+def test_later_owner_witness_binds_terminal_and_both_installed_digests(monkeypatch, tmp_path):
+    run = "checked-saved"
+    terminal = tmp_path/"fast-scan-automatic-work"/run/"terminal.json"
+    terminal.parent.mkdir(parents=True)
+    terminal.write_text(json.dumps(dict(native_sha256="sha256:test-native")))
+    rows = {name: [["a", 1, "curved"]] for name in ("c0", "fitted_c")}
+    witness = tmp_path/"crossover-worker.json"
+    witness.write_text(json.dumps(dict(receipt=dict(run_id=run, terminal_sha256=signed.tag(terminal.read_bytes())),
+                                      ordered_owners=rows, waveform_reads=0, verified_handoffs=1)))
+    monkeypatch.setattr(readout.frozen, "OWNER_0086", witness)
+    monkeypatch.setattr(readout.frozen, "OWNER_0086_PIN", signed.tag(witness.read_bytes()))
+    digests = {arm: signed.canonical({"a": 1}) for arm in rows}
+    installed = dict(native_sha256="sha256:test-native", evidence=dict(owners=digests))
+    assert readout.installed_owners("DS30-0086", installed) == {
+        arm: {"a": (1, "curved")} for arm in rows}
+    digests["fitted_c"] = signed.canonical({"a": 2})
+    assert readout.installed_owners("DS30-0086", installed) is None
+    with pytest.raises(ValueError, match="unbound"):
+        readout.installed_owners("DS30-0086", dict(installed, native_sha256="sha256:different"))
+
+
+def test_postseal_strict_provenance_counts_empty_positive_matches_and_disagreements():
+    keys = ("empty", "ordinary", "different", "failed")
+    predictions = {k: dict(cfo_hz=500. if k != "failed" else 5000., arrival=3.) for k in keys}
+    installed = {k: dict(factor=factor(501., 4.)) for k in keys}
+    mixed = {k: dict(counter=0, factor=None if k == "empty" else factor(
+        1000. if k == "different" else 500., 3.)) for k in keys}
+    assert readout.strict_provenance(predictions, mixed, installed) == dict(
+        original_candidate_empty=1, original_candidate_strict_match=1,
+        original_candidate_positive_strict_mismatch=1)
