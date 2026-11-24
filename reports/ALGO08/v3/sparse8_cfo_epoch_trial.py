@@ -51,13 +51,15 @@ def attrs():
     return dict(cpu=2, nice=15, ionice=priority, threads={key: 1 for key in THREADS})
 
 
-def run(stage):
+def run(stage, requested_mode):
     config = attrs()
     worker = HERE / "sparse8_cfo_epoch_saved.py"
     stages = {}
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        for mode in MODES:
+        for mode in (requested_mode,):
+            if mode == "centroid" and document(stage / "ordinary-clock.json")["exit_code"]:
+                raise ValueError("The ordinary saved publication must complete first")
             scratch = stage / f"{mode}-scratch"
             scratch.mkdir()
             environment = os.environ | dict(
@@ -74,8 +76,9 @@ def run(stage):
                 except subprocess.TimeoutExpired:
                     exit_code = 124
                 elapsed = (perf_counter_ns()-start)*1e-9
+                finished = time_ns()
                 usage1 = getrusage(RUSAGE_CHILDREN)
-            clock = dict(started_unix_ns=unix, elapsed_s=elapsed, exit_code=exit_code,
+            clock = dict(started_unix_ns=unix, finished_unix_ns=finished, elapsed_s=elapsed, exit_code=exit_code,
                          cpu_s=usage1.ru_utime-usage0.ru_utime+usage1.ru_stime-usage0.ru_stime,
                          major_faults=usage1.ru_majflt-usage0.ru_majflt, command=command,
                          backing_input_blocks=usage1.ru_inblock-usage0.ru_inblock)
@@ -84,6 +87,11 @@ def run(stage):
                 raise RuntimeError(f"{mode} exited {exit_code}. See {stage / (mode+'.stderr')}")
             result.chmod(0o400)
             stages[mode] = dict(clock_sha256=clock_pin, receipt_sha256=identifier(result))
+    if requested_mode == "ordinary":
+        print(stages[requested_mode]["receipt_sha256"], flush=True)
+        return
+    stages["ordinary"] = dict(clock_sha256=identifier(stage / "ordinary-clock.json"),
+                              receipt_sha256=identifier(stage / "ordinary-receipt.json"))
     seal = write(stage / "prediction-seal.json", dict(
         case=CASE, protocol_sha256=identifier(PROTOCOL), driver_sha256=identifier(Path(__file__)),
         stage_order=MODES, score_reads=0, acquisition="verified saved packet", host=config, products=stages))
@@ -169,9 +177,11 @@ def score(stage, seal_sha):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", type=Path)
-    parser.add_argument("--score", metavar="PREDICTION_SEAL_SHA256")
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--score", metavar="PREDICTION_SEAL_SHA256")
+    action.add_argument("--run", choices=MODES)
     args = parser.parse_args()
     if args.score:
         score(args.stage, args.score)
     else:
-        run(args.stage)
+        run(args.stage, args.run)
