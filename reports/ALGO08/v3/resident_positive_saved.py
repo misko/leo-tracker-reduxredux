@@ -140,10 +140,11 @@ def worker(job, mode, output):
 
 def prepare(root, raw_admission):
     from aperture_trial import archive_identity, read, write
-    from combined_raw_trial import checked_producer
+    from dense_hybrid_combined import compatible_producer
     from dense_geographic_trial import host
     from empty_bootstrap import bind_native, checked
     from leo.contracts.digests import canonical_digest
+    from leo.operations.tle_archive import TleArchiveReader
     from leo.storage.fast_scan import immutable_json
 
     admission = read(raw_admission)
@@ -164,9 +165,15 @@ def prepare(root, raw_admission):
         raise ValueError("The signed local original physical packet or causal archive changed")
     checked(Path(request["offer"]), request["offer_sha256"])
     combined = read_pinned(COMBINED, COMBINED_SHA)
-    producer = checked_producer(request["cutoff_utc_ns"])
-    if combined["portable"]["artifact"] != producer["artifact_sha256"]:
-        raise ValueError("The original exact portable pack changed")
+    portable = combined["portable"]
+    file = Path(portable["file"])
+    checked(file, portable["artifact"][7:])
+    producer = read_pinned(file.parent / "artifact-bind.json", portable["producer"])
+    refs = TleArchiveReader(archive).list_snapshots("space-track")
+    if (producer["portable_sha256"] != portable["artifact"] or
+            not compatible_producer(producer["source"], request, [ref.sha256 for ref in refs]) or
+            any(ref.collected_utc_ns >= request["cutoff_utc_ns"] for ref in refs)):
+        raise ValueError("The same-cutoff dense portable pack must contain only the enrolled pre-RF archive")
     from combined_frontier_run import BLOCK_SHA
     from full_short_run import GEOGRAPHIC_SHA, TRACK_SCORES_SHA
     from grid_feature_projection import LIBRARY_SHA
