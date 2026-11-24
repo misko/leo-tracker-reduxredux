@@ -193,6 +193,7 @@ def timer_model(installed_s, publication_wall_s, ingestion_cpu_s, projected_nati
 def score(case, root):
     sys.path[:0] = [str(ROOT / "src"), str(ROOT), str(HERE)]
     from ds30_0049_saved_crossover_score import publication
+    from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.scoring import distance_km
 
     started, cpu = perf_counter(), process_time()
@@ -210,9 +211,11 @@ def score(case, root):
     anchor, = [r["reference"] for r in read(ROOT / "reports/2026_11_21_ds30_full/reference-audit.json", REFERENCE_PIN)["cases"]
                if r["dataset_label"] == case and r["authority_eligible"] and r["sealed_metadata_digests_verified"]]
     site = [anchor[k] for k in ("latitude_deg", "longitude_deg")]
-    scientific = quality(installed, observed["terminal"], distance_km, site)
+    # The prediction terminal uses "ok" while the public disposition is "complete".
+    candidate_status = observed["receipt"]["decision"]
+    scientific = quality(installed, dict(observed["terminal"], decision=candidate_status), distance_km, site)
     ports = worker_receipt["audit"]
-    inner = read(output / "exact-named-raw-witness.json")["timing"] if observed["terminal"]["decision"] == "complete" else {}
+    inner = read(output / "exact-named-raw-witness.json")["timing"] if candidate_status == "complete" else {}
     pub = ports["saved_scientific_elapsed_s"]
     ingress_low = bounds["optimistic_ingress_remainder_s"]
     ingress_kept = (bounds["measured_mixed_acquisition"]["cpu_s"] - sum(bounds["measured_mixed_native_process_cpu_s"].values()))
@@ -220,6 +223,15 @@ def score(case, root):
     model = {label: timer_model(bounds["installed_s"], pub, time, estimate) | {"ingress_cpu_s": time}
              for label, time in (("free_ingress", 0), ("free_prefetch_and_wait", ingress_low),
                                  ("observed_other_acquisition_cpu", ingress_kept))}
+    (native_path,) = output.glob("fast-scan-automatic-work/*/detections.json")
+    terminal = output / "fast-scan-automatic-work" / observed["receipt"]["run_id"] / "terminal.json"
+    file_boundaries = {key: (path.stat().st_mtime_ns - process["started_unix_ns"])/1e9
+                       for key, path in (("native_file_s", native_path), ("terminal_file_s", terminal))}
+    if not 0 < file_boundaries["native_file_s"] <= file_boundaries["terminal_file_s"] <= process["elapsed_s"]:
+        raise ValueError("Saved publication file timings are outside the charged child")
+    sidecars = {key: canonical_digest({k: v for k, v in observed[key].items() if k not in ("binding", "elapsed_seconds")})
+                for key in ("grid", "path") if observed[key] is not None}
+    named_figures = {row["name"]: (row["sha256"], "sha256:" + row["rgba_sha256"].removeprefix("sha256:")) for row in named["figures"]}
     verification = dict(cpu_s=process_time()-cpu, elapsed_s=perf_counter()-started)
     write(root / "score.json", dict(case=case, qualification=scientific, process=process, validation=verification,
           measured_preamble=worker_receipt["preamble"], measured_saved_publication=ports, inner=inner,
@@ -227,6 +239,11 @@ def score(case, root):
           exact_owner_map={arm: observed["owners"].get(arm) == named["evidence"]["owners"].get(arm) for arm in ARMS},
           installed_ordered_rows_available=False, observed_owners={arm: len(rows) for arm, rows in observed["owner_rows"].items()},
           terminal_exact=observed["receipt"]["terminal_sha256"] == installed["terminal_sha256"],
+          exact_positions={arm: observed["terminal"]["arms"][arm]["latlon"] == installed["arms"][arm]["latlon"] for arm in ARMS},
+          exact_rf={arm: observed["terminal"]["arms"][arm]["rf_rms_hz"] == installed["arms"][arm]["rf_rms_hz"] for arm in ARMS},
+          exact_numeric_sidecars={key: value == named["evidence"]["scientific_digests"][key] for key, value in sidecars.items()},
+          exact_pngs={name: dict(encoded=record[0] == named_figures[name][0], pixels=record[1] == named_figures[name][1])
+                      for name, record in observed["figures"].items()}, file_boundaries=file_boundaries,
           native_sha256=named["native_sha256"], installed_result_sha256=admission["installed_result_sha256"],
           candidate_grid_points=observed["grid"]["evaluated_points"] if observed["grid"] is not None else 0,
           candidate_pngs=observed["figures"], waveform_reads=0))
