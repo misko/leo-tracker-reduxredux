@@ -339,6 +339,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "3258963eb3aa9c134c0081ae4ab40287a9c16668" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
+    assert "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
     for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png",

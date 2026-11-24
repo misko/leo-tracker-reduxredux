@@ -725,6 +725,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                   "between its fixed-zero and fitted solutions still exceeded ALGO08v3's fitted error by more "
                   "than 1 m. This retrospective bound applies to choosing or interpolating the published endpoints. "
                   "A fresh nonlinear fit can move beyond them."]
+    lines += ["", "On the first 41 recordings, a separate diagnostic applied ALGO08v3’s calibration "
+              "displacement to the candidate’s fixed-zero estimate on each shared fix. This increased "
+              "1 km coverage from 18 to 20, while worsening 22 of 36 shared positions and increasing "
+              "median paired error by 25 m. All five cases with at least 1 km of excess fitted error "
+              "remained at least 1 km worse. [Paired calibration displacement test](https://github.com/"
+              "misko/leo-tracker-reduxredux/blob/635d9f2846eb61aa058901d2577b81f8c3959650/reports/"
+              "ALGO08/v3/calibration-transport.md)"]
     lines += ["", "### Which receiver changes affected DS30-0049?", "",
               "A separate crossover on DS30-0049 tested both solvers on each saved receiver output. "
               "Both solvers returned 1.420 km fitted error on the installed detections and 4.040 km on the "
@@ -741,7 +748,14 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "| Replace 284 closely matched short measurements | 4.196 | 3.847 |",
               "| Replace 72 short measurements that chose a different carrier | 3.942 | 3.779 |",
               "| Remove 161 candidate-only detections | 4.254 | 3.900 |",
-              "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |", "",
+              "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |",
+              "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |", "",
+              "Applying the two edits together recovered **940 m with fixed-zero calibration and 836 m with "
+              "fitted calibration**. The joint gains exceeded the sums of the individual gains by 87 m and "
+              "198 m. The joint fit retained 318 of 320 original observation assignments with matching "
+              "satellite and role. Its fitted error still exceeded ALGO08v3 by 1.783 km. "
+              "[Joint saved-input test](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "3435ca510dced361269178f61757cf192be4e46a/reports/ALGO08/v3/ds30-0049-joint-recovery.md)", "",
               "Restoring all 104 detections recovered 41 of the 44 missing installed assignments with the "
               "same satellite and role. Fitted error improved by 377 m and remained 2.243 km above ALGO08v3. "
               "The four changes were tested independently. "
