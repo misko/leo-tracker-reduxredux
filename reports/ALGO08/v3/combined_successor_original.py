@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from resource import RUSAGE_CHILDREN, getrusage
 from shutil import copytree
 import subprocess
 import sys
@@ -132,9 +133,13 @@ def launch(root, case, **options):
     argv, env, enrolled = prepare(root, case, **options)
     folder = root/case
     started = boot.now()
+    before = getrusage(RUSAGE_CHILDREN)
     probe = subprocess.run([*argv, "--first-map-setup-only"], env=env, check=False, capture_output=True,
                            text=True, timeout=15)
-    write(folder/"startup.json", dict(clock=boot.clock(started), exit_code=probe.returncode,
+    after = getrusage(RUSAGE_CHILDREN)
+    write(folder/"startup.json", dict(clock=boot.clock(started),
+                                      child_cpu_s=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime),
+                                      exit_code=probe.returncode,
                                       stdout=probe.stdout, stderr=probe.stderr))
     probe.check_returncode()
     scanner, solver = (json.loads(line) for line in probe.stdout.splitlines())

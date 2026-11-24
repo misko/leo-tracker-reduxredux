@@ -2,7 +2,10 @@
 
 from contextlib import contextmanager
 from pathlib import Path
+import sys
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import combined_successor_cairo_entry as cairo
 import combined_successor_raw_entry as guarded
