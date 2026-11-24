@@ -68,6 +68,11 @@ def job(case):
 
 
 def run(mode, output):
+    from portable_orbit_index_trial import begin, observed, settings, timing
+
+    overall = begin()
+    start = begin()
+    config, native_parser, checks = settings()
     from aperture_trial import write
     from combined_raw_research import portable_factory
     from combined_raw_trial import PRODUCER
@@ -76,12 +81,8 @@ def run(mode, output):
     from leo.analysis.localization_v3 import phase_prior
     from leo.application import localization_v3
     from persistent_orbit_updates import OrbitUpdates
-    from portable_orbit_index_trial import begin, observed, settings, timing
     from tools.pipeline_eval.variants.experimental.tle_records import batch_records
 
-    overall = begin()
-    start = begin()
-    config, native_parser, checks = settings()
     cache = OrbitUpdates() if mode == "persist" else None
     startup = timing(start)
     alternate = RELEASE / "src/leo/analysis/localization_v3/phase_prior.py"
