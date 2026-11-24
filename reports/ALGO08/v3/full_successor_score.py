@@ -1,6 +1,7 @@
 """Score immutable DS30 predictions after benchmark workers finish."""
 
 import argparse
+from bisect import bisect_right
 from collections import Counter
 import csv
 from datetime import datetime, timezone
@@ -126,6 +127,28 @@ def paired_rf_and_error(pairs, arm):
             counts[direction + ("_closer" if error < 0 else "_farther")] += 1
     return dict(comparable=sum(counts.values()), **{key: counts[key] for key in (
         "rf_lower_closer", "rf_lower_farther", "rf_higher_closer", "rf_higher_farther", "tied")})
+
+
+def empirical_accuracy_gap(pairs, arm):
+    """Compare all-attempt coverage and bound how far existing fixes would need to move."""
+    key = arm + "_error_km"
+    installed, candidate = (sorted(p[i][key] for p in pairs if p[i][key] is not None) for i in (0, 1))
+    deficit, at = 0, None
+    for threshold in sorted(set(installed)):
+        gap = bisect_right(installed, threshold) - bisect_right(candidate, threshold)
+        if gap > deficit:
+            deficit, at = gap, threshold
+    # A displacement of at most d can decrease each radial error by at most d.
+    # The same inequality holds for each order statistic, allowing ranks to change.
+    radius, rank = None, None
+    if len(candidate) >= len(installed):
+        radius = 0.
+        for i, base in enumerate(installed):
+            if candidate[i] - base > radius:
+                radius, rank = candidate[i] - base, i + 1
+    return dict(assigned=len(pairs), installed_scored=len(installed), candidate_scored=len(candidate),
+                largest_coverage_deficit=deficit, first_threshold_km=at,
+                maximum_displacement_lower_bound_km=radius, binding_rank=rank)
 
 
 def squared_error_influence(pairs, arm):
@@ -354,6 +377,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
     metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
+    metadata["empirical_accuracy_gap"] = {arm: empirical_accuracy_gap(pairs, arm) for arm in ARMS}
     if capture_days is not None:
         metadata["capture_day_sensitivity"] = capture_days
     if renderer_revision is not None:
@@ -473,6 +497,18 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                          f"{o['fixes']}/{k} | {o['within_1km']}/{k} | {o['within_2km']}/{k} | "
                          f"{number(o['error_km']['p50'],3)} / {number(o['error_km']['p90'],3)} | "
                          f"{number(o['rf_rms_hz']['p50'])} |")
+    lines += ["", "The cumulative curves also show where the candidate loses the most recordings. "
+              "The displacement column gives a lower bound on the largest change to an existing candidate "
+              "position required to match or exceed ALGO08v3 coverage at every distance, keeping the same "
+              "scored recordings. It compares ranked errors and allows the order of recordings to change.", "",
+              "| Calibration | Largest coverage shortfall (recordings) | First distance at that shortfall | "
+              "Required displacement of at least one position |", "|---|---:|---:|---:|"]
+    for arm, label in (("c0", "Fixed zero"), ("fitted_c", "Fitted")):
+        gap = metadata["empirical_accuracy_gap"][arm]
+        at, radius = gap["first_threshold_km"], gap["maximum_displacement_lower_bound_km"]
+        start = "—" if at is None else f"{at:.3f} km"
+        bound = "More scored fixes required" if radius is None else f"{radius:.3f} km"
+        lines.append(f"| {label} | {gap['largest_coverage_deficit']} | {start} | {bound} |")
     if capture_days:
         lines += ["", "### Variation by recording date", "",
                   "Each row groups recordings by their original UTC capture date. Coverage counts every "

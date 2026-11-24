@@ -8,7 +8,8 @@ import sys
 import pytest
 from PIL import Image
 
-from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, compare_centers, outcomes_summary, paired_rf_and_error, paired_rows,
+from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, compare_centers, empirical_accuracy_gap,
+                                  outcomes_summary, paired_rf_and_error, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
 
@@ -98,6 +99,20 @@ def test_frequency_and_geographic_changes_use_the_same_available_pairs():
     result = paired_rf_and_error([(row(10,2), changed) for changed in changes], "c0")
     assert result == dict(comparable=6, rf_lower_closer=1, rf_lower_farther=1, rf_higher_closer=1,
                           rf_higher_farther=1, tied=2)
+
+
+@pytest.mark.parametrize("installed,candidate,deficit,at,radius", [
+    ([1., 1., 2., None], [4., 1., .5, 3.], 1, 2., 1.),
+    ([1., 2., None], [None, None, 1.], 1, 2., None),
+    ([None, 1.], [1., None], 0, None, 0.),
+    ([None], [None], 0, None, 0.),
+])
+def test_curve_shortfall_and_displacement_allow_reranking(installed, candidate, deficit, at, radius):
+    pairs = [(dict(c0_error_km=a), dict(c0_error_km=b)) for a, b in zip(installed, candidate, strict=True)]
+    actual = empirical_accuracy_gap(pairs, "c0")
+    assert actual["largest_coverage_deficit"] == deficit
+    assert actual["first_threshold_km"] == at
+    assert actual["maximum_displacement_lower_bound_km"] == radius
 
 
 def matching_pair():
