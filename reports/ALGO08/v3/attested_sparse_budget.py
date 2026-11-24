@@ -53,15 +53,16 @@ def factors_only(visit):
 def verify_science(rows, detector, reference):
     from leo.contracts.digests import canonical_json_bytes
 
-    exact = canonical_json_bytes([factors_only(row) for row in rows])
-    expected = canonical_json_bytes([factors_only(row) for row in reference["visits"]])
-    if exact != expected or not detector["named_archive_exact"]:
-        raise ValueError("Typed factors, empties or original visit identity differ from the signed ledger")
+    actual_rows = [factors_only(row) for row in rows]
+    old_rows = [factors_only(row) for row in reference["visits"]]
+    differences = [old["visit_index"] for old, new in zip(old_rows, actual_rows, strict=True)
+                   if canonical_json_bytes(old) != canonical_json_bytes(new)]
     old, new = reference["detector"]["mixed"]["native"], detector["mixed"]["native"]
-    for key in ("rule", "installed_sha256", "visits", "native_calls", "factors", "streams"):
-        if old[key] != new[key]:
-            raise ValueError(f"The actual original stream/schedule differs in {key}")
-    return pin(exact)
+    stream_differences = [key for key in ("rule", "installed_sha256", "visits", "native_calls", "factors", "streams")
+                          if old[key] != new[key]]
+    return dict(qualified=detector["named_archive_exact"] and not differences and not stream_differences,
+                changed_visits=differences, changed_mixed_accounting=stream_differences,
+                normalized_sha256=pin(canonical_json_bytes(actual_rows)))
 
 
 def exclusive(rows, detector):
@@ -148,31 +149,34 @@ def run(output):
                 return replay(visits, packet, spec, sources, short_binary=binary, short_pin=binary_pin, setup_timing=setup)
 
             (rows, detectors), scope = duration(pair)
-            exact = verify_science(rows, detectors, reference)
+            science = verify_science(rows, detectors, reference)
             recipe = detectors["mixed"]["pre_selector_recipe"]
             if (canonical_digest(recipe) != "sha256:" + EIGHT_MS_RECIPES[binary_pin]
                     or detectors["mixed"]["detector_sha256"] != "sha256:" + binary_pin):
                 raise ValueError("Expected the installed full anchor and distinct registered short binary recipe")
             costs = exclusive(rows, detectors)
             runs[mode] = dict(costs=costs, detector=detectors, context_setup_ns=setup,
-                              replay_scope_ns=scope, normalized_science_sha256=exact, visits=rows,
+                              replay_scope_ns=scope, science=science, visits=rows,
                               donor_predictions=predicted_slices(models, costs["mixed"]) if mode == "sparse" else None)
-        if (runs["generic"]["normalized_science_sha256"] != runs["sparse"]["normalized_science_sha256"]
-                or runs["generic"]["detector"]["mixed"]["pre_selector_recipe_sha256"] ==
-                   runs["sparse"]["detector"]["mixed"]["pre_selector_recipe_sha256"]):
-            raise ValueError("Need exact parity across separately identified recipes")
-        bundles[case] = dict(order=order, attestation_sha256=attestation, original=reference["original"],
+        if (runs["generic"]["detector"]["mixed"]["pre_selector_recipe_sha256"] ==
+                runs["sparse"]["detector"]["mixed"]["pre_selector_recipe_sha256"]):
+            raise ValueError("Need separately identified recipes")
+        examples = [detail["science"] for detail in runs.values()]
+        qualified = all(row["qualified"] for row in examples) and len({row["normalized_sha256"] for row in examples}) == 1
+        bundles[case] = dict(qualified=qualified, order=order, attestation_sha256=attestation, original=reference["original"],
                              prior_ledger_sha256=old_pin, prior_costs=exclusive(reference["visits"], reference["detector"]),
                              verified_file=document["verified_file"], detached_admission_ns=admission, runs=runs)
-    evidence = dict(schema="leo.research.attested-sparse-native-budget.v1", case_order=list(ORDER),
+    qualified = all(case["qualified"] for case in bundles.values())
+    evidence = dict(schema="leo.research.attested-sparse-native-budget.v1", qualified=qualified, case_order=list(ORDER),
                     donors_sha256=DONORS_SHA, bundles=bundles, machine=machine, outer_runtime_setup_ns=runtime,
                     driver_and_harness_sha256={p.name: pin(p.read_bytes()) for p in (Path(__file__), HERE / "attested_visit_detector.py")},
                     original_backing_waveform_bytes=0, held_selector_runs=0, position_solver_runs=0)
     with output.open("xb") as stream:
         stream.write(canonical_json_bytes(evidence))
+    return 0 if qualified else 2
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("output", type=Path)
-    run(cli.parse_args().output)
+    raise SystemExit(run(cli.parse_args().output))
