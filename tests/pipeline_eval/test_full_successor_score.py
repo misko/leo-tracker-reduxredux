@@ -87,6 +87,24 @@ def test_records_a_timed_failed_attempt_without_implying_observed_receiver_data(
         paired_rows(rows, assigned)
 
 
+def test_relocation_requires_matched_proofs_and_enrolled_content_in_both_arms():
+    rows, assigned = matching_pair()
+    fields = dict(historic_raw_authority_sha256="1"*64, canonical_reopened_inventory_sha256="2"*64,
+                  relocation_proof_sha256="3"*64, prior_preflight_sha256="4"*64)
+    assigned["DS30-test"]["physical_content"] = "5"*64
+    for r in rows:
+        r.update(**fields, verified_pair=True, raw_identity_sha256="5"*64)
+    a, b = paired_rows(rows, assigned)[0]
+    assert a["relocation_proof_sha256"] == b["relocation_proof_sha256"] == "3"*64
+    rows[1]["raw_identity_sha256"] = "6"*64
+    with pytest.raises(ValueError, match="enrolled physical"):
+        paired_rows(rows, assigned)
+    rows[1]["raw_identity_sha256"] = "5"*64
+    rows[1]["relocation_proof_sha256"] = "7"*64
+    with pytest.raises(ValueError, match="Unmatched"):
+        paired_rows(rows, assigned)
+
+
 def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assigned = roster()
     template, _ = matching_pair()

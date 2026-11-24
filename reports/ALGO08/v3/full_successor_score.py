@@ -22,6 +22,8 @@ BUILDS = ("installed", "successor")
 PINS = {"installed": "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
         "successor": "sha256:30cc3b044040f2519677d67abfde731f83693612744d2236d1ba71bb5a31e4ab"}
 VERIFIED = {"complete", "withheld", "solver_failed"}
+RELOCATION_FIELDS = ("historic_raw_authority_sha256", "canonical_reopened_inventory_sha256",
+                     "relocation_proof_sha256", "prior_preflight_sha256")
 
 
 def checked(data, pin):
@@ -49,6 +51,7 @@ def roster(root=ROOT):
         survey = surveyed[case]
         point = survey["reference"] if survey["authority_eligible"] else None
         assigned[case] = dict(case_id=original["case_id"], raw_authority=original["raw_authority_digest"],
+                              physical_content=original["raw_recording"]["identity_sha256"],
                               recording_state=original["recording_state"], release_100=case in historical,
                               reference=[point["latitude_deg"], point["longitude_deg"]] if point else None)
     return assigned
@@ -112,7 +115,12 @@ def paired_rows(rows, assigned):
         observed = r["raw_authority_sha256"]
         if (observed is not None and observed != requested) or (r["outcome"] in VERIFIED and not observed):
             raise ValueError("Observed input authority disagrees with the enrolled original")
-        for field in ("build_sha256", "requested_raw_authority_sha256", "authority_sha256", "attempt_result_sha256"):
+        digests = ("build_sha256", "requested_raw_authority_sha256", "authority_sha256", "attempt_result_sha256")
+        if any(r.get(k) is not None for k in RELOCATION_FIELDS):
+            if r.get("raw_identity_sha256") != assigned[case].get("physical_content") or r.get("verified_pair") is not True:
+                raise ValueError("Relocation proof requires the verified enrolled physical recording")
+            digests += (*RELOCATION_FIELDS, "raw_identity_sha256")
+        for field in digests:
             digest = (r.get(field) or "").removeprefix("sha256:")
             if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
                 raise ValueError(f"Missing or invalid {field}")
@@ -129,6 +137,8 @@ def paired_rows(rows, assigned):
                                        first=r["first"], release_100=int(assigned[case]["release_100"]),
                                        recording_state=assigned[case]["recording_state"], outcome=r["outcome"],
                                        requested_raw_authority_sha256=requested, raw_authority_sha256=observed,
+                                       accession_raw_authority_sha256=assigned[case]["raw_authority"],
+                                       physical_content_sha256=assigned[case].get("physical_content"),
                                        authority_sha256=r["authority_sha256"], build_sha256=r["build_sha256"],
                                        attempt_result_sha256=r["attempt_result_sha256"], timing_scope=r["timing_scope"],
                                        terminal_sha256=r.get("terminal_sha256"), reason=r.get("reason"),
@@ -137,14 +147,15 @@ def paired_rows(rows, assigned):
                                        child_finished_unix_ns=end,
                                        elapsed_s=r["elapsed_s"], cpu_s=r["cpu_s"],
                                        child_elapsed_s=r["child_elapsed_s"], child_cpu_s=r["child_cpu_s"],
-                                       validator_elapsed_s=r["validator_elapsed_s"], validator_cpu_s=r["validator_cpu_s"], **scores)
+                                       validator_elapsed_s=r["validator_elapsed_s"], validator_cpu_s=r["validator_cpu_s"],
+                                       **{field: r.get(field) for field in RELOCATION_FIELDS}, **scores)
     if len(by_key) != 2 * len(assigned):
         raise ValueError(f"Only {len(by_key)} measured arms for {len(assigned)} assigned recordings")
     pairs = []
     for case in assigned:
         a, b = (by_key[case, role] for role in BUILDS)
         if any(a[key] != b[key] for key in ("first", "authority_sha256", "requested_raw_authority_sha256",
-                                           "generation", "same_lease")) or type(a["same_lease"]) is not bool:
+                                           "generation", "same_lease", *RELOCATION_FIELDS)) or type(a["same_lease"]) is not bool:
             raise ValueError(f"Unmatched original input or run order on {case}")
         first, second = (a, b) if a["first"] == "installed" else (b, a)
         if first["child_finished_unix_ns"] > second["child_started_unix_ns"]:
@@ -202,6 +213,10 @@ def write_report(pairs, output, enrollment, receipt_digest):
     joint = Counter((a["outcome"], b["outcome"]) for a, b in pairs)
     metadata["paired_outcomes"] = [
         {"installed": a, "successor": b, "recordings": n} for (a, b), n in sorted(joint.items())]
+    metadata["relocated_recordings"] = [
+        {field: row[field] for field in ("case", "accession_raw_authority_sha256", "physical_content_sha256",
+                                         "raw_authority_sha256", *RELOCATION_FIELDS)}
+        for row, _ in pairs if row["relocation_proof_sha256"] is not None]
     (output / "summary.json").write_text(json.dumps(metadata, indent=2, allow_nan=False) + "\n")
     render_distribution_figures(output / "recordings.csv", output, enrollment=enrollment)
     full = summaries["All DS30 recordings"]
@@ -295,6 +310,11 @@ def write_report(pairs, output, enrollment, receipt_digest):
                   f"position was {recovered['fitted_c_error_km']:.3f} km from the reference. "
                   "[DS30-0397 solver and publication audit](https://github.com/misko/leo-tracker-reduxredux/blob/"
                   "5bb0489d85435688e05c1b6f6419620e5565fe33/reports/ALGO08/v3/ds30-0397-orbit-support-audit.md)"]
+    moved = metadata["relocated_recordings"]
+    if moved:
+        lines += ["", f"For {len(moved)} recordings, the original directory moved after DS30 enrollment. "
+                  "Both builds reopened the same original data. The per-recording table retains the accession, "
+                  "historical and reopened input identities and the digest of each relocation proof."]
     lines += ["", "[Per-recording results](recordings.csv) · [Machine-readable summary and provenance](summary.json)", ""]
     (output / "README.md").write_text("\n".join(lines))
 
