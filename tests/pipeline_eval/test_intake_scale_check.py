@@ -1,6 +1,6 @@
 import pytest
 
-from reports.ALGO08.v3.intake_scale_check import blind_rows, check_order, load
+from reports.ALGO08.v3.intake_scale_check import blind_rows, check_order, load, solve_intake_tradeoff
 from reports.ALGO08.v3.release_intake_rate import required_rate
 
 
@@ -41,3 +41,13 @@ def test_blind_gates_include_both_withheld_baseline_and_recovered_fix():
     assert gate["required_MB_s"] == pytest.approx(342.787)
     assert gate["median_ratio"] == pytest.approx(.5)
     assert gate["sum_ratio"] < .5
+
+
+def test_only_numerical_time_can_be_saved_in_tradeoff():
+    # Even a zero-cost solve still pays four seconds outside the solver.
+    rows = [dict(elapsed_s=10., post_s=6., solve_s=2., byte_low=1_000_000, byte_high=2_000_000)]
+    scenarios = solve_intake_tradeoff(rows)
+    assert scenarios[0]["rates"]["byte_high"] is None
+    assert scenarios[-1]["numeric_time_eliminated"]
+    assert scenarios[-1]["rates"]["byte_high"]["required_MB_s"] == pytest.approx(2.)
+    assert scenarios[-1]["rates"]["byte_low"]["required_MB_s"] == pytest.approx(1.)

@@ -52,10 +52,25 @@ def blind_rows():
         if raw["case"] != "DS30-" + case or raw["elapsed_s"] != trial["prior_installed_raw"]["elapsed_s"]:
             raise ValueError("Blind assignment and original raw-process clock must agree")
         worker = trial["time"]["elapsed_s"]["routed"] + trial["admission"]["setup"]["elapsed_s"]
+        solve = trial["publication_clocks"]["routed"]["solve"]["elapsed_s"]
+        if not 0 < solve <= trial["time"]["elapsed_s"]["routed"]:
+            raise ValueError("The numerical solve must be contained in the measured saved worker")
         rows.append(dict(case=raw["case"], byte_low=raw["byte_low"], byte_high=raw["byte_high"],
                          elapsed_s=raw["elapsed_s"], original_post_s=raw["post_s"],
-                         post_s=worker, allowance_s=raw["elapsed_s"]/2-worker))
+                         post_s=worker, solve_s=solve, allowance_s=raw["elapsed_s"]/2-worker))
     return rows
+
+
+def solve_intake_tradeoff(rows):
+    """Scale only the numerical solve. Keep admission, publication and exit fully charged."""
+    scenarios = []
+    for speed in (1, 1.25, 1.5, 2, 4, float("inf")):
+        modeled = [dict(r, post_s=(r["post_s"] - r["solve_s"]) + r["solve_s"]/speed) for r in rows]
+        rates = {bound: required_rate(modeled, bound, post_speedup=1, startup_s=0)
+                 for bound in ("byte_low", "byte_high")}
+        scenarios.append(dict(solve_speedup=speed if isfinite(speed) else None,
+                              numeric_time_eliminated=not isfinite(speed), rates=rates))
+    return scenarios
 
 
 def load():
@@ -150,5 +165,6 @@ if __name__ == "__main__":
     rows = blind_rows()
     gates = {bound: required_rate(rows, bound, post_speedup=1, startup_s=0)
              for bound in ("byte_low", "byte_high")}
-    print(json.dumps(dict(prefix_orders=load(), blind_rows=rows, blind_intake_gates=gates),
+    print(json.dumps(dict(prefix_orders=load(), blind_rows=rows, blind_intake_gates=gates,
+                          numerical_solve_scenarios=solve_intake_tradeoff(rows)),
                      indent=2, allow_nan=False))

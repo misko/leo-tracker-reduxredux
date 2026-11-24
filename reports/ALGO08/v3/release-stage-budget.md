@@ -78,6 +78,19 @@ On DS30-0289 the candidate spent longer in the solver and recovered a fix that i
 
 If the receiver delivers a uniform effective rate and each recording keeps its measured downstream cost, these two blind cases need **342.8 MB/s** to pass both aggregate timing gates. The rate includes startup and detection publication. The paired median sets the threshold, with the summed-time threshold just below at **342.3 MB/s**. DS30-0289 originally had zero input pages resident. Throughput measured on warm DS30-0016 files does not account for that original storage condition. [Blind fix and withholding clocks](nomination-handoff-0289-local.md) · [Reproducible budget and original byte bounds](intake_scale_check.py)
 
+The numerical solve accounted for 12.718 s on DS30-0419 and 22.831 s on DS30-0289. How much faster would the receiver still need to be if we reduced just that time? The calculation below keeps admission, publication and process overhead at their measured costs. It charges the work to produce the additional fix on DS30-0289.
+
+| Assumed speedup of numerical solve | Required intake rate to pass both 2× timing gates |
+|---|---:|
+| Current solve | 342.8 MB/s |
+| 1.25× | 298.8 MB/s |
+| 1.5× | 275.2 MB/s |
+| 2× | 250.5 MB/s |
+| 4× | 220.8 MB/s |
+| Zero solve time (limiting case) | 197.3 MB/s |
+
+For scale, the complete 13-file DS30-0016 recording reached detection publication at 196.3 MB/s in the detector-only process and 212.0 MB/s in the integrated process. At those measured rates, even halving the numerical solve would leave the receiver short of the 250.5 MB/s needed in this two-recording model. Each estimate assumes a uniform rate across the two recordings and unchanged downstream work for the new detections. A measured raw-to-exit pair on the same recording tests both assumptions. [Reproduce the calculation](intake_scale_check.py) · [Full detector timing](original-full-detector-boundary.md)
+
 ### Throughput from one to four original files
 
 On resident DS30-0016, four files contained 314.078 MB. The detection-only worker published their signed packet in **1.330 and 1.344 s**, or **236.1 and 233.7 MB/s** with startup. Subtracting the one-file measurements gave **328.7 and 334.2 MB/s** for the three additional files. All measured detections matched their corresponding rows from the full 20/8 ms receiver. These are original waveform-to-detection clocks. [Nested prefixes, both execution orders and detector checks](original-prefix-scaling.md)
