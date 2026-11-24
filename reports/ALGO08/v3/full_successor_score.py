@@ -84,6 +84,23 @@ def paired_timing(pairs, metric):
                 median_paired_speedup=1 / median(b / a for a, b in matched))
 
 
+def time_accounting(pairs):
+    totals = {}
+    for i, role in enumerate(BUILDS):
+        rows = [pair[i] for pair in pairs]
+        wall = sum(r["elapsed_s"] for r in rows)
+        cpu = sum(r["cpu_s"] for r in rows)
+        totals[role] = dict(wall_s=wall, cpu_s=cpu, wall_minus_cpu_s=wall - cpu)
+    a, b = (totals[role] for role in BUILDS)
+    saved = a["wall_s"] - b["wall_s"]
+    cpu_saved = a["cpu_s"] - b["cpu_s"]
+    hypothetical = [(base, {"elapsed_s": min(test["elapsed_s"], test["cpu_s"])}) for base, test in pairs]
+    return dict(totals=totals, wall_saved_s=saved, cpu_saved_s=cpu_saved,
+                residual_saved_s=saved - cpu_saved,
+                cpu_fraction_of_wall_savings=cpu_saved / saved if saved > 0 else None,
+                removing_positive_candidate_wall_minus_cpu=paired_timing(hypothetical, "elapsed_s"))
+
+
 def calibration_segment_error_km(reference, zero, fitted):
     """Closest possible horizontal error on the minor arc joining the two published solutions."""
     if reference is None or zero is None or fitted is None:
@@ -178,6 +195,7 @@ def paired_rows(rows, assigned):
                                        generation=r["generation"], child_started_unix_ns=start,
                                        child_finished_unix_ns=end,
                                        elapsed_s=r["elapsed_s"], cpu_s=r["cpu_s"],
+                                       input_blocks=r.get("input_blocks"), output_blocks=r.get("output_blocks"),
                                        child_elapsed_s=r["child_elapsed_s"], child_cpu_s=r["child_cpu_s"],
                                        validator_elapsed_s=r["validator_elapsed_s"], validator_cpu_s=r["validator_cpu_s"],
                                        **{field: r.get(field) for field in RELOCATION_FIELDS}, **scores)
@@ -225,7 +243,8 @@ def write_report(pairs, output, enrollment, receipt_digest):
     summaries = {}
     for name, group in sections.items():
         population = {a["case"] for a, _ in group}
-        stats = dict(assigned=len(group), wall=paired_timing(group, "elapsed_s"), cpu=paired_timing(group, "cpu_s"))
+        stats = dict(assigned=len(group), wall=paired_timing(group, "elapsed_s"), cpu=paired_timing(group, "cpu_s"),
+                     time_accounting=time_accounting(group))
         for i, role in enumerate(BUILDS):
             rows = [p[i] for p in group]
             stats[role] = dict(outcomes=Counter(r["outcome"] for r in rows), wall_s=distribution([r["elapsed_s"] for r in rows]),
@@ -295,7 +314,20 @@ def write_report(pairs, output, enrollment, receipt_digest):
     lines += ["", "Successful times cover process launch through exit and independent publication verification for both builds. "
               "A failure contributes wall and CPU through exit. The per-recording data give the child-only and verifier clocks separately. The summed ratio divides total "
               "ALGO08v3 seconds by total candidate seconds. The paired measure is the reciprocal of the median candidate-to-ALGO08v3 time ratio. "
-              "The second worker can benefit from pages cached by the first.", "", "## Position error", "",
+              "The second worker can benefit from pages cached by the first.", "",
+              "| Run order | Wall seconds saved | CPU seconds saved | Change in remaining seconds |",
+              "|---|---:|---:|---:|"]
+    for name in ("All DS30 recordings", "ALGO08v3 ran first", "Candidate ran first"):
+        t = summaries[name]["time_accounting"]
+        lines.append(f"| {name} | {number(t['wall_saved_s'], 1)} | {number(t['cpu_saved_s'], 1)} | "
+                     f"{number(t['residual_saved_s'], 1)} |")
+    sensitivity = full["time_accounting"]["removing_positive_candidate_wall_minus_cpu"]
+    lines += ["", "Savings subtract candidate seconds from ALGO08v3 seconds. Wall time minus CPU time can include "
+              "storage waits, scheduling delays and clock-accounting differences. As a sensitivity check, removing "
+              "every positive wall-minus-CPU second from the candidate on each recording, while holding its CPU cost "
+              f"and the measured ALGO08v3 wall times fixed, would give **{number(sensitivity['summed_speedup'])}×** "
+              f"summed and **{number(sensitivity['median_paired_speedup'])}×** median paired. These are hypothetical speedups.",
+              "", "## Position error", "",
               "![Position errors with all assigned recordings in the denominator](position-error.png)", "",
               "![Horizontal error histograms for fixed-zero and fitted calibration](position-error-histogram.png)", "",
               "The position histograms count scored fixes in shared bins. The legends report the assigned totals "

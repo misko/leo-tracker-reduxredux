@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 from full_successor_score import (PINS, calibration_segment_error_km, outcomes_summary, paired_rows,
-                                  paired_timing, roster, score_arms, write_report)
+                                  paired_timing, roster, score_arms, time_accounting, write_report)
 
 
 def arms(point):
@@ -39,6 +39,19 @@ def test_failed_fix_remains_in_population_and_rf_summaries_are_separate():
         outcomes_summary(rows[:1], {"a", "b"})
 
 
+def test_cpu_and_residual_contributions_add_to_wall_savings():
+    pairs = [({"elapsed_s": 10, "cpu_s": 7}, {"elapsed_s": 6, "cpu_s": 4}),
+             ({"elapsed_s": 2, "cpu_s": 2}, {"elapsed_s": 2, "cpu_s": 2.1})]
+    t = time_accounting(pairs)
+    assert t["cpu_saved_s"] == pytest.approx(2.9)
+    assert t["residual_saved_s"] == pytest.approx(1.1)
+    assert t["cpu_fraction_of_wall_savings"] == pytest.approx(2.9 / 4)
+    assert t["removing_positive_candidate_wall_minus_cpu"] == {
+        "pairs": 2, "summed_speedup": 2, "median_paired_speedup": 1 / .7}
+    assert time_accounting(pairs[1:])["cpu_fraction_of_wall_savings"] is None
+    assert time_accounting([])["removing_positive_candidate_wall_minus_cpu"]["pairs"] == 0
+
+
 def test_calibration_segment_treats_clipped_endpoints_and_antimeridian_as_geography():
     degree = 111.1950802335
     assert calibration_segment_error_km([1, 180], [0, 179], [0, -179]) == pytest.approx(degree)
@@ -69,7 +82,9 @@ def test_requires_complete_matched_pair_and_keeps_two_different_outcomes():
     with pytest.raises(ValueError, match="measured arms"):
         paired_rows(rows[1:], assigned)
     rows[1].update(outcome="withheld", arms=arms(None))
+    rows[0].update(input_blocks=0, output_blocks=32)
     a, b = paired_rows(rows, assigned)[0]
+    assert (a["input_blocks"], a["output_blocks"], b["input_blocks"]) == (0, 32, None)
     assert (a["c0_error_km"], b["c0_error_km"], b["fitted_c_fix"]) == (0., None, False)
     assert b["between_children_s"] == 1e-9
     with pytest.raises(ValueError, match="Duplicate"):
@@ -145,6 +160,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64)
     report = json.loads((tmp_path / "summary.json").read_bytes())
     assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
+    assert report["cohorts"]["All DS30 recordings"]["time_accounting"]["cpu_saved_s"] == 0
     assert report["twofold_wall_time_target"] == {
         "required_speedup": 2.0, "summed_speedup": False, "median_paired_speedup": True, "both_met": False}
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
