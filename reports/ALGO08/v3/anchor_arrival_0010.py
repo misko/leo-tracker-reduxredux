@@ -1,12 +1,12 @@
 """Transfer the frozen arrival census to the first sealed DS30-0010 pair."""
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 from hashlib import sha256
 import json
 from pathlib import Path
 
-from .anchor_arrival_authority import inventory, score
+from .anchor_arrival_authority import PEER_SAMPLES, inventory, score
 from .anchor_only_history import ARMS, paired, read, seal, slot
 from .directed_donor import ADC
 
@@ -86,6 +86,18 @@ def owner_scope(native, stock, measured, ids):
     return counts
 
 
+def phase_scope(stock, measured):
+    original = {slot(row): row["candidates"] for row in stock}
+    counts = defaultdict(Counter)
+    for row in measured["anchors"]:
+        expected = original[row["slot"]]
+        peer = row["peer"] is not None
+        key = "also_installed" if expected else "successor_only"
+        counts[key].update(exact=expected == [row["candidate"]], peer=peer, compatible_with_both=peer and
+                           all(value is not None and abs(value) <= PEER_SAMPLES for value in row["offset_fit_residuals"]))
+    return {group: dict(values) for group, values in counts.items()}
+
+
 def id_for(session, radio, counter):
     return "sha256:" + sha256(f"{session}:{radio}:{counter}".encode()).hexdigest()
 
@@ -121,6 +133,7 @@ def run(case):
                 sources=SOURCE_PINS, attempts=ARM_PINS, issued=authority["window_count"], callback_counts=native["native_calls"],
                 timing_present=mixed["source"]["timing"] is not None, exact_owner_rows={"installed": False, "successor": True},
                 official_owned_counts=official, successor_owner_scope=owner_scope(mixed, full, observed, owners),
+                phase_scope=phase_scope(full, observed),
                 arrival=evidence, waveform_opens=0, catalogue_opens=0, native_calls=0, solver_calls=0)
 
 
