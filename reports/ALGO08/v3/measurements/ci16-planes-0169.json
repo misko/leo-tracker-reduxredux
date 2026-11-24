@@ -1,0 +1,785 @@
+{
+  "authority": "sha256:089f67081dd421f5965c1fcf90bd7f7730c5edcdae20fc903c2c91600f72d309",
+  "builds": {
+    "ci16_packing": {
+      "binary": "ed03bfb0d075d8e94c616a39f0d03ad05f79ab4b37df02cf1fca52127013557e",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-mssse3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3/ci16_packing.c",
+        "-o",
+        "/dev/shm/leo-v3-ci16-planes-0169-result01/ci16_packing.so"
+      ],
+      "source": "24c6c73527989589ea5013e3a2218959332d8b22d0254b16db704083ab3099dc"
+    },
+    "ci16_planes": {
+      "binary": "77390504239da9d52211a2d9457d9d4d64121f71ef51f5c2a112563e51f05305",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-march=x86-64-v3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3/ci16_planes.c",
+        "-o",
+        "/dev/shm/leo-v3-ci16-planes-0169-result01/ci16_planes.so"
+      ],
+      "source": "d34f0b0f28753f92af59de3fc7d2ab9014c71f3f60c0a13e73215bee9e9d4625"
+    }
+  },
+  "held_entropy": {
+    "modulo_difference": {
+      "held_bits_per_byte": [
+        [
+          8.00011556905464,
+          2.942132765382122
+        ],
+        [
+          8.000110247578165,
+          2.94341169649511
+        ],
+        [
+          8.00013095263601,
+          2.7857348860218267
+        ],
+        [
+          8.000133504797466,
+          2.7850484478953517
+        ]
+      ],
+      "ideal_bytes": 69530908.9117771,
+      "total_bits_per_component": [
+        10.942248334436762,
+        10.943521944073275,
+        10.785865838657836,
+        10.785181952692817
+      ]
+    },
+    "words": {
+      "held_bits_per_byte": [
+        [
+          8.000132096108748,
+          2.5692023694807924
+        ],
+        [
+          8.000112942911372,
+          2.5700533686702904
+        ],
+        [
+          8.000133706862098,
+          2.4148209443921154
+        ],
+        [
+          8.000090906241983,
+          2.4148547173433763
+        ]
+      ],
+      "ideal_bytes": 67151041.68321724,
+      "total_bits_per_component": [
+        10.569334465589542,
+        10.570166311581662,
+        10.414954651254213,
+        10.414945623585359
+      ]
+    }
+  },
+  "legacy_conversion": {
+    "cpu_ns": 168583852,
+    "wall_ns": 170548731
+  },
+  "lz4": {
+    "library": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.10.0",
+    "sha256": "45729d07db6c43e524c2e69d0c4aef81148a66e272c4f4e0e64b787e17fe1731",
+    "version": "1.10.0"
+  },
+  "machine": {
+    "affinity": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "ru_maxrss_kib": 393268
+  },
+  "orders": [
+    [
+      "ordinary",
+      "packed",
+      "split-zstd",
+      "planes-lz4",
+      "planes-zstd"
+    ],
+    [
+      "planes-zstd",
+      "planes-lz4",
+      "split-zstd",
+      "packed",
+      "ordinary"
+    ]
+  ],
+  "originals": {
+    "chunk_index": 0,
+    "decoded": 102400000,
+    "encoded": 78852856,
+    "first_sequence": 0,
+    "index_sha256": "sha256:e3d1f28198726802776c1e300eb4a9beb750b981c505743306738285263271de",
+    "manifest_sha256": "sha256:de13da9f410c21fd0ef0544906f40a3a0c081d5deae74ae4fd60d7fac25f2514",
+    "member_sha256": "sha256:889c12fd0c940d4a95b47829e4d78947ab8207a023b1657b201e5f37074fe21d",
+    "raw_sha256": "sha256:0cdb857cb3139a3b50c89abe15727b495ea29871e732d024a88d0832fd2aafa4",
+    "windows": 64
+  },
+  "packing": [
+    {
+      "blocks": 256,
+      "shift": 0,
+      "width": 12
+    }
+  ],
+  "repeats": [
+    {
+      "ordinary": {
+        "complete": {
+          "authenticated_encoded_bytes": 78852856,
+          "authentication": {
+            "cpu_ns": 17501525,
+            "wall_ns": 17502385
+          },
+          "clock": {
+            "cpu_ns": 152586562,
+            "wall_ns": 153139735
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 138760209,
+            "wall_ns": 138747860
+          },
+          "test_only_equality": {
+            "cpu_ns": 13826353,
+            "wall_ns": 14391875
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 78852856,
+          "authentication": {
+            "cpu_ns": 17460377,
+            "wall_ns": 17461086
+          },
+          "clock": {
+            "cpu_ns": 149787768,
+            "wall_ns": 149801740
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 137554922,
+            "wall_ns": 137555098
+          },
+          "test_only_equality": {
+            "cpu_ns": 12232846,
+            "wall_ns": 12246642
+          }
+        },
+        "sizes": [
+          78852856
+        ],
+        "table_bytes": 5648,
+        "table_sha256": "01e5d906763b2e85852e0eaeb18dd8e521bd1effb29cfb4b7dd4045145623fa6",
+        "writer": {
+          "cpu_ns": 168691470,
+          "wall_ns": 170708200
+        }
+      },
+      "packed": {
+        "complete": {
+          "authenticated_encoded_bytes": 76800256,
+          "authentication": {
+            "cpu_ns": 17222530,
+            "wall_ns": 17223483
+          },
+          "clock": {
+            "cpu_ns": 93090745,
+            "wall_ns": 93093189
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 81969272,
+            "wall_ns": 81961279
+          },
+          "test_only_equality": {
+            "cpu_ns": 11121473,
+            "wall_ns": 11131910
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 76800256,
+          "authentication": {
+            "cpu_ns": 17022901,
+            "wall_ns": 17023511
+          },
+          "clock": {
+            "cpu_ns": 35494901,
+            "wall_ns": 35495597
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 31197274,
+            "wall_ns": 31195495
+          },
+          "test_only_equality": {
+            "cpu_ns": 4297627,
+            "wall_ns": 4300102
+          }
+        },
+        "sizes": [
+          30720128,
+          46080128
+        ],
+        "table_bytes": 23872,
+        "table_sha256": "102a046469710271d8daec14a15152579c729ba9f4b87c316c9fb731002ed1df",
+        "writer": {
+          "cpu_ns": 103763677,
+          "wall_ns": 103766006
+        }
+      },
+      "planes-lz4": {
+        "complete": {
+          "authenticated_encoded_bytes": 83451650,
+          "authentication": {
+            "cpu_ns": 18596000,
+            "wall_ns": 18596860
+          },
+          "clock": {
+            "cpu_ns": 103872534,
+            "wall_ns": 103874952
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 92523530,
+            "wall_ns": 92514593
+          },
+          "test_only_equality": {
+            "cpu_ns": 11349004,
+            "wall_ns": 11360359
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 83451650,
+          "authentication": {
+            "cpu_ns": 18862209,
+            "wall_ns": 18862971
+          },
+          "clock": {
+            "cpu_ns": 41789899,
+            "wall_ns": 41799587
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 37172747,
+            "wall_ns": 37181009
+          },
+          "test_only_equality": {
+            "cpu_ns": 4617152,
+            "wall_ns": 4618578
+          }
+        },
+        "sizes": [
+          33422407,
+          50029243
+        ],
+        "table_bytes": 23876,
+        "table_sha256": "23403881c347aeabd303a74e03f04db6e982608f44d3a198625a6ed176c38d5b",
+        "writer": {
+          "cpu_ns": 185020305,
+          "wall_ns": 185025304
+        }
+      },
+      "planes-zstd": {
+        "complete": {
+          "authenticated_encoded_bytes": 69107458,
+          "authentication": {
+            "cpu_ns": 14811446,
+            "wall_ns": 14812119
+          },
+          "clock": {
+            "cpu_ns": 114961499,
+            "wall_ns": 114964285
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 104414244,
+            "wall_ns": 104407439
+          },
+          "test_only_equality": {
+            "cpu_ns": 10547255,
+            "wall_ns": 10556846
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 69107458,
+          "authentication": {
+            "cpu_ns": 15185452,
+            "wall_ns": 15186089
+          },
+          "clock": {
+            "cpu_ns": 43744809,
+            "wall_ns": 43750666
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 39513142,
+            "wall_ns": 39516606
+          },
+          "test_only_equality": {
+            "cpu_ns": 4231667,
+            "wall_ns": 4234060
+          }
+        },
+        "sizes": [
+          27644423,
+          41463035
+        ],
+        "table_bytes": 23877,
+        "table_sha256": "6328778b0e217a6face3d60a970ad012a0a6428ee9a50a613219e849e8bcd137",
+        "writer": {
+          "cpu_ns": 216351956,
+          "wall_ns": 216366444
+        }
+      },
+      "split-zstd": {
+        "complete": {
+          "authenticated_encoded_bytes": 78853743,
+          "authentication": {
+            "cpu_ns": 16690327,
+            "wall_ns": 16698248
+          },
+          "clock": {
+            "cpu_ns": 151349932,
+            "wall_ns": 151360125
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 139364501,
+            "wall_ns": 139364429
+          },
+          "test_only_equality": {
+            "cpu_ns": 11985431,
+            "wall_ns": 11995696
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 78853743,
+          "authentication": {
+            "cpu_ns": 17964546,
+            "wall_ns": 17965701
+          },
+          "clock": {
+            "cpu_ns": 59763601,
+            "wall_ns": 59770328
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 55150112,
+            "wall_ns": 55155467
+          },
+          "test_only_equality": {
+            "cpu_ns": 4613489,
+            "wall_ns": 4614861
+          }
+        },
+        "sizes": [
+          31553895,
+          47299848
+        ],
+        "table_bytes": 23876,
+        "table_sha256": "5bb2638a6c3c0c78aa5959d4e5004f03e91a85d22749007216fb07c0b0c4fbf9",
+        "writer": {
+          "cpu_ns": 156009770,
+          "wall_ns": 156023170
+        }
+      }
+    },
+    {
+      "ordinary": {
+        "complete": {
+          "authenticated_encoded_bytes": 78852856,
+          "authentication": {
+            "cpu_ns": 17675832,
+            "wall_ns": 17676416
+          },
+          "clock": {
+            "cpu_ns": 151007057,
+            "wall_ns": 151020073
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 138029275,
+            "wall_ns": 138027032
+          },
+          "test_only_equality": {
+            "cpu_ns": 12977782,
+            "wall_ns": 12993041
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 78852856,
+          "authentication": {
+            "cpu_ns": 17506481,
+            "wall_ns": 17507509
+          },
+          "clock": {
+            "cpu_ns": 149299958,
+            "wall_ns": 149311766
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 137346535,
+            "wall_ns": 137344038
+          },
+          "test_only_equality": {
+            "cpu_ns": 11953423,
+            "wall_ns": 11967728
+          }
+        },
+        "sizes": [
+          78852856
+        ],
+        "table_bytes": 5648,
+        "table_sha256": "01e5d906763b2e85852e0eaeb18dd8e521bd1effb29cfb4b7dd4045145623fa6",
+        "writer": {
+          "cpu_ns": 168984539,
+          "wall_ns": 168989143
+        }
+      },
+      "packed": {
+        "complete": {
+          "authenticated_encoded_bytes": 76800256,
+          "authentication": {
+            "cpu_ns": 17208987,
+            "wall_ns": 17210143
+          },
+          "clock": {
+            "cpu_ns": 91971781,
+            "wall_ns": 91973784
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 81520521,
+            "wall_ns": 81516704
+          },
+          "test_only_equality": {
+            "cpu_ns": 10451260,
+            "wall_ns": 10457080
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 76800256,
+          "authentication": {
+            "cpu_ns": 17510932,
+            "wall_ns": 17511697
+          },
+          "clock": {
+            "cpu_ns": 35247033,
+            "wall_ns": 35247879
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 31314539,
+            "wall_ns": 31314445
+          },
+          "test_only_equality": {
+            "cpu_ns": 3932494,
+            "wall_ns": 3933434
+          }
+        },
+        "sizes": [
+          30720128,
+          46080128
+        ],
+        "table_bytes": 23872,
+        "table_sha256": "102a046469710271d8daec14a15152579c729ba9f4b87c316c9fb731002ed1df",
+        "writer": {
+          "cpu_ns": 102710917,
+          "wall_ns": 102713482
+        }
+      },
+      "planes-lz4": {
+        "complete": {
+          "authenticated_encoded_bytes": 83451650,
+          "authentication": {
+            "cpu_ns": 18368265,
+            "wall_ns": 18369047
+          },
+          "clock": {
+            "cpu_ns": 102515213,
+            "wall_ns": 102517890
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 91664392,
+            "wall_ns": 91656114
+          },
+          "test_only_equality": {
+            "cpu_ns": 10850821,
+            "wall_ns": 10861776
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 83451650,
+          "authentication": {
+            "cpu_ns": 19137317,
+            "wall_ns": 19137987
+          },
+          "clock": {
+            "cpu_ns": 42887953,
+            "wall_ns": 42897275
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 37705745,
+            "wall_ns": 37704524
+          },
+          "test_only_equality": {
+            "cpu_ns": 5182208,
+            "wall_ns": 5192751
+          }
+        },
+        "sizes": [
+          33422407,
+          50029243
+        ],
+        "table_bytes": 23876,
+        "table_sha256": "23403881c347aeabd303a74e03f04db6e982608f44d3a198625a6ed176c38d5b",
+        "writer": {
+          "cpu_ns": 185615450,
+          "wall_ns": 185629363
+        }
+      },
+      "planes-zstd": {
+        "complete": {
+          "authenticated_encoded_bytes": 69107458,
+          "authentication": {
+            "cpu_ns": 14827171,
+            "wall_ns": 14827691
+          },
+          "clock": {
+            "cpu_ns": 115793865,
+            "wall_ns": 115796348
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 104732400,
+            "wall_ns": 104724366
+          },
+          "test_only_equality": {
+            "cpu_ns": 11061465,
+            "wall_ns": 11071982
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 69107458,
+          "authentication": {
+            "cpu_ns": 15345062,
+            "wall_ns": 15345554
+          },
+          "clock": {
+            "cpu_ns": 43569591,
+            "wall_ns": 43570466
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 39352482,
+            "wall_ns": 39352416
+          },
+          "test_only_equality": {
+            "cpu_ns": 4217109,
+            "wall_ns": 4218050
+          }
+        },
+        "sizes": [
+          27644423,
+          41463035
+        ],
+        "table_bytes": 23877,
+        "table_sha256": "6328778b0e217a6face3d60a970ad012a0a6428ee9a50a613219e849e8bcd137",
+        "writer": {
+          "cpu_ns": 215457256,
+          "wall_ns": 215463195
+        }
+      },
+      "split-zstd": {
+        "complete": {
+          "authenticated_encoded_bytes": 78853743,
+          "authentication": {
+            "cpu_ns": 17626715,
+            "wall_ns": 17627511
+          },
+          "clock": {
+            "cpu_ns": 151002259,
+            "wall_ns": 151011528
+          },
+          "complete_windows": 64,
+          "decoded_bytes": 102400000,
+          "net_clock": {
+            "cpu_ns": 140317768,
+            "wall_ns": 140319671
+          },
+          "test_only_equality": {
+            "cpu_ns": 10684491,
+            "wall_ns": 10691857
+          }
+        },
+        "ready": {
+          "authenticated_encoded_bytes": 78853743,
+          "authentication": {
+            "cpu_ns": 17512497,
+            "wall_ns": 17513518
+          },
+          "clock": {
+            "cpu_ns": 59580979,
+            "wall_ns": 59590510
+          },
+          "complete_windows": 8,
+          "decoded_bytes": 40320000,
+          "net_clock": {
+            "cpu_ns": 54903658,
+            "wall_ns": 54913371
+          },
+          "test_only_equality": {
+            "cpu_ns": 4677321,
+            "wall_ns": 4677139
+          }
+        },
+        "sizes": [
+          31553895,
+          47299848
+        ],
+        "table_bytes": 23876,
+        "table_sha256": "5bb2638a6c3c0c78aa5959d4e5004f03e91a85d22749007216fb07c0b0c4fbf9",
+        "writer": {
+          "cpu_ns": 155660071,
+          "wall_ns": 155664038
+        }
+      }
+    }
+  ],
+  "residency": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000000.ci16.zst": 78852856,
+      "manifest.json": 6812,
+      "windows-000000.jsonl": 173459
+    },
+    "snapshot": {
+      "cached_pages": 19297,
+      "ended_unix_ns": 1795516063808880130,
+      "members": 3,
+      "observed_file_pages": 19297,
+      "observed_members": 3,
+      "started_unix_ns": 1795516063808523277,
+      "unavailable": {}
+    }
+  },
+  "source_metadata": {
+    "cpu_ns": 2355121,
+    "wall_ns": 8204231
+  },
+  "stage_requests": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    0,
+    0,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "zstd": [
+    1,
+    5,
+    7
+  ]
+}
