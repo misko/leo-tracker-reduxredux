@@ -8,12 +8,12 @@ from tempfile import NamedTemporaryFile
 
 import numpy as np
 
-from leo.contracts.digests import sha256_digest
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.storage.short_window import ShortWindowRead
 from tools.pipeline_eval.variants.experimental.paired_sha256 import PairedSha256
 
 from . import legacy_block_multi as multi, legacy_block_seek as core
-from .seekable_member_trial import clock, elapsed
+from .legacy_block_seek import clock, elapsed
 
 
 class Description(ct.Structure):
@@ -47,7 +47,7 @@ def load(path):
 
 
 class FusedMember:
-    def __init__(self, reader, chunk, library, hasher):
+    def __init__(self, reader, chunk, library, hasher, *, allow_literal=False):
         began = clock()
         if (reader.manifest.schema_version != 2 or reader.manifest.receiver_ids != (0, 1)
                 or reader.manifest.sample_rate_hz != 10_000_000 or chunk not in reader.manifest.chunks):
@@ -61,7 +61,7 @@ class FusedMember:
         self.encoded_auth = elapsed(began)
         began = clock()
         descriptions, self.exceptions, _ = multi.describe(self.compressed, chunk.uncompressed_bytes)
-        if not self.exceptions:
+        if not self.exceptions and not allow_literal:
             raise multi.UnsupportedExceptionLayout("Use the ordinary literal-only map for this member")
         self.plan = (Description * len(descriptions))(*(Description(*row[:5]) for row in descriptions))
         self.blocks = (core.Block * len(descriptions))()
@@ -118,10 +118,24 @@ class FusedMember:
             raise core.MapError("Cannot seal provenance before clean original EOF")
         blocks = [[block.encoded, block.length, block.decoded, block.count, block.origin]
                   for block in self.blocks]
+        if not self.exceptions:
+            raw = canonical_json_bytes(dict(schema=core.SCHEMA, **core.identity(self.reader, self.chunk),
+                                            blocks=blocks, prefixes=self.prefixes))
+            if len(raw) > core.MAX_MAP:
+                raise multi.UnsupportedExceptionLayout("The literal map exceeds its existing format bound")
+            return raw, sha256_digest(raw)
         pieces = [memoryview(self.retained)[i * multi.MAX_BLOCK:i * multi.MAX_BLOCK + blocks[ordinal][3]]
                   for i, ordinal in enumerate(self.exceptions)]
         raw = multi.encode_verified(self.reader, self.chunk, blocks, self.prefixes, self.exceptions, pieces)
         return raw, sha256_digest(raw)
+
+    def audit(self):
+        return dict(**self.metrics, metadata=self.metadata, complete_encoded_auth=self.encoded_auth,
+                    plan_and_history=self.setup, history_and_context_bytes=self.scratch,
+                    block_map_workspace_bytes=ct.sizeof(self.blocks) + ct.sizeof(self.plan),
+                    retained_exception_buffer=self.retained.nbytes,
+                    largest_sample_window_bytes=max(row.payload_bytes for row in self.rows),
+                    exceptional_ordinals=list(self.exceptions))
 
 
 def publish(path, raw):
