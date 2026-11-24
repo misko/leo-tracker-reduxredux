@@ -97,7 +97,7 @@ def prepare_member(reader, chunk, codec=legacy):
 
 def ordered_members(inventory):
     for entry in inventory["segments"]:
-        reader = ShortWindowReader(entry["path"])
+        reader = ShortWindowReader(Path(entry["path"]))
         if (
             reader.manifest_sha256 != entry["manifest_digest"]
             or reader.manifest.window_count != entry["windows"]

@@ -17,6 +17,17 @@ def test_preparation_matches_the_existing_map_after_full_stock_readback(tmp_path
     assert data == expected
     assert hashes == [row.index.iq_sha256 for row in windows]
     assert observed["indexed_blocks"] == len(windows)
+    inventory = {
+        "segments": [
+            {
+                "path": str(reader.path),
+                "manifest_digest": reader.manifest_sha256,
+                "windows": len(windows),
+            }
+        ]
+    }
+    ((bound_reader, bound_chunk),) = port.ordered_members(inventory)
+    assert bound_reader.path == reader.path and bound_chunk == chunk
 
 
 def test_preparation_requires_stock_eof_even_after_the_first_valid_prefix(tmp_path, monkeypatch):

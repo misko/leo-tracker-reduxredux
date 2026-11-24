@@ -14,7 +14,7 @@ stage=/dev/shm/leo-v3-guarded-selective-0016-stage01
 name=fast8-auto-20261113-112146-b04f5461-1-lower
 original=/srv/bulk/leo/fast-scan-recordings/$name
 release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
-out=/dev/shm/leo-v3-legacy-block-raw-0016-result01
+out=/dev/shm/leo-v3-legacy-block-raw-0016-result02
 
 sudo -n systemd-run --quiet --wait --pipe --collect \
   -p User=leo -p Group=leo -p Nice=15 -p CPUAffinity=2 \
