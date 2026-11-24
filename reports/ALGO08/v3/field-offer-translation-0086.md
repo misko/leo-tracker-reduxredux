@@ -2,6 +2,8 @@
 
 A 12.5 km east translation left the frozen successor's location nearly fixed. The two estimates moved **5.2 and 15.8 cm**. A 12.5 km west translation excluded the verified roof by **5.204 km**. The same solver falsely fixed both arms on the offered east face, moving **5.570 and 5.557 km** from its original estimates. Its conditional RF RMS fell in both arms while horizontal error rose above **5.4 km**. This was a saved detector experiment on one physical recording at the enrolled DS30 site. [Frozen design and offers](field-offer-translation-protocol.md) · [Verified result](measurements/field-offer-translation-0086.json.gz)
 
+![Returned position and surveyed receiver across the three offered regions](development/ds30-0086-region-translation.png)
+
 | Offer | Roof clearance from nearest face | Decision | Error, `c = 0` / fitted `c` | Conditional RF RMS, fixed / fitted | Movement from original position, fixed / fitted |
 | --- | ---: | --- | ---: | ---: | ---: |
 | Original, archived ordinary successor | +6.179 km | Fix | 370.631 / 381.596 m | 179.824195 / 180.081121 Hz | — |

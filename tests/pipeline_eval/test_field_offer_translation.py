@@ -17,3 +17,15 @@ def test_translated_offers_use_original_frame(label, direction):
     assert translated["width_km"] == offer["width_km"]
     scale = 111.32 * math.cos(math.radians(offer["center"][0]))
     assert (translated["center"][1] - offer["center"][1]) * scale == pytest.approx(direction * 12.5)
+
+
+def test_region_figure_uses_one_fixed_frame_for_bars_survey_and_estimates():
+    from reports.ALGO08.v3.field_offer_translation_figure import figure
+
+    data = {name: dict(region=dict(center=[0, east/111.32], width_km=25.),
+                       arms=dict(fitted_c=dict(latlon=[0, point/111.32], error_km=abs(point-5))))
+            for name, east, point in (("original", 0, 5), ("east", 12.5, 5), ("west", -12.5, 0))}
+    axes, = figure(data, [0, 5/111.32]).axes
+    assert [bar.get_x() for bar in axes.patches] == pytest.approx([-12.5, 0, -25])
+    assert [dots.get_offsets()[0][0] for dots in axes.collections] == pytest.approx([5, 5, 0])
+    assert axes.lines[0].get_xdata() == pytest.approx([5, 5])
