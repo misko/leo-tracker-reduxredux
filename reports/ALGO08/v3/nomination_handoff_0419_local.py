@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 from shutil import copytree, disk_usage
 import stat
+from statistics import median
 import subprocess
 import sys
 from unittest.mock import patch
@@ -188,10 +189,16 @@ def launch(root):
 
 def score(root):
     import unseen_saved_holdout_score as known
+    from aperture_trial import write
+    import empty_bootstrap as boot
+    from joint_publication import artifacts
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from nomination_handoff_0255_publication import remediation_pins
 
+    started = boot.now()
     admission = json.loads((root / "admission.json").read_bytes())
     row = admission["original_inputs"]
+    result = {}
 
     def reference():
         body = subprocess.check_output(["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show",
@@ -202,10 +209,57 @@ def score(root):
                    and p["authority_eligible"] and p["sealed_metadata_digests_verified"])
         return [case["reference"][key] for key in ("latitude_deg", "longitude_deg")]
 
-    with patch.multiple(known, CASE=CASE, PANEL=PANEL, ADMITTED=row["admitted"], ISSUED=row["issued"],
-                        NATIVE_PIN=row["native_sha256"], runtime_sources=remediation_pins,
-                        enrollment=assigned, reference=reference):
+    def collect(path, value):
+        if path != root / "result.json":
+            raise ValueError("Unexpected scorer output")
+        result.update(value)
+
+    with (patch("aperture_trial.write", collect),
+          patch.multiple(known, CASE=CASE, PANEL=PANEL, ADMITTED=row["admitted"], ISSUED=row["issued"],
+                         NATIVE_PIN=row["native_sha256"], runtime_sources=remediation_pins,
+                         enrollment=assigned, reference=reference)):
         known.score(root)
+
+    original = checked(tmpfs(PANEL / "pair.json"), PAIR_PIN)["runs"]["candidate"]
+    historical, fresh = PANEL / "candidate", root / "installed/candidate"
+    evidence = artifacts(tmpfs(historical), original["receipt"])
+    installed = result["jobs"]["installed"]["publication"]
+    result["archived_installed_products"] = dict(figures=evidence["images"], equal_pngs=(
+        evidence["images"] == installed["figures"] if installed else None))
+    if installed and result["jobs"]["installed"]["decision"] == original["receipt"]["decision"] == "complete":
+        run = original["receipt"]["run_id"]
+        archived, repeated = (FastStandardAnalysisStore(folder) for folder in (historical, fresh))
+        for name in ("grid", "path"):
+            a = getattr(archived, "position_" + name)(run)
+            b = getattr(repeated, "position_" + name)(run)
+            a.pop("elapsed_seconds", None)
+            b.pop("elapsed_seconds", None)
+            result["archived_installed_products"][f"equal_{name}"] = a == b
+    result["publication_clocks"] = {
+        mode: {key: saved_report[key] for key in ("publication_elapsed_s", "publication_cpu_s", "solve")}
+        for mode, report in result["jobs"].items() if report["publication"]
+        for saved_report in (json.loads((root / mode / "candidate/joint-research-receipt.json").read_bytes()),)}
+    previous = checked(tmpfs(HANDOFF_RESULT), HANDOFF_RESULT_PIN)
+    result["cumulative_development_and_blind"] = {
+        metric: pooled(previous["controls"]["installed"][metric], previous["clock"][metric],
+                       timing["installed"], timing["routed"], admission["setup"][metric])
+        for metric, timing in result["time"].items()
+    }
+    result["study_scope"] = dict(
+        frozen_development_cases=["DS30-0255"], blind_cases=[CASE],
+        new_waveform_reads=0, production_changes=0, timed_runtime_source="76b28b6ebfd911a67ac1fc48f9127ced05eecae9",
+        release_handoff_source="3a49c5f1241f935d30f3348eed77c8d3c7e4a919",
+        new_scoring_clock=boot.clock(started))
+    write(root.with_name(root.name + "-comparison.json"), result)
+
+
+def pooled(dev_named, dev_routed, blind_named, blind_routed, common_admission):
+    named = dev_named + blind_named
+    routed = dev_routed + blind_routed
+    return dict(combined_named=named, combined_routed=routed, summed_speedup=named / routed,
+                median_paired_speedup=1 / median((dev_routed / dev_named, blind_routed / blind_named)),
+                blind_speedup_shared_admission=(blind_named + common_admission) / (blind_routed + common_admission),
+                blind_speedup_candidate_only_admission=blind_named / (blind_routed + common_admission))
 
 
 if __name__ == "__main__":
