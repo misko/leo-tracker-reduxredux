@@ -1,0 +1,636 @@
+{
+  "cache": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000000.ci16.zst": 78852856,
+      "manifest.json": 6812,
+      "windows-000000.jsonl": 173459
+    },
+    "snapshot": {
+      "cached_pages": 19297,
+      "ended_unix_ns": 1795515240530337446,
+      "members": 3,
+      "observed_file_pages": 19297,
+      "observed_members": 3,
+      "started_unix_ns": 1795515240529985545,
+      "unavailable": {}
+    }
+  },
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "threads": {
+      "BLIS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "native_build": {
+    "commands": [
+      [
+        "cc",
+        "-shared",
+        "-Wl,--gc-sections",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+        "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+        "/tmp/leo-algo08v2-2x-bench/spectral-vectors-combined-v1/packed/timing_first_receiver.o",
+        "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+        "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+        "-lfftw3f",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/full/relinked.so"
+      ],
+      [
+        "cc",
+        "-fPIC",
+        "-O3",
+        "-std=c11",
+        "-fopenmp-simd",
+        "-ffp-contract=off",
+        "-fno-math-errno",
+        "-fno-strict-aliasing",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "-I",
+        "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+        "-I",
+        "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+        "-D_POSIX_C_SOURCE=200809L",
+        "-I",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3",
+        "-c",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/full/timing_first_receiver.c",
+        "-o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/full/timing_first_receiver.o"
+      ],
+      [
+        "cc",
+        "-shared",
+        "-Wl,--gc-sections",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.o",
+        "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/full/timing_first_receiver.o",
+        "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/delay_pgo.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/portable_verifier.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_reference.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+        "/tmp/leo-algo08v2-2x-bench/d97b-fir-tile-v1/tile.o",
+        "-lfftw3f",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/full/jacobi.so"
+      ],
+      [
+        "cc",
+        "-fprofile-use=/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/feedback",
+        "-fno-profile-values",
+        "-shared",
+        "-Wl,--gc-sections",
+        "/var/tmp/leo-v3-eight-ms-build-padded/8ms/two_carrier_receiver.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/pilot_cancel.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/timing_first_receiver.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/delay_pgo.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/portable_verifier.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/delay_reference.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/tile.o",
+        "-lfftw3f",
+        "-pthread",
+        "-lm",
+        "-Wl,-Bsymbolic-functions",
+        "-o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/short_primary/relinked.so"
+      ],
+      [
+        "cc",
+        "-fPIC",
+        "-O3",
+        "-std=c11",
+        "-fopenmp-simd",
+        "-ffp-contract=off",
+        "-fno-math-errno",
+        "-fno-strict-aliasing",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+        "-I",
+        "native/adaptive/detector/kernel/private/native_presence",
+        "-I",
+        "/tmp/leo-algo08v2-2x/native/algo08v2/tools/pipeline_eval/variants",
+        "-I",
+        "/tmp/leo-algo08v2-2x/tools/pipeline_eval/variants/experimental",
+        "-D_POSIX_C_SOURCE=200809L",
+        "-I",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3",
+        "-c",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/short_primary/timing_first_receiver.c",
+        "-o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/short_primary/timing_first_receiver.o"
+      ],
+      [
+        "cc",
+        "-shared",
+        "-Wl,--gc-sections",
+        "/var/tmp/leo-v3-eight-ms-build-padded/8ms/two_carrier_receiver.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/pilot_cancel.o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/short_primary/timing_first_receiver.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/delay_pgo.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/portable_verifier.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/portable_fine.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fine_search.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/conditioned_cfo_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/refine_bank.o",
+        "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/fft_full.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/delay_reference.o",
+        "/tmp/leo-algo08v2-2x-bench/receiver-cfo-wrap-fix/delay_dispatch.o",
+        "/var/tmp/leo-v3-eight-ms-build-padded/scouts/8ms/tile.o",
+        "-lfftw3f",
+        "-pthread",
+        "-lm",
+        "-Wl,-Bsymbolic-functions",
+        "-o",
+        "/dev/shm/leo-v3-jacobi-columns-0169-result01/short_primary/jacobi.so"
+      ]
+    ],
+    "helper_sha256": "e6189c44b9e3a0e6cf0ab067b98bf64b16f1cec2c4e983fc3c9946af1654a819",
+    "output": {
+      "full": {
+        "alternative": "c55e4c4f847cddba9827b9242275e844314d3cbd205a97ee4000939cca3bc320",
+        "original": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+        "source": "936b67cbb9af0201a7e65281756cc9c16f042ac2ad5e84201b1577131c67044a"
+      },
+      "short_primary": {
+        "alternative": "812e6ca58e4933213428b1f75266666324f63b258b9180acd3e6825a98e13036",
+        "original": "fe4ba7b7613654c268353f9e4a78c2bbb916904e06387ace304b0866818f0e3d",
+        "source": "0d6c837a78b7363e7b2e0037f15324d32caa0400db1657578f0cdc2f7bd3aa2e"
+      }
+    },
+    "same_build": "no profile feedback on modified object"
+  },
+  "orders": [
+    [
+      "scalar",
+      "vector",
+      "shipped"
+    ],
+    [
+      "shipped",
+      "vector",
+      "scalar"
+    ],
+    [
+      "scalar",
+      "vector",
+      "shipped"
+    ],
+    [
+      "shipped",
+      "vector",
+      "scalar"
+    ]
+  ],
+  "original": {
+    "chunk_index": 0,
+    "decoded": 102400000,
+    "encoded": 78852856,
+    "first_sequence": 0,
+    "index_sha256": "sha256:e3d1f28198726802776c1e300eb4a9beb750b981c505743306738285263271de",
+    "manifest_sha256": "sha256:de13da9f410c21fd0ef0544906f40a3a0c081d5deae74ae4fd60d7fac25f2514",
+    "member_sha256": "sha256:889c12fd0c940d4a95b47829e4d78947ab8207a023b1657b201e5f37074fe21d",
+    "raw_sha256": "sha256:0cdb857cb3139a3b50c89abe15727b495ea29871e732d024a88d0832fd2aafa4",
+    "windows": 64
+  },
+  "raw_authority": "sha256:089f67081dd421f5965c1fcf90bd7f7730c5edcdae20fc903c2c91600f72d309",
+  "scopes": {
+    "full20": {
+      "emitted": 110,
+      "factors": "sha256:f7be7891902adcda1db7edd91002c86fbad80bd719fcdd2f6e1f8af63dc6f8a1",
+      "lane_calls": 102,
+      "repeats": [
+        {
+          "scalar": {
+            "batch_cpu_ns": 312255825,
+            "batch_wall_ns": 312267237,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 310569869,
+              "full_wall_ns": 310627755
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 293169338,
+            "batch_wall_ns": 293175441,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 291877371,
+              "full_wall_ns": 291920653
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 314742652,
+            "batch_wall_ns": 314758579,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 313167637,
+              "full_wall_ns": 313230133
+            },
+            "trace": null
+          }
+        },
+        {
+          "scalar": {
+            "batch_cpu_ns": 312488867,
+            "batch_wall_ns": 312495267,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 310858211,
+              "full_wall_ns": 310923078
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 292532174,
+            "batch_wall_ns": 292542567,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 291125006,
+              "full_wall_ns": 291176031
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 311958966,
+            "batch_wall_ns": 311965487,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 310411860,
+              "full_wall_ns": 310464781
+            },
+            "trace": null
+          }
+        },
+        {
+          "scalar": {
+            "batch_cpu_ns": 313844362,
+            "batch_wall_ns": 313854733,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 312163338,
+              "full_wall_ns": 312226132
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 296838884,
+            "batch_wall_ns": 296845138,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 295252836,
+              "full_wall_ns": 295305289
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 309253048,
+            "batch_wall_ns": 309273240,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 307698896,
+              "full_wall_ns": 307763802
+            },
+            "trace": null
+          }
+        },
+        {
+          "scalar": {
+            "batch_cpu_ns": 315554800,
+            "batch_wall_ns": 315561505,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 313760837,
+              "full_wall_ns": 313827876
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 289969228,
+            "batch_wall_ns": 289975226,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 288529765,
+              "full_wall_ns": 288574723
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 322326810,
+            "batch_wall_ns": 322337828,
+            "native": {
+              "full_calls": 102,
+              "full_cpu_ns": 320354265,
+              "full_wall_ns": 320436603
+            },
+            "trace": null
+          }
+        }
+      ],
+      "stages": {
+        "scalar": {
+          "batch_cpu_ns": 318402142,
+          "batch_wall_ns": 318408728,
+          "native": {
+            "full_calls": 102,
+            "full_cpu_ns": 316616646,
+            "full_wall_ns": 316684608
+          },
+          "trace": {
+            "full": {
+              "jacobi_ns": 5653097,
+              "modes_ns": 25775283,
+              "scouts": 162
+            },
+            "short_primary": {
+              "jacobi_ns": 0,
+              "modes_ns": 0,
+              "scouts": 0
+            }
+          }
+        },
+        "vector": {
+          "batch_cpu_ns": 313181031,
+          "batch_wall_ns": 313201349,
+          "native": {
+            "full_calls": 102,
+            "full_cpu_ns": 311529820,
+            "full_wall_ns": 311594769
+          },
+          "trace": {
+            "full": {
+              "jacobi_ns": 4138207,
+              "modes_ns": 24097554,
+              "scouts": 162
+            },
+            "short_primary": {
+              "jacobi_ns": 0,
+              "modes_ns": 0,
+              "scouts": 0
+            }
+          }
+        }
+      }
+    },
+    "mixed20_8": {
+      "emitted": 66,
+      "factors": "sha256:0297234a46a7eb9508b8e0c87dd27726505ccd696e4acd73fe7116e35d3b5239",
+      "lane_calls": 102,
+      "repeats": [
+        {
+          "scalar": {
+            "batch_cpu_ns": 143123839,
+            "batch_wall_ns": 143126754,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 56321168,
+              "full_wall_ns": 56333961,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 85907159,
+              "short_primary_wall_ns": 85925690
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 125547780,
+            "batch_wall_ns": 125550451,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 51550172,
+              "full_wall_ns": 51560936,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 73228566,
+              "short_primary_wall_ns": 73243823
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 141434413,
+            "batch_wall_ns": 141437493,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 54590797,
+              "full_wall_ns": 54602816,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 85424218,
+              "short_primary_wall_ns": 85443623
+            },
+            "trace": null
+          }
+        },
+        {
+          "scalar": {
+            "batch_cpu_ns": 140888971,
+            "batch_wall_ns": 140891890,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 54309143,
+              "full_wall_ns": 54320659,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 85752167,
+              "short_primary_wall_ns": 85772188
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 128072636,
+            "batch_wall_ns": 128075635,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 53667446,
+              "full_wall_ns": 53681214,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 73576704,
+              "short_primary_wall_ns": 73591015
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 138558915,
+            "batch_wall_ns": 138561848,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 53734406,
+              "full_wall_ns": 53745308,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 84126595,
+              "short_primary_wall_ns": 84141915
+            },
+            "trace": null
+          }
+        },
+        {
+          "scalar": {
+            "batch_cpu_ns": 139247457,
+            "batch_wall_ns": 139254151,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 54374403,
+              "full_wall_ns": 54389002,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 84152118,
+              "short_primary_wall_ns": 84168900
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 126450003,
+            "batch_wall_ns": 126452861,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 51814343,
+              "full_wall_ns": 51826551,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 73804278,
+              "short_primary_wall_ns": 73820883
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 138252686,
+            "batch_wall_ns": 138255647,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 52840361,
+              "full_wall_ns": 52849220,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 84715169,
+              "short_primary_wall_ns": 84729838
+            },
+            "trace": null
+          }
+        },
+        {
+          "scalar": {
+            "batch_cpu_ns": 139857595,
+            "batch_wall_ns": 139860877,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 53887132,
+              "full_wall_ns": 53897216,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 85242822,
+              "short_primary_wall_ns": 85257864
+            },
+            "trace": null
+          },
+          "shipped": {
+            "batch_cpu_ns": 125117091,
+            "batch_wall_ns": 125119813,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 51087223,
+              "full_wall_ns": 51097876,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 73279303,
+              "short_primary_wall_ns": 73293586
+            },
+            "trace": null
+          },
+          "vector": {
+            "batch_cpu_ns": 141751513,
+            "batch_wall_ns": 141754557,
+            "native": {
+              "full_calls": 16,
+              "full_cpu_ns": 56116774,
+              "full_wall_ns": 56130889,
+              "short_primary_calls": 86,
+              "short_primary_cpu_ns": 84821349,
+              "short_primary_wall_ns": 84839640
+            },
+            "trace": null
+          }
+        }
+      ],
+      "stages": {
+        "scalar": {
+          "batch_cpu_ns": 140866848,
+          "batch_wall_ns": 140869901,
+          "native": {
+            "full_calls": 16,
+            "full_cpu_ns": 54217857,
+            "full_wall_ns": 54227012,
+            "short_primary_calls": 86,
+            "short_primary_cpu_ns": 85856150,
+            "short_primary_wall_ns": 85873140
+          },
+          "trace": {
+            "full": {
+              "jacobi_ns": 962199,
+              "modes_ns": 4317565,
+              "scouts": 27
+            },
+            "short_primary": {
+              "jacobi_ns": 208324,
+              "modes_ns": 3110040,
+              "scouts": 86
+            }
+          }
+        },
+        "vector": {
+          "batch_cpu_ns": 140307950,
+          "batch_wall_ns": 140315329,
+          "native": {
+            "full_calls": 16,
+            "full_cpu_ns": 55181790,
+            "full_wall_ns": 55199786,
+            "short_primary_calls": 86,
+            "short_primary_cpu_ns": 84371398,
+            "short_primary_wall_ns": 84386495
+          },
+          "trace": {
+            "full": {
+              "jacobi_ns": 701466,
+              "modes_ns": 4119234,
+              "scouts": 27
+            },
+            "short_primary": {
+              "jacobi_ns": 179317,
+              "modes_ns": 3079545,
+              "scouts": 86
+            }
+          }
+        }
+      }
+    }
+  }
+}
