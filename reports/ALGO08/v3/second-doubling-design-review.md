@@ -1,5 +1,7 @@
 # Where the next 2× must come from
 
+**Correction after testing a missing region.** The early orbit-index prototype supplied TLE text pairs to one consumer that required SGP4 orbit objects. On the original containing offer both versions returned the same scientific products, but the indexed run had lost a geographic check. On the same recording with both search centres translated two degrees east, the original and indexed solvers even made different publication decisions. The 4.246 s and 4.008 s results below cannot establish equivalent end-to-end savings. The preparation-only measurements still compare identical prepared arrays. [Physical omitted-region evidence](portable-omitted-region.md)
+
 The comparison baseline is frozen ALGO08v3 on one core. The guarded candidate finishes a complete simulated North fix in 11.224 s against 16.761 s. Half time is 8.381 s to three decimals. Using the underlying clocks, it still needs 2.844 s. Acquisition took 5.349 s and decision and publication took 5.346 s. Holding the rest fixed, reducing each by about 27% would reach half time on this one recording. A weak physical fix and a dense physical fix will have different budgets. [Measured stages and location controls](continued-transfer-results.md)
 
 | Recording and timing boundary | v3 | Candidate | What the comparison establishes |

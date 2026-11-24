@@ -154,6 +154,15 @@ def prepare(root):
           solver_invocations=0, waveform_reads=0))
 
 
+def bound_versions(path, manifest_sha256, index_sha256):
+    from empty_bootstrap import checked
+    from portable_orbit_compatibility import producer_versions
+    binding = json.loads(checked(path, manifest_sha256))
+    if binding["portable_sha256"] != index_sha256:
+        raise ValueError("Orbit index producer manifest and selected artifact disagree")
+    return producer_versions(binding["implementation"])
+
+
 def publication_worker(root):
     from active_preparation_trial import bind_preparation
     from continued_cfo_trial import work
@@ -167,7 +176,8 @@ def publication_worker(root):
             path, pin = Path(os.environ[FILE_ENV]), os.environ[PIN_ENV]
             start = begin()
             try:
-                compatibility = versions()
+                producer_pin = os.environ.get("LEO_RESEARCH_ORBIT_PRODUCER_SHA256")
+                compatibility = bound_versions(path.parent/"artifact-bind.json", producer_pin, pin) if producer_pin else versions()
             except UnsupportedExport as error:
                 receipt.setdefault("transfers", []).append(dict(file=str(path), sha256=pin,
                     loading=dict(fallback=str(error)), compatibility_clock=timing(start)))
@@ -200,7 +210,9 @@ def publication(root, staging, pin):
             or not sealed["same_scientific_arrays"]
             or staging.resolve(strict=True).parent != Path("/dev/shm")):
         raise ValueError("The saved publication must use the sealed pre-cutoff producer digest")
-    with patch.dict(os.environ, {FILE_ENV: str(staging/EXPORT), PIN_ENV: pin}):
+    producer_pin = sha256((staging/"artifact-bind.json").read_bytes()).hexdigest()
+    with patch.dict(os.environ, {FILE_ENV: str(staging/EXPORT), PIN_ENV: pin,
+                                 "LEO_RESEARCH_ORBIT_PRODUCER_SHA256": producer_pin}):
         ordinary.run(root, worker_path=Path(__file__).resolve())
     audit = json.loads((root/"orbits-indexed.json").read_bytes())
     transfer, = audit["transfers"]

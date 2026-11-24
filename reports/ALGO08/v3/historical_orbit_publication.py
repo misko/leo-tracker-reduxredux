@@ -30,6 +30,20 @@ def compared_receipt(receipt):
     return result
 
 
+def same_regional_path(candidate, control):
+    """Compare actual regional proof and projection work, excluding proof timers."""
+    def evidence(trace):
+        proof = trace["early_regional"]
+        if not proof or any("diagnostic_error" in p["result"] or
+                            p["result"].get("probes_evaluated", 0) <= 0 for p in proof):
+            return None
+        solve = trace["solve"]
+        return ([(p["result"], p["reused"]) for p in proof],
+                solve["prepared_exterior"], solve["geographic_projector"])
+    expected = evidence(control)
+    return expected is not None and evidence(candidate) == expected
+
+
 def worker(root):
     from active_preparation_trial import bind_preparation
     from continued_cfo_trial import work
@@ -112,6 +126,7 @@ def score(root):
     media = artifacts(target, receipt)
     products = scientific(target)
     if (actual["handoffs"] != 1 or actual["waveform_calls"] or receipt["decision"] != "complete"
+            or not same_regional_path(candidate_trace, prior_trace)
             or products != scientific(REFERENCE/"selective") or products["grid_points"] != 179
             or compared_receipt(receipt) != compared_receipt(prior["science"]["receipt"])
             or terminal["arms"] != prior["science"]["arms"]
