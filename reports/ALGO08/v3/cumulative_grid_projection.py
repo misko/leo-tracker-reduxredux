@@ -92,6 +92,8 @@ def saved_inventory_port(request):
     inventory = inventory_binding(Path(request["recording"]), Path(path), request["session"], request["inventory"])
     description = ("authenticated saved named v3 20 ms acquisition" if request.get("receiver") == "named-v3"
                    else "authenticated saved mixed 20/12 ms acquisition")
+    if request.get("receiver") == "masked-20-8-held-history":
+        description = "authenticated saved 20/8 ms factors with whole-stereo short omissions and held history"
     saved_publication = partial(joint_publication.run, detector_override=deny_waveform,
                                 detector_description=description)
     with (patch.object(FastScanStore, "inventory", inventory),

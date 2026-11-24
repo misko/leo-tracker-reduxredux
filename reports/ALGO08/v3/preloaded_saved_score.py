@@ -54,9 +54,10 @@ def science(root, receipt, job, identity):
     if set(roles) != {"c0", "fitted_c"} or any(canonical_digest({r[0]: r[1] for r in rows}) != data["owners"][key]
                                              for key, rows in roles.items()):
         raise ValueError("Ordered owner rosters do not bind the actual calibration arms")
+    finish = (trace["route_details"] or {}).get("named_survivor_fit") or {}
     return dict(identity=identity, terminal=receipt["terminal_sha256"], arms=data["arms"], roles=roles,
                 grid_and_path=data["scientific_digests"], grid_points=grid["evaluated_points"], images=images,
-                named_finish=trace["route_details"]["named_survivor_fit"]["status"])
+                named_finish=finish.get("status"))
 
 
 def score(root):
