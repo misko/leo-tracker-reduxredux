@@ -9,7 +9,7 @@ import pytest
 from PIL import Image
 
 from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, capture_pace, compare_centers, empirical_accuracy_gap,
-                                  field_stage_history, frozen_stage_order, outcomes_summary, paired_rf_and_error, paired_rows,
+                                  field_stage_history, frozen_stage_order, half_time_outcomes, outcomes_summary, paired_rf_and_error, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
 
@@ -17,6 +17,24 @@ from full_successor_score import (PINS, calibration_segment_error_km, capture_da
 def arms(point):
     return {name: {"latlon": point, "rf_rms_hz": 100 if point is not None else None}
             for name in ("c0", "fitted_c")}
+
+
+def test_joint_half_time_cells_keep_signed_failures_ties_and_launch_order():
+    rows = []
+    for wall, cpu, order, error in [(5, 3, "installed", None), (5, 5, "successor", 1.),
+                                    (7, 3, "installed", 2.), (7, 5, "successor", .5)]:
+        a = dict(elapsed_s=10, cpu_s=6, first=order, outcome="complete", c0_error_km=1., fitted_c_error_km=1.)
+        b = dict(elapsed_s=wall, cpu_s=cpu, first=order, outcome="solver_failed" if error is None else "complete",
+                 c0_error_km=error, fitted_c_error_km=None if error is None else error + .25)
+        rows.append((a, b))
+    stats = half_time_outcomes(rows)
+    assert {k: g["pairs"] for k, g in stats.items()} == dict(wall_and_cpu=1, wall_only=1, cpu_only=1, neither=1)
+    assert stats["wall_and_cpu"]["outcomes"]["successor"] == {"solver_failed": 1}
+    assert stats["wall_and_cpu"]["accuracy"]["fitted_c"]["shared"] == 0
+    assert stats["wall_only"]["first"] == {"installed": 0, "successor": 1}
+    assert stats["wall_only"]["accuracy"] == {"c0": {"shared": 1, "equal_or_closer": 1},
+                                              "fitted_c": {"shared": 1, "equal_or_closer": 0}}
+    assert stats["neither"]["accuracy"]["fitted_c"] == {"shared": 1, "equal_or_closer": 1}
 
 
 def test_all_ds30_and_historical_subset_are_identified_independently():
@@ -297,6 +315,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
             assert moments["radial_mse_km2"] == pytest.approx(moments["squared_mean_offset_km2"] + moments["centered_mse_km2"])
     assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
     assert report["cohorts"]["All DS30 recordings"]["time_accounting"]["cpu_saved_s"] == 0
+    assert sum(v["pairs"] for v in report["per_recording_half_time_outcomes"].values()) == 455
     assert report["twofold_wall_time_target"] == {
         "required_speedup": 2.0, "summed_speedup": False, "median_paired_speedup": True, "both_met": False}
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1

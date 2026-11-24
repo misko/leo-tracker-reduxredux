@@ -137,6 +137,30 @@ def paired_timing(pairs, metric):
                 median_paired_speedup=1 / median(b / a for a, b in matched))
 
 
+def half_time_outcomes(pairs):
+    """Cross-classify the two measured clocks and score the same recordings in each cell."""
+    groups = {(True, True): "wall_and_cpu", (True, False): "wall_only",
+              (False, True): "cpu_only", (False, False): "neither"}
+    result = {}
+    for label in groups.values():
+        result[label] = dict(pairs=0, first={role: 0 for role in BUILDS},
+                             outcomes={role: Counter() for role in BUILDS},
+                             accuracy={arm: dict(shared=0, equal_or_closer=0) for arm in ARMS})
+    for a, b in pairs:
+        label = groups[(2 * b["elapsed_s"] <= a["elapsed_s"], 2 * b["cpu_s"] <= a["cpu_s"])]
+        group = result[label]
+        group["pairs"] += 1
+        group["first"][a["first"]] += 1
+        for role, row in zip(BUILDS, (a, b), strict=True):
+            group["outcomes"][role][row["outcome"]] += 1
+        for arm in ARMS:
+            original, candidate = a[arm + "_error_km"], b[arm + "_error_km"]
+            if original is not None and candidate is not None:
+                group["accuracy"][arm]["shared"] += 1
+                group["accuracy"][arm]["equal_or_closer"] += int(candidate <= original)
+    return result
+
+
 def capture_pace(pairs, assigned):
     """Compare fully charged offline runtime with each recording's own audited observing span."""
     results = {}
@@ -448,6 +472,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
     metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
+    metadata["per_recording_half_time_outcomes"] = half_time_outcomes(pairs)
     trial_order = frozen_stage_order({a["case"]: (a["case_id"], a["physical_content_sha256"]) for a, _ in pairs})
     metadata["field_stages"] = field_stage_history(pairs, trial_order)
     metadata["accuracy_repair_budget"] = [
@@ -553,6 +578,19 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         t = summaries[name]["time_accounting"]
         lines.append(f"| {name} | {number(t['wall_saved_s'], 1)} | {number(t['cpu_saved_s'], 1)} | "
                      f"{number(t['residual_saved_s'], 1)} |")
+    lines += ["", "The following counts show when halving elapsed time also halved process CPU on the same "
+              "recording. Each accuracy fraction counts equal or smaller candidate errors among shared scored fixes. "
+              "The first two count columns include every timed outcome. The launch orders cover different recordings.", "",
+              "| Candidate used half the ALGO08v3 time or less | ALGO08v3 ran first | Candidate ran first | "
+              "Equal or closer, fixed zero | Equal or closer, fitted |",
+              "|---|---:|---:|---:|---:|"]
+    for key, label in (("wall_and_cpu", "Wall and CPU"), ("wall_only", "Wall only"),
+                       ("cpu_only", "CPU only"), ("neither", "Neither")):
+        group = metadata["per_recording_half_time_outcomes"][key]
+        shares = {arm: f"{v['equal_or_closer']}/{v['shared']}" if v["shared"] else "—"
+                  for arm, v in group["accuracy"].items()}
+        lines.append(f"| {label} | {group['first']['installed']} | {group['first']['successor']} | "
+                     f"{shares['c0']} | {shares['fitted_c']} |")
     lines += ["", "### From the first pair of recordings to the full field trial", "",
               "The first two recordings checked operation. Later stages followed the frozen hash order. "
               "The new recordings in each row appear in that row only. The cumulative column includes every "
