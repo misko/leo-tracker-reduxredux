@@ -91,7 +91,7 @@ def run(output):
         asset_pins[name] = spec[name]
     before = json.loads(boot.checked(BASE / "result.json", PRIOR_PIN))["jobs"]["routed"]["publication"]
     sealed = json.loads(boot.checked(CAPTURED / "prediction-seal.json", CAPTURE_SEAL))
-    if sealed[SCENE] != "sha256:" + CAPTURE_PIN:
+    if sealed[SCENE] != CAPTURE_PIN:
         raise ValueError("The paid candidate did not seal this official live scene")
     lanes, options = pickle.loads(boot.checked(CAPTURED / SCENE, CAPTURE_PIN))
     live = host()
