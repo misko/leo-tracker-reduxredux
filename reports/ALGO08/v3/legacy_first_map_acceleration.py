@@ -2,6 +2,7 @@
 
 from contextlib import contextmanager
 from functools import partial, wraps
+from importlib import import_module
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -33,6 +34,10 @@ def solver_ports(spec, audit):
 
     @wraps(publish)
     def accelerated(*args, **kwargs):
+        # Match the ordinary publisher's import order before research
+        # adapters make the checkout visible for auxiliary tools.
+        import_module("tools.algo08_position")
+        import_module("tools.algo08_scan")
         from causal_body_election import binding as election
         import exact_named_route as route
         from grid_design_template import Designs, bind_projected_design

@@ -63,7 +63,7 @@ def compile_inputs(root):
                 clock=boot.clock(began), compiler_cpu_s=after.ru_utime + after.ru_stime - before.ru_utime - before.ru_stime)
 
 
-def launch(root):
+def launch(root, retained=None):
     from aperture_trial import write
     from dense_geographic_trial import host
     from eight_ms_south_transfer import environment_for
@@ -87,12 +87,33 @@ def launch(root):
     boot.checked(Path(template[template.index(replay) + 1]), template[template.index(replay + "-sha256") + 1][7:])
     root.mkdir(mode=0o700)
     prepared = compile_inputs(root)
+    tiny_case = panel.ORDER[0]
+    previous = None
+    if retained is not None:
+        from visit_frame_raw_0016 import digest, read
+
+        previous_book = read(retained / "admission.json")
+        previous_log = read(retained / tiny_case / "fused-clock.json")
+        previous_maps = read(retained / tiny_case / "fused/legacy-first-map-acquisition.json")
+        if (read(retained / "prediction-seal.json") != panel.panel_seal(retained)
+                or previous_log["clock"]["exit_code"] or previous_maps["acceleration"]["solver"]
+                or previous_book["inputs"][tiny_case]["request"] != inputs[tiny_case]["request"]
+                or previous_log["command"] != previous_book["commands"][tiny_case]):
+            raise ValueError("Only an independently sealed complete receiver-side withhold can be retained")
+        previous = dict(receipt_sha256=digest(retained / "admission.json"), sources=previous_book["sources"],
+                        revision=previous_book["runtime_revision"], command=previous_log["command"],
+                        case=tiny_case, path=str(retained))
     sources = runtime_pins() | panel.source_pins([*(f"reports/ALGO08/v3/{name}" for name in PORTS),
                                                   PAIRED + ".py", PAIRED + ".c"])
     commands, admission = {}, {}
     for case in panel.ORDER:
         started = boot.now()
         folder = root / case
+        if previous is not None and case == tiny_case:
+            shutil.copytree(retained / case, folder)
+            commands[case] = previous["command"]
+            admission[case] = boot.clock(started)
+            continue
         folder.mkdir(mode=0o700)
         (folder / "tmp").mkdir()
         shutil.copytree(panel.POSITIVE / "fonts", folder / "fonts")
@@ -105,8 +126,10 @@ def launch(root):
     write(root / "admission.json", dict(order=panel.ORDER, machine=machine, inputs=inputs, commands=commands,
           sources=sources, runtime_revision=revision, admission=admission, controller_admission=boot.clock(began),
           prior_map_files_used_by_candidate=0, original_waveform_bytes_opened_by_preflight=0,
-          prepared=prepared, prior_first_use=PREVIOUS))
+          prepared=prepared, prior_first_use=PREVIOUS, retained=previous))
     for case in panel.ORDER:
+        if previous is not None and case == tiny_case:
+            continue
         folder, argv = root / case, commands[case]
         usage, started = getrusage(RUSAGE_CHILDREN), boot.now()
         probe = subprocess.run([*argv, "--first-map-setup-only"], env=environment_for(folder),
@@ -121,6 +144,8 @@ def launch(root):
                 or diagnostic["audit"]["acceleration"]["pin"] != prepared["spec_pin"]):
             raise ValueError("Expected the exact real first-use startup without waveform access")
     for case in panel.ORDER:
+        if previous is not None and case == tiny_case:
+            continue
         folder = root / case
         measure_mode(folder, "fused", commands[case], environment_for(folder),
                      lambda: resident(inputs[case]["wavepaths"]), require_success=False)
@@ -136,11 +161,12 @@ def score(root):
     prior = json.loads(gzip.decompress(checked(HERE / "measurements/legacy-first-use-original-panel.json.gz", PREVIOUS)))
     panel.score(root)
     receipt = read(root / "result.json")
-    pin = receipt["admission"]["prepared"]["spec_pin"]
     evidence, ordinary, accelerated = {}, {}, {}
     for case, row in receipt["cases"].items():
         run = root / case / "fused"
         audit = read(run / "legacy-first-map-acquisition.json")
+        argv = row["clock"]["command"]
+        pin = argv[argv.index("--legacy-first-map-fast-sha256") + 1]
         if audit["acceleration"]["pin"] != pin:
             raise ValueError("Different acceleration artifacts ran")
         paths = dict(owned=sum(bool(member["owned_window_capacity"]) for member in audit["members"]),
@@ -168,5 +194,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("launch", "score"))
     parser.add_argument("root", type=Path)
+    parser.add_argument("--retain-withhold", type=Path)
     args = parser.parse_args()
-    {"launch": launch, "score": score}[args.mode](args.root)
+    if args.mode == "launch":
+        launch(args.root, args.retain_withhold)
+    else:
+        score(args.root)
