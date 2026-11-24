@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from resource import RUSAGE_CHILDREN, getrusage
 from shutil import copytree
 import subprocess
 import sys
@@ -60,7 +61,7 @@ def allowed_tiny(positive, clock):
                 clock["elapsed_s"] < positive["verified_once"]["elapsed_s"])
 
 
-def prepare(root, case):
+def prepare(root, case, *, short_pin=None, positive_reference=None):
     import empty_bootstrap as boot
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
@@ -80,7 +81,7 @@ def prepare(root, case):
     if machine != prior["admission"]["machine"]:
         raise ValueError("The original low-priority environment changed")
     if case == TINY:
-        pos = root/POSITIVE
+        pos = root/POSITIVE if positive_reference is None else positive_reference
         positive = read(pos/"result.json")
         if (read(pos/"prediction-seal.json") != output_seal(pos)
                 or positive["positive_prediction_sha256"] != digest(pos/"prediction-seal.json")
@@ -101,7 +102,7 @@ def prepare(root, case):
     from full_short_run import EIGHT_MS_SHA, GEOGRAPHIC_SHA, TRACK_SCORES_SHA
 
     for flag, pin in zip(("--short-binary", "--geographic-library", "--regional-track-library",
-                          "--frontier-block-library"), (EIGHT_MS_SHA, GEOGRAPHIC_SHA, TRACK_SCORES_SHA, BLOCK_SHA), strict=True):
+                          "--frontier-block-library"), (short_pin or EIGHT_MS_SHA, GEOGRAPHIC_SHA, TRACK_SCORES_SHA, BLOCK_SHA), strict=True):
         path = Path(argv[argv.index(flag)+1])
         boot.checked(path, pin.removeprefix("sha256:"))
         native[flag] = dict(path=str(path), sha256=pin)
@@ -122,19 +123,23 @@ def prepare(root, case):
     return argv, environment_for(folder), enrolled
 
 
-def launch(root, case):
+def launch(root, case, **options):
     import empty_bootstrap as boot
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from raw_0016_best_trial import measure_mode
     from visit_frame_raw_0016 import resident
 
-    argv, env, enrolled = prepare(root, case)
+    argv, env, enrolled = prepare(root, case, **options)
     folder = root/case
     started = boot.now()
+    before = getrusage(RUSAGE_CHILDREN)
     probe = subprocess.run([*argv, "--first-map-setup-only"], env=env, check=False, capture_output=True,
                            text=True, timeout=15)
-    write(folder/"startup.json", dict(clock=boot.clock(started), exit_code=probe.returncode,
+    after = getrusage(RUSAGE_CHILDREN)
+    write(folder/"startup.json", dict(clock=boot.clock(started),
+                                      child_cpu_s=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime),
+                                      exit_code=probe.returncode,
                                       stdout=probe.stdout, stderr=probe.stderr))
     probe.check_returncode()
     scanner, solver = (json.loads(line) for line in probe.stdout.splitlines())

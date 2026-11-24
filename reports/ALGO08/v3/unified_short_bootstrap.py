@@ -235,23 +235,26 @@ def run(args, *, publisher=None):
     launcher, specification, sources, publication, checks = staged.load_runtime()
     from combined_frontier_run import BLOCK_SHA, PREFETCH_FILES, load_prefetch
     from full_short_raw import observe_acquisition
-    from full_short_run import (EIGHT_MS_RECIPE_SHA, EIGHT_MS_SHA, GEOGRAPHIC_SHA, RECIPE_SHA, SHORT_SHA,
-                                TRACK_SCORES_SHA, checked_recipe)
+    from full_short_run import (EIGHT_MS_RECIPES, EIGHT_MS_SHA, GEOGRAPHIC_SHA, RECIPE_SHA, SHORT_SHA,
+                                SPARSE_EIGHT_MS_SHA, TRACK_SCORES_SHA, checked_recipe)
     from leo.analysis.glrt_frequency_input import frequency_evidence
     from leo.contracts.digests import canonical_digest
     from mixed_aperture_receiver import MixedApertureDetector
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
     from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
 
-    short_pin = EIGHT_MS_SHA if eight_ms else SHORT_SHA
+    sparse8 = getattr(args, "sparse8_primary", False)
+    if sparse8 and (not eight_ms or full_anchor_primary is not None):
+        raise ValueError("Sparse short primary requires native 8 ms and original two-scan anchors")
+    short_pin = (SPARSE_EIGHT_MS_SHA if sparse8 else EIGHT_MS_SHA) if eight_ms else SHORT_SHA
     inputs = ((args.short_binary, short_pin), (args.geographic_library, GEOGRAPHIC_SHA),
               (args.regional_track_library, TRACK_SCORES_SHA), (args.frontier_block_library, BLOCK_SHA))
     for path, pin in inputs:
         staged.checked(path, pin)
     if args.one_pass_web_png:
         staged.checked(HERE / "one_pass_web_png.py", LAYOUT_SHA256)
-    original_recipe = checked_recipe(eight_ms=True) if eight_ms else checked_recipe()
-    recipe, effective_detector = original_recipe, EIGHT_MS_RECIPE_SHA if eight_ms else RECIPE_SHA
+    original_recipe = checked_recipe(eight_ms=True, short_pin=short_pin) if eight_ms else checked_recipe()
+    recipe, effective_detector = original_recipe, EIGHT_MS_RECIPES[short_pin] if eight_ms else RECIPE_SHA
     anchor_helper = None
     if full_anchor_primary is not None:
         from primary_anchor_8ms import RECIPE_FIELD, AnchorPrimaryMixer, bound_library, definition
