@@ -19,7 +19,7 @@ def native(tmp_path_factory):
     return fused.load(binary)
 
 
-def capture(tmp_path, *, fault=None, literal_only=False):
+def capture(tmp_path, *, fault=None, literal_only=False, empty_tail=False):
     # Distances cross bounded ring wraps, and sample windows cross block ends.
     rng = np.random.default_rng(71)
     raw = rng.integers(-4096, 4096, size=655_360, dtype="<i2").reshape(-1, 2, 2)
@@ -29,6 +29,8 @@ def capture(tmp_path, *, fault=None, literal_only=False):
             data[start+4096:start+12_288] = data[start+64:start+8256].copy()
             data[start+32_000:start+48_000] = data[start-16_000:start]
     windows = [raw[first:first+35_000] for first in range(0, len(raw), 35_000)]
+    if empty_tail:
+        windows.append(raw[:0])
     writer = ShortWindowWriter(
         tmp_path, "capture", configuration={"sample_rate_hz": 10_000_000, "window_ms": 20},
         radio={}, receiver_ids=(0, 1), schema_version=2, chunk_windows=len(windows), compression_level=1,
@@ -149,3 +151,41 @@ def test_first_use_map_reopens_from_the_same_verified_encoded_snapshot(tmp_path,
         assert not (tmp_path / "damaged").exists()
     finally:
         member.close()
+
+
+def test_first_use_literal_map_preserves_partial_and_zero_visit(tmp_path, native):
+    reader, chunk, frame, samples = capture(tmp_path, literal_only=True, empty_tail=True)
+    expected = list(reader.windows())
+    assert 0 < expected[-2].samples.shape[0] < expected[0].samples.shape[0]
+    assert expected[-1].samples.shape == (0, 2, 2)
+    control, control_pin, _ = core.seal_map(reader, chunk, frame, expected)
+    library = tmp_path/"replay.so"
+    core.build(library)
+    member = fused.FusedMember(reader, chunk, native, None, allow_literal=True)
+    try:
+        for row, wanted in zip(member.windows(), samples, strict=True):
+            np.testing.assert_array_equal(row.samples, wanted)
+        document, pin = member.sidecar()
+        assert (document, pin) == (control, control_pin)
+        replay = core.Selective(reader, chunk, document, pin, core.load(library))
+        try:
+            for index in (-2, -1):
+                np.testing.assert_array_equal(replay.read(replay.rows[index], full=False), samples[index][:80_000])
+        finally:
+            replay.close()
+    finally:
+        member.close()
+
+
+@pytest.mark.parametrize("decision", ["complete", "withheld"])
+def test_verified_terminal_issuance_accepts_both_normal_outcomes(decision):
+    from reports.ALGO08.v3.legacy_first_map_entry import require_verified_terminal
+
+    terminal = dict(decision=decision, session_id="session", window_count=29)
+    plan = dict(session="session", windows=29, raw_authority="verified original")
+    audit = dict(finished_raw_authority="verified original")
+    require_verified_terminal(terminal, plan, audit)
+    with pytest.raises(ValueError, match="No complete first-use"):
+        require_verified_terminal(terminal, plan, {})
+    with pytest.raises(ValueError, match="No complete first-use"):
+        require_verified_terminal(terminal | {"window_count": 28}, plan, audit)

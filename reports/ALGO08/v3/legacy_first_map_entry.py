@@ -29,6 +29,14 @@ class ReachedScanner(Exception):
     pass
 
 
+def require_verified_terminal(terminal, plan, audit):
+    """Map persistence depends on signed acquisition, including durable withholds."""
+    if (terminal["decision"] not in ("complete", "withheld")
+            or terminal["session_id"] != plan["session"] or terminal["window_count"] != plan["windows"]
+            or audit.get("finished_raw_authority") != plan["raw_authority"]):
+        raise ValueError("No complete first-use receiver and publication")
+
+
 def run(args):
     import empty_bootstrap as boot
     from legacy_map_receipt import write
@@ -91,8 +99,9 @@ def run(args):
                 raise
             print(json.dumps(dict(reached_scanner=True, waveform_opens=0, audit=audit)))
             return
-    if args.first_map_setup_only or terminal["decision"] != "complete" or "finished_raw_authority" not in audit:
+    if args.first_map_setup_only:
         raise ValueError("No complete first-use receiver and publication")
+    require_verified_terminal(terminal, state["plan"], audit)
     began = boot.now()
     pin = state["publish"](args.output / "legacy-first-maps", state["plan"], pending)
     if pin != audit["plan_sha256"]:
