@@ -22,3 +22,20 @@ def test_all_four_ordinary_orbits_are_exact_with_a_replayed_new_residual(trial):
         trial.committed_orbits(records(old), records(wrong), dict(ordinary=old, residual_layout=wrong))
     with pytest.raises(ValueError, match="eight-PNG sets"):
         trial.committed_orbits(records(old), records(wrong), dict(ordinary=old, residual_layout=new))
+
+
+def test_saved_price_charges_both_admissions_and_only_one_index_build(trial):
+    from residual_portable_saved_score import time_prices
+
+    def seconds(wall, cpu):
+        return dict(elapsed_s=wall, cpu_s=cpu)
+
+    def nanos(wall, cpu):
+        return dict(elapsed_ns=int(wall*1e9), cpu_ns=int(cpu*1e9))
+
+    result = time_prices(seconds(11, 10), seconds(12, 11), seconds(16, 15), seconds(.1, .05),
+                         nanos(.4, .2), nanos(.5, .25), seconds(4, 3.9))
+    assert result['elapsed_s']['prepared'] == pytest.approx(11.5)
+    assert result['elapsed_s']['prior_prepared'] == pytest.approx(12.5)
+    assert result['elapsed_s']['first_use_with_producer'] == pytest.approx(15.5)
+    assert result['cpu_s']['first_use_with_producer'] == pytest.approx(14.15)
