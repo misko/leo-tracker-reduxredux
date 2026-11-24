@@ -227,14 +227,28 @@ def estimate(data, panels):
     return dict(measured_ns_per_lane=dict(pack=pack, gather=gather, refill=refill), projections=result)
 
 
-def run(root):
+def run(root, *, census_only=False, prepared=None):
     machine = ref.check_machine()
     if root.resolve().parent != Path("/dev/shm"):
         raise ValueError("Use a fresh tmpfs directory")
     root.mkdir()
-    binary, build_receipt = build(root)
-    codec, gather = Compact(binary), exact.RefineEntry(binary, "short_cfo_gather")
-    loaded, panels = census(("dense", "north", "weak"), codec)
+    if prepared is None:
+        binary, build_receipt = build(root)
+        codec = Compact(binary)
+        loaded, panels = census(("dense", "north", "weak"), codec)
+        if census_only:
+            ref.save(root / "census.json", dict(build=build_receipt, panels=panels))
+            return
+    else:
+        receipt = json.loads((prepared / "census.json").read_bytes())
+        binary = prepared / "native/tail.so"
+        build_receipt, panels = receipt["build"], receipt["panels"]
+        ref.verified(binary, build_receipt["binary_sha256"])
+        codec = Compact(binary)
+        loaded, local = census(("north",), codec)
+        if json.loads(json.dumps(local["north"])) != panels["north"]:
+            raise ValueError("Prepared North scope changed")
+    gather = exact.RefineEntry(binary, "short_cfo_gather")
     with ExitStack() as stack:
         paths, boundary = {}, {}
         assets = {edge: np.frombuffer(ref.verified(ref.RELEASE / "assets" / (edge+".f32"), pin), dtype="<f4")
@@ -257,4 +271,7 @@ def run(root):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
-    run(parser.parse_args().root)
+    preflight = parser.add_mutually_exclusive_group()
+    preflight.add_argument("--census-only", action="store_true")
+    preflight.add_argument("--prepared", type=Path)
+    run(**vars(parser.parse_args()))
