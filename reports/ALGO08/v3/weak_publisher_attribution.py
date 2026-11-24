@@ -147,7 +147,7 @@ def worker(root):
     weak.write(root/"profile.json", measured)
 
 
-def launch(root):
+def launch(root, *, driver=Path(__file__), sources=(PROTOCOL, HERE/"saved_overhead.py")):
     from dense_geographic_trial import host
     from full_short_physical import environment
     from north_held_anchor_pair import tmpfs
@@ -169,10 +169,10 @@ def launch(root):
     weak.write(root/"font-clock.json", font)
     if font["exit_code"]:
         raise RuntimeError(font["stderr_tail"])
-    command = ["/usr/bin/timeout", "--kill-after=2s", "35s", python, "-IB", Path(__file__), "worker", root]
+    command = ["/usr/bin/timeout", "--kill-after=2s", "35s", python, "-IB", driver, "worker", root]
     weak.write(root/"binding.json", dict(host=machine, commit=subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip(),
                sources=weak.pins(), command=list(map(str, command)), control_sha256=REFERENCE_SEAL,
-               observer_sha256={p.name: sha256(p.read_bytes()).hexdigest() for p in (Path(__file__), PROTOCOL, HERE/"saved_overhead.py")}))
+               observer_sha256={p.name: sha256(p.read_bytes()).hexdigest() for p in (driver, *sources)}))
     clock = measure(command, env, root/"candidate")
     weak.write(root/"clock.json", clock)
     if clock["exit_code"]:
@@ -191,13 +191,9 @@ def validate_profile(profile):
             for key in ("cpu_ns", "elapsed_ns")}
 
 
-def seal(root):
+def require_parity(published, control):
     from leo.contracts.digests import canonical_digest
 
-    control = json.loads(weak.staged.checked(REFERENCE/"seal.json", REFERENCE_SEAL))
-    weak.seal(root)
-    published, profile = (weak.read(root/f"{name}.json") for name in ("seal", "profile"))
-    report = validate_profile(profile)
     fields = ("identity", "terminal", "arms", "roles", "grid_and_path", "grid_points", "images", "named_finish")
     if any(canonical_digest(published["science"][name]) != canonical_digest(control["science"][name])
            for name in fields if isinstance(published["science"][name], dict)):
@@ -207,6 +203,14 @@ def seal(root):
         raise ValueError("Instrumented publication changed the terminal, grid or named finish")
     if [row["result"] for row in published["regional"]] != [row["result"] for row in control["regional"]]:
         raise ValueError("Actual paid regional proof did not reproduce")
+
+
+def seal(root):
+    control = json.loads(weak.staged.checked(REFERENCE/"seal.json", REFERENCE_SEAL))
+    weak.seal(root)
+    published, profile = (weak.read(root/f"{name}.json") for name in ("seal", "profile"))
+    report = validate_profile(profile)
+    require_parity(published, control)
     weak.write(root/"attributed.json", dict(reconciled=report, reference_seal_sha256=REFERENCE_SEAL,
                control_clock=control["clock"], control_scopes=control["disjoint_saved_costs"], profile=profile,
                through_exit=published["clock"], original_subscopes=published["disjoint_saved_costs"], parity=True))
