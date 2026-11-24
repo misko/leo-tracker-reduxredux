@@ -54,6 +54,18 @@ The rates divide original compressed bytes by the time left for intake after pay
 
 ### A recovered solver failure
 
+The five original failed processes had already published their detections. The two programs in each release pair ran serially. The other program's signed launch-to-terminal interval and terminal file timestamp give its start time. The original configuration write precedes the first launch, and the pair receipt follows the second exit. Together with both measured process durations these events bound launch time on either launch order. This reconstruction uses the retained file modification times and assumes wall time tracked the measured monotonic intervals during each pair. The same bounds enclosed **all 95 directly reconstructible starts**. Every failure interval below is narrower than 0.19 s.
+
+| Failed ALGO08v3 recording | Launch to published detections (s) | Detections to failed exit (s) |
+|---|---:|---:|
+| DS30-0022 | 98.70–98.80 | 11.97–12.07 |
+| DS30-0129 | 50.62–50.72 | 16.92–17.02 |
+| DS30-0234 | 64.74–64.83 | 14.94–15.03 |
+| DS30-0239 | 78.07–78.27 | 21.91–22.11 |
+| DS30-0247 | 53.38–53.47 | 17.79–17.89 |
+
+Of their combined **429.625 s**, the five failures spent **345.52–346.07 s** reaching detections. Assuming every downstream interval gets 1.5× faster **and all five still fail** would lower the modeled 100-case intake target to **261.7 MB/s**. Charging the measured DS30-0022 recovery below, holding the other four failures at their original cost and applying 1.5× only to the original 95 completed workers gives **278.8 MB/s**. The earlier **283.1 MB/s** model holds all five failure costs fixed. Each scenario retains all 100 original recordings. Successful recovery changes the amount of downstream work. [Serial launch and publication clocks](https://github.com/misko/leo-tracker-reduxredux/blob/47fd843beca155e64be89fa22d84dee786e88fdd/tools/pipeline_eval/qualification/paired_publication.py) · [Reproduction](https://github.com/misko/leo-tracker-reduxredux/blob/47fd843beca155e64be89fa22d84dee786e88fdd/reports/ALGO08/v3/failed_intake_clocks.py) · [Original time bounds and model results](https://github.com/misko/leo-tracker-reduxredux/blob/47fd843beca155e64be89fa22d84dee786e88fdd/reports/ALGO08/v3/measurements/failed-intake-clocks.json)
+
 DS30-0022 was one of the five failed v3 runs charged at its original time in the 100-recording model. A separate candidate replay of its saved detections recovered the fix. The original orbit lookup had requested a time outside its interpolation interval. On retry the candidate propagated the missing orbit state from the same capture-time catalogue. It reproduced ALGO08v2's fixed and fitted errors (**1.294 / 1.311 km**), both frequency residuals, and all 2,388 ordered assignments per arm. It verified the grid, path and eight PNGs.
 
 The saved worker took **39.812 s** through exit, plus **0.430 s** for input checks. Its original ALGO08v3 process had failed after 110.770 s. If the recovered worker's cost followed a new receiver unchanged, halving that original time would leave **15.14 s** for 8.369 GB of input through detection publication, about **553 MB/s**. This case now has a measured recovery cost. Its complete original-input candidate time and the other four recoveries remain unmeasured in this trial. [Failure mechanism, controlled calibration and timing](https://github.com/misko/leo-tracker-reduxredux/blob/42f5be5c2a055f0a9ab5404750c477d2e8c98963/reports/ALGO08/v3/solver-exception-0022.md)
