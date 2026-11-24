@@ -2,9 +2,12 @@
 
 import argparse
 import runpy
+import sys
 from dataclasses import asdict
 from pathlib import Path
 from time import monotonic, sleep, time_ns
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from joint_recovery_0049_admission import QUIET, QUIET_PIN, device_stats
 from matched_donor_0049_trial import (
