@@ -84,10 +84,12 @@ def run(root, output, alternatives):
     resident = cache_sample(present) if active else None
     if active and (resident["cached_pages"] != resident["observed_file_pages"] or full != preflight["complete_source_bytes"]):
         raise ValueError("The full source is missing either exact signed bytes or residency")
+    events = [json.loads(line) for line in (root/"copy-idle-progress.jsonl").read_text().splitlines()]
     emit(output, dict(
         as_run_debug_pins={name: sha256((root/name).read_bytes()).hexdigest() for name in (
             "preflight.json", "result.json", "copy-idle-progress.jsonl")},
         enclosed=dict(preflight=preflight, result=result, alternative_passive=json.loads(alternatives.read_bytes())),
+        admitted_copy_progress=events,
         staged_verified_original_bytes=full, staged_unsigned_prefix_bytes=prefix_bytes, final_local_residency=resident,
         signed_identity=ready, ready_raw_to_publication=bool(active),
         private_readonly_bind=dict(source=result["stage"], target=result["original"]) if active else None,

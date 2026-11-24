@@ -1,4 +1,11 @@
+from hashlib import sha256
+import json
+
+import pytest
+
 from reports.ALGO08.v3.next_complete_original import MAX_BYTES, choose, enrollment
+from reports.ALGO08.v3.next_complete_original_custody import original_inventory
+from reports.ALGO08.v3.next_complete_original_stage import causal_rows
 
 
 def entry(label, size, count=820):
@@ -21,3 +28,29 @@ def test_bound_original_uses_the_frozen_opaque_size_order():
     assert (selected["case"], selected["encoded_bytes"], selected["visits"]) == ("DS30-0049", 1_202_056_196, 986)
     assert not selected["release"] and selected["admitted"] == 932
     assert all_cases["smallest_release"][0]["encoded_bytes"] > MAX_BYTES
+
+
+def test_canonical_inventory_reuses_original_absolute_paths(tmp_path):
+    source = "/srv/bulk/leo/fast-scan-recordings/original"
+    filename = source+"/original-segment-00000000/manifest.json"
+    physical = tmp_path/"original"/"original-segment-00000000"/"manifest.json"
+    body = json.dumps({"window_count": 986}).encode()
+    physical.parent.mkdir(parents=True)
+    physical.write_bytes(body)
+    pin = sha256(body).hexdigest()
+    preflight = {"selected": {"original": source}}
+    binding = {"case": {"recording": {"segments": [{"path": filename, "sha256": pin}]}}}
+    inventory, digest = original_inventory(tmp_path, preflight, binding)
+    assert inventory["segments"][0]["path"] == filename.removesuffix("/manifest.json")
+    assert inventory["window_count"] == 986
+    assert len(digest.removeprefix("sha256:")) == 64
+    binding["case"]["recording"]["segments"][0]["sha256"] = "wrong"
+    with pytest.raises(ValueError, match="Signed metadata differs"):
+        original_inventory(tmp_path, preflight, binding)
+
+
+def test_causal_scope_rejects_future_and_nonlocal_entries_without_reads():
+    job = {"evaluation_reference": None, "tle_root": "/srv/bulk/saved/tle"}
+    for name in ("20-future.tle", "../5-escaped.tle"):
+        with pytest.raises(ValueError, match="bounded original causal"):
+            causal_rows({"causal_snapshots": {name: "pin"}, "job": job}, 20)
