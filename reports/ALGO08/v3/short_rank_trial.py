@@ -18,7 +18,6 @@ from tools.pipeline_eval.qualification.blind_compact_run import Factor
 from .dense_geographic_trial import host
 from .full_short_run import EIGHT_MS_SHA
 from .mixed_aperture_receiver import NativePath, PILOT_SHA, StereoSchedule, verified
-from .timing_only_oracle import one
 
 HERE = Path(__file__).resolve().parent
 PUBLISH_BUILD = Path("/var/tmp/leo-v3-eight-ms-build-padded")
@@ -36,6 +35,12 @@ SOURCES = {
 RANK_GATE_NS = 40_000
 ORDERS = (("active", "trace", "rebuilt"), ("rebuilt", "trace", "active"),
           ("trace", "active", "rebuilt"), ("rebuilt", "active", "trace"))
+
+
+def one(text, old, new):
+    if text.count(old) != 1:
+        raise ValueError("The pinned rank boundary has changed")
+    return text.replace(old, new, 1)
 
 
 def traced(source):
