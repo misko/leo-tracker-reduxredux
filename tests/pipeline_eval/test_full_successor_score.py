@@ -26,6 +26,8 @@ def test_all_ds30_and_historical_subset_are_identified_independently():
     assert sum(r["recording_state"] == "incomplete" for r in assigned.values()) == 44
     assert all(r["reference"] is not None for r in assigned.values())
     assert all(r["capture_span_s"] > 0 for r in assigned.values())
+    assert sum(r["scheduled_edge"] == "lower" for r in assigned.values()) == 233
+    assert sum(r["scheduled_edge"] == "upper" for r in assigned.values()) == 222
 
 
 def test_capture_pace_charges_each_recording_and_distinguishes_timely_withholds_and_accurate_fixes():
@@ -251,6 +253,12 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
                  renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior,
                  capture_days=capture_day_sensitivity(pairs, assigned), pace=capture_pace(pairs, assigned))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    for role in ("installed", "successor"):
+        for arm in ("c0", "fitted_c"):
+            for metric in ("within_1km", "within_2km", "fixes"):
+                cohorts = report["cohorts"]
+                assert sum(cohorts[f"Scheduled {edge} edge"][role][arm][metric]
+                           for edge in ("lower", "upper")) == cohorts["All DS30 recordings"][role][arm][metric]
     assert report["runtime_relative_to_observing_span"]["interrupted"]["pairs"] == 44
     assert "Replay time compared with recording duration" in (tmp_path / "README.md").read_text()
     stages = report["field_stages"]["stages"]

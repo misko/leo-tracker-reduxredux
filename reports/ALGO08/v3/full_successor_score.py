@@ -56,9 +56,14 @@ def roster(root=ROOT):
         start, stop = survey["capture_start_utc_ns"], survey["capture_end_utc_ns"]
         if start != original["captured_utc_ns"] or not isinstance(stop, int) or stop <= start:
             raise ValueError("Audited recording span must agree with the original start")
+        # record_fast_scan_campaign names the recording with the edge passed to measured_targets.
+        edge = original["recording_id"].rsplit("-", 1)[-1]
+        if edge not in ("upper", "lower"):
+            raise ValueError("Unknown scheduled edge in the frozen DS30 recording name")
         assigned[case] = dict(case_id=original["case_id"], raw_authority=original["raw_authority_digest"],
                               physical_content=original["raw_recording"]["identity_sha256"],
                               capture_span_s=(stop - start) / 1e9,
+                              scheduled_edge=edge,
                               capture_day=datetime.fromtimestamp(original["captured_utc_ns"] // 10**9,
                                                                  timezone.utc).date().isoformat(),
                               recording_state=original["recording_state"], release_100=case in historical,
@@ -334,6 +339,7 @@ def paired_rows(rows, assigned):
             raise ValueError("Terminal decision and calibration outputs disagree")
         by_key[case, algorithm] = dict(case=case, algorithm=algorithm, case_id=r["case_id"],
                                        first=r["first"], release_100=int(assigned[case]["release_100"]),
+                                       scheduled_edge=assigned[case].get("scheduled_edge"),
                                        recording_state=assigned[case]["recording_state"], outcome=r["outcome"],
                                        requested_raw_authority_sha256=requested, raw_authority_sha256=observed,
                                        accession_raw_authority_sha256=assigned[case]["raw_authority"],
@@ -418,6 +424,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         "Remaining recordings": [pair for pair in pairs if not pair[0]["release_100"]],
         "Complete captures": [pair for pair in pairs if pair[0]["recording_state"] == "complete"],
         "Interrupted captures": [pair for pair in pairs if pair[0]["recording_state"] == "incomplete"],
+        "Scheduled lower edge": [pair for pair in pairs if pair[0]["scheduled_edge"] == "lower"],
+        "Scheduled upper edge": [pair for pair in pairs if pair[0]["scheduled_edge"] == "upper"],
         "ALGO08v3 ran first": [pair for pair in pairs if pair[0]["first"] == "installed"],
         "Candidate ran first": [pair for pair in pairs if pair[0]["first"] == "successor"],
         "Both arms in one benchmark slot": [pair for pair in pairs if pair[0]["same_lease"]],
@@ -602,6 +610,17 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                          f"{o['fixes']}/{k} | {o['within_1km']}/{k} | {o['within_2km']}/{k} | "
                          f"{number(o['error_km']['p50'],3)} / {number(o['error_km']['p90'],3)} | "
                          f"{number(o['rf_rms_hz']['p50'])} |")
+    lines += ["", "The scan campaign scheduled upper- and lower-edge targets on the same roof. The signed "
+              "recording identifier encodes the requested edge. Capture times and satellite passes vary between "
+              "these groups. The counts below include every attempt in each group.", "",
+              "| Scheduled edge | Pairs | Within 1 km, fixed zero (v3 / candidate) | Within 1 km, fitted (v3 / candidate) | "
+              "Within 2 km, fixed zero (v3 / candidate) | Within 2 km, fitted (v3 / candidate) |",
+              "|---|---:|---:|---:|---:|---:|"]
+    for edge in ("lower", "upper"):
+        group = summaries[f"Scheduled {edge} edge"]
+        comparisons = [f"{group['installed'][arm][radius]} / {group['successor'][arm][radius]}"
+                       for radius in ("within_1km", "within_2km") for arm in ARMS]
+        lines.append(f"| {edge.capitalize()} | {group['assigned']} | " + " | ".join(comparisons) + " |")
     lines += ["", "The cumulative curves also show where the candidate loses the most recordings. "
               "The displacement column gives a lower bound on the largest change to an existing candidate "
               "position required to match or exceed ALGO08v3 coverage at every distance, keeping the same "
