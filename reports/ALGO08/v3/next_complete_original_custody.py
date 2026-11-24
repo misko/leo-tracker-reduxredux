@@ -31,7 +31,7 @@ def original_inventory(root, preflight, bound):
     return inv, canonical_digest(inv)
 
 
-def run(root, output, alternatives):
+def run(root, output, alternatives, *, stopped_by=None):
     from leo.contracts.digests import canonical_digest
     from next_complete_original_stage import cache_sample, emit
 
@@ -90,6 +90,8 @@ def run(root, output, alternatives):
             "preflight.json", "result.json", "copy-idle-progress.jsonl")},
         enclosed=dict(preflight=preflight, result=result, alternative_passive=json.loads(alternatives.read_bytes())),
         admitted_copy_progress=events,
+        deliberate_stop=stopped_by,
+        partial_checkpoint=json.loads((root/"checkpoint.json").read_bytes()) if (root/"checkpoint.json").is_file() else None,
         staged_verified_original_bytes=full, staged_unsigned_prefix_bytes=prefix_bytes, final_local_residency=resident,
         signed_identity=ready, ready_raw_to_publication=bool(active),
         private_readonly_bind=dict(source=result["stage"], target=result["original"]) if active else None,
@@ -101,5 +103,6 @@ if __name__ == "__main__":
     parser.add_argument("root", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("alternatives", type=Path)
+    parser.add_argument("--stopped-by")
     args = parser.parse_args()
-    run(args.root, args.output, args.alternatives)
+    run(args.root, args.output, args.alternatives, stopped_by=args.stopped_by)
