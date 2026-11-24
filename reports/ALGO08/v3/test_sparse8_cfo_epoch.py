@@ -58,6 +58,6 @@ def test_aperture_shift_keeps_stereo_anchors_and_cfo_and_changes_only_winner_tim
     for row in adjusted:
         nominal, offset, _ = offsets[row["observation_id"]]
         assert row["time_s"] == nominal+offset
-    assert all("time_s" in row for row in rows)
+    assert all(row["time_s"] == offsets[row["observation_id"]][0] for row in rows)
     with pytest.raises(ValueError, match="original winners"):
         graph_rows(rows[:-1], offsets)
