@@ -88,12 +88,63 @@ def summarize(rows):
                 original_bytes=[sum(r[k] for r in rows) for k in ("byte_low", "byte_high")])
 
 
+def render(summary, output):
+    from reports.ALGO08.v3.legacy_frame_figure import FIX_WRITER, HERE, load_seal
+    import matplotlib.pyplot as plt
+
+    receipts = HERE / "measurements"
+    first = load_seal(receipts/"legacy-first-use-original-panel.json.gz",
+                      "c4af0fb8f0795ce2fd46aa93953fbf4cc30c481cf44b12b99db745f0411005da")
+    ready = load_seal(receipts/"legacy-map-writer-0016.json.gz", FIX_WRITER)
+    installed = json.loads(checked(receipts/"physical-0016-product-clocks.json",
+                                   "01a47d1ba93d93ad174518fe2733367ae0d68cf6a9fe80ac66dc7f37d207b2f0"))["installed"]
+    if not first["qualified"] or not ready["qualified"]:
+        raise ValueError("Both DS30-0016 publications must qualify")
+    mb = ready["input"]["totals"]["authenticated_encoded_bytes"]/1e6
+    groups = summary["groups"]
+    goal, = [s["high"]["required_MB_s"] for s in summary["scenarios"]
+             if s["post_speedup"] == 1.5 and s["startup_s"] == 0]
+    rows = [
+        ("v3 · at most 1% resident", groups["cold"]["effective_MB_s"][1]),
+        ("v3 · all partitioned cases", groups["all"]["effective_MB_s"][1]),
+        ("v3 · at least 99% resident", groups["warm"]["effective_MB_s"][1]),
+        ("DS30-0016 · installed v3", mb/installed["launch_to_detections_s"]),
+        ("DS30-0016 · first analysis", mb/first["cases"]["DS30-0016"]["science"]["detector_file_s"]),
+        ("DS30-0016 · indexes ready", mb/ready["products"]["indexed"]["detector_file_s"]),
+    ]
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    fig.subplots_adjust(left=.33, right=.94, top=.77, bottom=.25)
+    fig.suptitle("Verified input through detection publication", x=.04, ha="left",
+                 fontsize=16, weight="bold")
+    fig.text(.04, .865, "Original compressed MB per elapsed second, including process startup", color="#435462")
+    for i, (label, rate) in enumerate(rows):
+        ax.barh(i, rate, height=.53, color="#3e546c" if i < 4 else "#127969")
+        ax.text(rate-4, i, f"{rate:.1f}", ha="right", va="center", color="white", weight="bold")
+    ax.axvline(goal, color="#a96229", linestyle="--", linewidth=1.5)
+    ax.set_yticks(range(len(rows)), [label for label, _ in rows])
+    ax.set_xlim(0, 310)
+    ax.invert_yaxis()
+    ax.spines[["top", "right", "left"]].set_visible(False)
+    ax.tick_params(axis="y", length=0)
+    ax.set_xlabel("Effective throughput (MB/s)")
+    fig.text(.04, .115, f"The dashed line marks {goal:.1f} MB/s, the modeled target if work after detections is 1.5× faster.",
+             fontsize=9)
+    fig.text(.04, .06, "The first three rows aggregate v3 jobs. The last three time the same recording with resident original input.",
+             fontsize=9)
+    fig.savefig(output, dpi=145, facecolor="white")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("stages", "exact_extents", "archived_panel", "output"):
         parser.add_argument(name, type=Path)
+    parser.add_argument("--plot", type=Path)
     args = parser.parse_args()
     rows = load_rows(json.loads(checked(args.stages, STAGES)), json.loads(checked(args.exact_extents, EXTENTS)),
                      args.archived_panel)
+    summary = summarize(rows)
     args.output.write_text(json.dumps(dict(stage_sha256=STAGES, extent_sha256=EXTENTS,
-                                          rows=rows, summary=summarize(rows)), indent=2, allow_nan=False)+"\n")
+                                          rows=rows, summary=summary), indent=2, allow_nan=False)+"\n")
+    if args.plot:
+        render(summary, args.plot)
