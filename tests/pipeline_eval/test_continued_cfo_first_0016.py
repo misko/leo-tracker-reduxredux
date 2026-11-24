@@ -31,3 +31,12 @@ def test_prefix_comparison_distinguishes_changed_timing_cfo_and_roundoff(compone
     assert checked["material"] == [dict(lane=(3, 1), fields=[score.CFO, "nonroundoff"])]
     with pytest.raises(ValueError, match="counter"):
         score.audit_rows([row(original)], [dict(row(original), valid_start_counter=1001)])
+
+
+def test_residency_proof_identifies_the_pair_of_member_files(components):
+    _, score = components
+    census = dict(unavailable={}, observed_members=2, cached_pages=100, observed_file_pages=100)
+    observation = dict(clock=dict(exit_code=0, major_faults=1, input_blocks=8), before=census, after=census)
+    score.check_clock(observation)
+    with pytest.raises(ValueError, match="fully resident"):
+        score.check_clock(dict(observation, after=dict(census, cached_pages=99)))

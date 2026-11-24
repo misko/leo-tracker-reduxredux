@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 from math import remainder
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -104,6 +105,16 @@ def held_audit(packet):
     return json.loads(json.dumps({k:v for k,v in audit.items() if k != "cycles"}))
 
 
+def check_clock(clock):
+    if clock["clock"]["exit_code"]:
+        raise ValueError("A receiver did not reach the authenticated seal")
+    for name in ("before", "after"):
+        snapshot = clock[name]
+        if (snapshot["unavailable"] or snapshot["observed_members"] != 2
+                or not 0 < snapshot["cached_pages"] == snapshot["observed_file_pages"]):
+            raise ValueError("The signed prefix payload and index must both be fully resident")
+
+
 def score(root, output):
     from anchor_exposure import bind, enroll
     from continued_cfo import ContinuedChanges
@@ -111,15 +122,24 @@ def score(root, output):
 
     run_binding = read(root/"binding.json")
     for name, pin in run_binding["sources"].items():
-        checked(HERE/name, pin)
+        path = HERE/name
+        if path == Path(__file__).resolve():
+            checkout = HERE.parents[2]
+            original = subprocess.check_output(["git", "-c", f"safe.directory={checkout}", "-C", str(checkout),
+                                                "show", f"{run_binding['commit']}:{path.relative_to(checkout)}"])
+            if sha256(original).hexdigest() != pin:
+                raise ValueError("The original post-exit verifier cannot be authenticated")
+        else:
+            checked(path, pin)
     runs = {}
     for i, modes in enumerate(ORDER, 1):
         for mode in modes:
             tag = f"{i}-{mode}"
             scope, clock = read(root/tag/"scope-receipt.json"), read(root/(tag+"-clock.json"))
             native = json.loads(checked(root/tag/"detections.json", scope["native_sha256"][7:]))
-            if scope["position_runs"] or any(clock["clock"][k] for k in ("exit_code", "major_faults", "input_blocks")):
-                raise ValueError("The named and guarded receiver clocks must each be resident through exit")
+            check_clock(clock)
+            if scope["position_runs"]:
+                raise ValueError("A receiver-only clock unexpectedly ran a position solve")
             runs[tag] = dict(scope=scope, clock=clock, native=native)
     named, guarded = (runs[f"1-{mode}"] for mode in ORDER[0])
     same_run = ("prefix_inventory", "native_sha256", "iq", "opened", "recipe", "held_choice", "paid")
@@ -166,11 +186,18 @@ def score(root, output):
                   acquired_vs_archived_exact_paid_mask=audit_rows(scope["acquired_probes"], selected_expected),
                   acquired_vs_archived_all_paid=audit_rows(scope["acquired_probes"], expected["refined"]),
                   final_vs_complete_continued_prefix=audit_rows(probes(fresh), expected["continued"]))
+    suppressed = {key(row) for row, replacement in zip(expected["refined"], selected_expected, strict=True)
+                  if row["candidates"] != replacement["candidates"]}
+    suppressed_seen = {row["lane"] for row in checks["acquired_vs_archived_all_paid"]["material"]
+                       if row["fields"] == [CFO] and row["lane"] in suppressed}
     if scope["held_choice"]["pre_refinement_probes_sha256"] != canonical_digest(probes(original)):
         raise ValueError("The live held proof was scored over different original measurements")
     write(output, dict(binding_sha256=sha256((root/"binding.json").read_bytes()).hexdigest(), runs=runs, checks=checks,
+          verifier_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
           archived={label: pin for label, (_, pin) in FULL.items()}, full_selector=full, prefix_selector=prefix,
-          full_route_receipt=full_continued["choice"], named_matches_its_complete_prefix=True,
+          full_route_receipt=full_continued["choice"], full_gate_counts=full_continued["counts"],
+          skipped_all_paid_edits=len(suppressed), observed_skipped_cfo_edits=len(suppressed_seen),
+          named_matches_its_complete_prefix=True,
           released_vs_selective=detector_overlap(probes(named["native"]), probes(fresh)),
           hybrid_warranted=bool(checks["final_vs_complete_continued_prefix"]["material"])))
 
