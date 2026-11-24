@@ -171,11 +171,13 @@ def north_pair(root, prefix_result):
 
 def verify(root):
     from anchor_exposure import bind
+    from combined_raw_trial import source_at
     from continued_cfo_first_0016 import read, write
     from continued_cfo_trial import rebinding
     from eight_ms_native_score import NORTH_ORIGINAL, same_images, unchanged_history
     from empty_bootstrap import checked
     from joint_held_north_raw import require_resident
+    from leo.contracts.algo08_region import Algo08Region
     from leo.contracts.digests import canonical_digest
     from preloaded_saved_score import science
     from primary_anchor_8ms import anchor_witness
@@ -193,7 +195,10 @@ def verify(root):
     binding, clock = (read(root/name) for name in ("binding.json","clock.json"))
     request = binding["request"]
     for name,file_pin in binding["source_sha256"].items():
-        checked(HERE/name,file_pin)
+        if name == Path(__file__).name:
+            source_at(binding["commit"],name,file_pin)
+        else:
+            checked(HERE/name,file_pin)
     cache = {stage:read(root/f"cache-{stage}.json") for stage in ("before","after")}
     for snapshots in cache.values():
         for snapshot in snapshots.values():
@@ -225,7 +230,8 @@ def verify(root):
     common = old["scientific_seal"]
     orig = common["science"]
     stock = evidence(path,receipt,clock["started_unix_ns"],read_only=True)
-    if stock["raw_authority"]!=request["authority"] or receipt["region"]!=orig["identity"]["original_offer"]:
+    offer = Algo08Region.parse(orig["identity"]["original_offer"]).document()
+    if stock["raw_authority"]!=request["authority"] or receipt["region"]!=offer:
         raise ValueError("North original authority or offer changed")
     actual = None
     if receipt["decision"]=="complete":
