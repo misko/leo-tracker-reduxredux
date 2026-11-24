@@ -89,12 +89,12 @@ def launch(stage, mode, admission=None):
     return products, config
 
 
-def run(stage, requested_mode):
+def run(stage, requested_mode, *, admission=None, case=CASE, protocol=PROTOCOL):
     if requested_mode == "centroid":
         control = ordinary_receipt(stage)
         if document(stage / "ordinary-clock.json")["exit_code"] and not document(control).get("recovered"):
             raise ValueError("The ordinary saved publication must complete first")
-    products, config = launch(stage, requested_mode)
+    products, config = launch(stage, requested_mode, admission)
     stages = {requested_mode: products}
     if requested_mode == "ordinary":
         print(stages[requested_mode]["receipt_sha256"], flush=True)
@@ -103,8 +103,9 @@ def run(stage, requested_mode):
     stages["ordinary"] = dict(clock_sha256=identifier(stage / "ordinary-clock.json"), receipt_file=control.name,
                               receipt_sha256=identifier(control))
     seal = write(stage / "prediction-seal.json", dict(
-        case=CASE, protocol_sha256=identifier(PROTOCOL), driver_sha256=identifier(Path(__file__)),
-        stage_order=MODES, score_reads=0, acquisition="verified saved packet", host=config, products=stages))
+        case=case, protocol_sha256=identifier(protocol), driver_sha256=identifier(Path(__file__)),
+        stage_order=MODES, score_reads=0, acquisition="verified saved packet", host=config, products=stages,
+        admission_sha256=admission))
     print(seal, flush=True)
 
 
@@ -156,12 +157,12 @@ def geography(case=CASE):
     return [row["reference"][name] for name in ("latitude_deg", "longitude_deg")]
 
 
-def score(stage, seal_sha):
+def score(stage, seal_sha, *, case=CASE, protocol=PROTOCOL, native_pin=NATIVE, pair_pin=PAIR, require_grid_parity=False):
     from tools.pipeline_eval.scoring import distance_km
     from prospective_0316_solver import owner_delta
 
     seal = document(stage / "prediction-seal.json", seal_sha)
-    if (seal["case"] != CASE or seal["score_reads"] != 0 or seal["protocol_sha256"] != identifier(PROTOCOL)
+    if (seal["case"] != case or seal["score_reads"] != 0 or seal["protocol_sha256"] != identifier(protocol)
             or seal["stage_order"] != list(MODES) or set(seal["products"]) != set(MODES)):
         raise ValueError("Expected both frozen predictions before survey scoring")
     stages = {}
@@ -173,15 +174,16 @@ def score(stage, seal_sha):
         result = receipt["terminal"]
         terminal = document(stage / mode / "fast-scan-automatic-work" / result["run_id"] / "terminal.json",
                             result["terminal_sha256"])
-        if (terminal["native_sha256"] != "sha256:"+NATIVE or receipt["acquisition_handoffs"] != 1
+        if (terminal["native_sha256"] != "sha256:"+native_pin or receipt["acquisition_handoffs"] != 1
                 or receipt["waveform_reads"] or (clock["exit_code"] and not receipt.get("recovered"))
                 or set(terminal["arms"]) != set(ARMS)):
             raise ValueError("Prediction does not bind to the saved-graph comparison")
         evidence = receipt["evidence"]["evidence"]
-        document(stage / mode / "exact-named-raw-witness.json", receipt["witness_sha256"])
-        stages[mode] = dict(terminal=terminal, saved_receipt=receipt, evidence=evidence, clock=clock)
-    home = CAMPAIGN / "cases" / CASE
-    pair = document(home / "pair.json", PAIR)
+        witness = document(stage / mode / "exact-named-raw-witness.json", receipt["witness_sha256"])
+        stages[mode] = dict(terminal=terminal, saved_receipt=receipt, evidence=evidence, clock=clock,
+                            route=witness["solver_recipe"]["history_risk"])
+    home = CAMPAIGN / "cases" / case
+    pair = document(home / "pair.json", pair_pin)
     archive = home / "successor" / f"attempt-{pair['generation']:06d}"
     published = document(archive / "result.json", pair["attempt_result_sha256"]["successor"])
     result = published["evidence"]["receipt"]
@@ -194,18 +196,24 @@ def score(stage, seal_sha):
         arms=ordinary["terminal"]["arms"] == archived_terminal["arms"],
         graph_digest_changed=ordinary["saved_receipt"]["graph_time"]["graph_input_digests"]
         != corrected["saved_receipt"]["graph_time"]["graph_input_digests"])
+    if require_grid_parity:
+        archived_witness = document(archive / "publication/exact-named-raw-witness.json")
+        a, b = archived_witness["evidence"], ordinary["evidence"]
+        reproduction.update(images=a["images"] == b["images"], ordered_owners=a["owner_rows"] == b["owner_rows"],
+                            path=a["sidecars"]["path"] == b["sidecars"]["path"],
+                            scientific_grid=scientific_grid(stage / "ordinary") == scientific_grid(archive / "publication"))
     if not all(reproduction.values()):
         raise ValueError(f"Archived ordinary scientific evidence differs: {reproduction}")
     stop = corrected["saved_receipt"]["terminal"]["decision"] != "complete"
-    result = dict(case=CASE, seal_sha256=seal_sha, archived_reproduction=reproduction, stop=stop)
+    result = dict(case=case, seal_sha256=seal_sha, archived_reproduction=reproduction, stop=stop)
     if not stop:
-        reference = geography()
+        reference = geography(case)
         deltas, outcomes = {}, {}
         for mode, state in stages.items():
             evidence = state["evidence"]
             if len(evidence["images"]) != 8 or not evidence["grid"]:
                 raise ValueError("Expected complete figures and position grid")
-            outcomes[mode] = dict(clock=state["clock"], figures=evidence["images"], grid=evidence["grid"],
+            outcomes[mode] = dict(clock=state["clock"], figures=evidence["images"], grid=evidence["grid"], route=state["route"],
                                   owner_maps=evidence["owner_maps"], arms={
                                       arm: dict(position=arm_state["latlon"], rf_rms_hz=arm_state["rf_rms_hz"],
                                                 error_m=1e3*distance_km(arm_state["latlon"], reference))
@@ -221,6 +229,11 @@ def score(stage, seal_sha):
                       stop=any(row["error_m"] > 250. for row in deltas.values()),
                       correction=corrected["saved_receipt"]["graph_time"])
     print(write(stage / "score.json", result))
+
+
+def scientific_grid(root):
+    (path,) = root.glob("fast-scan-standard-v2/*/*/position-grid.json")
+    return {key: value for key, value in document(path)["document"].items() if key != "elapsed_seconds"}
 
 
 if __name__ == "__main__":
