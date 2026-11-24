@@ -54,7 +54,7 @@ def position_sides(store, receipt, media, expected_points=179):
 
 
 def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, expected_grid_points=None,
-                 modes=None, candidate_recipe=None):
+                 modes=None, candidate_recipe=None, archive_root=None):
     from full_short_raw import RECIPE_SHA
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
@@ -92,7 +92,7 @@ def process_rows(root, admission, inputs=ORIGINAL, *, expected_natives=None, exp
                     or bootstrap["frozen_specification"] != pairs.V3_IDENTITY["frozen_specification"]
                     or bootstrap["stock_launcher_sha256"] != pairs.V3_LAUNCHER_SHA
                     or bootstrap["requested_offer_sha256"] != admission["offer_sha256"]
-                    or bootstrap["archive_root"] != str(root/"tle")
+                    or bootstrap["archive_root"] != str(root/"tle" if archive_root is None else archive_root)
                     or any(admission["sources"][k] != v for k, v in scoped_sources.items() if k in admission["sources"])
                     or projection and projection.get("library_sha256") != PROJECTION_SHA
                     or not projection and receipt["decision"] == "complete"
