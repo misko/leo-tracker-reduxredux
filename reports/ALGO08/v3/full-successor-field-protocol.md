@@ -8,6 +8,12 @@ Run serially with the Gauss benchmark lease, a single numerical thread on one CP
 
 Report paired elapsed and CPU distributions, fix, withholding and failure counts, both geographic calibration arms, and RF RMS separately. Each accuracy curve divides by all assigned recordings, including failures and withheld positions. Report fix-only error percentiles, paired error changes on shared fixes, gained and lost fixes, and the original 100-recording subset. Summed speedup is the ratio of total installed time to total candidate time. Paired median speedup is the reciprocal of the median candidate-to-installed time ratio. Show both launch-order strata. Keep the observing site and the full timing boundary visible in the result. Publish the final report when all 455 comparisons and their source identities are accounted for, regardless of the measured speedup. [Full-report scorer](full_successor_score.py)
 
+For a read-only progress check, run the following command on a matching combined export and seal. It scores each completed stage and its newly added recordings. It also reports the number of remaining pairs that must finish within half the baseline time to meet the full median target. A positive `observed_candidate_wall_minus_half_baseline_s` is the saving below half-time that the remaining pairs must collectively contribute to reach the summed target. The result includes the export digest for reproducibility. The command reads only the ledger and original enrollment metadata.
+
+```sh
+python -m reports.ALGO08.v3.ds30_stage_progress "$campaign_root/rows-with-relocations.jsonl"
+```
+
 Run the scorer from the research checkout with the final driver export. It checks the assigned population, original input identity, one frozen build per role, terminal outcomes, both calibration arms and process clocks before writing the report.
 
 Gauss retains the paired ledger at `/srv/postgres-nvme/leo-ds30-evaluation-20261124`. The immutable plan SHA-256 is `9deecea6ce5237d01d277370f57b2666f3b84ab96bba72fe0b668c7701d0fc99`. It assigns ALGO08v3 first on 228 recordings and the successor first on 227. The campaign unit is `leo-ds30-paired-evaluation-20261124.service`. The result export includes failures, the actual launch order, child and independent verification clocks, and the digest of each selected attempt. [Driver and restart instructions](ds30-paired-evaluation.md) · [Frozen candidate, checked inputs and restore procedure](integrated-original-batch.md)
