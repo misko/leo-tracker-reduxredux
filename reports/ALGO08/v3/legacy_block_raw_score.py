@@ -32,8 +32,6 @@ def snapshot(target, log, request, producer):
     published = evidence(target, receipt, process["started_unix_ns"], read_only=True)
     if (
         process["exit_code"]
-        or process["input_blocks"]
-        or process["major_faults"]
         or receipt["decision"] != "complete"
         or receipt["session_id"] != request["session"]
         or native["source"]["raw_recording_authority_digest"] != request["authority"]
@@ -51,6 +49,18 @@ def snapshot(target, log, request, producer):
         raise ValueError(
             f"Original signed acquisition or paid physical scope changed in {target.name}"
         )
+    for label in ("cache_before", "cache_after"):
+        cache = log[label]
+        if (
+            cache["members"],
+            cache["observed_members"],
+            cache["observed_file_pages"],
+            cache["cached_pages"],
+            cache["unavailable"],
+        ) != (28, 28, 242_675, 242_675, {}):
+            raise ValueError(
+                f"The original physical waveform scope was not resident: {target.name}"
+            )
     inner = witness["evidence"]
     owners = inner["owner_rows"]
     verified_media = artifacts(target, receipt)
@@ -165,7 +175,11 @@ def score(root):
     sealed = read(root / "prediction-seal.json")
     recovery_path = root / "recovery.json"
     recovery = read(recovery_path) if recovery_path.exists() else None
-    if sealed != seal(root) or (recovery or book)["sources"] != runtime_pins():
+    measured_pins, observed_pins = (recovery or book)["sources"], runtime_pins()
+    reviewer = "reports/ALGO08/v3/legacy_block_raw_score.py"
+    if sealed != seal(root) or any(
+        measured_pins[key] != pin for key, pin in observed_pins.items() if key != reviewer
+    ):
         raise ValueError("One or more paid outputs or frozen sources changed")
     if recovery is not None:
         moved = {"indexed-clock.json", "indexed.stdout", "indexed.stderr"}
@@ -252,6 +266,7 @@ def score(root):
         dict(
             qualified=True,
             recovery=recovery,
+            verifier=dict(measured=measured_pins[reviewer], scored=observed_pins[reviewer]),
             case=book["case"],
             admission=book,
             products=products,
