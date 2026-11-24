@@ -96,10 +96,12 @@ def render(summary, output):
     first = load_seal(receipts/"legacy-first-use-original-panel.json.gz",
                       "c4af0fb8f0795ce2fd46aa93953fbf4cc30c481cf44b12b99db745f0411005da")
     ready = load_seal(receipts/"legacy-map-writer-0016.json.gz", FIX_WRITER)
+    prefix = load_seal(receipts/"original-dense-intake.json.gz",
+                       "add31a04da733a4c4cdaa87b613c8f8832aabb8c37aa55d278045c227f85cde6")
     installed = json.loads(checked(receipts/"physical-0016-product-clocks.json",
                                    "01a47d1ba93d93ad174518fe2733367ae0d68cf6a9fe80ac66dc7f37d207b2f0"))["installed"]
-    if not first["qualified"] or not ready["qualified"]:
-        raise ValueError("Both DS30-0016 publications must qualify")
+    if not (first["qualified"] and ready["qualified"] and prefix["qualified"] and len(prefix["pairs"]) == 2):
+        raise ValueError("The complete recordings and both original-prefix pairs must qualify")
     mb = ready["input"]["totals"]["authenticated_encoded_bytes"]/1e6
     groups = summary["groups"]
     goal, = [s["high"]["required_MB_s"] for s in summary["scenarios"]
@@ -112,13 +114,16 @@ def render(summary, output):
         ("DS30-0016 · first analysis", mb/first["cases"]["DS30-0016"]["science"]["detector_file_s"]),
         ("DS30-0016 · indexes ready", mb/ready["products"]["indexed"]["detector_file_s"]),
     ]
-    fig, ax = plt.subplots(figsize=(9, 4.8))
-    fig.subplots_adjust(left=.33, right=.94, top=.77, bottom=.25)
+    for side, label in (("named", "DS30-0008 prefix · installed v3"), ("first_use", "DS30-0008 prefix · first analysis")):
+        seconds = sum(pair[side]["through_detections_s"] for pair in prefix["pairs"])
+        rows.append((label, 2 * prefix["binding"]["input_bytes"] / 1e6 / seconds))
+    fig, ax = plt.subplots(figsize=(9.6, 5.9))
+    fig.subplots_adjust(left=.34, right=.95, top=.80, bottom=.24)
     fig.suptitle("Verified input through detection publication", x=.04, ha="left",
                  fontsize=16, weight="bold")
-    fig.text(.04, .865, "Original compressed MB per elapsed second, including process startup", color="#435462")
+    fig.text(.04, .89, "Original compressed MB per elapsed second, including process startup", color="#435462")
     for i, (label, rate) in enumerate(rows):
-        ax.barh(i, rate, height=.53, color="#3e546c" if i < 4 else "#127969")
+        ax.barh(i, rate, height=.53, color="#3e546c" if i < 4 or i == 6 else "#127969")
         ax.text(rate-4, i, f"{rate:.1f}", ha="right", va="center", color="white", weight="bold")
     ax.axvline(goal, color="#a96229", linestyle="--", linewidth=1.5)
     ax.set_yticks(range(len(rows)), [label for label, _ in rows])
@@ -129,7 +134,7 @@ def render(summary, output):
     ax.set_xlabel("Effective throughput (MB/s)")
     fig.text(.04, .115, f"The dashed line marks {goal:.1f} MB/s, the modeled target if work after detections is 1.5× faster.",
              fontsize=9)
-    fig.text(.04, .06, "The first three rows aggregate v3 jobs. The last three time the same recording with resident original input.",
+    fig.text(.04, .07, "DS30-0016 covers a complete recording. DS30-0008 covers its first 64 visits, pooled over two reversed trials.",
              fontsize=9)
     fig.savefig(output, dpi=145, facecolor="white")
     plt.close(fig)
