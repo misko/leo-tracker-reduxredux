@@ -100,15 +100,14 @@ def run(mode, output):
         loaded = timing(start)
         transferred, forecast = {}, {}
         start = begin()
-        index = portable_factory(PRODUCER, transferred)
-        transfer = transferred["transfers"][0]
-        if (transfer["compatibility"]["fallback"] or transfer["loading"]["fallback"]
-                or transfer["producer_cutoff_utc_ns"] > cutoff):
-            raise ValueError("The trusted earlier index is required in both arms")
         scope = cache.request(phase_prior, alternate, cutoff) if cache is not None else nullcontext()
-        start = begin()
         with (batch_records(Path(native_parser["library"])) as validation, scope as counts,
               patch.object(localization_v3, "forecast", observed(localization_v3.forecast, forecast))):
+            index = portable_factory(PRODUCER, transferred)
+            transfer = transferred["transfers"][0]
+            if (transfer["compatibility"]["fallback"] or transfer["loading"]["fallback"]
+                    or transfer["producer_cutoff_utc_ns"] > cutoff):
+                raise ValueError(f"The trusted earlier index is required in both arms: {transfer}")
             result = measure(prepared_job, config, index)
         prepared_and_verified = timing(start)
         if not index.counts["sidecar_hit_bodies"] or validation["fallback"] or forecast["calls"] != 1:
