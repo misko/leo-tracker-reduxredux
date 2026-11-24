@@ -12,7 +12,14 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from .owned_capture_0016 import (
-    LOGICAL, MANIFESTS, MEMBER_COUNT, STAGE, STAGE_PIN, WINDOWS, checked, logical,
+    LOGICAL,
+    MANIFESTS,
+    MEMBER_COUNT,
+    STAGE,
+    STAGE_PIN,
+    WINDOWS,
+    checked,
+    logical,
 )
 
 QUALIFICATION = Path("/dev/shm/leo-v3-frame-visit-0016-result02.json")
@@ -95,7 +102,8 @@ def original_windows(source, chunk, ingress, paired, hasher):
                                     stop_sequence=chunk.first_sequence + chunk.window_count))
     if len(rows) != chunk.window_count or opened != set(expected):
         raise ValueError("Hydration did not exhaust the exact original member")
-    if any(row.samples.flags.writeable or row.samples.nbytes != row.index.payload_bytes for row in rows):
+    if any(row.samples.flags.writeable or row.samples.nbytes != row.index.payload_bytes
+           for row in rows):
         raise ValueError("Owned source must consist of immutable verified windows")
     return rows
 
@@ -147,15 +155,17 @@ def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
                 if hydrate["input_blocks"]:
                     raise ValueError("Resident waveform hydration charged external reads")
                 # Allow the new payload to grow to the member's decoded size plus codec headroom.
-                projected = current_tree_bytes(output_root) + 2 * chunk.uncompressed_bytes + 2_000_000
+                projected = (current_tree_bytes(output_root) + 2 * chunk.uncompressed_bytes
+                             + 2_000_000)
                 if projected > LIMIT:
                     raise ValueError("Owned and encoded extents exceed the retained byte budget")
                 shared["max_accounted_bytes"] = max(shared["max_accounted_bytes"], projected)
                 start = clocks()
                 for window in owned:
                     row = window.index
-                    writer.append(sequence=row.sequence, target_id=row.target_id, samples=window.samples,
-                                  acquisition=row.acquisition, powers=row.powers)
+                    writer.append(sequence=row.sequence, target_id=row.target_id,
+                                  samples=window.samples, acquisition=row.acquisition,
+                                  powers=row.powers)
                 writer_costs.update(elapsed(start))
                 hashes.extend((row.index.iq_sha256, row.index.acquisition["global_visit"])
                               for row in owned)
@@ -179,7 +189,8 @@ def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
     for chunk, index, old in zip(written.manifest.chunks, records, original, strict=True):
         name = f"visit-frames-{chunk.chunk_index:06d}.json"
         pin = write_table(path / name, written.manifest_sha256, chunk, index, TABLE_SCHEMA)
-        data = {key: getattr(chunk, key) for key in (*LOGICAL, "compressed_bytes", "compressed_sha256")}
+        fields = (*LOGICAL, "compressed_bytes", "compressed_sha256")
+        data = {key: getattr(chunk, key) for key in fields}
         members.append(dict(data, side_name=name, side_sha256=pin,
                             original_compressed_sha256=old["compressed_sha256"],
                             original_compressed_bytes=old["compressed_bytes"]))
@@ -200,7 +211,8 @@ def readback(recording, reports, expected, data_authority):
     from .seekable_eight_raw import clocks, elapsed
 
     start = clocks()
-    session, inventory_pin, inventory = FastScanStore(recording).inventory(recording, verify_windows=False)
+    store = FastScanStore(recording)
+    session, inventory_pin, inventory = store.inventory(recording, verify_windows=False)
     hashes, prefixes = [], {}
     for entry, segment in zip(inventory["segments"], reports, strict=True):
         if (Path(entry["path"]).name, entry["manifest_digest"]) != (
@@ -275,7 +287,8 @@ def run(output):
     authority = json.loads(checked(STAGE / "staging.json", STAGE_PIN))
     source = STAGE / Path(authority["recording"]).name
     require_tmpfs(source)
-    if authority["case"] != "DS30-0016" or len(list(source.glob("*/manifest.json"))) != len(MANIFESTS):
+    source_manifests = list(source.glob("*/manifest.json"))
+    if authority["case"] != "DS30-0016" or len(source_manifests) != len(MANIFESTS):
         raise ValueError("Expected the complete staged weak physical source")
     checked(CACHE_LIBRARY, CACHE_SHA)
     repo = Path(__file__).resolve().parents[3]
@@ -308,16 +321,18 @@ def run(output):
     if ([visit for _, visit in ordered] != list(range(WINDOWS))
             or canonical_digest([authority["inventory"], [digest for digest, _ in ordered]])
             != authority["raw_authority"]):
-        raise ValueError("No exact authenticated correspondence to the original DS30-0016 authority")
+        raise ValueError("The ordered samples differ from the original DS30-0016 authority")
     first = segments[0]["members"][0]
-    if any(first[key] != first_member[key] for key in ("compressed_sha256", "compressed_bytes", *LOGICAL)):
+    fields = ("compressed_sha256", "compressed_bytes", *LOGICAL)
+    if any(first[key] != first_member[key] for key in fields):
         raise ValueError("First emitted member differs from the signed physical corruption witness")
     verified = readback(recording, segments, ordered, authority)
     if sum(len(row["members"]) for row in segments) != MEMBER_COUNT:
         raise ValueError("The complete output missed an original member")
     start = clocks()
     custody = dict(schema=SCHEMA, recording=str(recording), session_id=verified["session_id"],
-                   inventory_sha256=verified["inventory_sha256"], raw_authority=verified["raw_authority"],
+                   inventory_sha256=verified["inventory_sha256"],
+                   raw_authority=verified["raw_authority"],
                    window_count=verified["window_count"], segments=segments)
     custody_pin = close_file(output / "capture-authority.json", custody)
     _fsync_directory(recording)
