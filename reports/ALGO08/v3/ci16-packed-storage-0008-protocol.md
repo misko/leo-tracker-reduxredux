@@ -1,0 +1,5 @@
+# Independent dense transfer of measured-width CI16 packing
+
+Use only the first complete physical DS30-0008 member already staged and sealed by the seekable-member study. Bind its two existing receipts, exact manifest, compressed payload, signed index and decoded CI16 digest. Require the original mixed probe digest independently established by that study. Check full tmpfs residency before decoding. Preserve the source archive and make no backing-storage waveform read.
+
+Run the same codec, full-width fallback, three layouts and rotated orders used for DS30-0016. Charge the same complete durable capture emulation, strict encoded verification, fresh first mixed native receiver and joint clock. Verify the all-layout signed timeline and probes, including any validity exclusions, and recover all original decoded bytes separately. Time conversion, first mixed analysis, and complete readback of one private legacy packed sidecar. Apply the same one-core, low-priority Gauss lock and keep this transfer separate from the DS30-0016 result.

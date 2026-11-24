@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 from contextlib import ExitStack, nullcontext
+from dataclasses import dataclass
 from hashlib import sha256
 from importlib import import_module
 import json
@@ -33,6 +34,23 @@ LEVELS = {"ordinary": 1, "split-level-1": 1, "split-level-fast": -1}
 ORDERS = (tuple(LEVELS), ("split-level-fast", "ordinary", "split-level-1"),
           ("split-level-1", "split-level-fast", "ordinary"))
 MATCH = ("timeline_sha256", "probes_sha256", "issued", "admitted", "invalid", "visits", "selected")
+
+
+@dataclass(frozen=True)
+class StagedMember:
+    case: str
+    path: Path
+    manifest: str
+    compressed: str
+    decoded: str
+    index: str
+    compressed_bytes: int
+    index_bytes: int
+    manifest_bytes: int
+    prior_probes: str | None = None
+
+
+ORIGINAL = StagedMember("DS30-0016", SOURCE, MANIFEST, COMPRESSED, DECODED, INDEX, 78_554_951, 173_091, 6_812)
 
 
 class ApertureWriter:
@@ -133,34 +151,40 @@ def capture(root, mode, template, windows, *, codec=None):
                                 compression_level=level)
 
 
-def verified_source(ingress, hasher):
+def verified_source(ingress, hasher, member=ORIGINAL):
     from leo.storage.short_window import ShortWindowReader
     from tools.pipeline_eval.qualification.cache_residency import cache_snapshot, load_query
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
 
-    if SOURCE.resolve(strict=True) != SOURCE or SOURCE.stat().st_dev != Path("/dev/shm").stat().st_dev:
-        raise ValueError("Expected the pinned local DS30-0016 stage")
+    source = member.path
+    if (not source.is_relative_to("/dev/shm") or source.resolve(strict=True) != source
+            or source.stat().st_dev != Path("/dev/shm").stat().st_dev):
+        raise ValueError("Expected a pinned local tmpfs member")
     frozen.verified(frozen.CACHE_LIBRARY, frozen.CACHE_SHA)
     query = load_query(frozen.CACHE_LIBRARY)
-    members = (("manifest.json", 6_812), ("windows-000000.jsonl", 173_091), ("iq-000000.ci16.zst", 78_554_951))
-    if any((SOURCE / name).stat().st_size != size for name,size in members):
+    members = (("manifest.json", member.manifest_bytes), ("windows-000000.jsonl", member.index_bytes),
+               ("iq-000000.ci16.zst", member.compressed_bytes))
+    if any((source / name).resolve(strict=True) != source / name or (source / name).stat().st_size != size
+           for name,size in members):
         raise ValueError("Pinned source file extents changed")
-    cache = cache_snapshot([(SOURCE, name, size) for name,size in members], os.sysconf("SC_PAGE_SIZE"), query)
+    cache = cache_snapshot([(source, name, size) for name,size in members], os.sysconf("SC_PAGE_SIZE"), query)
     if (cache["unavailable"] or cache["observed_members"] != len(members)
             or cache["cached_pages"] != cache["observed_file_pages"]):
         raise ValueError("All 64 source visits must be resident before decoding")
     start = clock()
-    reader = ShortWindowReader(SOURCE)
+    reader = ShortWindowReader(source)
     chunk = reader.manifest.chunks[0]
     if (reader.manifest_sha256, chunk.compressed_sha256, chunk.uncompressed_sha256,
-            chunk.index_sha256, chunk.first_sequence, chunk.window_count) != (MANIFEST, COMPRESSED, DECODED, INDEX, 0, 64):
+            chunk.index_sha256, chunk.first_sequence, chunk.window_count) != (
+                member.manifest, member.compressed, member.decoded, member.index, 0, 64):
         raise ValueError("Source manifest does not bind the exact signed samples")
     with ingress(), paired_decoded_hashes(hasher):
         windows = list(reader.windows(start_sequence=0, stop_sequence=64))
     if (len(windows) != 64 or any(row.samples.shape != (seek.SAMPLES, 2, 2) for row in windows)):
         raise ValueError("Fixture capture is not a full stereo 64-visit member")
     return reader, windows, dict(timing=elapsed(start), cache=cache, raw_bytes=chunk.uncompressed_bytes,
-                                 source=str(SOURCE), manifest=MANIFEST, compressed=COMPRESSED, decoded=DECODED, index=INDEX)
+                                 source=str(source), case=member.case, manifest=member.manifest, compressed=member.compressed,
+                                 decoded=member.decoded, index=member.index, prior_probes=member.prior_probes)
 
 
 def qualified(acquisition):
@@ -258,7 +282,7 @@ def full_recovery(directory, mode, pin, expected, *, codec=None):
     return dict(timing=elapsed(start), decoded=digest)
 
 
-def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1"):
+def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1", member=ORIGINAL, short_binary=SHORT):
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
 
     host = signed.check_machine()
@@ -270,10 +294,10 @@ def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1"):
     pilot = frozen.RELEASE / "assets/lower.f32"
     hasher = frozen.PAYLOAD / "paired-sha256.so"
     for path, expected in ((full, spec["detector_sha256"]), (pilot, signed.PILOT_SHA["lower"]),
-                           (SHORT, signed.SHORT_SHA), (hasher, spec["paired_sha256"]["sha256"])):
+                           (short_binary, signed.SHORT_SHA), (hasher, spec["paired_sha256"]["sha256"])):
         frozen.verified(path, expected)
     ingress = frozen.frozen_function(spec, "receiver_ingress.py", "compressed_input_buffer")
-    reader, windows, source = verified_source(ingress, hasher)
+    reader, windows, source = verified_source(ingress, hasher, member)
     setup_started = clock()
     if codecs:
         source["raw_word_range"] = [min(int(row.samples.min()) for row in windows),
@@ -283,7 +307,7 @@ def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1"):
         import_module(module)
     asset = np.frombuffer(frozen.verified(pilot, signed.PILOT_SHA["lower"]), dtype="<f4")
     with ExitStack() as stack:
-        for mode, binary in (("full", full), ("short_primary", SHORT)):
+        for mode, binary in (("full", full), ("short_primary", short_binary)):
             engine = NativePath(binary, asset, mode)
             stack.callback(engine.close)
     shared_setup = elapsed(setup_started)
@@ -298,20 +322,22 @@ def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1"):
             with TemporaryDirectory(dir=root, prefix=f"{mode}-") as temp:
                 begin = clock()
                 directory, pin, written = capture(Path(temp), mode, reader.manifest, windows, codec=codec)
-                first = analyze(directory, mode, pin, full, SHORT, pilot, ingress, hasher, codec=codec)
+                first = analyze(directory, mode, pin, full, short_binary, pilot, ingress, hasher, codec=codec)
                 both = elapsed(begin)
                 if codec is not None:
                     written["block_widths"] = codec.counts()
-                if (written["decoded_sha256"] != DECODED or written["index_sha256"] != INDEX
+                if (written["decoded_sha256"] != member.decoded or written["index_sha256"] != member.index
                         or first["issued"] != 64 or first["admitted"] + first["invalid"] != 64):
                     raise ValueError("Capture changed original bytes, metadata or eligibility")
                 outcomes = {key: first[key] for key in MATCH}
                 if baseline is None:
+                    if member.prior_probes is not None and outcomes["probes_sha256"] != member.prior_probes:
+                        raise ValueError("The ordinary reader must reproduce the independently sealed mixed probe digest")
                     baseline = outcomes
                 if outcomes != baseline:
                     raise ValueError("Storage representation changed first mixed detector evidence")
                 if mode not in recovery:
-                    recovery[mode] = full_recovery(directory, mode, pin, DECODED, codec=codec)
+                    recovery[mode] = full_recovery(directory, mode, pin, member.decoded, codec=codec)
                 row[mode] = dict(capture=written, first_analysis=first, capture_to_first=both)
         comparisons.append(row)
 
@@ -327,10 +353,10 @@ def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1"):
         legacy_conversion = elapsed(began) | dict(legacy_cost)
         legacy_analysis = None
         if codec is not None:
-            legacy_analysis = analyze(sidecar, legacy_mode, legacy_pin, full, SHORT, pilot, ingress, hasher, codec=codec)
+            legacy_analysis = analyze(sidecar, legacy_mode, legacy_pin, full, short_binary, pilot, ingress, hasher, codec=codec)
             if {key: legacy_analysis[key] for key in MATCH} != baseline:
                 raise ValueError("Legacy conversion changed the ordered data or signed receiver evidence")
-        legacy_recovery = full_recovery(sidecar, legacy_mode, legacy_pin, DECODED, codec=codec)
+        legacy_recovery = full_recovery(sidecar, legacy_mode, legacy_pin, member.decoded, codec=codec)
         legacy_bytes = {path.name: path.stat().st_size for path in sidecar.iterdir()}
     active_modes = orders[0]
     signed.freeze(root / "result.json", dict(host=host, source=source, orders=orders,
