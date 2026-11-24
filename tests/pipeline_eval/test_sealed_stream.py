@@ -1,10 +1,12 @@
 from hashlib import sha256
+import os
 
 import numpy as np
 import pytest
 import zstandard
 
 from reports.ALGO08.v3.sealed_stream import Native, build
+from reports.ALGO08.v3.sealed_stream_descriptor import bounded_digest
 
 
 def digest(value):
@@ -65,3 +67,18 @@ def test_wrong_checksum_and_descriptor_fail_and_skippable_falls_back(native, mem
     file.write_bytes(skippable + frame)
     assert native.prepare(file, dict(chunk, compressed_bytes=len(skippable)+len(frame),
                                     compressed_sha256=digest(skippable+frame)), rows) == (1, None)
+
+
+def test_bounded_descriptor_hash_checks_extent_and_last_partial_block(tmp_path):
+    payload = b"0123456789"
+    file = tmp_path / "input"
+    file.write_bytes(payload)
+    with file.open("rb") as stream:
+        buffer = memoryview(bytearray(4))
+        assert bounded_digest(stream.fileno(), len(payload), buffer) == digest(payload)[7:]
+        os.lseek(stream.fileno(), 0, os.SEEK_SET)
+        with pytest.raises(ValueError, match="exceeds"):
+            bounded_digest(stream.fileno(), len(payload)-1, buffer)
+        os.lseek(stream.fileno(), 0, os.SEEK_SET)
+        with pytest.raises(ValueError, match="early"):
+            bounded_digest(stream.fileno(), len(payload)+1, buffer)
