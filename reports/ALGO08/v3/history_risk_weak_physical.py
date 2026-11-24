@@ -61,10 +61,13 @@ def controls():
 
 
 def validate_selection(native, original, detector, selected, req, expected):
+    from leo.contracts.digests import canonical_digest
+
     if (native["source"]["probes"] != original["source"]["probes"] or selected["choice"]["route"] != "unfiltered"
             or selected["selected"] != 506 or selected["refinement_calls"] or len(native["source"]["probes"]) != 1426
             or selected["native_sha256"] != req["native"] or "sha256:"+detector != req["detector"]
-            or selected["choice"] != expected or native["source"]["raw_recording_authority_digest"] != req["authority"]
+            or canonical_digest(selected["choice"]) != canonical_digest(expected)
+            or native["source"]["raw_recording_authority_digest"] != req["authority"]
             or native["clock_anchor"]["before"]["realtime_ns"] != req["cutoff_utc_ns"]):
         raise ValueError("The original held policy must reproduce the complete physical 20/8 ms packet")
 
