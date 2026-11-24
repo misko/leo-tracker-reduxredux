@@ -93,8 +93,58 @@ def run(folder):
     return dict(failures=failed, controls=controls, targets=estimate(intake, failed, repair))
 
 
+def render(result, output):
+    import matplotlib.pyplot as plt
+
+    records = sorted(result["failures"].items())
+    fig, (raw, saved) = plt.subplots(1, 2, figsize=(10.3, 4.5), sharey=True,
+                                     gridspec_kw={"width_ratios": [2.15, 1]})
+    fig.subplots_adjust(left=.13, right=.98, bottom=.23, top=.72, wspace=.12)
+    fig.suptitle("Where the five failed DS30 runs spent their time", x=.025, ha="left",
+                 fontsize=16, fontweight="bold")
+    raw.set_title("Original ALGO08v3 through failed exit", loc="left", fontsize=11)
+    saved.set_title("Saved solver through publication", loc="left", fontsize=11)
+    for i, (case, bounds) in enumerate(records):
+        pre = sum(bounds["pre_s"]) / 2
+        post = sum(bounds["post_s"]) / 2
+        raw.barh(i, pre, height=.6, color="#405873", label="To detections" if i == 0 else None)
+        raw.barh(i, post, left=pre, height=.6, color="#ccb48b", label="To failed exit" if i == 0 else None)
+        raw.text(pre-1.5, i, f"{pre:.1f}", color="white", ha="right", va="center")
+        raw.text(pre+post/2, i, f"{post:.1f}", color="#30291f", ha="center", va="center", fontsize=9)
+    raw.set_yticks(range(len(records)), [key for key, _ in records])
+    raw.legend(ncol=2, loc="lower left", bbox_to_anchor=(0, 1.13), frameon=False, borderaxespad=0)
+    raw.invert_yaxis()
+    products = (
+        ("0022", "661311100d12da42dc72d05db76e3ba4f95fecb9a5f45857415c2da65363dc9a", "candidate_clock"),
+        ("0129", "8ac6521afabd3cdccd93acb1ee5bfc835efe69abfe9b7a28fd2b247139b7d093", "clock"),
+    )
+    names = [key for key, _ in records]
+    for key, pin, clock in products:
+        path = MEASUREMENTS / f"live-orbit-support-{key}.json.gz"
+        replay = json.loads(gzip.decompress(checked(path, pin)))
+        if replay["case"] != "DS30-"+key or replay[clock]["exit_code"] != 0:
+            raise ValueError("Require a successful saved publication for the same failed case")
+        i = names.index(replay["case"])
+        elapsed = replay[clock]["elapsed_s"]
+        saved.barh(i, elapsed, height=.6, color="#147b70")
+        saved.text(elapsed-1, i, f"{elapsed:.1f}", va="center", ha="right", color="white")
+    for ax, limit in ((raw, 115), (saved, 45)):
+        ax.set_xlim(0, limit)
+        ax.set_xlabel("Elapsed seconds")
+        ax.spines[["top", "right", "left"]].set_visible(False)
+        ax.tick_params(axis="y", length=0)
+    fig.text(.025, .055, "Left bars use the midpoint of timing bounds narrower than 0.19 s. "
+             "Right bars start at saved detections for the two replays.", fontsize=9)
+    fig.savefig(output, dpi=145, facecolor="white")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("panel", type=Path)
+    parser.add_argument("--plot", type=Path)
     args = parser.parse_args()
-    print(json.dumps(run(args.panel), indent=2, allow_nan=False))
+    result = run(args.panel)
+    if args.plot:
+        render(result, args.plot)
+    print(json.dumps(result, indent=2, allow_nan=False))
