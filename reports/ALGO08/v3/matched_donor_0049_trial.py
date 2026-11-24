@@ -24,6 +24,7 @@ from sparse8_cfo_epoch_trial import ARMS, CAMPAIGN, LOCK, attrs, document, ident
 from matched_donor_0049 import derive, owner_counts, replace_disagreement
 from sparse_only_drop_0049 import exclude_sparse_only
 from empty_recovery_0049 import restore_empty_lanes
+from anchor_only_0049 import derive_anchor_only
 import signed_cfo_time_readout as authority
 
 
@@ -40,6 +41,9 @@ RESTORATION = SimpleNamespace(stem="ds30-0049-empty-recovery", derive=restore_em
 DISAGREEMENT = SimpleNamespace(stem="ds30-0049-shifted-winner-repair", derive=replace_disagreement,
                                ledger=DONOR.ledger, ledger_digest=DONOR.ledger_digest, label="replaced",
                                option="--replace-shifted-winners", source=None, priority="idle")
+ANCHORS = SimpleNamespace(stem="ds30-0049-anchor-only", derive=derive_anchor_only,
+                          ledger="anchors", ledger_digest="anchor_sha256", label="added_anchors",
+                          option="--anchor-only-control", source="anchor_only_0049.py", priority="idle")
 
 PREVIOUS = {
     DONOR.stem: "9e129a016bdd533d7c82706b402665bea6cd2d34c0628c0bda62fe414cae1a6a",
@@ -56,6 +60,8 @@ def source_pins(experiment):
     names = ["matched_donor_0049.py", "signed_cfo_time_readout.py", "sparse8_cfo_epoch_trial.py"]
     if experiment.source:
         names.append(experiment.source)
+    if experiment is ANCHORS:
+        names.extend(("sparse_only_drop_0049.py", "empty_recovery_0049.py"))
     return {name: identifier(HERE/name) for name in names}
 
 
@@ -94,6 +100,13 @@ def prepare(root, experiment):
         if measured != {"rx0/short": (811, 59, 59), "rx1/short": (811, 13, 13),
                         "rx0/anchor": (121, 0, 0), "rx1/anchor": (121, 0, 0)}:
             raise ValueError("Both-positive disagreement enrolment differs from the freeze")
+    if experiment is ANCHORS:
+        proof = change["graph_input"]
+        if (change["short_edit_counts"] != dict(matched=284, shifted=72, empty=104, sparse_only=161)
+                or [sum(a["receiver"] == radio for a in change["anchors"]) for radio in (0,1)] != [8,4]
+                or (proof["installed_rows"], proof["both_derivations_rows"]) != (531,543)
+                or any(v["additional_passed"] or v["failed"] for v in change["additional_candidates"].values())):
+            raise ValueError("Full-anchor eligibility differs from the frozen exact inputs")
     root.mkdir(mode=0o700)
     payload = root/"derived-native.json"
     payload.write_bytes(json.dumps(derived, sort_keys=True, ensure_ascii=False, allow_nan=False,
@@ -259,6 +272,19 @@ def compare_previous(plan, arms, experiment):
     return results
 
 
+def charted_installed(crossover, original, plan):
+    mode = "successor-installed"  # Entries are solver first, receiver second.
+    pub = CROSSOVER/mode
+    pin = crossover["owner_row_source_sha256"][mode]
+    run = document(pub/"crossover-worker.json", pin)
+    receipt = run["receipt"]
+    terminal = document(pub/"fast-scan-automatic-work"/receipt["run_id"]/"terminal.json", receipt["terminal_sha256"])
+    if (run["submitted_native_sha256"] != plan["installed_native_sha256"] or run["waveform_reads"]
+            or run["verified_handoffs"] != 1 or terminal["arms"] != original["arms"]):
+        raise ValueError("Require the archived charted solve on the identical installed detector and endpoints")
+    return run, crossover["cells"][mode]["clocks"], pin
+
+
 def score(root, seal_pin, experiment):
     from sparse8_cfo_epoch_trial import geography
 
@@ -333,6 +359,14 @@ def score(root, seal_pin, experiment):
             result.update(prior_separate_interventions=compare_previous(plan, arms, experiment),
                           installed_all_owned_rf_hz={a:stock_detail["arms"][a]["residual_rms_hz"] for a in ARMS},
                           installed_saved_clock=crossover["cells"]["installed-installed"]["clocks"])
+        if experiment is ANCHORS:
+            charted, charted_clock, charted_pin = charted_installed(crossover, stock, plan)
+            result.update(charted_installed_clock=charted_clock, charted_installed_pin=charted_pin,
+                          graph_input=plan["change"]["graph_input"])
+            for arm, row in arms.items():
+                row["fraction_of_original_gap_recreated"] = row["remaining_gap_m"]/(row["sparse_m"]-row["installed_m"])
+                row["charted_installed_owner_delta"] = owner_delta(charted["ordered_owners"][arm], new_owners[arm])
+            useful = advance = None
         result.update(arms=arms, position=position, media=media["images"], grid_replay=grid["endpoint_objective_replay"],
                       useful=useful, advance=advance, fitted_gap_recovered=-fitted/gap)
     elif receipt["decision"] != "withheld" or witness["evidence"]["images"] or list(directory.rglob("*.png")):
@@ -346,7 +380,7 @@ if __name__ == "__main__":
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
     options = parser.add_mutually_exclusive_group()
-    for choice in (EXCLUSION, RESTORATION, DISAGREEMENT):
+    for choice in (EXCLUSION, RESTORATION, DISAGREEMENT, ANCHORS):
         options.add_argument(choice.option, dest="experiment", action="store_const", const=choice)
     parser.set_defaults(experiment=DONOR)
     args = parser.parse_args()
