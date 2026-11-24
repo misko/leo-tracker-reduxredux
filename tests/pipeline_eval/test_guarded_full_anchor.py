@@ -1,4 +1,7 @@
 from copy import deepcopy
+import gzip
+from hashlib import sha256
+import json
 
 import pytest
 
@@ -50,3 +53,17 @@ def test_preserve_full_discrete_values_and_exact_short_scores():
     changed["candidates"][0]["fractional_tracking_cfo_hz"] += .0000000001
     with pytest.raises(ValueError, match="signed rank"):
         compare_probes([probe], [changed], ["full"])
+
+
+def test_sealed_members_keep_actual_native_gates_and_held_choices():
+    raw = (guard.HERE / "measurements/guarded-full-anchor-sparse8.json.gz").read_bytes()
+    assert sha256(raw).hexdigest() == "01e1b4ad6a2f2c62bad2421a5ddb82065d0705fe384e0cb83b90e854eb6e58db"
+    evidence = json.loads(gzip.decompress(raw))
+    assert evidence["original_backing_bytes"] == 0
+    for case in evidence["cases"]:
+        assert compare_probes(case["signed_preheld"]["exact"], case["signed_preheld"]["guarded"], case["schedule"]) == case["preheld_comparison"]
+        assert case["held"]["exact"]["witness"]["choice"] == case["held"]["guarded"]["witness"]["choice"]
+        for pair in case["native_clocks"]:
+            exact, changed = (pair["measures"][mode] for mode in ("exact", "guarded"))
+            assert exact["receipt"]["native_calls"] == changed["receipt"]["native_calls"]
+            assert changed["receipt"]["native_cpu_ns"]["full"] < exact["receipt"]["native_cpu_ns"]["full"]
