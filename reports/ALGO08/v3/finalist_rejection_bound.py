@@ -9,12 +9,16 @@ from math import isfinite
 from pathlib import Path
 from statistics import median
 from struct import pack, unpack
+import sys
 from time import perf_counter, process_time
+
+HERE = Path(__file__).resolve().parent
+if __name__ == "__main__":
+    sys.path.insert(0, str(HERE))
 
 from finalist_tangent_summary import classify
 
 
-HERE = Path(__file__).resolve().parent
 MEASUREMENTS = HERE/"measurements"
 TRACE = "06eedd0a32ddd013dea8a7398600bbe39f9a85018fc83ca04c285358d1cfd925"
 BINDING = "18a61b117fb02561b97e7f32b99bd0377b8a9cb17e8a913718e968bc29a1ab38"
