@@ -76,7 +76,8 @@ def stage_metadata(source, dest, manifest_pin, member, admission, lock):
     return len(manifest) + len(body)
 
 
-def stage(root):
+def stage(root, *, bind=bindings, case="DS30-0419", previous_pin=PREVIOUS_PIN,
+          request_pin=REQUEST_PIN, inventory_pin=INVENTORY_PIN, size=SIZE, seconds=SECONDS):
     started, cpu = perf_counter(), process_time()
     io_before = resource.getrusage(resource.RUSAGE_SELF).ru_inblock
     if (root.parent != Path("/tmp") or root.exists() or root.is_symlink()
@@ -84,42 +85,42 @@ def stage(root):
             or os.sched_getaffinity(0) != {2} or os.getpriority(os.PRIO_PROCESS, 0) < 15
             or subprocess.check_output(["ionice", "-p", str(os.getpid())], text=True).strip() != "idle"):
         raise ValueError("Expected a fresh private /tmp stage on the idle-only CPU 2 route")
-    request, first, member, payload, inode = bindings()
+    request, first, member, payload, inode = bind()
     metadata(CACHE, CACHE_PIN, 80_000)
     query = load_query(CACHE)
     page = os.sysconf("SC_PAGE_SIZE")
-    before = payload_cache(payload, SIZE, query, page)
+    before = payload_cache(payload, size, query, page)
     if before["device"] != DEVICE or before["inode"] != inode:
         raise ValueError("The original signed physical payload identity changed")
     root.mkdir(mode=0o700)
     folder = root / payload.parent.name
     folder.mkdir()
     stats = Path(f"/sys/dev/block/{os.major(DEVICE)}:{os.minor(DEVICE)}/stat")
-    deadline = started + SECONDS
-    pacing = Pacing(root, SIZE, 0, idle=True, device=stats, deadline=deadline)
+    deadline = started + seconds
+    pacing = Pacing(root, size, 0, idle=True, device=stats, deadline=deadline)
     admission = IdleAdmission(stats, deadline, pacing.record)
     verified, meta_bytes, stopped, copy_done = None, 0, None, None
     try:
         with LOCK.open("rb") as lock:
             meta_bytes = stage_metadata(payload.parent, folder, first["manifest_digest"], member, admission, lock)
-            copy_member(payload, folder / payload.name, SIZE, member["compressed_sha256"], lock, pacing,
+            copy_member(payload, folder / payload.name, size, member["compressed_sha256"], lock, pacing,
                         journal=root / "checkpoint.json", admission=admission, required_device=DEVICE)
         copy_done = perf_counter() - started
         verified = verified_local(folder, first["manifest_digest"], member)
     except IdleWindowExpired as error:
         stopped = str(error)
     finally:
-        cached = payload_cache(payload, SIZE, query, page)
+        cached = payload_cache(payload, size, query, page)
         io_after = resource.getrusage(resource.RUSAGE_SELF).ru_inblock
         events = [json.loads(row) for row in pacing.log.read_text().splitlines()]
-        result = dict(schema="leo.research.ds30-0419-first-member-idle.v1", case="DS30-0419",
-                      previous_sha256=PREVIOUS_PIN, allowlisted_idle_source_sha256=IDLE_PIN,
+        result = dict(schema=f"leo.research.{case.lower()}-first-member-idle.v1", case=case,
+                      previous_sha256=previous_pin, allowlisted_idle_source_sha256=IDLE_PIN,
                       complete=verified is not None, stop_reason=stopped, source=str(payload), stage=str(folder),
-                      request_sha256=REQUEST_PIN, inventory_sha256=INVENTORY_PIN,
+                      request_sha256=request_pin, inventory_sha256=inventory_pin,
                       original_session=request["session"], raw_authority=request["raw_authority"],
                       manifest_sha256=first["manifest_digest"], member=member, verified=verified,
                       slot=dict(cpu=2, nice=os.getpriority(os.PRIO_PROCESS, 0), ionice="idle",
-                                max_elapsed_s=SECONDS, block_bytes=BLOCK, rate_bytes_s=RATE,
+                                max_elapsed_s=seconds, block_bytes=BLOCK, rate_bytes_s=RATE,
                                 source_advice="POSIX_FADV_RANDOM"),
                       elapsed_s=perf_counter()-started, cpu_s=process_time()-cpu,
                       elapsed_through_copy_s=copy_done, payload_bytes=pacing.copied, metadata_bytes=meta_bytes,
