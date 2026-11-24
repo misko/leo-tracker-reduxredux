@@ -43,11 +43,11 @@ def write(path, value):
     return identifier(path)
 
 
-def attrs():
+def attrs(*, expected_priority="best-effort: prio 7"):
     if os.sched_getaffinity(0) != {2} or os.getpriority(os.PRIO_PROCESS, 0) != 15:
         raise ValueError("Expected CPU2 and nice 15 on the shared host")
     priority = subprocess.check_output(["ionice", "-p", str(os.getpid())], text=True).strip()
-    if priority != "best-effort: prio 7" or any(os.environ.get(key) != "1" for key in THREADS):
+    if priority != expected_priority or any(os.environ.get(key) != "1" for key in THREADS):
         raise ValueError(f"Expected low IO priority and single numerical thread, got {priority}")
     return dict(cpu=2, nice=15, ionice=priority, threads={key: 1 for key in THREADS})
 
