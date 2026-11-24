@@ -665,6 +665,25 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "275 m and 819 m. The fitted estimate moved 1.625 km when switching solvers on the mixed packet. "
               "[DS30-0220 four-way comparison](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "3258963eb3aa9c134c0081ae4ab40287a9c16668/reports/ALGO08/v3/field-receiver-solver-cross-0220.md)"]
+    lines += ["", "On that same DS30-0220 packet, the candidate provisionally assigned all 179 detections "
+              "used only by the original solver's conditional fit to the same satellites. The second "
+              "screen removed 156 and the later repair removed the other 23. The same stages removed 38 "
+              "and 29 on DS30-0086, where the final geographic difference was small. The counts identify "
+              "when the paths diverged. [Detection-by-detection screen replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "ca74fa45e5e16028aa1d6012cd415fe689c8271a/reports/ALGO08/v3/pre-screen-owner.md)"]
+    lines += ["", "### What would another speedup require?", "",
+              "On the first 30 pairs, halving everything ALGO08v3 did before writing its detector packet "
+              "would give **1.48× summed** end-to-end speedup. Keeping the original solver and subsequent "
+              "work at their measured costs would require a **4.29×** speedup across that whole initial "
+              "stage to reach both 2× targets. The model includes startup, reading, verification, decoding and "
+              "detection. [Measured stage boundaries and assumptions](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "96451b64b82e48a1a0564816b45cec785c1f3f98/reports/ALGO08/v3/installed-receiver-first30.md)", "",
+              "The two receivers agreed on 83,058 short-aperture peaks under the prespecified matching rule. "
+              "A correction for when each receiver measured the carrier changed held disagreement from "
+              "97.480 to 97.460 Hz RMS after subtracting the mean for each recording and radio. The same "
+              "timing model increased disagreement in fractional-sample alignment. These are receiver "
+              "measurements on matching peaks. [Held predictions and unmatched peaks](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "8860e704a759e549666eaa29667f0314c91fce98/reports/ALGO08/v3/first30-native-agreement.md)"]
     lines += ["", "### Changing the offered search region", "",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "

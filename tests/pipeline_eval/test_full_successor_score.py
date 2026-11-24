@@ -265,6 +265,13 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     markdown = (tmp_path / "README.md").read_text()
     assert "| 2026-11-13 | 44 |" in markdown
     receipts = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/measurements"
+    prefix = json.loads(gzip.decompress((receipts / "installed-receiver-first30.json.gz").read_bytes()))["aggregate"]
+    assert f"**{1 / prefix['twice_as_fast_prefix']['summed']:.2f}× summed**" in markdown
+    assert f"**{prefix['prefix_speedup']['required_rate']:.2f}×**" in markdown
+    agreement = json.loads(gzip.decompress((receipts / "first30-native-agreement.json.gz").read_bytes()))
+    assert f"{agreement['counts']['short']['matched']:,} short-aperture peaks" in markdown
+    radio = agreement["held"]["cfo_hz"]["radio"]
+    assert f"{radio['rms_before']:.3f} to {radio['rms_after']:.3f} Hz RMS" in markdown
     first = json.loads(gzip.decompress((receipts / "ds30-0049-saved-crossover.json.gz").read_bytes()))
     errors = [first["cells"][cell]["arms"]["fitted_c"]["error_m"] / 1000 for cell in
               ("installed-installed", "successor-installed", "installed-successor", "successor-successor")]
