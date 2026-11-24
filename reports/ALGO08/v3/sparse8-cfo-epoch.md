@@ -59,3 +59,18 @@ Both position estimates moved further from the survey despite a roughly 0.52 Hz 
 The single corrected worker ran from 17:09:07.567 to 17:09:14.669 UTC, 7.103 s wall and 6.873 s CPU through successful exit. The graph-time adapter charged 13.682 ms wall and 13.678 ms CPU. The existing parity-matched saved normal clock was 6.36 s wall and 6.31 s CPU, with no absolute timestamps in that receipt. The workers used different shared leases.
 
 The corrected prediction seal is `56830f0eea83f88ee1ae62d48179310cea187fa5f56ba5e3d2796e4404139672`. The [scored challenge](measurements/sparse8-cfo-epoch-0049-score.json) is `3c8a2e38922b2383d9f5ed9d4b2ffe77c3aa543464280da49cf3ae5c35f2bec8`. The [challenge receipts](measurements/sparse8-cfo-epoch-0049-receipts.tar.gz) are `0272f589a1b4902b6385bb10066d9ae9002779202c318ee6d9496996c3c38c3b`.
+
+## DS30-0086 prospective holdout
+
+After the 0049 gate passed, the ordinary and corrected cached workers each ran once on the preassigned complete DS30-0086 pair. Admission used the identical successor native packet and offer with 50 exact resident causal snapshots. The ordinary terminal, both calibration arms, ordered owners, scientific grid, path and eight PNGs matched the archived raw successor exactly. The corrected worker again published both arms, a matched 179-point grid and eight validated PNGs. Both selected the lean route.
+
+| Calibration | Ordinary error, m | Corrected error, m | Error change, m | Endpoint shift, m | Ordinary → corrected RF RMS, Hz |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `c=0` | 370.631 | 241.613 | −129.018 | 226.633 | 179.824 → 179.425 |
+| Fitted `c` | 381.596 | 233.326 | −148.270 | 231.271 | 180.081 → 179.683 |
+
+The correction shifted 3,176 short rows and retained 495 full anchors. Graph tracks changed from 85 to 82, with assigned rows moving from 2,434 to 2,425. Each calibration arm retained 2,082 common IDs with identical satellite ownership and roles, added 79 and dropped 13. The two resulting publications use different support.
+
+Ordinary ran from 17:11:16.904 to 17:11:32.036 UTC, 15.132 s wall and 14.820 s CPU. Corrected ran from 17:12:22.196 to 17:12:35.896 UTC, 13.700 s wall and 13.505 s CPU. Both exited successfully. Updating Graph timestamps cost 79.116 ms wall and 79.093 ms CPU. The measured through-exit difference includes solver work and distinct idle leases. It supplies one saved comparison of throughput.
+
+The pre-survey prediction seal is `0649beae4cda8663b43e3faabf245131c097b335dded181439575f854bf590c5`. The [holdout score](measurements/sparse8-cfo-epoch-0086-score.json) is `652b0e853b4c160ab675e8d57777d5b5a7d3ad61e6c26e1bd266ce65efb62482`. The [holdout receipts](measurements/sparse8-cfo-epoch-0086-receipts.tar.gz) are `92770714b1eb8d690e4208d4b4b375b0171fe400ea9b4165f50de6aa01da06c3`. The two held recordings improved on this site, while the fixed-owner development challenge moved further from the survey. Geographic transfer remains unmeasured.
