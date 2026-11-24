@@ -1,0 +1,18 @@
+# Complete original DS30-0016 with the dedicated map audit writer
+
+The merged writer completed the original DS30-0016 fix in **7.359185 s elapsed and 7.345453 s CPU**. The earlier all-map child took **7.092842 s elapsed and 7.071635 s CPU**. This ready replay was 0.266 s slower through exit. It preserved the exact detection bytes, terminal, both calibrations, 115 ordered owners per arm, the 179-point grid and path, and all eight PNG file and RGBA digests. [Frozen protocol](legacy-map-writer-0016-protocol.md) · [Qualified machine receipt](measurements/legacy-map-writer-0016.json.gz)
+
+| Original DS30-0016 process | Through-exit elapsed (s) | Through-exit CPU (s) | Authenticated acquisition elapsed (s) |
+|---|---:|---:|---:|
+| Historical matched ordinary | 8.629779 | 8.611184 | 3.612482 |
+| Historical five maps | 7.580689 | 7.574294 | 2.877753 |
+| Historical all maps with scientific audit serializer | 7.092842 | 7.071635 | 2.393716 |
+| All maps with dedicated audit writer | **7.359185** | **7.345453** | **2.559248** |
+
+The reader and publication ran in a separate process from the earlier all-map baseline. Authenticated acquisition increased by **0.166 s**, while decision and publication increased from **4.093182 to 4.167490 s**. These differences include work before the final audit write. The new and previous child recorded 408 and 312 process-wide input blocks, respectively, with zero major faults. Both had all 242,675 underlying waveform, index and manifest pages resident when observed before and after each child. The result measures the full fixing route after the writer change. The earlier 305–307 ms positive-fixture writer clock came from a process stopped before the numerical solver. It does not isolate the cost avoided on this completed fix. [Earlier all-map measurement](legacy-block-all-0016.md) · [Independent writer-only timing](legacy-map-receipt-writer.md)
+
+All 13 prepared maps and the exact native decoder reopened under their original digests. The child authenticated **991,734,597 original encoded bytes**, issued all 808 opportunities and consumed the same **93 full and 620 prefix** requests. It preserved the eight exception intersections and one exceptional Huffman table replay, with no ordinary fallback. The new 23,708-byte map audit retained the original schema and all non-timing values, emitted in the same sorted JSON format. Exact fields and scientific media were verified by rereading the sealed publication. [Map and artifact evidence](measurements/legacy-map-writer-0016.json.gz)
+
+The measured child plus **0.005914 s** for ready checks and reopening finished in **7.365098 s**. Common source admission was **0.020059 s**. No map preparation or ordinary child ran for this replay. Adding the earlier measured full preparation stages to the new child would sum to **12.259745 s** before admission, readiness and the separately recorded earlier portable index cost. [Current and historical timing boundaries](measurements/legacy-map-writer-0016.json.gz)
+
+The replay used one authenticated, already-resident original recording under the shared low-priority Gauss CPU 2 lock, with no raw archive copy, backing reads, RF collection or second solve. The as-run freeze is `3a95e60ca` from `133b6374d`. The dedicated writer's SHA-256 is `8a9155c1219fa1b88d9a547c12483dddcc6a245ca8c47061407b49f8e567387b`. The uncompressed score SHA-256 is `c684ca974a93252c720e189fbe29247ecd67a138413bb4bafe67238b1ccf10bb`. The measured output seal SHA-256 is `76181d09ef8af9a90ea6b3d7a561e473c71969164ea1f3db2b14edfc9448a565`. Seven focused tests passed. [Runner](legacy_map_writer_0016.py) · [Tests](../../../tests/pipeline_eval/test_legacy_map_writer_0016.py)
