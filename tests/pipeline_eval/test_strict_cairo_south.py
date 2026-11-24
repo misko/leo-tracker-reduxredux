@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from reports.ALGO08.v3.strict_cairo_south import FLAGS, LIBRARIES, REPLACEMENTS, candidate_command, verify_map
+from reports.ALGO08.v3.strict_cairo_south_score import opportunities, prices
 
 
 def test_preserve_physical_flags_and_binaries_with_new_signed_assignment():
@@ -33,3 +34,22 @@ def test_every_derivative_member_must_point_to_original_complete_readback():
     row['checked_derivative']['full_checks'] = 4
     with pytest.raises(ValueError, match='full readback'):
         verify_map(entries, [row], [chunk], 'source')
+
+
+def test_quoted_prices_include_readiness_and_complete_conversion():
+    def timing(wall, cpu):
+        return dict(elapsed_s=wall, cpu_s=cpu)
+
+    quote = prices(timing(16, 15), timing(9, 8), timing(1, 1), timing(2, 1),
+                   dict(wall_ns=10_000_000_000, cpu_ns=9_000_000_000), 15)
+    assert quote['elapsed_s']['prepared'] == 10
+    assert quote['elapsed_s']['first_use'] == 20
+    assert quote['elapsed_s']['prepared_common_speedup'] == pytest.approx(16/12)
+    assert quote['elapsed_s']['historical_prepared_speedup'] == 1.5
+    assert quote['cpu_s']['first_use_plus_common'] == 19
+
+
+def test_original_opportunities_keep_clock_and_order_when_factors_differ():
+    actual = opportunities(dict(source=dict(probes=[dict(visit_index=1, actual_rf_hz=10, candidates=[1]),
+                                                    dict(visit_index=2, actual_rf_hz=20, candidates=[])])))
+    assert actual == [dict(visit_index=1, actual_rf_hz=10), dict(visit_index=2, actual_rf_hz=20)]
