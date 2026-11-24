@@ -216,7 +216,26 @@ def paired_rows(rows, assigned):
     return pairs
 
 
-def write_report(pairs, output, enrollment, receipt_digest):
+def shared_position_moments(rows, assigned):
+    """Compare scatter only on pairs for which both published a scored position."""
+    from reports.ALGO08.v3.ds30_position_moments import decompose, east_north_km
+
+    indexed = {(r["case"], r["algorithm"]): r["arms"] for r in rows}
+    result = {}
+    for arm in ARMS:
+        offsets = {role: [] for role in BUILDS}
+        for case, source in assigned.items():
+            reference = source["reference"]
+            points = [indexed[case, role][arm]["latlon"] for role in BUILDS]
+            if reference is None or any(point is None for point in points):
+                continue
+            for role, point in zip(BUILDS, points, strict=True):
+                offsets[role].append(east_north_km(reference, point))
+        result[arm] = {role: decompose(values) if values else None for role, values in offsets.items()}
+    return result
+
+
+def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None):
     from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
@@ -252,6 +271,12 @@ def write_report(pairs, output, enrollment, receipt_digest):
         summaries[name] = stats
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
+    if renderer_revision is not None:
+        if len(renderer_revision) != 40 or any(c not in "0123456789abcdef" for c in renderer_revision):
+            raise ValueError("Expected a full Git revision for the report renderer")
+        metadata["report_renderer_revision"] = renderer_revision
+    if position_moments is not None:
+        metadata["position_error_moments_on_shared_fixes"] = position_moments
     full = summaries["All DS30 recordings"]
     gates = {metric: full["wall"][metric] >= 2.0 for metric in ("summed_speedup", "median_paired_speedup")}
     metadata["twofold_wall_time_target"] = {"required_speedup": 2.0, **gates, "both_met": all(gates.values())}
@@ -360,6 +385,23 @@ def write_report(pairs, output, enrollment, receipt_digest):
         metres = [number(1000 * delta[p], 1) if delta[p] is not None else "—" for p in ("p50", "p90")]
         lines.append(f"| {dict(c0='Fixed zero', fitted_c='Fitted')[arm]} | {c['shared']} | {c['gained']} / {c['lost']} | "
                      f"{metres[0]} / {metres[1]} |")
+    if position_moments is not None:
+        lines += ["", "### Position scatter at the Gauss roof", "",
+                  "On shared fixes, each horizontal error gives a distance and bearing from the survey point. "
+                  "The radial RMS includes both the average displacement and the recording-to-recording scatter. "
+                  "Subtracting each build’s own average displacement gives the centered RMS. Their squared "
+                  "contributions add to the squared radial RMS.", "",
+                  "| Calibration | Build | Shared fixes | Radial RMS (km) | Mean displacement magnitude (km) | Centered RMS (km) |",
+                  "|---|---|---:|---:|---:|---:|"]
+        for arm in ARMS:
+            for role in BUILDS:
+                item = position_moments[arm][role]
+                labels = ("Fixed zero" if arm == "c0" else "Fitted", "ALGO08v3" if role == "installed" else "Candidate")
+                n = item["n"] if item else 0
+                values = [number(item[k], 3) if item else "—" for k in ("radial_rms_km", "mean_offset_km", "centered_rms_km")]
+                lines.append(f"| {labels[0]} | {labels[1]} | {n} | " + " | ".join(values) + " |")
+        lines += ["", "This diagnostic uses the survey only after scoring. It measures repeatability at one "
+                  "physical location and supplies no location correction to either build."]
     lines += ["", "### When speed and accuracy coincide", "",
               "![Wall speedup and change in horizontal position error on each recording](paired-speed-and-error.png)", "",
               f"On **{fast}/{k}** recordings the candidate took half the ALGO08v3 wall time or less. "
@@ -402,6 +444,11 @@ def write_report(pairs, output, enrollment, receipt_digest):
               "original fitted-error gap remained. "
               "[Matched-detection experiment](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "2ab7167229369484196b4ae1ed32924c35585e86/reports/ALGO08/v3/ds30-0049-matched-donor.md)"]
+    lines += ["", "A separate replay removed 161 candidate-only detections whose installed search returned empty. "
+              "It removed 10 final assignments and reduced fitted error by 140 m. Each replay used the original "
+              "candidate packet as its control. "
+              "[Candidate-only detection experiment](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "e9536f1014191a14b83676ff88a2baf244f034cd/reports/ALGO08/v3/ds30-0049-sparse-only-drop.md)"]
     lines += ["",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
@@ -437,6 +484,11 @@ def write_report(pairs, output, enrollment, receipt_digest):
         lines += ["", f"For {len(moved)} recordings, the original directory moved after DS30 enrollment. "
                   "Both builds reopened the same original data. The per-recording table retains the accession, "
                   "historical and reopened input identities and the digest of each relocation proof."]
+    lines += ["", f"The combined per-recording input has SHA-256 `{receipt_digest}`."]
+    if renderer_revision is not None:
+        lines[-1] += (f" Report renderer `{renderer_revision[:12]}`. "
+                      "[Reproduce the figures from the sealed export](https://github.com/misko/leo-tracker-reduxredux/"
+                      f"blob/{renderer_revision}/reports/ALGO08/v3/full-successor-field-protocol.md)")
     lines += ["", "[Per-recording results](recordings.csv) · [Machine-readable summary and provenance](summary.json)", ""]
     (output / "README.md").write_text("\n".join(lines))
 
@@ -446,12 +498,14 @@ if __name__ == "__main__":
     parser.add_argument("receipts", type=Path, help="Final checked per-recording worker export, JSON lines")
     parser.add_argument("output", type=Path)
     parser.add_argument("--expected-sha256", help="Pin the complete JSON-lines export to the published SHA-256")
+    parser.add_argument("--renderer-revision", help="Full Git revision of the checked-out renderer")
     args = parser.parse_args()
     path_bytes = args.receipts.read_bytes()
     export_sha256 = sha256(path_bytes).hexdigest()
     if args.expected_sha256 is not None and args.expected_sha256.removeprefix("sha256:") != export_sha256:
         parser.error("The worker export differs from the expected SHA-256")
     assigned = roster()
-    actual_pairs = paired_rows([json.loads(line) for line in path_bytes.splitlines() if line.strip()], assigned)
+    raw_rows = [json.loads(line) for line in path_bytes.splitlines() if line.strip()]
+    actual_pairs = paired_rows(raw_rows, assigned)
     write_report(actual_pairs, args.output, {case: r["release_100"] for case, r in assigned.items()},
-                 export_sha256)
+                 export_sha256, renderer_revision=args.renderer_revision, position_moments=shared_position_moments(raw_rows, assigned))

@@ -8,7 +8,7 @@ import pytest
 from PIL import Image
 
 from full_successor_score import (PINS, calibration_segment_error_km, outcomes_summary, paired_rows,
-                                  paired_timing, roster, score_arms, time_accounting, write_report)
+                                  paired_timing, roster, score_arms, shared_position_moments, time_accounting, write_report)
 
 
 def arms(point):
@@ -171,8 +171,15 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     failed = next(row for row in rows if row["case"] == "DS30-0397" and row["algorithm"] == "installed")
     failed.update(outcome="solver_failed", arms=arms(None), timing_scope="raw_launch_to_exit")
     pairs = paired_rows(rows, assigned)
-    write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64)
+    write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64,
+                 renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    assert report["report_renderer_revision"] == "d"*40
+    for arm in ("c0", "fitted_c"):
+        for role in ("installed", "successor"):
+            moments = report["position_error_moments_on_shared_fixes"][arm][role]
+            assert moments["n"] == 453
+            assert moments["radial_mse_km2"] == pytest.approx(moments["squared_mean_offset_km2"] + moments["centered_mse_km2"])
     assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
     assert report["cohorts"]["All DS30 recordings"]["time_accounting"]["cpu_saved_s"] == 0
     assert report["twofold_wall_time_target"] == {
