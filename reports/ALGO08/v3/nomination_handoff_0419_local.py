@@ -81,7 +81,7 @@ def nvme_read_bytes():
                     if line.startswith("read_bytes:")))
 
 
-def launch(root, *, assign=assigned):
+def launch(root, *, assign=assigned, execute=True, expected_inputs=None):
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from dense_geographic_trial import host
@@ -116,6 +116,10 @@ def launch(root, *, assign=assigned):
     nominal = "-".join(Path(pair["recording"]).name.split("-")[2:4])
     capture_ns = int(datetime.strptime(nominal, "%Y%m%d-%H%M%S").replace(tzinfo=timezone.utc).timestamp()) * 10**9
     expected = pair["archive"]["snapshots_sha256"]
+    observed_inputs = bound | {"archive_sha256": expected,
+                               "frozen_specification": release["frozen_specification"]}
+    if expected_inputs and any(observed_inputs.get(key) != value for key, value in expected_inputs.items()):
+        raise ValueError("Admitted data differs from the frozen input metadata")
     roster_start = boot.now()
     roster, size = collector_roster(COLLECTOR, COLLECTOR_DEVICE, capture_ns, bound["cutoff_utc_ns"], expected)
     roster_clock = boot.clock(roster_start)
@@ -183,7 +187,10 @@ def launch(root, *, assign=assigned):
         commands=commands, installed_release=release, machine=machine, detector_waveform_reads=0,
         controller_commit=subprocess.check_output(
             ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip(),
-        original_backing_archive_reads=0, use_live_orbit_support=True, portable=None))
+        original_backing_archive_reads=0, use_live_orbit_support=True, portable=None,
+        prepared_only=not execute))
+    if not execute:
+        return
     env = environment(root) | {"TMPDIR": str(root / "tmp"), "XDG_CACHE_HOME": str(root / "tmp")}
     for mode in assignment["order"]:
         target = root / mode
