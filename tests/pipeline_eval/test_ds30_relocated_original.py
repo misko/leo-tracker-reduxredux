@@ -64,3 +64,30 @@ def test_ledger_import_resumes_same_inode_and_refuses_to_replace(tmp_path):
     wrong.write_bytes(b"verified")
     with pytest.raises(ValueError, match="cannot overwrite"):
         ledger.link_immutable(wrong, target)
+
+
+def test_combined_row_binds_old_and_actual_raw_identities(tmp_path, monkeypatch):
+    from ds30_paired_inputs import write
+
+    monkeypatch.setattr(ledger, "ROOT", tmp_path)
+    attempt = tmp_path / "actual.json"
+    write(attempt, dict(outcome="withheld", elapsed_s=.4, cpu_s=.35, timing_scope="verified",
+                        process={"elapsed_s": .3, "cpu_s": .3, "input_blocks": 4, "output_blocks": 2,
+                                 "started_unix_ns": 1, "finished_unix_ns": 2},
+                        validation={"elapsed_s": .1, "cpu_s": .05}, authority_sha256="authority",
+                        evidence={"raw_authority": "canonical", "receipt": {"session_id": "same"},
+                                  "arms": {"c0": {"latlon": None}, "fitted_c": {"latlon": None}}}))
+    source = dict(case="DS30-0452", algorithm="successor", raw_identity_sha256="physical",
+                  manifest_raw_authority_sha256="frozen", order=["successor", "installed"])
+    proof = dict(paired_attempts={"successor": {"path": "actual.json", "sha256": relocation.digest(attempt.read_bytes())}},
+                 paired_scope={"actual_order": source["order"], "same_lease": True},
+                 accession={"physical_content_sha256": "physical", "manifest_raw_authority_sha256": "frozen"},
+                 canonical_reopened={"session_id": "same", "inventory_sha256": "new", "raw_authority_sha256": "canonical"},
+                 historical={"raw_authority_sha256": "old"}, proof_sha256="proof", original_preflight_sha256="refusal")
+    row = ledger.update_row(source, proof)
+    assert row["raw_authority_sha256"] == row["requested_raw_authority_sha256"] == "canonical"
+    assert row["historic_raw_authority_sha256"] == "old"
+    assert row["relocation_proof_sha256"] == "proof"
+    assert row["generation"] == 2 and row["verified_pair"]
+    with pytest.raises(ValueError, match="outside its original roster row"):
+        ledger.update_row(source | {"raw_identity_sha256": "other"}, proof)
