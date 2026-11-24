@@ -29,3 +29,20 @@ def test_separated_signed_bands_require_two_independent_triples(study):
 def test_never_use_current_or_future_paid_rows(study):
     with pytest.raises(ValueError, match="precede"):
         study.forecast(history(410_000), 35_000_000)
+
+
+def test_exact_quartet_controls_never_open_omitted_outcomes(study, monkeypatch):
+    class Omitted(dict):
+        def __getitem__(self, key):
+            if key == "candidates":
+                raise AssertionError("The planner inspected an unmeasured lane")
+            return super().__getitem__(key)
+
+    monkeypatch.setattr(study, "QUARTETS", 1)
+    monkeypatch.setattr(study, "schedule", lambda packet: [(i, "short_primary", False) for i in range(4)])
+    rows = [Omitted(visit_index=i, receiver_id=r, edge="lower", channel=1,
+                    actual_rf_hz=10.7e9, valid_start_counter=int(i*1e7)) for i in range(4) for r in (0,1)]
+    plan = study.plan_rows({"source":{"probes":rows}})
+    assert [row["buys"] for row in plan["targets"]] == [
+        {"earliest":"fixed"}, {}, {"uniform":"fixed"}, {"doppler":"forced"},
+    ]
