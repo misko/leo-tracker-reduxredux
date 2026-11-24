@@ -64,7 +64,7 @@ def worker(root, label):
     from combined_raw_trial import PRODUCER
     from continued_cfo_north_mirror import MIRROR, MIRROR_SHA
     from preloaded_saved_worker import enrolled
-    from raw_cfo_north_trial import ORDER, publish_saved
+    from raw_cfo_north_trial import ORDER, PUBLICATION_FLAGS, publish_saved
 
     began = staged.now()
     case = "north" if label == "omitted" else label
@@ -99,7 +99,8 @@ def worker(root, label):
         request = dict(request, archive={"root": str(archive)}, libraries=libraries,
                        offer_sha256={ORDER[1]: offer_pin}, receiver="masked-20-8-held-history")
         identity = dict(original_identity, original_offer=json.loads(staged.checked(offer, offer_pin)), offer_sha256=offer_pin,
-                        native_sha256=witness["native_sha256"], detector=detector, selected=witness["selected"])
+                        native_sha256=witness["native_sha256"], detector=detector, selected=witness["selected"],
+                        route=witness["choice"]["route"], flags=list(PUBLICATION_FLAGS))
         raw = dict(native_sha256=identity["native_sha256"], detector_recipe_sha256=detector)
         publish_saved(request, root/f"{label}-publication", offer, path, packet, raw,
                       started=began, runtime=runtime, receipt_name=RECEIPT)
@@ -150,7 +151,7 @@ def seal(root, label):
     from empty_bootstrap import checked
     from leo.contracts.algo08_region import Algo08Region
     from preloaded_saved_score import science
-    from raw_cfo_north_trial import native_file
+    from raw_cfo_north_trial import PUBLICATION_FLAGS, native_file
     from tools.pipeline_eval.qualification.paired_publication import evidence
 
     clock = read(root/f"{label}-clock.json")
@@ -165,6 +166,12 @@ def seal(root, label):
             or verified["raw_authority"] != identity["authority"]):
         raise ValueError("Saved solver did not reproduce the expected raw bindings and one waveform-free handoff")
     checked(native_file(target), identity["native_sha256"][7:])
+    case = "north" if label == "omitted" else label
+    planned = read(root/case/"plan.json")["masked_witness"]
+    if planned["native_sha256"] != identity["native_sha256"]:
+        raise ValueError("The candidate provenance must bind the paid held choice")
+    identity = dict(identity, route=planned["choice"]["route"], flags=list(PUBLICATION_FLAGS))
+    execution = dict(execution, identity=identity)
     scientific = science(target, receipt, clock, identity) if receipt["decision"] == "complete" else None
     report = target/"joint-research-receipt.json"
     research = read(report) if report.is_file() else {}
