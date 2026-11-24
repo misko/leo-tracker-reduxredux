@@ -212,9 +212,88 @@ def launch(root):
         raise ValueError(clock["stderr_tail"])
 
 
+def score(root, output):
+    from aperture_trial import read, write
+    from empty_bootstrap import bind_native
+    from joint_publication import artifacts
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from local_future_cli_trial import native_packet
+    from prospective_0316_solver import owner_delta
+    from raw_0016_best_score import position_sides
+    from short_raw_diagnostic import pairs
+    from triage_bounds import calibration_comparison
+
+    prediction = root/"prediction-seal.json"
+    if read(prediction) != seal(root):
+        raise ValueError("The selector or publication changed after the process seal")
+    mixed = bundle(MIXED, MIXED_SEAL, "candidate")
+    refined = bundle(REFINED, REFINED_SEAL, "candidate")
+    stock = bundle(MIXED, MIXED_SEAL, "stock")
+    assignment = json.loads(refined("admission.json"))
+    original = json.loads(mixed("detections.json"))
+    fixed_epoch = json.loads(refined("detections.json"))
+    previous = json.loads(refined("joint-research-receipt.json"))
+    detail, worker_result, external = (read(root/name) for name in ("choice.json", "worker.json", "clock.json"))
+    target = root/"candidate"
+    research = read(target/"joint-research-receipt.json")
+    selected = read(root/"selected-packet.json")
+    native = read(native_packet(target))
+    receipt = research["receipt"]
+    pin = detail["selected_recipe_sha256"]
+    bind_native(native, assignment["session"], assignment["inventory"], pin[7:], expected=detail["selected_native_sha256"])
+    if (selected != native or detail["pre_refinement_probes_sha256"] != canonical_digest(original["source"]["probes"])
+            or detail["input_native_sha256"] != canonical_digest(fixed_epoch) or selected["source"]["raw_recording_authority_digest"] != assignment["raw_authority"]
+            or worker_result["sources"] != pinned_sources() or worker_result["receipt"] != receipt
+            or external["clock"]["exit_code"] or worker_result["waveform_reads"] or worker_result["handoff_calls"] != 1):
+        raise ValueError("Selected packet and scientific publication do not bind the sealed inputs")
+    same_selected = native["source"]["probes"] == fixed_epoch["source"]["probes"]
+    if detail["choice"]["route"] == "unfiltered" and not same_selected:
+        raise ValueError("The unfiltered route changed which actual refined probe values passed")
+    science = pairs.evidence(target, receipt, external["clock"]["started_unix_ns"], read_only=True)
+    if science["raw_authority"] != assignment["raw_authority"]:
+        raise ValueError("Standard output does not bind the original recording")
+    figures = artifacts(target, receipt)
+    old = json.loads(refined("terminal.json"))
+    target_store = FastStandardAnalysisStore(target)
+    complete = receipt["decision"] == "complete"
+    sides, comparisons = None, {}
+    if complete:
+        sides = position_sides(target_store, receipt, figures, expected_points=None)
+        for arm in ARMS:
+            ordered = research["selected_rows"][arm]
+            if canonical_digest({oid: sat for oid, sat, _ in ordered}) != science["owners"][arm]:
+                raise ValueError("Ordered rows differ from the official ownership authority")
+        comparisons["ordered_owners"] = {arm: owner_delta(previous["selected_rows"][arm], research["selected_rows"][arm]) for arm in ARMS}
+        for name, read_document in (("grid", target_store.position_grid), ("path", target_store.position_path)):
+            current = read_document(receipt["run_id"])
+            older = json.loads(refined(f"position-{name}.json"))["document"]
+            allowed = {"binding", "elapsed_seconds"}
+            comparisons[f"exact_scientific_{name}"] = ({k: v for k, v in current.items() if k not in allowed}
+                                                        == {k: v for k, v in older.items() if k not in allowed})
+        comparisons["pngs_exact"] = {name: canonical_digest(item) == canonical_digest(previous["evidence"]["images"].get(name))
+                                      for name, item in figures["images"].items()}
+    elif figures != {"images": {}} or any(arm["latlon"] is not None for arm in science["arms"].values()):
+        raise ValueError("Withheld product must not contain figure or geographic estimates")
+    comparisons.update(same_selected_probes=same_selected, exact_positions_and_rf=science["arms"] == old["arms"],
+                       same_owner_digests=science["owners"] == (json.loads(refined("position-grid.json"))["document"]["binding"]["owner_sha256"]))
+    geographic = calibration_comparison({"current": science, "previous_refined": old, "previous_named": json.loads(stock("terminal.json"))}, "DS30-0016")
+    write(output, dict(raw_pair_status="admission_blocked", pre_score_sha256=digest(prediction.read_bytes()), choice=detail,
+                       selector=read(root/"selector-clock.json"), process=external, worker=worker_result,
+                       science=science, historical=dict(mixed_seal_sha256=MIXED_SEAL, refined_seal_sha256=REFINED_SEAL),
+                       comparison=comparisons, geographic=geographic, figures=figures, sidecars=sides,
+                       route=research["route"], solve=research["solve"], empty_family_calibration=research["empty_family_calibration"]))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("launch", "worker"))
+    cli.add_argument("mode", choices=("launch", "worker", "score"))
     cli.add_argument("root", type=Path)
+    cli.add_argument("--output", type=Path)
     args = cli.parse_args()
-    globals()[args.mode](args.root)
+    if args.mode == "score":
+        if args.output is None:
+            cli.error("score requires --output")
+        score(args.root, args.output)
+    else:
+        globals()[args.mode](args.root)
