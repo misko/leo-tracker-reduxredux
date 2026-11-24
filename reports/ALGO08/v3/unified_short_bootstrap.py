@@ -200,8 +200,12 @@ def run(args):
         raise ValueError("Direct figure rendering requires --one-pass-web-png")
     lane_mask = getattr(args, "short_lane_mask", None)
     eight_ms = getattr(args, "eight_ms_native_history", False)
-    if eight_ms and (lane_mask or getattr(args, "select_before_cfo", False) or not args.held_anchor_route):
+    whole_blocks = getattr(args, "whole_stereo_blocks", False)
+    if eight_ms and (whole_blocks or lane_mask or getattr(args, "select_before_cfo", False) or not args.held_anchor_route):
         raise ValueError("Native 8 ms requires the complete unrefined schedule and held-anchor routing")
+    if whole_blocks and (lane_mask or getattr(args, "held_anchor_route", False)
+                         or getattr(args, "select_before_cfo", False) or getattr(args, "packed_ci16_map", None)):
+        raise ValueError("Whole stereo scheduling requires the original unfiltered receiver and input reader")
     if lane_mask and getattr(args, "held_anchor_route", False):
         raise ValueError("The held-anchor selector requires measured outcomes on both donor lanes")
     if args.output.exists() or not args.output.parent.is_dir():
@@ -234,7 +238,16 @@ def run(args):
         effective_detector = canonical_digest(recipe).removeprefix("sha256:")
         mixer = StereoLaneReceiver(args.short_binary, SHORT_SHA, lane_mask)
     else:
+<<<<<<< HEAD
         mixer = MixedApertureDetector(args.short_binary, short_pin, full_coverage=True)
+=======
+        mixer = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True)
+    if whole_blocks:
+        from live_stereo_blocks import bind
+
+        recipe = bind(mixer, "sha256:" + RECIPE_SHA)
+        effective_detector = canonical_digest(recipe)[7:]
+>>>>>>> b9a51bdbb (Run the frozen whole stereo schedule in the original unfiltered receiver)
     frequency_changes = None
     if getattr(args, "select_before_cfo", False):
         if lane_mask or getattr(args, "held_anchor_route", False) or "fixed_epoch_cfo_refinement" not in recipe:
@@ -363,6 +376,8 @@ def run(args):
         dependencies += ("held_cycle_refined.py",)
     if lane_mask:
         dependencies += ("stereo_lane_schedule.py", "stereo_lane_receiver.py")
+    if whole_blocks:
+        dependencies += ("live_stereo_blocks.py",)
     if packed_audit is not None:
         dependencies += ("packed_combined_input.py", "seekable_member.py", "ci16_packing.py", "ci16_packing.c")
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
@@ -443,6 +458,8 @@ if __name__ == "__main__":
                         help="Use the pinned 8 ms primary with --held-anchor-route and no CFO tail")
     parser.add_argument("--short-lane-mask", choices=("quarter", "target"),
                         help="Skip a scheduled short antenna call while keeping both full anchors")
+    parser.add_argument("--whole-stereo-blocks", action="store_true",
+                        help="Keep each full anchor and two of every three unfiltered short stereo visits")
     parser.add_argument("--packed-ci16-map", type=Path, help="Private packed member map with sibling member directories")
     parser.add_argument("--packed-ci16-map-sha256", help="Trusted digest of the packed member map")
     parser.add_argument("--packed-ci16-codec", type=Path, help="Native codec library pinned by the map")
