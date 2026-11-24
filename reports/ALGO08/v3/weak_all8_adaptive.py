@@ -199,6 +199,14 @@ def score(root):
     if (research["publication"]["arms"] != original_arms or path != previous_path
             or adaptive["endpoint_latlon"] != original["endpoint_latlon"]):
         raise ValueError("Adaptation changed published estimates, diagnostics or path")
+    audit = quality(adaptive, original)
+    for arm, comparisons in audit["arms"].items():
+        low = comparisons["minimum"]+4.5
+        def count_low(layout):
+            return sum(row["scores"][arm] is not None and row["scores"][arm] <= low for row in layout["points"])
+
+        comparisons["full_low_nodes"] = count_low(original)
+        comparisons["retained_low_nodes"] = count_low(adaptive)
     images = {}
     for entry in research["publication"]["artifacts"]:
         digest, name = entry["sha256"], entry["name"]
@@ -223,11 +231,17 @@ def score(root):
                   owner_rows_sha256=canonical_digest(trace["selected_rows"]), roles=trace["selected_roles"],
                   positions=geography["scientific_arms"], named_owners=target["owner_counts"], named_factors=target["factors"],
                   cfo_tails=receive_tails(named_native, saved_native), decision=receipt["decision"],
-                  adaptive_grid={k:v for k,v in adaptive.items() if k != "points"}, audit=quality(adaptive, original),
+                  adaptive_grid={k:v for k,v in adaptive.items() if k != "points"}, audit=audit,
                   standard_grid_elapsed_s=original["elapsed_seconds"], images=images,
                   solve=published["solve"], render=published["layout"]["render"], raw_waveform_reads=0,
                   disjoint_saved_costs=disjoint(clock, observed["phases"], published["solve"], published["layout"]["render"]),
                   regional={k:v for k,v in trace["early_regional"][0]["result"].items() if k != "snapshots"})
+    proof = published["graph_proof"]
+    extent = proof["curvature_extent"]
+    output["no_active_curve_gate"] = dict(minimum_points=proof["minimum_points"], winning_rows=proof["winning_rows"],
+                                          proven=proof["proven"], curvature_extent={k:extent[k] for k in
+                                          ("largest_lane_span_s", "required_track_span_s", "proven")})
+    output["scorer_sha256"] = pin(Path(__file__))
     output["separate_clock_model"] = {key: budget(geography["original_v3"][key], geography["historical_raw_8ms_acquisition"][key],
                                                   clock[key], producer["build_clock"][key]) for key in ("elapsed_s", "cpu_s")}
     return output
@@ -237,8 +251,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("launch", "worker", "score"))
     parser.add_argument("root", type=Path)
+    parser.add_argument("--score-output", type=Path)
     args = parser.parse_args()
     if args.action == "score":
-        write(args.root/"result.json", score(args.root))
+        write(args.score_output or args.root/"result.json", score(args.root))
     else:
         (launch if args.action == "launch" else worker)(args.root)
