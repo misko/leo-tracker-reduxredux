@@ -38,9 +38,9 @@ MATCH = ("timeline_sha256", "probes_sha256", "issued", "admitted", "invalid", "v
 class ApertureWriter:
     """The existing capture writer's private payload backend for one seek table."""
 
-    def __init__(self, filename, level, records, costs):
-        self.paths = [filename.parent / name for name in seek.PART_FILES]
-        self.compressor = zstd.ZstdCompressor(level=level, write_checksum=True)
+    def __init__(self, filename, level, records, costs, codec=None):
+        self.paths = [filename.parent / name for name in seek.part_files(codec)]
+        self.compressor = zstd.ZstdCompressor(level=level, write_checksum=True) if codec is None else codec
         with ExitStack() as stack:
             self.files = [stack.enter_context(path.open("xb")) for path in self.paths]
             self.streams = stack.pop_all()
@@ -78,19 +78,22 @@ class ApertureWriter:
         self.streams.close()
 
 
-def capture(root, mode, template, windows):
+def capture(root, mode, template, windows, *, codec=None):
     from leo.storage import short_window
     from leo.storage.writer import _fsync_directory
 
     records, costs = [], Counter()
     def factory(filename, *, level):
-        return ApertureWriter(filename, level, records, costs)
+        return ApertureWriter(filename, level, records, costs, codec=codec)
 
     split = mode != "ordinary"
+    if not split and codec is not None:
+        raise ValueError("An independent codec requires the split capture layout")
+    level = LEVELS[mode] if codec is None else None
     start = clock()
     writer = short_window.ShortWindowWriter(root, "capture", configuration=template.configuration,
                                           radio=template.radio, receiver_ids=template.receiver_ids,
-                                          chunk_windows=len(windows), compression_level=LEVELS[mode],
+                                          chunk_windows=len(windows), compression_level=level if level is not None else 1,
                                           schema_version=2)
     try:
         # Reuse production CI16, metadata, per-window and whole SHA, and durable
@@ -114,7 +117,8 @@ def capture(root, mode, template, windows):
             raise ValueError("Split encoder returned incomplete capture coverage")
         manifest.rename(directory / "source-manifest.json")
         (directory / chunk.index_relative_path).rename(directory / "source-index.jsonl")
-        document = dict(schema=seek.SCHEMA, original_manifest=pin, original_index=chunk.index_sha256,
+        document = dict(schema=seek.SCHEMA if codec is None else codec.schema, original_manifest=pin,
+                        original_index=chunk.index_sha256,
                         chunk_index=0, records=records)
         seal = json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
         seek.write(directory / "seek.json", seal)
@@ -126,7 +130,7 @@ def capture(root, mode, template, windows):
                                 index_sha256=chunk.index_sha256, decoded_sha256=chunk.uncompressed_sha256,
                                 manifest_compressed_sha256=chunk.compressed_sha256,
                                 manifest_compressed_scope="prefix file" if split else "complete member",
-                                compression_level=LEVELS[mode])
+                                compression_level=level)
 
 
 def verified_source(ingress, hasher):
@@ -166,7 +170,7 @@ def qualified(acquisition):
     return valid_window_support(acquisition, 10_000_000, (seek.SAMPLES, 2, 2), (0, 1), FastScanPolicyV2())
 
 
-def analyze(directory, mode, pin, full, short, pilot, ingress, hasher):
+def analyze(directory, mode, pin, full, short, pilot, ingress, hasher, *, codec=None):
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_scan import FastSegmentSource
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
@@ -177,7 +181,7 @@ def analyze(directory, mode, pin, full, short, pilot, ingress, hasher):
     native = Counter()
     with ExitStack() as stack:
         if split:
-            reader = stack.enter_context(seek.open_member(directory, pin))
+            reader = stack.enter_context(seek.open_member(directory, pin, codec=codec))
             verify_started = clock()
             reader.verify_encoded()
             compressed_check = elapsed(verify_started)
@@ -234,7 +238,7 @@ def analyze(directory, mode, pin, full, short, pilot, ingress, hasher):
                 selected=sum(len(row["candidates"]) for row in probes), reads=reads)
 
 
-def full_recovery(directory, mode, pin, expected):
+def full_recovery(directory, mode, pin, expected, *, codec=None):
     from leo.storage.short_window import ShortWindowReader
 
     start = clock()
@@ -247,17 +251,18 @@ def full_recovery(directory, mode, pin, expected):
             matched.update(memoryview(window.samples).cast("B"))
         digest = "sha256:" + matched.hexdigest()
     else:
-        with seek.open_member(directory, pin) as reader:
+        with seek.open_member(directory, pin, codec=codec) as reader:
             digest = reader.verify_all()
     if digest != expected:
         raise ValueError("Full restoration differs from the original physical CI16")
     return dict(timing=elapsed(start), decoded=digest)
 
 
-def trial(root):
+def trial(root, *, orders=ORDERS, codecs=None, legacy_mode="split-level-1"):
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
 
     host = signed.check_machine()
+    codecs = {} if codecs is None else codecs
     if root.parent.resolve() != Path("/dev/shm"):
         raise ValueError("Expected a fresh tmpfs experiment")
     spec = json.loads(frozen.verified(frozen.PAYLOAD / "spec.json", frozen.SPEC_SHA))
@@ -270,6 +275,9 @@ def trial(root):
     ingress = frozen.frozen_function(spec, "receiver_ingress.py", "compressed_input_buffer")
     reader, windows, source = verified_source(ingress, hasher)
     setup_started = clock()
+    if codecs:
+        source["raw_word_range"] = [min(int(row.samples.min()) for row in windows),
+                                    max(int(row.samples.max()) for row in windows)]
     for module in ("leo.storage.fast_scan", "leo.scanner.fast_scan_analysis", "leo.contracts.fast_scan_native",
                    "tools.pipeline_eval.qualification.blind_compact_run"):
         import_module(module)
@@ -281,14 +289,19 @@ def trial(root):
     shared_setup = elapsed(setup_started)
     root.mkdir(mode=0o700)
     comparisons, recovery, baseline = [], {}, None
-    for order in ORDERS:
+    for order in orders:
         row = {}
         for mode in order:
+            codec = codecs.get(mode)
+            if codec is not None:
+                codec.blocks.clear()
             with TemporaryDirectory(dir=root, prefix=f"{mode}-") as temp:
                 begin = clock()
-                directory, pin, written = capture(Path(temp), mode, reader.manifest, windows)
-                first = analyze(directory, mode, pin, full, SHORT, pilot, ingress, hasher)
+                directory, pin, written = capture(Path(temp), mode, reader.manifest, windows, codec=codec)
+                first = analyze(directory, mode, pin, full, SHORT, pilot, ingress, hasher, codec=codec)
                 both = elapsed(begin)
+                if codec is not None:
+                    written["block_widths"] = codec.counts()
                 if (written["decoded_sha256"] != DECODED or written["index_sha256"] != INDEX
                         or first["issued"] != 64 or first["admitted"] + first["invalid"] != 64):
                     raise ValueError("Capture changed original bytes, metadata or eligibility")
@@ -298,21 +311,34 @@ def trial(root):
                 if outcomes != baseline:
                     raise ValueError("Storage representation changed first mixed detector evidence")
                 if mode not in recovery:
-                    recovery[mode] = full_recovery(directory, mode, pin, DECODED)
+                    recovery[mode] = full_recovery(directory, mode, pin, DECODED, codec=codec)
                 row[mode] = dict(capture=written, first_analysis=first, capture_to_first=both)
         comparisons.append(row)
 
     with TemporaryDirectory(dir=root, prefix="legacy-") as temp:
         sidecar = Path(temp) / "converted"
         legacy_cost = Counter()
+        codec = codecs.get(legacy_mode)
+        if codec is not None:
+            codec.blocks.clear()
         began = clock()
         with ingress(), paired_decoded_hashes(hasher):
-            legacy_pin = seek.create(reader, 0, sidecar, costs=legacy_cost)
+            legacy_pin = seek.create(reader, 0, sidecar, costs=legacy_cost, codec=codec)
         legacy_conversion = elapsed(began) | dict(legacy_cost)
-        legacy_recovery = full_recovery(sidecar, "split-level-1", legacy_pin, DECODED)
-    signed.freeze(root / "result.json", dict(host=host, source=source, orders=ORDERS, levels=LEVELS,
+        legacy_analysis = None
+        if codec is not None:
+            legacy_analysis = analyze(sidecar, legacy_mode, legacy_pin, full, SHORT, pilot, ingress, hasher, codec=codec)
+            if {key: legacy_analysis[key] for key in MATCH} != baseline:
+                raise ValueError("Legacy conversion changed the ordered data or signed receiver evidence")
+        legacy_recovery = full_recovery(sidecar, legacy_mode, legacy_pin, DECODED, codec=codec)
+        legacy_bytes = {path.name: path.stat().st_size for path in sidecar.iterdir()}
+    active_modes = orders[0]
+    signed.freeze(root / "result.json", dict(host=host, source=source, orders=orders,
+                levels={mode: LEVELS.get(mode) for mode in active_modes},
                 runs=comparisons, complete_recovery=recovery, legacy_conversion=legacy_conversion,
-                legacy_recovery=legacy_recovery, accepted_science=baseline, common_setup=shared_setup,
+                legacy_first_analysis=legacy_analysis, legacy_recovery=legacy_recovery, legacy_bytes=legacy_bytes,
+                accepted_science=baseline, common_setup=shared_setup,
+                native_codecs={mode: codec.programme() for mode, codec in codecs.items()},
                 decoder_version=zstd.ZSTD_VERSION,
                 source_pins={"full": spec["detector_sha256"], "short": signed.SHORT_SHA,
                              "paired_sha256": spec["paired_sha256"]["sha256"]}))

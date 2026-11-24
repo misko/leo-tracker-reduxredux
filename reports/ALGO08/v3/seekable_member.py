@@ -58,7 +58,11 @@ def write(path, content):
     path.chmod(0o400)
 
 
-def create(reader, chunk_index, output, *, costs=None):
+def part_files(codec):
+    return PART_FILES if codec is None else codec.part_files
+
+
+def create(reader, chunk_index, output, *, costs=None, codec=None):
     """Convert only a whole member after its ordinary decoded validation finishes."""
     manifest_bytes = (reader.path / "manifest.json").read_bytes()
     check(manifest_bytes, reader.manifest_sha256)
@@ -70,9 +74,10 @@ def create(reader, chunk_index, output, *, costs=None):
     output.mkdir(mode=0o700)
     write(output / "source-manifest.json", manifest_bytes)
     write(output / "source-index.jsonl", index_bytes)
-    compressor = zstd.ZstdCompressor(level=1, write_checksum=True)
+    compressor = zstd.ZstdCompressor(level=1, write_checksum=True) if codec is None else codec
     records = []
-    with (output / PART_FILES[0]).open("xb") as prefix, (output / PART_FILES[1]).open("xb") as tail:
+    names = part_files(codec)
+    with (output / names[0]).open("xb") as prefix, (output / names[1]).open("xb") as tail:
         original_windows = reader.windows(start_sequence=chunk.first_sequence,
                                           stop_sequence=chunk.first_sequence + chunk.window_count)
         for window, row in zip(original_windows, rows, strict=True):
@@ -92,9 +97,9 @@ def create(reader, chunk_index, output, *, costs=None):
         for file in (prefix, tail):
             file.flush()
             os.fsync(file.fileno())
-    for name in PART_FILES:
+    for name in names:
         (output / name).chmod(0o400)
-    root = dict(schema=SCHEMA, original_manifest=reader.manifest_sha256,
+    root = dict(schema=SCHEMA if codec is None else codec.schema, original_manifest=reader.manifest_sha256,
                 original_index=chunk.index_sha256, chunk_index=chunk_index, records=records)
     payload = json.dumps(root, sort_keys=True, separators=(",", ":")).encode()
     write(output / "seek.json", payload)
@@ -131,7 +136,7 @@ def read_metadata(root, name):
 
 
 class Reader:
-    def __init__(self, root, expected_pin):
+    def __init__(self, root, expected_pin, *, codec=None):
         self.files = []
         self.payload_bytes = self.decoded_bytes = 0
         self.metadata_bytes = self.frames = self.full_checks = 0
@@ -146,7 +151,7 @@ class Reader:
             seal, manifest_bytes, index_bytes = inputs
             check(seal, expected_pin)
             document = json.loads(seal)
-            if document["schema"] != SCHEMA:
+            if document["schema"] != (SCHEMA if codec is None else codec.schema):
                 raise ValueError("Unknown seekable member schema")
             check(manifest_bytes, document["original_manifest"])
             check(index_bytes, document["original_index"])
@@ -164,7 +169,7 @@ class Reader:
                     if type(size) is not int or not 0 < size <= MAX_FRAME or offset != totals[p]:
                         raise ValueError("Seek table extents overlap, reorder or omit bytes")
                     totals[p] += size
-            for name, total in zip(PART_FILES, totals, strict=True):
+            for name, total in zip(part_files(codec), totals, strict=True):
                 fd, identity, size = open_regular(root_fd, name, maximum=total)
                 self.files.append((fd, identity))
                 if size != total:
@@ -174,7 +179,8 @@ class Reader:
             raise
         finally:
             os.close(root_fd)
-        self.decoder = zstd.ZstdDecompressor()
+        self.codec = codec
+        self.decoder = zstd.ZstdDecompressor() if codec is None else None
 
     def close(self):
         self.verified_payloads = None
@@ -216,9 +222,12 @@ class Reader:
             else:
                 encoded = self.verified_payloads[i][offset:offset + size]
             expected = PART_BYTES[i]
-            if zstd.frame_content_size(encoded) != expected:
-                raise ValueError("Frame claims a different decoded extent")
-            raw = self.decoder.decompress(encoded, max_output_size=expected, allow_extra_data=False)
+            if self.codec is None:
+                if zstd.frame_content_size(encoded) != expected:
+                    raise ValueError("Frame claims a different decoded extent")
+                raw = self.decoder.decompress(encoded, max_output_size=expected, allow_extra_data=False)
+            else:
+                raw = self.codec.decode(encoded, expected)
             if len(raw) != expected:
                 raise ValueError("Frame returned a different decoded extent")
             check(raw, raw_pin)
@@ -243,8 +252,8 @@ class Reader:
 
 
 @contextmanager
-def open_member(root, pin):
-    reader = Reader(root, pin)
+def open_member(root, pin, *, codec=None):
+    reader = Reader(root, pin, codec=codec)
     try:
         yield reader
     finally:
