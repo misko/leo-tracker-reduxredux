@@ -16,6 +16,7 @@ import seekable_member as seek
 
 SCHEMA = "private-algo08-packed-input-map-v1"
 STRICT_EIGHT_SCHEMA = "private-algo08-strict-packed-eight-input-map-v1"
+VARIABLE_EIGHT_SCHEMA = "private-algo08-strict-packed-eight-input-map-v2"
 INPUT_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError)
 
 
@@ -28,9 +29,10 @@ def pin(text):
     return "sha256:" + value
 
 
-def member_map(content, *, strict_eight=False):
+def member_map(content, *, strict_eight=False, variable_extents=False):
     doc = json.loads(content)
-    if doc["schema"] != (STRICT_EIGHT_SCHEMA if strict_eight else SCHEMA):
+    schema = VARIABLE_EIGHT_SCHEMA if variable_extents else STRICT_EIGHT_SCHEMA
+    if doc["schema"] != (schema if strict_eight else SCHEMA):
         raise ValueError("Unknown packed input map schema")
     entries = {}
     for item in doc["members"]:
@@ -74,7 +76,8 @@ def load_input(config, temporary, audit, *, strict_eight=False):
     finally:
         os.close(directory)
     seek.check(content, digest)
-    binary_pin, mapping = member_map(content, strict_eight=strict_eight)
+    variable_extents = strict_eight and json.loads(content)["schema"] == VARIABLE_EIGHT_SCHEMA
+    binary_pin, mapping = member_map(content, strict_eight=strict_eight, variable_extents=variable_extents)
     binary_root = os.open(binary.parent.resolve(strict=True), os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         native = seek.read_metadata(binary_root, binary.name)
@@ -85,7 +88,7 @@ def load_input(config, temporary, audit, *, strict_eight=False):
     seek.write(verified, native)
     codec = ci16_packing.Packing(verified)
     audit.update(map_sha256=digest, codec=codec.programme(), mapped_members=len(mapping))
-    return root, mapping, codec
+    return root, mapping, codec, variable_extents
 
 
 def admit(reader, source, chunk):
@@ -122,7 +125,7 @@ def packed_source(scan, config, temporary, audit, *, strict_eight=False):
     started = now()
     audit.update(members=[], original_windows=0)
     try:
-        root, mapping, codec = load_input(config, temporary, audit, strict_eight=strict_eight)
+        root, mapping, codec, variable_extents = load_input(config, temporary, audit, strict_eight=strict_eight)
     except INPUT_ERRORS as error:
         if strict_eight:
             raise
@@ -132,6 +135,8 @@ def packed_source(scan, config, temporary, audit, *, strict_eight=False):
     audit.update(fallback=None, setup=spent(started))
     if strict_eight:
         audit["strict_packed_eight"] = True
+        if variable_extents:
+            audit["schema"] = VARIABLE_EIGHT_SCHEMA
         from seekable_eight_raw import CommittedSamples, PREFIX
         from mixed_aperture_receiver import NativePath
 
@@ -147,13 +152,16 @@ def packed_source(scan, config, temporary, audit, *, strict_eight=False):
 
             loads = {}
             for row in reader.rows:
+                samples = (CommittedSamples(reader, row.sequence, loads) if row.sample_count == seek.SAMPLES
+                           else SimpleNamespace(shape=(row.sample_count, 2, 2)))
                 yield SimpleNamespace(sequence=row.sequence, iq_sha256=row.iq_sha256, acquisition=row.acquisition,
                                       target=source.targets[row.target_id], receiver_ids=source.receiver_ids,
-                                      samples=CommittedSamples(reader, row.sequence, loads),
-                                      sample_rate_hz=reader.manifest.sample_rate_hz)
+                                      samples=samples, sample_rate_hz=reader.manifest.sample_rate_hz)
             record.update(state="strict-packed-eight", checks=reader.counts(), loads=loads,
                           original_decoded_sha256=reader.chunk.uncompressed_sha256,
                           encoded_blocks=reader.verified_encoded_frames)
+            if variable_extents:
+                record["empty_parts"] = reader.empty_parts
 
     original = scan.FastSegmentSource
 
@@ -188,7 +196,8 @@ def packed_source(scan, config, temporary, audit, *, strict_eight=False):
                 with ExitStack() as scope:
                     try:
                         reader = scope.enter_context(seek.open_member(root / name, seek_pin, codec=codec,
-                            prefix_samples=PREFIX if strict_eight else seek.PREFIX_SAMPLES))
+                            prefix_samples=PREFIX if strict_eight else seek.PREFIX_SAMPLES,
+                            variable_extents=variable_extents))
                         admit(reader, self, chunk)
                     except INPUT_ERRORS as error:
                         if strict_eight:
