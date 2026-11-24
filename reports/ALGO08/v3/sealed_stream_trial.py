@@ -84,7 +84,7 @@ def worker(path, case, arm, build, build_pin):
                 yield
 
     recipe = checked_recipe(eight_ms=True)
-    with installed_symbols(), scope:
+    with installed_symbols(), patch.object(live, "MEMBER", member), scope:
         acquired, probes = live.receive("unmasked", stage.EIGHT, manifest, ingress,
             create_mixer=lambda: MixedApertureDetector(stage.EIGHT, stage.EIGHT_SHA, full_coverage=True),
             detector_pin=canonical_digest(recipe))
