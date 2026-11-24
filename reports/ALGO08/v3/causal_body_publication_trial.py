@@ -5,8 +5,11 @@ from contextlib import contextmanager, nullcontext
 from hashlib import sha256
 import json
 from pathlib import Path
+from resource import RUSAGE_CHILDREN, getrusage
 import shutil
+import subprocess
 import sys
+from time import perf_counter, time_ns
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -89,7 +92,6 @@ def paired(root, preparation):
 
     sys.addaudithook(deny_backing)
     from exact_named_raw import staged_path, write
-    from short_raw_diagnostic import measure
 
     staged_path(root.parent)
     pre = json.loads(preparation.read_bytes())
@@ -115,6 +117,19 @@ def paired(root, preparation):
             raise RuntimeError(clock["stderr_tail"])
     write(root/"through-exit.json", measured)
     score(root, pre)
+
+
+def measure(command, env, destination):
+    before = getrusage(RUSAGE_CHILDREN)
+    started_ns, started = time_ns(), perf_counter()
+    with destination.with_suffix(".stdout").open("x") as stdout, destination.with_suffix(".stderr").open("x") as stderr:
+        child = subprocess.run(command, env=env, stdout=stdout, stderr=stderr, check=False)
+    elapsed = perf_counter() - started
+    after = getrusage(RUSAGE_CHILDREN)
+    return dict(started_unix_ns=started_ns, elapsed_s=elapsed, exit_code=child.returncode,
+                cpu_s=after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
+                input_blocks=after.ru_inblock-before.ru_inblock, major_faults=after.ru_majflt-before.ru_majflt,
+                stderr_tail=destination.with_suffix(".stderr").read_text()[-2500:])
 
 
 def os_environ(root):
