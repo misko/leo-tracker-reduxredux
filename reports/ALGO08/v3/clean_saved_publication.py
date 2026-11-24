@@ -40,13 +40,14 @@ def installed(bound, req, output):
            audit_name="worker.json")
 
 
-def routed(bound, req, root):
+def routed(bound, req, root, *, route_binding=None):
     import exact_named_route as exact
     import named_history_once as history
     from history_cairo_render import binding as layout
     from history_risk_route import binding as risk
 
     named, exact_ports, read = history.named_solve, exact.exact_ports, exact.read
+    active_route = risk if route_binding is None else route_binding
     result, render = dict(solves=[]), {}
     original_rank = None
 
@@ -71,7 +72,7 @@ def routed(bound, req, root):
                 if original_rank is None:
                     raise ValueError("Expected the original shared rank before installing exact ports")
                 result["solves"].append(trace := {})
-                with risk(reader, req["causal_cutoff_utc_ns"], trace, original_rank):
+                with active_route(reader, req["causal_cutoff_utc_ns"], trace, original_rank):
                     return ordinary(native, reader, assets, offer)
 
             with patch.object(algo08_scan, "solve", solve):
