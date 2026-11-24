@@ -148,7 +148,7 @@ def read_metadata(root, name):
 
 
 class Reader:
-    def __init__(self, root, expected_pin, *, codec=None, prefix_samples=PREFIX_SAMPLES):
+    def __init__(self, root, expected_pin, *, codec=None, prefix_samples=PREFIX_SAMPLES, parse_metadata=metadata):
         schema, self.parts = layout(prefix_samples, codec)
         self.files = []
         self.payload_bytes = self.decoded_bytes = 0
@@ -169,7 +169,7 @@ class Reader:
             check(manifest_bytes, document["original_manifest"])
             check(index_bytes, document["original_index"])
             self.manifest_sha256 = document["original_manifest"]
-            self.manifest, self.chunk, self.rows = metadata(
+            self.manifest, self.chunk, self.rows = parse_metadata(
                 manifest_bytes, index_bytes, document["chunk_index"],
             )
             self.records = document["records"]
@@ -266,8 +266,8 @@ class Reader:
 
 
 @contextmanager
-def open_member(root, pin, *, codec=None, prefix_samples=PREFIX_SAMPLES):
-    reader = Reader(root, pin, codec=codec, prefix_samples=prefix_samples)
+def open_member(root, pin, *, codec=None, prefix_samples=PREFIX_SAMPLES, parse_metadata=metadata):
+    reader = Reader(root, pin, codec=codec, prefix_samples=prefix_samples, parse_metadata=parse_metadata)
     try:
         yield reader
     finally:
