@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from reports.ALGO08.v3 import anchor_arrival_authority as audit
+from reports.ALGO08.v3.anchor_arrival_0010 import verified_owners
+from reports.ALGO08.v3.anchor_only_history import ARMS, seal
 
 
 def probe(visit, radio, epoch, fraction=0.0, hz=0.0):
@@ -53,3 +55,29 @@ def test_sealed_evidence_cannot_adjudicate_the_disputed_0049_owners_by_peer_timi
     last = case["owned_extras"][-1]
     assert last["short_before"] == last["short_after"] == 0
     assert max(map(abs, last["offset_fit_residuals"])) < 0.2
+
+
+def test_held_owner_join_rejects_duplicates_and_unknown_native_opportunities():
+    rows = {arm: [["sha256:observation", 70000, "conditional"]] for arm in ARMS}
+    digests = {arm: "sha256:" + seal({"sha256:observation": 70000}) for arm in ARMS}
+    counts = {arm: 1 for arm in ARMS}
+    assert verified_owners(rows, digests, {"sha256:observation"}, counts) == {
+        arm: {"sha256:observation"} for arm in ARMS
+    }
+    with pytest.raises(ValueError, match="official owner digest"):
+        verified_owners(rows, digests, {"sha256:foreign"}, counts)
+    rows["fitted_c"].append(rows["fitted_c"][0])
+    with pytest.raises(ValueError, match="official owner digest"):
+        verified_owners(rows, digests, {"sha256:observation"}, counts)
+
+
+def test_sealed_0010_transfer_keeps_detector_and_owner_evidence_boundaries():
+    path = Path(audit.__file__).parent / "measurements/anchor-arrival-0010.json"
+    result = json.loads(path.read_text())
+    assert result["exact_owner_rows"] == {"installed": False, "successor": True}
+    assert result["arrival"]["all_installed_positives"] == 863
+    assert result["phase_scope"]["also_installed"] == {"peer": 672, "compatible_with_both": 178, "exact": 828}
+    extras = result["arrival"]["owned_extras"]
+    assert len(extras) == 16 and sum(row["peer"] is not None for row in extras) == 12
+    assert sum(all(value is not None and abs(value) <= audit.PEER_SAMPLES for value in row["offset_fit_residuals"])
+               for row in extras) == 3
