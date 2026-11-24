@@ -42,7 +42,8 @@ def direct_ticks(ticks):
 def stock_special(figure):
     return dict(heading=figure._suptitle.get_text() if figure._suptitle else None,
                 axes=[limits(ax) | {"lines": lines(ax), "offsets": collections(ax),
-                                    "bars": [(bar.get_x(), bar.get_y(), bar.get_width(), bar.get_height())
+                                    "bars": [[float(value) for value in
+                                              (bar.get_x(), bar.get_y(), bar.get_width(), bar.get_height())]
                                              for bar in ax.patches if hasattr(bar, "get_height")]}
                       for ax in figure.axes], ticks=[visible_ticks(ax) for ax in figure.axes])
 

@@ -67,3 +67,20 @@ def test_shared_axis_witness_keeps_only_drawn_labels():
     FigureCanvasAgg(figure).draw()
     assert visible_ticks(first)[0] == []
     assert visible_ticks(last)[0] == [(0., "0.0"), (0.5, "0.5"), (1., "1.0")]
+
+
+def test_drawn_track_bar_witness_serializes_without_precision_loss():
+    import json
+    import numpy as np
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
+    from reports.ALGO08.v3.history_cairo_artists import stock_special
+
+    figure = Figure(figsize=(16, 6))
+    axes = figure.subplots()
+    axes.bar(np.arange(3), [10.25, 95.125, 3.625], bottom=np.int64(0))
+    assert isinstance(axes.patches[0].get_y(), np.integer)
+    FigureCanvasAgg(figure).draw()
+    restored = json.loads(json.dumps(stock_special(figure), allow_nan=False))
+    assert restored["axes"][0]["bars"][0] == [-0.4, 0., 0.8, 10.25]
