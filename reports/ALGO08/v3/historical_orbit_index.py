@@ -2,7 +2,6 @@
 
 import argparse
 from contextlib import contextmanager
-from dataclasses import replace
 from functools import partial
 from hashlib import sha256
 from inspect import unwrap
@@ -17,6 +16,7 @@ from unittest.mock import patch
 
 HOUR_NS = 3_600_000_000_000
 INPUTS_PIN = "d23c4b2470b9c81f9714633d430d63ee477980cfe4c96848acb7619693174e22"
+CAUSAL_PIN = "5076a2182ba9f551f54df78ba1dee53eb223e922d7aac86088fcd4cf429dc6a8"
 PARSER_PIN = "3146dcb19ec88ef5e03f0b29c04fa6773c3fd575aa2c22ccbbca6ddc6ca48143"
 EXPORTER_PIN = "43a57182525d1b04148981ba316046a6ffd36931d98132bdac24777eecbc998d"
 REGIONAL_PORT = "tools/pipeline_eval/variants/experimental/regional_bound_guard.py"
@@ -144,10 +144,10 @@ def phase_history(reader, elements, metadata, *, element_parser, export, distinc
 
 @contextmanager
 def elected_elements():
+    from leo.operations import causal_tle_catalogue as causal
     from leo.operations import localization_v3_inputs as inputs
-    from leo.sky.propagation import ElementSetCatalogue
 
-    causal, original_export = inputs.causal_catalogue, inputs.export_tle
+    catalogue_type, original_export = causal.ElementSetCatalogue, inputs.export_tle
     satellites, counts = {}, {"coarse_latest": 0, "distinct_scan_objects": 0}
 
     def materialize(pair):
@@ -157,13 +157,12 @@ def elected_elements():
             satellites[pair] = satellite
         return satellite
 
-    def latest(*args, **kwargs):
-        elected = causal(*args, **kwargs)
-        catalogue = elected.catalogue
-        counts["coarse_latest"] = len(catalogue)
-        actual = ElementSetCatalogue(catalogue.names, catalogue.satellite_numbers,
-                                     tuple(map(materialize, catalogue.satellites)))
-        return replace(elected, catalogue=actual)
+    def latest(names, numbers, pairs):
+        # Both installed and research exterior observers may capture the
+        # same causal result at different levels. Its original construction
+        # is the first point where all of them can receive native objects.
+        counts["coarse_latest"] = len(pairs)
+        return catalogue_type(names, numbers, tuple(map(materialize, pairs)))
 
     def export(value):
         return original_export(materialize(value) if type(value) is tuple else value)
@@ -172,7 +171,7 @@ def elected_elements():
         return phase_history(reader, elements, metadata, element_parser=element_parser,
                              export=export, distinct=inputs.distinct_epochs)
 
-    with (patch.object(inputs, "causal_catalogue", latest), patch.object(inputs, "export_tle", export),
+    with (patch.object(causal, "ElementSetCatalogue", latest), patch.object(inputs, "export_tle", export),
           patch.object(inputs, "prepare_phase_history", past)):
         yield counts
     counts["distinct_scan_objects"] = len(satellites)
@@ -180,11 +179,13 @@ def elected_elements():
 
 def installed_guard():
     from empty_bootstrap import PAYLOAD, RELEASE
+    from leo.operations import causal_tle_catalogue as causal
     from leo.operations import localization_v3_inputs as inputs
     from sgp4 import exporter
     from tools.pipeline_eval.variants import algo08_causal_reuse as installed
 
     paths = ((Path(inputs.__file__).resolve(), RELEASE/"src/leo/operations/localization_v3_inputs.py", INPUTS_PIN),
+             (Path(causal.__file__).resolve(), RELEASE/"src/leo/operations/causal_tle_catalogue.py", CAUSAL_PIN),
              (Path(installed.__file__).resolve(), PAYLOAD/"tools/pipeline_eval/variants/algo08_causal_reuse.py", PARSER_PIN),
              (Path(exporter.__file__).resolve(), RELEASE/"venv/lib/python3.12/site-packages/sgp4/exporter.py", EXPORTER_PIN))
     return installed.accelerated and all(path == expected and sha256(path.read_bytes()).hexdigest() == pin

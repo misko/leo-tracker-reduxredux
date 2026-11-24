@@ -138,24 +138,42 @@ def test_guard_restores_the_original_ports_for_the_original_error(error, monkeyp
         assert len(reads) == 1
 
 
-def test_latest_materializes_at_the_causal_return_port(monkeypatch):
-    from leo.operations import localization_v3_inputs as inputs
-    from leo.operations.causal_tle_catalogue import CausalCatalogue
-    from leo.sky.propagation import ElementSetCatalogue
+def test_both_causal_observers_receive_native_objects_and_same_exterior_proof():
+    import numpy as np
+    from leo.operations.causal_tle_catalogue import causal_catalogue
+    from leo.sky.propagation import parse_element_sets
+    from sgp4.api import Satrec, SatrecArray
+    from tests.operations.test_causal_tle_catalogue import at_day
 
-    class Satrec:
-        @staticmethod
-        def twoline2rv(*pair):
-            return SimpleNamespace(signed_lines=pair)
+    text = at_day(232.5)
+    epoch, = parse_element_sets(text).element_epoch_utc_ns()
+    cutoff = epoch + 500
+    snapshot = SimpleNamespace(collected_utc_ns=cutoff, sha256="a", digest="sha256:a", provider="space-track",
+                               text=text, byte_size=len(text))
+    reader = SimpleNamespace(list_snapshots=lambda provider: [snapshot], read=lambda ref: ref.text)
+    expected = causal_catalogue(reader, cutoff)
+    original = expected.catalogue.satellites[0]
 
-    rows = ElementSetCatalogue(("STARLINK",), (3,), (("one", "two"),))
-    selected = CausalCatalogue(rows, ({"norad": 3},), 5)
-    monkeypatch.setattr(inputs, "Satrec", Satrec)
-    monkeypatch.setattr(inputs, "causal_catalogue", lambda: selected)
+    def exterior(result):
+        states = SatrecArray(result.catalogue.satellites).sgp4(np.array([original.jdsatepoch]),
+            np.array([original.jdsatepochF + .01]))
+        return tuple(x.tobytes() for x in states)
+
+    captures = []
+
+    def observe(call):
+        def capture(*args, **options):
+            result = call(*args, **options)
+            assert type(result.catalogue.satellites[0]) is Satrec
+            captures.append(exterior(result))
+            return result
+        return capture
+
+    source = trial.VerifiedIndexReader(reader, SourceIndex())
     with trial.elected_elements() as audit:
-        caught_by_regional_wrapper = inputs.causal_catalogue()
-        assert caught_by_regional_wrapper.catalogue.satellites[0].signed_lines == ("one", "two")
-        assert caught_by_regional_wrapper.provenance == selected.provenance
+        caught = observe(observe(causal_catalogue))(source, cutoff, element_parser=source.parse)
+        assert caught.provenance == expected.provenance
+    assert captures == [exterior(expected)]*2
     assert audit == {"coarse_latest": 1, "distinct_scan_objects": 1}
 
 
