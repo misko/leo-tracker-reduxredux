@@ -6,11 +6,13 @@ from hashlib import sha256
 import json
 from math import isfinite
 from pathlib import Path
+import sys
 
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 from attested_visit_detector import CASES, CURRENT, duration, pin, pinned, replay
 
 
-HERE = Path(__file__).resolve().parent
 ARCHIVED = Path("/tmp/leo-ds30-partial-window-detector01")
 SPARSE = Path("/tmp/leo-v3-short-rank-transfer-DS30-0016-01/sparse/use.so")
 DONORS = HERE / "measurements/receiver-mix-budget.json"
