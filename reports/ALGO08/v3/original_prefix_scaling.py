@@ -144,7 +144,19 @@ def detection_hook(root, live, windows, scientific_imports, immutable_json):
     return publish
 
 
-def worker(root, binding, size, *, entrypoint=None):
+def bound_source(source, entry, stop):
+    """Set the prefix frontier before the released class receives lookahead."""
+    ordinary = source.__init__
+
+    def initialize(segment, item, **options):
+        if item != entry or options:
+            raise ValueError("Unexpected signed acquisition segment or range for the exact prefix")
+        ordinary(segment, item, stop_sequence=stop)
+
+    return patch.object(source, "__init__", initialize)
+
+
+def worker(root, binding, size, *, entrypoint=None, preserve_lookahead=False):
     import empty_bootstrap as boot
     from exact_named_raw import staged_path
     import legacy_first_map_entry as entry
@@ -155,6 +167,7 @@ def worker(root, binding, size, *, entrypoint=None):
     options = list(binding["candidate_options"])
     for flag, value in (("--recording", source), ("--output", root)):
         options[options.index(flag) + 1] = str(value)
+    args = entry.parser().parse_args(options) if entrypoint is None else None
     live = {}
     load, staged = boot.load_runtime, boot.staged_scanner
     with ExitStack() as patches:
@@ -173,7 +186,10 @@ def worker(root, binding, size, *, entrypoint=None):
                     raise ValueError("Only the predeclared prefix metadata may enter the scanner")
                 return assigned["session"], assigned["digest"], assigned["inventory"]
 
-            patches.enter_context(patch.object(scan, "FastSegmentSource", Prefix))
+            if preserve_lookahead:
+                patches.enter_context(bound_source(original, assigned["inventory"]["segments"][0], assigned["stop"]))
+            else:
+                patches.enter_context(patch.object(scan, "FastSegmentSource", Prefix))
             patches.enter_context(patch.object(scan.FastScanStore, "inventory", inventory))
 
             def observed(*args):
@@ -183,7 +199,7 @@ def worker(root, binding, size, *, entrypoint=None):
                 finally:
                     live["receiver_acquire"] = boot.clock(started)
 
-            if entrypoint is not None:
+            if entrypoint is not None and not preserve_lookahead:
                 patches.enter_context(patch.object(scan, "acquire", observed))
             return scan
 
@@ -254,7 +270,7 @@ def worker(root, binding, size, *, entrypoint=None):
         patches.enter_context(patch.object(boot, "load_runtime", loaded))
         try:
             if entrypoint is None:
-                entry.run(entry.parser().parse_args(options))
+                entry.run(args)
             else:
                 with patch.object(sys, "argv", [__file__, *options]):
                     entrypoint()
