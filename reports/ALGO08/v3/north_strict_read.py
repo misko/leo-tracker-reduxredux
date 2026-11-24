@@ -140,10 +140,11 @@ def transform(root, clip, observed):
 
 
 def run(root):
-    from adaptive_raw_trial import prepare, launch, work, tmpfs
+    from adaptive_raw_trial import launch, prepare, work
     from aperture_trial import write
     from current_north_control import run as named
     from dense_geographic_trial import host
+    from north_held_anchor_pair import tmpfs
 
     machine = host()
     tmpfs(root.parent)
