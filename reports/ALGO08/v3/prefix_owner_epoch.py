@@ -41,10 +41,21 @@ def score_hypotheses(observed, dt, train, held, models, period):
     return dict(shift_s=shift, held_rms_samples=float(np.sqrt(np.mean(residual[held]**2))))
 
 
+def satellite_positions(satellite, utc, shift_s):
+    from leo.sky.frames import greenwich_mean_sidereal_time_rad, julian_day_from_utc_ns, teme_to_ecef
+
+    jd, fraction = julian_day_from_utc_ns(utc + round(shift_s * 1e9))
+    errors, position, velocity = satellite.sgp4_array(jd, fraction)
+    if np.any(errors):
+        raise ValueError("Unusable SGP4 state in the frozen challenge")
+    earth_jd, earth_fraction = julian_day_from_utc_ns(utc)
+    angle = greenwich_mean_sidereal_time_rad(earth_jd, earth_fraction)
+    return teme_to_ecef(position, velocity, angle)[0]
+
+
 def compare(documents, binding):
     from leo.analysis.localization_v3.region import SearchRegion
     from leo.operations.causal_tle_catalogue import causal_catalogue
-    from leo.operations.scan_position_inputs import _propagate
     from leo.operations.tle_archive import TleArchiveReader
     from leo.sky.frames import geodetic_to_ecef_km
     from tools.pipeline_eval.qualification.paired_publication import archive_identity
@@ -101,7 +112,7 @@ def compare(documents, binding):
         dt = np.diff(times)
         clock = score_hypotheses(code, dt, train, held, [(0, np.zeros_like(dt))], period)
         lane["clock_rms_samples"] = clock["held_rms_samples"]
-        states = {i: [(shift, _propagate(sat, utc, shift)[0]) for shift in (-3, 0, 3)]
+        states = {i: [(shift, satellite_positions(sat, utc, shift)) for shift in (-3, 0, 3)]
                   for i, sat in satellites.items()}
         for site in sites:
             scores = {}
