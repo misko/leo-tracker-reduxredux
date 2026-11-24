@@ -22,6 +22,10 @@ Both single-core processes started from stored waveforms, used the same 1,200 sc
 
 The earlier installed control on these waveforms took 16.133 s, giving 1.644× for the ready archive. Against the fresh control the candidate still needs to save **1.183 s** to reach 2×. The packed payload occupied 1.586 GB versus 1.579 GB for the original. The reader saved decoding work by accessing short observation windows separately. The total speedup also includes changing the detector, solver and renderer. [Reader and solver clocks](north-strict-read.md)
 
+Running ALGO08v3 first on the same simulation gave **18.757 → 10.544 s (1.779×)**. Adding the one-time 8.258 s conversion to this repeat gives 18.802 s, or 0.998× the fresh control. The two candidate clocks give **1.530–1.644×** against the earlier 16.133 s baseline. Both fresh pairs cleared 1.6× with prebuilt input. Neither reached 2×. These repetitions cover one location and one recording. [Reversed order and independent verification](north-strict-reverse.md)
+
+On 64 visits from the same simulation, a prototype wrote a split archive directly from the original sample words, then verified the complete payload in **365 ms**, versus **436 ms** for the ordinary writer and full readback. That measurement ends before detection. Reading a full recording written in this format requires a reader that can authenticate the writer's own multi-member manifest. [Writer experiment](north-owned-capture.md)
+
 | Horizontal error and frequency residuals | ALGO08v3, zero / fitted calibration | Candidate, zero / fitted calibration |
 |---|---:|---:|
 | Horizontal error | 105.7 / 140.8 m | 112.0 / 128.1 m |
@@ -44,6 +48,8 @@ The next solver experiment kept the original satellite selection, repairs, fits,
 On the first recording the saved speedup was **1.55×**. Across the first two, total time fell **34.357 → 27.217 s** (**1.26×**), with **1.28×** by the median paired ratio. Adding the prospectively selected 6,770-visit DS30-0374 brought the totals to **62.681 → 50.847 s** (**1.23×**), with **1.20×** by the median paired ratio. Both solvers fixed 3/3. DS30-0160 avoided repeating a fit after recovering a missing prior orbit. DS30-0316 took the ordinary inference path and had no such retry. These cases differ in how much work the solver can reuse.
 
 With DS30-0402 included, both solvers fixed **4/4**. Total elapsed fell from **136.033 to 117.050 s**, a **1.162×** speedup. The median within-recording candidate/v3 time ratio was **0.868** and the summed ratio was **0.860**, against a target of 0.500. DS30-0402 was already a development case. Its constrained optimization ran 393 visits across ten fits. An earlier configuration checked the fitted arm first and used a wider compiled likelihood, preserving the same science in **49.712 s** on this recording. The four-case comparison uses the same frozen solver on every recording. [Four-case results](exact-named-0402.md) · [Earlier DS30-0402 configuration](wide-private-0402.md)
+
+![Paired saved-detector runtimes on four physical recordings and cumulative position error for the four shared fixes in each calibration arm](development/exact-named-four.png)
 
 The candidate launches could use the same prebuilt orbit index. Its signed digest and producer match the independently timed **4.320 s** build. Charging that build once across the three completed runs gives **55.168 s**, or **1.14×** versus named v3. DS30-0316 also incurred a 1.127 s rejected startup before its legacy manifest path convention was corrected. Including both that startup and the index gives **56.295 s**, or **1.11×**. The candidate reused four indexed catalogue bodies on DS30-0160 and zero on DS30-0316. [Index build clock](weak-all8-adaptive.md) · [Per-case activation](exact-named-route.md)
 
