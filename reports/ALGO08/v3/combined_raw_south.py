@@ -1,8 +1,10 @@
 """Replay the exact North raw combination on the original South containing offer."""
 
 import argparse
+from collections import Counter
 from hashlib import sha256
 import json
+from math import sqrt
 from pathlib import Path
 import subprocess
 import sys
@@ -99,7 +101,42 @@ def run(root):
     score(root)
 
 
-def score(root):
+def probe_delta(previous, current):
+    old, new = (document["source"]["probes"] for document in (previous, current))
+    changed, maximum, cfo, radios = Counter(), {}, [], Counter()
+    opportunity_changes = support_changes = 0
+    for left, right in zip(old, new, strict=True):
+        opportunity_changes += dict(left, candidates=[]) != dict(right, candidates=[])
+        support_changes += len(left["candidates"]) != len(right["candidates"])
+        for a, b in zip(left["candidates"], right["candidates"]):
+            for name in a.keys() | b.keys():
+                x, y = a.get(name), b.get(name)
+                if x != y:
+                    changed[name] += 1
+                    if type(x) in (int, float) and type(y) in (int, float):
+                        maximum[name] = max(maximum.get(name, 0), abs(x-y))
+                    if name == "fractional_tracking_cfo_hz":
+                        cfo.append(x-y)
+                        radios[right["receiver_id"]] += 1
+    return dict(opportunities=len(old), changed_opportunity_metadata=opportunity_changes,
+                changed_selected_counts=support_changes, differing_fields=dict(changed), maximum_absolute_delta=maximum,
+                changed_cfo_by_radio=dict(radios), changed_cfo_rms_hz=sqrt(sum(d*d for d in cfo)/len(cfo)) if cfo else 0.)
+
+
+def owner_delta(previous, current):
+    result = {}
+    for arm, rows in current.items():
+        old = {identity: (norad, role) for identity, norad, role in previous[arm]}
+        new = {identity: (norad, role) for identity, norad, role in rows}
+        common = old.keys() & new.keys()
+        result[arm] = dict(previous=len(old), current=len(new), common=len(common),
+                           changed_common_owners=sum(old[i][0] != new[i][0] for i in common),
+                           changed_common_roles=sum(old[i][1] != new[i][1] for i in common),
+                           removed=sorted(old.keys() - new.keys()), added=sorted(new.keys() - old.keys()))
+    return result
+
+
+def score(root, output=None):
     from aperture_trial import read, write
     from empty_bootstrap import bind_native, checked
     from joint_publication import artifacts
@@ -111,10 +148,11 @@ def score(root):
     from tools.pipeline_eval.scoring import distance_km
 
     binding, clock = (read(root / (name + ".json")) for name in ("binding", "clock"))
+    output = root / "result.json" if output is None else output
     request = binding["request"]
     before, after = (read(root / f"cache-{state}.json") for state in ("before", "after"))
     if clock["exit_code"]:
-        write(root / "result.json", dict(completed=False, clock=clock, before=before, after=after, binding=binding))
+        write(output, dict(completed=False, clock=clock, before=before, after=after, binding=binding))
         return
     old = json.loads(checked(SOUTH / "result.json", SOUTH_RESULT))
     target = root / "containing"
@@ -160,12 +198,17 @@ def score(root):
                   and transfers[0]["counts"]["sidecar_hit_bodies"] == binding["producer"]["overlapping_bodies"],
                   block_rank=rank["requested"] and rank["status"] == "compacted")
     errors = {arm: distance_km(old["truth"], row["latlon"]) for arm, row in one["arms"].items()}
-    write(root / "result.json", dict(completed=True, checks=checks, clock=clock, old_clock=archived["clock"],
+    changed_figures = [name for name, image in current["figures"].items()
+                       if canonical_digest(image) != canonical_digest(archived["media"]["images"][name])]
+    write(output, dict(completed=True, checks=checks, clock=clock, old_clock=archived["clock"],
           historical_named=archived["named_historical"], old_quality=archived["arms"], named_quality=archived["named"],
           old_terminal_sha256=archived["receipt"]["terminal_sha256"], new_native_sha256=raw["native_sha256"],
           old_native_sha256=old["seal"]["native_sha256"], phases=raw["phases"], old_phases=old["raw"]["phases"],
           solve=research["solve"], diagnostic=research["route_details"].get("reason"), current=current, error_km=errors,
           before=before, after=after, binding=binding, orbit=orbit, rank=rank,
+          old_proof=archived["early"], acquisition_selection=raw["held_anchor_route"],
+          probe_delta=probe_delta(previous, native), owner_delta=owner_delta(old_research["selected_rows"], research["selected_rows"]),
+          changed_figures=changed_figures, png_read_verification=raw["verified_png_reads"],
           reference_sha256=SOUTH_RESULT, driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
 
 
@@ -174,5 +217,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("run", "score"))
     parser.add_argument("root", type=Path)
+    parser.add_argument("--receipt", type=Path, help="Write a separate archive-only comparison")
     args = parser.parse_args()
-    (run if args.mode == "run" else score)(args.root)
+    if args.mode == "run":
+        if args.receipt is not None:
+            parser.error("--receipt applies only to score")
+        run(args.root)
+    else:
+        score(args.root, args.receipt)
