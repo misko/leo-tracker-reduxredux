@@ -18,6 +18,23 @@ Both the median of paired candidate-to-v3 time ratios and the ratio of summed ti
 
 Even making the entire interval after detections instantaneous gives at most **1.46× on the paired median and 1.54× on the summed gate**. Conversely, work before detections includes launch, file access, verification and publication of the native packet as well as the two-scan detector. A 2.4× improvement to a detector kernel alone would save only its share of this interval.
 
+### A throughput target for small receiver trials
+
+An intake benchmark can express the same budget in **original compressed megabytes per second through publication of detections**. That boundary pays for reading input, integrity checks, native detection and writing the packet. The original v3 processes achieved **110.3 MB/s** in aggregate across the 95 partitioned cases. Cases with at most 1% of input pages already resident averaged **94.3 MB/s**, and cases with at least 99% resident averaged **173.3 MB/s**. The absolute rates use decimal MB and weight each group by its measured elapsed time.
+
+For the 95 partitioned jobs, this model charges an optional startup cost, the compressed input size divided by a uniform effective rate, and the original post-detection interval divided by the assumed speedup. The other five jobs retain their full measured wall times in both denominators and in the modeled candidate total. Actual software cannot select those five jobs in advance from their eventual failure status. Holding their cost fixed is an accounting scenario. It differs from the stage-split bounds above.
+
+| Assumed speedup after detections | Intake rate needed with no separate startup | Intake rate needed with 0.50 s startup per partitioned case |
+|---:|---:|---:|
+| 1.00× | 475.7 MB/s | 490.5 MB/s |
+| 1.50× | **283.1 MB/s** | **288.3 MB/s** |
+| 1.60× | 269.5 MB/s | 274.2 MB/s |
+| 2.00× | 235.5 MB/s | 239.0 MB/s |
+
+The summed-time gate sets the threshold in all four rows. For scale, the 991.735 MB original DS30-0016 recording reached detections at **217.3 MB/s** on first use and **267.0 MB/s** with its replay indexes ready, including startup in both rates. The one-case clocks used resident input. The modeled target is a panel-wide rate with its stated post-detection assumption. [Original-file timing](legacy-first-use-original-panel.md) · [Prepared reader comparison](legacy-map-writer-0016.md)
+
+The historical cache observer counted pages for each original compressed member. We recovered exact sizes for 55 recordings from the earlier signed extent ledger. For the remaining 45 we bounded each rounded-up final page between one byte and a full page. Across all 100 jobs the original payloads total **788.684–788.703 GB**. Propagating both ends of that interval changes the 288.3 MB/s target by less than 0.01 MB/s. No waveform was reopened. [Original page-count implementation](../../../tools/pipeline_eval/qualification/cache_residency.py) · [55 exact recording sizes](measurements/acquisition-throughput.json) · [100-case throughput calculation](release_intake_rate.py) · [Per-record bounds and gates](measurements/release-intake-rate.json)
+
 ### Single-core CPU and file residency
 
 The historical processes spent **73.6% of summed elapsed time on CPU**. If each process used half as much CPU and its remaining elapsed time stayed constant, the paired median and summed elapsed speedups would both be **1.58×**. Under this assumption a **3.12× reduction in CPU time** would meet both elapsed gates. Elapsed time outside CPU can include scheduler delays and input waits. Streaming or changing the access pattern can affect both components.
