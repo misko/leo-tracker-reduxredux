@@ -5,10 +5,12 @@ import gzip
 from hashlib import sha256
 import json
 from pathlib import Path
+import sys
 from time import process_time
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from curvature_filter import independent_bound
 from curvature_filter_trial import CONTROLS, DENSE, DENSE_COLD, HERE, SOUTH_RAW, write_seal
 
