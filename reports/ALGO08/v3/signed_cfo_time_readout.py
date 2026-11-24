@@ -75,6 +75,11 @@ def candidate(case):
         raw = document(folder/"unified-short-bootstrap.json")
         input_sha = result["native_sha256"]
         offer = result["raw_identity"]["region_sha256"]
+    return qualified_candidate(folder, raw, input_sha, offer)
+
+
+def qualified_candidate(folder, raw, input_sha, offer):
+    """Bind a selected publication to the frozen unfiltered 20/8 native recipe."""
     witness = document(folder/"exact-named-raw-witness.json")
     held = raw["held_anchor_route"]
     native = read_native(folder, input_sha)
