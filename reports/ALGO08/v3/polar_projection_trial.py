@@ -58,17 +58,21 @@ def recorded_scene(checked):
         data = json.loads(packet["document"].item())
         bank = {key: packet[key] for key in ("time_s", "position_km", "velocity_km_s")}
     source = json.loads(checked(OFFER, OFFER_SHA))["receipt"]["region"]
-    # The prespecified common rows with a previously audited alternative. Only
-    # the identity roster and its two actual phase vectors enter this check.
-    rows = data["layouts"]["changed_only"]
-    times = np.concatenate([item["times"] for item in rows["rows"]])
-    observed = np.concatenate([item["values"] for item in rows["rows"]])
-    rf = np.repeat([item["rf_ratio"] for item in rows["rows"]], [len(item["times"]) for item in rows["rows"]])
-    labels = np.array(rows["labels"][0], dtype=np.intp)
+    # The previously audited alternative contains RX1 tracks only. Enroll the
+    # first RX2 track in the unchanged, signed common roster as well.
+    common, whole = (data["layouts"][key] for key in ("changed_only", "whole"))
+    peer = whole["receivers"].index(2)
+    boundaries = np.r_[0, np.cumsum([len(row["times"]) for row in whole["rows"]])]
+    rows = [*common["rows"], whole["rows"][peer]]
+    peer_labels = whole["labels"][0][boundaries[peer]:boundaries[peer+1]]
+    times = np.concatenate([item["times"] for item in rows])
+    observed = np.concatenate([item["values"] for item in rows])
+    rf = np.repeat([item["rf_ratio"] for item in rows], [len(item["times"]) for item in rows])
+    labels = np.array([*common["labels"][0], *peer_labels], dtype=np.intp)
     phases = {arm: np.asarray(data["states"][arm][0]["posterior"], dtype=np.float64) for arm in ARMS}
-    if times.shape != labels.shape or times.shape != observed.shape or set(rows["receivers"]) != {1, 2}:
+    if times.shape != labels.shape or times.shape != observed.shape or set(common["receivers"]) != {1}:
         raise ValueError("The signed common observation roster changed")
-    return bank, source, phases, (times, observed, rf, labels), len(rows["rows"])
+    return bank, source, phases, (times, observed, rf, labels), len(rows)
 
 
 def prepared_scan(region, screen, bank, all_times):
@@ -196,6 +200,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("receipt", type=Path)
     args = parser.parse_args()
+    result = experiment()
     with args.receipt.open("x") as stream:
-        json.dump(experiment(), stream, indent=2, sort_keys=True, allow_nan=False)
+        json.dump(result, stream, indent=2, sort_keys=True, allow_nan=False)
         stream.write("\n")
