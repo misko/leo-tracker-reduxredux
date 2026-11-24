@@ -2,7 +2,8 @@ import pytest
 
 from PIL import Image
 
-from reports.ALGO08.v3.ds30_oracle_routing import coverage, frozen_order, included_prefix, meets, optimize, render_figure
+from reports.ALGO08.v3.ds30_oracle_routing import (candidate_time_fraction_for_twofold, coverage, frozen_order,
+                                                    included_prefix, meets, optimize, render_figure)
 
 
 def row(case, elapsed, c0, fitted, *, fix=None):
@@ -82,3 +83,13 @@ def test_route_figure_uses_all_feasible_and_infeasible_choices(tmp_path):
     with Image.open(png) as image:
         assert image.format == "PNG"
         image.verify()
+
+
+def test_uniform_additional_saving_must_pass_both_clocks_with_positive_candidate_times():
+    pairs = [(row(str(i), 10, 0, 0), row(str(i), b, 0, 0)) for i, b in enumerate((1., 2., 4., 8.))]
+    assert candidate_time_fraction_for_twofold(pairs, 3) is None
+    assert candidate_time_fraction_for_twofold(pairs, 7) == 1.
+    assert candidate_time_fraction_for_twofold(pairs, 14) == pytest.approx(10 / 14)
+    # A small baseline on the fallback case leaves summed headroom, but the median still binds.
+    pairs[0][0]["elapsed_s"] = .5
+    assert candidate_time_fraction_for_twofold(pairs, 14) == pytest.approx(1 / (.4 + .8))

@@ -2,6 +2,7 @@
 
 import argparse
 from collections import Counter
+import gzip
 from hashlib import sha256
 import json
 from math import fsum
@@ -166,6 +167,51 @@ def clocks(pairs, route):
     return metrics
 
 
+def candidate_time_fraction_for_twofold(pairs, route):
+    """Largest fraction of candidate wall time affordable with outputs and fallback clocks fixed."""
+    selected = [pair for i, pair in enumerate(pairs) if route & (1 << i)]
+    if len(selected) <= len(pairs) // 2:
+        return None
+    installed_total = fsum(a["elapsed_s"] for a, _ in pairs)
+    retained = fsum(a["elapsed_s"] for i, (a, _) in enumerate(pairs) if not route & (1 << i))
+    allowance = installed_total / 2 - retained
+    if allowance <= 0:
+        return None
+    sum_fraction = allowance / fsum(b["elapsed_s"] for _, b in selected)
+    ratios = sorted(b["elapsed_s"] / a["elapsed_s"] for a, b in selected)
+    # At the half-time boundary both middle ratios are below the fixed fallback ratio of one.
+    # For an even panel, one fallback and one positive candidate ratio would average above 0.5.
+    low, high = (len(pairs) - 1) // 2, len(pairs) // 2
+    median_fraction = 1 / (ratios[low] + ratios[high])
+    return min(1., sum_fraction, median_fraction)
+
+
+def additional_speed_budget(receipt):
+    """Optimize both timing gates under uniform additional candidate acceleration on the sealed panel."""
+    data = gzip.decompress(receipt.read_bytes())
+    pin = digest(data)
+    if pin != "sha256:12e9dad9e2ded14f14ea9d029e73644ab91facf744b434f0d8a5dd9c69912828":
+        raise ValueError("Unexpected original routing receipt")
+    pairs = [(row["installed"], row["successor"]) for row in json.loads(data)["measurements"]]
+    answer = {"original_routing_receipt": pin, "panels": {}}
+    for name, groups in (("strict", coverage(pairs, None)), ("one_and_two_km", coverage(pairs, (1., 2.))),
+                         ("unconstrained", {})):
+        feasible = []
+        for route in range(1 << len(pairs)):
+            if meets(groups, route):
+                fraction = candidate_time_fraction_for_twofold(pairs, route)
+                if fraction is not None:
+                    feasible.append((fraction, route))
+        fraction, route = max(feasible)
+        scaled = [(a, dict(b, elapsed_s=b["elapsed_s"] * fraction)) for a, b in pairs]
+        answer["panels"][name] = dict(
+            feasible_routes_at_some_positive_fraction=len(feasible), maximum_time_fraction=fraction,
+            minimum_extra_speedup=1/fraction, installed_fallbacks=[
+                a["case"] for i, (a, _) in enumerate(pairs) if not route & (1 << i)],
+            attained=clocks(scaled, route)["wall"])
+    return answer
+
+
 def optimize(pairs):
     if not 1 <= len(pairs) <= LIMIT:
         raise ValueError("Use only the nonempty first twelve sealed original pairs")
@@ -256,7 +302,13 @@ def render_figure(result, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--campaign", type=Path, default=CAMPAIGN)
+    parser.add_argument("--additional-speed-from-sealed", action="store_true",
+                        help="Calculate extra candidate acceleration from the published eleven-pair receipt")
     args = parser.parse_args()
+    if args.additional_speed_from_sealed:
+        receipt = Path(__file__).parent / "measurements/ds30-oracle-routing.json.gz"
+        print(json.dumps(additional_speed_budget(receipt), indent=2, allow_nan=False))
+        return
     pairs, source = verified_rows(args.campaign)
     compact = ("case", "outcome", "elapsed_s", "cpu_s", "timing_scope", "c0_fix", "c0_error_km", "fitted_c_fix", "fitted_c_error_km")
     outcomes = {role: dict(Counter(pair[i]["outcome"] for pair in pairs)) for i, role in enumerate(BUILDS)}

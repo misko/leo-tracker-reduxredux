@@ -21,4 +21,14 @@ Strict preservation costs **172.349 s** above always using the candidate. Relaxi
 
 The first twelve frozen execution positions start with the two smoke recordings, followed by the ranked assignments. The snapshot had eleven contiguous verified pairs and left DS30-0144 unpaired at the twelfth position. It uses the independently sealed generation-2 DS30-0452 overlay in its original position and verifies both attempts against the original plan, pair, attested raw authorities and metadata result receipts. The timings retain the published raw process and verification boundaries, including the signed failure and actual separate storage admissions. They describe the measured opportunities from these original Gauss recordings. The exact reference audit uses the recorded operator-site authority. The experiment read no waveform and launched neither worker. [Campaign protocol](full-successor-field-protocol.md) · [Relocated original validation](ds30-original-relocation.md)
 
+## What additional speed would make routing sufficient?
+
+Hold both builds' positions and fix decisions fixed. Give the candidate the same fractional reduction in its **entire** wall time on every recording while charging the full measured ALGO08v3 time for each fallback. Reoptimizing over all 2,048 routes, the least further acceleration required for **both** timing gates is **3.026×** with full error-curve preservation, **1.609×** with coverage at 1 and 2 km plus fix count, and **1.287×** with unrestricted accuracy. These are requirements on the current candidate under this hypothetical change.
+
+For the strict route, the four retained ALGO08v3 runs consume 375.538 s of the panel's 506.357 s target. Only 130.819 s is left for seven candidate runs that currently take 395.815 s. Improving the positions themselves could allow more of those four recordings to use the faster build. [Per-policy budget and reproducer](ds30_oracle_routing.py) · [Exact additional-speed results](measurements/ds30-oracle-additional-speed.json)
+
+```sh
+python -m reports.ALGO08.v3.ds30_oracle_routing --additional-speed-from-sealed
+```
+
 Reproduce with `python -m reports.ALGO08.v3.ds30_oracle_routing` against the exact combined-export SHA-256 `bceb23d2c1cb3fe0a4e26c4e377ef69fdd8899fd57b990a32c983491c1facf5b`. The implementation uses the normal report’s error and attempt validation. The first metadata check found that withheld terminal receipts omit the optional RF field that the export supplies as null. The reader now applies the same normalization before comparing receipts. Route selection and input enrollment stayed frozen. [Calculator](ds30_oracle_routing.py) · [Focused tests](../../../tests/pipeline_eval/test_ds30_oracle_routing.py)
