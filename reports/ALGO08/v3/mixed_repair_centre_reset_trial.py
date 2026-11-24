@@ -1,10 +1,12 @@
 """Seal or, with an explicit reviewed launch, exercise one saved mixed packet."""
 
 import argparse
+from contextlib import redirect_stdout
 import ctypes
 import fcntl
 from hashlib import sha256
 import json
+from io import StringIO
 import os
 from pathlib import Path
 from resource import RUSAGE_CHILDREN, getrusage
@@ -30,6 +32,10 @@ TIMEOUT_S = 25
 FRESH_NS = 2_000_000_000
 WATCHER = Path("/srv/postgres-nvme/leo-ds30-research-worktrees/field-receiver-solver-cross/reports/ALGO08/v3/field_crossover_admission_watch.py")
 WATCHER_SHA256 = "5a30d1cfcfa675db74f023a28ed0c026746c19784a8efa97ae757426e2ffd023"
+LAZY_TOOLS = {
+    "v5_orbit_domain.py": "14be68cd3af6906dbe0df64841e6a756e93caf234ad11b553bd1d8937fc2e18f",
+    "algo08_blind_rank.py": "321df8d3771fd478543e7c161a4b1c7d1a84734c8c4a0ae2768ebdf1c9038831",
+}
 CONTROLS = {
     CASE: ("d307ff5f4a02fe144eb1547574728a46bf19b4365d971687c471adea65aa4755",
            "b8be7fef63a425d3fd15de1ca206f6ec40be65b96afa8d114fb0e8808c8a36eb",
@@ -94,6 +100,14 @@ def metadata(case):
     return installed, mixed, charted, trial, worker, clock, saved
 
 
+def checked_lazy_tools():
+    for name, pin in LAZY_TOOLS.items():
+        path = HERE.parents[2] / "tools/pipeline_eval/variants" / name
+        if digest(path) != pin or digest(CHARTED / "tools/pipeline_eval/variants" / name) != pin:
+            raise ValueError(f"Source-relative positive dependency changed at {path}")
+    return LAZY_TOOLS
+
+
 def plan():
     installed, mixed, _, trial, _, _, saved = metadata(CASE)
     if not eligible(trial) or eligible(metadata("DS30-0086")[3]):
@@ -104,11 +118,13 @@ def plan():
                     HERE / "mixed-repair-centre-reset-protocol.md")
     input_check = HERE / "measurements/mixed-repair-centre-reset-0220-inputs.json"
     proof = json.loads(input_check.read_bytes())
-    if proof["native_sha256"] != mixed["native_sha256"] or proof["archive_sha256"] != mixed["raw_identity"]["archive_sha256"]:
+    if (proof["native_sha256"] != mixed["native_sha256"] or proof["archive_sha256"] != mixed["raw_identity"]["archive_sha256"]
+            or proof["source_relative_tools"] != checked_lazy_tools() or not proof["positive_ports"]["solver_setup"]):
         raise ValueError("The recorded local input preflight does not match this trial")
     return dict(case=CASE, native_sha256=mixed["native_sha256"], raw_authority=mixed["raw_identity"],
                 frozen_build_sha256=BUILD, sources={p.name: digest(p) for p in source_paths},
                 input_preflight_sha256=digest(input_check),
+                source_relative_tools=LAZY_TOOLS,
                 existing_same_packet_controls=dict(charted=str(CAMPAIGN / "cases" / CASE / "successor/attempt-000001"),
                                                    installed=str(saved)),
                 control_pins={case: pins for case, pins in CONTROLS.items()},
@@ -285,6 +301,31 @@ def verify(root):
                                            figures=observed["figures"], raw_timing_credit=0))
 
 
+def check_inputs(output):
+    enrolled, spec, _, request, handoff, _, _, archive, _, _, artifacts = launch_inputs()
+    from ds30_0049_saved_crossover import charted
+    from combined_successor_raw_entry import smoke
+    import legacy_first_map_acceleration as acceleration
+
+    if not callable(charted):
+        raise ValueError("The saved charted entry did not resolve")
+    lazy = checked_lazy_tools()
+    fast = [p for p in artifacts if p.name == "artifacts.json"]
+    request.legacy_first_map_fast, = fast
+    request.legacy_first_map_fast_sha256 = "sha256:" + digest(request.legacy_first_map_fast)
+    request.output = output.with_suffix(".unused-publication")
+    traced = StringIO()
+    with binding(enabled=True), redirect_stdout(traced):
+        smoke(request, acceleration)
+        if handoff.calls:
+            raise ValueError("Input check must precede publication")
+    save(output, dict(native_sha256=enrolled.mix["native_sha256"], archive=archive,
+                      archive_sha256=request.archive_sha256, charted_build_sha256=BUILD,
+                      installed_spec_receiver_sha256=spec["detector_sha256"],
+                      exact_local_artifacts=sorted(str(item) for item in artifacts), numerical_calls=0,
+                      source_relative_tools=lazy, positive_ports=json.loads(traced.getvalue())))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("plan", "inputs", "watch", "worker", "verify"))
@@ -297,14 +338,7 @@ def main():
     if args.mode == "plan":
         save(args.path, plan())
     elif args.mode == "inputs":
-        enrolled, spec, _, request, handoff, _, _, archive, _, _, artifacts = launch_inputs()
-        with binding(enabled=True):
-            if handoff.calls:
-                raise ValueError("Input check must precede publication")
-        save(args.path, dict(native_sha256=enrolled.mix["native_sha256"], archive=archive,
-                            archive_sha256=request.archive_sha256, charted_build_sha256=BUILD,
-                            installed_spec_receiver_sha256=spec["detector_sha256"],
-                            exact_local_artifacts=sorted(str(item) for item in artifacts), numerical_calls=0))
+        check_inputs(args.path)
     elif args.mode == "verify":
         verify(args.path)
     elif args.approved_plan is None or args.approved_sha256 is None:
