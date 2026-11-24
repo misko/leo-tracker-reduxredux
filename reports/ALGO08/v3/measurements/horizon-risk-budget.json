@@ -1,0 +1,223 @@
+{
+  "historical_floor": {
+    "cases": 55,
+    "free_solve": {
+      "contender_s": 3993.611520853692,
+      "median_paired_ratio": 0.7134384625095194,
+      "positive_gap_to_half_s": 1174.488650436846,
+      "reference_s": 5638.245740833692,
+      "relative_total": 0.7083074602319802
+    },
+    "split_wall_shares": {
+      "acquisition": 0.6711121782335556,
+      "publication": 0.027591820224760408,
+      "solve": 0.3012960015416839
+    },
+    "splits": 52,
+    "unsplit_elapsed_s": {
+      "DS30-0022": 110.76983176544309,
+      "DS30-0129": 67.63393904455006,
+      "DS30-0227": 1.3087947918102145
+    }
+  },
+  "measured_raw": [
+    {
+      "candidate": {
+        "admitted": 713,
+        "clock": {
+          "cpu_s": 8.823744000000001,
+          "elapsed_s": 8.828566629439592,
+          "input_blocks": 560
+        },
+        "decision": "complete",
+        "figures": 8,
+        "index_pages": 543,
+        "issued": 808,
+        "payload_pages": 242128,
+        "reason": null
+      },
+      "candidate_scopes": {
+        "authenticated_raw_acquisition": {
+          "cpu_s": 3.218289825,
+          "elapsed_s": 3.2184332348406315
+        },
+        "decision_and_publication": {
+          "cpu_s": 5.041751012999999,
+          "elapsed_s": 5.044968704693019
+        },
+        "infer": {
+          "cpu_s": 0.703545157,
+          "elapsed_s": 0.704160232
+        },
+        "prepare": {
+          "cpu_s": 1.514732215,
+          "elapsed_s": 1.514801409
+        }
+      },
+      "case": "DS30-0016",
+      "stock": {
+        "admitted": 713,
+        "clock": {
+          "cpu_s": 10.742462,
+          "elapsed_s": 10.744677368551493,
+          "input_blocks": 0
+        },
+        "decision": "complete",
+        "figures": 8,
+        "index_pages": 543,
+        "issued": 808,
+        "payload_pages": 242128,
+        "reason": null
+      }
+    },
+    {
+      "candidate": {
+        "admitted": 27,
+        "clock": {
+          "cpu_s": 0.611146,
+          "elapsed_s": 0.6148689556866884,
+          "input_blocks": 0
+        },
+        "decision": "withheld",
+        "figures": 0,
+        "index_pages": 20,
+        "issued": 29,
+        "payload_pages": 8184,
+        "reason": "no_active_curvature"
+      },
+      "candidate_scopes": {
+        "authenticated_raw_acquisition": {
+          "cpu_s": 0.175264413,
+          "elapsed_s": 0.17542820423841476
+        },
+        "decision_and_publication": {
+          "cpu_s": 0.014010912000000042,
+          "elapsed_s": 0.014011973515152931
+        },
+        "infer": {
+          "cpu_s": 0.0,
+          "elapsed_s": 0.0
+        },
+        "prepare": {
+          "cpu_s": 0.0,
+          "elapsed_s": 0.0
+        }
+      },
+      "case": "DS30-0107",
+      "stock": {
+        "admitted": 27,
+        "clock": {
+          "cpu_s": 1.4955999999999996,
+          "elapsed_s": 1.4970183838158846,
+          "input_blocks": 0
+        },
+        "decision": "withheld",
+        "figures": 0,
+        "index_pages": 20,
+        "issued": 29,
+        "payload_pages": 8184,
+        "reason": "no_active_curvature"
+      }
+    }
+  ],
+  "profiled_medium_outer_ceiling": {
+    "look_angles": {
+      "caller": "regional_bank",
+      "calls": 1,
+      "inclusive_cpu_s": 0.036601125000000005
+    },
+    "teme_to_ecef": {
+      "caller": "ecef_states",
+      "calls": 2,
+      "inclusive_cpu_s": 0.04358124
+    },
+    "whole_scope_ceiling_cpu_s": 0.080182365
+  },
+  "raw_optimistic_floors": {
+    "actual": {
+      "contender_s": 9.44343558512628,
+      "median_paired_ratio": 0.6161989525554472,
+      "positive_gap_to_half_s": 3.322587708942592,
+      "reference_s": 12.241695752367377,
+      "relative_total": 0.7714156417667911
+    },
+    "free_preparation": {
+      "contender_s": 7.92863417612628,
+      "median_paired_ratio": 0.5457081710716931,
+      "positive_gap_to_half_s": 1.8077862999425918,
+      "reference_s": 12.241695752367377,
+      "relative_total": 0.6476745000457139,
+      "remaining_s_by_case": {
+        "DS30-0016": 7.313765220439592,
+        "DS30-0107": 0.6148689556866884
+      }
+    },
+    "free_prepare_and_infer": {
+      "contender_s": 7.224473944126281,
+      "median_paired_ratio": 0.5129403080709389,
+      "positive_gap_to_half_s": 1.1036260679425922,
+      "reference_s": 12.241695752367377,
+      "relative_total": 0.5901530384570427,
+      "remaining_s_by_case": {
+        "DS30-0016": 6.609604988439592,
+        "DS30-0107": 0.6148689556866884
+      }
+    }
+  },
+  "sources": {
+    "evidence": {
+      "census": [
+        "acquisition-throughput.json",
+        "fc46925e68437054169e2a3008388493554baf5c92f495eb3beb9434c10e620a"
+      ],
+      "medium_profile": [
+        "named-shared-cpu-0316.json.gz",
+        "7a95b522bfbb822f92133d9e9536a61095bb11a4251a7a676288129d64c72b47"
+      ],
+      "weak_saved": [
+        "live-orbit-setup-audit.json",
+        "4ffa145b0770faed152948dc3de367746a7e805f4586f32290929cd5d7ceb336"
+      ]
+    },
+    "installed": {
+      "analysis/localization_v3/orbits.py": "6d2b3db52f68abb93bd3a72211e6e8bc6030d5b939981287922a2beebc4f028d",
+      "sky/frames.py": "b6c98c11d25957c8f535d09a4f4cc47f3f82745b63ca57c61f9e8d5949fbb8e0"
+    },
+    "raw": {
+      "DS30-0016": [
+        "leo-v3-history-risk-0016-raw-score02.json",
+        "920456558c3b3ed29fcad552ee9b369b1b5ca0fda456211b85c6ee73748f662f"
+      ],
+      "DS30-0107": [
+        "leo-v3-history-risk-0107-score01.json",
+        "19a54239fad54185b0cf18bbf5b75b4cb8981e3be101087ddb53005d5c5d40e3"
+      ]
+    }
+  },
+  "weak_earlier_saved_bulk_calls": [
+    {
+      "cells": 682041,
+      "cpu_ns": 163879593,
+      "disagreeing_comparisons": 0,
+      "knots": 61,
+      "known_overlap": 0,
+      "new_overlap": 0,
+      "orbits": 11181,
+      "previous_stage_cells": {},
+      "stage": "regional_bank"
+    },
+    {
+      "cells": 485415,
+      "cpu_ns": 107310146,
+      "disagreeing_comparisons": 0,
+      "knots": 335,
+      "known_overlap": 0,
+      "new_overlap": 88389,
+      "orbits": 1449,
+      "previous_stage_cells": {
+        "regional_bank": 88389
+      },
+      "stage": "regional_bank"
+    }
+  ]
+}
