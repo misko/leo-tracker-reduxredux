@@ -74,6 +74,22 @@ Transferring each measured downstream saving, including launcher checks, to that
 
 Adding DS30-0402 gives it a **35.72 s** acquisition budget. The four-recording thresholds become **377 MB/s** for the median gate and **324 MB/s** for the summed gate. The difference from the three-case thresholds illustrates how much the target depends on including one expensive solve. Use `--routed-cases 4` to reproduce the four-case estimate. The raw 20/8 ms receiver can produce different detections from the original packet used to measure these saved-solver improvements.
 
+### How representative are those four recordings?
+
+The four account for **4.98%** of installed v3 elapsed on the historical 55 recordings and **7.31%** of post-detection time among the 52 with stage clocks. Ordered by increasing post-detection time, DS30-0160 ranks 2nd, DS30-0316 6th, DS30-0374 19th and DS30-0402 52nd of 52. The largest measured saving came from the single most expensive post-detection case. Three of the four were among the eight shortest complete raw runs.
+
+The table prices the remaining work across the original 55. It transfers the four matched solver time differences, charges the three unsplit recordings their entire installed clocks, and asks how much faster the other **48** post-detection stages would have to run. Each column gives the minimum common reduction across those 48 that would satisfy **both** the median and summed elapsed gates at the stated acquisition rate.
+
+| Assumed effective acquisition on all 52 split cases, original compressed MB/s | Remaining downstream reduction for 1.6× | Remaining downstream reduction for 2× |
+|---:|---:|---:|
+| 225 | 12.4% | 54.7% |
+| 250 | 1.4% | 43.8% |
+| 325 | 0% | 21.0% |
+| 375 | 0% | 10.9% |
+| 400 | 0% | 6.8% |
+
+The acquisition rate includes startup, storage waits, verification, DSP and sealing detections. Uniform rates and uniform downstream savings are assumptions. These rows neither measure a candidate on the 55 recordings nor predict their position accuracy. They show why timing only DS30-0402 provides little evidence for a release. Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --historical-transfer` in the project environment for the two gates separately. [Historical stage and input-size ledger](measurements/acquisition-throughput.json) · [Paired calculation](adaptive_receiver_budget.py)
+
 ## Keeping ALGO08v3's original position solution
 
 The next solver experiment kept the original satellite selection, repairs, fits, and standard figures and reused repeated computations. All four physical recordings returned exactly the original ordered satellite assignments, both calibration endpoints and RF residuals, the 179-location grid, the path and all eight PNGs. Each comparison starts with the same original signed 20 ms detections. The named comparison clocks are historical. [First two recordings](exact-named-route.md) · [Third recording](exact-named-dense.md) · [Fourth recording and cohort](exact-named-0402.md)

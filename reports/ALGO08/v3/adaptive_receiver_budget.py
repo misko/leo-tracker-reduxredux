@@ -126,6 +126,67 @@ def routed_case_report(size=3):
                 measured_saved_median_ratio=median_saved, measured_saved_summed_ratio=summed_saved)
 
 
+def unseen_cut(rows, matched, rate, target):
+    """Minimum uniform downstream reduction on the other split cases, for each gate."""
+    if not isfinite(rate) or rate <= 0 or not 0 < target < 1:
+        raise ValueError("Expected a positive acquisition rate and a target ratio between zero and one")
+    parts = []
+    for row in rows:
+        acquisition, solve, tail = row["stages"]
+        downstream = solve + tail
+        original = acquisition + downstream
+        # Keep the entire original clock on unsplit recordings, even when their size is known.
+        if acquisition == 0:
+            parts.append((original, original, 0))
+        elif row["case"] in matched:
+            parts.append((original, row["compressed_MB"]/rate + matched[row["case"]]["modeled_downstream_s"], 0))
+        else:
+            parts.append((original, row["compressed_MB"]/rate, downstream))
+
+    def gates(cut):
+        return elapsed_ratios([(v3, fixed + (1-cut)*unknown) for v3, fixed, unknown in parts])
+
+    unchanged, ideal = gates(0), gates(1)
+    costs = {}
+    for index, name in enumerate(("median", "summed")):
+        if unchanged[index] <= target:
+            costs[name] = 0.0
+        elif ideal[index] > target:
+            costs[name] = None
+        else:
+            lo, hi = 0.0, 1.0
+            for _ in range(50):
+                middle = (lo+hi)/2
+                if gates(middle)[index] <= target:
+                    hi = middle
+                else:
+                    lo = middle
+            costs[name] = hi
+    return costs
+
+
+def historical_transfer_report():
+    matched = routed_case_report(4)["cases"]
+    rows = json.loads(checked(DATA / "acquisition-throughput.json", RAW_CLOCKS_SHA))["rows"]
+    split = [r for r in rows if r["stages"][0] > 0]
+    included = select(split, list(matched))
+    def duration(row):
+        return sum(row["stages"])
+
+    def downstream(row):
+        return sum(row["stages"][1:])
+
+    ranks = {row["case"]: dict(raw_time_rank=1 + sum(duration(r) < duration(row) for r in split),
+                               downstream_time_rank=1 + sum(downstream(r) < downstream(row) for r in split))
+             for row in included}
+    return dict(recordings=len(rows), split_count=len(split), matched_ranks=ranks,
+                matched_share_of_raw_elapsed=sum(map(duration, included))/sum(map(duration, rows)),
+                matched_share_of_split_downstream=sum(map(downstream, included))/sum(map(downstream, split)),
+                required_unseen_downstream_cut={
+                    rate: {speed: unseen_cut(rows, matched, rate, 1/speed) for speed in (1.6, 2)}
+                    for rate in (225, 250, 325, 375, 400)})
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     kind = cli.add_mutually_exclusive_group()
@@ -133,8 +194,12 @@ if __name__ == "__main__":
                      help="Use the three- or four-recording panel's measured solver savings (default 3)")
     kind.add_argument("--routed-cases", type=int, nargs="?", const=3, choices=(3, 4),
                       help="Charge orbit-risk launch checks for the three- or four-recording panel")
+    kind.add_argument("--historical-transfer", action="store_true",
+                      help="Price the unmeasured downstream saving required across the historical 55")
     args = cli.parse_args()
-    if args.routed_cases:
+    if args.historical_transfer:
+        result = historical_transfer_report()
+    elif args.routed_cases:
         result = routed_case_report(args.routed_cases)
     elif args.exact_cases:
         result = exact_case_report(args.exact_cases)

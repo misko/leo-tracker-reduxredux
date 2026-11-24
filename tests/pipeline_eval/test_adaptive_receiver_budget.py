@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
-from adaptive_receiver_budget import exact_case_report, matched_budget, receiver_budget, routed_case_report
+from adaptive_receiver_budget import exact_case_report, matched_budget, receiver_budget, routed_case_report, unseen_cut
 
 
 def test_publication_includes_the_tail_and_charges_unsplit_runs():
@@ -62,3 +62,12 @@ def test_four_case_saved_gate_takes_the_median_of_candidate_over_control():
     assert report["measured_saved_summed_ratio"] == pytest.approx(0.4999938)
     assert report["median_gate_MB_s"] == pytest.approx(376.99, abs=0.01)
     assert report["summed_gate_MB_s"] == pytest.approx(323.71, abs=0.01)
+
+
+def test_unseen_cut_preserves_known_downstream_and_entire_unsplit_clock():
+    rows = [dict(case=case, stages=[6, 2, 2], compressed_MB=10) for case in ("known", "other", "extra")]
+    rows.append(dict(case="unsplit", stages=[0, 0, 10], compressed_MB=1000))
+    # At 10 MB/s paid times are 3, 5-4*cut, 5-4*cut, 10.
+    matched = {"known": {"modeled_downstream_s": 2}}
+    assert unseen_cut(rows, matched, 10, 0.50) == pytest.approx(dict(median=0, summed=3/8))
+    assert unseen_cut(rows, matched, 10, 0.30)["summed"] is None
