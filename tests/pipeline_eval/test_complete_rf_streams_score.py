@@ -14,3 +14,15 @@ def test_join_counts_only_actual_signed_owner_support():
     assert result["roles"] == {"conditional": 1, "predictive": 1}
     with pytest.raises(ValueError, match="no measured"):
         coverage([("empty", 51, "conditional")], factors)
+
+
+def test_figure_uses_meter_errors_for_both_calibrations_and_all_comparators():
+    from reports.ALGO08.v3.complete_rf_streams_figure import observations
+
+    rows = observations()
+    assert [r[:2] for r in rows] == [
+        ("North simulation", "Fixed c = 0"), ("North simulation", "Fitted c"),
+        ("DS30-0016 recording", "Fixed c = 0"), ("DS30-0016 recording", "Fitted c"),
+    ]
+    assert [[round(x) for x in row[2]] for row in rows] == [
+        [106, 112, 1250], [141, 128, 865], [1644, 490, 504], [1661, 980, 3040]]

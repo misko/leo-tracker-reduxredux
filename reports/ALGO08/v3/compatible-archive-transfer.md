@@ -12,12 +12,16 @@ A simpler reader now verifies each original recording without generating an inde
 
 After the holdout was scored, the fallback reused its verified scan, ranking and three partially completed candidate fits. That saved **10.545 s** and preserved both positions, assignments, grid, path and all eight routed PNGs. Even after that change it took **56.232 s**, **5.511 s longer** than installed v3 on the same saved packet. [Post-holdout change and verified results](nomination-handoff-0255.md)
 
+The final result had zero predictive assignments. A timed replay of the original solver showed it had evaluated **40 proposed tracks with 702 observations**. The fixed-zero calibration accepted all 40. The fitted calibration accepted 39, so the paired rule discarded the predictive assignments. Those fits cost **2.202 CPU s**. A shortcut that applies when the *incoming* list is empty saves zero on this recording. [Proposals, acceptance decisions and measured stage time](empty-predictive-refit-0255.md)
+
 **Why retaining both radios on half the channels failed.** A saved-input trial kept every long observation and continuously measured both radios on four of eight channels. North recovered enough observation history to publish, but it lost six of nine assigned satellite families. On DS30-0016, all 92 conditional assignments survived, but the sole family observed across two channels lost its 23 observations on the second channel. The fitted frequency residual improved slightly even as fitted position error rose by 2.06 km. This schedule failed the accuracy gate on both recordings. [Channel schedule, assignments and outputs](complete-rf-streams.md)
 
 | Saved recording | All-channel error, fixed / fitted | Four-channel error, fixed / fitted |
 |---|---:|---:|
 | North | 112 / 128 m | 1,250 / 865 m |
 | DS30-0016 | 490 / 980 m | 504 / 3,040 m |
+
+![Fixed-zero and fitted position errors for installed v3, all-channel short observations and four-channel short observations on North simulation and physical DS30-0016](development/complete-rf-errors.png)
 
 Two smaller changes preserved scientific outputs but had limited timing benefit. Drawing the orbit sheets with fixed plot limits reproduced all 12 archived PNGs across three recordings. It saved 129 ms and 144 ms on the two larger scenes and cost an extra 72 ms on DS30-0016. In the solver, checking the fitted calibration first could skip one fit on DS30-0255. Both repair fits together cost only 0.908 CPU s, while the candidate needed to recover 5.473 CPU s to match installed v3 on that packet. An earlier rejection would also have redirected DS30-0169, whose repair succeeded. [Exact rendering and reversed-order clocks](agg-orbit-artists.md) · [Replay of the solver rejection](early-lean-refusal-0255.md)
 
