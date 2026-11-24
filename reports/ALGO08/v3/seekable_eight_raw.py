@@ -278,18 +278,23 @@ def exercise_corruption(root, entry, chunk, scope, reference, skipped):
 
 def run(root, case):
     from aperture_trial import write
-    from ci16_packed_storage_trial import BUILD
-    from ci16_packing import Packing, SOURCE
+    from reports.ALGO08.v3.ci16_packed_storage_trial import BUILD
+    from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
     from dense_geographic_trial import host
     from eight_ms_native_receiver import prepare
     from empty_bootstrap import checked, load_runtime, receiver_symbols
     from full_short_run import EIGHT_MS_SHA, checked_recipe
     from leo.contracts.digests import canonical_digest
-    from sparse_cold_input import frozen_function
+    from reports.ALGO08.v3.sparse_cold_input import frozen_function
     import empty_bootstrap as staged
 
     if root.parent.resolve(strict=True) != Path("/dev/shm"):
         raise ValueError("Stage the private derivative in tmpfs")
+    checkout = HERE.parents[2]
+    git = ["git", "-c", f"safe.directory={checkout}", "-C", str(checkout)]
+    if subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True).strip():
+        raise ValueError("Commit the source and protocol before converting the original member")
+    revision = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
     machine = host()
     entry, chunk = source(case)
     before = residency(entry, chunk)
@@ -323,8 +328,7 @@ def run(root, case):
     write(root/"binding.json", dict(case=case, original=entry, member=chunk, machine=machine, recipe=recipe,
          detector=scope.detector, source_pins={name: sha256((HERE/name).read_bytes()).hexdigest()
               for name in ("seekable_eight_raw.py", "seekable_member.py", "seekable-eight-raw-protocol.md", "mixed_aperture_receiver.py")},
-         codec=scope.codec.programme(), checkout=subprocess.check_output(["git", "-C", str(HERE.parents[2]), "rev-parse", "HEAD"],
-                                                                         text=True).strip(), initial_residency=before))
+         codec=scope.codec.programme(), checkout=revision, initial_residency=before))
     creation = convert(root, entry, chunk, scope)
     # Commit the digest independently of the private sidecar before any read.
     write(root/"attested-root.json", dict(bound_original=entry["manifest_digest"], **creation))
