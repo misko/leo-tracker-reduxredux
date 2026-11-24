@@ -19,6 +19,7 @@ HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parents[2])]
 CONTROL = HERE/"measurements/combined-successor-cairo.json.gz"
 CONTROL_SHA = "ab222fbb9fec094e54e7c74f15b61a60c727a69aa741f2adca2f7668b7af3ec1"
+CONTROL_COMPRESSED_SHA = "b4416ea6169518458ddb3968bfc22032697ebb8b7a009459d88a126bb0f38d9b"
 SCENE = Path("/dev/shm/leo-v3-combined-frame-portable-result02/candidate/render-scene.pickle")
 SCENE_SHA = "e222976de38b98d0147cc6abcf21d90693483b6b3e3154c5c211da0c8ba62361"
 PRESENTATION_ROOTS = (
@@ -108,8 +109,10 @@ def render(trace, spec, subject):
     packet, options = pickle.loads(checked(SCENE, SCENE_SHA))
     title = subject["witness"]["ports"]["cairo_layout"]["original_recording_title"]
     apps = subject["witness"]["evidence"]["detail"]["arms"]
-    if packet["arms"] != apps or options["evaluation_reference"] is not None:
-        raise ValueError("The saved plot packet differs from the current observation owners")
+    if (packet["arms"].keys() != apps.keys() or options["evaluation_reference"] is not None
+            or any(value != apps[arm][key] for arm, row in packet["arms"].items()
+                   for key, value in row.items() if key != "owner_sha256")):
+        raise ValueError("The saved plot packet differs from the current plotted calibration values")
     title_options = options | {"title": title}
     trace.phase = "render_setup"
     libraries = []
@@ -217,7 +220,10 @@ def run(path):
     machine = host()
     if path.exists() or path.parent != Path("/dev/shm"):
         raise ValueError("Use a fresh small tmpfs receipt")
-    subject = json.loads(decompress(checked(CONTROL, CONTROL_SHA)))["subject"]
+    data = decompress(checked(CONTROL, CONTROL_COMPRESSED_SHA))
+    if sha256(data).hexdigest() != CONTROL_SHA:
+        raise ValueError("The independently qualified Cairo result changed")
+    subject = json.loads(data)["subject"]
     target = subject["modeled_cohort_gates"]["elapsed_s"]
     deficit = target["indexed_s"] - target["baseline_s"]/1.6
     trace = ImportTrace()
