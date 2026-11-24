@@ -62,7 +62,10 @@ def main():
 
     def options():
         cli = parser()
-        cli.add_argument("--sparse8-primary", action="store_true", required=True)
+        receiver_policy = cli.add_mutually_exclusive_group(required=True)
+        receiver_policy.add_argument("--sparse8-primary", action="store_true")
+        receiver_policy.add_argument("--full-primary-nonanchors", action="store_true",
+                                     help="Use full-aperture primaries between unchanged two-scan anchors")
         return cli
 
     def smoke(args, acceleration):
