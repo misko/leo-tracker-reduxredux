@@ -1,6 +1,7 @@
 """Transfer measured single-core acquisition costs using the original RF cadence."""
 
 from collections import Counter
+import argparse
 import json
 from math import isclose
 from pathlib import Path
@@ -97,6 +98,8 @@ def study():
         if len(probes) != original["probes"] or len(probes) != 2 * original["admitted"]:
             raise ValueError("Saved packet and blind admission disagree")
         budget = budgets[trial["case"]]
+        if budget["byte_low"] != budget["byte_high"]:
+            raise ValueError("The call-mix projection requires an exact compressed extent")
         target = dict(case=trial["case"], encoded_bytes=budget["byte_high"], calls=counts, streams=streams,
                       native_sha256=original["native_sha256"], intake_allowance_s=budget["allowance_s"])
         target["transfer"] = {s["name"]: predict(s, target) for s in sources}
@@ -111,5 +114,47 @@ def study():
                 uniform_extra_s_per_case_for_both_timing_gates=uniform_extra)
 
 
+def plot_budget(study, path):
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    fig, ax = plt.subplots(figsize=(8, 3.55))
+    fig.subplots_adjust(left=.16, right=.96, top=.67, bottom=.27)
+    fig.suptitle("How much time can each DS30 recording spend on input?", x=.025,
+                 y=.98, ha="left", fontsize=15, fontweight="bold")
+    colors = ("#267874", "#506e9c")
+    for y, row in enumerate(study["projected"]):
+        allowance = row["intake_allowance_s"]
+        ax.hlines(y, 0, allowance, color="#d9dfe3", lw=3)
+        for index, (name, seconds) in enumerate(row["transfer"].items()):
+            is_south = name.startswith("South/")
+            offset = .14 * (index - (len(row["transfer"])-1)/2)
+            ax.scatter(seconds, y + offset, c=colors[int(is_south)], s=32, zorder=3)
+        ax.vlines(allowance, y - .22, y + .22, color="#303947", lw=2)
+        ax.text(allowance + .4, y, f"{allowance:.1f}", va="center", fontsize=9)
+    ax.set(ylim=(len(study["projected"])-.5, -.6), xlim=(0, 42),
+           yticks=range(len(study["projected"])), yticklabels=[r["case"] for r in study["projected"]],
+           xlabel="Seconds")
+    ax.spines[:].set_visible(False)
+    ax.tick_params(length=0)
+    ax.grid(axis="x", color="#e7ebee", lw=.7)
+    ax.set_axisbelow(True)
+    handles = [Line2D([], [], marker="o", lw=0, color=c) for c in colors]
+    handles.append(Line2D([], [], marker="|", lw=0, color="#303947", markersize=12))
+    fig.legend(handles, ["CPU using Gauss rates", "CPU using South rates", "Elapsed allowance for 2×"],
+               loc="upper left", bbox_to_anchor=(.015,.885), frameon=False, ncol=3, fontsize=9)
+    fig.text(.025, .04, "Dots project authenticated acquisition CPU from four resident runs. Startup, detector handoff and waits still use the allowance.",
+             fontsize=8, color="#435565")
+    fig.savefig(path, dpi=150, facecolor="white")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
-    print(json.dumps(study(), indent=2, allow_nan=False))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--plot", type=Path, help="Render the enrolled scenarios from the published receipt")
+    args = parser.parse_args()
+    if args.plot:
+        receipt = Path(__file__).parent / "measurements" / "receiver-mix-budget.json"
+        plot_budget(json.loads(receipt.read_bytes()), args.plot)
+    else:
+        print(json.dumps(study(), indent=2, allow_nan=False))

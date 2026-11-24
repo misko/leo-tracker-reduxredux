@@ -69,7 +69,8 @@ def combined_intake_budget():
         elapsed, cpu = raw["elapsed_s"], original_clocks[trial["case"]]["cpu_s"]
         off_cpu = elapsed - cpu
         saved_cpu = trial["paid_setup_and_time"]["cpu_s"]["candidate_with_setup"]
-        rows.append(dict(case=raw["case"], elapsed_s=raw["elapsed_s"], byte_high=raw["byte_high"],
+        rows.append(dict(case=raw["case"], elapsed_s=raw["elapsed_s"],
+                         byte_low=raw["byte_low"], byte_high=raw["byte_high"],
                          post_s=post, allowance_s=allowance,
                          original_off_cpu_s=off_cpu, min_original_pre_detection_off_cpu_s=max(0, raw["pre_s"] - cpu),
                          saved_cpu_with_setup_s=saved_cpu, free_receiver_fixed_wait_s=saved_cpu + off_cpu,
