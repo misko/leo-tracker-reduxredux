@@ -1,0 +1,103 @@
+{
+  "schema": "leo.research.full-mask-normal-design.v1",
+  "base_commit": "4819d7cbbc5eaae091381a2e05343c8051115bc1",
+  "release": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c",
+  "prototype_sha256": "fc5622b3c51288b13a962be17c6b10348680dfd641933fe69dc688747935ca3d",
+  "test_sha256": "f87bb31452cfed61368c8eaaacd52b1e31f04a74770c239e2ca93631180003e2",
+  "numpy": "2.5.2",
+  "scipy": "1.18.1",
+  "component_tests_passed": 11,
+  "observations": 172,
+  "optimizer_rounds": 2,
+  "optimizer_iterations_per_round": 3,
+  "component_runs": [
+    {
+      "site": [0.0, 0.0],
+      "calibration": "c0",
+      "byte_exact": true,
+      "forwarded_calls": 47,
+      "native_activations_per_treatment": 47,
+      "symbolic_cache_hits_per_treatment": 46,
+      "mask_entries_checked": 8084,
+      "scale_entries_checked": 1786,
+      "design_copy_bytes_avoided": 2457536,
+      "unit_multiplies_avoided": 307192
+    },
+    {
+      "site": [0.0, 0.0],
+      "calibration": "fitted_c",
+      "byte_exact": true,
+      "forwarded_calls": 40,
+      "native_activations_per_treatment": 40,
+      "symbolic_cache_hits_per_treatment": 39,
+      "mask_entries_checked": 6880,
+      "scale_entries_checked": 1560,
+      "design_copy_bytes_avoided": 2146560,
+      "unit_multiplies_avoided": 268320
+    },
+    {
+      "site": [-23.0, 137.0],
+      "calibration": "c0",
+      "byte_exact": true,
+      "forwarded_calls": 47,
+      "native_activations_per_treatment": 47,
+      "symbolic_cache_hits_per_treatment": 46,
+      "mask_entries_checked": 8084,
+      "scale_entries_checked": 1786,
+      "design_copy_bytes_avoided": 2457536,
+      "unit_multiplies_avoided": 307192
+    },
+    {
+      "site": [-23.0, 137.0],
+      "calibration": "fitted_c",
+      "byte_exact": true,
+      "forwarded_calls": 47,
+      "native_activations_per_treatment": 47,
+      "symbolic_cache_hits_per_treatment": 46,
+      "mask_entries_checked": 8084,
+      "scale_entries_checked": 1833,
+      "design_copy_bytes_avoided": 2522208,
+      "unit_multiplies_avoided": 315276
+    }
+  ],
+  "archived_ceiling_sources": [
+    {
+      "path": "integrated-original.json.gz",
+      "sha256": "eb115ec1dd7a734693e21d8be49e2f7de87fe48936b8db8d51e1216cf37a0dff",
+      "timing_paths": {
+        "runs/positive_first/DS30-0016/result/document/receiver/receipt/curved_design": {
+          "normal_selection_calls": 45,
+          "normal_selection_ns": 306949
+        },
+        "runs/withholding_first/DS30-0016/result/document/receiver/receipt/curved_design": {
+          "normal_selection_calls": 45,
+          "normal_selection_ns": 322609
+        }
+      }
+    },
+    {
+      "path": "bounds-DS30-0008-pair.json",
+      "sha256": "0d2ec8bfd30a71142c9f88dcbcf2bcdef0d5f4188e8f6b42cb280bdaa06b6312",
+      "timing_paths": {
+        "runs/baseline/receipt/curved_design": {
+          "normal_selection_calls": 428,
+          "normal_selection_ns": 468451603
+        },
+        "runs/bounds/receipt/curved_design": {
+          "normal_selection_calls": 428,
+          "normal_selection_ns": 435637370
+        }
+      }
+    },
+    {
+      "path": "conditional-repair-fallback-0255-worker.json",
+      "sha256": "81b31061e1895c437311df8877b9918fc815990984edd95dcb5de8302c3d9bf5",
+      "timing_paths": {
+        "receipt/curved_design": {
+          "normal_selection_calls": 131,
+          "normal_selection_ns": 180406287
+        }
+      }
+    }
+  ]
+}
