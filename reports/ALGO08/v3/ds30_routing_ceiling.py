@@ -4,6 +4,7 @@ import argparse
 import json
 from math import fsum, isfinite
 from pathlib import Path
+from statistics import median
 
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, milp
@@ -37,13 +38,16 @@ def fastest_route(pairs, fraction=1., cutoffs=None):
     flags = np.rint(result.x).astype(bool)
     route = sum(1 << i for i, use in enumerate(flags) if use)
     baseline_s = fsum(baseline)
-    selected_s = fsum(np.where(flags, fraction * candidate, baseline))
+    times = np.where(flags, fraction * candidate, baseline)
+    selected_s = fsum(times)
+    median_ratio = median(times / baseline)
     lower_bound_s = baseline_s + result.mip_dual_bound
     if not (meets(groups, route) and isfinite(lower_bound_s) and abs(lower_bound_s - selected_s) < 1e-5):
         raise ValueError("Routing witness or objective bound did not verify")
     return dict(pairs=size, time_fraction=fraction, candidate_choices=int(flags.sum()),
                 installed_total_s=baseline_s, optimum_total_s=selected_s, dual_bound_s=lower_bound_s,
                 within_half_total=selected_s <= .5 * baseline_s,
+                paired_median_ratio=median_ratio, within_half_median=bool(median_ratio <= .5),
                 candidate_cases=[a["case"] for (a, _), use in zip(pairs, flags, strict=True) if use])
 
 
@@ -52,9 +56,11 @@ def timing_requirement(pairs, cutoffs=None):
     free = fastest_route(pairs, 0., cutoffs)
     result = dict(measured=measured, free_candidate=free)
     if measured["within_half_total"]:
-        return dict(**result, feasible_fraction=1., infeasible_fraction=None)
+        return dict(**result, feasible_fraction=1., infeasible_fraction=None,
+                    both_gates_at_feasible_fraction=measured["within_half_median"], feasible_route=measured)
     if not free["within_half_total"]:
-        return dict(**result, feasible_fraction=None, infeasible_fraction=0.)
+        return dict(**result, feasible_fraction=None, infeasible_fraction=0.,
+                    both_gates_at_feasible_fraction=False, feasible_route=None)
     # The minimum over routes of nondecreasing affine wall times is nondecreasing.
     lo, hi = 0., 1.
     for _ in range(14):
@@ -63,7 +69,9 @@ def timing_requirement(pairs, cutoffs=None):
             lo = mid
         else:
             hi = mid
-    return dict(**result, feasible_fraction=lo, infeasible_fraction=hi)
+    witness = fastest_route(pairs, lo, cutoffs)
+    return dict(**result, feasible_fraction=lo, infeasible_fraction=hi,
+                both_gates_at_feasible_fraction=witness["within_half_median"], feasible_route=witness)
 
 
 def main():

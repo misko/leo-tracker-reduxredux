@@ -38,3 +38,7 @@ def test_equal_outputs_permit_independent_fastest_choices():
     assert timing_requirement([(arm(8), arm(4))])["feasible_fraction"] == 1.
     fixed = {**arm(8), "c0_fix": True, "c0_error_km": .001}
     assert timing_requirement([(fixed, arm(4))])["feasible_fraction"] is None
+    assert borderline["both_gates_at_feasible_fraction"]
+    # The sum-optimal route can pass total time while its central pair of ratios exceeds half time.
+    sum_only = timing_requirement([(arm(100), arm(1)), (arm(1), arm(1)), (arm(1), arm(1)), (arm(1), arm(1))])
+    assert sum_only["feasible_fraction"] == 1. and not sum_only["both_gates_at_feasible_fraction"]
