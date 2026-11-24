@@ -91,7 +91,7 @@ def score(root):
             position = value["latlon"]
             fit = details["arms"].get(arm, {})
             arms[arm] = dict(position=position, error_km=distance_km(truth, position) if position else None,
-                             rf_rms_hz=fit.get("residual_rms_hz"))
+                             rf_rms_hz=value.get("rf_rms_hz"), plot_residual_rms_hz=fit.get("residual_rms_hz"))
         results[label] = dict(status=details["state"], reason=terminal["reason"], arms=arms, clearance_km=clearance,
                               native_sha256=expected, signed_factors=sum(len(row["candidates"]) for row in factors),
                               timings=witness["timing"], installed=witness["installed"], verification=witness["verification"],
