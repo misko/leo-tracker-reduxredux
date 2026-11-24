@@ -1,0 +1,3 @@
+# Admission for a complete physical pair during heavy storage traffic
+
+Enroll the signed DS30 bindings with 100 through 2,000 issued visits. Read only the existing small manifests and check backing-file extent and page residency. The census opens no recording samples. Prefer the designated 808-visit physical fix if the entire original is resident. Otherwise select the smallest previously unmeasured fully resident recording above 196 visits, without opening outcomes. Require a complete signed recording and use the original TLE cutoff and operator region. Retain every missing case or rejected admission in the record. A partial file can support a member experiment only if the entire member is authenticated. It cannot be substituted for a complete recording.
