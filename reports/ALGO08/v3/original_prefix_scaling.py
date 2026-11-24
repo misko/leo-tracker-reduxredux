@@ -144,6 +144,18 @@ def detection_hook(root, live, windows, scientific_imports, immutable_json):
     return publish
 
 
+def bound_source(source, entry, stop):
+    """Set the prefix frontier before the released class receives lookahead."""
+    ordinary = source.__init__
+
+    def initialize(segment, item, **options):
+        if item != entry or options:
+            raise ValueError("Unexpected signed acquisition segment or range for the exact prefix")
+        ordinary(segment, item, stop_sequence=stop)
+
+    return patch.object(source, "__init__", initialize)
+
+
 def worker(root, binding, size, *, entrypoint=None):
     import empty_bootstrap as boot
     from exact_named_raw import staged_path
@@ -173,7 +185,10 @@ def worker(root, binding, size, *, entrypoint=None):
                     raise ValueError("Only the predeclared prefix metadata may enter the scanner")
                 return assigned["session"], assigned["digest"], assigned["inventory"]
 
-            patches.enter_context(patch.object(scan, "FastSegmentSource", Prefix))
+            if entrypoint is None:
+                patches.enter_context(patch.object(scan, "FastSegmentSource", Prefix))
+            else:
+                patches.enter_context(bound_source(original, assigned["inventory"]["segments"][0], assigned["stop"]))
             patches.enter_context(patch.object(scan.FastScanStore, "inventory", inventory))
             return scan
 

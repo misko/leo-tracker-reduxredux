@@ -12,7 +12,7 @@ Run with the installed interpreter and exact script, changing only the listed ma
 orientation=forward
 repo=/srv/postgres-nvme/leo-ds30-research-worktrees/prefetch-prefix-0049
 release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
-out=/tmp/leo-v3-prefetch-prefix-0049-$orientation-01
+out=/tmp/leo-v3-prefetch-prefix-0049-$orientation-02
 sudo -n systemd-run --quiet --wait --pipe --collect \
   -p User=leo -p Group=leo -p Nice=15 -p CPUAffinity=2 \
   -p IOSchedulingClass=best-effort -p IOSchedulingPriority=7 \
