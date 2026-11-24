@@ -31,6 +31,8 @@ WAVEFORM_BYTES, SIGNED_BYTES = 991_734_597, 993_933_681
 ARM_NAMES = ("c0", "fitted_c")
 ADAPTERS = ("reports/ALGO08/v3/exact_named_raw.py", "reports/ALGO08/v3/unified_short_bootstrap.py")
 STAGING_LOCK = TMPFS/"leo-v3-guarded-selective-0016-staging.lock"
+SAVED_SIDE_CAR_SCIENCE = {"grid": "sha256:8d2ac3a5f76abd886901e3c81d4f42e8270b438dcc5b453c1af8e710356b64a3",
+                          "path": "sha256:ce942344219c7cab8c1d287c8d831eff3805e1e5925aa87ae8c2b1cb8976f3a4"}
 
 
 def pinned_archive(binding, *, decoded_pin=False):
@@ -218,11 +220,12 @@ def route_options(argv):
                 "prove_graph_time_support", "prove_no_active_curvature")
     disabled = ("strict_packed_eight", "packed_ci16_map", "portable_orbit_index", "full_anchor_primary_library",
                 "one_pass_web_png", "direct_orbit_figures", "direct_residual_figures")
-    disabled += tuple(name for name in vars(args) if "cairo" in name)
     settings = {name: bool(getattr(args, name, False)) for name in (*required, *disabled)}
-    if not all(settings[name] for name in required) or any(settings[name] for name in disabled):
+    renderer = {name: value not in (None, False, "stock", "standard", "installed")
+                for name, value in vars(args).items() if "cairo" in name}
+    if not all(settings[name] for name in required) or any(settings[name] for name in disabled) or any(renderer.values()):
         raise ValueError("Expected the ordinary archive 20/8 history-risk and standard raster publication")
-    return settings
+    return settings | renderer
 
 
 def launch_ready(root, stage, signed, ready):
@@ -407,6 +410,7 @@ def published(root, mode, log, request, stock, saved, *, adapters=None):
         sidecar_parity = {name: media.get(name) == pin for name, pin in stock["full_sidecar_sha256"].items()} if complete else {}
     route_reference = saved["scientific"]["solver_recipe"]["history_risk"]
     actual_route = witness.get("solver_recipe", {}).get("history_risk", {}) if candidate else route_reference
+    expected_sidecar_science = SAVED_SIDE_CAR_SCIENCE if candidate else stock["science"]["scientific_digests"]
     return dict(process=log, science=science, digest=digest, probes=len(opportunities),
                 opportunities=canonical_digest(opportunities), excluded=provenance["excluded_windows"],
                 factors=sum(len(row["candidates"]) for row in source["probes"]), sidecars=sidecars,
@@ -414,7 +418,8 @@ def published(root, mode, log, request, stock, saved, *, adapters=None):
                 all_owned_rf_rms_hz={arm: info["residual_rms_hz"] for arm, info in detail["arms"].items()},
                 terminal_parity=terminal["terminal_sha256"] == previous_terminal,
                 native_parity=digest == (request["native"] if candidate else stock["native_sha256"]),
-                sidecar_parity=sidecar_parity,
+                full_sidecar_record_parity=sidecar_parity,
+                sidecar_science_parity=science["scientific_digests"] == expected_sidecar_science,
                 reference_owner_parity=(owners == older["owner_rows"] if candidate else science["owners"] == stock["science"]["owners"]),
                 route=witness["ports"] if witness else None,
                 route_parity=all(actual_route.get(key) == value for key, value in route_reference.items()),
@@ -453,6 +458,7 @@ def score(root, output):
     ratio = {kind: logs["stock"]["clock"][kind]/logs["candidate"]["clock"][kind]
              for kind in ("elapsed_s", "cpu_s")} if same else None
     reference_parity = {mode: bool(run["native_parity"] and run["terminal_parity"] and run["reference_owner_parity"] and run["route_parity"]
+                                   and run["sidecar_science_parity"]
                                    and run["sidecars"] and run["sidecars"]["grid_points"] == 179
                                    and len(run["png_parity"]) == 8 and all(run["png_parity"].values()))
                         for mode, run in runs.items()}

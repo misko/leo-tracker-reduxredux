@@ -68,7 +68,7 @@ def test_complete_extents_require_custody_and_admit_exactly_one_pair(stage, monk
     assert check["ready"] and check["missing_bytes"] == 0 and check["complete_files"] == 3
 
 
-def test_enrolled_command_binds_original_region_archive_and_current_frozen_solver(tmp_path):
+def test_enrolled_command_binds_original_region_archive_and_current_frozen_solver(tmp_path, monkeypatch):
     import exact_named_raw
 
     request, _, _, _ = runner.references()
@@ -85,6 +85,12 @@ def test_enrolled_command_binds_original_region_archive_and_current_frozen_solve
     assert candidate.history_risk_route and candidate.eight_ms_native_history and candidate.held_anchor_route
     assert candidate.portable_orbit_index is None and candidate.output == tmp_path/"candidate"
     assert runner.route_options(a)["strict_packed_eight"] is False
+    parser = exact_named_raw.parser()
+    parser.add_argument("--cairo-layout", default="stock")
+    monkeypatch.setattr(exact_named_raw, "parser", lambda: parser)
+    assert runner.route_options(a)["cairo_layout"] is False
+    with pytest.raises(ValueError, match="standard raster"):
+        runner.route_options(a + ["--cairo-layout", "active"])
 
 
 def test_only_completed_custody_that_matches_original_extents_is_accepted(stage, monkeypatch):
