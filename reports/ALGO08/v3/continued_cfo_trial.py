@@ -28,6 +28,8 @@ SEALED_PRICE = "25c515e90936e4e03fe858dd0070356bafb3fea84ef492d9bcc8bc629f13b232
 INSTALL = ("geographic", "regional", "block", "projection")
 LIBRARY_ARGUMENTS = dict(zip(INSTALL, ("geographic_library", "regional_track_library",
                                        "frontier_block_library", "grid_feature_projection_library"), strict=True))
+FLAGS = ("prove_empty_graph", "prove_graph_time_support", "named_survivor_finish", "exact_graph_reuse",
+         "reuse_verified_png_reads", "one_pass_web_png", "direct_residual_figures", "direct_orbit_figures")
 
 
 def rebinding(native, rows, spec):
@@ -140,8 +142,6 @@ def work(root):
     from cumulative_grid_projection import saved_inventory_port
     from leo.analysis.glrt_frequency_input import frequency_evidence
     from leo.contracts.digests import canonical_digest
-    from local_future_cli_trial import native_packet
-    from raw_0016_best_trial import FLAGS
     from short_graph_guard import prove
 
     job = read(root/"binding.json")
@@ -152,7 +152,7 @@ def work(root):
     packet = json.loads(staged.checked(Path(source["packet"]), source["native_sha256"][7:]))
     staged.bind_native(packet, job["session"], job["inventory"], detector[7:], expected=source["native_sha256"])
     args = SimpleNamespace(recording=Path(job["recording"]), archive=Path(job["archive"]), region=Path(job["offer"]),
-                           output=target, **{flag[2:].replace("-","_"): True for flag in FLAGS},
+                           output=target, **{flag: True for flag in FLAGS},
                            **{k: Path(p) for k,p in job["libraries"].items()})
     handoff = entry.Handoff(job["session"], job["inventory"], detector[7:], packet)
     graph, layout, png = {}, {}, {}
@@ -163,7 +163,8 @@ def work(root):
             raise ValueError("The enrolled one active publication did not have its bound original graph support")
         receipt, detail = entry.publish_active(args, publication, spec, handoff, layout, graph_audit=graph, png_read_audit=png,
                                      no_active_curvature_sha256=proof.get("curvature_extent", {}).get("native_sha256"))
-    if (not ready or handoff.calls != 1 or native_packet(target).read_bytes() != Path(source["packet"]).read_bytes()):
+    native, = target.glob("fast-scan-automatic-work/*/detections.json")
+    if (not ready or handoff.calls != 1 or native.read_bytes() != Path(source["packet"]).read_bytes()):
         raise ValueError("Expected the selected saved native bytes through exactly one handoff")
     write(target/"continued-cfo-worker.json", dict(receipt=receipt, solve=detail["solve"], graph=graph, layout=layout,
           named_finish=detail["named_survivor_finish"], projection=detail["grid_feature_projection"], png=png, proof=proof,
