@@ -6,6 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 import ds30_relocated_original as relocation
+import ds30_relocation_ledger as ledger
 
 
 def test_only_literal_same_basename_direct_archive_target_is_admitted(tmp_path, monkeypatch):
@@ -51,3 +52,15 @@ def test_only_exact_member_relative_path_is_supported():
         relocation.relative("/approved/record/segment/../file", Path("/approved/record"))
     with pytest.raises(ValueError):
         relocation.relative("/unrelated/record/segment/file", Path("/approved/record"))
+
+
+def test_ledger_import_resumes_same_inode_and_refuses_to_replace(tmp_path):
+    source, target = tmp_path / "proof", tmp_path / "retained"
+    source.write_bytes(b"verified")
+    assert ledger.link_immutable(source, target) == target
+    assert ledger.link_immutable(source, target) == target
+    assert source.samefile(target)
+    wrong = tmp_path / "changed"
+    wrong.write_bytes(b"verified")
+    with pytest.raises(ValueError, match="cannot overwrite"):
+        ledger.link_immutable(wrong, target)

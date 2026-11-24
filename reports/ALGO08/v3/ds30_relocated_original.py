@@ -21,6 +21,7 @@ LOGICAL = Path("/srv/postgres-nvme/fast-scan-recordings")
 PHYSICAL = BULK / "leo/fast-scan-recordings"
 CASES = tuple(f"DS30-{index:04d}" for index in range(447, 456))
 PLAN_PIN = "sha256:9deecea6ce5237d01d277370f57b2666f3b84ab96bba72fe0b668c7701d0fc99"
+PROOF_0452 = "sha256:4c891a48b1b60e0c35fa63fbd18cd213263a3bbdbc58d88672f85fdf1522527e"
 NATIVE_FLAGS = ("chunk_index", "first_sequence", "window_count", "index_bytes", "index_sha256",
                 "index_relative_path", "payload_relative_path", "compressed_bytes", "compressed_sha256",
                 "uncompressed_bytes", "uncompressed_sha256")
@@ -283,11 +284,13 @@ def measured_pair(proof_file, pin, output):
     proof = json.loads(checked(proof_file, pin))
     plan = plan_document()
     case = proof["case"]
-    if (case != "DS30-0452" or proof["plan_sha256"] != PLAN_PIN or proof["driver_sha256"] != digest(Path(__file__).read_bytes())
+    original_proof = case == "DS30-0452" and pin == PROOF_0452
+    if (case not in CASES or proof["plan_sha256"] != PLAN_PIN
+            or not (original_proof or proof["driver_sha256"] == digest(Path(__file__).read_bytes()))
             or Path(proof["roots"]["logical"]).name != Path(proof["inputs"]["authority"]["recording"]).name
-            or not output.is_relative_to(study.OUTPUT / "relocation") or output.name != case
+            or output != study.OUTPUT / "relocation" / case
             or output.parent.resolve(strict=True) != output.parent or output.exists() and output.is_symlink()):
-        raise ValueError("This isolated reopening is limited to the enrolled 0452 relocation")
+        raise ValueError("This reopening is restricted to an exact enrolled NVMe relocation")
     if set(os.sched_getaffinity(0)) != {2} or os.getpriority(os.PRIO_PROCESS, 0) < 15:
         raise ValueError("Use the ordinary low priority single Gauss slot")
     if plan["stock"] != verified_v3(study.STOCK):
@@ -316,7 +319,7 @@ def measured_pair(proof_file, pin, output):
             run_attempt(result, plan, inputs, offer, authority, arm, lease.fileno(), lease_id, 2, state, study.storage_sample)
             unchanged(proof)
         successor, path = study.outcome(output, "successor")
-        if successor["outcome"] in {"complete", "withheld"}:
+        if successor["outcome"] in study.VERIFIED:
             pin_acquisition = verify_encoded_successor(path.parent / "publication", proof)
             write(output / "native-encoded-auth.json", dict(successor=pin_acquisition,
                 installed_contract=proof["stock_reader_sources"], both_raw_authority=proof["reopened"]["raw_authority_sha256"]))
