@@ -142,7 +142,7 @@ def earlier_paid_pairs(development, innovations):
     raw = signed.document(DATA / "ds30-0049-receiver-factorial.json.gz", FACTORIAL)
     paid = raw["native-rows.json"]["document"]
     index = {(row["counter"], row["radio"]): (oid, row) for oid, row in development.items()}
-    stats, differences, errors = Counter(), [], []
+    stats, differences, errors, compatible_errors = Counter(), [], [], []
     for row in paid:
         if row["anchor"]:
             stats["full_anchor_lanes"] += 1
@@ -168,8 +168,13 @@ def earlier_paid_pairs(development, innovations):
                 stats["equal_sign"] += (estimate>0) == (observed>0)
                 differences.append(observed)
                 errors.append(estimate-observed)
+                if abs(estimate) <= FREQUENCY_LIMIT:
+                    stats["coincident_and_passes_innovation_gate"] += 1
+                    stats["compatible_equal_sign"] += (estimate>0) == (observed>0)
+                    compatible_errors.append(estimate-observed)
     return dict(counts=dict(stats), paid_delta_on_coincident_forecast_rows=compare_errors(differences),
-                extrapolated_delta_disagreement_hz=compare_errors(errors), source_sha256=FACTORIAL)
+                extrapolated_delta_disagreement_hz=compare_errors(errors),
+                compatible_extrapolated_delta_disagreement_hz=compare_errors(compatible_errors), source_sha256=FACTORIAL)
 
 
 def ordinary_anchor_census():
