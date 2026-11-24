@@ -4,7 +4,7 @@ The corrected solver completed the full unfiltered mixed 20/12 ms DS30-0008 publ
 
 | Same saved packet | Prior exact Graph and grid | Grouped rank and duplicate check |
 |---|---:|---:|
-| Numerical solve CPU / elapsed | 22.868 / 22.871 s | 22.574 / 22.579 s |
+| Numerical solve CPU / elapsed | 22.868 / 22.875 s | 22.574 / 22.579 s |
 | Render and encode CPU | 2.349 s | 2.490 s |
 | Complete publication CPU | 26.785 s | 26.601 s |
 | Through-exit CPU / elapsed | 27.027 / 27.036 s | 26.921 / 26.947 s |
@@ -25,6 +25,8 @@ Named v3 used genuine full-aperture detections. The mixed inputs differ from tha
 
 ## Full-recording budget
 
-Half of the resident named-v3 qualification's **113.021 s** is **56.510 s**. With the measured **26.947 s** saved process charged in full, at most **29.564 s** remains for reading, verification and unthinned native detection over the 8,182 MB original. That requires at least **277 MB/s** through the whole verified acquisition. The historical unthinned mixed acquisition used **32.403 CPU s and 60.449 elapsed seconds** from a mostly nonresident start. Adding its CPU to this saved process CPU gives an optimistic **59.324 s** before any input wait, about **2.814 s** above the target. Adding the two observed elapsed components gives **87.396 s**, about **1.29×** versus the resident named clock. These are conditional component sums. Separate-process setup and saved handoff work may overlap or disappear in a combined entry. Cache, dependency demand and storage wait may move elapsed in the other direction. No new detector-to-exit measurement was made. [Matched named clocks](measurements/dense-control-clocks.json) · [Original mixed stage clock](measurements/dense-measured-budget.json)
+Half of the resident named-v3 qualification's **113.021 s** is **56.51 s**. With the measured **26.947 s** saved process charged in full, at most **29.564 s** remains for reading, verification and unthinned native detection over the 8,182 MB original. That requires at least **277 MB/s** through the whole verified acquisition. The historical unthinned mixed acquisition used **32.403 CPU s and 60.449 elapsed seconds** from a mostly nonresident start. Adding its CPU to this saved process CPU gives an optimistic **59.324 s** before any input wait, about **2.81 s** above the target. Adding the two observed elapsed components gives **87.396 s**, about **1.29×** versus the resident named clock. These are conditional component sums. Separate-process setup and saved handoff work may overlap or disappear in a combined entry. Cache, dependency demand and storage wait may move elapsed in the other direction. No new detector-to-exit measurement was made. [Matched named clocks](measurements/dense-control-clocks.json) · [Original mixed stage clock](measurements/dense-measured-budget.json)
 
 One fresh candidate ran under the shared Gauss CPU 2 lock at nice 15, best-effort I/O 7 and one numerical thread. The candidate exited zero before the verifier opened the scoring authority. Ten component and adjacent tests passed. The uncompressed receipt SHA-256 is `f4750387b41c8247e6195a162a5653f11c2fd2281b23faa857cddbb1bc29255a`. [Runner](exact_solver_0008.py) · [Tests](../../../tests/pipeline_eval/test_exact_solver_0008.py)
+
+Use the archived release interpreter and the same locked environment as the medium transfer. Run `exact_solver_0008.py preflight` to check the staged packet, archive and source pins. Run `launch FRESH_TMPFS_PATH` for the timed child, then `verify FRESH_TMPFS_PATH` with repository `src` ahead of the released `src` for read-only verification. [Environment](exact-solver-0057.md)
