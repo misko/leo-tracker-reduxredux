@@ -5,10 +5,13 @@ from contextlib import ExitStack
 import ctypes as ct
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 from statistics import median
 import subprocess
+import sys
 from time import perf_counter_ns, process_time_ns
+from unittest.mock import patch
 
 import numpy as np
 
@@ -26,6 +29,9 @@ RELINK_PIN = "b2324c7cfe3c60eecd59a98eda6b8d508c46e01df6ac81375db2f5f500493a30"
 PRIMARY_WRAPPER_OBJECT = "90e6b9af8a0c9de5160016e0eba606f4e0ead8678576c24523138b72c0a3b5a2"
 BUILD_CWD = Path("/tmp/leo-algo08v2-2x/native/algo08v2")
 ASSETS = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/assets")
+TRAIN_ROOT = Path("/var/tmp/leo-v3-eight-ms-primary")
+PROFILE_PINS = {"DS30-0008": "5692c483ab8d38c65e8c9d61defb6e52661e7a4386a4e153246a5b5546593165",
+                "DS30-0016": "6319205cee0efe826f1b05a55cb8f1230892b5126ee880deff4d6d13c9156624"}
 SOURCES = {
     "DS30-0008": (Path("/dev/shm/leo-seekable-member-0008-case1/fast8-auto-20261113-075937-d9ab96ee-1-lower-segment-00000000"),
                   "5ffe3ed98feb37f7f7ada44dbf34d2af9d3fcadce567fd3cdbb7e31965a02759", 77_442_779),
@@ -55,8 +61,8 @@ def traced(source):
                "            prev = best;\n        }\n        rank_cost[1] += rank_now() - carrier_rank_started;")
 
 
-def build(root):
-    doc = json.loads(verified(PUBLISH_BUILD / "build.json", BUILD_PIN))["scout"]["arms"]["8ms"]
+def recipes():
+    doc = json.loads(verified(PUBLISH_BUILD / "build.json", BUILD_PIN))["scout"]
     link = json.loads(verified(PUBLISH_BUILD / "8ms/build-receipt.json", RELINK_PIN))
     command = link["relink"]
     objects = {Path(path).name: Path(path) for path in command if path.endswith(".o")}
@@ -64,8 +70,14 @@ def build(root):
     for name, pin in object_pins.items():
         verified(objects[name], pin)
     name = "timing_first_receiver"
-    text = verified(objects[name + ".o"].with_suffix(".c"), doc["source_sha256"][name]).decode()
+    text = verified(objects[name + ".o"].with_suffix(".c"), doc["arms"]["8ms"]["source_sha256"][name]).decode()
     position = command.index(str(objects[name + ".o"]))
+    return doc, link, name, text, position
+
+
+def build(root):
+    _, link, name, text, position = recipes()
+    command = link["relink"]
     calls = []
 
     def execute(args):
@@ -87,6 +99,54 @@ def build(root):
         execute([*command[:position], obj, *command[position+1:-1], libraries[arm]])
     return libraries, dict(commands=calls, pins={name: sha256(path.read_bytes()).hexdigest()
                                                 for name, path in libraries.items()})
+
+
+def retrain(root):
+    doc, link, name, text, position = recipes()
+    command = link["relink"]
+    original = PUBLISH_BUILD / "8ms/short-primary.so"
+    verified(original, EIGHT_MS_SHA)
+    trainer = TRAIN_ROOT / "reports/ALGO08/single-core-2x/receiver_mixer_profile_trial.py"
+    verified(trainer, doc["trainer_sha256"])
+    variant_root = HERE.parents[2] / "tools/pipeline_eval/variants"
+    overlay_sources = [variant_root / "experimental" / ("receiver_sparse_carriers." + ext) for ext in ("py", "inc")]
+    with patch.object(sys, "path", [str(variant_root), *sys.path]):
+        from experimental import receiver_sparse_carriers
+        if Path(receiver_sparse_carriers.__file__) != overlay_sources[0]:
+            raise ValueError("Expected the existing verified carrier-ranking overlay")
+    libraries = {"active": original}
+    training, calls = {}, []
+
+    def execute(args, **kwargs):
+        args = list(map(str, args))
+        calls.append(args)
+        return subprocess.run(args, cwd=BUILD_CWD, check=True, **kwargs)
+
+    for arm, body in (("matched", text), ("sparse", receiver_sparse_carriers.overlay(text))):
+        path = root / arm
+        feedback = path / "feedback"
+        feedback.mkdir(parents=True)
+        c_path, obj = (path / name).with_suffix(".c"), (path / name).with_suffix(".o")
+        c_path.write_text(body)
+        for phase in ("generate", "use"):
+            library = path / (phase + ".so")
+            flags = [f"-fprofile-{phase}={feedback}", "-fno-profile-values"]
+            required = ["-Werror=missing-profile", "-Werror=coverage-mismatch"] if phase == "use" else []
+            execute([link["compile"][0], *flags, *required, *link["compile"][1:-4],
+                     "-I", variant_root / "experimental", "-c", c_path, "-o", obj])
+            execute([command[0], *flags, *command[3:position], obj, *command[position+1:-1], library])
+            if phase == "generate":
+                environment = os.environ | {"PYTHONPATH": os.pathsep.join(
+                    [str(TRAIN_ROOT), str(TRAIN_ROOT / "src"), str(ASSETS.parent / "src"), str(ASSETS.parent)])}
+                result = execute([sys.executable, trainer, "train", library, ASSETS], env=environment,
+                                 capture_output=True, text=True)
+                training[arm] = json.loads(result.stdout)
+        libraries[arm] = library
+    if training["matched"] != training["sparse"] or training["matched"] != doc["arms"]["8ms"]["training"]:
+        raise ValueError("The site-free trained callback counts changed")
+    return libraries, dict(commands=calls, pins={key: sha256(path.read_bytes()).hexdigest()
+         for key, path in libraries.items()}, training=training,
+         overlay_sha256={p.name: sha256(p.read_bytes()).hexdigest() for p in overlay_sources})
 
 
 def read_member(case):
@@ -158,7 +218,7 @@ def replay(rows, libraries, orders=ORDERS):
                     trace.argtypes, trace.restype = (ct.POINTER(ct.c_uint64),), None
         records, fingerprint = [], []
         for visit, edge, center, samples in rows:
-            trace = engines["trace", edge].native.lib.short_rank_trace_take
+            trace = engines["trace", edge].native.lib.short_rank_trace_take if "trace" in libraries else None
             for lane in (0, 1):
                 expected = None
                 trials = []
@@ -204,9 +264,38 @@ def profile(root, cases):
         stage_gate_ns=RANK_GATE_NS, waveform_backing_bytes=0), sort_keys=True) + "\n")
 
 
+def transfer(root, case, profiles):
+    machine = host()
+    expected = {}
+    for source in SOURCES:
+        path = profiles / f"leo-v3-short-rank-profile-{source}-02/profile.json"
+        evidence = json.loads(verified(path, PROFILE_PINS[source]))["cases"][source]
+        if not evidence["advance"] or evidence["lanes"] == 0:
+            raise ValueError("Both frozen scopes must clear the carrier-ranking profile gate")
+        expected[source] = evidence["exact_raw_factor_sha256"]
+    root.mkdir()
+    libraries, binding = retrain(root)
+    rows, proof = read_member(case)
+    labels = {"rebuilt": "matched", "trace": "sparse", "active": "active"}
+    orders = tuple(tuple(labels[arm] for arm in order) for order in ORDERS)
+    records, digest = replay(rows, libraries, orders)
+    if digest != expected[case]:
+        raise ValueError("The prior strict native factor bytes changed")
+    compares = [{name: sum(r["runs"][i][name]["cpu"] for r in records) for name in libraries}
+                for i in range(len(orders))]
+    (root / "transfer.json").write_text(json.dumps(dict(machine=machine, build=binding, case=case, source=proof,
+        lanes=len(records), positive=sum(r["positive"] for r in records), exact_raw_factor_sha256=digest,
+        ns_per_lane=summarize(records), paid_cpu_ns=compares, records=records, waveform_backing_bytes=0),
+        sort_keys=True) + "\n")
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("root", type=Path)
     cli.add_argument("--case", choices=SOURCES, required=True)
+    cli.add_argument("--transfer", type=Path, help="Directory containing the two frozen original profile runs")
     args = cli.parse_args()
-    profile(args.root, (args.case,))
+    if args.transfer is None:
+        profile(args.root, (args.case,))
+    else:
+        transfer(args.root, args.case, args.transfer)
