@@ -26,6 +26,19 @@ The 20/8 ms receiver and routed solver completed the two enrolled replays in **9
 
 The two recordings were enrolled by known outcome before the positive replay. Each pair used the same original waveform files, input opportunities, supplied region, and causal catalogue on Gauss. The candidate ran first, then installed v3, on the same single core at low priority with numerical libraries limited to one thread. Clocks cover process entry through exit, including decoding, native detection, both fits when applicable, and publication. The files were resident. Offline admission took 0.108 s for DS30-0107 and 0.100 s for DS30-0016. The 0.616 median and 0.771 summed wall ratios exceed the 0.50 target. These two selected recordings share a roof. They cannot establish other-site performance or estimate a DS30-wide fix rate. [Enrollment and scoring code](history_risk_physical_cohort.py) · [Two-case receipt](measurements/history-risk-physical-cohort.json.gz)
 
+### Where the time went on DS30-0016
+
+On the complete DS30-0016 waveform, the same on-disk boundaries separate three parts of the observed process time. Each row ends at process exit. The detections-to-terminal interval includes preparing the catalogue and fitting a position. Publication and final verification continue after the terminal appears.
+
+| DS30-0016 implementation | Launch to detection file | Detection file to decision file | Decision file to exit | Total |
+|---|---:|---:|---:|---:|
+| Installed ALGO08v3 | 5.772 s | 3.295 s | 1.678 s | 10.745 s |
+| 20/8 ms, original storage | 4.388 s | 2.327 s | 2.113 s | 8.829 s |
+| 20/8 ms + Cairo, original storage | 4.333 s | 2.294 s | 1.051 s | 7.677 s |
+| 20/8 ms + Cairo, prepared split storage | 3.291 s | 2.295 s | 0.940 s | 6.525 s |
+
+On these runs Cairo shortened the interval after the decision by **1.062 s**. Changing the storage then shortened time to the detection file by **1.042 s**, while the interval between detections and decision changed by **0.001 s**. These are wall intervals from file timestamps in the original result directories and the measured exit clocks. The measurement checked each file against its sealed digest and matched the decision's detection digest to the actual file. Timestamps are filesystem metadata. External admission and conversion costs are listed separately above. [Boundary extractor](raw_product_clocks.py) · [Input digests, timestamps and stage clocks](measurements/physical-0016-product-clocks.json)
+
 ### Position and frequency on the recording that fixed
 
 | Calibration | Installed horizontal error | Candidate horizontal error | Installed conditional RF RMS | Candidate conditional RF RMS |
