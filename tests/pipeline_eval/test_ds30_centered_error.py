@@ -1,8 +1,10 @@
+import json
 from math import hypot
 
 import pytest
 
-from reports.ALGO08.v3.ds30_centered_error import analyze
+from reports.ALGO08.v3 import ds30_centered_error as trial
+from reports.ALGO08.v3.ds30_centered_error import analyze, pending_pairs
 from reports.ALGO08.v3.ds30_position_moments import decompose, east_north_km
 from tools.pipeline_eval.scoring import distance_km
 
@@ -54,3 +56,51 @@ def test_shared_scored_support_excludes_failed_and_unscored_fixes_only_from_scat
         assert arm["fixes"] == {"installed": 2, "successor": 3}
         assert arm["scored"] == {"installed": 1, "successor": 2}
         assert all(row["n"] == 1 and row["centered_mse_km2"] == 0 for row in arm["builds"].values())
+
+
+def test_zero_shared_fixes_retains_total_return_counts_without_scatter_estimates():
+    arm = {name: {"latlon": None} for name in trial.ARMS}
+    result = analyze([("one", (0., 0.), {role: {"outcome": "withheld", "arms": arm} for role in trial.BUILDS})])
+    assert result["assigned"] == 1
+    for entry in result["arms"].values():
+        assert entry["fixes"] == {"installed": 0, "successor": 0}
+        assert entry["builds"] == {"installed": {"n": 0}, "successor": {"n": 0}}
+        assert entry["successor_minus_installed"] is None
+
+
+def test_pending_prospective_respects_all_pair_seals_before_reading_any_export(tmp_path, monkeypatch):
+    order = ["installed", "successor"]
+    entries = [{"case": case, "order": order} for case in trial.INITIAL+trial.PROSPECTIVE]
+    monkeypatch.setattr(trial, "campaign_order", lambda campaign: entries)
+    observed = {"state": "observed_pair", "verified_pair": True, "chronological": True, "actual_order": order}
+    root = tmp_path/"cases"
+    first = root/trial.PROSPECTIVE[0]
+    first.mkdir(parents=True)
+    path = first/"pair.json"
+    path.write_text(json.dumps(observed))
+    reserved = entries[len(trial.INITIAL):]
+    assert pending_pairs(tmp_path, reserved) == dict.fromkeys(trial.PROSPECTIVE[1:], "no_pair_receipt")
+    # No export or scored receipts exist in this fixture. Pending checks need no endpoint.
+    assert trial.prospective(tmp_path)["ready"] is False
+    path.write_text(json.dumps(observed | {"actual_order": order[::-1]}))
+    with pytest.raises(ValueError, match="frozen order"):
+        pending_pairs(tmp_path, reserved)
+
+
+def test_prospective_requires_current_combined_seal_and_identical_worker_rows(tmp_path, monkeypatch):
+    entries = [{"case": case} for case in trial.INITIAL+trial.PROSPECTIVE]
+    monkeypatch.setattr(trial, "campaign_order", lambda campaign: entries)
+    monkeypatch.setattr(trial, "pending_pairs", lambda campaign, entries: {})
+    rows = [dict(case=case, algorithm=role, verified_pair=True) for case in trial.PROSPECTIVE for role in trial.BUILDS]
+    body = "\n".join(json.dumps(row) for row in rows).encode()
+    (tmp_path/"rows.jsonl").write_bytes(body)
+    seal_path = tmp_path/"rows-with-relocations-seal.json"
+    seal = dict(plan_sha256=trial.PLAN, ledger_snapshot_sha256="previous export", combined_sha256="previous combined")
+    seal_path.write_text(json.dumps(seal))
+    assert trial.prospective(tmp_path)["pending"] == {"combined_export": "ordinary_snapshot_not_yet_sealed"}
+
+    combined = b"\n".join((body.splitlines())[:-1])
+    (tmp_path/"rows-with-relocations.jsonl").write_bytes(combined)
+    seal_path.write_text(json.dumps(seal | dict(ledger_snapshot_sha256=trial.digest(body), combined_sha256=trial.digest(combined))))
+    with pytest.raises(ValueError, match="cover all six"):
+        trial.prospective(tmp_path)
