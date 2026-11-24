@@ -110,7 +110,7 @@ def probe():
     print(json.dumps(result | {"verified_native_png": True}))
 
 
-def launch(root, *, entry=None, extra_sources=None, protocol=PROTOCOL):
+def launch(root, *, entry=None, extra_sources=None, protocol=PROTOCOL, probe_marker=None):
     import combined_successor_0289 as combined
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
@@ -168,7 +168,7 @@ def launch(root, *, entry=None, extra_sources=None, protocol=PROTOCOL):
           smoke=dict(clock=smoke, exit_code=isolated.returncode, stdout=isolated.stdout, stderr=isolated.stderr),
           waveform_reads=0, backing_archive_reads=0))
     isolated.check_returncode()
-    marker = "verified_native_png" if entry is None else "paired_grid_ready"
+    marker = probe_marker or ("verified_native_png" if entry is None else "paired_grid_ready")
     if not json.loads(isolated.stdout)[marker]:
         raise ValueError("The isolated entry smoke did not verify the experimental port")
     write(root / "routed/clock.json", measure(command, env, root / "routed/candidate"))
