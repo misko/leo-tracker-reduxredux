@@ -291,6 +291,57 @@ def field_totals():
     return json.loads(gzip.decompress(checked(path, FIELD)))["modes"]
 
 
+def priced_stages(data):
+    """Transfer only relative native stage costs to the saved field mix."""
+    rows = [row for case in data["cases"].values() for row in case["rows"]]
+    positive = [row for row in rows if row["factor_hex"]]
+    empty = [row for row in rows if not row["factor_hex"]]
+    if not positive or not empty:
+        raise ValueError("A field reweighting needs both native outcome classes")
+    short = data["first30_native"]["short_primary"]
+    full = data["first30_native"]["full"]
+    share = 1-short["empty_lanes"]/short["lanes"]
+    stages = {}
+    for index, name in enumerate(STAGES, 1):
+        means = []
+        for repeat in range(REPEATS):
+            p = sum(row["rounds"][repeat]["clock_on"][index] for row in positive)/len(positive)
+            e = sum(row["rounds"][repeat]["clock_on"][index] for row in empty)/len(empty)
+            means.append(share*p+(1-share)*e)
+        stages[name] = median(means)
+    total = sum(stages.values())
+    short_cpu_share = short["process_cpu_ns"]/(short["process_cpu_ns"]+full["process_cpu_ns"])
+    short_elapsed_share = short["elapsed_ns"]/(short["elapsed_ns"]+full["elapsed_ns"])
+    collections = {
+        "lag_and_carrier": ("lag_timing", "carrier_grid"),
+        "lag_carrier_and_refinement": ("lag_timing", "carrier_grid", "full_rate_refine"),
+        "input_through_carrier": ("input_mix", "fir", "frame_modes", "lag_timing", "carrier_grid"),
+        "confirm_load_and_verify": ("pilot_confirm", "verifier_load", "verifier"),
+        "load_and_verify": ("verifier_load", "verifier"),
+    }
+    ceilings = {}
+    for name, group in collections.items():
+        measure = sum(stages[key] for key in group)
+        fraction = measure/total
+        ceilings[name] = dict(field_short_rate_donor_ns=measure, projected_short_fraction=fraction,
+                              projected_combined_native_cpu_fraction=fraction*short_cpu_share,
+                              projected_combined_native_elapsed_fraction_if_cpu_share_transfers=fraction*short_elapsed_share,
+                              donor_replacement_ns_before_first30_complete_gate=measure-0.4827*total,
+                              donor_replacement_ns_before_one_third_combined_cpu=measure-total/(3*short_cpu_share),
+                              donor_replacement_ns_before_one_third_combined_elapsed=measure-total/(3*short_elapsed_share))
+    index = 1+STAGES.index("verifier_load")
+    verifier_reached = {name: sum(row["rounds"][0]["clock_on"][index] > 0 for row in scope)
+                        for name, scope in (("positive", positive), ("empty", empty))}
+    return dict(stages_ns=stages, total_ns=total, sample_positive=len(positive), sample_empty=len(empty),
+                field_positive_share=share, field_short_combined_cpu_share=short_cpu_share,
+                field_short_combined_elapsed_share=short_elapsed_share,
+                field_short_reduction_for_one_third_combined_cpu=1/(3*short_cpu_share),
+                field_short_reduction_for_one_third_combined_elapsed=1/(3*short_elapsed_share),
+                field_short_reduction_for_elapsed_gate_with_assumed_1_4x_solver={
+                    "first30": .4827, "next16": .3091, "all46": .4179},
+                verifier_reached=verifier_reached, ceilings=ceilings)
+
+
 def profile(root):
     cpu, nice = list(os.sched_getaffinity(0)), os.nice(0)
     io = subprocess.check_output(["ionice", "-p", str(os.getpid())], text=True).strip()
@@ -339,11 +390,13 @@ def profile(root):
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("build", "profile"))
+    cli.add_argument("mode", choices=("build", "profile", "price"))
     cli.add_argument("output", type=lambda path: Path(path).resolve())
     args = cli.parse_args()
     if args.mode == "build":
         args.output.mkdir()
         build(args.output)
-    else:
+    elif args.mode == "profile":
         profile(args.output)
+    else:
+        print(json.dumps(priced_stages(json.loads(args.output.read_bytes())), sort_keys=True, indent=2, allow_nan=False))
