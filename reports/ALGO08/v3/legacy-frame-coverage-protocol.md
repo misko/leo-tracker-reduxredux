@@ -1,0 +1,5 @@
+# Coverage of the original-frame reader on one complete recording
+
+Use the existing resident original DS30-0016 copy, including all 13 members in manifest order. Authenticate both original manifests by their previously pinned digests and every compressed payload by the digest in its manifest. Check the directory and member paths are literal tmpfs paths and all payload pages are resident before hashing. Inspect the existing Zstandard headers without decoding samples. Record which members contain only four-stream Huffman literals with zero sequences, which include match blocks, and how many visits and compressed bytes each group represents. Count the conservative cost of retaining one full decoded block (up to 128 KiB) for every match-bearing block. Other unsupported frame types continue to require ordinary decoding.
+
+The first-member decoder timings cannot establish whole-recording savings. A later raw comparison must retain every enrolled member, including any fallback, and charge creating and validating any new seek map separately from ready replay. The census runs once in the shared low-priority Gauss slot. It runs neither detector nor solver.
