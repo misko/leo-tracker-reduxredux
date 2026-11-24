@@ -85,6 +85,25 @@ def paired_timing(pairs, metric):
                 median_paired_speedup=1 / median(b / a for a, b in matched))
 
 
+def paired_rf_and_error(pairs, arm):
+    """Count changes in the conditional RF fit and position on the same recording."""
+    rf_key = arm + "_rf_rms_hz"
+    error_key = arm + "_error_km"
+    counts = Counter()
+    for installed, candidate in pairs:
+        if None in (installed[rf_key], candidate[rf_key], installed[error_key], candidate[error_key]):
+            continue
+        rf = candidate[rf_key] - installed[rf_key]
+        error = candidate[error_key] - installed[error_key]
+        if rf == 0 or error == 0:
+            counts["tied"] += 1
+        else:
+            direction = "rf_lower" if rf < 0 else "rf_higher"
+            counts[direction + ("_closer" if error < 0 else "_farther")] += 1
+    return dict(comparable=sum(counts.values()), **{key: counts[key] for key in (
+        "rf_lower_closer", "rf_lower_farther", "rf_higher_closer", "rf_higher_farther", "tied")})
+
+
 def squared_error_influence(pairs, arm):
     """Price the largest single contribution to the excess squared error on shared fixes."""
     key = arm + "_error_km"
@@ -309,6 +328,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         summaries[name] = stats
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
+    metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
     if renderer_revision is not None:
         if len(renderer_revision) != 40 or any(c not in "0123456789abcdef" for c in renderer_revision):
             raise ValueError("Expected a full Git revision for the report renderer")
@@ -535,6 +555,25 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "This isolates the effect of these anchors with installed short-visit evidence. "
               "[Anchor-only control](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "9c881a8106ceb548efc032fbfd4883f39c8018b6/reports/ALGO08/v3/ds30-0049-anchor-only.md)"]
+    lines += ["", "### RF fit and position on the same recordings", "",
+              "Each RF residual uses that build’s own accepted observations. The counts below compare changes "
+              "in conditional RF RMS with movement toward or away from the survey on shared scored fixes.", "",
+              "| Calibration | Paired | Lower RF RMS, closer | Lower RF RMS, farther | Higher RF RMS, closer | Higher RF RMS, farther | Either tied |",
+              "|---|---:|---:|---:|---:|---:|---:|"]
+    for arm, label in (("c0", "Fixed zero"), ("fitted_c", "Fitted")):
+        rf = metadata["paired_rf_and_error"][arm]
+        lines.append(f"| {label} | {rf['comparable']} | {rf['rf_lower_closer']} | {rf['rf_lower_farther']} | "
+                     f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
+    lines += ["", "### Checking the receiver effect on another recording", "",
+              "On DS30-0086, each solver also processed both saved detector packets. "
+              "With the ALGO08v3 solver, switching to the mixed 20/8 ms receiver changed fitted position error "
+              "from 0.410 to 0.378 km. With the candidate solver, it changed from 0.457 to 0.382 km. "
+              "At fixed-zero calibration the corresponding changes were 0.402 to 0.399 km and 0.451 to 0.371 km. "
+              "All four combinations returned a position. Conditional RF RMS increased by about 49–50 Hz "
+              "when switching receivers, even though the estimated positions moved closer to survey. "
+              "The mixed receiver improved accuracy on this recording and degraded it on DS30-0049. "
+              "[Paired solver inputs, position shifts and RF fits](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "021fc1bca199524db12f05f5da233ab0a5dda0e8/reports/ALGO08/v3/field-receiver-solver-cross-0086.md)"]
     lines += ["", "### Changing the offered search region", "",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "

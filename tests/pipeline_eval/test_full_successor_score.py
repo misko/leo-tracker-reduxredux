@@ -7,7 +7,7 @@ import sys
 import pytest
 from PIL import Image
 
-from full_successor_score import (PINS, calibration_segment_error_km, compare_centers, outcomes_summary, paired_rows,
+from full_successor_score import (PINS, calibration_segment_error_km, compare_centers, outcomes_summary, paired_rf_and_error, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
 
@@ -87,6 +87,16 @@ def test_calibration_segment_treats_clipped_endpoints_and_antimeridian_as_geogra
     assert calibration_segment_error_km([0, 0], [0, 1], [0, 1]) == pytest.approx(degree)
     assert calibration_segment_error_km([5, 1], [0, 0], [0, 180]) is None
     assert calibration_segment_error_km([0, 0], None, None) is None
+
+
+def test_frequency_and_geographic_changes_use_the_same_available_pairs():
+    def row(hz, km):
+        return dict(c0_rf_rms_hz=hz, c0_error_km=km)
+
+    changes = [row(9,1), row(9,3), row(11,1), row(11,3), row(11,2), row(10,3), row(None,1), row(9,None)]
+    result = paired_rf_and_error([(row(10,2), changed) for changed in changes], "c0")
+    assert result == dict(comparable=6, rf_lower_closer=1, rf_lower_farther=1, rf_higher_closer=1,
+                          rf_higher_farther=1, tied=2)
 
 
 def matching_pair():
@@ -224,6 +234,8 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
+    assert "from 0.410 to 0.378 km. With the candidate solver, it changed from 0.457 to 0.382 km." in markdown
+    assert "field-receiver-solver-cross-0086.md)" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown
