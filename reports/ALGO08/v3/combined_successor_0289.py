@@ -77,18 +77,18 @@ def worker(root):
         raise ValueError("The admitted successor implementation changed")
     original, audit = boot.load_runtime, {}
     routed = root/"routed"
-    with ExitStack() as scope:
-        def load():
-            result = original()
-            scope.enter_context(exact_grid(PROJECTION, TEMPLATE, audit))
-            return result
+    try:
+        with ExitStack() as scope:
+            def load():
+                result = original()
+                scope.enter_context(exact_grid(PROJECTION, TEMPLATE, audit))
+                return result
 
-        scope.enter_context(patch.object(boot, "load_runtime", load))
-        scope.enter_context(patch.object(generic, "routed", partial(generic.routed, route_binding=successor_binding)))
-        try:
+            scope.enter_context(patch.object(boot, "load_runtime", load))
+            scope.enter_context(patch.object(generic, "routed", partial(generic.routed, route_binding=successor_binding)))
             guarded(STAGED/"job.json", JOB_SHA, routed)
-        finally:
-            write(routed/"combined-grid.json", audit)
+    finally:
+        write(routed/"combined-grid.json", audit)
 
 
 def prepare(root):

@@ -103,3 +103,31 @@ def test_unqualified_grid_binding_uses_original_sampler(monkeypatch):
     with successor.exact_grid("not opened", "not opened", audit):
         assert phase.cached_predictive_grid is ordinary
     assert audit == {"fallback": "unsupported_native_grid_binding"}
+
+
+def test_worker_exports_grid_telemetry_after_leaving_native_context(monkeypatch, tmp_path):
+    import aperture_trial
+    import combined_successor as port
+    import combined_successor_0289 as trial
+    import empty_bootstrap as boot
+    import solver_exception_live
+
+    (tmp_path/"routed").mkdir()
+    observed = {}
+    monkeypatch.setattr(boot, "load_runtime", lambda: None)
+    monkeypatch.setattr(trial, "read", lambda _: dict(sources={}, job_sha256=trial.JOB_SHA, libraries={}))
+    monkeypatch.setattr(trial, "source_pins", dict)
+    monkeypatch.setattr(trial, "admitted_libraries", dict)
+    monkeypatch.setattr(solver_exception_live, "worker", lambda *_: boot.load_runtime())
+    monkeypatch.setattr(aperture_trial, "write", lambda path, value: observed.update({path.name: dict(value)}))
+
+    @contextmanager
+    def native_grid(_projection, _template, audit):
+        yield
+        audit["projection"] = {"native_projection": 3}
+        audit["assembly"] = {"assembly_calls": 2}
+
+    monkeypatch.setattr(port, "exact_grid", native_grid)
+    trial.worker(tmp_path)
+    assert observed["combined-grid.json"] == {
+        "projection": {"native_projection": 3}, "assembly": {"assembly_calls": 2}}
