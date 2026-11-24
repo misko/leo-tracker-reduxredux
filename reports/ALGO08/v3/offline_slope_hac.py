@@ -135,17 +135,21 @@ def physical_summary(trace_root):
             n, diag = row["points"], conditional["diagnostics"]
             if len(row["observation_ids"]) != n:
                 raise ValueError("Unexpected archived active point count")
-            other = all(v for key, v in row["actual_tests"].items() if key != "conditional")
-            if (other and conditional["rms_hz"] <= 450 and diag["mean_z"] <= 3
+            if (conditional["rms_hz"] <= 450 and diag["mean_z"] <= 3
                     and diag["maximum_step_z"] <= 4 and diag["quadratic_bic_gain"] <= 10
                     and abs(diag["lag1_acf"]) <= 4/np.sqrt(n) and diag["slope_z"] > CUTOFF):
+                competing_blocks = [key for key, passed in row["actual_tests"].items()
+                                    if key != "conditional" and passed is False]
                 rows.append(dict(component=row["component"], points=n, slope_z=diag["slope_z"],
                                  lag1=diag["lag1_acf"], lag1_limit=4/np.sqrt(n),
-                                 variance_ratio_needed_for_slope_gate=(diag["slope_z"]/CUTOFF)**2))
+                                 variance_ratio_needed_for_slope_gate=(diag["slope_z"]/CUTOFF)**2,
+                                 competing_blocks=competing_blocks))
         # These scalar traces preserve ordered observation IDs, not the
         # released gate's time/residual inputs for a counterfactual.
         summary[case] = dict(gate_sha256=gate_pin, stage_sha256=stage_pin, slope_only_rows=rows,
-                             slope_only_points=sum(r["points"] for r in rows), vector_scores=0)
+                             slope_only_points=sum(r["points"] for r in rows),
+                             points_blocked_by_conditional_slope_alone=sum(r["points"] for r in rows if not r["competing_blocks"]),
+                             vector_scores=0)
     return summary
 
 
