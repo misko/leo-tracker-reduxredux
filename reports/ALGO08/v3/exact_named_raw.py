@@ -263,6 +263,27 @@ def check_strict_input(args):
     staged_path(codec)
 
 
+def visit_frame_scope(args, stack):
+    path = getattr(args, "visit_frame_custody", None)
+    digest = getattr(args, "visit_frame_custody_sha256", None)
+    if path is None and digest is None:
+        return None
+    if path is None or digest is None or getattr(args, "strict_packed_eight", False):
+        raise ValueError("Visit frames require their own trusted authority and exclude strict packed input")
+    if not (args.eight_ms_native_history and args.held_anchor_route):
+        raise ValueError("Visit frames require the signed complete 20/8 ms receiver")
+    from empty_bootstrap import clock, now
+    from visit_frame_input import binding, custody
+
+    started = now()
+    original = custody(staged_path(path), digest, args.recording)
+    audit = dict(custody_sha256=digest, inventory_sha256=original["inventory_sha256"],
+                 session_id=original["session_id"], raw_authority=original["raw_authority"])
+    stack.enter_context(binding(sys.modules["empty_bootstrap"], original, audit))
+    audit["setup"] = clock(started)
+    return audit
+
+
 def run(args):
     import unified_short_bootstrap as raw
 
@@ -272,7 +293,14 @@ def run(args):
         raise ValueError("Supply the pinned causal archive digest")
     sys.addaudithook(deny_backing(args.recording))
     check_strict_input(args)
-    terminal = raw.run(args, publisher=publish_active)
+    with ExitStack() as stack:
+        visit_frame = visit_frame_scope(args, stack)
+        terminal = raw.run(args, publisher=publish_active)
+    if visit_frame is not None:
+        from hashlib import sha256
+
+        visit_frame["port_sha256"] = "sha256:"+sha256((HERE/"visit_frame_input.py").read_bytes()).hexdigest()
+        write(args.output/"visit-frame-acquisition.json", visit_frame)
     if not (args.output/"exact-named-raw-witness.json").exists():
         witness = json.loads((args.output/"unified-short-bootstrap.json").read_bytes())
         if terminal["decision"] != "withheld" or witness["scientific_imports_after"]:
@@ -302,6 +330,9 @@ def parser():
     command.add_argument("--packed-ci16-map", type=Path, help="Trusted all-member strict packed map")
     command.add_argument("--packed-ci16-map-sha256", help="Independently verified map SHA-256")
     command.add_argument("--packed-ci16-codec", type=Path, help="Native codec pinned by the trusted map")
+    command.add_argument("--visit-frame-custody", type=Path,
+                         help="Use the independently authenticated optional 20/8 ms visit-frame index")
+    command.add_argument("--visit-frame-custody-sha256", help="Trusted detached visit-frame authority SHA-256")
     command.set_defaults(eight_ms_native_history=True, held_anchor_route=True, prove_empty_graph=True,
                          prove_graph_time_support=True, prove_no_active_curvature=True, one_pass_web_png=False,
                          exact_graph_reuse=False, reuse_verified_png_reads=False, lazy_scanner_detector=False)
