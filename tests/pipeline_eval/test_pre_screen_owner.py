@@ -8,7 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 
 from named_cold_owner_trace import observe as installed_observer
 from pre_screen_owner import Curve, activate, alternative_ids, nominate
-from second_curve_gate_trace import ReachedSecondGate, observe as charted_observer, read_gates
+from second_curve_gate_trace import ReachedSecondGate, instrumented_gate, observe as charted_observer, read_gates
+from second_curve_gate_grade import row_headroom
 
 
 def alternatives(points, index=0, norad=12345, alias=-1):
@@ -97,3 +98,41 @@ def test_charted_trace_rejects_duplicate_observations_and_keeps_unknown_metric_n
     tape["tracks"].append(duplicate)
     with pytest.raises(ValueError, match="active row membership"):
         read_gates(tape)
+
+
+def test_original_gate_instrumentation_recovers_family_and_local_failure(monkeypatch):
+    import numpy as np
+    from leo.analysis.localization_v3 import conservative_recovery as gate_module
+
+    track = dict(key="a",times=np.arange(3.),values=np.zeros(3),rf_hz=11.5e9,receiver=1,channel=1,
+                 observation_ids=["o0","o1","o2"])
+    scan = SimpleNamespace(tracks=[track],hardware=lambda *args: np.zeros(3),rx_basis=[np.zeros((3,1))])
+    model = SimpleNamespace(scan=scan, rows=[dict(candidate_norad=12345,candidate_index=0)],
+        members=[0],slices=[slice(0,3)],alias=[0],keep=np.ones(3,dtype=bool),
+        state=lambda _:dict(beta=None,smooth=[np.zeros(1)]),
+        calculate=lambda _:dict(conditional_residual_hz=np.zeros(3)),
+        conditional_frequency=lambda _:(np.zeros(3),np.ones(3)))
+    monkeypatch.setattr(gate_module,"whitening",lambda _:())
+    monkeypatch.setattr(gate_module,"profile",lambda *_:dict(rms=[12.],bias=[0.],innovations=None,alias=[0]))
+    monkeypatch.setattr(gate_module,"conditional_gate",lambda *_:dict(compatible=True,rms_hz=20.,mean_hz=0.,diagnostics={}))
+    monkeypatch.setattr(gate_module,"requires_multiple_orbital_owners",lambda *_:True)
+    for passing in (True,False):
+        monkeypatch.setattr(gate_module,"batch_noise_screen",lambda *_:dict(noise_screen_pass=[passing]))
+        original = gate_module.retained_metrics(model,None)
+        candidate = instrumented_gate(gate_module.retained_metrics)(model,None)
+        row, = candidate["tracks"]
+        assert {k:row[k] for k in original["tracks"][0]} == original["tracks"][0]
+        trace, = read_gates(candidate)
+        assert trace["actual_tests"]["profile_noise"] is passing
+        assert trace["family_support_groups"] == (1 if passing else None)
+
+
+def test_derive_unsigned_slope_at_exact_original_floor():
+    row = dict(conditional=dict(compatible=False,rms_hz=12.,mean_hz=3.,diagnostics=dict(
+        mean_z=.1,slope_z=3.01,quadratic_bic_gain=-1.,maximum_step_z=1.,lag1_acf=.2)))
+    measured = row_headroom(row,[10.,11.,12.,13.])
+    assert measured["span_s"] == 3.
+    assert measured["conditional_sigma_from_moments_hz"] == 75.
+    assert measured["absolute_slope_from_z_hz_per_s"] == pytest.approx(3.01*75./5**.5)
+    assert measured["conditional_failed"] == ["slope_z"]
+    assert measured["signed_slope_hz_per_s"] is None
