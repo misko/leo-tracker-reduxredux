@@ -5,6 +5,7 @@ import pytest
 import zstandard as zstd
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 from reports.ALGO08.v3 import legacy_block_multi as multi
 from reports.ALGO08.v3 import legacy_block_seek as core
@@ -120,3 +121,31 @@ def test_authentic_literal_layout_falls_back_to_complete_stock(tmp_path, native)
     assert len(result) == len(expected)
     assert "literal-only" in metrics["fallback"]
     assert not path.exists()
+
+
+@pytest.mark.parametrize("literal", [False, True])
+def test_first_use_map_reopens_from_the_same_verified_encoded_snapshot(tmp_path, native, literal):
+    from reports.ALGO08.v3 import legacy_first_map_input as first
+
+    reader, chunk, _, _ = capture(tmp_path, literal_only=literal)
+    library = tmp_path / "replay.so"
+    core.build(library)
+    active = core.load(library)
+    member = fused.FusedMember(reader, chunk, native, None, allow_literal=True)
+    try:
+        assert sum(window.samples.nbytes for window in member.windows()) == chunk.uncompressed_bytes
+        raw, pin = member.sidecar()
+        assert bool(member.exceptions) != literal
+        result = first.reopen(member, {"map_sha256": pin}, raw, core if literal else multi, active)
+        assert result["original_encoded_reused"] == chunk.compressed_bytes
+        assert result["prefix_bytes"] == member.rows[0].payload_bytes
+        assert result["prefix_sha256"] == member.prefixes[0]
+        plan = {"members": [{"map": "member.json", "map_sha256": pin}]}
+        assert first.publish_bundle(tmp_path / "maps", plan, {"member.json": raw}) == sha256_digest(
+            (tmp_path / "maps/custody.json").read_bytes())
+        assert (tmp_path / "maps/member.json").read_bytes() == raw
+        with pytest.raises(BundleCorruptionError, match="Map changed"):
+            first.publish_bundle(tmp_path / "damaged", plan, {"member.json": raw + b" "})
+        assert not (tmp_path / "damaged").exists()
+    finally:
+        member.close()
