@@ -4,6 +4,7 @@ import pytest
 
 from reports.ALGO08.v3.regional_decision_bound import below, disprove, mixture_cap
 from reports.ALGO08.v3.regional_lazy_geometry import cell_bound
+from reports.ALGO08.v3.regional_lazy_projection import projection_order
 
 
 @pytest.mark.parametrize("peak, visible,total", [(0., 1, 1), (35., 50, 1000), (3000., 100, 11177), (-50., 100, 1000)])
@@ -45,3 +46,11 @@ def test_lazy_ceiling_keeps_all_cap_endpoints_even_for_unscored_tracks():
     assert result["receiver_only_cells"] == 240
     assert result["lazy_cells"] == 200
     assert result["prefix_only_avoided_cells"] == 40
+
+
+def test_compact_plan_retains_endpoints_and_caches_duplicate_times():
+    order, mapping = projection_order(8, [3, 6, 3], [[1, 3, 5, 1], [0, 3, 6, 7]])
+    assert order.tolist() == [3, 6, 1, 5, 0, 7]
+    assert mapping.tolist() == [4, 2, -1, 0, -1, 3, 1, 5]
+    with pytest.raises(ValueError, match="outside the original prepared grid"):
+        projection_order(8, [2], [[7, 8]])

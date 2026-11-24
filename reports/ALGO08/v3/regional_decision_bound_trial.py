@@ -19,6 +19,7 @@ SOURCE_PINS = {"dense": "f4750387b41c8247e6195a162a5653f11c2fd2281b23faa857cddbb
 SOUTH_OFFERS = {"south-far": "a5127d5844ca98f58a157ec2b6b962f60ec2894c58b8122a0ee244b248a5eb62",
                 "south-near": "0c89bd52594b706b2772fbcf6ea627065eeb3d94eb6266f35de09ebb6b7a5d2a"}
 BATCH = 8
+LAZY_CELL_SHA = "593da581c752828d428ded900ccaf80964a74038f6b723163066a4ceba7c541e"
 
 
 def assignment(case):
@@ -149,7 +150,46 @@ class Receiver:
             scores.extend(self.evaluate(batch, arrays))
 
 
-def stage(kernel, base, points, width, mode):
+class LazyReceiver(Receiver):
+    """Keep the released original track port with a compact per-probe projection."""
+
+    def __init__(self, packed, kernel, library):
+        import numpy as np
+        from regional_lazy_projection import LazyProjector
+
+        super().__init__(packed, kernel)
+        self.projection = LazyProjector(library, packed.geometry, np.r_[self.first, self.last],
+                                        [batch.index for batch in self.batches])
+        self.first = self.projection.map[self.first]
+        self.last = self.projection.map[self.last]
+        self.endpoints = int(max(self.first.max(), self.last.max())) + 1
+        for batch in (self.full, *self.batches):
+            batch.index = self.projection.map[batch.index]
+            if np.any(batch.index < 0):
+                raise ValueError("The lazy partition dropped a scored time")
+            batch.required = int(batch.index.max())+1
+
+    def project(self, point):
+        start = process_time_ns()
+        result = self.projection.begin(*point["latlon"])
+        self.metrics.update(projection_cpu_ns=process_time_ns()-start, projections=1)
+        return result
+
+    def ensure(self, extent):
+        start = process_time_ns()
+        cells = self.projection.ensure(extent)
+        self.metrics.update(projection_cpu_ns=process_time_ns()-start, cells=cells)
+
+    def evaluate(self, batch, arrays):
+        self.ensure(batch.required)
+        return super().evaluate(batch, arrays)
+
+    def caps(self, horizon):
+        self.ensure(self.endpoints)
+        return super().caps(horizon)
+
+
+def stage(kernel, base, points, width, mode, lazy_library=None):
     from bilateral_veto_disproof import disprove as original_disprove
     from regional_decision_bound import disprove
     from regional_probe_block import OrderedProbeScores, ProbeBlock
@@ -159,9 +199,14 @@ def stage(kernel, base, points, width, mode):
     start, wall = process_time_ns(), perf_counter_ns()
     decision, probe = None, None
     if mode != "guarded":
-        probe = Receiver(TrackScores(SCORES, base, only_receiver=1), kernel)
-        decision = (original_disprove(points, width, probe.score) if mode == "one" else
-                    disprove(points, width, probe.score, probe.loses))
+        try:
+            packed = TrackScores(SCORES, base, only_receiver=1)
+            probe = LazyReceiver(packed, kernel, lazy_library) if mode == "lazy" else Receiver(packed, kernel)
+            decision = (original_disprove(points, width, probe.score) if mode == "one" else
+                        disprove(points, width, probe.score, probe.loses))
+        except (AttributeError, KeyError, TypeError, ValueError, OverflowError, OSError):
+            if mode != "lazy":
+                raise
     fallback, visited = None, []
     if decision is None:
         started = process_time_ns()
@@ -211,7 +256,56 @@ def compare(kernel, packed, width, points, control):
                 audited_receiver_tracks=audit.tracks)
 
 
-def run(case, output):
+def compare_lazy(case, kernel, base, width, points, control, library):
+    import numpy as np
+    from leo.contracts.digests import canonical_digest
+    from regional_track_scores import TrackScores
+    from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import probe_layout
+
+    raw = (HERE/"measurements/regional-lazy-geometry.json").read_bytes()
+    if sha256(raw).hexdigest() != LAZY_CELL_SHA:
+        raise ValueError("The measured stopped prefix inventory changed")
+    ceiling = json.loads(raw)["cases"][case]
+    runs = [stage(kernel, base, points, width, mode, library) for mode in ("guarded", "lazy", "lazy", "guarded")]
+    stock, rows = runs[0]
+    expected = stock["decision"]
+    if any(expected.get(key) != control.get(key) for key in ("stop", "would_withhold", "probes_evaluated")):
+        raise ValueError("The original fused stage no longer matches its release witness")
+    for record, observed in runs[1:]:
+        if record["decision"]["would_withhold"] != expected["would_withhold"] or (observed and observed != rows):
+            raise ValueError("The lazy stage changed the released decision or complete fallback")
+        if record["mode"] == "lazy" and (record["native"]["cells"] != ceiling["lazy_cells"]
+                or [row["evaluated"] for row in record["exteriors"]] != [row["evaluated"] for row in runs[1][0]["exteriors"]]):
+            raise ValueError("Lazy projection did not respect the original stopped prefixes")
+    eligible, remaining = probe_layout(points, width)
+    auditor = LazyReceiver(TrackScores(SCORES, base, only_receiver=1), kernel, library)
+    lookup = {tuple(row["xy_km"]): row for row in points}
+    witness = next(points[i] for i in remaining if points[i]["side"] == "inside")
+    partitions = [(witness, len(auditor.projection.columns))]
+    for row in runs[1][0]["exteriors"]:
+        batches = [auditor.batches[i//BATCH] for i in range(0, row["evaluated"], BATCH)]
+        partitions.append((lookup[tuple(row["xy"])], max([auditor.endpoints, *(b.required for b in batches)])))
+    assert len(partitions)-1 <= len(eligible)
+    parity_cells = 0
+    for point, extent in partitions:
+        lazy = auditor.project(point)
+        auditor.ensure(extent)
+        ordinary = kernel.phase_linear_frequency(auditor.packed.geometry, *point["latlon"])
+        ids = auditor.projection.columns[:extent]
+        for a, b in zip(lazy, ordinary, strict=True):
+            dtype = np.uint64 if a.dtype == np.float64 else a.dtype
+            if not np.array_equal(a[:, :extent].view(dtype), b[:, ids].view(dtype)):
+                raise ValueError("Compact used projection values differ from the released full projection")
+        parity_cells += auditor.projection.orbits*extent
+    if parity_cells != ceiling["lazy_cells"]:
+        raise ValueError("The geometry audit missed the actual paid subset")
+    savings = [runs[i][0]["cpu_ns"]-runs[j][0]["cpu_ns"] for i, j in ((0, 1), (3, 2))]
+    return dict(runs=[item for item, _ in runs], matched_cpu_savings_ns=savings,
+                advance=min(savings) >= 50_000_000, parity_cells=parity_cells,
+                released_rows_sha256=canonical_digest(rows), actual_guarded_decision=expected)
+
+
+def run(case, output, lazy_library=None, lazy_library_sha256=None, prior_dense=None):
     from aperture_trial import configuration, read, solve, write
 
     publication, spec = configuration()
@@ -228,6 +322,11 @@ def run(case, output):
     machine = host()
     if any(file_sha(path) != pin for path, pin in ((SCORES, TRACK_SCORES_SHA), (BLOCK, BLOCK_SHA), (GEOGRAPHIC, GEOGRAPHIC_SHA))):
         raise ValueError("The pinned native regional libraries changed")
+    if lazy_library is not None:
+        if file_sha(lazy_library) != lazy_library_sha256:
+            raise ValueError("The reviewed lazy native artifact changed")
+        if case != "dense" and (prior_dense is None or not read(prior_dense)["advance"]):
+            raise ValueError("The dense native lazy performance gate did not pass")
     job = assignment(case)
     archive = Path(job["archive"]["root"])
     kernel, _ = checked_runtime()
@@ -249,9 +348,14 @@ def run(case, output):
                     start = process_time_ns()
                     points, base, meta = kernel._prepare_probe_scores(data, catalogue, offer)
                     setup = process_time_ns()-start
-                    result.update(compare(kernel, base, offer.width_km, points, job["control"]),
-                                  geometry_setup_cpu_ns=setup, meta=meta)
-                    return dict(result["guarded"]["decision"], **meta)
+                    if lazy_library is None:
+                        result.update(compare(kernel, base, offer.width_km, points, job["control"]))
+                        stock_decision = result["guarded"]["decision"]
+                    else:
+                        result.update(compare_lazy(case, kernel, base, offer.width_km, points, job["control"], lazy_library))
+                        stock_decision = result["actual_guarded_decision"]
+                    result.update(geometry_setup_cpu_ns=setup, meta=meta)
+                    return dict(stock_decision, **meta)
 
                 with patch.object(kernel, "evaluate_veto", evaluate):
                     regional_bound_guard.causal_probes(tracks, reader, view, catalogue=causal, terminal_only=True)
@@ -268,6 +372,7 @@ def run(case, output):
     if not result:
         raise ValueError("The saved proof did not run")
     write(output, dict(case=case, source=job, machine=machine, waveform_reads=0, position_fits=0,
+                       lazy_library_sha256=lazy_library_sha256,
                        runner_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), **result))
 
 
@@ -275,5 +380,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case", choices=CASES)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--lazy-library", type=Path)
+    parser.add_argument("--lazy-library-sha256")
+    parser.add_argument("--prior-dense", type=Path)
     args = parser.parse_args()
-    run(args.case, args.output)
+    run(**vars(args))
