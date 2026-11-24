@@ -160,12 +160,17 @@ def exact_arm(owners, membership, installed, candidate_index):
     records = {}
     for name, all_ids in membership.items():
         yes, no = all_ids & owner_ids, all_ids-owner_ids
-        side = records[name] = dict(installed_owner=len(yes), installed_nonowner=len(no),
-                                    radio={str(rx): dict(owned=sum(installed[i]["radio"]==rx for i in yes),
-                                                 nonowned=sum(installed[i]["radio"]==rx for i in no)) for rx in (0,1)})
+        side = records[name] = dict(installed_owner=len(yes), installed_nonowner=len(no), radio={})
         if name in ("missing", "common"):
             side["neighbor_context"] = dict(owned=context_counts(yes, installed, candidate_index),
                                             nonowned=context_counts(no, installed, candidate_index))
+        for rx in (0, 1):
+            owned = {oid for oid in yes if installed[oid]["radio"] == rx}
+            unowned = {oid for oid in no if installed[oid]["radio"] == rx}
+            lane = side["radio"][str(rx)] = dict(owned=len(owned), nonowned=len(unowned))
+            if name in ("missing", "common"):
+                lane["neighbor_context"] = dict(owned=context_counts(owned, installed, candidate_index),
+                                                nonowned=context_counts(unowned, installed, candidate_index))
     return dict(class_counts=records, time=owner_times(owners, installed, membership))
 
 
@@ -204,11 +209,13 @@ def study(snapshot):
                             or len({n for n,_ in owners.values()}) != arms[arm]["satellites"]):
                         raise ValueError("A published installed owner differs from its native factor or manifest")
                     result["arms"][arm] = dict(exact_arm(owners, groups, installed, candidate_index),
-                                               owner_sha256=arms[arm]["owner_sha256"], owner_count=len(owners))
+                                               owner_sha256=arms[arm]["owner_sha256"], owner_count=len(owners),
+                                               satellites=arms[arm]["satellites"])
             else:
                 for arm in ARMS:
                     count = arms[arm]["associated_points"]
                     result["arms"][arm] = dict(owner_sha256=arms[arm]["owner_sha256"], owner_count=count,
+                                               satellites=arms[arm]["satellites"],
                                                exact_owner_count_bounds={k:owner_bounds(count,len(positive),len(v))
                                                                          for k,v in groups.items()})
     return dict(ledger_sha256=FIRST30, protocol_sha256=digest((HERE/"missed-owner-support-protocol.md").read_bytes()), cases=results)
