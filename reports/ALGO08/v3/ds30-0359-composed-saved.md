@@ -10,7 +10,8 @@ clock by 0.415 s. Candidate admission erased that margin against
 the historical installed exit alone. This is one previously exposed
 saved case outside the three-case blind cohort.
 [Frozen protocol](ds30-0359-composed-saved-protocol.md) ·
-[Earlier controls](ds30-0359-combined.md)
+[Earlier controls](ds30-0359-combined.md) ·
+[Fresh installed comparator](ds30-0359-installed-control.md)
 
 | Timing boundary | Historical installed wall / CPU s | Earlier ordinary routed wall / CPU s | Clean composed wall / CPU s |
 | --- | ---: | ---: | ---: |
