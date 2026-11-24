@@ -241,6 +241,7 @@ def paired_rank(prepared, region, bound, scan, core):
     from leo.analysis.localization_v3.discovery import signature
     from leo.application.localization_v3_engine import _json_value
     from leo.contracts.digests import canonical_digest
+    from proof_global_rank import ranked_scores
 
     def timed(context):
         start = process_time_ns(), perf_counter_ns()
@@ -250,24 +251,38 @@ def paired_rank(prepared, region, bound, scan, core):
     def readout(nodes):
         return json.loads(json.dumps(nodes, default=_json_value, allow_nan=False))
 
-    baseline, baseline_clock = timed(scan)
-    candidate_scan = core.scan_context(prepared, region, digest(prepared["noise"]), bound, "previous")
     work = Counter()
 
     def install(current, tables, _global_counts, *, borrow=False):
         return prototype.install(current, tables, work, borrow=borrow)
 
-    with patch.object(entry, "shared_association_rows", install):
-        candidate, elapsed = timed(candidate_scan)
+    def closed(wrapper, name, qualified_name):
+        if wrapper.__qualname__ != qualified_name:
+            raise ValueError("The ordinary cached rank wrapper changed")
+        cells = dict(zip(wrapper.__code__.co_freevars, wrapper.__closure__, strict=True))
+        return cells[name].cell_contents
+
+    track_rows = closed(core.ranked_initial_nodes, "ordinary_rank", "full_catalogue_route.<locals>.cold.<locals>.rank")
+    installed = closed(track_rows, "original", "rank_with_centre_rows.<locals>.rank")
+    with ranked_scores(installed):
+        original_scored, baseline_clock = timed(scan)
+        candidate_scan = core.scan_context(prepared, region, digest(prepared["noise"]), bound, "previous")
+        with patch.object(entry, "shared_association_rows", install):
+            candidate_scored, elapsed = timed(candidate_scan)
+    original_scores, baseline = zip(*original_scored, strict=True)
+    candidate_scores, candidate = zip(*candidate_scored, strict=True)
     base, test = readout(baseline), readout(candidate)
+    original_digest, candidate_digest = canonical_digest(base), canonical_digest(test)
+    scores_match = [float(x).hex() for x in original_scores] == [float(x).hex() for x in candidate_scores]
     changed = []
     for rank, (left, right) in enumerate(zip(base, test, strict=False), 1):
         for row1, row2 in zip(left["seed"]["rows"], right["seed"]["rows"], strict=False):
             if row1 != row2:
                 changed.append(dict(rank=rank, curve=row1["component"], keys=sorted(k for k in row1 if row1[k] != row2[k])))
-    return baseline, dict(control=baseline_clock, candidate=elapsed, cold_nodes_byte_equal=base == test,
+    return baseline, dict(control=baseline_clock, candidate=elapsed, cold_nodes_byte_equal=original_digest == candidate_digest,
                           ordered_signatures_match=[signature(node) for node in baseline] == [signature(node) for node in candidate],
-                          control_digest=canonical_digest(base), candidate_digest=canonical_digest(test),
+                          all_rank_scores_exact=scores_match, original_scores=original_scores, candidate_scores=candidate_scores,
+                          control_digest=original_digest, candidate_digest=candidate_digest,
                           changed_diagnostics=changed, candidate_work=dict(work))
 
 
@@ -321,8 +336,6 @@ if __name__ == "__main__":
     cli.add_argument("--inventory", type=Path)
     cli.add_argument("--prototype", action="store_true")
     args = cli.parse_args()
-    if args.prototype and args.case != "medium":
-        cli.error("Use the frozen medium-only prototype")
     if args.mode == "worker":
         worker(args.case, args.request, args.inventory, args.output, prototype=args.prototype)
     else:
