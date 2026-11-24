@@ -57,6 +57,7 @@ def audit(output):
         with trace.bind():
             started = now()
             import empty_bootstrap as boot
+            from combined_successor_raw_entry import solver_ports
             from legacy_first_map_entry import parser
 
             expected = json.loads(boot.checked(ORIGINAL/"result.json", RESULT))
@@ -77,7 +78,6 @@ def audit(output):
 
             trace.phase = "saved_handoff"
             started = now()
-            from combined_successor_raw_entry import solver_ports
             from cumulative_grid_projection import saved_inventory_port
             import exact_named_raw as raw
             import history_cairo_render
