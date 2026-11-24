@@ -200,7 +200,10 @@ def run(args):
         raise ValueError("Direct figure rendering requires --one-pass-web-png")
     lane_mask = getattr(args, "short_lane_mask", None)
     eight_ms = getattr(args, "eight_ms_native_history", False)
+    full_anchor_primary = getattr(args, "full_anchor_primary_library", None)
     whole_blocks = getattr(args, "whole_stereo_blocks", False)
+    if full_anchor_primary is not None and not eight_ms:
+        raise ValueError("Primary-only anchors require all-visit native 8 ms and its held selector")
     if eight_ms and (whole_blocks or lane_mask or getattr(args, "select_before_cfo", False) or not args.held_anchor_route):
         raise ValueError("Native 8 ms requires the complete unrefined schedule and held-anchor routing")
     if whole_blocks and (lane_mask or getattr(args, "held_anchor_route", False)
@@ -230,6 +233,13 @@ def run(args):
         staged.checked(HERE / "one_pass_web_png.py", LAYOUT_SHA256)
     original_recipe = checked_recipe(eight_ms=True) if eight_ms else checked_recipe()
     recipe, effective_detector = original_recipe, EIGHT_MS_RECIPE_SHA if eight_ms else RECIPE_SHA
+    anchor_helper = None
+    if full_anchor_primary is not None:
+        from primary_anchor_8ms import RECIPE_FIELD, AnchorPrimaryMixer, bound_library, definition
+
+        anchor_helper = bound_library(full_anchor_primary)
+        recipe = dict(original_recipe, **{RECIPE_FIELD: definition()})
+        effective_detector = canonical_digest(recipe)[7:]
     if lane_mask:
         from stereo_lane_receiver import StereoLaneReceiver
         from stereo_lane_schedule import recipe as mask_recipe
@@ -238,7 +248,8 @@ def run(args):
         effective_detector = canonical_digest(recipe).removeprefix("sha256:")
         mixer = StereoLaneReceiver(args.short_binary, SHORT_SHA, lane_mask)
     else:
-        mixer = MixedApertureDetector(args.short_binary, short_pin, full_coverage=True)
+        mixer = (MixedApertureDetector(args.short_binary, short_pin, full_coverage=True) if anchor_helper is None
+                 else AnchorPrimaryMixer(args.short_binary, short_pin, anchor_helper))
     if whole_blocks:
         from live_stereo_blocks import bind
 
@@ -368,6 +379,8 @@ def run(args):
         dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
     if eight_ms:
         dependencies += ("eight_ms_native_receiver.py", "eight_ms_held_fit.py")
+    if anchor_helper is not None:
+        dependencies += ("mixed_aperture_receiver.py", "primary_anchor_8ms.py")
     if frequency_changes is not None:
         dependencies += ("held_cycle_refined.py",)
     if lane_mask:
@@ -452,6 +465,8 @@ if __name__ == "__main__":
                         help="Choose unfiltered or full chronological carrier history by held full-anchor log scores")
     parser.add_argument("--eight-ms-native-history", action="store_true",
                         help="Use the pinned 8 ms primary with --held-anchor-route and no CFO tail")
+    parser.add_argument("--full-anchor-primary-library", type=Path,
+                        help="Use the pinned original rank-zero scan for every 20 ms anchor in all-visit native 8 ms")
     parser.add_argument("--short-lane-mask", choices=("quarter", "target"),
                         help="Skip a scheduled short antenna call while keeping both full anchors")
     parser.add_argument("--whole-stereo-blocks", action="store_true",
