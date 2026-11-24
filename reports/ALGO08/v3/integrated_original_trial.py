@@ -73,8 +73,10 @@ def launch(root, label, first):
         if (not all(r["qualified"] for r in receipts.values())
                 or receipts[TINY]["actual_cohort_gates"]["elapsed_s"]["summed_speedup"] < THRESHOLD):
             raise ValueError("The first qualified measured pair did not authorize a reversal")
-        if label == CASE and not (root.with_name(root.name+"-tiny")/TINY/"result.json").is_file():
-            raise ValueError("The repetition must be withholding first")
+        if label == CASE:
+            tiny = read(root.with_name(root.name+"-tiny")/TINY/"result.json")
+            if not tiny["qualified"]:
+                raise ValueError("The repetition must begin with a qualified withholding")
         positive = first/CASE
     with (patch.object(ordinary, "sources", sources), patch.object(ordinary, "command_for", command),
           patch.object(ordinary, "allowed_tiny", allowed_tiny)):
@@ -183,11 +185,12 @@ def score(root, label, first):
     rebased = rebind_request(target, old_target, req, raw, old, (1426, 506) if label == CASE else (54, 19))
     current, previous = (terminal(path, u["receipt"]) for path, u in ((target, raw), (old_target, old)))
     engine = acquisition["acceleration"]["solver"]
+    resident = ordinary.previous()["checked"][label]["clock"]["cache_before"]
     controls = dict(
         terminal=current == dict(previous, native_sha256=rebased["native"]),
         custody=all(row["complete_encoded_auth"] for row in acquisition["members"])
         and acquisition["acceleration"]["artifacts"] == reference["acquisition"]["acceleration"]["artifacts"],
-        residence=all(log[key] == book["case_source"]["resident"]["waveform"] for key in ("cache_before", "cache_after")),
+        residence=all(log[key] == resident for key in ("cache_before", "cache_after")),
         no_backing=book["raw_conditioning_bytes"] == 0,
         receiver_audit=all(raw["receiver_audit"]["native"][key] == old["receiver_audit"]["native"][key]
                            for key in ("factors", "installed_sha256", "native_calls", "rule", "streams", "visits")),
