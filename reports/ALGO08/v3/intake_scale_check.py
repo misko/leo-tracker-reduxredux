@@ -45,7 +45,8 @@ def receipt(name, pin):
 def combined_blind_trials():
     trials = []
     for case, pin in (("0163", "9c28657f1dd8a8f31b2f564522d47b42e9b83347f9f816e75c435022f6398801"),
-                      ("0173", "9e68ac940d14ad404662a6460029dfe2b58a02e4e27e9137e5b32031687dd62a")):
+                      ("0173", "9e68ac940d14ad404662a6460029dfe2b58a02e4e27e9137e5b32031687dd62a"),
+                      ("0359", "e6a627e9cb8c5b8200916e5031ce5b581ae971d274bf9d9eeffb215149a3df31")):
         trial = receipt(f"ds30-{case}-combined.json.gz", pin)
         if (trial["case"] != f"DS30-{case}" or trial["study"]["independent_cases"] != [trial["case"]]
                 or trial["admission"]["science_commit"] != "ad319307d" or not trial["checks"]["same_input_and_offer"]):

@@ -6,15 +6,17 @@ from reports.ALGO08.v3.intake_scale_check import (
 from reports.ALGO08.v3.release_intake_rate import required_rate
 
 
-def test_revised_solver_joint_target_is_for_its_two_blind_inputs_only():
+def test_revised_solver_joint_target_uses_the_three_enrolled_blind_inputs():
     result = combined_intake_budget()
-    first, second = result["rows"]
-    assert [first["case"], second["case"]] == ["DS30-0163", "DS30-0173"]
+    first, second, third = result["rows"]
+    assert [r["case"] for r in result["rows"]] == ["DS30-0163", "DS30-0173", "DS30-0359"]
     assert first["post_s"] == pytest.approx(13.6972304)
     assert second["post_s"] == pytest.approx(16.0159222)
-    assert result["joint"]["required_MB_s"] == pytest.approx(229.47936)
-    assert result["joint"]["sum_ratio"] < result["joint"]["median_ratio"] == pytest.approx(.5)
-    assert result["free_receiver_cpu_original_wait"]["sum_speedup"] == pytest.approx(1.842388, abs=1e-6)
+    assert third["post_s"] == pytest.approx(17.9208057)
+    assert third["required_MB_s"] == pytest.approx(315.2262894)
+    assert result["joint"]["required_MB_s"] == pytest.approx(252.256235)
+    assert result["joint"]["median_ratio"] < result["joint"]["sum_ratio"] == pytest.approx(.5)
+    assert result["free_receiver_cpu_original_wait"]["sum_speedup"] == pytest.approx(1.994488, abs=1e-6)
     assert first["min_original_pre_detection_off_cpu_s"] == pytest.approx(24.1450482)
 
 
