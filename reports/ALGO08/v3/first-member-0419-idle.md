@@ -22,6 +22,8 @@ resident analysis has no timing, factor or CFO observations.
 | Encoded bytes still missing from the stage | **60,289,393 B** |
 | Resident receiver starts / signed detection outputs | **0 / 0** |
 
+A separate 10.01 s observation after the copy ended measured 267.68 MB of reads and 2.58 MB of writes on the bulk logical device (`dm-5`). Its weighted I/O time corresponds to 4.03 requests outstanding on average. Linux cgroup I/O counters for that device attributed 117.9 MB of reads to `leo-adaptive-analysis-worker@15.service` and 101.3 MB to `leo-adaptive-analysis-worker@0.service`, together about 82% of the read bytes. These services process existing recordings. The capture timer was disabled and the RF capture service inactive. This sample identifies two substantial readers during the follow-up observation. It does not assign the earlier queue peaks to a particular service.
+
 The unchanged interlock admitted individual reads only after a
 measured quiet interval on dm-5 and acquisition of the shared Gauss
 CPU 2 lock. The run kept nice 15, idle I/O priority, 2 MiB/s pacing,

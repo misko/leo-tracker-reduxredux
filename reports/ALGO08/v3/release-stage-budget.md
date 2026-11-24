@@ -89,7 +89,7 @@ The numerical solve accounted for 12.718 s on DS30-0419 and 22.831 s on DS30-028
 | 4× | 220.8 MB/s |
 | Zero solve time (limiting case) | 197.3 MB/s |
 
-For scale, the complete 13-file DS30-0016 recording reached detection publication at 196.3 MB/s in the detector-only process and 212.0 MB/s in the integrated process. At those measured rates, even halving the numerical solve would leave the receiver short of the 250.5 MB/s needed in this two-recording model. Each estimate assumes a uniform rate across the two recordings and unchanged downstream work for the new detections. A measured raw-to-exit pair on the same recording tests both assumptions. [Reproduce the calculation](intake_scale_check.py) · [Full detector timing](original-full-detector-boundary.md)
+For scale, the same resident 13-file DS30-0016 recording reached the early detection hook at **196.3 MB/s** in one process and **295.4 MB/s** in a fresh process using normal lookahead. The earlier integrated process reached its standard detector-file boundary at **212.0 MB/s**. The two hook timings fall on opposite sides of the 250.5 MB/s row. Each estimate assumes a uniform rate across the two blind recordings and unchanged downstream work for the new detections. A measured raw-to-exit pair on the same recording tests both assumptions. [Reproduce the calculation](intake_scale_check.py) · [Full detector timing](original-full-detector-boundary.md) · [Matched full-file scheduling trial](resident-original-demand.md)
 
 ### Throughput from one to four original files
 
