@@ -59,3 +59,24 @@ These recordings also have independent v3 clocks from original waveforms. For ea
 The original stage-clock cohort supplies all three denominators. DS30-0160 and DS30-0316 were fully resident at launch. DS30-0374 was 10.6% resident. A separate 164.40 s historical v3 run also exists for DS30-0374. Using that slower wall clock as the denominator would make the acquisition budget look much larger. [Stage-clock inventory](measurements/acquisition-throughput.json) · [Separate dense run](exact-named-dense.md)
 
 On two original DS30-0008 members, the faster of two acquisition passes that **only decoded and verified** bytes processed 567 MB per CPU-second. As a sensitivity calculation, give all three recordings that rate, zero I/O waits and zero time for signal detection. The resulting candidate/v3 elapsed ratios are **0.503 median and 0.492 summed** against a 0.500 target on both gates. Throughput can vary by recording and implementation. The measured cost makes a change to how data are read and verified worth testing alongside faster signal processing. Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --exact-cases` to reproduce the table and both ratios. [Original two-member measurements](physical-stage-envelope.md)
+
+## Reading the same original signal with less decoding
+
+Two saved DS30 members now have an independently verified experimental representation that separates each 20 ms capture into an 8 ms prefix and a 12 ms tail. The receiver authenticates every encoded block and decodes the samples its 20/8 ms detector uses. Corrupting an unused tail caused verification to fail on both recordings. The resulting detection packets matched the ordinary 20/8 ms receiver byte for byte. The installed 20 ms receiver reads the same physical opportunities but can select different factors. [Protocol, fault injection and timings](seekable-eight-raw.md)
+
+| Acquisition elapsed for one 64-visit physical member | DS30-0008 | DS30-0169 |
+|---|---:|---:|
+| Original v3, 20 ms | 488 ms | 435–448 ms |
+| Ordinary archive, 20/8 ms | 349 ms | 338–362 ms |
+| Verified split archive, 20/8 ms | 207 ms | 193–204 ms |
+| Building and independently verifying the split archive from the original | 492 ms | 432 ms |
+
+With the split archive already built, acquisition was **2.36×** faster on DS30-0008 and roughly **2.1–2.3×** on DS30-0169 against the original 20 ms receiver. These clocks end at acquisition, before final detection selection and position solving. For the first analysis of each existing recording, adding conversion and readback gives about **699 ms** and **625–635 ms**. Both exceed the ordinary v3 acquisition cost. A prospective format needs a measured writer-to-first-analysis comparison to establish its cost for a new scan. The full-file reader experiment on the existing format saved up to 19.5% CPU on DS30-0169 but failed to give a repeatable improvement on DS30-0008. [Original-format receiver](sealed-stream.md)
+
+## One process from original I/Q through the position and figures
+
+The common research entry point now runs the 20/8 ms receiver and the exact named solver in one process using the supplied search region. On the 1,200-visit North geographic simulation, v3 and the candidate processed all 2,400 opportunities, published both calibration arms and verified all eight PNGs. The new candidate took **15.561 s**, compared with **19.967 s** for the fresh instrumented v3 baseline (**1.28×**). Acquisition fell from 9.507 to 6.144 s, with another 0.071 s for the candidate's end-of-recording detector selection. Solving fell from 7.172 to 6.082 s. Rendering took 1.698 and 1.649 s respectively. [Raw launch, timing boundaries and receipts](exact-named-raw.md)
+
+Horizontal error changed from **106 to 112 m** at fixed zero calibration and **141 to 128 m** with fitted calibration. RF residual RMS increased from 9.7 to 45.0 Hz and from 18.6 to 50.4 Hz. The two receivers selected different observations. An exact solver on identical input can therefore preserve the solver result while the complete pipelines produce different positions. Reusing the candidate's detections with the published far-outside offer produced a withhold with no PNGs. North is a previously evaluated simulation and the omission was a saved-detector check.
+
+On the complete physical DS30-0107 original input, the same entry point withheld for insufficient curvature in **0.577 s**. Its position and RF fields were null in both arms. This verifies the physical withholding path. The physical DS30 positive-fix gate remains open.
