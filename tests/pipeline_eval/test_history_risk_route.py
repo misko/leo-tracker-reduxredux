@@ -10,6 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 
 from history_risk_route import checked_census, choose_once, select
+from history_risk_route_panel import reduction
 
 
 def test_dispatch_uses_same_prepared_object_and_keeps_choice_across_attempts():
@@ -57,3 +58,11 @@ def test_checks_all_released_samples_for_errors_and_nonfinite_states():
                             ecef_states=ecef)
     result = checked_census({"status": "inputs_prepared", "sky": sky}, modes, 41)
     assert all(set(row["unusable"]) == {"1", "2"} for row in result["prior"].values())
+
+
+def test_three_case_reduction_distinguishes_median_and_summed_speedup():
+    result = reduction([12, 20, 40], [6, 10, 40])
+    assert result["median_paired_ratio"] == 2
+    assert result["summed_ratio"] == pytest.approx(72/56)
+    with pytest.raises(ValueError):
+        reduction([12, 20, 40], [6, 10])
