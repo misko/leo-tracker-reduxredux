@@ -181,4 +181,4 @@ if __name__ == "__main__":
         score(args.root)
     else:
         composed.launch(args.root, entry=Path(__file__), extra_sources=sources,
-                        protocol=PROTOCOL, probe_marker="precision_ready")
+                        protocol=composed.PROTOCOL, probe_marker="precision_ready")
