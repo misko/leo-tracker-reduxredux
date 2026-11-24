@@ -9,6 +9,7 @@ import pytest
 from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
 from reports.ALGO08.v3.direct_packed_capture import Capture, close_file, write_capture
 from reports.ALGO08.v3.north_direct_multichunk import normalized_native
+from reports.ALGO08.v3.north_direct_multichunk_score import physical_owners
 from reports.ALGO08.v3.seekable_member import SAMPLES, WINDOW_BYTES, ShortWindowIndexV2, digest
 
 
@@ -77,3 +78,22 @@ def test_native_normalization_preserves_candidate_order_and_policy():
     packet = dict(provenance={"run_id": "path-specific", "detector_sha256": "pinned"},
                   source={"session_id": "path-specific", "analysis_manifest_sha256": "own", "probes": [1, 2]})
     assert normalized_native(packet) == {"provenance": {"detector_sha256": "pinned"}, "source": {"probes": [1, 2]}}
+
+
+def test_owner_order_reconciles_only_via_signed_native_identity():
+    from leo.contracts.digests import canonical_digest
+
+    probes = [dict(visit_index=2, receiver_id=0, channel=3, valid_start_counter=104,
+                   candidates=[{"passed_fractional_margin_gate": True}]),
+              dict(visit_index=3, receiver_id=1, channel=4, valid_start_counter=204,
+                   candidates=[{"passed_fractional_margin_gate": True}])]
+    for session in ("old", "new"):
+        a, b = (digest(f"{session}:{rx}:{timestamp}".encode()) for rx, timestamp in ((0, 104), (1, 204)))
+        native = dict(source=dict(session_id=session, probes=probes))
+        selected = {"c0": [[b, 11, "conditional"], [a, 12, "anchor"]]}
+        arms = {"c0": dict(associated_points=2, owner_sha256=canonical_digest({a: 12, b: 11}))}
+        assert physical_owners(native, selected, arms) == {"c0": [[3, 1, 4, 204, 11, "conditional"],
+                                                                   [2, 0, 3, 104, 12, "anchor"]]}
+        selected["c0"][0][1] = 12
+        with pytest.raises(ValueError, match="owner digests"):
+            physical_owners(native, selected, arms)
