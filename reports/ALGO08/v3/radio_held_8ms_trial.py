@@ -210,11 +210,15 @@ def score(root):
     stock_detail = FastStandardAnalysisStore(REFERENCE/"stock").detail(stock_receipt["run_id"])
     if (stock["raw_authority"] != identity["authority"] or stock_receipt["region"] != region
             or stock_receipt["session_id"] != identity["session"] or stock_receipt["window_count"] != identity["issued"]
-            or stock_detail["terminal_sha256"] != stock_receipt["terminal_sha256"]
-            or outcome(stock["arms"], region, truth) != old_score["controls"]["named"]):
-        raise ValueError("Named reference is outside the original request or disagrees with its score")
+            or stock_detail["terminal_sha256"] != stock_receipt["terminal_sha256"]):
+        raise ValueError("Named reference is outside the original request")
     candidate = outcome(sealed["verified"]["arms"], region, truth)
-    controls = dict(masked=old_score["candidate"], all8=old_score["controls"]["all8"], named=old_score["controls"]["named"])
+    controls = {mode: outcome(evidence["arms"], region, truth)
+                for mode, evidence in (("masked", masked["science"]), ("all8", live["science"]), ("named", stock))}
+    archived = dict(masked=old_score["candidate"], all8=old_score["controls"]["all8"], named=old_score["controls"]["named"])
+    if any(row[key] != archived[mode][arm][key] for mode, arms in controls.items() for arm, row in arms.items()
+           for key in ("error_m", "face_km", "rf_rms_hz")):
+        raise ValueError("Archived position or RF scores did not reproduce")
     owner_changes = {}
     if sealed["science"] is not None:
         for mode, reference in (("masked", masked["science"]), ("all8", live["science"])):
