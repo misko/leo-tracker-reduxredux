@@ -9,6 +9,12 @@ four-member work gives **236.1 and 233.7 MB/s**. The two-point startup
 intercepts were **0.375 and 0.404 s**. This is a resident input
 scaling control on DS30-0016. [Frozen scope](original-prefix-scaling-protocol.md) · [Measured receipt](measurements/original-prefix-scaling-0016.json.gz)
 
+The later dispatch audit established that the bounded source subclass
+shadowed the normal base-class prefetch wrapper. These original prefix
+clocks include complete synchronous demand reads. A subsequent full
+matched pair measured the cost of both schedules on the very same
+original recording. [Measured scheduling comparison](resident-original-demand.md)
+
 ## Exact source selection
 
 The locally staged DS30-0008 original segment 0 still supplied only
