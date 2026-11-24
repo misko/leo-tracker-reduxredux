@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from full_successor_score import outcomes_summary, paired_rows, paired_timing, roster, score_arms, write_report
+from full_successor_score import PINS, outcomes_summary, paired_rows, paired_timing, roster, score_arms, write_report
 
 
 def arms(point):
@@ -38,14 +38,15 @@ def test_failed_fix_remains_in_population_and_rf_summaries_are_separate():
 
 
 def matching_pair():
-    assigned = {"DS30-test": dict(case_id="original", reference=[48., 7.], release_100=True,
+    assigned = {"DS30-test": dict(case_id="original", raw_authority="a"*64, reference=[48., 7.], release_100=True,
                                   recording_state="complete")}
-    rows = [dict(case="DS30-test", case_id="original", algorithm=k, build_sha256=str(i)*64,
+    rows = [dict(case="DS30-test", case_id="original", algorithm=k, build_sha256=PINS[k],
+                 historical_first100=True, manifest_raw_authority_sha256="a"*64,
                  raw_authority_sha256="a"*64, first="installed", elapsed_s=1., cpu_s=.9,
                  requested_raw_authority_sha256="a"*64, authority_sha256="b"*64,
                  attempt_result_sha256="e"*64, timing_scope="raw_launcher_through_exit_plus_common_publication_verification",
                  child_elapsed_s=.95, child_cpu_s=.86, validator_elapsed_s=.05, validator_cpu_s=.04,
-                 outcome="complete", arms=arms([48., 7.])) for i, k in enumerate(("installed", "successor"), 1)]
+                 outcome="complete", arms=arms([48., 7.])) for k in ("installed", "successor")]
     return rows, assigned
 
 
@@ -89,6 +90,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         for role in template:
             fix = role["algorithm"] == "installed" or i > 0
             rows.append({**role, "case": case, "case_id": item["case_id"],
+                         "historical_first100": item["release_100"], "manifest_raw_authority_sha256": item["raw_authority"],
                          "first": "installed" if i % 2 else "successor",
                          "outcome": "complete" if fix else "withheld",
                          "arms": arms([48., 7.] if fix else None)})

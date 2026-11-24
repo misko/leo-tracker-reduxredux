@@ -19,6 +19,8 @@ MANIFEST = "a4ce879975be0593f1adeb7c106f31660c6c423f17e2c7858985244530dc0eb8"
 REFERENCE = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
 RELEASE_100 = "8535781f2ed67016fe42c6ff820f503e9876c1b0f356f3cf2d9c1b6e8d216aa2"
 BUILDS = ("installed", "successor")
+PINS = {"installed": "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
+        "successor": "sha256:30cc3b044040f2519677d67abfde731f83693612744d2236d1ba71bb5a31e4ab"}
 VERIFIED = {"complete", "withheld", "solver_failed"}
 
 
@@ -94,13 +96,16 @@ def score_arms(arms, reference):
 def paired_rows(rows, assigned):
     """Require two distinct, source-matched raw workers for each assigned recording."""
     by_key = {}
-    builds = {name: set() for name in BUILDS}
     for r in rows:
         case, algorithm = r["case"], r["algorithm"]
         if case not in assigned or algorithm not in BUILDS or (case, algorithm) in by_key:
             raise ValueError("Duplicate or unexpected benchmark arm")
         if r["case_id"] != assigned[case]["case_id"] or r["first"] not in BUILDS:
             raise ValueError("Case identity or assigned run order changed")
+        if (r["build_sha256"] != PINS[algorithm] or
+                r["manifest_raw_authority_sha256"] != assigned[case]["raw_authority"] or
+                r["historical_first100"] != assigned[case]["release_100"]):
+            raise ValueError("Published benchmark build or enrollment changed")
         if r["outcome"] not in ("complete", "withheld", "solver_failed", "worker_failed", "invalid_publication"):
             raise ValueError(f"Recording has an unresolved or unmeasured arm: {case}, {algorithm}")
         requested = r["requested_raw_authority_sha256"]
@@ -117,7 +122,6 @@ def paired_rows(rows, assigned):
         scores = score_arms(r["arms"], assigned[case]["reference"])
         if any(scores[name + "_fix"] != (r["outcome"] == "complete") for name in ARMS):
             raise ValueError("Terminal decision and calibration outputs disagree")
-        builds[algorithm].add(r["build_sha256"])
         by_key[case, algorithm] = dict(case=case, algorithm=algorithm, case_id=r["case_id"],
                                        first=r["first"], release_100=int(assigned[case]["release_100"]),
                                        recording_state=assigned[case]["recording_state"], outcome=r["outcome"],
@@ -130,8 +134,6 @@ def paired_rows(rows, assigned):
                                        validator_elapsed_s=r["validator_elapsed_s"], validator_cpu_s=r["validator_cpu_s"], **scores)
     if len(by_key) != 2 * len(assigned):
         raise ValueError(f"Only {len(by_key)} measured arms for {len(assigned)} assigned recordings")
-    if any(len(pins) != 1 for pins in builds.values()):
-        raise ValueError("Build changed within the benchmark")
     pairs = []
     for case in assigned:
         a, b = (by_key[case, role] for role in BUILDS)
@@ -142,7 +144,7 @@ def paired_rows(rows, assigned):
 
 
 def write_report(pairs, output, enrollment, receipt_digest):
-    from full_successor_figures import render_distribution_figures
+    from reports.ALGO08.v3.full_successor_figures import render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
     all_rows = [r for pair in pairs for r in pair]
