@@ -92,10 +92,12 @@ def worker(mode, output):
         def scanner(sources, detector=None):
             from leo.contracts.digests import canonical_digest
             from leo.storage.short_window import ShortWindowReader
-            from tools.pipeline_eval.qualification import blind_compact_run
-            from full_short_raw import observe_acquisition
 
-            scanner_module = original_scanner(sources, detector=blind_compact_run.detector if mode == "named" else detector)
+            if mode == "named":
+                from tools.pipeline_eval.qualification import blind_compact_run
+
+                detector = blind_compact_run.detector
+            scanner_module = original_scanner(sources, detector=detector)
             original_member = ShortWindowReader._member
 
             def read_member(reader, name, size, digest):
@@ -137,6 +139,8 @@ def worker(mode, output):
             scanner_module.FastSegmentSource = PrefixSource
             scope.enter_context(patch.object(ShortWindowReader, "_member", read_member))
             if mode == "named":
+                from full_short_raw import observe_acquisition
+
                 pin = runtime_spec["detector_sha256"]
                 scope.enter_context(observe_acquisition(scanner_module, None, pin, audit))
             return scanner_module
