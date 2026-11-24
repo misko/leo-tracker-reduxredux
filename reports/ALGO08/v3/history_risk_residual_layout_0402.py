@@ -26,6 +26,7 @@ ALL_CAIRO = Path("/dev/shm/leo-v3-history-risk-cairo-0402-result01/verified-resu
 ALL_CAIRO_SHA = "82a177ef8ea46681c9021ab830cdaa7f737f1ad633f644890a06ce742aac239f"
 PROTOCOL = "history-risk-residual-layout-0402-protocol.md"
 TIMED_DRIVER = "228c630d85af623075c000b83d9ef045255d0cbae1ea963e76183e205ab5efea"
+PREVIOUS_DRIVER = "242c64ac306d0f8ffbbadfa999677ec83583bb19f2beda46053f8c671971ebbd"
 
 
 def source_pins():
@@ -111,12 +112,13 @@ def launch(root, preflight_path):
                                             preflight_sha256=sha256(preflight_path.read_bytes()).hexdigest()))
 
 
-def worker(output, expected):
+def worker(output, expected, *, case="0402", pins=source_pins):
     from empty_bootstrap import clock, now
     from history_cairo_render import binding
     from history_risk_route_trial import exact, worker as original_worker
 
-    if source_digest(source_pins()) != expected:
+    active_sources = pins()
+    if source_digest(active_sources) != expected:
         raise ValueError("The selected renderer sources changed during launch")
     root = output.parent
     ordinary_ports = exact.exact_ports
@@ -140,7 +142,7 @@ def worker(output, expected):
                 yield
 
     with patch.object(exact, "exact_ports", renderer):
-        original_worker("0402", root)
+        original_worker(case, root)
     from aperture_trial import write
 
     require_active(work)
@@ -150,7 +152,7 @@ def worker(output, expected):
     with (root/SCENE).open("xb") as stream:
         stream.write(data)
     digest = sha256(data).hexdigest()
-    write(root/"render.json", dict(work=work, render=timing, sources=source_pins(), scene_sha256=digest,
+    write(root/"render.json", dict(work=work, render=timing, sources=active_sources, scene_sha256=digest,
                                    scene_capture=clock(start), scene_bytes=len(data)))
 
 
@@ -196,7 +198,8 @@ def score(root):
     require_active(replayed["work"])
     pins = source_pins()
     if (renderer["sources"] != worker["sources"]
-            or renderer["sources"] not in (pins, pins | {Path(__file__).name: TIMED_DRIVER})
+            or renderer["sources"] not in (pins, pins | {Path(__file__).name: TIMED_DRIVER},
+                                          pins | {Path(__file__).name: PREVIOUS_DRIVER})
             or renderer["sha256"] != source_digest(renderer["sources"]) or replayed["source_scene_sha256"] != worker["scene_sha256"]
             or any(replayed["hashes"][mode] != {name: item["sha256"] for name, item in figures.items()}
                    for mode, figures in (("ordinary", before), ("residual_layout", after)))):
