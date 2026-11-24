@@ -22,6 +22,8 @@ The next solver experiment kept the original satellite selection, repairs, fits,
 
 The two completed saved publications took **34.357 → 27.217 s**, a **1.26×** speedup by total time and **1.28×** by the median paired time ratio. DS30-0316 also required a one-time fix for its legacy manifest path convention. Including that rejected 1.127 s startup gives **1.21×** for the total experiment. DS30-0160 avoided repeating a fit after recovering a missing prior orbit. DS30-0316 took the ordinary inference path and had no such retry. This difference makes an ordinary fix the more informative case for the next optimization.
 
+Both candidate launches could use the same prebuilt orbit index. Its signed digest and producer match the independently timed **4.320 s** build. Charging that build once across the two completed runs gives **31.538 s**, or **1.09×** versus named v3. Including both that build and the rejected startup gives **32.665 s**, or **1.05×** across all attempts. The held inputs actually reused four indexed catalogue bodies on DS30-0160 and zero on DS30-0316. These alternative totals account for setup and retry costs without adding them to every recording. [Index build clock](weak-all8-adaptive.md) · [Per-case activation](exact-named-route.md)
+
 ## How much faster must acquisition become?
 
 The table gives the **minimum uniform effective compressed MB/s** from launch until sealed detections that would satisfy both existing time gates. A run passes those gates when both the median paired candidate/v3 elapsed ratio and the ratio of summed elapsed times are at most 0.5. Higher required rates leave less time to read, authenticate, decode and detect the same recordings.
