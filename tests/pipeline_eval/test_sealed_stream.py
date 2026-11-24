@@ -1,11 +1,12 @@
 from hashlib import sha256
+import json
 import os
 
 import numpy as np
 import pytest
 import zstandard
 
-from reports.ALGO08.v3.sealed_stream import Native, build
+from reports.ALGO08.v3.sealed_stream import Native, PAYLOAD, build, sealed_windows
 from reports.ALGO08.v3.sealed_stream_descriptor import bounded_digest
 
 
@@ -82,3 +83,38 @@ def test_bounded_descriptor_hash_checks_extent_and_last_partial_block(tmp_path):
         os.lseek(stream.fileno(), 0, os.SEEK_SET)
         with pytest.raises(ValueError, match="early"):
             bounded_digest(stream.fileno(), len(payload)+1, buffer)
+
+
+@pytest.mark.parametrize("behavior", ("slab", "fallback", "reject"))
+def test_original_window_reader_accepts_fallback_and_exposes_no_failed_window(native, tmp_path, behavior):
+    from leo.contracts.digests import canonical_json_bytes
+    from leo.storage.errors import BundleCorruptionError
+    from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
+
+    writer = ShortWindowWriter(tmp_path, "scope", configuration={"window_ms": 20},
+                               radio={"id": "synthetic"}, receiver_ids=(0, 1), chunk_windows=2)
+    windows = [np.arange(4*100, dtype="<i2").reshape(100, 2, 2)+i for i in range(2)]
+    for i, samples in enumerate(windows):
+        writer.append(sequence=i, target_id="t", samples=samples, acquisition={}, powers=({}, {}))
+    root = writer.finish(stop_reason="max_visits")
+    path = root / "manifest.json"
+    manifest = json.loads(path.read_bytes())
+    chunk = manifest["chunks"][0]
+    payload = zstandard.ZstdCompressor(write_checksum=behavior != "fallback").compress(
+        b"".join(window.tobytes() for window in windows))
+    (root / chunk["payload_relative_path"]).write_bytes(payload)
+    chunk.update(compressed_bytes=len(payload), compressed_sha256=digest(payload))
+    if behavior == "reject":
+        chunk["uncompressed_sha256"] = digest(b"incorrect full decoded digest")
+    path.write_bytes(canonical_json_bytes(manifest))
+    stats = {}
+    with sealed_windows(native, PAYLOAD / "paired-sha256.so", root, chunk, stats):
+        reader = ShortWindowReader(root).windows()
+        if behavior == "reject":
+            with pytest.raises(BundleCorruptionError, match="decoded member"):
+                next(reader)
+        else:
+            observed = [item.samples for item in reader]
+            assert all(not samples.flags.writeable for samples in observed)
+            assert all(np.array_equal(a, b) for a, b in zip(observed, windows, strict=True))
+            assert stats.get("fallback") == (1 if behavior == "fallback" else None)
