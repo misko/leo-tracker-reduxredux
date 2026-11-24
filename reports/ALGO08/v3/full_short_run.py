@@ -17,6 +17,9 @@ GEOGRAPHIC_SHA = "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573
 TRACK_SCORES_SHA = "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098"
 EIGHT_MS_SHA = "fe4ba7b7613654c268353f9e4a78c2bbb916904e06387ace304b0866818f0e3d"
 EIGHT_MS_RECIPE_SHA = "2358151dbbbf4f9db1ba6b1a2393a993854c4b1fdd959bc96022e5e21c91fd89"
+SPARSE_EIGHT_MS_SHA = "c5b57b0602e81a6a85c14caf648eb12341f098d09915b4d3f705094ed309574c"
+SPARSE_EIGHT_MS_RECIPE_SHA = "c5d73bad038bed7719cb989955e474bb54c802506aadfa4b6d7a006311d0e045"
+EIGHT_MS_RECIPES = {EIGHT_MS_SHA: EIGHT_MS_RECIPE_SHA, SPARSE_EIGHT_MS_SHA: SPARSE_EIGHT_MS_RECIPE_SHA}
 
 
 @contextmanager
@@ -57,12 +60,17 @@ def verify_recipe(value, pin):
         raise ValueError("The receiver callback or schedule changed")
 
 
-def checked_recipe(eight_ms=False):
+def checked_recipe(eight_ms=False, *, short_pin=None):
     value = recipe()
     verify_recipe(value, RECIPE_SHA)
     if eight_ms:
-        value.update(shortened_sha256=EIGHT_MS_SHA, aperture_samples=[value["aperture_samples"][0], 80_000])
-        verify_recipe(value, EIGHT_MS_RECIPE_SHA)
+        short_pin = EIGHT_MS_SHA if short_pin is None else short_pin
+        if short_pin not in EIGHT_MS_RECIPES:
+            raise ValueError("Unregistered native 8 ms detector")
+        value.update(shortened_sha256=short_pin, aperture_samples=[value["aperture_samples"][0], 80_000])
+        verify_recipe(value, EIGHT_MS_RECIPES[short_pin])
+    elif short_pin is not None:
+        raise ValueError("An alternate short detector requires the native 8 ms route")
     return value
 
 
