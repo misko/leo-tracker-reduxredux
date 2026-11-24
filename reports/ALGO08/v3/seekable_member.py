@@ -155,6 +155,7 @@ class Reader:
                 raise ValueError("Unknown seekable member schema")
             check(manifest_bytes, document["original_manifest"])
             check(index_bytes, document["original_index"])
+            self.manifest_sha256 = document["original_manifest"]
             self.manifest, self.chunk, self.rows = metadata(
                 manifest_bytes, index_bytes, document["chunk_index"],
             )

@@ -248,6 +248,7 @@ def run(args):
         raise ValueError("Expected the causal archive directory")
     scope = staged.now()
     audit, layout_audit = {}, {}
+    packed_audit = None
     route_selection = None
     graph_audit = {} if args.exact_graph_reuse else None
     png_read_audit = {} if args.reuse_verified_png_reads else None
@@ -271,8 +272,15 @@ def run(args):
         session, inventory_digest, inventory = scan.FastScanStore(args.output).inventory(args.recording, verify_windows=False)
         phases["asset_and_inventory_checks"] = staged.clock(scope)
         scope = staged.now()
+        packed = nullcontext()
+        if any(getattr(args, key, None) is not None for key in
+               ("packed_ci16_map", "packed_ci16_map_sha256", "packed_ci16_codec")):
+            from packed_combined_input import packed_source, request
+
+            packed_audit = {}
+            packed = packed_source(scan, request(args), assets, packed_audit)
         with (frequency_changes.capture(mixer.policy) if frequency_changes is not None else nullcontext(),
-              receiver_import(native_import, symbols), observe_acquisition(scan, mixer, effective_detector, audit),
+              receiver_import(native_import, symbols), packed, observe_acquisition(scan, mixer, effective_detector, audit),
               compressed_input_buffer(), paired_decoded_hashes(library), fetch() as prefetch):
             native = scan.acquire(session, inventory_digest, inventory, assets)
         staged.bind_native(native, session, inventory_digest, effective_detector)
@@ -345,6 +353,8 @@ def run(args):
         dependencies += ("held_cycle_refined.py",)
     if lane_mask:
         dependencies += ("stereo_lane_schedule.py", "stereo_lane_receiver.py")
+    if packed_audit is not None:
+        dependencies += ("packed_combined_input.py", "seekable_member.py", "ci16_packing.py", "ci16_packing.c")
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
                   route=route, requested_offer_sha256=sha256(offer_bytes).hexdigest(), archive_root=str(archive),
                   frozen_specification="sha256:"+launcher["FINGERPRINT"], receiver_recipe=recipe,
@@ -375,6 +385,8 @@ def run(args):
                                           else research["exact_phase_forecast"])
     if route_selection is not None:
         result["held_anchor_route"] = route_selection
+    if packed_audit is not None:
+        result["packed_ci16_input"] = packed_audit
     with (args.output / "unified-short-bootstrap.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False)
         stream.write("\n")
@@ -419,4 +431,7 @@ if __name__ == "__main__":
                         help="Choose unfiltered or full chronological carrier history by held full-anchor log scores")
     parser.add_argument("--short-lane-mask", choices=("quarter", "target"),
                         help="Skip a scheduled short antenna call while keeping both full anchors")
+    parser.add_argument("--packed-ci16-map", type=Path, help="Private packed member map with sibling member directories")
+    parser.add_argument("--packed-ci16-map-sha256", help="Trusted digest of the packed member map")
+    parser.add_argument("--packed-ci16-codec", type=Path, help="Native codec library pinned by the map")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
