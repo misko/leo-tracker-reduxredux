@@ -28,6 +28,7 @@ ADAPTIVE_RESULT = "4980d2c33a8809b6c7653e83251358c68f653befd646c0ec6367c51c8fe1a
 ADAPTIVE_TRACE = "a0205c691d44f885a7d2ca02e2e9602ec6acd978b609ae0379926243fbaf7fd4"
 ADAPTIVE_WORKER = "db4eaeee87e0b9cfcd4504ff55abc94a8a67b64bbcfe7f3574e1d3e91bbc6834"
 HISTORICAL_CLOCKS = "ae947ab9906b878b9491f9c4a227f0dd4f14c0332891d46b9f0b4a61264c910a"
+HISTORICAL_SOLVE = "ae2cf773d46dff0bf24aa6bde0b7284f7b6896a7e76e4963a08e8eaae40b7436"
 FINGERPRINT = "6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
 INSTALLED_NATIVE = "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5"
 INPUT = "sha256:161d3ff4a85777f81217a929fdf0c999eb09f48575322ab46dcdcd773a95e23a"
@@ -296,6 +297,7 @@ def score(root):
     from leo.contracts.digests import canonical_digest
     from prospective_0316_solver import owner_delta
     from tools.pipeline_eval.qualification.paired_publication import evidence
+    from tools.pipeline_eval.scoring import distance_km
     from triage_bounds import calibration_comparison
 
     binding, elapsed = (read(root/f"{name}.json") for name in ("binding", "clock"))
@@ -308,12 +310,19 @@ def score(root):
     adaptive_started = adaptive_result["clocks"]["adaptive"]
     archive = data(HERE/"measurements/dense-full-short-raw.json.gz", NAMED_PIN)["baseline"]
     historical = data(HERE/"measurements/dense-control-clocks.json", HISTORICAL_CLOCKS)
+    own_saved = data(HERE/"measurements/blind-joint-repair.json.gz", HISTORICAL_SOLVE)["receipts"]["DS30-0008"]
     if (named_science["raw_authority"] != binding["request"]["authority"] or archive["authority"] != named_science["raw_authority"]
             or receipt["region"] != parent["receipt"]["region"] or receipt["region"] != archive["receipt"]["region"]
             or parent["native_sha256"] != INPUT or named["named_identity"]["frozen_specification"] != "sha256:"+FINGERPRINT
             or receipt["session_id"] != parent["receipt"]["session_id"] or receipt["counts"] != parent["receipt"]["counts"]
             or historical["common"]["terminal_sha256"] != archive["receipt"]["terminal_sha256"]
-            or historical["common"]["archive"]["snapshots_sha256"] != binding["request"]["archive"]["snapshots_sha256"]):
+            or historical["common"]["archive"]["snapshots_sha256"] != binding["request"]["archive"]["snapshots_sha256"]
+            or own_saved["identity"]["raw_authority"] != named_science["raw_authority"]
+            or own_saved["identity"]["archive"]["snapshots_sha256"] != binding["request"]["archive"]["snapshots_sha256"]
+            or own_saved["identity"]["offer"] != receipt["region"]
+            or own_saved["identity"]["specification"] != "sha256:"+FINGERPRINT
+            or own_saved["identity"]["native_sha256"] == INPUT
+            or own_saved["control"]["arms"] != archive["arms"] or own_saved["control"]["owners"] != archive["owners"]):
         raise ValueError("Comparator authority, supplied region, saved inventory or named release differ")
     candidate_dir = ADAPTIVE/"candidate"
     candidate_terminal_path = candidate_dir/"fast-scan-automatic-work"/parent["receipt"]["run_id"]/"terminal.json"
@@ -325,10 +334,18 @@ def score(root):
     if receipt["decision"] == "complete":
         rows = named["evidence"]["owner_rows"]
         others = adaptive_trace["selected_rows"]
+        if (canonical_digest(others) != adaptive_result["layout"]["original_owner_rows_sha256"]
+                or any(canonical_digest({row[0]: row[1] for row in others[arm]}) !=
+                       adaptive_result["layout"]["arms"][arm]["owner_sha256"] for arm in ARMS)):
+            raise ValueError("Archived adaptive ordered rows do not bind the actual published owner sets")
         owners = {arm: owner_delta(rows[arm], others[arm]) for arm in ARMS}
+    endpoints = {arm: distance_km(named_science["arms"][arm]["latlon"], candidate["arms"][arm]["latlon"])
+                 for arm in ARMS}
     first = adaptive_started["elapsed_s"] + binding["candidate_same_cutoff_producer"]["elapsed_s"]
     write(root/"result.json", dict(state=receipt["decision"], reference_valid=True, named=named, science=named_science,
-          candidate_terminal=candidate, owners=owners, geography=error, history=historical["controls"],
+          candidate_terminal=candidate, owners=owners, geography=error, candidate_endpoint_shift_km=endpoints,
+          history=historical["controls"], named_own_detector_saved_numerical=dict(clock=own_saved["control_clocks"],
+              identity=own_saved["identity"], role_counts=own_saved["stock_roles"], source_sha256=HISTORICAL_SOLVE),
           adaptive=dict(clock=adaptive_started, first_use_serial_s=first, grid=101, decision=parent["receipt"]["decision"]),
           clock=elapsed, saved_elapsed_speed_ratio=elapsed["elapsed_s"]/adaptive_started["elapsed_s"],
           saved_elapsed_speed_ratio_first_use=elapsed["elapsed_s"]/first, binding_sha256=pin(root/"binding.json")))
