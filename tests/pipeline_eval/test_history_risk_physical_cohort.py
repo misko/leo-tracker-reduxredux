@@ -60,10 +60,12 @@ def test_median_and_summed_gates_differ_and_both_arms_are_reported():
 def test_pre_cairo_receipts_require_the_renderer_to_be_off():
     (a, ra), (b, rb) = compared("DS30-0107", (.5, 2)), compared("DS30-0016", (6, 10))
     expected = {a["case"]: ra, b["case"]: rb}
-    current = reduce([a, b], expected, lambda argv: flags(argv) | {"cairo_six_sheets": False})
+    current = reduce([a, b], expected, lambda argv: flags(argv) | {"cairo_six_sheets": False, "cairo_residual_layout": False})
     assert current == reduce([a, b], expected, flags)
     with pytest.raises(ValueError, match="frozen original raw comparison"):
         reduce([a, b], expected, lambda argv: flags(argv) | {"cairo_six_sheets": True})
+    with pytest.raises(ValueError, match="frozen original raw comparison"):
+        reduce([a, b], expected, lambda argv: flags(argv) | {"cairo_residual_layout": True})
 
 
 def test_reducer_rejects_missing_cases_saved_boundaries_and_source_drift():

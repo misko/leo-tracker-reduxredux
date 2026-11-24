@@ -44,10 +44,10 @@ def raw_rows(data, expected, options_for):
         raise ValueError(f"{case} requires a qualified original-waveform score")
     req, ref = admission["request"], expected["request"]
     base, runs, logs = expected["stock"], data["runs"], data["measured_exits"]
-    parsed_options = options_for(admission["commands"]["candidate"]).copy()
-    # The two frozen commands predate the optional Cairo renderer.
-    if "cairo_six_sheets" not in admission["active_options"] and parsed_options.get("cairo_six_sheets") is False:
-        del parsed_options["cairo_six_sheets"]
+    parsed_options = options_for(admission["commands"]["candidate"])
+    # New opt-in renderers were absent from these frozen commands.
+    parsed_options = {name: value for name, value in parsed_options.items()
+                      if name in admission["active_options"] or value is not False or not name.startswith("cairo_")}
     if (tuple(admission["order"]) != MODES or set(runs) != set(MODES) or set(logs) != set(MODES)
             or not data["same_opportunities"] or admission["stock"] != expected["installed"]
             or any(req[key] != value for key, value in ref.items() if key not in ("archive", "saved_inventory", "packet"))
