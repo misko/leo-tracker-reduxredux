@@ -32,9 +32,7 @@ def nullspace_size(matrix):
                 smallest_over_largest=float(singular[-1]/singular[0]) if singular[0] else 0.)
 
 
-def receiver_tracks(tracks, by_id):
-    from leo.analysis.research.retained_track_likelihood import projected_receiver_basis
-
+def receiver_tracks(tracks, by_id, projected_receiver_basis):
     matrix, extents, samples, smallest = [], [], 0, []
     for track in tracks:
         times = np.asarray([by_id[oid]["time_s"] for oid in track["observation_ids"]])
@@ -66,6 +64,9 @@ def run(root):
     from held_spatial_start_trial import PINS, json_pin
     from leo.analysis.localization_v3.tracks import winning_observations
 
+    start = process_time()
+    from leo.analysis.research.retained_track_likelihood import projected_receiver_basis
+    import_cpu_s = process_time()-start
     receipts = {}
     for case, pin in zip(("dense", "south"), SEALS, strict=True):
         seal = json.loads(gzip.decompress(checked(root/f"{case}.json.gz", pin)))
@@ -84,12 +85,14 @@ def run(root):
         by_id = {row["observation_id"]: row for row in observed}
         join_time = process_time()-start
         start = process_time()
-        rx = {str(r): receiver_tracks([t for t in seal["sampled"]["tracks"] if t["receiver"] == r], by_id)
+        rx = {str(r): receiver_tracks([t for t in seal["sampled"]["tracks"] if t["receiver"] == r],
+                                      by_id, projected_receiver_basis)
               for r in (1, 2)}
         assert min(r["same_basis_min_witness"] for r in rx.values()) == seal["filter"]["min_strongest_smooth_projection"]
         receipts[case] = dict(signed_row_join_cpu_s=join_time, build_and_rank_cpu_s=process_time()-start, per_radio=rx,
                               candidate_seal_sha256=pin, **account(rx, phase_counts))
     write_seal(root/"joint-dimension.json.gz", dict(cases=receipts, machine=host(), geometry_evaluations=0,
+               first_research_import_cpu_s=import_cpu_s,
                complete_solves=0), {Path(__file__).name: Path(__file__).read_bytes()})
 
 
