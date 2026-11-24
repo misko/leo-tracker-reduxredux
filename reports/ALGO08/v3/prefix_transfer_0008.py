@@ -182,6 +182,8 @@ def launch(root, bundle, pin):
     commands, receiver = {}, {}
     for mode in ORDER:
         folder = root/mode
+        target = folder/"routed"
+        target.mkdir()
         source, native_pin = recorded[mode]
         packet = json.loads(checked(source, native_pin))
         receiver[mode] = packet["provenance"]["detector_sha256"]
@@ -194,7 +196,7 @@ def launch(root, bundle, pin):
         write(job, dict(binding=bound, original_archive=req["original_archive"]))
         job_pin = digest(job)
         write(folder/"admission.json", dict(source_pins=sources, job_sha256=job_pin))
-        write(folder/"binding.json", dict(input=bound))
+        write(target/"binding.json", dict(input=bound))
         commands[mode] = ["/usr/bin/timeout", "--kill-after=2s", "150s", str(RELEASE/"venv/bin/python"),
                           "-IB", __file__, "worker", str(folder), "--pin", job_pin, "--mode", mode]
     write(root/"admission.json", dict(setup=clock(begin), source_pins=sources, adapter=digest(Path(__file__)),
@@ -228,7 +230,8 @@ def worker(folder, pin, mode):
         raise ValueError("Saved wrapper or derived detector recipe changed")
     port = read(folder/"admission.json")
     job = json.loads(secure(folder/"job.json", pin))
-    if port["job_sha256"] != pin or job["binding"] != read(folder/"binding.json")["input"] or mode != folder.name:
+    target = folder/"routed"
+    if port["job_sha256"] != pin or job["binding"] != read(target/"binding.json")["input"] or mode != folder.name:
         raise ValueError("The original sealed worker binding changed")
     saved_entry = saved.worker
     if mode == ORDER[1]:
@@ -237,7 +240,7 @@ def worker(folder, pin, mode):
     with (patch.object(exact, "resident_path", resident),
           patch.object(exact, "exact_ports", partial(exact.exact_ports, resident=resident)),
           patch.object(saved, "worker", saved_entry)):
-        frozen(folder/"job.json", pin, folder)
+        frozen(folder/"job.json", pin, target)
 
 
 def main():
