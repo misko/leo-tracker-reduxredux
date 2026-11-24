@@ -61,7 +61,9 @@ def test_one_paired_callback_per_antenna_and_hindsight_uses_net_difference():
         all_short_matches=14, best_same_budget_matches=16, gain_above_all_short=2,
     )
     assert scored["policies"]["periodic"]["complete"]["stats"]["all"]["matched"] == 12
-    assert scored["policies"]["fixed_late"]["complete"]["stats"]["all"]["matched"] == 14
+    late = scored["policies"]["fixed_late"]["complete"]["stats"]["all"]
+    assert late["matched"] == 14
+    assert late["gained_over_periodic"] == 2 and late["lost_from_periodic"] == 0
     assert scored["policies"]["periodic"]["complete"]["clocks"] == dict(
         native_cpu_ns=100, short_first_extra_cpu_ns=10,
     )

@@ -197,6 +197,7 @@ def scope_scores(visits, schedules, scope):
     for choice in schedules["periodic"]:
         row = visits[choice["index"]]
         registered[row["stream"], choice["count"]//WINDOW].append(choice["index"])
+    periodic = {row["index"]: row["factors"] for row in schedules["periodic"]}
     complete = [group for group in registered.values() if len(group)==WINDOW]
     eligible = {i for group in complete for i in group}
 
@@ -230,14 +231,19 @@ def scope_scores(visits, schedules, scope):
                 scores = Counter()
                 for choice in windows:
                     i = choice["index"]
-                    for oid, factor in zip(ids[i],choice["factors"],strict=True):
+                    for oid, factor, first in zip(
+                        ids[i], choice["factors"], periodic[i], strict=True,
+                    ):
                         if oid not in members:
                             continue
                         stock = ref[oid]
+                        matched = stock is not None and near(stock, factor)
+                        matched_periodic = stock is not None and near(stock, first)
                         scores.update(lanes=1, positives=factor is not None,
                                       references=stock is not None,
-                                      matched=stock is not None and near(stock,factor),
-                                      exact=stock is not None and stock==factor)
+                                      matched=matched, exact=stock is not None and stock==factor,
+                                      gained_over_periodic=matched and not matched_periodic,
+                                      lost_from_periodic=matched_periodic and not matched)
                 groups_stats[tag] = dict(scores)
             results[name] = dict(visit_count=len(windows), actions=dict(actions),
                                  clocks=dict(clocks), stats=groups_stats)
