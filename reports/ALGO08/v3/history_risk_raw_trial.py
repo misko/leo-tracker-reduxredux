@@ -177,7 +177,7 @@ def launch_omission(root, raw_root):
     from dense_geographic_trial import host
     from eight_ms_south_transfer import environment_for
     from empty_bootstrap import clock
-    from exact_named_raw import staged_path, write
+    from exact_named_raw import parser, staged_path, write
     from exact_named_raw_transfer import read
     from portable_orbit_index_trial import local_launcher_tools
 
@@ -196,6 +196,10 @@ def launch_omission(root, raw_root):
     machine = host()
     if machine != raw_job["machine"]:
         raise ValueError("The saved check must use the original low-priority single core")
+    command = raw_job["command"]
+    entry = command.index(str(HERE/"exact_named_raw.py"))
+    candidate_args = command[entry+1:]
+    parser().parse_args(candidate_args)
     root.mkdir()
     (root/"tmp").mkdir()
     shutil.copytree(raw_root/"fonts", root/"fonts")
@@ -205,7 +209,7 @@ def launch_omission(root, raw_root):
     if offer_sha != previous["omitted_offer_sha256"]:
         raise ValueError("The original non-containing offer changed")
     args = ["/usr/bin/timeout", "--kill-after=2s", "45s", sys.executable, "-IB", __file__, "omitted-worker", str(root)]
-    write(root/"binding.json", dict(request=raw_job["request"], candidate_args=raw_job["command"][7:],
+    write(root/"binding.json", dict(request=raw_job["request"], candidate_args=candidate_args,
         source=str(raw_root/"candidate"), source_raw_receipt=verdict["binding_sha256"], omitted_offer_sha256=offer_sha,
         source_native=verdict["signed_native"], machine=machine, setup=clock(start), command=args,
         sources=source_hashes(OMISSION_SOURCES)))
