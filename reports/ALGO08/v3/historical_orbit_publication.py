@@ -44,7 +44,7 @@ def worker(root):
         out.write("\n")
 
 
-def run(root):
+def run(root, *, worker_path=None):
     from empty_bootstrap import RELEASE, checked, load_runtime
 
     load_runtime()
@@ -82,7 +82,7 @@ def run(root):
     subprocess.run([python, "-Bc", "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
                    check=True, env=env, timeout=30)
     target = root/"selective"
-    clock = measure([python, "-IB", __file__, root, "--worker"], env, target)
+    clock = measure([python, "-IB", worker_path or __file__, root, "--worker"], env, target)
     write(root/"candidate-clock.json", clock)
     if clock["exit_code"]:
         raise RuntimeError(clock["stderr_tail"])
