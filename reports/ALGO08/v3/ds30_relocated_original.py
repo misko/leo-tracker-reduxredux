@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import stat
 import sys
-from time import monotonic, process_time, time_ns
+from time import monotonic, process_time, sleep
 from uuid import uuid4
 
 HERE = Path(__file__).resolve().parent
@@ -329,6 +329,26 @@ def metadata_only(event, args):
         raise RuntimeError("No waveform file may open in the relocation proof")
 
 
+def admitted_proof(case, output):
+    from guarded_stage_idle import FULL_LIMIT, QUEUE_LIMIT
+
+    # Observe the quiet window without consuming the shared process slot.
+    deadline = monotonic() + 60
+    while monotonic() < deadline:
+        quiet, _ = study.quiet_window()
+        if quiet:
+            try:
+                with study.exclusive(study.LOCK, "rb"):
+                    sample = study.storage_sample()
+                    if all(row["in_flight"] <= QUEUE_LIMIT and row["full_avg10"] < FULL_LIMIT for row in sample.values()):
+                        prove(case, output)
+                        return 0
+            except BlockingIOError:
+                pass
+        sleep(.5)
+    return 75
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_subparsers(dest="action", required=True)
@@ -342,13 +362,8 @@ def main():
     option = parser.parse_args()
     if option.action == "prove":
         sys.addaudithook(metadata_only)
-        quiet, _ = study.quiet_window()
-        if not quiet:
-            return 75
-        prove(option.case, option.output)
-    else:
-        return measured_pair(option.proof, option.proof_sha256, option.output)
-    return 0
+        return admitted_proof(option.case, option.output)
+    return measured_pair(option.proof, option.proof_sha256, option.output)
 
 
 if __name__ == "__main__":
