@@ -1,0 +1,5 @@
+# Stable final ownership for duplicate Graph proposals
+
+Retain the first proposed polynomial only when the later fit has identical ordered support, degree, reference time, time scale, rounded absolute alias lifts and strict original association-gate membership on that support, and their predicted values differ by at most one binary64 spacing of the original alias period. Preserve all distinct proposals and the incumbent residual gates. Apply the rule only before final Graph ownership arbitration, after greedy extraction and refinement. No site, owner, survey or orbital input enters the rule.
+
+Run the two signed South packets and one each of the pre-existing saved weak DS30-0016 and North packets through the same installed native Graph. For both South packets compare generated support, exact lost-row recovery and remaining scope with the original crossed experiment. Require complete byte-equivalent Graph preparation on the independent weak and North packets. Record actual duplicate count and cost. No fresh localization, raw or TLE work.
