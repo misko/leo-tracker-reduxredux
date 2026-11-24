@@ -115,7 +115,7 @@ def worker(case, root):
                                   waveform_calls=0, **result))
 
 
-def launch(split, root):
+def launch(split, root, *, worker_path=None, extra_sources=()):
     from portable_orbit_index_trial import local_launcher_tools
 
     local_launcher_tools()
@@ -132,7 +132,7 @@ def launch(split, root):
     cases = SPLITS[split]
     sources = ("survivor_sensitivity_trial.py", "survivor_sensitivity.py", "survivor-sensitivity-protocol.md",
                "lighter_joint_estimator.py", "named_survivor_fit.py", "blind_joint_signed.py", "isolated_salvage.py",
-               "unified_short_bootstrap.py", "joint_publication.py")
+               "unified_short_bootstrap.py", "joint_publication.py", *extra_sources)
     write(root / "binding.json", dict(machine=machine, cases=cases, split=split,
                   source_sha256={name: sha256((HERE / name).read_bytes()).hexdigest() for name in sources}))
     env = environment(root)
@@ -141,7 +141,7 @@ def launch(split, root):
     for case in cases:
         target = root / case
         target.mkdir()
-        command = ["/usr/bin/timeout", "--kill-after=2s", "50s", RELEASE / "venv/bin/python", "-IB", __file__,
+        command = ["/usr/bin/timeout", "--kill-after=2s", "50s", RELEASE / "venv/bin/python", "-IB", worker_path or __file__,
                    "worker", case, target]
         clock = measure(command, env, target)
         write(root / f"{case}-clock.json", clock)
