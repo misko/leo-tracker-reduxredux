@@ -57,6 +57,7 @@ def combined_blind_trials():
 def combined_intake_budget():
     originals = receipt("release-intake-rate.json",
                         "97889f708715be74e1036e2c9e5f30a38800658bfe9ecff2be4aacbdb2b13aed")
+    original_clocks = {r["case"]: r for r in receipt("release-stage-budget.json", STAGES)["rows"]}
     rows = []
     for trial in combined_blind_trials():
         raw, = (r for r in originals["rows"] if r["case"] == trial["case"])
@@ -64,10 +65,18 @@ def combined_intake_budget():
             raise ValueError("Expected the original raw-process clock for each blind recording")
         post = trial["paid_setup_and_time"]["elapsed_s"]["candidate_with_setup"]
         allowance = raw["elapsed_s"] / 2 - post
+        elapsed, cpu = raw["elapsed_s"], original_clocks[trial["case"]]["cpu_s"]
+        off_cpu = elapsed - cpu
+        saved_cpu = trial["paid_setup_and_time"]["cpu_s"]["candidate_with_setup"]
         rows.append(dict(case=raw["case"], elapsed_s=raw["elapsed_s"], byte_high=raw["byte_high"],
                          post_s=post, allowance_s=allowance,
+                         original_off_cpu_s=off_cpu, min_original_pre_detection_off_cpu_s=max(0, raw["pre_s"] - cpu),
+                         saved_cpu_with_setup_s=saved_cpu, free_receiver_fixed_wait_s=saved_cpu + off_cpu,
                          required_MB_s=raw["byte_high"] / 1e6 / allowance if allowance > 0 else None))
-    return dict(rows=rows, joint=required_rate(rows, "byte_high", post_speedup=1, startup_s=0))
+    sum_ceiling = sum(r["elapsed_s"] for r in rows) / sum(r["free_receiver_fixed_wait_s"] for r in rows)
+    median_ceiling = 1 / median(r["free_receiver_fixed_wait_s"] / r["elapsed_s"] for r in rows)
+    return dict(rows=rows, joint=required_rate(rows, "byte_high", post_speedup=1, startup_s=0),
+                free_receiver_cpu_original_wait=dict(sum_speedup=sum_ceiling, median_speedup=median_ceiling))
 
 
 def cpu_budget(rows, off_cpu_retained):

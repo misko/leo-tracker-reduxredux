@@ -14,6 +14,8 @@ def test_revised_solver_joint_target_is_for_its_two_blind_inputs_only():
     assert second["post_s"] == pytest.approx(16.0159222)
     assert result["joint"]["required_MB_s"] == pytest.approx(229.47936)
     assert result["joint"]["sum_ratio"] < result["joint"]["median_ratio"] == pytest.approx(.5)
+    assert result["free_receiver_cpu_original_wait"]["sum_speedup"] == pytest.approx(1.842388, abs=1e-6)
+    assert first["min_original_pre_detection_off_cpu_s"] == pytest.approx(24.1450482)
 
 
 def test_transfer_charges_intercept_and_reports_whole_case_error():
