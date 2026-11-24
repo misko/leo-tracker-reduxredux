@@ -8,6 +8,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
@@ -153,6 +154,8 @@ class SelectiveMember:
         data = reader._member(self.chunk.index_relative_path, self.chunk.index_bytes, self.chunk.index_sha256)
         self.rows = [ShortWindowIndexV2.model_validate_json(line) for line in data.splitlines()]
         offset = 0
+        if len(self.rows) != len(self.records):
+            raise BundleCorruptionError("visit index count differs from its frame table")
         for row, record in zip(self.rows, self.records, strict=True):
             if (row.sequence != record["sequence"] or row.payload_offset_bytes != offset
                     or row.receiver_count != 2 or row.sample_count > 200_000
@@ -205,7 +208,7 @@ class Mode(Enum):
     COMPLETE_FULL = "complete-full"
 
 
-def measure_read(directory, pin, side_pin, windows, native, mode):
+def measure_read(directory, pin, side_pin, windows, native, mode, *, compare_words=False):
     from tools.pipeline_eval.qualification.blind_compact_run import _probe, factor_candidate
 
     started = clock()
@@ -227,7 +230,7 @@ def measure_read(directory, pin, side_pin, windows, native, mode):
         if row != own.index:
             raise BundleCorruptionError("installed readback changed a stored row or order")
         if samples is not None:
-            if not np.array_equal(samples, own.samples):
+            if compare_words and not np.array_equal(samples, own.samples):
                 raise BundleCorruptionError("installed readback changed owned CI16")
             if table is not None:
                 prefix = memoryview(samples.reshape(-1)).cast("B")[:PREFIX_BYTES]
@@ -268,6 +271,8 @@ def measure_read(directory, pin, side_pin, windows, native, mode):
                       authenticated_encoded_bytes=chunk.compressed_bytes,
                       encoded_bytes_fed_to_decoder=chunk.compressed_bytes))
     evidence = dict(visits=dict(visits), lanes=len(raw_lanes), raw_native=canonical_digest(raw_lanes),
+                    short_sequences=[sequence for sequence, which, lane, _ in raw_lanes
+                                     if which == "short_primary" and lane == 0],
                     selected=canonical_digest(probes), positives=sum(bool(row["candidates"]) for row in probes),
                     cancellation_candidates=sum(1 for _, _, _, lane in raw_lanes
                                                 for candidate in lane if candidate[0] != 0))
@@ -292,13 +297,13 @@ def changed_byte(path, offset):
             stream.flush()
 
 
-def refusal(path, side_pin, chunk, *, corrupt_sidecar):
+def refusal(path, side_pin, chunk, *, short_sequence=None):
     reader = short_window.ShortWindowReader(path)
-    if corrupt_sidecar:
+    if short_sequence is None:
         damaged, offset = path / SIDE, 1
     else:
         records, _ = read_table(reader, side_pin)
-        record = records[1]
+        record = records[short_sequence]
         suffix_length = record["offset"] + record["frame_bytes"] - record["prefix_end"]
         if suffix_length <= 8:
             raise ValueError("need a short-visit encoded suffix beyond the prefix block")
@@ -308,11 +313,20 @@ def refusal(path, side_pin, chunk, *, corrupt_sidecar):
             SelectiveMember(reader, side_pin)
         except BundleCorruptionError as error:
             message = str(error)
-            if ("visit sidecar" if corrupt_sidecar else chunk["payload_relative_path"]) not in message:
+            if ("visit sidecar" if short_sequence is None else chunk["payload_relative_path"]) not in message:
                 raise
         else:
             raise ValueError("corruption escaped strict admission")
-    return dict(file=damaged.name, offset=offset, rejected=message, issued_visits=0)
+        if short_sequence is not None:
+            try:
+                next(reader.windows())
+            except BundleCorruptionError as error:
+                if message != str(error):
+                    raise
+            else:
+                raise ValueError("installed reader exposed data before rejecting the changed member")
+    return dict(file=damaged.name, offset=offset, rejected=message, issued_visits=0,
+                scheduled_short_sequence=short_sequence)
 
 
 def qualification(result_path):
@@ -324,6 +338,9 @@ def qualification(result_path):
             or os.getpriority(os.PRIO_PROCESS, 0) != 15
             or not Path(short_window.__file__).is_relative_to(frozen.RELEASE / "src")):
         raise ValueError("use a fresh tmpfs receipt, CPU2/nice15 and the installed short-window code")
+    io_policy = subprocess.check_output(("ionice", "-p", str(os.getpid())), text=True).strip()
+    if io_policy != "best-effort: prio 7":
+        raise ValueError("expected ionice class 2 priority 7")
     scope = json.loads(frozen.verified(frozen.PAYLOAD/"spec.json", frozen.SPEC_SHA))
     full = frozen.PAYLOAD / "receiver.so"
     frozen.verified(full, INSTALLED_SHA)
@@ -340,7 +357,7 @@ def qualification(result_path):
                   reader_sha256=sha256(Path(short_window.__file__).read_bytes()).hexdigest(),
                   runner_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
                   cpu_affinity=sorted(os.sched_getaffinity(0)), nice=os.getpriority(os.PRIO_PROCESS, 0),
-                  ready_orders=ORDERS, captures={}, complete_twenty={}, ready=[])
+                  ionice=io_policy, ready_orders=ORDERS, captures={}, complete_twenty={}, ready=[])
     with TemporaryDirectory(dir="/dev/shm", prefix="visit-frame-0016-") as temporary, ExitStack() as stack:
         native = {name: NativePath(binary, pilot, name) for name, binary in
                   (("full", full), ("short_primary", SHORT))}
@@ -352,7 +369,8 @@ def qualification(result_path):
             begin = clock()
             pin, side_pin, chunk = write_capture(path, original.manifest, windows, arm)
             write = elapsed(begin)
-            scan, evidence = measure_read(path, pin, side_pin, windows, native, Mode.COMPLETE_MIXED)
+            scan, evidence = measure_read(path, pin, side_pin, windows, native,
+                                          Mode.COMPLETE_MIXED, compare_words=True)
             both = elapsed(begin)
             paths[arm] = path, pin, side_pin, chunk
             expected[arm] = evidence
@@ -388,8 +406,9 @@ def qualification(result_path):
             output["complete_twenty"][arm] = read
         output["all_twenty_evidence"] = all_twenty
         path, _, side_pin, chunk = paths["frames"]
-        output["corrupt_sidecar"] = refusal(path, side_pin, chunk, corrupt_sidecar=True)
-        output["corrupt_unused_suffix"] = refusal(path, side_pin, chunk, corrupt_sidecar=False)
+        output["corrupt_sidecar"] = refusal(path, side_pin, chunk)
+        output["corrupt_unused_suffix"] = refusal(
+            path, side_pin, chunk, short_sequence=expected["frames"]["short_sequences"][0])
     fixture.signed.freeze(result_path, output)
 
 

@@ -45,8 +45,9 @@ def test_complete_reader_and_prefix_decoder_preserve_exact_rows_and_ci16(tmp_pat
 
 def test_refuse_sidecar_and_skipped_suffix_corruption_under_frozen_pins(tmp_path):
     path, _, _, side_pin, chunk = write(tmp_path, (200_000, 200_000))
-    assert trial.refusal(path, side_pin, chunk, corrupt_sidecar=True)["issued_visits"] == 0
-    assert trial.refusal(path, side_pin, chunk, corrupt_sidecar=False)["issued_visits"] == 0
+    assert trial.refusal(path, side_pin, chunk)["issued_visits"] == 0
+    suffix = trial.refusal(path, side_pin, chunk, short_sequence=1)
+    assert suffix["issued_visits"] == 0 and suffix["scheduled_short_sequence"] == 1
     assert len(trial.SelectiveMember(ShortWindowReader(path), side_pin).rows) == 2
 
 
