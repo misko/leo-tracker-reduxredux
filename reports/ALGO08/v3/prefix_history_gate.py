@@ -198,6 +198,13 @@ def price(costs, plan, route):
         dense_gross_target_cpu_s=GROSS_GATE)
 
 
+def potential_rollback(plan, model):
+    visits = plan["potential_short_skips"]//2
+    return dict(missing_stereo_visits=visits,
+                short_native_redo_cpu_s_using_archive_mean=model["potential_gross_cpu_s"],
+                full_stereo_iq_bytes=visits*1_600_000, short_stereo_iq_bytes=visits*960_000)
+
+
 def run(output):
     from tools.pipeline_eval.variants import carrier_continuation
 
@@ -239,6 +246,7 @@ def run(output):
               prefix_issued=prefix["provenance"]["window_count"],
               prefix_admitted=prefix["provenance"]["processed_windows"], issued=issued,
               original_factors=sum(len(row["candidates"]) for row in doc["source"]["probes"]),
+              if_thinned_rollback=potential_rollback(count, model),
               pessimistic_future_cycle_bound=future, history_gain_upper_if_unknown_suffix=upper,
               skipped_visit_count_if_allowed=len(skipped))
     with output.open("x") as stream_handle:
