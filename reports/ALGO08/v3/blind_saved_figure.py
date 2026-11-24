@@ -112,9 +112,10 @@ if __name__ == "__main__":
     parser.add_argument("--combined", action="store_true", help="Plot the revised two-centre solver comparisons")
     args = parser.parse_args()
     if args.combined:
-        blind = read_receipt("ds30-0163-combined.json.gz",
-                             "9c28657f1dd8a8f31b2f564522d47b42e9b83347f9f816e75c435022f6398801")
-        render([combined_development(), combined_blind(blind)], args.output,
+        from reports.ALGO08.v3.intake_scale_check import combined_blind_trials
+
+        rows = [combined_development(), *(combined_blind(trial) for trial in combined_blind_trials())]
+        render(rows, args.output,
                title="Revised solver on the same saved DS30 detections", candidate_label="Revised solver",
                note="One core, through publication and exit. Input admission timed separately. Installed v3 withheld on DS30-0289.")
     else:

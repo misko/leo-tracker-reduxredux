@@ -42,6 +42,34 @@ def receipt(name, pin):
     return json.loads(gzip.decompress(content) if name.endswith(".gz") else content)
 
 
+def combined_blind_trials():
+    trials = []
+    for case, pin in (("0163", "9c28657f1dd8a8f31b2f564522d47b42e9b83347f9f816e75c435022f6398801"),
+                      ("0173", "9e68ac940d14ad404662a6460029dfe2b58a02e4e27e9137e5b32031687dd62a")):
+        trial = receipt(f"ds30-{case}-combined.json.gz", pin)
+        if (trial["case"] != f"DS30-{case}" or trial["study"]["independent_cases"] != [trial["case"]]
+                or trial["admission"]["science_commit"] != "ad319307d" or not trial["checks"]["same_input_and_offer"]):
+            raise ValueError("Expected the frozen combined solver on its independently enrolled recording")
+        trials.append(trial)
+    return trials
+
+
+def combined_intake_budget():
+    originals = receipt("release-intake-rate.json",
+                        "97889f708715be74e1036e2c9e5f30a38800658bfe9ecff2be4aacbdb2b13aed")
+    rows = []
+    for trial in combined_blind_trials():
+        raw, = (r for r in originals["rows"] if r["case"] == trial["case"])
+        if raw["elapsed_s"] != trial["prior_installed_raw"]["elapsed_s"]:
+            raise ValueError("Expected the original raw-process clock for each blind recording")
+        post = trial["paid_setup_and_time"]["elapsed_s"]["candidate_with_setup"]
+        allowance = raw["elapsed_s"] / 2 - post
+        rows.append(dict(case=raw["case"], elapsed_s=raw["elapsed_s"], byte_high=raw["byte_high"],
+                         post_s=post, allowance_s=allowance,
+                         required_MB_s=raw["byte_high"] / 1e6 / allowance if allowance > 0 else None))
+    return dict(rows=rows, joint=required_rate(rows, "byte_high", post_speedup=1, startup_s=0))
+
+
 def cpu_budget(rows, off_cpu_retained):
     """Price a uniform CPU speedup at a fixed fraction of original off-CPU time."""
     if not rows or not 0 <= off_cpu_retained <= 1:
@@ -188,6 +216,7 @@ if __name__ == "__main__":
              for bound in ("byte_low", "byte_high")}
     original = receipt("release-stage-budget.json", STAGES)["rows"]
     print(json.dumps(dict(prefix_orders=load(), blind_rows=rows, blind_intake_gates=gates,
+                          combined_blind_intake=combined_intake_budget(),
                           release_cpu_scenarios=[cpu_budget(original, kept) for kept in (0, .5, 1)],
                           numerical_solve_scenarios=solve_intake_tradeoff(rows)),
                      indent=2, allow_nan=False))

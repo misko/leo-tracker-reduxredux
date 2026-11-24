@@ -1,7 +1,19 @@
 import pytest
 
-from reports.ALGO08.v3.intake_scale_check import blind_rows, check_order, cpu_budget, load, solve_intake_tradeoff
+from reports.ALGO08.v3.intake_scale_check import (
+    blind_rows, check_order, combined_intake_budget, cpu_budget, load, solve_intake_tradeoff,
+)
 from reports.ALGO08.v3.release_intake_rate import required_rate
+
+
+def test_revised_solver_joint_target_is_for_its_two_blind_inputs_only():
+    result = combined_intake_budget()
+    first, second = result["rows"]
+    assert [first["case"], second["case"]] == ["DS30-0163", "DS30-0173"]
+    assert first["post_s"] == pytest.approx(13.6972304)
+    assert second["post_s"] == pytest.approx(16.0159222)
+    assert result["joint"]["required_MB_s"] == pytest.approx(229.47936)
+    assert result["joint"]["sum_ratio"] < result["joint"]["median_ratio"] == pytest.approx(.5)
 
 
 def test_transfer_charges_intercept_and_reports_whole_case_error():
