@@ -47,6 +47,7 @@ def graph_run(rows, config, library):
 
     from leo.analysis import graph_tracklets as graph, polynomial_tracklets as polynomial, tracklet_fitting as finish
     from leo.analysis.localization_v3 import tracks
+    from leo.application.localization_v3_engine import _json_value
     from tools.pipeline_eval.variants.experimental.graph_path import NativePath, native_paths
     from exact_graph_execution import graph_execution
 
@@ -119,7 +120,15 @@ def graph_run(rows, config, library):
         with patch.object(tracks, "fit_lane", lane):
             all_tracks, points = tracks.graph_tracks(rows, config)
     support = {track["key"]: track["observation_ids"] for track in all_tracks}
-    return dict(points=points, tracks=len(all_tracks), support=support, trace=trace, execution=audit, paths=dict(metrics))
+
+    def original_values(value):
+        if isinstance(value, np.ndarray):
+            return [value.dtype.str, value.shape, value.tobytes().hex()]
+        return _json_value(value)
+
+    payload = json.dumps(all_tracks, default=original_values, allow_nan=False, sort_keys=True, separators=(",", ":"))
+    return dict(points=points, tracks=len(all_tracks), support=support, trace=trace, execution=audit, paths=dict(metrics),
+                complete_graph_sha256=sha256(payload.encode()).hexdigest())
 
 
 def first_forks(old, new):
