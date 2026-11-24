@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 
 from curvature_filter import eligibility, independent_bound, stable_order, update_ordering
 from curvature_filter_trial import score_owners, write_seal
+from curvature_joint_dimension import account, nullspace_size
 
 
 def test_unequal_times_annihilate_affine_modes_and_leave_smooth_witness():
@@ -74,3 +75,19 @@ def test_seal_records_checked_release_bytes_by_digest(tmp_path):
     assert actual == {"score": 0., "release_sources": {"installed.py": sha256(checked["installed.py"]).hexdigest()}}
     with pytest.raises(FileExistsError):
         write_seal(seal, {}, checked)
+
+
+def test_exact_joint_dimension_counts_columns_even_if_they_are_dependent():
+    matrix = np.array([[1., 2.], [2., 4.], [3., 6.], [4., 8.]])
+    dimensions = nullspace_size(matrix)
+    assert dimensions["exact_nullity_floor"] == 2
+    assert dimensions["numerical_rank"] == 1
+    assert dimensions["numerical_nullity"] == 3
+
+
+def test_pair_dimension_accounts_for_both_local_affine_pieces_and_candidate_phases():
+    rx = {"1": dict(native_rows=100, triples=15, smooth_columns=11, exact_nullity_floor=4),
+          "2": dict(native_rows=90, triples=14, smooth_columns=11, exact_nullity_floor=3)}
+    actual = account(rx, [3, 2])
+    assert actual["triple_floor_if_both_phase_tangents_eliminated"] == 2
+    assert actual["full_row_floor_with_two_local_affine_pieces_and_both_phase_tangents"] == 47
