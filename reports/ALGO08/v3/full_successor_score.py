@@ -119,6 +119,9 @@ def paired_rows(rows, assigned):
         for field in ("elapsed_s", "cpu_s"):
             if not isinstance(r[field], (float, int)) or not math.isfinite(r[field]) or r[field] <= 0:
                 raise ValueError(f"Unmeasured {field} for {case}")
+        start, end = r["child_started_unix_ns"], r["child_finished_unix_ns"]
+        if type(start) is not int or type(end) is not int or not 0 < start < end:
+            raise ValueError("Both child timestamps are required")
         scores = score_arms(r["arms"], assigned[case]["reference"])
         if any(scores[name + "_fix"] != (r["outcome"] == "complete") for name in ARMS):
             raise ValueError("Terminal decision and calibration outputs disagree")
@@ -129,6 +132,8 @@ def paired_rows(rows, assigned):
                                        authority_sha256=r["authority_sha256"], build_sha256=r["build_sha256"],
                                        attempt_result_sha256=r["attempt_result_sha256"], timing_scope=r["timing_scope"],
                                        terminal_sha256=r.get("terminal_sha256"), reason=r.get("reason"),
+                                       generation=r["generation"], child_started_unix_ns=start,
+                                       child_finished_unix_ns=end,
                                        elapsed_s=r["elapsed_s"], cpu_s=r["cpu_s"],
                                        child_elapsed_s=r["child_elapsed_s"], child_cpu_s=r["child_cpu_s"],
                                        validator_elapsed_s=r["validator_elapsed_s"], validator_cpu_s=r["validator_cpu_s"], **scores)
@@ -137,8 +142,11 @@ def paired_rows(rows, assigned):
     pairs = []
     for case in assigned:
         a, b = (by_key[case, role] for role in BUILDS)
-        if any(a[key] != b[key] for key in ("first", "authority_sha256", "requested_raw_authority_sha256")):
+        if any(a[key] != b[key] for key in ("first", "authority_sha256", "requested_raw_authority_sha256", "generation")):
             raise ValueError(f"Unmatched original input or run order on {case}")
+        first, second = (a, b) if a["first"] == "installed" else (b, a)
+        if first["child_finished_unix_ns"] > second["child_started_unix_ns"]:
+            raise ValueError(f"Actual child clocks disagree with assigned launch order on {case}")
         pairs.append((a, b))
     return pairs
 
