@@ -42,6 +42,8 @@ NORTH_INSIDE = Path("/tmp/leo-algo08v2-2x-bench/exact-curved-lookahead-north-ins
 NORTH_PAIR = "sha256:9bf5dc4e3ef1e2df17f8d8184bca74f2ce9559a1e154401b9f6330f8e97feaeb"
 RECORDING = {"north": "0abe7b4514be674d9f5388e3", "south": "6bd1f26bfa0bedfcf3f100f8"}
 FIELD_TRANSLATION = "DS30-0086"
+TRIO_EXPORT = "sha256:43bbb0ab05d9ed7bb2541b0adf14116b7a4300debce888a950956043aa50f467"
+TRIO_SEAL = "sha256:1b4f52e4ebf6ae91e152751a8d1b2e94796ccd5901c46e56de99e48a41c8c41c"
 
 
 def pinned_json(path, pin):
@@ -118,18 +120,18 @@ def physical_publication(root, row, evidence):
     return from_documents(terminal, path, grid, receipt)
 
 
-def read_field(snapshot):
+def read_field(snapshot, cohort, export, seal_pin):
     plan = pinned_json(CAMPAIGN / "plan.json", PLAN)
     entries = frozen_order(plan)
     selection = INITIAL + PROSPECTIVE
     if tuple(entry["case"] for entry in entries[:len(selection)]) != selection:
         raise ValueError("The original enrolled and reserved captures differ from the protocol")
-    seal = pinned_json(snapshot / "rows-with-relocations-seal.json", EXPORT_SEAL)
-    if seal["plan_sha256"] != PLAN or seal["combined_sha256"] != EXPORT:
+    seal = pinned_json(snapshot / "rows-with-relocations-seal.json", seal_pin)
+    if seal["plan_sha256"] != PLAN or seal["combined_sha256"] != export:
         raise ValueError("Expected the frozen original selected attempt ledger")
-    rows = {case: {} for case in INITIAL}
-    required = {case.encode() for case in INITIAL}
-    for line in checked(snapshot / "rows-with-relocations.jsonl", EXPORT).splitlines():
+    rows = {case: {} for case in cohort}
+    required = {case.encode() for case in cohort}
+    for line in checked(snapshot / "rows-with-relocations.jsonl", export).splitlines():
         if not any(case in line for case in required):
             continue
         row = json.loads(line)
@@ -139,17 +141,21 @@ def read_field(snapshot):
                 raise ValueError("The selected attempt ledger contains duplicate outcomes")
             group[row["algorithm"]] = row
 
-    overlay_root = CAMPAIGN / "relocation" / RELOCATION
-    overlay = pinned_json(overlay_root / "overlay.json", OVERLAY)
-    if (overlay["case"] != RELOCATION or overlay["plan_sha256"] != PLAN
-            or overlay["proof_path"] != f"relocation/{RELOCATION}/proof.json"
-            or overlay["proof_sha256"] != seal["proofs"][RELOCATION]):
-        raise ValueError("The relocated publication lacks its enrolled proof")
-    checked(overlay_root / "proof.json", overlay["proof_sha256"])
-    checked(overlay_root / "native-encoded-auth.json", overlay["encoded_auth_sha256"])
+    overlay = None
+    if RELOCATION in cohort:
+        overlay_root = CAMPAIGN / "relocation" / RELOCATION
+        overlay = pinned_json(overlay_root / "overlay.json", OVERLAY)
+        if (overlay["case"] != RELOCATION or overlay["plan_sha256"] != PLAN
+                or overlay["proof_path"] != f"relocation/{RELOCATION}/proof.json"
+                or overlay["proof_sha256"] != seal["proofs"][RELOCATION]):
+            raise ValueError("The relocated publication lacks its enrolled proof")
+        checked(overlay_root / "proof.json", overlay["proof_sha256"])
+        checked(overlay_root / "native-encoded-auth.json", overlay["encoded_auth_sha256"])
     result = {}
-    for entry in entries[:len(INITIAL)]:
+    for entry in entries[:len(selection)]:
         case = entry["case"]
+        if case not in rows:
+            continue
         assigned = {"case_id": entry["case_id"], "release_100": entry["historical_first100"],
                     "raw_authority": entry["manifest_raw_authority_sha256"],
                     "physical_content": entry["raw_identity_sha256"],
@@ -302,7 +308,7 @@ def encode(value):
 
 
 def run(snapshot, translated):
-    field = read_field(snapshot)
+    field = read_field(snapshot, INITIAL, EXPORT, EXPORT_SEAL)
     ordinary = field[FIELD_TRANSLATION]
     translations = read_translations(translated, ordinary)
     return {"field": field, "translations": translations, "public": read_reference_cases(),
@@ -310,24 +316,32 @@ def run(snapshot, translated):
             "reservation": list(PROSPECTIVE), "snapshot_sha256": EXPORT}
 
 
+def run_prospective(snapshot):
+    return {"field": read_field(snapshot, PROSPECTIVE, TRIO_EXPORT, TRIO_SEAL),
+            "cohort": list(PROSPECTIVE), "snapshot_sha256": TRIO_EXPORT}
+
+
 def score(path):
-    data = json.loads(path.read_bytes())
+    predictions = path.read_bytes()
+    data = json.loads(predictions)
+    prediction_sha = canonical_digest(data)
     assigned = roster()
     for case, row in data["field"].items():
         apply_reference(row, assigned[case]["reference"])
         row.pop("endpoints_km", None)
-    for row in data["translations"].values():
-        apply_reference(row, assigned[FIELD_TRANSLATION]["reference"])
-    answers = pinned_json(HERE.parent / "regional-release/scoring-key.json", PUBLIC_KEY)["answers"]
-    truth = {}
-    for site, recording in RECORDING.items():
-        truth[site], = {tuple(r["truth"]) for r in answers.values() if r["recording"] == recording}
-    for name, row in data["public"].items():
-        apply_reference(row, truth[name.split("-")[0]])
-    data["summary"] = {
-        group: verdicts(data[group]) for group in ("field", "public", "translations")
-    }
-    data["prediction_sha256"] = canonical_digest(json.loads(path.read_bytes()))
+    if "public" in data:
+        for row in data["translations"].values():
+            apply_reference(row, assigned[FIELD_TRANSLATION]["reference"])
+        answers = pinned_json(HERE.parent / "regional-release/scoring-key.json", PUBLIC_KEY)
+        truth = {}
+        for site, recording in RECORDING.items():
+            truth[site], = {tuple(r["truth"]) for r in answers["answers"].values()
+                            if r["recording"] == recording}
+        for name, row in data["public"].items():
+            apply_reference(row, truth[name.split("-")[0]])
+    data["summary"] = {group: verdicts(data[group]) for group in ("field", "public", "translations")
+                       if group in data}
+    data["prediction_sha256"] = prediction_sha
     return data
 
 
@@ -337,10 +351,13 @@ def main():
     worker = actions.add_parser("run")
     worker.add_argument("snapshot", type=Path)
     worker.add_argument("translated", type=Path)
+    prospective = actions.add_parser("prospective")
+    prospective.add_argument("snapshot", type=Path)
     scorer = actions.add_parser("score")
     scorer.add_argument("path", type=Path)
     args = vars(parser.parse_args())
-    print(encode((run if args.pop("action") == "run" else score)(**args)))
+    action = {"run": run, "prospective": run_prospective, "score": score}[args.pop("action")]
+    print(encode(action(**args)))
 
 
 if __name__ == "__main__":
