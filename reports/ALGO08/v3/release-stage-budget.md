@@ -157,7 +157,7 @@ The same frozen change also completed the next original failure, **DS30-0129**, 
 
 ### Single-core CPU and file residency
 
-The historical processes spent **73.6% of summed elapsed time on CPU**. If each process used half as much CPU and its remaining elapsed time stayed constant, the paired median and summed elapsed speedups would both be **1.58×**. Under this assumption a **3.12× reduction in CPU time** would meet both elapsed gates. Elapsed time outside CPU can include scheduler delays and input waits. Streaming or changing the access pattern can affect both components.
+Halving CPU time while holding the remaining elapsed time fixed gives **1.58×** on both timing gates across all 100 jobs. For the 95 with both stage timestamps, the share of time spent before detections also varied with original page residency.
 
 | Original payload pages resident at launch | Runs with both timestamps | Fraction of summed elapsed time before detections |
 |---|---:|---:|
