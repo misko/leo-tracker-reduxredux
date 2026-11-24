@@ -174,12 +174,12 @@ def worker(root):
 
 
 def score(root):
-    import empty_bootstrap as boot
     from eight_ms_held_score import geographic_reference, owner_differences
     from exact_named_raw import ARM_NAMES, write
+    from portable_orbit_index_trial import local_launcher_tools
 
     sys.addaudithook(deny_original)
-    boot.load_runtime()
+    local_launcher_tools()
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from tools.pipeline_eval.scoring import distance_km
@@ -208,7 +208,9 @@ def score(root):
         raise ValueError("Both full grid documents must match the verified publication")
     truth, reference = geographic_reference("weak")
     parity = dict(terminal=terminal == same["terminals"]["exact"], ordered_owners=observed["owner_rows"] == older["owner_rows"],
-        grid=sorted(key for key in old_grid if old_grid[key] != new_grid[key]), path=older["sidecars"]["path"] == observed["sidecars"]["path"],
+        grid_differences=sorted(key for key in old_grid if old_grid[key] != new_grid[key]),
+        all_ordered_grid_values=old_grid["points"] == new_grid["points"],
+        path=older["sidecars"]["path"] == observed["sidecars"]["path"],
         figures=[name for name in observed["images"] if older["images"][name] == observed["images"][name]])
     arms = {}
     for arm in ARM_NAMES:
