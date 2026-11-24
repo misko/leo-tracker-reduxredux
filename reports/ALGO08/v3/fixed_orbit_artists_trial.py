@@ -64,6 +64,7 @@ def render(installed, encoder, source, options, *, fixed, bundle):
     from fixed_orbit_artists import fixed_artists
     from leo.presentation import orbit_plot
     from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from one_pass_web_png import one_pass_layout
     from tools.pipeline_eval.variants.experimental import raster_layout, shared_orbit_figures as shared
 
     spans, figures = defaultdict(list), []
@@ -100,9 +101,12 @@ def render(installed, encoder, source, options, *, fixed, bundle):
         with patch.object(raster_layout, "render_shared", wrap):
             images = timed("bundle", installed)(source, require_trial=True, **options)
     else:
-        with (patch.object(orbit_plot, "Figure", raster_layout._OrbitFigure),
+        with (one_pass_layout(enabled=True, explicit_orbits=True) as layout_counts,
               patch.object(shared, "imsave", encoder.wrap(shared.imsave))):
-            images = wrap(source, reuse_pixels=True, **options)
+            with patch.object(orbit_plot, "Figure", raster_layout._OrbitFigure):
+                images = wrap(source, reuse_pixels=True, **options)
+            if layout_counts != {"orbit_figures": 2}:
+                raise ValueError("The dense archive used two explicit orbit layouts")
     expected = {"make": 2, "layout_witness": 2, "agg_base": 2, "copy": 2, "restore": 4, "encode": 4, "orbit": 1}
     if any(len(spans[stage]) != count for stage, count in expected.items()):
         raise ValueError("The ordinary shared Agg execution changed")
@@ -162,6 +166,8 @@ def run(output):
     from leo.presentation import orbit_plot
     from tools.pipeline_eval.variants.experimental import lossless_png, raster_layout, shared_orbit_figures
 
+    layout_sha = "820717a79448adb6e6fef2c15fbcbb090c9b135e927bb7460fde17b474ecc114"
+    checked(HERE / "one_pass_web_png.py", layout_sha)
     for module in (orbit_plot, raster_layout, shared_orbit_figures):
         path = Path(module.__file__)
         checked(path, SOURCES[path.name])
@@ -177,7 +183,7 @@ def run(output):
     forward, reverse = ("ordinary", "fixed"), ("fixed", "ordinary")
     cases = {label: run_case(label, installed, encoder, orders=orders) for label, orders in (
         ("DS30-0402", (forward, reverse)), ("DS30-0008", (reverse, forward)), ("DS30-0016", (forward, reverse)))}
-    write(output, dict(cases=cases, sources=SOURCES | {
+    write(output, dict(cases=cases, sources=SOURCES | {"one_pass_web_png.py": layout_sha} | {
         name: sha256((HERE / name).read_bytes()).hexdigest() for name in
         ("agg-orbit-artists-protocol.md", "fixed_orbit_artists.py", "fixed_orbit_artists_trial.py")},
                        encoder={key: spec[key] for key in ("png_filter", "png_deflate")}, waveform_reads=0, solver_runs=0))
