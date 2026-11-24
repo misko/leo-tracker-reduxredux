@@ -68,7 +68,8 @@ def worker(path, case, arm, build, build_pin):
     costs = AcquisitionCosts()
     stats = {}
     deployed = arm == "original"
-    scope = patch.object(ShortWindowReader, "_member", stock_member) if deployed else +        patch.object(live, "paired_decoded_hashes", lambda _: nullcontext())
+    scope = (patch.object(ShortWindowReader, "_member", stock_member) if deployed
+             else patch.object(live, "paired_decoded_hashes", lambda _: nullcontext()))
 
     @contextmanager
     def ingress():
