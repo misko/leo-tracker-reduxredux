@@ -108,24 +108,31 @@ def verified_packet(raw, request):
 
 def saved_worker(root):
     import empty_bootstrap as staged
-    import unified_short_bootstrap as entry
     from time import process_time
 
     started = process_time(), perf_counter()
-    _, specification, sources, publication, pins = staged.load_runtime()
+    runtime = staged.load_runtime()
+    request = json.loads((root/'binding.json').read_bytes())
+    packet, native, raw = verified_packet(root/ORDER[0], request)
+    sealed = json.loads((root/'raw-packet-seal.json').read_bytes())
+    if sealed['packet'] != str(packet) or sealed['native_sha256'] != raw['native_sha256']:
+        raise ValueError('Changed raw packet at the saved mirror handoff')
+    publish_saved(request, root/ORDER[1], root/'mirror-offer.json', packet, native, raw,
+                  started=started, runtime=runtime)
+
+
+def publish_saved(request, target, offer, packet, native, raw, *, started, runtime=None):
+    import empty_bootstrap as staged
+    import unified_short_bootstrap as entry
+    from time import process_time
+
+    _, specification, sources, publication, pins = staged.load_runtime() if runtime is None else runtime
     from aperture_trial import read, write
     from cumulative_grid_projection import saved_inventory_port
     from leo.analysis.glrt_frequency_input import frequency_evidence
     from leo.contracts.algo08_region import Algo08Region
     from short_graph_guard import prove
 
-    request = read(root/'binding.json')
-    packet, native, raw = verified_packet(root/ORDER[0], request)
-    sealed = read(root/'raw-packet-seal.json')
-    if sealed['packet'] != str(packet) or sealed['native_sha256'] != raw['native_sha256']:
-        raise ValueError('Changed raw packet at the saved mirror handoff')
-    target = root/ORDER[1]
-    offer = root/'mirror-offer.json'
     staged.checked(offer,request['offer_sha256'][ORDER[1]])
     libraries = {name:Path(path) for name,path in request['libraries'].items()
                  if name not in ('short_binary','cfo_refinement_library')}

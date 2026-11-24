@@ -2,6 +2,7 @@
 
 from collections import Counter
 from contextlib import contextmanager
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -130,3 +131,27 @@ def test_north_verification_detects_signed_factor_and_opportunity_differences():
     assert result["changed_lanes"] == 1 and result["max_changed_cfo_hz"] == 5
     with pytest.raises(ValueError, match="chronological opportunity"):
         compare_rows(original[::-1], original)
+
+
+def test_mirror_enrollment_rejects_substituting_the_containing_offer(monkeypatch, tmp_path):
+    import continued_cfo_north_mirror as mirror
+
+    packet = tmp_path / "detections.json"
+    raw = {"native_sha256": "sha256:packet", "detector_recipe_sha256": "sha256:policy"}
+    offer = {"center": [0, 1], "width_km": 25}
+    request = dict(session="session", inventory="inventory", mirror_offer=offer)
+    source = {
+        tmp_path / "sealed.json": dict(packet=str(packet), raw=raw, binding_sha256="binding",
+                                       comparisons={"factors": True}),
+        tmp_path / "binding.json": dict(request=request, libraries={}),
+        packet: {},
+        mirror.MIRROR: offer,
+    }
+    monkeypatch.setattr(mirror, "CONTAINING", tmp_path)
+    monkeypatch.setattr(mirror, "native_file", lambda _: packet)
+    monkeypatch.setattr(mirror, "bind_native", lambda *args, **kwargs: None)
+    monkeypatch.setattr(mirror, "checked", lambda path, pin: json.dumps(source[path]).encode())
+    assert mirror.enrollment()[1] == packet
+    source[mirror.MIRROR] = dict(offer, center=[0, 0])
+    with pytest.raises(ValueError, match="originally assigned near-omitted"):
+        mirror.enrollment()
