@@ -45,6 +45,10 @@ class RankComplete(BaseException):
     """Leave the controlled worker before finalist fits and publication."""
 
 
+def reject_fallback(*_args, **_kwargs):
+    raise RuntimeError("The saved rank census cannot proceed to a full solver")
+
+
 @contextmanager
 def observe_curves(scan, audit):
     import numpy as np
@@ -173,34 +177,45 @@ def worker(case, request, inventory, output):
     @contextmanager
     def capture(profiled):
         import cold_finalist_race
+        import joint_publication as joint
         from leo.analysis.localization_v3.discovery import signature
         from tools.pipeline_eval.variants import v5_core
 
-        def stop(_mode, prepared, region, bound):
+        def census(prepared, region, bound):
             from blind_joint_finish import digest
-            from runpy import run_path
 
             start = process_time_ns(), perf_counter_ns()
             scan = v5_core.scan_context(prepared, region, digest(prepared["noise"]), bound, "previous")
             if len(scan.norads) != expected["stages"]["work"]["selected"]["catalogue"]:
                 raise ValueError("Archived cold catalogue extent changed")
-            # The ordinary route would enter full_catalogue_route's scoped
-            # centre tables immediately before calling the installed rank.
-            share = run_path(str(OLD.parents[2]/"tools/pipeline_eval/variants/algo08_blind_rank.py"))["shared_rank_preparation"]
-            with share(scan) as sharing, observe_curves(scan, result):
+            # The archived full-catalogue route already wraps this callable
+            # with its actual centre tables, scratch and repeat caches.
+            with observe_curves(scan, result):
                 ranked = v5_core.ranked_initial_nodes(scan)
             signatures = [[list(row) for row in signature(node)] for node in ranked]
             if signatures != expected["stages"]["work"]["ordered"]:
                 raise ValueError("The exact instrumented rank disagrees with the sealed input")
             result.update(cold_rank_plus_observer=dict(cpu_ns=process_time_ns()-start[0], elapsed_ns=perf_counter_ns()-start[1]),
-                          ordered_ranks=len(signatures), exact_archived_signatures=True, centre_cache=dict(sharing),
+                          ordered_ranks=len(signatures), exact_archived_signatures=True,
                           prior_cold_row_cache=expected["solve"]["cold_track_rows"],
                           prior_rank=expected["stages"]["work"]["ranks"][0], other_position_solves=0, waveform_reads=0)
+
+        def stop(_mode, prepared, region, bound):
+            try:
+                census(prepared, region, bound)
+            except Exception as error:
+                raise RuntimeError("The catalogue block audit failed inside the rank") from error
             raise RankComplete
+
+        full_route = joint.full_catalogue_route
+
+        def guarded_route(_installed, *args, **options):
+            return full_route(reject_fallback, *args, **options)
 
         if profiled:
             raise ValueError("Use unprofiled original install scope")
-        with patch.object(cold_finalist_race, "refine", stop):
+        with (patch.object(cold_finalist_race, "refine", stop),
+              patch.object(joint, "full_catalogue_route", guarded_route)):
             yield
 
     with patch.object(original, "controlled_cold", capture):
