@@ -218,6 +218,11 @@ def run(args, *, publisher=None):
     full_anchor_primary = getattr(args, "full_anchor_primary_library", None)
     strict_packed_eight = getattr(args, "strict_packed_eight", False)
     whole_blocks = getattr(args, "whole_stereo_blocks", False)
+    live_recheck = getattr(args, "selective_full_20ms_recheck", False)
+    if live_recheck:
+        from live_full_recheck import require_compatible
+
+        require_compatible(args)
     if strict_packed_eight and (not eight_ms or full_anchor_primary is not None
                                 or getattr(args, "packed_ci16_map", None) is None):
         raise ValueError("Strict packed input requires the complete 20/8 ms receiver and a trusted packed map")
@@ -293,8 +298,17 @@ def run(args, *, publisher=None):
         from held_cycle_refined import FrequencyChanges
 
         frequency_changes = FrequencyChanges()
-    scan = staged.staged_scanner(sources, detector=mixer.detector)
     symbols = staged.receiver_symbols(sources)
+    recheck = None
+    detector = mixer.detector
+    if live_recheck:
+        from live_full_recheck import FIELD, LiveFullRecheck, definition
+
+        recheck = LiveFullRecheck(mixer, symbols["Continuation"], symbols["factor_candidate"])
+        recipe = dict(recipe, **{FIELD: definition()})
+        effective_detector = canonical_digest(recipe)[7:]
+        detector = recheck.detector
+    scan = staged.staged_scanner(sources, detector=detector)
     native_import = staged.RECEIVER.removesuffix(".py").replace("/", ".")
     offer_bytes = args.region.read_bytes()
     offer = scan.Algo08Region.parse(json.loads(offer_bytes))
@@ -352,7 +366,9 @@ def run(args, *, publisher=None):
                 native, recipe, frequency_changes, session, inventory_digest, decision_file)
             phases["held_anchor_route_selection"] = staged.clock(scope)
         elif getattr(args, "held_anchor_route", False):
-            if eight_ms:
+            if recheck is not None:
+                from live_full_recheck import prepare
+            elif eight_ms:
                 from eight_ms_native_receiver import prepare
             else:
                 from held_anchor_route_publication import prepare
@@ -412,6 +428,10 @@ def run(args, *, publisher=None):
         dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
     if eight_ms:
         dependencies += ("eight_ms_native_receiver.py", "eight_ms_held_fit.py")
+    if recheck is not None:
+        from live_full_recheck import SOURCES
+
+        dependencies += SOURCES
     if anchor_helper is not None:
         dependencies += ("mixed_aperture_receiver.py", "primary_anchor_8ms.py")
     if guarded_full is not None:
@@ -460,6 +480,8 @@ def run(args, *, publisher=None):
                                           else research["exact_phase_forecast"])
     if route_selection is not None:
         result["held_anchor_route"] = route_selection
+    if recheck is not None:
+        result["selective_full_20ms_recheck"] = recheck.receipt()
     if packed_audit is not None:
         result["packed_ci16_input"] = packed_audit
     if adaptive_map:

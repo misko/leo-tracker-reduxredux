@@ -56,40 +56,64 @@ def key(row):
     return tuple(row[f] for f in ("edge", "receiver_id", "channel", "actual_rf_hz"))
 
 
-def shortlist(rows, entries, continuation):
+class Shortlist:
     """Hardware chronology has no path for named answers, owners or geography."""
-    remembered = defaultdict(lambda: deque(maxlen=HISTORY_LENGTH))
+
+    def __init__(self, continuation):
+        self.continuation = continuation
+        self.remembered = defaultdict(lambda: deque(maxlen=HISTORY_LENGTH))
+
+    def consider(self, row, aperture):
+        if len(row["candidates"]) > 1:
+            raise ValueError("Expected the original one-measurement mixed chronology")
+        counter = row["valid_start_counter"]
+        history = self.remembered[key(row)]
+        preceding = sum(kept and 0 < counter - start <= OLD_BOUND for start, kept in history)
+        _, keep, votes = self.continuation.select(row)
+        matched = aperture == "short" and votes == [0] and preceding > 0
+        history.append((counter, keep is not None))
+        return dict(lane=lane(row), aperture=aperture, same_lane_prior_kept=preceding, votes=votes, selected=matched)
+
+
+def shortlist(rows, entries, continuation):
+    history = Shortlist(continuation)
     decisions, selected = [], set()
     for row, event in zip(rows, entries, strict=True):
         visit, _, radio, _, aperture, _ = event
-        if lane(row) != (visit, radio) or len(row["candidates"]) > 1:
+        if lane(row) != (visit, radio):
             raise ValueError("Expected the original one-measurement mixed chronology")
-        counter = row["valid_start_counter"]
-        history = remembered[key(row)]
-        preceding = sum(kept and 0 < counter - start <= OLD_BOUND for start, kept in history)
-        _, keep, votes = continuation.select(row)
-        matched = aperture == "short" and votes == [0] and preceding > 0
-        history.append((counter, keep is not None))
-        decisions.append(dict(lane=lane(row), aperture=aperture, same_lane_prior_kept=preceding,
-                              votes=votes, selected=matched))
-        if matched:
+        decision = history.consider(row, aperture)
+        decisions.append(decision)
+        if decision["selected"]:
             selected.add(lane(row))
     return selected, decisions
+
+
+def rechecked(base, factors, continuation):
+    if factors is None:
+        continuation.select(base)
+        return base, None
+    _, keep, votes = continuation.select(dict(base, candidates=factors))
+    chosen = [] if keep is None else [factors[keep]]
+    return dict(base, candidates=chosen), dict(lane=lane(base), full_candidates=factors, votes=votes, chosen=chosen)
 
 
 def replace(rows, replacements, continuation):
     result, witness = [], []
     for base in rows:
-        factors = replacements.get(lane(base))
-        if factors is None:
-            continuation.select(base)
-            result.append(base)
-            continue
-        _, keep, votes = continuation.select(dict(base, candidates=factors))
-        chosen = [] if keep is None else [factors[keep]]
-        result.append(dict(base, candidates=chosen))
-        witness.append(dict(lane=lane(base), full_candidates=factors, votes=votes, chosen=chosen))
+        row, evidence = rechecked(base, replacements.get(lane(base)), continuation)
+        result.append(row)
+        if evidence is not None:
+            witness.append(evidence)
     return result, witness
+
+
+def full_candidates(factors, constructor):
+    rows = [constructor(rank, epoch, status="complete", offset=offset, cfo=hz, exact=exact, control=roll,
+                        margin=exact-roll) for rank, epoch, offset, hz, exact, roll in factors]
+    if any(not row["passed_fractional_margin_gate"] for row in rows):
+        raise ValueError("Full ABI returned an invalid candidate")
+    return rows
 
 
 def inputs(case):
@@ -187,11 +211,7 @@ def full_lookup(original, entry, member, scheduled, full_binary, tab):
                     if (visit, radio) in scheduled:
                         midpoint = target["rf_center_hz"] - target["lnb_lo_hz"] - a["actual_if_center_hz"]
                         factors, (cpu, wall) = receiver.run(window.samples, radio, midpoint)
-                        returned[visit, radio] = [factor_candidate(rank, epoch, status="complete", offset=offset,
-                            cfo=hz, exact=exact, control=roll, margin=exact-roll)
-                            for rank, epoch, offset, hz, exact, roll in factors]
-                        if any(not f["passed_fractional_margin_gate"] for f in returned[visit, radio]):
-                            raise ValueError("Full ABI returned an invalid candidate")
+                        returned[visit, radio] = full_candidates(factors, factor_candidate)
                         calls.append(dict(lane=(visit, radio), cpu_ns=cpu, wall_ns=wall))
             try:
                 timed_next(sequence)

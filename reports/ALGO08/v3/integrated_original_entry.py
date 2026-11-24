@@ -63,8 +63,11 @@ def main():
     def options():
         cli = parser()
         cli.add_argument("--sparse8-primary", action="store_true", required=True)
-        cli.add_argument("--guarded-full-anchor-library", type=Path,
-                         help="Research-only guarded full anchors with the original sparse 8 ms primary")
+        receiver_variant = cli.add_mutually_exclusive_group()
+        receiver_variant.add_argument("--guarded-full-anchor-library", type=Path,
+                                      help="Use guarded full anchors with the original sparse 8 ms primary")
+        receiver_variant.add_argument("--selective-full-20ms-recheck", action="store_true",
+                                      help="Recheck unsupported short measurements on their original full window")
         return cli
 
     def smoke(args, acceleration):
