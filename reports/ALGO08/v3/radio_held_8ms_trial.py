@@ -62,7 +62,7 @@ def packet_for_north(root):
     original, recipe = source8("north")
     masked, masked_recipe, schedule = input_stream(original, recipe)
     prior = plan["masked_witness"]
-    if (not plan["admit"] or canonical_digest(original) != plan["original_sha256"]
+    if (not plan["admit"] or canonical_digest(original) != "sha256:"+plan["original_sha256"]
             or schedule != plan["schedule"] or canonical_digest(masked) != prior["parent_native_sha256"]
             or canonical_digest(masked_recipe) != prior["parent_detector_sha256"]):
         raise ValueError("Original scheduled North packet differs from the frozen mask")
@@ -206,14 +206,14 @@ def score(root):
             owner_changes[mode] = {arm: owner_differences(reference["roles"][arm], sealed["science"]["roles"][arm])
                                    for arm in ARMS}
     errors = {mode: {arm: candidate[arm]["error_m"] - control[arm]["error_m"]
-                     for arm in ARMS if candidate[arm]["error_m"] is not None}
+                     for arm in ARMS if candidate[arm] is not None}
               for mode, control in controls.items()}
     write(root/"score.json", dict(candidate=candidate, controls=controls, owner_changes=owner_changes, delta_error_m=errors,
                                  decision=receipt["decision"], truth_source_sha256=pin,
                                  truth_face_km=face_clearance_km(region, truth), clock=sealed["clock"],
                                  comparator_clocks=dict(masked_saved=masked["clock"], all8_raw=live["clock"],
                                                         named_raw=live["historical"]["named"]),
-                                 named_plus_250m=(receipt["decision"] == "complete"
+                                 named_plus_250m=(set(errors["named"]) == set(ARMS)
                                                   and all(error <= 250.0 for error in errors["named"].values()))))
 
 
