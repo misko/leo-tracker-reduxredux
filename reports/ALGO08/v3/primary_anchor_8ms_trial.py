@@ -32,7 +32,7 @@ def verified_rank_zero(full, first):
     return tuple(row for row in full if row[0] == 0) == first
 
 
-def prefix_worker(output):
+def prefix_worker(root):
     import mixed_aperture_receiver as mixed
     from combined_raw_research import native_eight
     from continued_cfo_first_0016 import worker, write
@@ -83,8 +83,8 @@ def prefix_worker(output):
         with patch.object(selector,"prepare",observe), patch.object(AnchorPrimaryMixer,"detector",scoped):
             native_eight([*argv,"--full-anchor-primary-library",str(ARTIFACT)])
 
-    worker("history8",output,launch_alternative=alternative)
-    write(output/"lane-audit.json",trace)
+    worker("history8",root,launch_alternative=alternative)
+    write(root/"lane-audit.json",trace)
 
 
 def prefix(root):
@@ -139,7 +139,7 @@ def prefix(root):
          admit_north=all(r["exact_rank0"] for r in rows) and not changes["short"]))
 
 
-def north(root, prefix_result):
+def north(root, prefix_result, primary=True):
     from combined_raw_trial import PRODUCER, checked_producer, flags
     from continued_cfo_first_0016 import read, write
     from eight_ms_native_live import EIGHT
@@ -152,9 +152,21 @@ def north(root, prefix_result):
     controls,census = admitted_inputs()
     checked_producer(controls["binding"]["request"]["cutoff_utc_ns"],census["72"]["body_digests"])
     bound_library(ARTIFACT)
+    anchor_flags = ("--full-anchor-primary-library",str(ARTIFACT)) if primary else ()
     launch(root,continued=True,entrypoint=HERE/"combined_raw_research.py",trial_protocol=PROTOCOL,extra_sources=SOURCES,
-           experiment_flags=[*flags(PRODUCER),"--full-anchor-primary-library",str(ARTIFACT)],native_eight_binary=EIGHT)
+           experiment_flags=[*flags(PRODUCER),*anchor_flags],native_eight_binary=EIGHT)
     write(root/"prefix-gate.json",dict(prefix_sha256=pin(prefix_result),gate=gate,real_anchor_helper=definition()))
+
+
+def north_pair(root, prefix_result):
+    from continued_cfo_first_0016 import write
+
+    root.mkdir()
+    order = ("primary-anchor","full-anchor")
+    write(root/"pair.json",dict(order=order,sole_changed_option="--full-anchor-primary-library",
+                               prefix_sha256=pin(prefix_result),native_anchor_helper=definition()))
+    for mode in order:
+        north(root/mode,prefix_result,primary=mode=="primary-anchor")
 
 
 def verify(root):
@@ -247,10 +259,10 @@ def score(root):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action",required=True)
-    for action in ("prefix-worker","prefix","north","verify","score"):
+    for action in ("prefix-worker","prefix","north-pair","verify","score"):
         cli = sub.add_parser(action)
         cli.add_argument("root",type=Path)
-        if action=="north":
+        if action=="north-pair":
             cli.add_argument("prefix_result",type=Path)
     args = vars(parser.parse_args())
-    {"prefix-worker":prefix_worker,"prefix":prefix,"north":north,"verify":verify,"score":score}[args.pop("action")](**args)
+    {"prefix-worker":prefix_worker,"prefix":prefix,"north-pair":north_pair,"verify":verify,"score":score}[args.pop("action")](**args)
