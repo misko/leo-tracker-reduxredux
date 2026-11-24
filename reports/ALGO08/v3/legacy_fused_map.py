@@ -21,7 +21,9 @@ class Description(ct.Structure):
 
 
 def build(path):
-    multi.verified(multi.ZSTD, multi.ZSTD_PIN)
+    from .sparse_cold_input import verified
+
+    verified(multi.ZSTD, multi.ZSTD_PIN)
     source = Path(__file__).with_name("legacy_fused_history.c")
     command = ["cc", "-std=c11", "-O3", "-shared", "-fPIC", "-Wall", "-Wextra", "-Werror",
                str(source), str(multi.ZSTD.resolve()), "-o", str(path)]

@@ -1,5 +1,15 @@
 # Selective decoding on the original DS30-0016 files
 
+Indexing **all 13 original compressed files** reduced complete analysis time to **7.093 s**, including both calibration fits and eight verified PNGs. The candidate with ordinary reads took **8.630 s**. Against the earlier installed ALGO08v3 clock of **10.745 s**, the ready speedup was **1.51×**. That leaves **0.377 s to reach 1.6×** and **1.721 s to reach 2×** on this recording. Neither detector outputs nor position or image content changed between the two candidate reader modes. [Full-recording comparison and machine receipt](legacy-block-all-0016.md)
+
+![Elapsed time and preparation cost on the original DS30-0016 recording](development/legacy-original-0016.png)
+
+The full reader authenticated all 991.7 MB of the original encoded recording and verified 545.6 MB of requested decoded data. It used eight small stored exception spans during the run and restored one dependent Huffman table. Acquisition took **2.394 s**, compared with **2.878 s** with five maps and **3.612 s** with ordinary reads. The full candidate and ordinary control ran in separate processes at different times. The resulting 17.8% reduction in through-exit time includes variation outside acquisition.
+
+The 13-map build reused the five previously verified maps. The incremental preparation took **3.182 s**. Charging those five maps' original verification and creation as well brings the observed preparation plus first analysis to **11.993 s**. All three candidate runs used the same earlier orbit index. Building that index would add a further 4.320 s. [All-member first-use accounting](legacy-block-all-0016.md) · [Reproduce the figure](legacy_frame_figure.py)
+
+### Which original files need exceptions?
+
 Only **5 of the 13 original files** consist entirely of Huffman-coded literals. Those files account for **320 of 808 visits** and **393.1 of 991.7 MB** of compressed input. A decoder that falls back on the first Zstandard match can use the shortcut on 39.6% of this recording's compressed bytes. The previously studied first file qualified. Timing it alone would overstate coverage. [Complete per-file census](measurements/legacy-frame-coverage-0016.json) · [Frozen selection](legacy-frame-coverage-protocol.md)
 
 | Original file layout | Files | Visits | Compressed bytes | Decoded bytes | Compressed blocks | Blocks containing matches |
