@@ -1,0 +1,7 @@
+# Live continued-CFO pricing on one staged member
+
+Use the already staged, independently authenticated first 64-visit member of DS30-0169. Require the compressed member and signed index to be fully resident before and after each invocation by an observation with no reads or reconditioning. Use no other input, original waveform path or position fit.
+
+The two fresh processes, all-paid then continuation-gated, use the same original fixed-epoch refinement library, original 20/12 ms receiver, calibration-free held-cycle policy and original decoded inputs. Adapt the source-pinned existing member wrapper to seal after the genuine EOF decision. Preserve the native opportunity census, real cancellation, authentication and native-byte checks. Measure the authenticated acquisition, paid refinement, the gated policy's online continuation, both EOF policy decisions, the selected detector seal, and exit. The within-run probe timer stays charged.
+
+Confirm pre-refinement factors and signed opportunity chronology match exactly. Independently project the original continuation's retained lanes on the genuine all-paid packet. Verify the actual live CFO calls and final payload against that projection. A history choice must publish the same selected factors. An unfiltered choice may change only the CFO of short factors skipped online. Use Gauss CPU 2 under one low-priority serialized lock. No additional timed pair, solver or large stage.
