@@ -59,8 +59,10 @@ def run(stage, requested_mode):
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         for mode in (requested_mode,):
-            if mode == "centroid" and document(stage / "ordinary-clock.json")["exit_code"]:
-                raise ValueError("The ordinary saved publication must complete first")
+            if mode == "centroid":
+                control = ordinary_receipt(stage)
+                if document(stage / "ordinary-clock.json")["exit_code"] and not document(control).get("recovered"):
+                    raise ValueError("The ordinary saved publication must complete first")
             scratch = stage / f"{mode}-scratch"
             scratch.mkdir()
             environment = os.environ | dict(
@@ -82,7 +84,7 @@ def run(stage, requested_mode):
             clock = dict(started_unix_ns=unix, finished_unix_ns=finished, elapsed_s=elapsed, exit_code=exit_code,
                          cpu_s=usage1.ru_utime-usage0.ru_utime+usage1.ru_stime-usage0.ru_stime,
                          major_faults=usage1.ru_majflt-usage0.ru_majflt, command=command,
-                         backing_input_blocks=usage1.ru_inblock-usage0.ru_inblock)
+                         input_blocks=usage1.ru_inblock-usage0.ru_inblock)
             clock_pin = write(stage / f"{mode}-clock.json", clock)
             if exit_code:
                 raise RuntimeError(f"{mode} exited {exit_code}. See {stage / (mode+'.stderr')}")
@@ -91,12 +93,49 @@ def run(stage, requested_mode):
     if requested_mode == "ordinary":
         print(stages[requested_mode]["receipt_sha256"], flush=True)
         return
-    stages["ordinary"] = dict(clock_sha256=identifier(stage / "ordinary-clock.json"),
-                              receipt_sha256=identifier(stage / "ordinary-receipt.json"))
+    control = ordinary_receipt(stage)
+    stages["ordinary"] = dict(clock_sha256=identifier(stage / "ordinary-clock.json"), receipt_file=control.name,
+                              receipt_sha256=identifier(control))
     seal = write(stage / "prediction-seal.json", dict(
         case=CASE, protocol_sha256=identifier(PROTOCOL), driver_sha256=identifier(Path(__file__)),
         stage_order=MODES, score_reads=0, acquisition="verified saved packet", host=config, products=stages))
     print(seal, flush=True)
+
+
+def ordinary_receipt(stage):
+    recovered = stage / "ordinary-recovered.json"
+    return recovered if recovered.is_file() else stage / "ordinary-receipt.json"
+
+
+def recover_ordinary(stage):
+    from leo.analysis.localization_v3.tracks import winning_observations
+    from leo.contracts.digests import canonical_digest
+
+    clock = document(stage / "ordinary-clock.json")
+    stderr = (stage / "ordinary.stderr").read_text()
+    if clock["exit_code"] != 1 or not stderr.rstrip().endswith("Object of type ndarray is not JSON serializable"):
+        raise ValueError("Unexpected ordinary worker failure")
+    witness_path = stage / "ordinary" / "exact-named-raw-witness.json"
+    witness = document(witness_path)
+    evidence = witness["evidence"]
+    detail = evidence["detail"]
+    terminal = dict(run_id=detail["run_id"], terminal_sha256=detail["terminal_sha256"], decision=detail["state"])
+    published = document(stage / "ordinary/fast-scan-automatic-work" / terminal["run_id"] / "terminal.json",
+                         terminal["terminal_sha256"])
+    (published_native,) = (stage / "ordinary").glob("fast-scan-automatic-work/*/detections.json")
+    native = document(published_native, NATIVE)
+    if (terminal["decision"] != "complete" or len(evidence["images"]) != 8 or
+            detail["input_sha256"] != "sha256:"+NATIVE or published["native_sha256"] != detail["input_sha256"]):
+        raise ValueError("The ordinary signed products did not complete before provenance serialization")
+    rows, _ = winning_observations(native)
+    partial = stage / "ordinary-receipt.json"
+    if not partial.read_text().startswith('{"acquisition_handoffs":1,'):
+        raise ValueError("The emitted boundary evidence is missing")
+    result = dict(case=CASE, mode="ordinary", terminal=terminal, waveform_reads=0, acquisition_handoffs=1,
+                  graph_time=dict(graph_input_digests=[canonical_digest(rows)], recomputed_from_signed_native=True),
+                  evidence=dict(evidence=evidence), recovered=True, witness_sha256=identifier(witness_path),
+                  partial_receipt_sha256=identifier(partial), failure_sha256=identifier(stage / "ordinary.stderr"))
+    print(write(stage / "ordinary-recovered.json", result))
 
 
 def geography():
@@ -122,15 +161,18 @@ def score(stage, seal_sha):
     stages = {}
     for mode in MODES:
         hashes = seal["products"][mode]
-        receipt = document(stage / f"{mode}-receipt.json", hashes["receipt_sha256"])
+        receipt_path = stage / hashes.get("receipt_file", f"{mode}-receipt.json")
+        receipt = document(receipt_path, hashes["receipt_sha256"])
         clock = document(stage / f"{mode}-clock.json", hashes["clock_sha256"])
         result = receipt["terminal"]
         terminal = document(stage / mode / "fast-scan-automatic-work" / result["run_id"] / "terminal.json",
                             result["terminal_sha256"])
         if (terminal["native_sha256"] != "sha256:"+NATIVE or receipt["acquisition_handoffs"] != 1
-                or receipt["waveform_reads"] or clock["exit_code"] or set(terminal["arms"]) != set(ARMS)):
+                or receipt["waveform_reads"] or (clock["exit_code"] and not receipt.get("recovered"))
+                or set(terminal["arms"]) != set(ARMS)):
             raise ValueError("Prediction does not bind to the saved-graph comparison")
         evidence = receipt["evidence"]["evidence"]
+        document(stage / mode / "exact-named-raw-witness.json", receipt["witness_sha256"])
         stages[mode] = dict(terminal=terminal, saved_receipt=receipt, evidence=evidence, clock=clock)
     home = CAMPAIGN / "cases" / CASE
     pair = document(home / "pair.json", PAIR)
@@ -181,8 +223,11 @@ if __name__ == "__main__":
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--score", metavar="PREDICTION_SEAL_SHA256")
     action.add_argument("--run", choices=MODES)
+    action.add_argument("--recover-ordinary", action="store_true")
     args = parser.parse_args()
     if args.score:
         score(args.stage, args.score)
+    elif args.recover_ordinary:
+        recover_ordinary(args.stage)
     else:
         run(args.stage, args.run)

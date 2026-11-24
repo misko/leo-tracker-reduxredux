@@ -165,7 +165,8 @@ def worker(mode, stage, *, verify_only=False):
                       correction_source_sha256=chart.tagged_bytes((HERE / "sparse8_cfo_epoch.py").read_bytes()),
                       worker_source_sha256=chart.tagged_bytes(Path(__file__).read_bytes()),
                       survey_reads=0, waveform_reads=0, acquisition_handoffs=handoff.calls,
-                      graph_time=audit, timing=timing, scoped_ports=positive, evidence=evidence)
+                      graph_time=audit, timing=timing, evidence=dict(evidence=evidence["evidence"]),
+                      witness_sha256=chart.tagged_bytes((options.output / "exact-named-raw-witness.json").read_bytes()))
     chart.write(stage / f"{mode}-receipt.json", provenance)
     print(json.dumps(dict(case=CASE, mode=mode, decision=terminal["decision"], timing=timing)))
 
