@@ -76,7 +76,7 @@ def scout(stats, offer_stats, initial, sigma, bounds, discovery, audit):
 
 
 @contextmanager
-def two_seeds(audit, *, instrument=None):
+def two_seeds(audit):
     from leo.analysis.localization_v3 import discovery
 
     ordinary = discovery.fresh_discovery
@@ -95,9 +95,6 @@ def two_seeds(audit, *, instrument=None):
         "    if proposals is None:\n"
         + "".join(f"    {line}\n" for line in fallback.splitlines())
     ) + source[source.index(end):]
-    bindings = {}
-    if instrument is not None:
-        modified, bindings = instrument(modified)
     code = compile(modified, str(path), "exec")
 
     def run(scan, sigma, *, budget=8, seed_policy="legacy"):
@@ -110,7 +107,7 @@ def two_seeds(audit, *, instrument=None):
 
         # Look up the currently scoped exact geometry and statistics after
         # entering the ordinary rank wrappers.
-        scope = dict(ordinary.__globals__, _choose=nominate, **bindings)
+        scope = dict(ordinary.__globals__, _choose=nominate)
         exec(code, scope)
         centres = scope["fresh_discovery"](scan, sigma, budget=budget, seed_policy=seed_policy)
         audit["paid_centres"] = len(centres)
