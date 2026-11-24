@@ -1,11 +1,12 @@
 from math import remainder
-from os import O_RDONLY, O_RDWR
+from os import O_RDONLY, O_RDWR, major, minor
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 from reports.ALGO08.v3 import empty_lane_directed_replay as replay
+from reports.ALGO08.v3 import empty_lane_directed_watch as watch
 
 
 def test_epoch_converts_large_hardware_counter_before_float_reduction():
@@ -80,3 +81,19 @@ def test_original_match_no_carrier_alias_and_stage_is_readonly():
                                  ('/srv/bulk/other', O_RDONLY, ()), ('/tmp/installed/answer', O_RDONLY, ())):
         with pytest.raises(ValueError):
             replay.forbid_source('open', (name, 'rb', flags), allowed=allowed)
+
+
+def test_passive_admission_requires_fresh_sleep_quiet_and_free_lock(tmp_path):
+    quiet = {'original': dict(full_avg10=4., in_flight=0), 'output': dict(full_avg10=4., in_flight=2)}
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False) is None
+    assert watch.eligible(dict(age_s=4.), True, quiet, False) == 'no-fresh-field-sleep'
+    assert watch.eligible(dict(age_s=0.5), False, quiet, False) == 'no-fresh-field-sleep'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, True) == 'shared-lease-present'
+    quiet['output']['in_flight'] += 1
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False) == 'storage-pressure'
+    lease = tmp_path / 'lease'
+    lease.touch()
+    stat = lease.stat()
+    key = f'{major(stat.st_dev):x}:{minor(stat.st_dev):x}:{stat.st_ino}'
+    assert watch.lock_present(lease, f'17: FLOCK ADVISORY WRITE 1290 {key} 0 EOF\n')
+    assert not watch.lock_present(lease, f'18: POSIX ADVISORY WRITE 1291 00:00:{stat.st_ino} 0 EOF\n')
