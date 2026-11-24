@@ -104,6 +104,7 @@ def held_clocks(campaign, *, split_apertures=False):
             record.update(aperture_seconds(native["native_wall_ns"], record["native_s"]))
             record["short_lanes"] = native["native_calls"].get("short_primary", 0)
             record["short_positives"] = native["factors"].get("short_primary", 0)
+            record["full_lanes"] = native["native_calls"].get("full", 0)
         result.append(record)
     return result
 
