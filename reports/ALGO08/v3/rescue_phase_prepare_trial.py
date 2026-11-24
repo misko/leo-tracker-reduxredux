@@ -44,18 +44,20 @@ def census(receipt):
 def worker(root):
     import unified_short_bootstrap as entry
     from aperture_trial import read,write
-    from owner_loss_0402 import STAGED,request
+    from empty_bootstrap import checked
+    from owner_loss_0402 import STAGED
     from prospective_0402_solver import SETTINGS,worker as publish_worker
-    from rescue_phase_prepare import binding
 
-    job,_ = request()
     bind = read(root/'binding.json')
+    job = Path(bind['request_path'])
+    checked(job,bind['request_sha256'])
     parent = entry.publish_active
     audit = []
 
     def active(args,*values,**options):
         from leo.storage.short_window import ShortWindowReader
         from named_constrained_research import deny_waveform
+        from rescue_phase_prepare import binding
 
         args.named_survivor_finish = True
         args.direct_residual_figures = args.direct_orbit_figures = True
