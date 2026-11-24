@@ -1,6 +1,8 @@
 # ALGO08v3 successor validation on saved DS30 recordings
 
-**The current candidate has yet to demonstrate a twofold end-to-end speedup with preserved accuracy on DS30 fixes.** It completed one whole physical withholding case 2.79× faster. Two physical fixes timed from saved detections gave substantially different results. The dense case improved both calibration arms. The held medium case lost 49 assigned observations per arm and increased fitted-calibration position error by 236 m.
+**The current solver cut total time from 136.03 to 68.02 s on four physical DS30 fixes starting from saved detections.** One expensive recording supplied 46 s of the 68 s saved. The median paired speedup was **1.58×**, including candidate launcher checks. All four known positives returned fixes, and the largest increase in horizontal error was **4.2 m** across both calibration arms. Full waveform-to-position timing on a physical fix with this receiver and solver together remains open. [Four-recording comparison](#choosing-the-solver-from-earlier-orbit-quality)
+
+The following earlier experiments explain why the candidate checks orbit quality before choosing a solver. On DS30-0160, the original lean approach increased fitted-calibration error by 236 m. The new routing rule recovered the installed answer.
 
 | Recording | Timing boundary | ALGO08v3 → candidate, elapsed | Position result |
 |---|---|---:|---|
@@ -62,9 +64,13 @@ A location-independent check propagated the available earlier orbital elements a
 
 DS30-0374 was held out when designing the routing rule and had previously been used for localization. On these three known positives from the same roof, both pipelines returned three fixes and eight verified figures per fix. From saved detections through process exit, elapsed fell from **62.681 to 39.070 s**. That gives **1.604× summed and 1.528× median paired speedup**. Including the routed launcher's input checks gives **40.360 s**, or **1.553× summed and 1.470× median**. The historical installed worker clocks exclude launcher checks. [Timing boundaries, errors and product verification](history-risk-0374.md)
 
-![Paired runtimes including candidate input checks and horizontal error changes for each calibration arm on three physical DS30 recordings](development/history-risk-three-case.png)
+On the fourth recording, DS30-0402, the lean branch took **27.655 s** with entry checks, versus **73.351 s** for installed v3. All 4,821 satellite assignments in each arm matched. The error changes were under 0.05 mm. The grid and path changed, and seven of eight images matched pixel for pixel. All eight verified. Across four cases, charging candidate entry checks gives **1.585× median paired speedup and 2.000025× by total elapsed**. In the benchmark's candidate/v3 units, the median is **0.6344** and the ratio of totals is **0.499994**. Both must be at most 0.5. The summed margin is less than a millisecond against archived controls. The panel contains known positives at one site. [Per-recording errors, assignments and figures](history-risk-0402.md)
+
+![Paired runtimes including candidate input checks and horizontal error changes for each calibration arm on four physical DS30 recordings](development/history-risk-four-case.png)
 
 Transferring each measured downstream saving, including launcher checks, to that recording's historical raw clock gives acquisition budgets of **7.43, 8.47 and 25.40 s** respectively for a per-recording 2× improvement. A receiver sustaining one rate across the three would need **442 MB/s** for the median gate and **406 MB/s** for the summed gate, measured from launch through sealed detections in original compressed MB. These are targets derived from separate launches. Reproduce them with `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --routed-cases` in the project environment. [Calculation](adaptive_receiver_budget.py) · [Measured physical receiver prefixes](seekable-eight-raw.md)
+
+Adding DS30-0402 gives it a **35.72 s** acquisition budget. The four-recording thresholds become **377 MB/s** for the median gate and **324 MB/s** for the summed gate. The difference from the three-case thresholds illustrates how much the target depends on including one expensive solve. Use `--routed-cases 4` to reproduce the four-case estimate. The raw 20/8 ms receiver can produce different detections from the original packet used to measure these saved-solver improvements.
 
 ## Keeping ALGO08v3's original position solution
 

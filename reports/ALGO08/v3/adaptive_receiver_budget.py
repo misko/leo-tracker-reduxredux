@@ -7,6 +7,7 @@ from hashlib import sha256
 from math import isfinite
 
 from acquisition_throughput import minimum_rate
+from history_risk_route_panel import read_sealed_panel
 from regional_dense_budget import DATA, HERE, select
 from staged_budget import checked
 from tools.pipeline_eval.qualification.score_paired_holdout import elapsed_ratios
@@ -98,13 +99,10 @@ def exact_case_report(size=3):
                 median_ratio_at_verify_only_rate=median_gate, summed_ratio_at_verify_only_rate=summed_gate)
 
 
-def routed_case_report():
-    content = gzip.decompress((DATA / "history-risk-three-case.json.gz").read_bytes())
-    if sha256(content).hexdigest() != "b461931fba8c5bbb853966e9d4977bc9d6377393830067780fc36a37be556717":
-        raise ValueError("Unexpected routed panel")
-    panel = json.loads(content)["enrolled"]
+def routed_case_report(size=3):
+    panel = read_sealed_panel(size)["enrolled"]
     raw = json.loads(checked(DATA / "acquisition-throughput.json", RAW_CLOCKS_SHA))["rows"]
-    cases, modeled = {}, []
+    cases, modeled, paid_saved_pairs = {}, [], []
     for row in select(raw, ["DS30-" + key for key in panel]):
         case = row["case"]
         evidence = panel[case.removeprefix("DS30-")]
@@ -115,14 +113,17 @@ def routed_case_report():
                 or result["clock"]["exit_code"] != 0 or result["archive_stock_clock"]["exit_code"] != 0):
             raise ValueError(f"Raw and saved routed evidence do not match for {case}")
         charged = result["clock"]["elapsed_s"] + evidence["source_stage"]["preflight"]["elapsed_ns"] / 1e9
+        paid_saved_pairs.append((result["archive_stock_clock"]["elapsed_s"], charged))
         budget = matched_budget(row, dict(named=result["archive_stock_clock"], candidate=dict(elapsed_s=charged)))
         cases[case] = budget
         downstream = budget["modeled_downstream_s"]
         # Preserve the measured baseline total while supplying the transferred downstream
         # clock to the same median/sum throughput solver used for the historical cohorts.
         modeled.append(dict(row, stages=(budget["raw_v3_s"] - downstream, downstream, 0)))
+    median_saved, summed_saved = elapsed_ratios(paid_saved_pairs)
     return dict(cases=cases, median_gate_MB_s=minimum_rate(modeled, 1, 0),
-                summed_gate_MB_s=minimum_rate(modeled, 1, 1))
+                summed_gate_MB_s=minimum_rate(modeled, 1, 1),
+                measured_saved_median_ratio=median_saved, measured_saved_summed_ratio=summed_saved)
 
 
 if __name__ == "__main__":
@@ -130,10 +131,11 @@ if __name__ == "__main__":
     kind = cli.add_mutually_exclusive_group()
     kind.add_argument("--exact-cases", type=int, nargs="?", const=3, choices=(3, 4),
                      help="Use the three- or four-recording panel's measured solver savings (default 3)")
-    kind.add_argument("--routed-cases", action="store_true", help="Charge the measured orbit-risk launch checks")
+    kind.add_argument("--routed-cases", type=int, nargs="?", const=3, choices=(3, 4),
+                      help="Charge orbit-risk launch checks for the three- or four-recording panel")
     args = cli.parse_args()
     if args.routed_cases:
-        result = routed_case_report()
+        result = routed_case_report(args.routed_cases)
     elif args.exact_cases:
         result = exact_case_report(args.exact_cases)
     else:

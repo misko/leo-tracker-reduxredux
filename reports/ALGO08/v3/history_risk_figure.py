@@ -1,8 +1,6 @@
 """Compare paid saved-input runtimes and position-error changes on the routed panel."""
 
-import gzip
-from hashlib import sha256
-import json
+from argparse import ArgumentParser
 from pathlib import Path
 
 import matplotlib
@@ -10,16 +8,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from reports.ALGO08.v3.history_risk_route_panel import read_sealed_panel
 
 HERE = Path(__file__).resolve().parent
 
 
-def load_rows():
-    data = gzip.decompress((HERE / "measurements/history-risk-three-case.json.gz").read_bytes())
-    if sha256(data).hexdigest() != "b461931fba8c5bbb853966e9d4977bc9d6377393830067780fc36a37be556717":
-        raise ValueError("Unexpected routed panel")
+def load_rows(size=3):
     rows = []
-    for entry in json.loads(data)["enrolled"].values():
+    for entry in read_sealed_panel(size)["enrolled"].values():
         result = entry["result"]
         runs = result["scientific"]["runs"]
         error = {arm: 1000 * (runs["routed"]["horizontal_error_km"][arm] - runs["named"]["horizontal_error_km"][arm])
@@ -29,8 +25,8 @@ def load_rows():
     return rows
 
 
-def render(output):
-    rows = load_rows()
+def render(output, size=3):
+    rows = load_rows(size)
     navy, green = "#18385b", "#008374"
     fig, (runtime, errors) = plt.subplots(1, 2, figsize=(10.2, 3.9), sharey=True)
     fig.subplots_adjust(left=0.115, right=0.97, bottom=0.28, top=0.76, wspace=0.11)
@@ -58,4 +54,8 @@ def render(output):
 
 
 if __name__ == "__main__":
-    render(HERE / "development/history-risk-three-case.png")
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--cases", type=int, choices=(3, 4), default=3)
+    size = parser.parse_args().cases
+    slug = {3: "three", 4: "four"}[size]
+    render(HERE / f"development/history-risk-{slug}-case.png", size)

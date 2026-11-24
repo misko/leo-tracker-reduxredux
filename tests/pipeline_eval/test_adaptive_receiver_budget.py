@@ -54,3 +54,11 @@ def test_routed_panel_charges_admission_and_prices_each_timing_gate():
     assert report["cases"]["DS30-0160"]["acquisition_budget_s"] == pytest.approx(7.4301, abs=0.0001)
     assert report["median_gate_MB_s"] == pytest.approx(442.25, abs=0.01)
     assert report["summed_gate_MB_s"] == pytest.approx(405.69, abs=0.01)
+
+
+def test_four_case_saved_gate_takes_the_median_of_candidate_over_control():
+    report = routed_case_report(4)
+    assert report["measured_saved_median_ratio"] == pytest.approx(0.6343658)
+    assert report["measured_saved_summed_ratio"] == pytest.approx(0.4999938)
+    assert report["median_gate_MB_s"] == pytest.approx(376.99, abs=0.01)
+    assert report["summed_gate_MB_s"] == pytest.approx(323.71, abs=0.01)
