@@ -109,7 +109,8 @@ def tiny_model(tiny):
             or not decision.index(publisher) < decision.index("else:", decision.index(publisher)) < decision.index(receiver)
             or "history_cairo_render" not in getsource(publish_active)):
         raise ValueError("Require the exact archive-certified pre-render withholding")
-    return dict(archived_scope=proof["route"], verified_handoffs=proof["verified_handoffs"], render_imported=False,
+    return dict(archived_scope=proof["route"], verified_handoffs=proof["verified_handoffs"], renderer_called=False,
+                clock_assumption="Reuse the archived launch-through-exit clock including startup",
                 scientific_imports_after=proof["scientific_imports_after"],
                 previous_clock=tiny["process"], previous_sha256=BASE_PINS[TINY],
                 proof_source_sha256={name: digest(HERE/name) for name in (
