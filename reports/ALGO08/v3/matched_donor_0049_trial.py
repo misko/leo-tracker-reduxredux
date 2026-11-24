@@ -2,6 +2,7 @@
 
 import argparse
 import fcntl
+import gzip
 import json
 import os
 from pathlib import Path
@@ -22,14 +23,25 @@ from sparse8_cfo_epoch_saved import BUILD, BUILD_PIN, CHARTED, deny_backing
 from sparse8_cfo_epoch_trial import ARMS, CAMPAIGN, LOCK, attrs, document, identifier, write
 from matched_donor_0049 import derive, owner_counts
 from sparse_only_drop_0049 import exclude_sparse_only
+from empty_recovery_0049 import restore_empty_lanes
 import signed_cfo_time_readout as authority
 
 
 STAGE = Path("/dev/shm/leo-v3-cfo-epoch-0049-saved01")
 DONOR = SimpleNamespace(stem="ds30-0049-matched-donor", derive=derive,
-                        ledger="donations", ledger_digest="donation_sha256", label="donated")
+                        ledger="donations", ledger_digest="donation_sha256", label="donated",
+                        option=None, source=None, priority="best-effort: prio 7")
 EXCLUSION = SimpleNamespace(stem="ds30-0049-sparse-only-drop", derive=exclude_sparse_only,
-                            ledger="removed", ledger_digest="exclusion_sha256", label="removed")
+                            ledger="removed", ledger_digest="exclusion_sha256", label="removed",
+                            option="--exclude-sparse-only", source="sparse_only_drop_0049.py", priority=DONOR.priority)
+RESTORATION = SimpleNamespace(stem="ds30-0049-empty-recovery", derive=restore_empty_lanes,
+                              ledger="inserted", ledger_digest="insertion_sha256", label="inserted",
+                              option="--restore-empty-lanes", source="empty_recovery_0049.py", priority="idle")
+
+PREVIOUS = {
+    DONOR.stem: "9e129a016bdd533d7c82706b402665bea6cd2d34c0628c0bda62fe414cae1a6a",
+    EXCLUSION.stem: "dcbc89c91c03b302343057f982207a90684c956e8d2d12e3d198119ebf1836bb",
+}
 
 
 def protocol(experiment):
@@ -37,9 +49,9 @@ def protocol(experiment):
 
 
 def source_pins(experiment):
-    names = ["matched_donor_0049.py"]
-    if experiment is EXCLUSION:
-        names.append("sparse_only_drop_0049.py")
+    names = ["matched_donor_0049.py", "signed_cfo_time_readout.py", "sparse8_cfo_epoch_trial.py"]
+    if experiment.source:
+        names.append(experiment.source)
     return {name: identifier(HERE/name) for name in names}
 
 
@@ -65,6 +77,13 @@ def prepare(root, experiment):
         if measured != {"rx0/short": (811, 78, 374), "rx1/short": (811, 83, 143),
                         "rx0/anchor": (121, 0, 56), "rx1/anchor": (121, 0, 27)}:
             raise ValueError("Sparse-only enrolment differs from the freeze")
+    if experiment is RESTORATION:
+        measured = {key: (value["opportunities"], value["original_empty"], value["inserted"])
+                    for key, value in change["coverage"].items()}
+        if (measured != {"rx0/short": (811, 437, 30), "rx1/short": (811, 668, 74),
+                         "rx0/anchor": (121, 65, 0), "rx1/anchor": (121, 94, 0)}
+                or change["original_winners"] != 600):
+            raise ValueError("Empty-lane enrolment differs from the freeze")
     root.mkdir(mode=0o700)
     payload = root/"derived-native.json"
     payload.write_bytes(json.dumps(derived, sort_keys=True, ensure_ascii=False, allow_nan=False,
@@ -176,7 +195,7 @@ def worker(root, plan_pin, experiment, *, smoke=False):
 
 
 def launch(root, plan_pin, experiment):
-    config = attrs()
+    config = attrs(expected_priority=experiment.priority)
     if document(root/"plan.json", plan_pin)["protocol"] != protocol(experiment):
         raise ValueError("Launch flag differs from frozen protocol")
     with LOCK.open("rb") as lock:
@@ -188,8 +207,8 @@ def launch(root, plan_pin, experiment):
             copyfile(font, scratch/font.name)
         environment = os.environ | dict(TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch), XDG_CACHE_HOME=str(scratch))
         command = [sys.executable, "-IB", str(Path(__file__)), "worker", str(root), "--pin", plan_pin]
-        if experiment is EXCLUSION:
-            command.append("--exclude-sparse-only")
+        if experiment.option:
+            command.append(experiment.option)
         with (root/"worker.stdout").open("x") as out, (root/"worker.stderr").open("x") as err:
             cpu, began, unix = getrusage(RUSAGE_CHILDREN), perf_counter_ns(), time_ns()
             try:
@@ -207,6 +226,25 @@ def launch(root, plan_pin, experiment):
             survey_reads=0, waveform_reads=0)))
         if status:
             raise ValueError(f"Single candidate exit {status}; measured stderr and clock retained")
+
+
+def compare_previous(plan, arms):
+    results = {}
+    for stem, pin in PREVIOUS.items():
+        path = HERE/"measurements"/(stem+".json.gz")
+        previous = authority.document(path, pin)["score"]
+        if (previous["decision"] != "complete"
+                or previous["crossover_inputs"]["sparse_native_sha256"] != plan["original_native_sha256"]
+                or previous["crossover_inputs"]["installed_native_sha256"] != plan["installed_native_sha256"]):
+            raise ValueError("Previous intervention must use the exact same two native originals")
+        cells = previous["arms"]
+        if any(cells[arm]["sparse_m"] != arms[arm]["sparse_m"] or cells[arm]["installed_m"] != arms[arm]["installed_m"]
+               for arm in ARMS):
+            raise ValueError("Previous results must share the exact geographic reference and baseline predictions")
+        results[stem] = dict(arms={arm: {k: cells[arm][k] for k in (
+            "counterfactual_m", "change_m", "conditional_rf_hz", "all_owned_rf_hz")} for arm in ARMS},
+            clock=previous["clock"], support=previous["support"], receipt_sha256=pin)
+    return results
 
 
 def score(root, seal_pin, experiment):
@@ -244,6 +282,8 @@ def score(root, seal_pin, experiment):
         ("installed",stock_worker["ordered_owners"]), ("sparse",old_owners), ("counterfactual",new_owners))}
     if experiment is EXCLUSION and any(arm["removed"] for arm in support["counterfactual"].values()):
         raise ValueError("An excluded observation was still submitted in final ownership")
+    if experiment is RESTORATION and any(arm["inserted"] for arm in support["sparse"].values()):
+        raise ValueError("Restoration touched an original sparse owner")
     result = dict(decision=receipt["decision"], clock=clock, old_saved_clock=plan["original_saved_clock"], scope=receipt,
                   crossover_inputs=plan["change"]["recipe"], support=support, seals=dict(prediction=seal_pin),
                   geographic=witness["ports"]["history_risk"].get("boundary_checks", []), advance=False, useful=False)
@@ -273,9 +313,16 @@ def score(root, seal_pin, experiment):
                 installed_owner_delta=owner_delta(stock_worker["ordered_owners"][arm],new_owners[arm]))
         fixed, fitted = (arms[a]["change_m"] for a in ARMS)
         gap = arms["fitted_c"]["sparse_m"]-arms["fitted_c"]["installed_m"]
+        useful = fitted <= -250 and fixed <= 250
+        advance = -fitted >= gap/2 and fixed <= 250
+        if experiment is RESTORATION:
+            useful = advance = fitted <= -250 and fixed <= -250
+            stock_detail = FastStandardAnalysisStore(CROSSOVER/"installed-installed").detail(named_receipt["run_id"])
+            result.update(prior_separate_interventions=compare_previous(plan, arms),
+                          installed_all_owned_rf_hz={a:stock_detail["arms"][a]["residual_rms_hz"] for a in ARMS},
+                          installed_saved_clock=crossover["cells"]["installed-installed"]["clocks"])
         result.update(arms=arms, position=position, media=media["images"], grid_replay=grid["endpoint_objective_replay"],
-            useful=fitted<=-250 and fixed<=250, advance=(-fitted>=gap/2 and fixed<=250),
-            fitted_gap_recovered=-fitted/gap)
+                      useful=useful, advance=advance, fitted_gap_recovered=-fitted/gap)
     elif receipt["decision"] != "withheld" or witness["evidence"]["images"] or list(directory.rglob("*.png")):
         raise ValueError("Unexpected incomplete saved scientific disposition")
     print(write(root/"score.json",result))
@@ -286,9 +333,12 @@ if __name__ == "__main__":
     parser.add_argument("action", choices=("prepare","smoke","launch","worker","score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
-    parser.add_argument("--exclude-sparse-only", action="store_true")
+    options = parser.add_mutually_exclusive_group()
+    for choice in (EXCLUSION, RESTORATION):
+        options.add_argument(choice.option, dest="experiment", action="store_const", const=choice)
+    parser.set_defaults(experiment=DONOR)
     args = parser.parse_args()
-    experiment = EXCLUSION if args.exclude_sparse_only else DONOR
+    experiment = args.experiment
     if args.action=="prepare":
         prepare(args.root, experiment)
     elif not args.pin:

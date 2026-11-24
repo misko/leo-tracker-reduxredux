@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import pytest
 
+from empty_recovery_0049 import restore_empty_lanes
 from matched_donor_0049 import derive, owner_counts, same_carrier
 from signed_cfo_time_readout import canonical, opportunities
 from sparse_only_drop_0049 import exclude_sparse_only
@@ -118,3 +119,40 @@ def test_never_silently_derives_the_same_packet():
         probe['candidates'] = [factor(400000)]
     with pytest.raises(ValueError, match='literally empty'):
         exclude_sparse_only(stock, sparse)
+
+
+def test_restore_all_empty_short_lanes_using_complete_selected_installed_tuple():
+    stock, sparse = native_pair()
+    anchor = sparse['source']['probes'][0]
+    anchor['candidates'] = []
+    row = stock['source']['probes'][8]
+    first = dict(factor(-3000, margin=20, rank=0), passed_fractional_margin_gate=False)
+    selected = dict(factor(-7200, samples=.23, margin=6, rank=2), fractional_exact_score=.794,
+                    fractional_control_score=.24)
+    row['candidates'] = [first, factor(-7300, margin=2, rank=1), selected]
+    before = deepcopy((stock, sparse))
+
+    derived, audit = restore_empty_lanes(stock, sparse)
+    assert (stock, sparse) == before
+    new, original = (p['source']['probes'] for p in (derived, sparse))
+    assert len(new) == len(original)
+    assert new[8] == dict(original[8], candidates=[selected])
+    assert new[9] == dict(original[9], candidates=stock['source']['probes'][9]['candidates'])
+    assert new[:8] == original[:8] and new[10:] == original[10:]
+    assert new[0]['candidates'] == []  # A positive installed anchor stays unchanged.
+    assert audit['inserted_count'] == 2 and audit['original_winners'] == 7
+    assert [r['receiver'] for r in audit['inserted']] == [0, 1]
+    assert audit['recipe']['insertion_sha256'] == canonical(audit['inserted'])
+    assert audit['recipe']['installed_native_sha256'] == canonical(stock)
+    assert audit['recipe']['sparse_native_sha256'] == canonical(sparse)
+    assert audit['recipe']['scope'] == 'saved research counterfactual'
+    assert derived['provenance']['detector_sha256'] != sparse['provenance']['detector_sha256']
+    assert audit['derived_native_sha256'] == canonical(derived)
+    assert derived['clock_anchor'] == sparse['clock_anchor'] and derived['delivery_clocks'] == sparse['delivery_clocks']
+
+
+def test_restore_does_not_overwrite_a_nonempty_sparse_row_without_a_passed_winner():
+    stock, sparse = native_pair()
+    sparse['source']['probes'][8]['candidates'] = [dict(factor(-1800), passed_fractional_margin_gate=False)]
+    with pytest.raises(ValueError, match='single selected winner or be empty'):
+        restore_empty_lanes(stock, sparse)
