@@ -49,13 +49,14 @@ def resident_path(path):
     return path
 
 
-def catalogue_scope(archive, refs, cutoff, original, counts, *, resident=resident_path):
+def catalogue_scope(archive, refs, cutoff, original, counts, *, resident=None):
     elected = frozenset(refs)
+    check_path = resident_path if resident is None else resident
 
     def read(reader, ref):
         if reader.root != archive or ref not in elected or ref.collected_utc_ns >= cutoff:
             raise ValueError("Attempted access outside the signed local causal catalogue")
-        resident(ref.path)
+        check_path(ref.path)
         raw = original(reader, ref)
         counts[ref.path.name] += len(raw)
         return raw
