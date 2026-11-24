@@ -56,7 +56,7 @@ def choose_once(named, lean, probe, audit):
 
 
 @contextmanager
-def binding(reader, cutoff, audit, original_rank, *, reuse_nomination=False):
+def binding(reader, cutoff, audit, original_rank):
     from leo.analysis.localization_v3 import orbit_modes
     from tools.pipeline_eval.variants import v5_core
     from joint_publication import full_catalogue_route
@@ -67,32 +67,17 @@ def binding(reader, cutoff, audit, original_rank, *, reuse_nomination=False):
     original, exact_rank = v5_core.infer, v5_core.ranked_initial_nodes
     audit.update(lean_attempts=[], lean_final_fit={})
 
+    def fallback(*args, **kwargs):
+        with patch.object(v5_core, "ranked_initial_nodes", exact_rank):
+            return original(*args, **kwargs)
+
     def lean(*args, **kwargs):
         with ExitStack() as stack:
-            nomination = None
-            if reuse_nomination:
-                from nomination_handoff import NominationHandoff
-                from tools.pipeline_eval.variants import v5_screen_winner
-
-                armed = NominationHandoff(v5_core, v5_screen_winner, exact_rank, audit)
-                if armed.screen is not None:
-                    nomination = armed
-            if nomination is None:
-                # Lean normally prepares its own shared rank inputs.
-                stack.enter_context(patch.object(v5_core, "ranked_initial_nodes", original_rank))
-            else:
-                stack.enter_context(nomination.producer())
-
-            def fallback(*values, **options):
-                scope = (patch.object(v5_core, "ranked_initial_nodes", exact_rank)
-                         if nomination is None else nomination.fallback())
-                with scope:
-                    return original(*values, **options)
-
+            # Lean already prepares shared rank inputs inside its own ranked search.
+            stack.enter_context(patch.object(v5_core, "ranked_initial_nodes", original_rank))
             stack.enter_context(isolated_families())
             stack.enter_context(named_finish(audit["lean_final_fit"]))
-            cumulative = full_catalogue_route(fallback, reader, audit["lean_attempts"], optimized=True,
-                                             nomination=nomination)
+            cumulative = full_catalogue_route(fallback, reader, audit["lean_attempts"], optimized=True)
             return cumulative(*args, **kwargs)
 
     run = choose_once(original, lean, lambda ready: checked_census(ready, orbit_modes, cutoff), audit)

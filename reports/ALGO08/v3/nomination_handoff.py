@@ -14,6 +14,7 @@ import numpy as np
 
 
 SCREEN_SOURCE = "f276b8ee2f4c059d571da874b2fbef6f6b13d08078e30fd93950428f8c10fb70"
+RACE_SOURCE = "eeb7d1041f34fb7dbb805cb12eb93f66eba87e729e9cf695ff77811b51842fe7"
 CUT = "    screens = []\n"
 AFTER = "    scores = [score if np.isfinite(score) else None for score, _, _ in screens]\n"
 
@@ -176,3 +177,45 @@ class NominationHandoff:
                   patch.object(self.core, "ranked_initial_nodes", self.replay_rank),
                   patch.object(self.screens, "screen_nodes", self.screen)):
                 yield
+
+
+def capture_race(race, handoff):
+    original, partial = race.refine, race.partial_fits
+
+    def capture(scan, nodes, half_width, details):
+        outcomes, completed = partial(scan, nodes, half_width, details)
+        handoff.capture(scan, nodes, outcomes)
+        return outcomes, completed
+
+    def refine(mode, prepared, region, bound):
+        if mode != "race":
+            return original(mode, prepared, region, bound)
+        # The opt-in uses the exact rank already installed for the named path.
+        with handoff.producer(), patch.object(race, "partial_fits", capture):
+            return original(mode, prepared, region, bound)
+
+    return refine
+
+
+@contextmanager
+def routed_binding(reader, cutoff, audit, original_rank):
+    """Research-only opt-in for the existing history-risk route."""
+    import cold_finalist_race as race
+    from history_risk_route import binding
+    from tools.pipeline_eval.variants import v5_core, v5_screen_winner
+
+    handoff = NominationHandoff(v5_core, v5_screen_winner, v5_core.ranked_initial_nodes, audit)
+    if sha256(Path(race.__file__).read_bytes()).hexdigest() != RACE_SOURCE or handoff.screen is None:
+        handoff.counts["independent_route"] += 1
+        with binding(reader, cutoff, audit, original_rank):
+            yield
+        return
+    original = v5_core.infer
+
+    def named(*args, **kwargs):
+        with handoff.fallback():
+            return original(*args, **kwargs)
+
+    with (patch.object(v5_core, "infer", named), patch.object(race, "refine", capture_race(race, handoff)),
+          binding(reader, cutoff, audit, original_rank)):
+        yield

@@ -15,7 +15,7 @@ from aperture_trial import configuration, machine
 from blind_joint_route import make_route
 
 
-def full_catalogue_route(installed, reader, attempts, *, optimized=False, postfit_repair=None, nomination=None):
+def full_catalogue_route(installed, reader, attempts, *, optimized=False, postfit_repair=None):
     from functools import partial
     from runpy import run_path
     from blind_joint_finish import cold_candidate
@@ -32,8 +32,6 @@ def full_catalogue_route(installed, reader, attempts, *, optimized=False, postfi
         refine = partial(finalize, "race")
 
     def cold(prepared, region, bound):
-        if optimized and nomination is not None:
-            return refine(prepared, region, bound, checkpoint=nomination.capture)
         ordinary_rank = v5_core.ranked_initial_nodes
 
         def rank(scan):

@@ -41,9 +41,9 @@ def run(output):
     from leo.contracts.digests import canonical_digest
     from tools import algo08_position
     from tools.pipeline_eval.variants import v5_core, v5_screen_winner
-    from cold_finalist_race import refine
+    import cold_finalist_race as race
     from mixture_finish import digest
-    from nomination_handoff import NominationHandoff
+    from nomination_handoff import NominationHandoff, capture_race
 
     if resident_path(output.parent) != Path("/dev/shm") or output.exists():
         raise ValueError("Expected a fresh tmpfs witness")
@@ -83,8 +83,7 @@ def run(output):
             handoff = NominationHandoff(v5_core, v5_screen_winner, v5_core.ranked_initial_nodes, trace)
             trace["port_setup"] = elapsed(started)
             started = now()
-            with handoff.producer():
-                _, _, _, work = refine("race", prepared, search, native_bound, checkpoint=handoff.capture)
+            _, _, _, work = capture_race(race, handoff)("race", prepared, search, native_bound)
             trace["cold_producer"] = elapsed(started)
             trace["cold_prefix"] = work
             if work["scores"] != old["cold"]["scores"] or handoff.checkpoint is None:
