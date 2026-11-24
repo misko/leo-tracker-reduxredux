@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
-from adaptive_receiver_budget import exact_case_report, matched_budget, receiver_budget
+from adaptive_receiver_budget import exact_case_report, matched_budget, receiver_budget, routed_case_report
 
 
 def test_publication_includes_the_tail_and_charges_unsplit_runs():
@@ -47,3 +47,10 @@ def test_fourth_signed_case_exceeds_half_time_even_with_free_acquisition():
     assert expensive["required_MB_s"] is None
     assert report["median_ratio_at_verify_only_rate"] > 0.5
     assert report["summed_ratio_at_verify_only_rate"] > 0.5
+
+
+def test_routed_panel_charges_admission_and_prices_each_timing_gate():
+    report = routed_case_report()
+    assert report["cases"]["DS30-0160"]["acquisition_budget_s"] == pytest.approx(7.4301, abs=0.0001)
+    assert report["median_gate_MB_s"] == pytest.approx(442.25, abs=0.01)
+    assert report["summed_gate_MB_s"] == pytest.approx(405.69, abs=0.01)

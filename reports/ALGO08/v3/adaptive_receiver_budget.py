@@ -98,9 +98,44 @@ def exact_case_report(size=3):
                 median_ratio_at_verify_only_rate=median_gate, summed_ratio_at_verify_only_rate=summed_gate)
 
 
+def routed_case_report():
+    content = gzip.decompress((DATA / "history-risk-three-case.json.gz").read_bytes())
+    if sha256(content).hexdigest() != "b461931fba8c5bbb853966e9d4977bc9d6377393830067780fc36a37be556717":
+        raise ValueError("Unexpected routed panel")
+    panel = json.loads(content)["enrolled"]
+    raw = json.loads(checked(DATA / "acquisition-throughput.json", RAW_CLOCKS_SHA))["rows"]
+    cases, modeled = {}, []
+    for row in select(raw, ["DS30-" + key for key in panel]):
+        case = row["case"]
+        evidence = panel[case.removeprefix("DS30-")]
+        result = evidence["result"]
+        receipt = result["published"]["worker"]["receipt"]
+        if (result["case"] != case or receipt["window_count"] != row["windows"]
+                or receipt["session_id"] != "fast-" + row["inventory_sha256"].removeprefix("sha256:")[:32]
+                or result["clock"]["exit_code"] != 0 or result["archive_stock_clock"]["exit_code"] != 0):
+            raise ValueError(f"Raw and saved routed evidence do not match for {case}")
+        charged = result["clock"]["elapsed_s"] + evidence["source_stage"]["preflight"]["elapsed_ns"] / 1e9
+        budget = matched_budget(row, dict(named=result["archive_stock_clock"], candidate=dict(elapsed_s=charged)))
+        cases[case] = budget
+        downstream = budget["modeled_downstream_s"]
+        # Preserve the measured baseline total while supplying the transferred downstream
+        # clock to the same median/sum throughput solver used for the historical cohorts.
+        modeled.append(dict(row, stages=(budget["raw_v3_s"] - downstream, downstream, 0)))
+    return dict(cases=cases, median_gate_MB_s=minimum_rate(modeled, 1, 0),
+                summed_gate_MB_s=minimum_rate(modeled, 1, 1))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("--exact-cases", type=int, nargs="?", const=3, choices=(3, 4),
+    kind = cli.add_mutually_exclusive_group()
+    kind.add_argument("--exact-cases", type=int, nargs="?", const=3, choices=(3, 4),
                      help="Use the three- or four-recording panel's measured solver savings (default 3)")
-    exact_cases = cli.parse_args().exact_cases
-    print(json.dumps(exact_case_report(exact_cases) if exact_cases else report(), indent=2, allow_nan=False))
+    kind.add_argument("--routed-cases", action="store_true", help="Charge the measured orbit-risk launch checks")
+    args = cli.parse_args()
+    if args.routed_cases:
+        result = routed_case_report()
+    elif args.exact_cases:
+        result = exact_case_report(args.exact_cases)
+    else:
+        result = report()
+    print(json.dumps(result, indent=2, allow_nan=False))
