@@ -161,19 +161,26 @@ def work(root, mode, pin):
     write(root/f"{mode}-preparation.json", audit)
 
 
-def score(root):
+def score(root, output=None):
     from aperture_trial import read, write
     from empty_bootstrap import checked
+    from joint_publication import artifacts
     from regional_history_score import scientific
 
     admission = read(root/"binding.json")
     building = read(root/"producer.json")
-    if building["binding"] != admission or read(root/"artifact-seal.json")["index_sha256"] != building["artifact"]["sha256"]:
+    sealed = read(root/"artifact-seal.json")
+    if (building["binding"] != admission or sealed["binding"] != admission
+            or sealed["index_sha256"] != building["artifact"]["sha256"]):
         raise ValueError("Producer index was not sealed before the consumer pair")
+    checked(root/"producer.json", sealed["producer_sha256"])
+    checked(root/ARTIFACT, sealed["index_sha256"].removeprefix("sha256:"))
     historic = json.loads(checked(SCORE, SCORE_SHA))
     seal = json.loads(checked(TARGET/"prediction-seal.json", TARGET_SEAL_SHA))
     checked(TARGET/"candidate/joint-research-receipt.json", seal["candidate/joint-research-receipt.json"])
     original = scientific(TARGET/"candidate")
+    original_worker = read(TARGET/"candidate/saved-0316-worker.json")
+    original_media = artifacts(TARGET/"candidate", original_worker["receipt"])
     pair = {}
     for mode in ORDER[1:]:
         current = root/mode
@@ -182,12 +189,17 @@ def score(root):
         trace = read(current/"joint-research-receipt.json")
         finish = read(current/"final-fit-options.json")
         active = read(root/f"{mode}-preparation.json")
+        product = artifacts(current, work["receipt"])
         if (clock["exit_code"] or not work["no_waveform"] or work["handoffs"] != 1
                 or work["receipt"]["decision"] != "complete" or not work["graph"]["enabled"]
-                or not finish["named_survivor_finish"]["requested"] or scientific(current) != original):
+                or not finish["named_survivor_finish"]["paid_final_fit"]
+                or scientific(current) != original or product["images"] != original_media["images"]
+                or product["path"] != original_media["path"]):
             raise ValueError(f"{mode} changed the exact original research publication")
         pair[mode] = dict(process=clock, active=active, solve=trace["solve"], route=finish,
                           publication={key: trace[key] for key in ("publication_cpu_s", "publication_elapsed_s")},
+                          native_record_parser=work["receipt"]["tle_records"],
+                          stage_clocks={k: v for k, v in trace["route_details"].items() if k.endswith("_clocks")},
                           terminal_sha256=work["receipt"]["terminal_sha256"])
     ordinary, portable = (pair[mode]["active"] for mode in ORDER[1:])
     observed = portable["index_counts"]
@@ -195,10 +207,12 @@ def score(root):
     if (portable["fingerprint"] != ordinary["fingerprint"] or observed["sidecar_hit_bodies"] != len(admission["overlap"])
             or observed["invalid_bodies"] or observed["cold_bodies"] != 3 or attempt["fallback"]
             or portable["index_sha256"] != building["artifact"]["sha256"]
+            or pair["ordinary"]["native_record_parser"] != pair["portable"]["native_record_parser"]
+            or pair["portable"]["native_record_parser"]["fallback"]
             or portable["verified_original_reads"]["calls"] != ordinary["verified_original_reads"]["calls"]
             or portable["strict_parse"]["calls"] != ordinary["strict_parse"]["calls"]):
         raise ValueError("Causal cache handoff activated without exact matching preparation inputs and counts")
-    write(root/"result.json", dict(binding=admission, historical_named_and_research=historic["clocks"],
+    write(output or root/"result.json", dict(binding=admission, historical_named_and_research=historic["clocks"],
           historical_geographic=historic["geographic"], historical_score_sha256=SCORE_SHA,
           producer=building, producer_process=read(root/"producer.clock.json"), runs=pair,
           scientific=original, waveform_reads=0))
@@ -250,6 +264,7 @@ if __name__ == "__main__":
     parser.add_argument("action", choices=(*ORDER, "launch", "admit", "score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
+    parser.add_argument("--score-to", type=Path)
     args = parser.parse_args()
     if args.action == "admit":
         from empty_bootstrap import load_runtime
@@ -260,7 +275,7 @@ if __name__ == "__main__":
         from empty_bootstrap import load_runtime
 
         load_runtime()
-        score(args.root)
+        score(args.root, output=args.score_to)
     elif args.action in ORDER[1:]:
         work(args.root, args.action, args.pin)
     else:
