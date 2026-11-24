@@ -165,6 +165,7 @@ def score(root, output=None):
     from aperture_trial import read, write
     from empty_bootstrap import checked
     from joint_publication import artifacts
+    from portable_orbit_0316_repair import regional_evidence
     from regional_history_score import scientific
 
     admission = read(root/"binding.json")
@@ -181,6 +182,7 @@ def score(root, output=None):
     original = scientific(TARGET/"candidate")
     original_worker = read(TARGET/"candidate/saved-0316-worker.json")
     original_media = artifacts(TARGET/"candidate", original_worker["receipt"])
+    expected_regional = regional_evidence(read(TARGET/"candidate/joint-research-receipt.json"))
     pair = {}
     for mode in ORDER[1:]:
         current = root/mode
@@ -194,11 +196,12 @@ def score(root, output=None):
                 or work["receipt"]["decision"] != "complete" or not work["graph"]["enabled"]
                 or not finish["named_survivor_finish"]["paid_final_fit"]
                 or scientific(current) != original or product["images"] != original_media["images"]
-                or product["path"] != original_media["path"]):
+                or product["path"] != original_media["path"] or regional_evidence(trace) != expected_regional):
             raise ValueError(f"{mode} changed the exact original research publication")
         pair[mode] = dict(process=clock, active=active, solve=trace["solve"], route=finish,
                           publication={key: trace[key] for key in ("publication_cpu_s", "publication_elapsed_s")},
                           native_record_parser=work["receipt"]["tle_records"],
+                          early_regional=trace["early_regional"],
                           stage_clocks={k: v for k, v in trace["route_details"].items() if k.endswith("_clocks")},
                           terminal_sha256=work["receipt"]["terminal_sha256"])
     ordinary, portable = (pair[mode]["active"] for mode in ORDER[1:])
