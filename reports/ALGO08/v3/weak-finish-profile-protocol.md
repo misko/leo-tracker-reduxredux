@@ -1,0 +1,5 @@
+# Current weak positive from the detector handoff through publication
+
+Use the DS30-0016 selective detector binding from the successful 250c07d0c saved publication, its operator region, causal catalogue, original numerical libraries and both calibration arms. Reuse the original worker and its waveform-denying inventory port. Record a Python call profile to identify repeated work in the current fast positive path. Categorize costs by measured boundary and distinguish inclusive and exclusive time. An instrumented clock locates work and cannot establish a speedup.
+
+Price one concrete change if the profile reveals work that can be avoided at a stable interface. Use a fresh single-core low-priority process for each timing arm, charge setup and publication, and compare the decisions, both position and residual results, ordered owners, numerical grid and path, and eight official PNGs against the original saved result. Preserve site independence. Perform all numerical runs under the shared Gauss lock and write outputs to tmpfs.
