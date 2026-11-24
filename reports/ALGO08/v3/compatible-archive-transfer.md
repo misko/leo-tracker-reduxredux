@@ -1,5 +1,7 @@
 # Compatible waveform storage and a longer DS30 solver holdout
 
+Across the original 100-recording v3 release benchmark, 93 of the 95 jobs with stage timestamps spent more than half their elapsed time reaching the saved detections. Applying a uniform 1.5× speedup after detections would still require **2.35–2.44× before detections** to clear both 2× gates. The range includes all five failed jobs at their original elapsed times and bounds their unknown stage split. These are engineering targets calculated from prior runs. [100-recording stage distribution and timing requirements](release-stage-budget.md)
+
 The indexed reader finished two physical recordings in **7.408 s**. Reading the same new files with the ordinary reader took **8.200 s**. Both used the same 20/8 ms receiver, routed solver and Cairo renderer. The **0.792 s** difference isolates the effect of the reader. Against the previously timed installed ALGO08v3 runs on the original encoding, the complete candidate reached **2.03× at the median and 1.65× by total time**. The 2× total-time target is 6.121 s. The candidate still needs to save 1.287 s. [Full positive comparison](visit-frame-raw-0016.md) · [Withholding comparison](visit-frame-raw-0107.md)
 
 | Physical recording | Installed v3 on original files | Ordinary reader on new files | Indexed reader on same new files | Position result |
