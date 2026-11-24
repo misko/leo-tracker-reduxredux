@@ -6,14 +6,19 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+RELEASE_ROOT = Path('/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c')
+PAYLOAD_ROOT = Path('/opt/leo-algo08/algo08v3/payload')
+sys.path[:0] = list(map(str, (HERE, ROOT, RELEASE_ROOT/'src', RELEASE_ROOT, PAYLOAD_ROOT)))
 
 from causal_0138 import ADMITTED, ARCHIVE, AUTHORITY, CASE, CUTOFF, INVENTORY, ISSUED, NATIVE_PIN, OFFER, SESSION, SHM, checked
 
 
-HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]
 STAGE = SHM/'leo-v3-causal-0138-stage01'
 REQUEST_PIN = '16826e2aa70e6baf377ef3d3efc847bdfdff1f569ed4b64289b6861a580b4797'
 KEY = '0138'
