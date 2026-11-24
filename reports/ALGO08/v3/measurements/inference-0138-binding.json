@@ -1,0 +1,74 @@
+{
+  "command": [
+    "/usr/bin/timeout",
+    "--kill-after=2s",
+    "95s",
+    "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+    "-IB",
+    "/dev/shm/leo-v3-inference-0138-profile/reports/ALGO08/v3/inference_0138_profile.py",
+    "worker",
+    "/dev/shm/leo-v3-inference-0138-result01"
+  ],
+  "driver_sha256": "8034a57f6cd3b0e895cf1c457a775053e8ae37ef5fc924d5b8cd18355cc6d45c",
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "threads": {
+      "BLIS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "original_result_sha256": "8bd0bbd2b6f2d9382f4bb9bd4ac0fdd216a16f38de73cdc2b68b2bb75f9f9b68",
+  "protocol_sha256": "26049d43b623944e672dacdd967e3366ac4649ba05b08a260098e94dec8f8114",
+  "source_bound": {
+    "admitted": 6717,
+    "archive": "/dev/shm/leo-v3-causal-0138-stage01/tle",
+    "case": "DS30-0138",
+    "inventory": "/dev/shm/leo-v3-causal-0138-stage01/inventory.json",
+    "issued": 6773,
+    "packets": {
+      "/dev/shm/leo-v3-causal-0138-stage01/inventory.json": "9828145f4a17561ff79503a2e8583c580502cdf0463153ec8b1a64516645c3f9",
+      "/dev/shm/leo-v3-causal-0138-stage01/named-detections.json": "5ddc90892db1dda58b43b120d23eedff9a16d97d93ad1756b7aa3a0e7a3a3ebe",
+      "/dev/shm/leo-v3-causal-0138-stage01/operator-offer.json": "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236",
+      "/dev/shm/leo-v3-portable-orbit-prep-02/dense-orbits.bin": "fc51655ff19185cc382aeed925e466cea7290453256d45f80446aceef6f9e30e"
+    },
+    "portable": [
+      "/dev/shm/leo-v3-portable-orbit-prep-02/dense-orbits.bin",
+      "sha256:fc51655ff19185cc382aeed925e466cea7290453256d45f80446aceef6f9e30e",
+      "c1c2f5d911c978ad7673a2a53f05e272806f87c539f2f0a552b7e02916fe9c8b"
+    ],
+    "request": "/dev/shm/leo-v3-causal-0138-stage01/request.json",
+    "sources": {
+      "algo08_blind_rank.py": "321df8d3771fd478543e7c161a4b1c7d1a84734c8c4a0ae2768ebdf1c9038831",
+      "catalogue_block_rank.py": "961bce0676c4cf55da4e72a417f0120aba398d48c4389b905aa3655f0d0f3311",
+      "cold_track_row_reuse.py": "03ffb802b523ca9df43619b7ab0a7013f1d514915370cb40be6c54129f8d2d52",
+      "combined_raw_research.py": "7da6b71700c1c06833a3fc1b49f787620210a9838025dce6030a3c3167f3ee6b",
+      "empty_bootstrap.py": "2d789b4fb28447a623f6118bb53a2b734645a9bbedb7a263007f52f4acc429a0",
+      "exact-named-route-protocol.md": "8979d063bd33f5d52d05ac3349eb72dcaaaa36707b03bbc6f126f90c7bd153af",
+      "exact_graph_execution.py": "cee1c8e095f139d4e1b839dc84a3c25b96794a96031df05a16f7f876a67391fe",
+      "exact_named_route.py": "8799f632207d4a1b65954e454766605dcad109a799b9b81a08158c3a2ebc26ff",
+      "exact_noise_gate_0402.py": "67c4b92a90b0cef4f33010ba890c6a153543a926d2a2ad2256cbaa04a64766bb",
+      "grid_phase_state_reuse.py": "00cb3d9135835301f47afb455dad2669f543cdfa83a3579864e2903e18260170",
+      "held_adaptive_0160.py": "34757aa09d2ce8d99f50678519c1474ae94e432a3cc2f189fe9053ee5281e588",
+      "historical_orbit_index.py": "b1d43a1593d25e6232dd8c37b0e548015ca19de10359c43c22e483fb3f8285fe",
+      "history-risk-0138-protocol.md": "d726c1737ac9231684b1a5bf2a7c6a214787a5a5c7145ed5bf87e8c414708511",
+      "history_risk_0138.py": "a2912920f79020a1ca8dea9546bd993a32bcd0ed62c88bd8131490df129c5a9e",
+      "history_risk_route.py": "56cef69f9bfeed078e938da61e319e2b8c3a250fa45133907096ac8d0e5272b7",
+      "history_risk_route_trial.py": "df0f8043c00387a2933bd2d8bf7fad812b9020c58507cc76863c05f8d74e02b2",
+      "joint_publication.py": "3431764b4c6f888c4addb6b788f6e9f1715a76e1500fc047cb875959d0c24e01",
+      "named_history_once.py": "f72bf0529d19350b20d3c6fa989f60c853e117ef9b81859d9d019107a5c0376e",
+      "portable_orbit_compatibility.py": "1c78f21b2715fee8e59e35d6f8eb37377b654d32902318817c8146ceea19d01c",
+      "portable_orbit_index.py": "5abc8ad7f21ed688dea8b45c20718810f9b3c46d68749a413b985bbabf46db9b",
+      "prospective_0316_solver.py": "73e3fb562115933bd5f6fb28d7a3e281c11c8f11c834a45d4b1c0914c33a280c",
+      "stock_exact_gate_0402.py": "84d373a1fc9b1062140dafa5aa4a80577f5371a45d47b35c71cc3e983b4349bc",
+      "verified_png_reads.py": "6b494248536968b35c31a8f213c2ad16f565065cba72b101232be386b1fba5c5"
+    },
+    "stage": "/dev/shm/leo-v3-causal-0138-stage01"
+  }
+}
