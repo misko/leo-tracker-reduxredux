@@ -114,7 +114,8 @@ def compare(left, right, expected):
                 else:
                     p_epoch_row = p_epoch
                 offsets[stream].append((df, de, p_hz, p_epoch_row))
-    if counts["anchor"]["lanes"] != expected["full"] or counts["short"]["lanes"] != expected["short_primary"]:
+    if (counts["anchor"]["lanes"] != expected.get("full", 0)
+            or counts["short"]["lanes"] != expected.get("short_primary", 0)):
         raise ValueError("Reconstructed apertures differ from paid native calls")
     for c in counts.values():
         for role in ("installed", "mixed"):
