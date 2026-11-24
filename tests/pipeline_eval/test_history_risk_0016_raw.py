@@ -133,3 +133,14 @@ def test_optional_adapter_source_changes_are_recorded_without_relaxing_active_sc
     put(scientific, b"changed signed-model decision")
     with pytest.raises(ValueError, match="Unreviewed"):
         runner.frozen_sources(tmp_path, expected)
+
+
+def test_raw_candidate_receipt_is_loaded_when_its_stdout_is_empty(tmp_path):
+    candidate, stock = tmp_path/"candidate", tmp_path/"stock"
+    candidate.mkdir()
+    candidate.with_suffix(".stdout").write_text("")
+    raw = {"receipt": {"decision": "complete"}, "raw_acquisitions": 1}
+    (candidate/"unified-short-bootstrap.json").write_text(json.dumps(raw))
+    stock.with_suffix(".stdout").write_text('installation log\n{"decision":"complete"}\n')
+    assert runner.process_receipt(candidate, "candidate") == (raw["receipt"], raw)
+    assert runner.process_receipt(stock, "stock") == ({"decision": "complete"}, None)

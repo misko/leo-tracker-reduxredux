@@ -327,6 +327,13 @@ def read(path):
     return json.loads(path.read_bytes())
 
 
+def process_receipt(output, mode):
+    if mode == "candidate":
+        raw = read(output/"unified-short-bootstrap.json")
+        return raw["receipt"], raw
+    return json.loads(output.with_suffix(".stdout").read_text().splitlines()[-1]), None
+
+
 def published(root, mode, log, request, stock, saved, *, adapters=None):
     from empty_bootstrap import bind_native, checked
     from joint_publication import artifacts
@@ -338,7 +345,7 @@ def published(root, mode, log, request, stock, saved, *, adapters=None):
 
     output = root/mode
     clock = log["clock"]
-    terminal = json.loads(output.with_suffix(".stdout").read_text().splitlines()[-1])
+    terminal, raw = process_receipt(output, mode)
     science = pairs.evidence(output, terminal, clock["started_unix_ns"], read_only=True)
     packet_path = native_packet(output)
     body = packet_path.read_bytes()
@@ -355,13 +362,13 @@ def published(root, mode, log, request, stock, saved, *, adapters=None):
             or terminal["window_count"] != ISSUED or terminal["counts"] != dict(processed=ADMITTED, invalid_capture=ISSUED-ADMITTED, skipped_fast_score=0)
             or len(source["probes"]) != 2*ADMITTED or set(science["arms"]) != set(ARM_NAMES)):
         raise ValueError("Publication does not bind the entire original physical comparison")
-    witness, raw, owners = None, None, {}
+    witness, owners = None, {}
     if candidate:
-        raw = read(output/"unified-short-bootstrap.json")
         witness = read(output/"exact-named-raw-witness.json")
         enrolled_recipe = {key: value for key, value in saved["scientific"]["solver_recipe"].items() if key != "history_risk"}
         actual_recipe = {key: witness.get("solver_recipe", {}).get(key) for key in enrolled_recipe}
-        if (raw["receipt"] != terminal or raw["native_sha256"] != digest or raw["raw_acquisitions"] != 1
+        if (witness["evidence"]["detail"]["terminal_sha256"] != terminal["terminal_sha256"]
+                or raw["native_sha256"] != digest or raw["raw_acquisitions"] != 1
                 or raw["verified_handoffs"] != 1 or raw["requested_offer_sha256"] != request["offer_sha256"]
                 or raw["archive_root"] != request["archive"]["root"] or raw["frozen_specification"] != pairs.V3_IDENTITY["frozen_specification"]
                 or raw["stock_launcher_sha256"] != pairs.V3_LAUNCHER_SHA or raw["scientific_imports_before"]
