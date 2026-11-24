@@ -121,7 +121,8 @@ def saved_worker(root):
                   started=started, runtime=runtime)
 
 
-def publish_saved(request, target, offer, packet, native, raw, *, started, runtime):
+def publish_saved(request, target, offer, packet, native, raw, *, started, runtime,
+                  receipt_name='saved-refined-north.json', flags=PUBLICATION_FLAGS):
     import empty_bootstrap as staged
     import unified_short_bootstrap as entry
     from time import process_time
@@ -137,7 +138,7 @@ def publish_saved(request, target, offer, packet, native, raw, *, started, runti
     libraries = {name:Path(path) for name,path in request['libraries'].items()
                  if name not in ('short_binary','cfo_refinement_library')}
     args = SimpleNamespace(recording=Path(request['recording']),archive=Path(request['archive']['root']),
-                           region=offer,output=target,**libraries,**{flag[2:].replace('-','_'):True for flag in PUBLICATION_FLAGS})
+                           region=offer,output=target,**libraries,**{flag[2:].replace('-','_'):True for flag in flags})
     layout, graph, png = {}, {}, {}
     handoff = entry.Handoff(request['session'], request['inventory'], raw['detector_recipe_sha256'][7:], native)
     assets = staged.RELEASE/'assets'
@@ -156,7 +157,7 @@ def publish_saved(request, target, offer, packet, native, raw, *, started, runti
                  no_active_curvature_sha256=proof.get('curvature_extent',{}).get('native_sha256'))
     if not inventory_staged or handoff.calls != 1 or native_file(target).read_bytes() != packet.read_bytes():
         raise ValueError('The mirror must reuse the exactly authenticated acquisition once')
-    write(target/'saved-refined-north.json',dict(receipt=receipt,graph=graph,png=png,layout=layout,graph_proof=proof,
+    write(target/receipt_name,dict(receipt=receipt,graph=graph,png=png,layout=layout,graph_proof=proof,
           native_sha256=raw['native_sha256'],detector_recipe_sha256=raw['detector_recipe_sha256'],
           staged_inventory=True,waveform_calls=0,handoffs=handoff.calls,pins=pins,solve=detail.get('solve'),
           named_survivor_finish=detail.get('named_survivor_finish'),
