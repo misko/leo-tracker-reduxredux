@@ -124,3 +124,19 @@ def test_held_input_view_rejects_a_changed_cutoff_or_causal_manifest():
         request_view(request | {"causal_cutoff_utc_ns": 31}, enrollment)
     with pytest.raises(ValueError):
         request_view(request | {"local_archive": archive | {"snapshots_sha256": "different"}}, enrollment)
+
+
+def test_five_positive_receipt_keeps_launch_order_and_refuses_a_missing_fix():
+    def publication(case):
+        clock = {"elapsed_s": 6, "cpu_s": 5}
+        return dict(case="DS30-"+case, archive_stock_clock=clock, clock=clock, named_parity={"complete": True})
+
+    admission = {"preflight": {"elapsed_ns": 0, "cpu_ns": 0}}
+    order = ("0160", "0316", "0374", "0402")
+    earlier = {"enrolled": {case: dict(result=publication(case), source_stage=admission) for case in order}}
+    held = publication("0169")
+    proof = aggregate(earlier, held, admission, "pin", case="0169")
+    assert proof["case_order"] == [*order, "0169"]
+    assert len(proof["enrolled"]) == 5
+    with pytest.raises(ValueError):
+        aggregate(earlier, held | {"named_parity": {"complete": False}}, admission, "pin", case="0169")

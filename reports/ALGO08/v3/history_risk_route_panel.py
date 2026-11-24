@@ -13,9 +13,12 @@ PAIR = HERE/"measurements/history-risk-route.json.gz"
 PAIR_SHA256 = "11410cc7057f67442f63cdc99b151b4d3686a97c8f27baae168e79d65c8156fe"
 THREE_CASE = HERE/"measurements/history-risk-three-case.json.gz"
 THREE_CASE_SHA256 = "b461931fba8c5bbb853966e9d4977bc9d6377393830067780fc36a37be556717"
+FOUR_CASE = HERE/"measurements/history-risk-four-case.json.gz"
+FOUR_CASE_SHA256 = "2b7cf61aaabe5aa89ff5396376e229603cb9349dd49d3e37776994b5d2740278"
 PREDECESSORS = {
     "0374": (PAIR, PAIR_SHA256, ("0160", "0316")),
     "0402": (THREE_CASE, THREE_CASE_SHA256, ("0160", "0316", "0374")),
+    "0169": (FOUR_CASE, FOUR_CASE_SHA256, ("0160", "0316", "0374", "0402")),
 }
 
 
@@ -41,7 +44,10 @@ def aggregate(earlier, held, held_binding, held_sha256, *, case="0374"):
                    for price, row in zip(children, by_case.values(), strict=True)]
         totals[name] = dict(child=reduction(reference, children), preflight_charged=reduction(reference, charged))
     key = "development_receipt_sha256" if case == "0374" else "prior_panel_receipt_sha256"
-    return dict(enrolled=by_case, totals=totals) | {key: predecessor_sha}
+    if case == "0169" and not all(row["result"]["named_parity"]["complete"] for row in by_case.values()):
+        raise ValueError("The five-positive cohort requires a completed named and routed publication for every case")
+    order = {"case_order": list(by_case)} if case == "0169" else {}
+    return dict(enrolled=by_case, totals=totals) | {key: predecessor_sha} | order
 
 
 def main(root, output, *, case="0374"):
