@@ -63,6 +63,8 @@ DS30-0255 took **107.959 s** from raw recording to exit on installed v3. Halving
 
 Each row retains all seven recordings in both timing gates. The first column charges each candidate's measured admission and complete saved worker. The second multiplies each original downstream interval by the ratio of that candidate cost to the installed saved-worker time. Both calculations hold the six earlier results fixed. The rates model uniform intake on original bytes. Only the downstream workers were timed on these seven saved inputs. Reproduce the calculation with `python -m reports.ALGO08.v3.saved_solver_intake_budget --with-holdout`. [Budget calculation](saved_solver_intake_budget.py)
 
+The next independently assigned recording, DS30-0419, gives a practical intake target. Installed v3 took **93.571 s** from raw input to exit. With half that allowance, paying the candidate's **16.178 s** saved-worker time and **0.762 s** of admission leaves **29.845 s** to publish detections from about 8.372 GB, or **280.5 MB/s**. Installed intake originally took **57.191 s**. This calculation assumes a faster receiver supplies a packet with the same downstream cost. Its raw runtime and positions still need measurement. [Blind worker clocks](nomination-handoff-0419-local.md) · [Historical byte and time bounds](measurements/release-intake-rate.json)
+
 ### Five original solver failures and two saved-input recoveries
 
 ![Historical acquisition and failed solver intervals for five recordings, alongside two saved-input recoveries](development/failed-intake-clocks.png)
