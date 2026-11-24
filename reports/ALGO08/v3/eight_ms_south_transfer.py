@@ -206,7 +206,7 @@ def seal_raw(root):
           observation=observation, options=verify_options(root, binding["producer"]["overlapping_bodies"], raw["receipt"]["decision"])))
 
 
-def omitted_worker(root):
+def omitted_worker(root, job_path=None):
     import empty_bootstrap as staged
     from aperture_trial import read, write
     from combined_raw_research import combined_runtime, rank_status
@@ -214,16 +214,11 @@ def omitted_worker(root):
     from raw_cfo_north_trial import ORDER, PUBLICATION_FLAGS, publish_saved
 
     started = process_time(), perf_counter()
-    job = read(root / "omitted-job.json")
+    job = read(job_path or root / "omitted-job.json")
     binding = json.loads(staged.checked(root / "binding.json", job["binding_sha256"]))
     sealed = json.loads(staged.checked(root / "seal.json", job["seal_sha256"]))
     request = binding["request"]
-    packet, native, raw = native_probe(root, request)
-    if str(packet) != sealed["packet"] or raw["native_sha256"] != job["native_sha256"]:
-        raise ValueError("The saved mirror must consume the authentic issued detector")
     offer = Path(request["offers"][MODES[1]])
-    request = dict(request, offer_sha256={ORDER[1]: request["offer_sha256"][MODES[1]]},
-                   libraries={flag[2:].replace("-", "_"): row["path"] for flag, row in binding["libraries"].items()})
     for row in binding["libraries"].values():
         staged.checked(Path(row["path"]), row["sha256"])
     rank, orbit = {"requested": True}, {"requested": "portable"}
@@ -233,6 +228,11 @@ def omitted_worker(root):
         from unittest.mock import patch
         from leo.storage.fast_scan import FastSegmentSource
 
+        packet, native, raw = native_probe(root, request)
+        if str(packet) != sealed["packet"] or raw["native_sha256"] != job["native_sha256"]:
+            raise ValueError("The saved mirror must consume the authentic issued detector")
+        request = dict(request, offer_sha256={ORDER[1]: request["offer_sha256"][MODES[1]]},
+                       libraries={flag[2:].replace("-", "_"): row["path"] for flag, row in binding["libraries"].items()})
         with patch.object(FastSegmentSource, "windows", deny_waveform):
             publish_saved(request, root / MODES[1], offer, packet, native, raw, started=started, runtime=runtime,
                           receipt_name="saved-south.json", flags=PUBLICATION_FLAGS)
@@ -250,12 +250,19 @@ def omitted(root):
     if not result["eligible_omitted"] or result["seal_sha256"] != pin(root / "seal.json"):
         raise ValueError("The one geographic control requires the sealed containing gate")
     seal = read(root / "seal.json")
-    command = [RELEASE / "venv/bin/python", "-IB", Path(__file__), "omitted-worker", root]
-    write(root / "omitted-job.json", dict(command=list(map(str, command)), seal_sha256=result["seal_sha256"],
-          binding_sha256=seal["binding_sha256"], native_sha256=seal["raw"]["native_sha256"]))
     target = root / MODES[1]
-    clock = measure(command, environment_for(root), target)
-    write(root / "omitted-clock.json", clock)
+    label, timing_target = "omitted", target
+    if (root / "omitted-job.json").exists():
+        prior = read(root / "omitted-clock.json")
+        if (target.exists() or prior["exit_code"] != 1 or "ModuleNotFoundError: No module named 'leo'" not in prior["stderr_tail"]):
+            raise ValueError("The saved comparison already launched beyond its raw-free initialization")
+        label, timing_target = "omitted-recovery", root / "near-omitted-recovery"
+    job = root / f"{label}-job.json"
+    command = [RELEASE / "venv/bin/python", "-IB", Path(__file__), "omitted-worker", root, "--job-path", job]
+    write(job, dict(command=list(map(str, command)), seal_sha256=result["seal_sha256"], source_sha256=pin(Path(__file__)),
+                    binding_sha256=seal["binding_sha256"], native_sha256=seal["raw"]["native_sha256"]))
+    clock = measure(command, environment_for(root), timing_target)
+    write(root / f"{label}-clock.json", clock)
     if clock["exit_code"]:
         raise RuntimeError(clock["stderr_tail"])
     worker = read(target / "saved-south.json")
@@ -333,5 +340,7 @@ if __name__ == "__main__":
         command.add_argument("root", type=Path)
         if action == "score":
             command.add_argument("mode", choices=MODES)
+        if action == "omitted-worker":
+            command.add_argument("--job-path", type=Path)
     args = vars(cli.parse_args())
     {"raw": raw, "seal": seal_raw, "score": score, "omitted": omitted, "omitted-worker": omitted_worker}[args.pop("action")](**args)
