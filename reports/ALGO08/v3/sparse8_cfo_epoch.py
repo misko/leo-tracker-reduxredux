@@ -14,6 +14,7 @@ import numpy as np
 from leo.analysis.localization_v3.tracks import prepare_tracks
 from leo.analysis.polynomial_tracklets import TrackConfig
 from leo.contracts.digests import canonical_digest
+from sparse8_time_math import RATE, centroid
 
 
 HERE = Path(__file__).resolve().parent
@@ -36,7 +37,6 @@ SOURCE_PINS = {
     FULL_SOURCE / "delay_product_kernel.c": "d014fe0670ff7a926bbd302ada1f4d021fe2f488f91b32dae8b4fe1634a07f1c",
 }
 ARMS = ("c0", "fitted_c")
-RATE = 10_000_000
 PILOT_PERIOD = 13_333
 ALIAS_HZ = RATE / 44
 
@@ -58,27 +58,6 @@ def read(path):
 
 def t_frame(factor):
     return factor["integer_epoch_sample"] + factor["fractional_epoch_offset_samples"]
-
-
-def centroid(factor, short):
-    """Equal-frame centroid of the native verifier's actual gathered pilot support."""
-    offset = factor["fractional_epoch_offset_samples"]
-    base = factor["integer_epoch_sample"]
-    sample_count, maximum = (80_000, 5) if short else (200_000, 15)
-    integer = abs(offset-round(offset)) <= 1e-12
-    starts = []
-    for frame in range(maximum):
-        start = base + (40_000*frame+1)//3 + 88 + offset
-        if start < (0 if integer else 7) or start + 64*44 - 1 >= sample_count - (0 if integer else 8):
-            break
-        starts.append(start)
-    if not starts:
-        raise ValueError("The retained factor has no native verifier support")
-    verifier = (mean(starts) + (64*44-1)/2) / RATE
-    # The actual refined scout origin is not exported separately from the chosen integer epoch.
-    # With that epoch as a common proxy its equal delay-product midpoint spans the first 5 or 14 pilots.
-    delay = (base + 88 + (64*44-1)/2 + mean((40_000*j+1)//3 for j in range(5 if short else 14))) / RATE
-    return verifier, len(starts), delay
 
 
 def fit_past(target_time, target_visit, donors):

@@ -29,7 +29,8 @@ PATH_OPTIONS = ("--short-binary", "--geographic-library", "--regional-track-libr
 SIGNED_OPTIONS = ("--legacy-first-map-history", "--legacy-first-map-fast", "--portable-orbit-index")
 FLAGS = ("--history-risk-route", "--cairo-six-sheets", "--verify-original-once", "--sparse8-primary")
 SNAPSHOT_SOURCES = ("prefetch_snapshots.py", "legacy_snapshot_reuse.py")
-EFFECTIVE_TIME_SOURCES = ("sparse8_effective_time.py", "sparse8_cfo_epoch.py", "sparse8_cfo_epoch_saved.py")
+ENTRY_SOURCES = ("integrated_original_entry.py", "unified_short_bootstrap.py")
+EFFECTIVE_TIME_SOURCES = ("anchor_exposure.py", "sparse8_effective_time.py", "sparse8_time_math.py")
 
 
 def tagged_bytes(body):
@@ -92,12 +93,15 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False, sparse8_e
         native[flag] = dict(path=option(flag), sha256=option(flag + "-sha256"))
     source_pins = dict(charted["sources"])
     source_pins[str(Path(__file__).relative_to(ROOT))] = tagged_bytes(Path(__file__).read_bytes())
+    for name in ENTRY_SOURCES:
+        source = HERE / name
+        source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     if reuse_prefetched_snapshots:
         for name in SNAPSHOT_SOURCES:
             source = HERE / name
             source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     if sparse8_effective_time:
-        for name in (*EFFECTIVE_TIME_SOURCES, "integrated_original_entry.py", "unified_short_bootstrap.py"):
+        for name in EFFECTIVE_TIME_SOURCES:
             source = HERE / name
             source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     return dict(
@@ -108,7 +112,7 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False, sparse8_e
     )
 
 
-def load_build(path, pin, *, reuse_prefetched_snapshots=False):
+def load_build(path, pin, *, reuse_prefetched_snapshots=False, sparse8_effective_time=False):
     book = document(path, pin)
     if (book.get("schema") != BUILD_SCHEMA or book.get("charted_commit") != CHARTED_COMMIT
             or book.get("charted_admission") != CHARTED_ADMISSION
@@ -123,6 +127,14 @@ def load_build(path, pin, *, reuse_prefetched_snapshots=False):
     if reuse_prefetched_snapshots and any(str((HERE / name).relative_to(ROOT)) not in book["sources"]
                                           for name in SNAPSHOT_SOURCES):
         raise ValueError("The build must pin both private snapshot sources")
+    if sparse8_effective_time:
+        if any(str((HERE / name).relative_to(ROOT)) not in book["sources"] for name in EFFECTIVE_TIME_SOURCES):
+            raise ValueError("The opt-in source and its arithmetic must be pinned in this build")
+        from empty_bootstrap import RELEASE
+        from sparse8_effective_time import CLOCK_SOURCE_PINS
+
+        for name, checksum in CLOCK_SOURCE_PINS.items():
+            checked(RELEASE / "src/leo/analysis" / name, checksum)
     native = {flag: checked_artifact(entry) for flag, entry in book["native"].items()}
     png = checked_artifact(book["png"])
     producer = checked_artifact(book["portable_producer"])
@@ -272,8 +284,6 @@ def original_argv(args, book, authority):
             argv.extend((flag + "-sha256", tagged(entry["sha256"])))
     argv.extend(("--portable-orbit-producer-sha256", tagged(book["portable_producer"]["sha256"])[7:]))
     if getattr(args, "sparse8_effective_time", False):
-        if any(str((HERE / name).relative_to(ROOT)) not in book["sources"] for name in EFFECTIVE_TIME_SOURCES):
-            raise ValueError("The opt-in source and its arithmetic must be pinned in this build")
         argv.append("--sparse8-effective-time")
     return argv
 
@@ -408,7 +418,8 @@ def main(argv=None):
     if not args.build or not args.build_sha256:
         parser.error("supply the frozen --build and --build-sha256")
     book, assets, cutoff = load_build(args.build, args.build_sha256,
-                                      reuse_prefetched_snapshots=args.reuse_prefetched_snapshots)
+                                      reuse_prefetched_snapshots=args.reuse_prefetched_snapshots,
+                                      sparse8_effective_time=args.sparse8_effective_time)
     if args.verify:
         print(json.dumps(dict(schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, build_sha256=args.build_sha256)))
         return

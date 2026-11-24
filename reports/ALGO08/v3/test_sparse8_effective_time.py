@@ -4,8 +4,9 @@ import pytest
 
 from leo.analysis.localization_v3 import tracks
 from leo.contracts.digests import canonical_digest
-from sparse8_cfo_epoch_saved import correction_rows, graph_rows
+from sparse8_cfo_epoch_saved import correction_rows
 from sparse8_effective_time import binding, source_rows
+from sparse8_time_math import graph_rows
 
 
 @pytest.fixture
@@ -48,15 +49,17 @@ def test_original_port_matches_frozen_arithmetic_with_empty_history_lanes(packet
     assert sum(shift == 0 for _, shift, _ in corrections.values()) == 4
 
 
-@pytest.mark.parametrize("changed", ["unbound", "unsupported_route", "remeasured"])
+@pytest.mark.parametrize("changed", ["unbound", "unsupported_route", "remeasured", "unknown_recipe"])
 def test_ineligible_recipe_leaves_winning_observations_untouched(packet, changed):
     native, witness = packet
     if changed == "unbound":
         witness["native_sha256"] = "mismatch"
     elif changed == "unsupported_route":
         witness["choice"]["route"] = "some other selection"
-    else:
+    elif changed == "remeasured":
         witness["refinement_calls"] = 1
+    else:
+        witness["receiver_recipe"]["aperture_samples"] = [200_000, 120_000]
     original = tracks.winning_observations
     audit = {}
     with binding(native, witness, audit):
@@ -75,6 +78,33 @@ def test_source_bound_port_preserves_raw_document_and_corrects_only_graph(packet
     audit = {}
     with binding(native, witness, audit):
         adjusted, support = tracks.winning_observations(native)
+        assert tracks.winning_observations(native) == (adjusted, metadata)
     assert audit["applied"] and support is metadata
     assert adjusted == graph_rows(rows, factors)
     assert native == original
+
+
+def test_first_unsupported_graph_packet_sticks_to_nominal_for_the_whole_solver(packet, monkeypatch):
+    native, witness = packet
+    _, factors = source_rows(native, witness)
+    rows = [dict(observation_id=oid, time_s=time, measured_cfo_hz=hz, receiver=1, channel=1)
+            for oid, (time, _, hz) in factors.items()]
+    metadata = dict(anchor_utc_ns=1234, receiver_factors=len(rows))
+    monkeypatch.setattr(tracks, "winning_observations", lambda _: (rows, metadata))
+    audit = {}
+    with binding(native, witness, audit):
+        assert tracks.winning_observations({}) == (rows, metadata)
+        assert tracks.winning_observations(native) == (rows, metadata)
+    assert not audit["applied"]
+
+
+def test_different_packet_after_correction_fails_instead_of_mixing_graph_times(packet, monkeypatch):
+    native, witness = packet
+    _, factors = source_rows(native, witness)
+    rows = [dict(observation_id=oid, time_s=time, measured_cfo_hz=hz, receiver=1, channel=1)
+            for oid, (time, _, hz) in factors.items()]
+    monkeypatch.setattr(tracks, "winning_observations", lambda _: (rows, {}))
+    with binding(native, witness, {}):
+        assert tracks.winning_observations(native)[0] != rows
+        with pytest.raises(ValueError, match="different signed packet"):
+            tracks.winning_observations({})

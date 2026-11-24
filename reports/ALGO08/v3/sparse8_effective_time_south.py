@@ -81,7 +81,8 @@ def probe():
     native = packets["integrated"]
     route, new = source_rows(native, selector)
     from leo.analysis.localization_v3.tracks import winning_observations
-    from sparse8_cfo_epoch_saved import correction_rows, graph_rows
+    from sparse8_cfo_epoch_saved import correction_rows
+    from sparse8_time_math import graph_rows
 
     rows, _ = winning_observations(native)
     graph_rows(rows, new)

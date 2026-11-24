@@ -10,13 +10,17 @@ from unittest.mock import patch
 
 SELECTED_RECIPE = "sha256:ce13caaadf150f474a024fda7da31a33f9e293e9bb9e4d91613c552c3cd7335a"
 CONVENTION = "short native verifier equal-frame centroid relative to the full verifier at the exported frame epoch"
+CLOCK_SOURCE_PINS = {
+    "localization_v3/tracks.py": "db44a947666c2dd7946534f69bf6af72ced63c8af553bb1b089c0fba3d5b7b6f",
+    "glrt_frequency_input.py": "e7ad53bf41c596042c654184c8f212f4ec187c9281d4944725344d7f5e3ee58b",
+}
 
 
 def source_rows(native, selection):
     from anchor_exposure import enroll
     from full_short_run import SPARSE_EIGHT_MS_RECIPE_SHA
     from leo.contracts.digests import canonical_digest
-    from sparse8_cfo_epoch import RATE, centroid
+    from sparse8_time_math import RATE, centroid
 
     if not isinstance(selection, dict):
         raise ValueError("missing held selector witness")
@@ -59,15 +63,20 @@ def source_rows(native, selection):
 
 @contextmanager
 def binding(native, selection, audit):
+    from leo.analysis import glrt_frequency_input
     from leo.analysis.localization_v3 import tracks
     from leo.contracts.digests import canonical_digest
-    from sparse8_cfo_epoch_saved import graph_rows
+    from sparse8_time_math import graph_rows
 
     audit.update(requested=True, applied=False, convention=CONVENTION)
     begun = process_time_ns(), perf_counter_ns()
     try:
+        imported = (tracks, glrt_frequency_input)
+        if any(sha256(Path(module.__file__).read_bytes()).hexdigest() != pin
+               for module, pin in zip(imported, CLOCK_SOURCE_PINS.values(), strict=True)):
+            raise ValueError("unsupported installed Graph time semantics")
         route, corrections = source_rows(native, selection)
-    except (KeyError, TypeError, ValueError) as problem:
+    except (KeyError, OSError, TypeError, ValueError) as problem:
         audit.update(reason=str(problem), preparation_cpu_ns=process_time_ns()-begun[0],
                      preparation_elapsed_ns=perf_counter_ns()-begun[1])
         yield
@@ -81,6 +90,8 @@ def binding(native, selection, audit):
 
     def adjusted(packet):
         rows, metadata = original(packet)
+        if "reason" in audit:
+            return rows, metadata
         started = process_time_ns(), perf_counter_ns()
         try:
             if packet is not native and canonical_digest(packet) != selection["native_sha256"]:
@@ -91,7 +102,10 @@ def binding(native, selection, audit):
                 raise
             audit["reason"] = str(problem)
             return rows, metadata
-        audit.update(applied=True, corrected_graph_input_sha256=canonical_digest(corrected),
+        graph_digest = canonical_digest(corrected)
+        if audit["applied"] and audit["corrected_graph_input_sha256"] != graph_digest:
+            raise ValueError("The corrected solver presented inconsistent Graph evidence")
+        audit.update(applied=True, corrected_graph_input_sha256=graph_digest,
                      application_cpu_ns=process_time_ns()-started[0],
                      application_elapsed_ns=perf_counter_ns()-started[1])
         return corrected, metadata

@@ -1,7 +1,8 @@
 import pytest
 
 from sparse8_cfo_epoch import ALIAS_HZ, centroid, fit_past, observed_match
-from sparse8_cfo_epoch_saved import correction_rows, graph_rows
+from sparse8_cfo_epoch_saved import correction_rows
+from sparse8_time_math import graph_rows
 
 
 def factor(epoch=100, fractional=.25, frequency=100., rank=0, margin=.2):
