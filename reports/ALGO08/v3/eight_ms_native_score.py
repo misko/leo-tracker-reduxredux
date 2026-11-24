@@ -97,6 +97,23 @@ def prefix_score(root):
     return result
 
 
+def same_images(actual, archived):
+    def checked_images(images):
+        return {name: dict(item, size=list(item["size"])) for name, item in images.items()}
+
+    return checked_images(actual) == checked_images(archived)
+
+
+def verify_figures(root):
+    seal = root/"science-seal.json"
+    saved = read(seal)
+    observed, expected = (saved[case]["images"] for case in ("science", "science_baseline"))
+    if len(observed) != 8 or not same_images(observed, expected):
+        raise ValueError("A signed figure differs from its saved publication")
+    write(root/"figure-parity.json", dict(seal_sha256=sha256(seal.read_bytes()).hexdigest(), images=observed,
+                                         all_eight_encoded_decoded_and_dimensions_match=True))
+
+
 def north_seal(root):
     from eight_ms_held_score import owner_differences
     from full_short_run import EIGHT_MS_SHA
@@ -136,6 +153,7 @@ def north_seal(root):
     actual = science(case, raw["receipt"], clock, old["identity"])
     fields = ("terminal", "arms", "roles", "grid_and_path", "grid_points", "images", "named_finish")
     agreement = {key: actual[key] == old["science"][key] for key in fields}
+    agreement["images"] = same_images(actual["images"], old["science"]["images"])
     rank, orbit = (read(root/name) for name in ("catalogue-block-rank.json", "orbits-indexed.json"))
     transfer, = orbit["transfers"]
     if (not rank["requested"] or not rank["counts"]["compact_calls"] or transfer["compatibility"]["fallback"]
@@ -217,7 +235,8 @@ def omitted_score(root):
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("action", choices=("prefix", "seal", "score", "omitted"))
+    cli.add_argument("action", choices=("prefix", "seal", "score", "figures", "omitted"))
     cli.add_argument("root", type=Path)
     args = cli.parse_args()
-    {"prefix": prefix_score, "seal": north_seal, "score": north_score, "omitted": omitted_score}[args.action](args.root)
+    actions = dict(prefix=prefix_score, seal=north_seal, score=north_score, figures=verify_figures, omitted=omitted_score)
+    actions[args.action](args.root)

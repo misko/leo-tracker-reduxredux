@@ -154,10 +154,10 @@ def omitted_worker(root):
     request |= dict(libraries=libraries, offer_sha256={OFFERS[1]: MIRROR_SHA})
     packet, raw = native_file(root/"containing"), source["raw"]
     native = json.loads(checked(packet, binding["native_sha256"][7:]))
-    bind_native(native, request["session"], request["inventory"], raw["detector_recipe_sha256"][7:])
     orbit, rank = {}, {}
     with combined_runtime(orbit, rank, PRODUCER, use_blocks=True):
         runtime = load_runtime()
+        bind_native(native, request["session"], request["inventory"], raw["detector_recipe_sha256"][7:])
         publish_saved(request, root/"omitted", MIRROR, packet, native, raw, started=started, runtime=runtime,
                       receipt_name="eight-ms-omitted.json")
     write(root/"omitted-execution.json", dict(orbit=orbit, rank=rank, rank_status=rank_status(True, rank)))

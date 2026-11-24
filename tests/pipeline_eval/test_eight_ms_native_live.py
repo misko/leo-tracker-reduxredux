@@ -64,3 +64,11 @@ def test_unfiltered_native_signed_cfo_values_must_survive(modules):
         score.unchanged_history(original, [{"candidates": []}], kept)
     with pytest.raises(ValueError, match="zero later CFO calls"):
         score.unchanged_history(original, original, kept | {"refinement_calls": 1})
+
+
+def test_image_inventory_compares_decoded_hash_and_canonical_dimensions(modules):
+    check = modules[-1].same_images
+    native = {"position": {"size": (1680, 960), "sha256": "encoded", "rgba_sha256": "decoded"}}
+    archived = {"position": dict(native["position"], size=[1680, 960])}
+    assert check(native, archived)
+    assert not check(native, {"position": dict(archived["position"], rgba_sha256="different")})
