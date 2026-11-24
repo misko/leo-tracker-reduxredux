@@ -175,7 +175,7 @@ def launch(root, bundle, pin):
         (root/name).mkdir()
     font = "fontlist-v3.11.0.json"
     (root/"fonts"/font).write_bytes(checked(BASE/"fonts"/font,
-             "07189bbdc3694211155db6c4c6f677b7de06867976a2c4e2d8a57c228cb7688b"))
+             "3ec97e620a1fa0115bbbdaefd3ddd47382fd0aed525281d7f1fc88a8614f282a"))
     hybrid = root/"hybrid-native.json"
     immutable_json(hybrid, packets[ORDER[1]])
     recorded = {ORDER[0]: (SOURCE, SOURCE_SHA256), ORDER[1]: (hybrid, canonical_digest(packets[ORDER[1]])[7:])}
