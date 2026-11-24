@@ -159,13 +159,14 @@ def risk_solve(scan, cutoff, original_rank, audit):
 def publish_active(args, publication, specification, handoff, _layout=None, **_options):
     """Consume exactly one authenticated native handoff under the named specification."""
     import empty_bootstrap as boot
+    # Resolve the installed entry before the research port imports expose the checkout.
+    from tools import algo08_position, algo08_scan
     from cold_track_row_reuse import SHARING_PIN
     from exact_named_route import SHARING, SOURCES, digest, exact_ports
     from joint_publication import figure_evidence
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from named_history_once import named_solve
-    from tools import algo08_position, algo08_scan
     from verified_png_reads import VerifiedPngReads
 
     if (Path(algo08_scan.__file__).resolve() != boot.PAYLOAD / boot.SCANNER
