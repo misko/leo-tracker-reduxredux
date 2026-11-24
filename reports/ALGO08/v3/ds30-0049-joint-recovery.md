@@ -1,10 +1,10 @@
-# DS30-0049 joint short-lane restoration awaits a saved fit
+# DS30-0049 joint short-lane restoration
 
-The exact joint packet is sealed. The single direct attempt to acquire the
-shared Gauss lock returned `EAGAIN`. A preceding 15-second watch saw no fresh
-official storage deferral. Neither attempt launched a numerical child. Joint
-position, RF, ownership and publication results remain unmeasured in both
-calibration arms. [Frozen receiver and scoring protocol](ds30-0049-joint-recovery-protocol.md) · [Admission and custody receipt](measurements/ds30-0049-joint-recovery-custody.json)
+The joint perturbation reduced horizontal error by **940.291 m fixed-zero**
+and **836.433 m fitted**, exceeding the sums of the independently measured
+improvements by 86.732 m and 197.555 m. The fitted result recovered 31.93% of
+the original 2.620 km error gap. Both arms still exceed the original installed
+error by more than 1.7 km. [Frozen receiver and scoring protocol](ds30-0049-joint-recovery-protocol.md) · [Recorded scientific worker and score](measurements/ds30-0049-joint-recovery.json.gz)
 
 ## Verified receiver perturbation
 
@@ -37,7 +37,7 @@ plan, watch and direct admission receipt are kept read-only in
 `/srv/postgres-nvme/leo-ds30-research-worktrees/0049-joint-recovery-archive-01`.
 The original worker directory is `/dev/shm/leo-v3-joint-recovery-0049-01`.
 
-## Measured individual controls
+## Measured controls and joint result
 
 | Saved publication | Fixed-zero error | Fitted error | Fixed-zero gain over sparse | Fitted gain over sparse |
 | --- | ---: | ---: | ---: | ---: |
@@ -46,27 +46,91 @@ The original worker directory is `/dev/shm/leo-v3-joint-recovery-0049-01`.
 | Empty lanes only | 4,148.133 m | 3,662.974 m | 323.790 m | 377.258 m |
 | Shifted winners only | 3,942.154 m | 3,778.612 m | 529.769 m | 261.620 m |
 | Sum of the two independently measured gains | | | 853.559 m | 638.878 m |
-| Joint intervention | Unscored | Unscored | Unscored | Unscored |
+| Joint intervention | 3,531.632 m | 3,203.799 m | 940.291 m | 836.433 m |
 
-The sum is an arithmetic reference for the frozen interaction score. Both
-single interventions start from the same sparse packet, and rerunning Graph
-and ownership can make their effects interact. The independent DS30-0105
-original pair has authentic signed receiver evidence and separate geographic
-scores, with no equivalent joint intervention publication. This diagnostic
-requires installed selected outcomes and supports neither a deployable
-nomination rule nor a raw timing claim. [Empty-only control](ds30-0049-empty-recovery.md) · [Shifted-only control](ds30-0049-shifted-winner-repair.md) · [Independent original pair](ds30-evidence-transfer.md)
+Both single interventions start from the same sparse packet. Their sum is an
+arithmetic reference for the interaction after Graph and ownership rerun. The
+joint worker passed the 250 m two-arm development gate. This diagnostic uses
+installed selected outcomes. It measures a saved-packet perturbation.
+[Empty-only control](ds30-0049-empty-recovery.md) · [Shifted-only control](ds30-0049-shifted-winner-repair.md)
+
+The ordinary lean route ran Graph once and assigned 508 observations across
+17 tracks, versus 399 across 15 on sparse. Final ownership was 334 IDs,
+two satellites and nine tracks in each arm. The joint fit retained 262 of
+268 sparse owners with the same satellite and role, added 72 and dropped six.
+It retained 318 of 320 installed owners with the same satellite and role.
+This includes 43 of the 44 installed-owned insertions and all 48 installed-owned
+shifted rows in each arm. The joint roster owns 44 insertions total because
+one different inserted ID became owned.
+
+Conditional RF RMS was 145.630 Hz fixed-zero and 145.652 Hz fitted. The
+original sparse values were 168.634 and 168.814 Hz, and installed values
+were 129.663 and 129.671 Hz. The joint all-owned figures were 163.944 and
+159.130 Hz on its broader ownership, versus 168.634 and 168.814 Hz sparse and
+145.914 and 141.298 Hz installed. Frequency and geographic gains apply to the
+achieved supports. Both arms returned an interior fix in the signed original
+25 km offer. The standard 179-position grid replayed both endpoints with
+zero objective discrepancy. The path bound the same input, owners, terminal
+and position PNG. All eight standard PNGs were independently decoded and verified.
+
+## Conditioned comparison to full short-lane restoration
+
+The previously scored anchor-only control takes installed 20 ms factors on
+every short lane and preserves the sparse full-anchor factors, including the
+twelve extra anchors. Its charted installed-packet reference had exact
+endpoint parity with original installed. Both files and controls used the
+same original offer and scored against the same independent receiver reference.
+
+| Ordered comparison | Fixed-zero improvement | Fitted improvement |
+| --- | ---: | ---: |
+| Original sparse → joint, sparse anchors and ordinary matches retained | 940.291 m | 836.433 m |
+| Joint → all short lanes restored, same sparse anchors | 793.312 m | 750.904 m |
+| All short lanes restored → installed, removing twelve sparse-only anchors | 912.581 m | 1,032.499 m |
+| Cumulative sparse → installed | 2,646.184 m | 2,619.837 m |
+
+The middle contrast also replaces 284 strict matches and removes 161 sparse-only
+short positives together, leaving 543 observations and 323 owners per arm.
+Four of the 323 owners use the extra anchors. The final contrast is the
+anchor effect conditioned on complete installed short-lane restoration.
+The three increments telescope the measured endpoints along this order.
+Different orders can change the support and interactions.
+[All-short-restored and retained-anchor control](ds30-0049-anchor-only.md)
+
+## Independent transfer inputs
+
+DS30-0086 has the complete verified original generation-1 pair
+`407765fa47754cc99556143888b286e88f4674ab21836d3f437ac8af4c2ca439`.
+Both original offers agree exactly. The independently retained installed
+and genuine unfiltered sparse packets are byte-identical to the official
+native digests `8a56dd84…` and `3a5063c9…`. Both validated saved copies and
+all 50 original causal bodies are currently resident, as is the pinned
+portable index. Ordinary charted sparse has archived full scientific parity
+with its original publication. An existing charted installed-packet result
+supplies a fixed-fitter comparator. DS30-0086 and DS30-0049 are separate
+captures from the same roof. [Exact original pair and saved crossover](field-receiver-solver-cross-0086.md) · [Original mixed saved parity](sparse8-cfo-epoch.md)
 
 ## Admission record
 
-The packet and worker were frozen before admission. The original bounded
-watch expired without a qualifying event. After clarification, a separate
-direct supervisor used the same sealed packet and the existing runner. It
-would have checked the live official driver and observed the existing quiet
-window with all causal operands resident under the lease. Its first
-interpreter invocation failed to resolve a research module under isolated
-Python, before reaching admission. The repaired invocation passed an
-isolated help check, then made the sole direct nonblocking lock attempt.
-The lease was busy and the direct supervisor exited before any worker,
-quiet-window wait, or read of causal bodies. The first watch and the direct
-blocker are retained separately. No additional numerical or lock attempts
-were made. Nineteen component and adjacent checks passed.
+The first 15-second watch found no qualifying storage deferral. A separate
+direct attempt returned `EAGAIN`; an earlier import error stopped before
+admission. Both previous receipts record zero numerical children.
+[Earlier packet custody and admission receipts](measurements/ds30-0049-joint-recovery-custody.json)
+
+The subsequent bounded waiter kept the lease free during all nonquiet polls.
+After 3.511 seconds it obtained the shared lease nonblocking, reconfirmed
+the live driver had no active child, and rechecked all 48 cached bodies and
+the portable operand before spawning one worker. The bulk and local weighted
+queue averages were 0.867 and 0.148, and full I/O PSI avg10 was 0.90%.
+The verified portable index attached with 17 sidecar hits, eight original
+staged bodies in the used set, and zero fallback. The worker exited normally
+after **8.194 s wall and 7.418 s CPU** on CPU2, nice 15, idle I/O, and one
+numerical thread. It charged 176,424 process input blocks and 384 major faults
+across the full saved child. It used one bound handoff and performed no
+receiver or selected-history rerun, raw waveform access, or backing reads.
+Scoring took place after the prediction was sealed and the lease released.
+The worker made no end-to-end receiver measurement.
+
+The worker's source froze at `55f8c5950` and the waiter at `e1c4a8a49`.
+The prediction SHA-256 is `749757161fc1e525d20b103035664f3e33b80f76d1fad0ef790b3bc9c577225b`.
+The independent score SHA-256 is `67fc475c3136d63cf5f7518578a809cb3534f0ac51ebee50cac4b150a015b80b`.
+Twenty-two component and adjacent checks passed.
