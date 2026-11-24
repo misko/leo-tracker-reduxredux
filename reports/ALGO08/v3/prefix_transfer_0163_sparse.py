@@ -9,12 +9,14 @@ import subprocess
 import sys
 from unittest.mock import patch
 
+HERE = Path(__file__).resolve().parent
+sys.path[:0] = [str(HERE), str(HERE.parents[2])]
+
 from ds30_0163_composed_saved import TRANSFER_0163 as CASE, donor_sources
 from prefix_transfer_0419 import ARMS, checked, lane_key, metadata, prefix_scope, read, signed_member, write
 from prefix_transfer_0008 import digest
 
 
-HERE = Path(__file__).resolve().parent
 PROTOCOL = HERE / "0163-sparse-prefix-hybrid-protocol.md"
 PAIR = Path("/tmp/leo-v3-0163-resumed-member-pair02")
 PINS = {
