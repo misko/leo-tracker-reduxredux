@@ -11,6 +11,7 @@ import subprocess
 import sys
 from time import perf_counter_ns, time_ns
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sparse8_cfo_epoch_saved import CASE, HERE, MODES, NATIVE, PROTOCOL
 
 
