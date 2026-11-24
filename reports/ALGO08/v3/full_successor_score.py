@@ -509,6 +509,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
               "authority. All recordings come from the Gauss roof. The results measure repeatability at this site.", "",
+              "Two saved replays on the same physical DS30-0086 recording changed only the offered region. "
+              "Moving its center 12.5 km east kept the receiver inside and moved the candidate’s fitted position "
+              "by 0.16 m. Moving it 12.5 km west excluded the receiver by 5.204 km. The candidate still published "
+              "on the east boundary, 5.406 km from the receiver. Its fitted RF RMS improved from 180.08 to "
+              "170.33 Hz on that false fix. These replays are outside the measured runtime distribution. "
+              "[Offered regions, plotted fixes and sealed evidence](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "f59d67e11d4a23615258b47cd2e042d5339dc1d4/reports/ALGO08/v3/field-offer-translation-0086.md)", "",
               "A separate South simulation tested a different offered region on previously authenticated detector "
               "packets. With the receiver 1 km inside the north face, fitted errors were 1,099 m for ALGO08v3 "
               "and 363 m for the candidate. With the receiver 1 km outside, both published a false fix. "
