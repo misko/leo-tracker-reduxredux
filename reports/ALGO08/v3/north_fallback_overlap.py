@@ -269,6 +269,67 @@ def archived_sources(source):
     return verified
 
 
+def numerical_grid(document):
+    return {key: value for key, value in document.items() if key != "elapsed_seconds"}
+
+
+def priced_overlap(operations):
+    """Keep conservative inclusive CPU bounds and charge keys in both phases."""
+    net = {}
+    for name in ("terminal_regional_proof", "ranked_initial_nodes", "nominal_geometry",
+                 "nominal_discovery_projection"):
+        measured = [row for row in operations if row["operation"] == name and not row["nested_rank"]]
+        matches = [row for row in measured if row["phase"] == "fallback" and row.get("matches")]
+        saving = sum(row["operation_cpu_ns"] for row in matches)
+        keys = sum(row["key_cpu_ns"] for row in measured)
+        net[name] = dict(observed_calls=len(measured), fallback_matches=len(matches),
+                         gross_cpu_s=saving / 1e9, keys_cpu_s=keys / 1e9)
+    constructors = [row for row in operations if row["operation"] == "scan_context"]
+    constructor_keys = sum(row["key_cpu_ns"] for row in constructors) / 1e9
+    net["context_keys_s"] = constructor_keys
+    net["scope_ceiling_s"] = (sum(row["gross_cpu_s"] - row["keys_cpu_s"] for row in net.values()
+                                  if isinstance(row, dict)) - constructor_keys)
+    net["opaque_context_inclusive_cpu_s"] = sum(row["operation_cpu_ns"] for row in constructors
+                                                 if row["phase"] == "fallback") / 1e9
+    return net
+
+
+def reread(output, source):
+    archived_sources(source)
+    sys.path.insert(0, str(source))
+    from empty_bootstrap import load_runtime
+
+    load_runtime()
+    from joint_publication import artifacts
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+
+    study = json.loads((output / "audit.json").read_bytes())
+    outcomes = {}
+    for label, root in (("original", ROOT / "masked"), ("trace", output)):
+        stage = json.loads((root / "joint-research-receipt.json").read_bytes())
+        receipt = stage["receipt"]
+        store = FastStandardAnalysisStore(root)
+        run = receipt["run_id"]
+        terminal = json.loads((root / "fast-scan-automatic-work" / run / "terminal.json").read_bytes())
+        actual = artifacts(root, receipt)
+        detail = store.detail(run)
+        grid = store.position_grid(run)
+        if (canonical_digest(actual) != canonical_digest(stage["evidence"]) or not grid["complete"]
+                or canonical_digest(terminal) != receipt["terminal_sha256"] or terminal["native_sha256"] != study["native_sha256"]
+                or detail["input_sha256"] != study["native_sha256"] or len(actual["images"]) != 8):
+            raise ValueError(f"Saved {label} publication changed")
+        outcomes[label] = dict(terminal_sha256=receipt["terminal_sha256"], arms=terminal["arms"], standard_arms=detail["arms"],
+                               owner_sha256=canonical_digest(stage["selected_rows"]), grid_elapsed_s=grid["elapsed_seconds"],
+                               grid_points=grid["evaluated_points"], grid_science_sha256=canonical_digest(numerical_grid(grid)),
+                               **actual)
+    ignored = {"grid", "grid_elapsed_s"}
+    exact = {key: outcomes["original"][key] == outcomes["trace"][key] for key in outcomes["original"].keys() - ignored}
+    if not all(exact.values()):
+        raise ValueError(f"Scientific readback differs: {exact}")
+    return dict(**study, readback=dict(parity=exact, **outcomes), overlap=priced_overlap(study["operations"]))
+
+
 def worker(output, source):
     started = process_time(), perf_counter()
     verified_sources = archived_sources(source)
@@ -304,4 +365,8 @@ def worker(output, source):
 
 
 if __name__ == "__main__":
-    worker(Path(sys.argv[1]), Path(sys.argv[2]).resolve(strict=True) / "reports/ALGO08/v3")
+    output, source = Path(sys.argv[1]), Path(sys.argv[2]).resolve(strict=True) / "reports/ALGO08/v3"
+    if sys.argv[3:] == ["--score-only"]:
+        print(json.dumps(reread(output, source), indent=2, sort_keys=True, allow_nan=False))
+    else:
+        worker(output, source)

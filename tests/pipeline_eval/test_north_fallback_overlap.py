@@ -36,3 +36,24 @@ def test_fallback_requires_earlier_phase_exact_answer(audit):
     assert equal["matches"] == ["candidate"]
     assert "matches" not in unknown and "matches" not in unsupported
     assert watch.phase == "early_regional"
+
+
+def test_grid_readback_ignores_only_its_clock(audit):
+    grid = {"elapsed_seconds": 1.0, "points": [0.0], "binding": {"input": "sha256:a"}}
+    assert audit.numerical_grid(grid) == audit.numerical_grid(dict(grid, elapsed_seconds=2.0))
+    assert audit.numerical_grid(grid) != audit.numerical_grid(dict(grid, points=[1.0]))
+
+
+def test_price_disjoint_matches_and_charge_key_cost_for_both_phases(audit):
+    def operation(name, phase, *, match=False, nested=False):
+        return dict(operation=name, phase=phase, nested_rank=nested, operation_cpu_ns=1000,
+                    key_cpu_ns=10, matches=["candidate"] if match else [])
+
+    rows = [operation("ranked_initial_nodes", "candidate"), operation("ranked_initial_nodes", "fallback", match=True),
+            operation("nominal_discovery_projection", "fallback", match=True, nested=True),
+            operation("scan_context", "fallback"), operation("terminal_regional_proof", "fallback")]
+    price = audit.priced_overlap(rows)
+    assert price["ranked_initial_nodes"]["keys_cpu_s"] == 20e-9
+    assert price["nominal_discovery_projection"]["gross_cpu_s"] == 0
+    assert price["scope_ceiling_s"] == pytest.approx(960e-9)
+    assert price["opaque_context_inclusive_cpu_s"] == 1000e-9
