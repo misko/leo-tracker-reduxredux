@@ -23,3 +23,12 @@ def test_fifth_enrolled_fix_keeps_its_order_and_exact_zero_error_change():
     assert case == "DS30-0169"
     assert (original, charged) == pytest.approx((17.893, 12.485), abs=0.001)
     assert errors == {"c0": 0, "fitted_c": 0}
+
+
+def test_sixth_holdout_uses_full_20ms_saved_pair_and_its_own_charged_check():
+    rows = load_rows(6)
+    assert [row[0] for row in rows[:-1]] == [row[0] for row in load_rows(5)]
+    case, original, charged, errors = rows[-1]
+    assert case == "DS30-0138"
+    assert (original, charged) == pytest.approx((36.432, 22.604), abs=0.001)
+    assert errors == pytest.approx({"c0": -13.661, "fitted_c": -12.982}, abs=0.001)

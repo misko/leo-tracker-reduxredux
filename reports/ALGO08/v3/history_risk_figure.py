@@ -57,7 +57,7 @@ def render(output, size=3):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument("--cases", type=int, choices=(3, 4, 5), default=3)
+    parser.add_argument("--cases", type=int, choices=(3, 4, 5, 6), default=3)
     size = parser.parse_args().cases
-    slug = {3: "three", 4: "four", 5: "five"}[size]
+    slug = {3: "three", 4: "four", 5: "five", 6: "six"}[size]
     render(HERE / f"development/history-risk-{slug}-case.png", size)

@@ -11,11 +11,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-def elapsed_rows(ordinary, cairo, packed):
+def elapsed_rows(ordinary, cairo, packed, frame_scores=None):
     rows = {"Installed ALGO08v3": [], "20/8 ms": [], "20/8 ms + Cairo": [],
             "Split archive ready": [], "Split archive first use": []}
     if cairo["qualified"] is not True or packed["qualified"] is not True:
         raise ValueError("Expected qualified storage and renderer comparisons")
+    if frame_scores is not None:
+        if len(frame_scores) != 2 or {score["case"] for score in frame_scores} != {"DS30-0107", "DS30-0016"}:
+            raise ValueError("Both enrolled compatible-archive replays are required")
+        frames_by_case = {score["case"]: score for score in frame_scores}
+        rows["Standard frames · full read"] = []
+        rows["Standard frames · indexed read"] = []
     for case, source in (("DS30-0107", "costs"), ("DS30-0016", "positive_costs")):
         costs = packed[source]
         original = ordinary["cases"][case]
@@ -27,11 +33,20 @@ def elapsed_rows(ordinary, cairo, packed):
         rows["20/8 ms + Cairo"].append(cairo["clocks"][case]["candidate"]["elapsed_s"])
         rows["Split archive ready"].append(costs["scopes"]["ready"][0])
         rows["Split archive first use"].append(costs["scopes"]["first"][0])
+        if frame_scores is not None:
+            score = frames_by_case[case]
+            if score["qualified"] is not True or score["historical_named"]["elapsed_s"] != baseline:
+                raise ValueError("Expected qualified frame replays and the same installed comparator")
+            for mode, label in (("ordinary", "Standard frames · full read"), ("frames", "Standard frames · indexed read")):
+                clock = score["measured_children"][mode]["clock"]
+                if clock["exit_code"] != 0 or not 0 < clock["elapsed_s"] < float("inf"):
+                    raise ValueError("Expected a successful compatible-archive process clock")
+                rows[label].append(clock["elapsed_s"])
     return rows
 
 
 def render(rows, output):
-    fig, ax = plt.subplots(figsize=(9, 3.8), layout="constrained")
+    fig, ax = plt.subplots(figsize=(9, 1.8 + 0.4 * len(rows)), layout="constrained")
     fig.suptitle("End-to-end wall time on two physical DS30 recordings", fontweight="bold", fontsize=14)
     y = range(len(rows))
     withheld, fix = zip(*rows.values(), strict=True)
@@ -59,9 +74,11 @@ if __name__ == "__main__":
     parser.add_argument("cairo", type=Path)
     parser.add_argument("packed", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--frame-scores", nargs=2, type=Path,
+                        help="Add both complete compatible-archive scores in either order")
     args = parser.parse_args()
     receipts = []
-    for path in (args.ordinary, args.cairo, args.packed):
+    for path in (args.ordinary, args.cairo, args.packed, *(args.frame_scores or [])):
         data = path.read_bytes()
         receipts.append(json.loads(gzip.decompress(data) if path.suffix == ".gz" else data))
-    render(elapsed_rows(*receipts), args.output)
+    render(elapsed_rows(*receipts[:3], frame_scores=receipts[3:] or None), args.output)
