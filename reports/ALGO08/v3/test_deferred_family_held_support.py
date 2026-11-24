@@ -42,5 +42,5 @@ def test_coarse_hypothesis_does_not_become_an_owned_assignment():
 
 @pytest.mark.parametrize("path", [b"/dev/shm/example.tle", "/srv/bulk/example/manifest.json", "/tmp/a.ci16.zst"])
 def test_scope_excludes_backing_iq_and_orbit_paths(path):
-    with pytest.raises(ValueError, match="held-opportunity"):
+    with pytest.raises(ValueError, match="Held-opportunity"):
         deny_raw_and_orbital("open", (path,))
