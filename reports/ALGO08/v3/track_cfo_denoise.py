@@ -6,6 +6,7 @@ import json
 from math import remainder
 from pathlib import Path
 import sys
+from unittest.mock import patch
 
 from .anchor_cfo_innovation import compare_errors
 from .calibration_transport import FIELD, FIRST30, signed_attempt
@@ -18,6 +19,7 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE / "measurements"
 OLD_GRAPH = "734598d6f5588e9ce36a012ae32215b601628e11a8c421474bdc3e5d48b675f9"
 COHORTS = {"development": ("DS30-0049",), "held": ("DS30-0019", "DS30-0274", "DS30-0086")}
+DEVELOPMENT_PLAN = "53b74ecf735c731ddf2df5604715a205403d4c9256fd42b552bc166246d91c04"
 
 
 def bracket(left, center, right):
@@ -104,6 +106,50 @@ def predict(snapshot, cohort):
                            all_unambiguous_graph_shorts=kept, proposals=proposals, eligibility=counts)
     return dict(cohort=cohort, ledger_sha256=FIRST30, old_graph_plan_sha256=OLD_GRAPH, cases=plans,
                 protocol_sha256=digest((HERE / "track-cfo-denoise-protocol.md").read_bytes()))
+
+
+def development_graph_handoff(snapshot):
+    """Expose the candidate-only proposal and original raw and lifted Graph values."""
+    from leo.analysis.localization_v3 import tracks
+
+    graph_pins()
+    case = COHORTS["development"][0]
+    row = original_pairs(snapshot, "development")[case, "successor"]
+    result, native, opportunities, _ = candidate_packet(row)
+    archived = signed.document(DATA / "track-cfo-denoise-development-plan.json.gz", DEVELOPMENT_PLAN)["cases"][case]
+    graph = tracks.prepare_tracks
+    packets = []
+
+    def capture(*args, **kwargs):
+        packet = graph(*args, **kwargs)
+        packets.append(packet)
+        return packet
+
+    with patch.object(tracks, "prepare_tracks", capture):
+        _, pieces, scope = signed.graph(native, opportunities)
+    kept, corrections, audit = proposed_offsets(pieces)
+    if archived != dict(native_sha256=result["native_sha256"], scope=scope, matches_previous_graph_plan=True,
+                        all_unambiguous_graph_shorts=kept, proposals=corrections, eligibility=audit):
+        raise ValueError("The Graph handoff did not reproduce the sealed DS30-0049 proposal")
+    packet, = packets
+    actual = {oid: (float(t), float(f)) for track in packet["tracks"] for oid, t, f in
+              zip(track["observation_ids"], track["times"], track["values"], strict=True)}
+    rows = []
+    for key, group in pieces.items():
+        for item in group:
+            oid = item["id"]
+            t, lifted = actual[oid]
+            proposal = corrections.get(oid)
+            rows.append(dict(observation_id=oid, piece=list(key), ordinal=item["ordinal"], sample_counter=item["counter"],
+                             graph_time_s=t, measured_signed_cfo_hz=item["factor"][HERTZ], graph_alias_lift=item["lift"],
+                             graph_lifted_cfo_hz=lifted, short=item["short"], **{
+                                 name: item["row"][name] for name in STREAM},
+                             half_blend_delta_hz=None if proposal is None else .5*proposal["interpolation_minus_center_hz"],
+                             donor_ids=None if proposal is None else proposal["neighbors"]))
+    if len(rows) != len(actual) or len(actual) != scope["assigned"]:
+        raise ValueError("The development handoff lacks an original Graph observation")
+    return dict(case=case, candidate_native_sha256=result["native_sha256"], prediction_sha256=DEVELOPMENT_PLAN,
+                configuration_sha256=signed.PINS["assets/tracks.json"], graph=scope, observation_rows=rows)
 
 
 def paired_rows(stock, candidate, plan):
@@ -201,10 +247,16 @@ if __name__ == "__main__":
     parser.add_argument("export", type=Path)
     command = parser.add_subparsers(dest="action", required=True)
     command.add_parser("predict").add_argument("cohort", choices=COHORTS)
+    command.add_parser("development-graph-handoff")
     sc = command.add_parser("score")
     sc.add_argument("prediction", type=Path)
     sc.add_argument("sha256")
     args = parser.parse_args()
-    sys.addaudithook(lambda event, values: saved_only(event, values, prediction=args.action == "predict"))
-    output = predict(args.export, args.cohort) if args.action == "predict" else score(args.export, args.prediction, args.sha256)
+    sys.addaudithook(lambda event, values: saved_only(event, values, prediction=args.action != "score"))
+    if args.action == "predict":
+        output = predict(args.export, args.cohort)
+    elif args.action == "development-graph-handoff":
+        output = development_graph_handoff(args.export)
+    else:
+        output = score(args.export, args.prediction, args.sha256)
     print(json.dumps(output, sort_keys=True, separators=(",", ":"), allow_nan=False))
