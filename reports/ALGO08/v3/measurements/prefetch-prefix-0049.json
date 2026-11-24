@@ -1,0 +1,915 @@
+{
+  "case": "DS30-0049",
+  "initial_invalid_control": {
+    "clock": {
+      "after": {
+        "bytes": 469531245,
+        "cached_pages": 114640,
+        "members": 13,
+        "observed_file_pages": 114640,
+        "observed_members": 13,
+        "unavailable": {}
+      },
+      "before": {
+        "bytes": 469531245,
+        "cached_pages": 114640,
+        "members": 13,
+        "observed_file_pages": 114640,
+        "observed_members": 13,
+        "unavailable": {}
+      },
+      "clock": {
+        "cpu_s": 2.6042799999999997,
+        "elapsed_s": 2.6650756541639566,
+        "exit_code": 0,
+        "input_blocks": 7264,
+        "involuntary_switches": 44,
+        "major_faults": 23,
+        "minor_faults": 137349,
+        "output_blocks": 0,
+        "started_unix_ns": 1795547798095952838,
+        "stderr_tail": "",
+        "system_cpu_s": 0.8817619999999999,
+        "user_cpu_s": 1.722518,
+        "voluntary_switches": 93
+      },
+      "command": [
+        "/usr/bin/timeout",
+        "-k",
+        "1s",
+        "7s",
+        "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+        "-IB",
+        "/srv/postgres-nvme/leo-ds30-research-worktrees/prefetch-prefix-0049/reports/ALGO08/v3/prefetch_prefix_0049.py",
+        "child",
+        "/tmp/leo-v3-prefetch-prefix-0049-forward-01/ordinary-first",
+        "--binding",
+        "/tmp/leo-v3-prefetch-prefix-0049-forward-01/binding.json",
+        "--binding-sha256",
+        "6af42d8e04a59879dffdc248de31748e37416bc78dbb76e3d38bcdc409541720",
+        "--role",
+        "ordinary-first"
+      ],
+      "lease_deferral": {
+        "age_s": 1.698766394,
+        "body": {
+          "io": {
+            "/srv/bulk": {
+              "at": 6229027.515450628,
+              "full_avg10": 1.01,
+              "full_total_us": 228196602029,
+              "in_flight": 0,
+              "read_sectors": 416273682264,
+              "weighted_ms": 3355086761,
+              "written_sectors": 206927098296
+            },
+            "/srv/postgres-nvme": {
+              "at": 6229027.515513236,
+              "full_avg10": 1.01,
+              "full_total_us": 228196602029,
+              "in_flight": 0,
+              "read_sectors": 103138848930,
+              "weighted_ms": 3890048832,
+              "written_sectors": 182216675856
+            }
+          },
+          "state": "deferred_storage_busy"
+        },
+        "case": "DS30-0010",
+        "event": "01795547796395251779-90c63a74abd04812b3eaa5169d859848.json",
+        "sha256": "e6dd2fe4dbeec37a0f0b099d04bc2959fd723611965de6b7c822a9b3a2a33671"
+      }
+    },
+    "clock_sha256": "6292fc457e9725d317851196f6b6ac2a4dcea8d6d7a15ed8499b9bd51b1e913f",
+    "prefetch": {
+      "enabled": false,
+      "prefetch": {
+        "demand_wait_ns": 0,
+        "fallback": 0,
+        "hit_bytes": 0,
+        "hits": 0,
+        "submitted": 0,
+        "submitted_bytes": 0,
+        "worker_cpu_ns": 0
+      },
+      "slots": []
+    },
+    "prefetch_sha256": "0b97f61427634f0c6041e394572ee7273a6064e0d315854cfb89513523a9e80c",
+    "reason": "Ordinary prefix subclass bypassed the installed lookahead wrapper. The compare gate barred the slot child and does not use this timing."
+  },
+  "next_official_events": [
+    {
+      "case": "DS30-0010",
+      "event": "01795547924628288256-7e5dd21aeb764b29b667995d4c52cd0a.json",
+      "sha256": "7c15088c6eb7d1acc9c8e26e5cdc529d6da7c58c44a009b895377997abb81a7c",
+      "state": "deferred_storage_busy"
+    },
+    {
+      "case": "DS30-0010",
+      "event": "01795547956689944517-b103a7a33a6945718ed3b5e3dd1a71a1.json",
+      "sha256": "85171381bd35fce16e273e50b669c92faa3f1ffea45df9069a9039688e0bb975",
+      "state": "deferred_storage_busy"
+    }
+  ],
+  "recorded_ns": 1795548010544740560,
+  "trials": {
+    "forward": {
+      "clocks": [
+        {
+          "after": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "before": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "clock": {
+            "cpu_s": 2.7122010000000003,
+            "elapsed_s": 2.7754663387313485,
+            "exit_code": 0,
+            "input_blocks": 8912,
+            "involuntary_switches": 371,
+            "major_faults": 28,
+            "minor_faults": 136459,
+            "output_blocks": 0,
+            "started_unix_ns": 1795547894189118000,
+            "stderr_tail": "",
+            "system_cpu_s": 0.974559,
+            "user_cpu_s": 1.7376420000000001,
+            "voluntary_switches": 201
+          },
+          "command": [
+            "/usr/bin/timeout",
+            "-k",
+            "1s",
+            "7s",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+            "-IB",
+            "/srv/postgres-nvme/leo-ds30-research-worktrees/prefetch-prefix-0049/reports/ALGO08/v3/prefetch_prefix_0049.py",
+            "child",
+            "/tmp/leo-v3-prefetch-prefix-0049-forward-02/ordinary-first",
+            "--binding",
+            "/tmp/leo-v3-prefetch-prefix-0049-forward-02/binding.json",
+            "--binding-sha256",
+            "2c2591570e5ade4e3e91aea550dc49a342e14afe59496494ee3e9f7a2118980b",
+            "--role",
+            "ordinary-first"
+          ],
+          "lease_deferral": {
+            "age_s": 1.646758839,
+            "body": {
+              "io": {
+                "/srv/bulk": {
+                  "at": 6229123.660434591,
+                  "full_avg10": 0.52,
+                  "full_total_us": 228197478052,
+                  "in_flight": 0,
+                  "read_sectors": 416302122272,
+                  "weighted_ms": 3355492892,
+                  "written_sectors": 206927135392
+                },
+                "/srv/postgres-nvme": {
+                  "at": 6229123.660493325,
+                  "full_avg10": 0.52,
+                  "full_total_us": 228197478052,
+                  "in_flight": 0,
+                  "read_sectors": 103138855858,
+                  "weighted_ms": 3890050822,
+                  "written_sectors": 182216686712
+                }
+              },
+              "state": "deferred_storage_busy"
+            },
+            "case": "DS30-0010",
+            "event": "01795547892540228561-ab05a576420c4d67a942303c4eab3f37.json",
+            "sha256": "9edde24fbcae358de285045babf75482beafd9230a11e619ea4e6a64aec87140"
+          },
+          "role": "ordinary-first",
+          "sha256": "ac428b7675af35b6f0b46811dd1e5c0b20cc722b161f5235284a34505d609481"
+        },
+        {
+          "after": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "before": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "clock": {
+            "cpu_s": 2.256945,
+            "elapsed_s": 2.2583172991871834,
+            "exit_code": 0,
+            "input_blocks": 0,
+            "involuntary_switches": 193,
+            "major_faults": 0,
+            "minor_faults": 75340,
+            "output_blocks": 0,
+            "started_unix_ns": 1795547896970516977,
+            "stderr_tail": "",
+            "system_cpu_s": 0.5512969999999999,
+            "user_cpu_s": 1.705648,
+            "voluntary_switches": 76
+          },
+          "command": [
+            "/usr/bin/timeout",
+            "-k",
+            "1s",
+            "7s",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+            "-IB",
+            "/srv/postgres-nvme/leo-ds30-research-worktrees/prefetch-prefix-0049/reports/ALGO08/v3/prefetch_prefix_0049.py",
+            "child",
+            "/tmp/leo-v3-prefetch-prefix-0049-forward-02/slots-second",
+            "--binding",
+            "/tmp/leo-v3-prefetch-prefix-0049-forward-02/binding.json",
+            "--binding-sha256",
+            "2c2591570e5ade4e3e91aea550dc49a342e14afe59496494ee3e9f7a2118980b",
+            "--role",
+            "slots-second"
+          ],
+          "lease_deferral": {
+            "age_s": 1.646758839,
+            "body": {
+              "io": {
+                "/srv/bulk": {
+                  "at": 6229123.660434591,
+                  "full_avg10": 0.52,
+                  "full_total_us": 228197478052,
+                  "in_flight": 0,
+                  "read_sectors": 416302122272,
+                  "weighted_ms": 3355492892,
+                  "written_sectors": 206927135392
+                },
+                "/srv/postgres-nvme": {
+                  "at": 6229123.660493325,
+                  "full_avg10": 0.52,
+                  "full_total_us": 228197478052,
+                  "in_flight": 0,
+                  "read_sectors": 103138855858,
+                  "weighted_ms": 3890050822,
+                  "written_sectors": 182216686712
+                }
+              },
+              "state": "deferred_storage_busy"
+            },
+            "case": "DS30-0010",
+            "event": "01795547892540228561-ab05a576420c4d67a942303c4eab3f37.json",
+            "sha256": "9edde24fbcae358de285045babf75482beafd9230a11e619ea4e6a64aec87140"
+          },
+          "role": "slots-second",
+          "sha256": "e13d6db81fdfe9f6825b04e5d0bbc8e99a2103e2ee685af8b2f950ddd71aa1cc"
+        }
+      ],
+      "result": {
+        "arms": {
+          "ordinary-first": {
+            "clock": {
+              "cpu_s": 2.7122010000000003,
+              "elapsed_s": 2.7754663387313485,
+              "exit_code": 0,
+              "input_blocks": 8912,
+              "involuntary_switches": 371,
+              "major_faults": 28,
+              "minor_faults": 136459,
+              "output_blocks": 0,
+              "started_unix_ns": 1795547894189118000,
+              "stderr_tail": "",
+              "system_cpu_s": 0.974559,
+              "user_cpu_s": 1.7376420000000001,
+              "voluntary_switches": 201
+            },
+            "decode_cost": {
+              "hash_cpu_ns": 160628806,
+              "hash_wall_ns": 160606478,
+              "native_read_cpu_ns": 549459458,
+              "native_read_wall_ns": 552599287
+            },
+            "detector_seconds": 2.725062445,
+            "exclusions": 22,
+            "full_lanes": 92,
+            "member_hashes": [
+              [
+                "sha256:b4e40587d7893896f5921cc637bc04edea73b29e22c14dd9d970f78407033b65",
+                "sha256:ddb5509ce16f3a3ba875d62f9da3fdbbe94d56cf623b9f3e3d5d0810361efe64",
+                "sha256:b982854294708531e99c9159670ab99870eb17a88e6b4d529557060765a0b90f",
+                77994641,
+                64
+              ],
+              [
+                "sha256:30d57b4177734399e52ec49ca1a7965ecf5c0d616a888ad7f824f82122d44574",
+                "sha256:50c0ec332dcf6cfd9d45c8fb7c45d5fd0898f02571c771385e7d4d8d2e8fc516",
+                "sha256:08e7ec17274e9e33550c3fb13c3f82d720dcab76bd0f8da82ea018e5d81b0f10",
+                78260684,
+                64
+              ],
+              [
+                "sha256:09212b85036ee8618f7ee4de8dbe6828a739f574d0325ba04b9081417c49b43b",
+                "sha256:d617ae9ecbeb41f14445eeef7e477446cc3c928aebab051bae5a6d2031e993e4",
+                "sha256:9773e8004605ff3658bf3c9e473187ef99844cb9241a21a481f97ffdd4ecc3fc",
+                77972943,
+                64
+              ],
+              [
+                "sha256:8f22609abb18792db5a65b81ccc8e0fad6f32b29263845cce615740be6a9ba5d",
+                "sha256:5e3966c8a1a84dc8c0d642470352ca48da57e0cb5a66be65d25907e25605f5f7",
+                "sha256:be9b5794a18f3573ff542a0aa33bf3399cc42d06e9f4627f556dded4c585c463",
+                78139967,
+                64
+              ],
+              [
+                "sha256:cf6d1c311ed89e2677b5e3d32d86e8b8d48d7a2eeeb3bba16134de33efc42d2a",
+                "sha256:08a55bd65c6de6a969c682afbbf5a26c5145b0e2e8b38dfcacf10ebac7f429f5",
+                "sha256:037112db878b75ca79b4b94788dbf7285dc81a26032f7118595b15455a2b64eb",
+                78080428,
+                64
+              ],
+              [
+                "sha256:b223e580257fc1460c493a9a332d55fd1361b0905ac1803d37143a9e06f5f4db",
+                "sha256:9bbc7c1395f1409fdcace4250ffcf53fa05630b7c766890a6ba4fc6147f3c5a1",
+                "sha256:70c07068b88a35c9ad6cee484f379a2d117a2eb28fcc8651310b8b4c6af491f6",
+                78037834,
+                64
+              ]
+            ],
+            "native_sha256": "65490bced4eeff0e1af1c562c2eb42406ca38c9dcffa6b084fe1c3101c016395",
+            "prefetch": {
+              "demand_wait_ns": 35340,
+              "fallback": 0,
+              "hit_bytes": 390491856,
+              "hits": 5,
+              "submitted": 5,
+              "submitted_bytes": 390491856,
+              "worker_cpu_ns": 680143710
+            },
+            "prefix_raw_authority": "sha256:d51225fa37b16d4a845e0b7cffcea637609a540da7eda8c10266a8cd5d76cd3e",
+            "probes": 724,
+            "process_auth_blocks": 0,
+            "receiver": {
+              "cpu_ns": 2259906533,
+              "wall_ns": 2266227649
+            },
+            "short_lanes": 632,
+            "slots": []
+          },
+          "slots-second": {
+            "clock": {
+              "cpu_s": 2.256945,
+              "elapsed_s": 2.2583172991871834,
+              "exit_code": 0,
+              "input_blocks": 0,
+              "involuntary_switches": 193,
+              "major_faults": 0,
+              "minor_faults": 75340,
+              "output_blocks": 0,
+              "started_unix_ns": 1795547896970516977,
+              "stderr_tail": "",
+              "system_cpu_s": 0.5512969999999999,
+              "user_cpu_s": 1.705648,
+              "voluntary_switches": 76
+            },
+            "decode_cost": {
+              "hash_cpu_ns": 149613893,
+              "hash_wall_ns": 149601283,
+              "native_read_cpu_ns": 376198885,
+              "native_read_wall_ns": 376182076
+            },
+            "detector_seconds": 2.211181027,
+            "exclusions": 22,
+            "full_lanes": 92,
+            "member_hashes": [
+              [
+                "sha256:b4e40587d7893896f5921cc637bc04edea73b29e22c14dd9d970f78407033b65",
+                "sha256:ddb5509ce16f3a3ba875d62f9da3fdbbe94d56cf623b9f3e3d5d0810361efe64",
+                "sha256:b982854294708531e99c9159670ab99870eb17a88e6b4d529557060765a0b90f",
+                77994641,
+                64
+              ],
+              [
+                "sha256:30d57b4177734399e52ec49ca1a7965ecf5c0d616a888ad7f824f82122d44574",
+                "sha256:50c0ec332dcf6cfd9d45c8fb7c45d5fd0898f02571c771385e7d4d8d2e8fc516",
+                "sha256:08e7ec17274e9e33550c3fb13c3f82d720dcab76bd0f8da82ea018e5d81b0f10",
+                78260684,
+                64
+              ],
+              [
+                "sha256:09212b85036ee8618f7ee4de8dbe6828a739f574d0325ba04b9081417c49b43b",
+                "sha256:d617ae9ecbeb41f14445eeef7e477446cc3c928aebab051bae5a6d2031e993e4",
+                "sha256:9773e8004605ff3658bf3c9e473187ef99844cb9241a21a481f97ffdd4ecc3fc",
+                77972943,
+                64
+              ],
+              [
+                "sha256:8f22609abb18792db5a65b81ccc8e0fad6f32b29263845cce615740be6a9ba5d",
+                "sha256:5e3966c8a1a84dc8c0d642470352ca48da57e0cb5a66be65d25907e25605f5f7",
+                "sha256:be9b5794a18f3573ff542a0aa33bf3399cc42d06e9f4627f556dded4c585c463",
+                78139967,
+                64
+              ],
+              [
+                "sha256:cf6d1c311ed89e2677b5e3d32d86e8b8d48d7a2eeeb3bba16134de33efc42d2a",
+                "sha256:08a55bd65c6de6a969c682afbbf5a26c5145b0e2e8b38dfcacf10ebac7f429f5",
+                "sha256:037112db878b75ca79b4b94788dbf7285dc81a26032f7118595b15455a2b64eb",
+                78080428,
+                64
+              ],
+              [
+                "sha256:b223e580257fc1460c493a9a332d55fd1361b0905ac1803d37143a9e06f5f4db",
+                "sha256:9bbc7c1395f1409fdcace4250ffcf53fa05630b7c766890a6ba4fc6147f3c5a1",
+                "sha256:70c07068b88a35c9ad6cee484f379a2d117a2eb28fcc8651310b8b4c6af491f6",
+                78037834,
+                64
+              ]
+            ],
+            "native_sha256": "65490bced4eeff0e1af1c562c2eb42406ca38c9dcffa6b084fe1c3101c016395",
+            "prefetch": {
+              "demand_wait_ns": 27172,
+              "fallback": 0,
+              "hit_bytes": 390491856,
+              "hits": 5,
+              "submitted": 5,
+              "submitted_bytes": 390491856,
+              "worker_cpu_ns": 203264908
+            },
+            "prefix_raw_authority": "sha256:d51225fa37b16d4a845e0b7cffcea637609a540da7eda8c10266a8cd5d76cd3e",
+            "probes": 724,
+            "process_auth_blocks": 0,
+            "receiver": {
+              "cpu_ns": 1806869603,
+              "wall_ns": 1806926412
+            },
+            "short_lanes": 632,
+            "slots": [
+              {
+                "allocations": 1,
+                "peak_bytes": 78260684,
+                "reuses": 2
+              },
+              {
+                "allocations": 2,
+                "peak_bytes": 78080428
+              }
+            ]
+          }
+        },
+        "binding_sha256": "2c2591570e5ade4e3e91aea550dc49a342e14afe59496494ee3e9f7a2118980b",
+        "cache_at_start": {
+          "bytes": 469531245,
+          "cached_pages": 114640,
+          "members": 13,
+          "observed_file_pages": 114640,
+          "observed_members": 13,
+          "unavailable": {}
+        },
+        "case": "DS30-0049",
+        "machine": {
+          "cpu": [
+            2
+          ],
+          "ionice": "best-effort: prio 7",
+          "nice": 15,
+          "threads": {
+            "BLIS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1"
+          }
+        },
+        "order": [
+          "ordinary-first",
+          "slots-second"
+        ],
+        "source_pins": {
+          "original_prefix_scaling.py": "1712b39864c5f962788395a89150d373e0544f33f8198e4ed02029029808fa70",
+          "prefetch-prefix-0049-protocol.md": "2ab94a3a869580def304ea5844a19cd929956211919498f5aa97a4743289bf1d",
+          "prefetch_prefix_0049.py": "01332a9bacf60d68a5987c21bd60dac5050dbb107e5e6eae75d7043d9828de5b"
+        },
+        "waveform_bytes": 468486497,
+        "windows": 384
+      },
+      "result_sha256": "f3a264fe07cd3e7a08e36178ae89d152f56b4b3c1ddd5971f621fa2bb898b23b"
+    },
+    "reverse": {
+      "clocks": [
+        {
+          "after": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "before": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "clock": {
+            "cpu_s": 2.333288,
+            "elapsed_s": 2.423563441261649,
+            "exit_code": 0,
+            "input_blocks": 10144,
+            "involuntary_switches": 344,
+            "major_faults": 47,
+            "minor_faults": 85584,
+            "output_blocks": 0,
+            "started_unix_ns": 1795547926579647843,
+            "stderr_tail": "",
+            "system_cpu_s": 0.611396,
+            "user_cpu_s": 1.7218919999999998,
+            "voluntary_switches": 279
+          },
+          "command": [
+            "/usr/bin/timeout",
+            "-k",
+            "1s",
+            "7s",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+            "-IB",
+            "/srv/postgres-nvme/leo-ds30-research-worktrees/prefetch-prefix-0049/reports/ALGO08/v3/prefetch_prefix_0049.py",
+            "child",
+            "/tmp/leo-v3-prefetch-prefix-0049-reverse-02/slots-first",
+            "--binding",
+            "/tmp/leo-v3-prefetch-prefix-0049-reverse-02/binding.json",
+            "--binding-sha256",
+            "5f31d455ffb9face87b4e885f133e3e25605a2eb2c8548eb87b65e2305af91c4",
+            "--role",
+            "slots-first"
+          ],
+          "lease_deferral": {
+            "age_s": 1.949238808,
+            "body": {
+              "io": {
+                "/srv/bulk": {
+                  "at": 6229155.748499427,
+                  "full_avg10": 0.12,
+                  "full_total_us": 228197733131,
+                  "in_flight": 45,
+                  "read_sectors": 416310324488,
+                  "weighted_ms": 3355622117,
+                  "written_sectors": 206927149808
+                },
+                "/srv/postgres-nvme": {
+                  "at": 6229155.748555357,
+                  "full_avg10": 0.12,
+                  "full_total_us": 228197733131,
+                  "in_flight": 4,
+                  "read_sectors": 103138865562,
+                  "weighted_ms": 3890051411,
+                  "written_sectors": 182216698648
+                }
+              },
+              "state": "deferred_storage_busy"
+            },
+            "case": "DS30-0010",
+            "event": "01795547924628288256-7e5dd21aeb764b29b667995d4c52cd0a.json",
+            "sha256": "7c15088c6eb7d1acc9c8e26e5cdc529d6da7c58c44a009b895377997abb81a7c"
+          },
+          "role": "slots-first",
+          "sha256": "09b54bf8e6fc5c418ab3a4ab85c1d1f9614e5f7672170e025c2543a37adf3109"
+        },
+        {
+          "after": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "before": {
+            "bytes": 469531245,
+            "cached_pages": 114640,
+            "members": 13,
+            "observed_file_pages": 114640,
+            "observed_members": 13,
+            "unavailable": {}
+          },
+          "clock": {
+            "cpu_s": 2.3883410000000005,
+            "elapsed_s": 2.3917904598638415,
+            "exit_code": 0,
+            "input_blocks": 0,
+            "involuntary_switches": 317,
+            "major_faults": 0,
+            "minor_faults": 69526,
+            "output_blocks": 0,
+            "started_unix_ns": 1795547929008970197,
+            "stderr_tail": "",
+            "system_cpu_s": 0.6167210000000001,
+            "user_cpu_s": 1.7716200000000002,
+            "voluntary_switches": 77
+          },
+          "command": [
+            "/usr/bin/timeout",
+            "-k",
+            "1s",
+            "7s",
+            "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+            "-IB",
+            "/srv/postgres-nvme/leo-ds30-research-worktrees/prefetch-prefix-0049/reports/ALGO08/v3/prefetch_prefix_0049.py",
+            "child",
+            "/tmp/leo-v3-prefetch-prefix-0049-reverse-02/ordinary-second",
+            "--binding",
+            "/tmp/leo-v3-prefetch-prefix-0049-reverse-02/binding.json",
+            "--binding-sha256",
+            "5f31d455ffb9face87b4e885f133e3e25605a2eb2c8548eb87b65e2305af91c4",
+            "--role",
+            "ordinary-second"
+          ],
+          "lease_deferral": {
+            "age_s": 1.949238808,
+            "body": {
+              "io": {
+                "/srv/bulk": {
+                  "at": 6229155.748499427,
+                  "full_avg10": 0.12,
+                  "full_total_us": 228197733131,
+                  "in_flight": 45,
+                  "read_sectors": 416310324488,
+                  "weighted_ms": 3355622117,
+                  "written_sectors": 206927149808
+                },
+                "/srv/postgres-nvme": {
+                  "at": 6229155.748555357,
+                  "full_avg10": 0.12,
+                  "full_total_us": 228197733131,
+                  "in_flight": 4,
+                  "read_sectors": 103138865562,
+                  "weighted_ms": 3890051411,
+                  "written_sectors": 182216698648
+                }
+              },
+              "state": "deferred_storage_busy"
+            },
+            "case": "DS30-0010",
+            "event": "01795547924628288256-7e5dd21aeb764b29b667995d4c52cd0a.json",
+            "sha256": "7c15088c6eb7d1acc9c8e26e5cdc529d6da7c58c44a009b895377997abb81a7c"
+          },
+          "role": "ordinary-second",
+          "sha256": "d0371102939f32b2e2edec5777fc16630dcabb1b4bd8717a156b2b28ca5d8611"
+        }
+      ],
+      "result": {
+        "arms": {
+          "ordinary-second": {
+            "clock": {
+              "cpu_s": 2.3883410000000005,
+              "elapsed_s": 2.3917904598638415,
+              "exit_code": 0,
+              "input_blocks": 0,
+              "involuntary_switches": 317,
+              "major_faults": 0,
+              "minor_faults": 69526,
+              "output_blocks": 0,
+              "started_unix_ns": 1795547929008970197,
+              "stderr_tail": "",
+              "system_cpu_s": 0.6167210000000001,
+              "user_cpu_s": 1.7716200000000002,
+              "voluntary_switches": 77
+            },
+            "decode_cost": {
+              "hash_cpu_ns": 157344976,
+              "hash_wall_ns": 157331090,
+              "native_read_cpu_ns": 438570506,
+              "native_read_wall_ns": 438533554
+            },
+            "detector_seconds": 2.318943099,
+            "exclusions": 22,
+            "full_lanes": 92,
+            "member_hashes": [
+              [
+                "sha256:b4e40587d7893896f5921cc637bc04edea73b29e22c14dd9d970f78407033b65",
+                "sha256:ddb5509ce16f3a3ba875d62f9da3fdbbe94d56cf623b9f3e3d5d0810361efe64",
+                "sha256:b982854294708531e99c9159670ab99870eb17a88e6b4d529557060765a0b90f",
+                77994641,
+                64
+              ],
+              [
+                "sha256:30d57b4177734399e52ec49ca1a7965ecf5c0d616a888ad7f824f82122d44574",
+                "sha256:50c0ec332dcf6cfd9d45c8fb7c45d5fd0898f02571c771385e7d4d8d2e8fc516",
+                "sha256:08e7ec17274e9e33550c3fb13c3f82d720dcab76bd0f8da82ea018e5d81b0f10",
+                78260684,
+                64
+              ],
+              [
+                "sha256:09212b85036ee8618f7ee4de8dbe6828a739f574d0325ba04b9081417c49b43b",
+                "sha256:d617ae9ecbeb41f14445eeef7e477446cc3c928aebab051bae5a6d2031e993e4",
+                "sha256:9773e8004605ff3658bf3c9e473187ef99844cb9241a21a481f97ffdd4ecc3fc",
+                77972943,
+                64
+              ],
+              [
+                "sha256:8f22609abb18792db5a65b81ccc8e0fad6f32b29263845cce615740be6a9ba5d",
+                "sha256:5e3966c8a1a84dc8c0d642470352ca48da57e0cb5a66be65d25907e25605f5f7",
+                "sha256:be9b5794a18f3573ff542a0aa33bf3399cc42d06e9f4627f556dded4c585c463",
+                78139967,
+                64
+              ],
+              [
+                "sha256:cf6d1c311ed89e2677b5e3d32d86e8b8d48d7a2eeeb3bba16134de33efc42d2a",
+                "sha256:08a55bd65c6de6a969c682afbbf5a26c5145b0e2e8b38dfcacf10ebac7f429f5",
+                "sha256:037112db878b75ca79b4b94788dbf7285dc81a26032f7118595b15455a2b64eb",
+                78080428,
+                64
+              ],
+              [
+                "sha256:b223e580257fc1460c493a9a332d55fd1361b0905ac1803d37143a9e06f5f4db",
+                "sha256:9bbc7c1395f1409fdcace4250ffcf53fa05630b7c766890a6ba4fc6147f3c5a1",
+                "sha256:70c07068b88a35c9ad6cee484f379a2d117a2eb28fcc8651310b8b4c6af491f6",
+                78037834,
+                64
+              ]
+            ],
+            "native_sha256": "65490bced4eeff0e1af1c562c2eb42406ca38c9dcffa6b084fe1c3101c016395",
+            "prefetch": {
+              "demand_wait_ns": 5639567,
+              "fallback": 0,
+              "hit_bytes": 390491856,
+              "hits": 5,
+              "submitted": 5,
+              "submitted_bytes": 390491856,
+              "worker_cpu_ns": 519410298
+            },
+            "prefix_raw_authority": "sha256:d51225fa37b16d4a845e0b7cffcea637609a540da7eda8c10266a8cd5d76cd3e",
+            "probes": 724,
+            "process_auth_blocks": 0,
+            "receiver": {
+              "cpu_ns": 1916053363,
+              "wall_ns": 1916140698
+            },
+            "short_lanes": 632,
+            "slots": []
+          },
+          "slots-first": {
+            "clock": {
+              "cpu_s": 2.333288,
+              "elapsed_s": 2.423563441261649,
+              "exit_code": 0,
+              "input_blocks": 10144,
+              "involuntary_switches": 344,
+              "major_faults": 47,
+              "minor_faults": 85584,
+              "output_blocks": 0,
+              "started_unix_ns": 1795547926579647843,
+              "stderr_tail": "",
+              "system_cpu_s": 0.611396,
+              "user_cpu_s": 1.7218919999999998,
+              "voluntary_switches": 279
+            },
+            "decode_cost": {
+              "hash_cpu_ns": 169382760,
+              "hash_wall_ns": 166378255,
+              "native_read_cpu_ns": 432046908,
+              "native_read_wall_ns": 432739974
+            },
+            "detector_seconds": 2.368513871,
+            "exclusions": 22,
+            "full_lanes": 92,
+            "member_hashes": [
+              [
+                "sha256:b4e40587d7893896f5921cc637bc04edea73b29e22c14dd9d970f78407033b65",
+                "sha256:ddb5509ce16f3a3ba875d62f9da3fdbbe94d56cf623b9f3e3d5d0810361efe64",
+                "sha256:b982854294708531e99c9159670ab99870eb17a88e6b4d529557060765a0b90f",
+                77994641,
+                64
+              ],
+              [
+                "sha256:30d57b4177734399e52ec49ca1a7965ecf5c0d616a888ad7f824f82122d44574",
+                "sha256:50c0ec332dcf6cfd9d45c8fb7c45d5fd0898f02571c771385e7d4d8d2e8fc516",
+                "sha256:08e7ec17274e9e33550c3fb13c3f82d720dcab76bd0f8da82ea018e5d81b0f10",
+                78260684,
+                64
+              ],
+              [
+                "sha256:09212b85036ee8618f7ee4de8dbe6828a739f574d0325ba04b9081417c49b43b",
+                "sha256:d617ae9ecbeb41f14445eeef7e477446cc3c928aebab051bae5a6d2031e993e4",
+                "sha256:9773e8004605ff3658bf3c9e473187ef99844cb9241a21a481f97ffdd4ecc3fc",
+                77972943,
+                64
+              ],
+              [
+                "sha256:8f22609abb18792db5a65b81ccc8e0fad6f32b29263845cce615740be6a9ba5d",
+                "sha256:5e3966c8a1a84dc8c0d642470352ca48da57e0cb5a66be65d25907e25605f5f7",
+                "sha256:be9b5794a18f3573ff542a0aa33bf3399cc42d06e9f4627f556dded4c585c463",
+                78139967,
+                64
+              ],
+              [
+                "sha256:cf6d1c311ed89e2677b5e3d32d86e8b8d48d7a2eeeb3bba16134de33efc42d2a",
+                "sha256:08a55bd65c6de6a969c682afbbf5a26c5145b0e2e8b38dfcacf10ebac7f429f5",
+                "sha256:037112db878b75ca79b4b94788dbf7285dc81a26032f7118595b15455a2b64eb",
+                78080428,
+                64
+              ],
+              [
+                "sha256:b223e580257fc1460c493a9a332d55fd1361b0905ac1803d37143a9e06f5f4db",
+                "sha256:9bbc7c1395f1409fdcace4250ffcf53fa05630b7c766890a6ba4fc6147f3c5a1",
+                "sha256:70c07068b88a35c9ad6cee484f379a2d117a2eb28fcc8651310b8b4c6af491f6",
+                78037834,
+                64
+              ]
+            ],
+            "native_sha256": "65490bced4eeff0e1af1c562c2eb42406ca38c9dcffa6b084fe1c3101c016395",
+            "prefetch": {
+              "demand_wait_ns": 29476,
+              "fallback": 0,
+              "hit_bytes": 390491856,
+              "hits": 5,
+              "submitted": 5,
+              "submitted_bytes": 390491856,
+              "worker_cpu_ns": 442108267
+            },
+            "prefix_raw_authority": "sha256:d51225fa37b16d4a845e0b7cffcea637609a540da7eda8c10266a8cd5d76cd3e",
+            "probes": 724,
+            "process_auth_blocks": 0,
+            "receiver": {
+              "cpu_ns": 1865291550,
+              "wall_ns": 1870148668
+            },
+            "short_lanes": 632,
+            "slots": [
+              {
+                "allocations": 1,
+                "peak_bytes": 78260684,
+                "reuses": 2
+              },
+              {
+                "allocations": 2,
+                "peak_bytes": 78080428
+              }
+            ]
+          }
+        },
+        "binding_sha256": "5f31d455ffb9face87b4e885f133e3e25605a2eb2c8548eb87b65e2305af91c4",
+        "cache_at_start": {
+          "bytes": 469531245,
+          "cached_pages": 114640,
+          "members": 13,
+          "observed_file_pages": 114640,
+          "observed_members": 13,
+          "unavailable": {}
+        },
+        "case": "DS30-0049",
+        "machine": {
+          "cpu": [
+            2
+          ],
+          "ionice": "best-effort: prio 7",
+          "nice": 15,
+          "threads": {
+            "BLIS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1"
+          }
+        },
+        "order": [
+          "slots-first",
+          "ordinary-second"
+        ],
+        "source_pins": {
+          "original_prefix_scaling.py": "1712b39864c5f962788395a89150d373e0544f33f8198e4ed02029029808fa70",
+          "prefetch-prefix-0049-protocol.md": "2ab94a3a869580def304ea5844a19cd929956211919498f5aa97a4743289bf1d",
+          "prefetch_prefix_0049.py": "01332a9bacf60d68a5987c21bd60dac5050dbb107e5e6eae75d7043d9828de5b"
+        },
+        "waveform_bytes": 468486497,
+        "windows": 384
+      },
+      "result_sha256": "452d87f10465ce09d576a87e9a8b8414205e24e33c0bbe396678c659123a71d4"
+    }
+  },
+  "verified_prefix": {
+    "admitted": 362,
+    "detector_sha256": "65490bced4eeff0e1af1c562c2eb42406ca38c9dcffa6b084fe1c3101c016395",
+    "excluded": 22,
+    "factors": 238,
+    "issued": 384,
+    "members": 6,
+    "native_lanes": 724,
+    "raw_authority": "sha256:d51225fa37b16d4a845e0b7cffcea637609a540da7eda8c10266a8cd5d76cd3e"
+  }
+}
