@@ -118,7 +118,7 @@ def nominate(tracks, sky, center):
     return result
 
 
-def gate(case, config):
+def gate(case, config, retained=None):
     from aperture_trial import archive_identity
 
     from leo.analysis.localization_v3.tracks import prepare_tracks
@@ -157,6 +157,9 @@ def gate(case, config):
     start = clock()
     nominated = nominate(tracks, sky, center)
     clocks["nomination"] = spent(start)
+    if retained is not None:
+        retained.update(train=train, held_schedule=[{key: row[key] for key in NOMINAL} for row in held],
+                        tracks=tracks, sky=sky, reader=reader, parser=parser)
     return dict(case=case, packet=pin, archive=req["archive"], receiver=receiver, rf=rf,
                 center=center, population=population, catalogue=sky["metadata"], parser=parser.stats,
                 nominations=nominated, clocks=clocks, total=spent(when))
