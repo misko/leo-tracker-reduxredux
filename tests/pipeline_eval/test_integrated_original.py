@@ -53,3 +53,13 @@ def test_tiny_admission_uses_frozen_near_target_cutoff():
     assert not trial.allowed_tiny(positive(1.5679), process)
     assert not trial.allowed_tiny(positive(1.600, qualified=False), process)
     assert not trial.allowed_tiny(positive(1.600), {"exit_code": 1})
+
+
+def test_offline_media_review_preserves_hashes_and_json_sizes():
+    from reports.ALGO08.v3.integrated_original_score import json_value
+
+    recorded = {"position": {"size": (1680, 960), "dpi": (120, 120), "rgba_sha256": "decoded", "sha256": "encoded"}}
+    assert json_value(recorded) == {
+        "position": {"size": [1680, 960], "dpi": [120, 120], "rgba_sha256": "decoded", "sha256": "encoded"},
+    }
+    assert recorded["position"]["size"] == (1680, 960)
