@@ -24,7 +24,7 @@ from signed_cfo_time import epoch
 
 SEEN = {
     "DS30-0049": (2, "7514497ea681194487e8d85aecf2d739e996abf2b90566d446f81fe38875c36b"),
-    "DS30-0452": (1, "ce1d7f639427ea320ddcb877117338cbaeb19b66589cf36551a2a0c3c0ef8e40"),
+    "DS30-0452": (2, "ce1d7f639427ea320ddcb877117338cbaeb19b66589cf36551a2a0c3c0ef8e40"),
     "DS30-0124": (1, "a92a58d7e805380cd4966f6abfd98fb5242204095273f8fe06c755514e81ed3d"),
     "DS30-0170": (1, "dacfb564e47a869a9f15ebc49057d1fee062cb81f2f90da78476ff4dc22103f6"),
 }
@@ -165,19 +165,22 @@ def read_case(campaign, case, enrollment):
     if (pair["state"] != "observed_pair" or not pair["verified_pair"] or not pair["chronological"]
             or pair["actual_order"] != enrollment["order"] or generation is not None and generation != pair["generation"]):
         raise ValueError("Receiver evidence must be from the original verified paired recording")
+    pins = pair["attempt_result_sha256"]
+    originals = attempts(folder, pair)
     if case == "DS30-0452":
         overlay = signed.document(folder/"overlay.json", OVERLAY)
         if overlay["paired_scope"] != pair or overlay["plan_sha256"] != PLAN or overlay["case"] != case:
             raise ValueError("Relocated input was not verified against the original admission")
         checked(folder/"proof.json", overlay["proof_sha256"])
         checked(folder/"native-encoded-auth.json", overlay["encoded_auth_sha256"])
-        for role, directory in attempts(folder, pair).items():
-            if overlay["paired_attempts"][role] != dict(path=str((directory/"result.json").relative_to(campaign)),
-                                                       sha256=pair["attempt_result_sha256"][role]):
+        for role in BUILDS:
+            entry = overlay["paired_attempts"][role]
+            path = campaign/entry["path"]
+            if (path != folder/role/"attempt-000001"/"result.json" or entry["sha256"] != pins[role]):
                 raise ValueError("Relocation overlay binds different attempts")
-    pins = pair["attempt_result_sha256"]
-    installed, pub_i, manifest_i = bind_publication(attempts(folder, pair)["installed"], pins["installed"], "installed", pair)
-    candidate, pub_c, manifest_c = bind_publication(attempts(folder, pair)["successor"], pins["successor"], "successor", pair)
+            originals[role] = path.parent
+    installed, pub_i, manifest_i = bind_publication(originals["installed"], pins["installed"], "installed", pair)
+    candidate, pub_c, manifest_c = bind_publication(originals["successor"], pins["successor"], "successor", pair)
     identity = installed["raw_identity"]
     if identity != candidate["raw_identity"]:
         raise ValueError("Comparison must share exact recording, cutoff, inventory and original offer")
@@ -211,7 +214,8 @@ def read_case(campaign, case, enrollment):
         raise ValueError("Per-observation owner maps must reproduce the public totals")
     data = measure(stock, sparse, rosters)
     return dict(casescope="mechanism" if generation is not None else "prospective", generation=pair["generation"],
-                custody=dict(pair=signed.tag(body), attempts=pins, native={r: a["native_sha256"] for r,a in zip(
+                custody=dict(pair=signed.tag(body), attempts=pins, folders={role: str(path.relative_to(campaign))
+                    for role,path in originals.items()}, native={r: a["native_sha256"] for r,a in zip(
                     BUILDS, (installed, candidate), strict=True)}, owner_sources=owner_pins, raw=identity["raw_authority_sha256"]),
                 issued_visits=identity["window_count"], lanes=data, published_owners=counts, owner_coverage=notes)
 
@@ -268,10 +272,9 @@ def score(output, frozen, pin, campaign=CAMPAIGN):
     enrolled = roster()
     scores = {}
     for case, report in cases.items():
-        folder = case_folder(campaign, case)
         pins = report["custody"]["attempts"]
-        folders = attempts(folder, report)
-        pubs = [signed.document(folders[role]/"result.json", pins[role]) for role in BUILDS]
+        folders = report["custody"]["folders"]
+        pubs = [signed.document(campaign/folders[role]/"result.json", pins[role]) for role in BUILDS]
         scores[case] = outcome(enrolled[case]["reference"], pubs)
     write(output, dict(packet_metrics_sha256=pin, scores=scores, rankings=ranks(cases, scores),
                        raw_reads=0, tle_reads=0, solves=0))
