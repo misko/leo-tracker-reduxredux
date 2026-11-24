@@ -28,6 +28,8 @@ THREADS = ("OMP_NUM_THREADS", "OMP_THREAD_LIMIT", "OPENBLAS_NUM_THREADS", "MKL_N
 PATH_OPTIONS = ("--short-binary", "--geographic-library", "--regional-track-library", "--frontier-block-library")
 SIGNED_OPTIONS = ("--legacy-first-map-history", "--legacy-first-map-fast", "--portable-orbit-index")
 FLAGS = ("--history-risk-route", "--cairo-six-sheets", "--verify-original-once", "--sparse8-primary")
+ENTRY_SOURCES = ("integrated_original_entry.py", "unified_short_bootstrap.py")
+EFFECTIVE_TIME_SOURCES = ("anchor_exposure.py", "sparse8_effective_time.py", "sparse8_time_math.py")
 
 
 def tagged_bytes(body):
@@ -75,7 +77,7 @@ def checked_artifact(entry):
     return path
 
 
-def make_build(charted_admission):
+def make_build(charted_admission, *, sparse8_effective_time=False):
     """Freeze one externally reviewed build once, using the existing chart receipt."""
     from integrated_original_entry import PNG_LIBRARY, PNG_SHA
 
@@ -90,6 +92,13 @@ def make_build(charted_admission):
         native[flag] = dict(path=option(flag), sha256=option(flag + "-sha256"))
     source_pins = dict(charted["sources"])
     source_pins[str(Path(__file__).relative_to(ROOT))] = tagged_bytes(Path(__file__).read_bytes())
+    for name in ENTRY_SOURCES:
+        source = HERE / name
+        source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
+    if sparse8_effective_time:
+        for name in EFFECTIVE_TIME_SOURCES:
+            source = HERE / name
+            source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     return dict(
         schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, charted_admission=CHARTED_ADMISSION,
         sources=source_pins, native=native, png=dict(path=str(PNG_LIBRARY), sha256=PNG_SHA),
@@ -98,7 +107,7 @@ def make_build(charted_admission):
     )
 
 
-def load_build(path, pin):
+def load_build(path, pin, *, sparse8_effective_time=False):
     book = document(path, pin)
     if (book.get("schema") != BUILD_SCHEMA or book.get("charted_commit") != CHARTED_COMMIT
             or book.get("charted_admission") != CHARTED_ADMISSION
@@ -110,6 +119,14 @@ def load_build(path, pin):
         if not source.is_relative_to(ROOT) or source != ROOT / name:
             raise ValueError(f"Source leaves its frozen checkout: {name}")
         checked(source, checksum)
+    if sparse8_effective_time:
+        if any(str((HERE / name).relative_to(ROOT)) not in book["sources"] for name in EFFECTIVE_TIME_SOURCES):
+            raise ValueError("The opt-in source and its arithmetic must be pinned in this build")
+        from empty_bootstrap import RELEASE
+        from sparse8_effective_time import CLOCK_SOURCE_PINS
+
+        for name, checksum in CLOCK_SOURCE_PINS.items():
+            checked(RELEASE / "src/leo/analysis" / name, checksum)
     native = {flag: checked_artifact(entry) for flag, entry in book["native"].items()}
     png = checked_artifact(book["png"])
     producer = checked_artifact(book["portable_producer"])
@@ -258,6 +275,8 @@ def original_argv(args, book, authority):
         if flag in SIGNED_OPTIONS:
             argv.extend((flag + "-sha256", tagged(entry["sha256"])))
     argv.extend(("--portable-orbit-producer-sha256", tagged(book["portable_producer"]["sha256"])[7:]))
+    if getattr(args, "sparse8_effective_time", False):
+        argv.append("--sparse8-effective-time")
     return argv
 
 
@@ -343,6 +362,8 @@ def main(argv=None):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--authority-sha256")
     parser.add_argument("--build-sha256")
+    parser.add_argument("--sparse8-effective-time", action="store_true",
+                        help="Use the separately pinned effective Graph time opt-in")
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--verify", action="store_true")
     actions.add_argument("--preflight", action="store_true")
@@ -353,7 +374,8 @@ def main(argv=None):
     if args.freeze_build_from_chart:
         if args.build is None:
             parser.error("supply --build for the new build manifest")
-        write(args.build, make_build(args.freeze_build_from_chart))
+        write(args.build, make_build(args.freeze_build_from_chart,
+                                    sparse8_effective_time=args.sparse8_effective_time))
         print(tagged_bytes(args.build.read_bytes()))
         return
     if not args.verify and not all((args.recording, args.archive, args.region, args.bulk_root)):
@@ -365,7 +387,8 @@ def main(argv=None):
         return
     if not args.build or not args.build_sha256:
         parser.error("supply the frozen --build and --build-sha256")
-    book, assets, cutoff = load_build(args.build, args.build_sha256)
+    book, assets, cutoff = load_build(args.build, args.build_sha256,
+                                      sparse8_effective_time=args.sparse8_effective_time)
     if args.verify:
         print(json.dumps(dict(schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, build_sha256=args.build_sha256)))
         return
