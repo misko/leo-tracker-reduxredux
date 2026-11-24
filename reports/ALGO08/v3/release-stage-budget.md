@@ -20,6 +20,8 @@ Even making the entire interval after detections instantaneous gives at most **1
 
 ### How much can faster storage contribute?
 
+On the two complete resident originals tested with the revised pipeline, reaching the summed target requires cutting **2.343 s** from the measured 8.464 s to 6.121 s. DS30-0107 withheld before numerical solving. Even erasing the entire **2.179 s** numerical solve on DS30-0016 would give just **1.95×** by summed time. If that solve were twice as fast and everything else stayed fixed, the 3.015 s authenticated acquisition on DS30-0016 would still need to fall to **1.762 s** (1.71× faster). Those are bounds on this measured pair. The much longer originals in the 100-recording release also paid substantial storage waits. [Two original-file workers and full stage clocks](https://github.com/misko/leo-tracker-reduxredux/blob/1245957b4d0fe2eba5880d63ca31c5b527e0740c/reports/ALGO08/v3/combined-successor-original.md)
+
 The 100 v3 processes used **7,665.81 CPU s in 10,413.92 elapsed s** on one core. Removing every second spent off CPU would give at most **1.36×** by either timing gate with unchanged CPU work. On 99 recordings the original CPU time alone exceeded half of elapsed time. Of 49 with zero input pages resident at launch, 67.5% of aggregate elapsed time was CPU time. For the 23 with every page resident, the share was 97.5%. Other recordings started partly resident. The off-CPU interval includes scheduling and other waits as well as storage.
 
 | Off-CPU time retained | Uniform CPU speedup needed for 2× on both gates |
