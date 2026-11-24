@@ -1,0 +1,29 @@
+# Exact reuse in held-family nomination
+
+The candidate saved **0.174 CPU seconds**, about **8.9%**, on the complete held-family nomination substage of a reconstructed authentic DS30-0169 selected context. Every held-mask calibration, score, alias, qualification, residual array and original proposal order matched bit for bit. The original 16 held families covered 2,236 held observations and ran 128 hypotheses. No hypothesis generated a positive offer. [Frozen protocol](held-family-fixed-state-protocol.md) · [Sealed receipt](measurements/held-family-fixed-state-0169.json)
+
+## Work removed
+
+On the fifth leave-family-out phase update, the original `p.state(x)` calls `p.calculate(x)`. It then immediately makes the same posterior call to obtain covariance and coefficients. Both calls use the exact same model, occurrence of the same coordinate, full calibrated mask, phase reference, native precision and basis. The adapter retains the completed calculation from the final state readout; it uses the ordinary calculation if that callback supplies no matching result. This avoids 16 of the original 96 native posterior calculations inside the held calibration stage.
+
+The candidate prediction keeps one fixed prior covariance, raw measurements, aliases, noise, nuisance means, geometry input, point and signed reference assignment per candidate. Its prior Cholesky is identical at each phase update. The adapter computes it once per candidate. When two consecutive references have identical binary values, it reuses the evaluated geometry and Gaussian result while still executing all five phases, their posterior updates, convergence accounting and final gates. Of 640 original predictions, 146 encountered an exactly identical phase and 494 still ran. Of those 494, 366 reused the previously computed prior Cholesky. A different phase, including a signed-zero difference, reruns prediction. No cached state crosses held masks, hypotheses, or calibration arms. [Implementation](held_family_fixed_state.py) · [Component tests](../../../tests/pipeline_eval/test_held_family_fixed_state.py)
+
+## Matched nomination CPU
+
+| Balanced order | Whole released nomination, s | Whole candidate nomination, s | Released minus candidate, s |
+| --- | ---: | ---: | ---: |
+| Released then candidate | 1.933315 | 1.757564 | 0.175751 |
+| Candidate then released | 1.982056 | 1.809698 | 0.172358 |
+| Mean | 1.957686 | 1.783631 | 0.174054 |
+
+The two separately measured changes were **0.047154 CPU s** less in leave-family-out calibration and **0.082183 CPU s** less in candidate predictions. Those scopes are disjoint and both are inside the whole nomination clock. The remaining 0.044717 s difference includes original broad projection and scoring, shared timing overhead, and run variation. The original two targeted scopes total **0.900956 CPU s** even if granted away entirely, which bounds this change on the tested context. Earlier named control prediction clocks were 0.338 s on DS30-0316 and 0.718 s on DS30-0155. Their input sizes and support differ, so those figures cannot be added to this saving. [Earlier named CPU budget](named-inference-budget.md) · [Earlier 0155 attribution](named-roster-0155.md)
+
+Both arms' saved numerical fingerprints, phase/observation input order and exact selected objectives were confirmed before comparison. Each pass paid the same installed broad family projection and original nomination. The whole-nomination clocks include the small patch setup and per-family clock collection. Fingerprint comparisons sit outside those clocks. Startup and saved source admission cost 0.676 CPU s, original causal preparation and setup 2.209 s, and the exact saved context reconstruction 0.508 s. None of those common costs contributes to the measured speed difference. The experiment performed no new full localization, standard grid evaluation, cavity configuration fit, or publication. No original waveform or backing archive was accessed. [Replay driver](held_family_fixed_state_trial.py)
+
+## What the DS30-0004 receipts establish
+
+The successful saved handoff still spent **31.458 CPU s** in named fallback. Its 0.398 s original winner screen and 4.193 s of recorded native grid export, factor validation and predictive calculations are disjoint inside that fallback. The remaining **26.867 s** includes other mandatory grid work and the unpartitioned conservative, history, signed-conditioning and held-family stages. The reports preserve no 0004 held-family nomination arrays, offer schedule or per-arm unconstrained cavity gate margins. They show zero constrained calls in that recipe and do not establish how many unconstrained cavity trials ran. The possible first-arm veto based on completed original rescue slack below −0.25 remains unpriced. [Actual DS30-0004 clocks and receipt](nomination-handoff.md)
+
+The 0004 final path returns the same coordinate at the ends of rounds two through five in both arms. Its phase changes remain nonzero in those rounds, including 1.26×10⁻⁷ s fixed and 3.95×10⁻⁸ s fitted in the last update. The same coordinate alone cannot identify a reusable likelihood. The original direct named receipt already reports 90 repeated endpoint reads served by its supported cache and two executed conservative gate calls with no stable whole-pair hit. Those existing savings were left untouched. The new measured 0169 operation establishes a small exact opportunity and gives no basis for a large 0004 or through-exit speedup.
+
+The as-run commit is `97a972993`. Run `held_family_fixed_state_trial.py /dev/shm/FRESH_RECEIPT.json` with the pinned installed ALGO08v3 interpreter, `-IB`, CPU 2 at nice 15 and best-effort I/O priority 7, single numeric threads, under the shared Gauss lock. Receipt file SHA-256 is `34987d48b4e99b10c665ba9ce069c1e49e75da3c63c3fc0781f8d55a79bbc980`. All four component tests passed.
