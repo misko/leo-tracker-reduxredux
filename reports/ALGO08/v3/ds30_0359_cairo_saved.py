@@ -110,7 +110,7 @@ def probe():
     print(json.dumps(result | {"verified_native_png": True}))
 
 
-def launch(root):
+def launch(root, *, entry=None, extra_sources=None, protocol=PROTOCOL):
     import combined_successor_0289 as combined
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
@@ -132,7 +132,8 @@ def launch(root):
     previous = json.loads(checked(resident_path(BASE / "result.json"), PRIOR_PIN))
     sealed = json.loads(checked(resident_path(BASE / "prediction-seal.json"), SEAL_PIN))
     old, machine, release = previous["admission"], host(), verified_v3(NAMED_V3)
-    pins, libs, presentation = original.pinned_sources(), combined.admitted_libraries(), presentation_pins()
+    pins, libs = original.pinned_sources(), combined.admitted_libraries()
+    extras = {"presentation_sources": presentation_pins()} if extra_sources is None else extra_sources()
     original.ready(check_assignment=False, job_root=READY, admission_pin=READY_PIN, job_pin=JOB_PIN)
     if (old["machine"] != machine or old["installed_release"] != release or old["job_sha256"] != JOB_PIN
             or old["ready_admission_sha256"] != READY_PIN or old["sources"] != pins or old["libraries"] != libs
@@ -150,7 +151,7 @@ def launch(root):
     (root / "routed").mkdir()
     copytree(BASE / "fonts", root / "fonts")
     write(root / "routed/binding.json", {"input": bound})
-    argv = [str(RELEASE / "venv/bin/python"), "-IB", str(Path(__file__).resolve())]
+    argv = [str(RELEASE / "venv/bin/python"), "-IB", str(Path(__file__).resolve() if entry is None else entry)]
     prefix = ["/usr/bin/timeout", "--kill-after=2s"]
     command = [*prefix, "115s", *argv, "worker", str(root)]
     env = environment(root) | {"TMPDIR": str(root / "tmp"), "XDG_CACHE_HOME": str(root / "tmp")}
@@ -161,14 +162,15 @@ def launch(root):
     end_usage = resource.getrusage(resource.RUSAGE_CHILDREN)
     smoke["cpu_s"] += end_usage.ru_stime + end_usage.ru_utime - usage.ru_stime - usage.ru_utime
     write(root / "admission.json", dict(case="DS30-0359", command=command, sources=pins, libraries=libs,
-          protocol_sha256=digest(PROTOCOL), machine=machine, job_sha256=JOB_PIN, commit=revision, setup=setup,
-          original_controls_sha256=PRIOR_PIN, original_prediction_sha256=SEAL_PIN, presentation_sources=presentation,
+          protocol_sha256=digest(protocol), machine=machine, job_sha256=JOB_PIN, commit=revision, setup=setup,
+          original_controls_sha256=PRIOR_PIN, original_prediction_sha256=SEAL_PIN, **extras,
           resident=cache, archive_members=len(refs), installed_release=release, planned_candidate_children=1,
           smoke=dict(clock=smoke, exit_code=isolated.returncode, stdout=isolated.stdout, stderr=isolated.stderr),
           waveform_reads=0, backing_archive_reads=0))
     isolated.check_returncode()
-    if not json.loads(isolated.stdout)["verified_native_png"]:
-        raise ValueError("The isolated entry smoke did not verify the native port")
+    marker = "verified_native_png" if entry is None else "paired_grid_ready"
+    if not json.loads(isolated.stdout)[marker]:
+        raise ValueError("The isolated entry smoke did not verify the experimental port")
     write(root / "routed/clock.json", measure(command, env, root / "routed/candidate"))
     write(root / "prediction-seal.json", output_seal(root))
 
