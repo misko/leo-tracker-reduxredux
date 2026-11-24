@@ -108,3 +108,35 @@ def test_pair_reuses_original_installed_command_and_rejects_a_different_mode(mon
     clock.write_text(json.dumps(dict(command=cmd, timing={"exit_code": 0})))
     with pytest.raises(ValueError):
         pair.previous_stock_command(root, release)
+
+
+def test_held_input_view_rejects_a_changed_cutoff_or_causal_manifest():
+    from history_risk_0169_input import ENROLLMENT_SHA256, request_view
+
+    shared = dict(case="DS30-0169", recording="recording", session="session", issued=19, admitted=17)
+    archive = {"snapshots_sha256": "signed", "snapshots": 1, "bytes": 3}
+    request = shared | dict(enrollment_sha256=ENROLLMENT_SHA256, local_archive=archive,
+                            causal_cutoff_utc_ns=30, raw_authority="authority")
+    enrollment = shared | dict(cutoff_utc_ns=30, authority="authority", snapshots=1, archive_bytes=3,
+                               original_archive={"snapshots_sha256": "signed"})
+    assert request_view(request, enrollment)["original_archive"] == {"snapshots_sha256": "signed"}
+    with pytest.raises(ValueError):
+        request_view(request | {"causal_cutoff_utc_ns": 31}, enrollment)
+    with pytest.raises(ValueError):
+        request_view(request | {"local_archive": archive | {"snapshots_sha256": "different"}}, enrollment)
+
+
+def test_five_positive_receipt_keeps_launch_order_and_refuses_a_missing_fix():
+    def publication(case):
+        clock = {"elapsed_s": 6, "cpu_s": 5}
+        return dict(case="DS30-"+case, archive_stock_clock=clock, clock=clock, named_parity={"complete": True})
+
+    admission = {"preflight": {"elapsed_ns": 0, "cpu_ns": 0}}
+    order = ("0160", "0316", "0374", "0402")
+    earlier = {"enrolled": {case: dict(result=publication(case), source_stage=admission) for case in order}}
+    held = publication("0169")
+    proof = aggregate(earlier, held, admission, "pin", case="0169")
+    assert proof["case_order"] == [*order, "0169"]
+    assert len(proof["enrolled"]) == 5
+    with pytest.raises(ValueError):
+        aggregate(earlier, held | {"named_parity": {"complete": False}}, admission, "pin", case="0169")
