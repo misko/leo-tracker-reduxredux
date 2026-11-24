@@ -92,3 +92,26 @@ def test_map_and_member_mutations_fail_under_original_pins(tmp_path, native):
         trial.Selective(reader, chunk, table, pin, native)
     with pytest.raises(BundleCorruptionError, match="short-window member changed"):
         next(reader.windows())
+
+
+def test_provisional_decode_only_retries_unsupported_layout(monkeypatch):
+    attempts = []
+
+    def attempt(mode, *_, **__):
+        attempts.append(mode)
+        if mode == "selective":
+            raise trial.UnsupportedLayout("compressed match")
+        return {"actual_reader": mode}, "fresh stock evidence", None, []
+
+    monkeypatch.setattr(trial, "measure_attempt", attempt)
+    timing, proof, _, _ = trial.measure("selective", None, None, b"map", "pin", None, [])
+    assert attempts == ["selective", "stock"]
+    assert timing["actual_reader"] == "stock" and proof == "fresh stock evidence"
+    assert "fallback_including_declined_work" in timing
+
+    def wrong_pin(*_, **__):
+        raise trial.MapError("wrong pin")
+
+    monkeypatch.setattr(trial, "measure_attempt", wrong_pin)
+    with pytest.raises(trial.MapError, match="wrong pin"):
+        trial.measure("selective", None, None, b"map", "pin", None, [])

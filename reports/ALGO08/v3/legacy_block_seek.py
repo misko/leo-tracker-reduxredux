@@ -16,6 +16,7 @@ import numpy as np
 
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.multirate_window_recording import ShortWindowIndexV2
+from leo.storage import short_window
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader
 
@@ -107,6 +108,8 @@ def load(path):
     binary.legacy_open.restype = ct.c_void_p
     binary.legacy_close.argtypes = [ct.c_void_p]
     binary.legacy_close.restype = None
+    binary.legacy_scratch.argtypes = [ct.c_void_p]
+    binary.legacy_scratch.restype = ct.c_size_t
     binary.legacy_span.argtypes = [
         ct.c_void_p, ct.c_char_p, ct.c_size_t, ct.POINTER(Block), ct.c_uint32, ct.c_uint32,
         ct.c_uint32, ct.c_uint32, ct.c_void_p, ct.POINTER(Counts),
@@ -186,6 +189,7 @@ class Selective:
         self.context = binary.legacy_open()
         if not self.context:
             raise UnsupportedLayout("libzstd block decoder is unavailable")
+        self.scratch = binary.legacy_scratch(self.context)
         self.setup = elapsed(start)
 
     def close(self):
@@ -211,7 +215,7 @@ class Selective:
 
 
 @contextmanager
-def one_member(directory, chunk=None, *, snapshots=None, override=None):
+def one_member(directory, chunk=None, *, snapshots=None):
     stock = ShortWindowReader._member
 
     def scoped(reader, name, size, pin):
@@ -223,13 +227,8 @@ def one_member(directory, chunk=None, *, snapshots=None, override=None):
         if reader.path != directory or allowed.get(name) != (size, pin):
             raise ValueError("member access exceeds the exact staged scope")
         value = stock(reader, name, size, pin)
-        if name == expected.payload_relative_path:
-            if snapshots is not None:
-                snapshots.append(value)
-            if override is not None:
-                value = override(value)
-                if len(value) != size or sha256_digest(value) != pin:
-                    raise BundleCorruptionError("original member differs from its signed compressed digest")
+        if name == expected.payload_relative_path and snapshots is not None:
+            snapshots.append(value)
         return value
 
     with patch.object(ShortWindowReader, "_member", scoped):
@@ -266,13 +265,10 @@ def missing_block(member, uses):
 
 
 def open_source(reader, chunk, sidecar, pin, binary):
-    """An absent map or unsupported layout uses the authenticated stock reader."""
+    """An absent map stays on stock; layout declines propagate to the staged retry."""
     if sidecar is None:
         return None
-    try:
-        return Selective(reader, chunk, sidecar, pin, binary)
-    except UnsupportedLayout:
-        return None
+    return Selective(reader, chunk, sidecar, pin, binary)
 
 
 def measure(mode, scope, native, sidecar, pin, binary, evidence_rows, *, verify_words=False):
@@ -302,7 +298,10 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
     if reader.manifest_sha256 != source_pin:
         raise BundleCorruptionError("original legacy manifest pin changed")
     chunk = reader.manifest.chunks[0]
-    table = open_source(reader, chunk, sidecar, pin, binary) if mode == "selective" else None
+    table = None
+    if mode == "selective" and sidecar is not None:
+        data = short_window.ScannerIqStore._read_regular(sidecar, MAX_MAP) if isinstance(sidecar, Path) else sidecar
+        table = open_source(reader, chunk, data, pin, binary)
     schedule = StereoSchedule(full_coverage=True)
     targets = {item["target_id"]: item for item in reader.manifest.configuration["targets"]}
     visits, probes, lanes, uses = Counter(), [], [], []
@@ -355,11 +354,12 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
                                                   for row, full in uses) if table else chunk.uncompressed_bytes,
                   selective=dict(metadata=table.metadata, complete_encoded_auth=table.authentication,
                                  structure_and_native_context=table.setup,
-                                 requested_span_and_hash=dict(selective_io), **counts) if table else None)
+                                 requested_span_and_hash=dict(selective_io), native_scratch_bytes=table.scratch,
+                                 **counts) if table else None)
     return timing, proof, table, uses
 
 
-def corruption(reader, chunk, scope, sidecar, pin, binary, witness):
+def corruption(reader, chunk, scope, sidecar, pin, binary, witness, ingress):
     # Exercise a private mutated snapshot with the original pin, never mutate
     # the actual recording or put a waveform duplicate on disk.
     mutated = bytearray(sidecar)
@@ -371,23 +371,31 @@ def corruption(reader, chunk, scope, sidecar, pin, binary, witness):
     else:
         raise ValueError("changed map escaped authority")
 
-    def flipped(content):
-        corrupted = bytearray(content)
-        corrupted[witness["encoded_offset"]] ^= 1
-        return corrupted
-
     outcomes = {}
-    with one_member(scope.path, chunk, override=flipped):
-        for path in ("selective", "stock"):
-            try:
-                if path == "selective":
-                    Selective(reader, chunk, sidecar, pin, binary)
+    with one_member(scope.path, chunk), ingress():
+        stock = short_window.ScannerIqStore._read_regular
+
+        def changed_source(path, bound):
+            data = stock(path, bound)
+            if path == reader.path / chunk.payload_relative_path:
+                if not isinstance(data, memoryview) or not isinstance(data.obj, np.ndarray):
+                    raise ValueError("expected a privately owned ingress buffer")
+                data.obj[witness["encoded_offset"]] ^= 1
+            return data
+
+        with patch.object(short_window.ScannerIqStore, "_read_regular", staticmethod(changed_source)):
+            for path in ("selective", "stock"):
+                try:
+                    if path == "selective":
+                        Selective(reader, chunk, sidecar, pin, binary)
+                    else:
+                        next(reader.windows(stop_sequence=chunk.window_count))
+                except BundleCorruptionError as error:
+                    if f"short-window member changed: {chunk.payload_relative_path}" != str(error):
+                        raise
+                    outcomes[path] = str(error)
                 else:
-                    next(reader.windows(stop_sequence=chunk.window_count))
-            except BundleCorruptionError as error:
-                outcomes[path] = str(error)
-            else:
-                raise ValueError("changed original member escaped full compressed authentication")
+                    raise ValueError("changed original member escaped full compressed authentication")
     return dict(sidecar=damaged_map, omitted_suffix=witness, rejected_by=outcomes, issued_visits=0)
 
 
@@ -416,17 +424,22 @@ def run(root):
     release.verified(SHORT, EIGHT_MS_SHA)
     pilot = np.frombuffer(release.verified(release.RELEASE / "assets/lower.f32", PILOT_SHA["lower"]), dtype="<f4")
     scope = fixture.ORIGINAL
-    start = clock()
+    preparation_start = clock()
     captured = []
     with one_member(scope.path, snapshots=captured):
         reader, windows, source = fixture.verified_source(ingress, hasher, scope)
-    stock_authority = elapsed(start)
+    stock_authority = elapsed(preparation_start)
     (snapshot,) = captured
     chunk = reader.manifest.chunks[0]
     start = clock()
     sidecar, pin, map_work = seal_map(reader, chunk, snapshot, windows)
-    (root / "map.json").write_bytes(sidecar)
+    map_file = root / "map.json"
+    with map_file.open("xb") as stream:
+        stream.write(sidecar)
+        stream.flush()
+        os.fsync(stream.fileno())
     map_clock = elapsed(start)
+    verify_and_build = elapsed(preparation_start)
     del snapshot, captured
     checked = None
     with ExitStack() as stack:
@@ -447,17 +460,17 @@ def run(root):
             for mode in order:
                 with one_member(scope.path, chunk), ingress(), paired_decoded_hashes(hasher):
                     timing, authoritative, table, _ = measure(
-                        mode, scope, native, sidecar, pin, binary, windows)
+                        mode, scope, native, map_file, pin, binary, windows)
                 del table
                 if authoritative != checked or timing["actual_reader"] != mode:
                     raise ValueError("steady-state read changed signed detector outputs or fell back")
                 trial[mode] = timing
             results.append(trial)
-    damage = corruption(reader, chunk, scope, sidecar, pin, binary, witness)
+    damage = corruption(reader, chunk, scope, sidecar, pin, binary, witness, ingress)
     blocks, _ = validate_map(reader, chunk, sidecar, pin)
     output = dict(
         source=source, stock_authority=stock_authority, sidecar_sha256=pin, sidecar_bytes=len(sidecar),
-        map_clock=map_clock, map_work=map_work, build=setup, io_policy=setting,
+        map_clock=map_clock, verify_and_build=verify_and_build, map_work=map_work, build=setup, io_policy=setting,
         blocks=len(blocks), new_huffman_tables=sum(index == row[-1] for index, row in enumerate(blocks)),
         orders=ORDERS, ready=results, evidence=checked, corruption=damage,
         full_receiver_sha256=INSTALLED_SHA, short_receiver_sha256=EIGHT_MS_SHA,

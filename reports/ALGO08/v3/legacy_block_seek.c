@@ -43,6 +43,11 @@ void legacy_close(reader *state)
     free(state);
 }
 
+size_t legacy_scratch(const reader *state)
+{
+    return sizeof(*state) + ZSTD_sizeof_DCtx(state->decoder);
+}
+
 static int decode(reader *state, const unsigned char *source, size_t size,
                   const block *entry)
 {
