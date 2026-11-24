@@ -159,7 +159,7 @@ def score(case, output):
             raise ValueError("The flagged packet must preserve ordinary named decisions and media")
     else:
         archived = LEAN/"candidate"
-        prior_clock = exact.read(LEAN/"candidate-clock.json")
+        prior_clock = exact.read(LEAN/"candidate-clock.json")["timing"]
         lean = verified(archived, prior_clock, "saved-0316-worker.json", req)
         trial, = route["lean_attempts"]
         if (trial["decision"] != "complete" or trial["named_survivor_fit"]["status"] != "accepted"
