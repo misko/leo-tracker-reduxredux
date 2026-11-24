@@ -216,16 +216,18 @@ def score(snapshot, prediction, pin):
         if len(empty) != plan["empty_short_count"] or not selected.keys() <= empty:
             raise ValueError("The empty short enrollment changed")
         witness = None
+        graph_verified = False
         witness_path = candidate_path.parent / "publication/exact-named-raw-witness.json"
         if witness_path.exists():
             witness = signed.document(witness_path)
             detail = witness["evidence"]["detail"]
-            recorded = (witness["ports"].get("graph") or {}).get("graph")
+            recorded = ((witness.get("ports") or {}).get("graph") or {}).get("graph")
             if detail["terminal_sha256"] != candidate_row["terminal_sha256"] or detail["input_sha256"] != new["native_sha256"]:
                 raise ValueError("The Graph witness belongs to another publication")
             if plan["graph"] and recorded and recorded.get("calls") and any(
                     recorded[k] != plan["graph"][k] for k in ("assigned", "tracks")):
                 raise ValueError("The Graph replay differs from its recorded scope")
+            graph_verified = bool(plan["graph"] and recorded and recorded.get("calls"))
         result = factor_readout(empty,stock,selected)
         totals.update(result["counts"])
         callbacks = result["counts"].get("selected",0)
@@ -234,7 +236,7 @@ def score(snapshot, prediction, pin):
             raise ValueError("Selected proposals have no same-recording full callback price")
         prices = {m: callbacks*clock[f"native_{m}_ns"]["full"]/full_calls/1.e9 if callbacks else 0.
                   for m in ("cpu","wall")}
-        reports[case] = dict(native=result, installed_native_sha256=old["native_sha256"],
+        reports[case] = dict(native=result, installed_native_sha256=old["native_sha256"], graph_scope_verified=graph_verified,
                              current_half_time_wall_deficit_s=candidate_row["elapsed_s"] - row["elapsed_s"]/2,
                              modeled_full_recheck=prices,
                              exact_owners=owner_scoring(case,old,witness,empty,stock,selected) if case in EXACT else None)
