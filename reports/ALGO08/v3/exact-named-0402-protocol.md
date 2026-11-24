@@ -1,0 +1,7 @@
+# Frozen exact named composition on DS30-0402
+
+Expand the three saved original-20 ms comparisons by one previously studied physical recording. Use only DS30-0402 and its same-packet installed named replay, sealed at 73.35130277276039 s through verified publication and exit. Freeze the exact named numerical route and current constrained gate implementation at `ec4a1f01d`. Keep the original gate order, renderer, map layout, offer and causal cutoff. Neither the gated fitted-first run at 55.830 s nor the fitted-first graph and direct-render run at 53.403 s is the candidate for this experiment. DS30-0402 previously supplied the constrained gate development fixture.
+
+The existing resident signed detector and inventory bind 6,773 issued and 6,761 admitted stereo visits. Require the original 48-snapshot causal view already resident in tmpfs. Allow only the existing earlier DS30-0008 portable index. Execute one fresh candidate with the original scope under the shared Gauss CPU 2 lock. Compare both calibration arms, exact ordered owner rows, objective and terminal, the 179-point map and path, and all eight encoded and decoded PNGs after exit. No backing catalogue or waveform access.
+
+Append the fourth result to the three independently sealed saved comparisons. Report separate elapsed and CPU ratios of summed times, median case ratios, and any current gate activity and cost. Include the already paid index creation and prior failed startup separately. There is no gate-off run in this experiment.
