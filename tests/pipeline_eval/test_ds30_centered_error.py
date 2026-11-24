@@ -85,3 +85,22 @@ def test_pending_prospective_respects_all_pair_seals_before_reading_any_export(t
     path.write_text(json.dumps(observed | {"actual_order": order[::-1]}))
     with pytest.raises(ValueError, match="frozen order"):
         pending_pairs(tmp_path, reserved)
+
+
+def test_prospective_requires_current_combined_seal_and_identical_worker_rows(tmp_path, monkeypatch):
+    entries = [{"case": case} for case in trial.INITIAL+trial.PROSPECTIVE]
+    monkeypatch.setattr(trial, "campaign_order", lambda campaign: entries)
+    monkeypatch.setattr(trial, "pending_pairs", lambda campaign, entries: {})
+    rows = [dict(case=case, algorithm=role, verified_pair=True) for case in trial.PROSPECTIVE for role in trial.BUILDS]
+    body = "\n".join(json.dumps(row) for row in rows).encode()
+    (tmp_path/"rows.jsonl").write_bytes(body)
+    seal_path = tmp_path/"rows-with-relocations-seal.json"
+    seal = dict(plan_sha256=trial.PLAN, ledger_snapshot_sha256="previous export", combined_sha256="previous combined")
+    seal_path.write_text(json.dumps(seal))
+    assert trial.prospective(tmp_path)["pending"] == {"combined_export": "ordinary_snapshot_not_yet_sealed"}
+
+    combined = b"\n".join((body.splitlines())[:-1])
+    (tmp_path/"rows-with-relocations.jsonl").write_bytes(combined)
+    seal_path.write_text(json.dumps(seal | dict(ledger_snapshot_sha256=trial.digest(body), combined_sha256=trial.digest(combined))))
+    with pytest.raises(ValueError, match="cover all six"):
+        trial.prospective(tmp_path)

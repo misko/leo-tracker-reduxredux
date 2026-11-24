@@ -168,34 +168,42 @@ def pending_pairs(campaign, entries):
     return pending
 
 
-def prospective(campaign):
+def prospective(campaign, snapshot=None):
     ordered = campaign_order(campaign)
     entries = ordered[len(INITIAL):len(INITIAL)+len(PROSPECTIVE)]
     pending = pending_pairs(campaign, entries)
     metadata = dict(assigned=list(PROSPECTIVE), plan=PLAN, initial_result=INITIAL_RESULT, references=REFERENCE, builds=PINS)
     if pending:
         return dict(ready=False, **metadata, pending=pending)
-    body = (campaign/"rows.jsonl").read_bytes()
+    snapshot = campaign if snapshot is None else snapshot
+    body = (snapshot/"rows.jsonl").read_bytes()
     rows = selected_rows(body, PROSPECTIVE)
     pending = {case: "unverified_in_current_export" for case, group in rows.items()
                if set(group) != set(BUILDS) or not all(row["verified_pair"] for row in group.values())}
     if pending:
         return dict(ready=False, **metadata, pending=pending)
-    seal_body = (campaign/"rows-with-relocations-seal.json").read_bytes()
+    seal_body = (snapshot/"rows-with-relocations-seal.json").read_bytes()
     seal = json.loads(seal_body)
     if seal["plan_sha256"] != PLAN:
         raise ValueError("The live overlay export belongs to a different campaign")
-    combined = checked(campaign/"rows-with-relocations.jsonl", seal["combined_sha256"])
+    ordinary_digest = digest(body)
+    if seal["ledger_snapshot_sha256"] != ordinary_digest:
+        return dict(ready=False, **metadata, pending={"combined_export": "ordinary_snapshot_not_yet_sealed"})
+    combined = checked(snapshot/"rows-with-relocations.jsonl", seal["combined_sha256"])
+    rows_with_relocation = selected_rows(combined, PROSPECTIVE+(RELOCATION,))
+    if any(rows_with_relocation[case] != rows[case] for case in PROSPECTIVE):
+        raise ValueError("The combined seal must cover all six unchanged prospective worker rows")
     overlay = verified_overlay(campaign, seal)
-    relocation_row = selected_rows(combined, (RELOCATION,))[RELOCATION]
+    relocation_row = rows_with_relocation[RELOCATION]
     relocation_entry = next(entry for entry in ordered if entry["case"] == RELOCATION)
     assigned = roster()
     _, checked_relocation = verified_capture(campaign, relocation_entry, relocation_row, assigned[RELOCATION], overlay)
     selected = [verified_capture(campaign, entry, rows[entry["case"]], assigned[entry["case"]], overlay) for entry in entries]
     result = analyze([capture for capture, _ in selected])
     meaningful = {arm: len(group["shared"]) >= 2 for arm, group in result["arms"].items()}
-    return dict(ready=True, **metadata, ordinary_export=digest(body), relocation=OVERLAY,
-                combined_export=seal["combined_sha256"], combined_seal=digest(seal_body), relocation_pair=checked_relocation,
+    return dict(ready=True, **metadata, ordinary_export=ordinary_digest, relocation=OVERLAY,
+                combined_export=seal["combined_sha256"], combined_seal=digest(seal_body),
+                ordinary_combined_rows_equal=True, relocation_pair=checked_relocation,
                 verified_pairs={capture[0]: proof for capture, proof in selected}, result=result, spread_comparison_available=meaningful)
 
 
@@ -205,9 +213,7 @@ def main():
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--prospective", action="store_true")
     args = parser.parse_args()
-    if args.prospective and args.snapshot is not None:
-        parser.error("prospective estimates require the updated ordinary export")
-    output = prospective(args.campaign) if args.prospective else study(args.campaign, args.snapshot or args.campaign)
+    output = prospective(args.campaign, args.snapshot) if args.prospective else study(args.campaign, args.snapshot or args.campaign)
     print(json.dumps(output, indent=2, allow_nan=False))
 
 
