@@ -360,6 +360,18 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
     assert "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |" in markdown
     assert "ds30-0086-joint-recovery.md)" in markdown
+    ownership = json.loads((receipts / "missed-owner-support.json").read_bytes())["cases"]
+    counts, losses = [], []
+    for case in ("DS30-0049", "DS30-0086"):
+        arm = ownership[case]["arms"]["fitted_c"]
+        missing = arm["class_counts"]["missing"]
+        counts.append((missing["installed_owner"], missing["installed_owner"] + missing["installed_nonowner"]))
+        series = arm["time"]["metrics"]
+        losses.append(1 - series["without_missing_shorts"]["quadratic_design_s4"] / series["original"]["quadratic_design_s4"])
+    assert f"{counts[0][0]} of the {counts[0][1]} missing measurements" in markdown
+    assert f"{counts[1][0]} of the {counts[1][1]} on DS30-0086" in markdown
+    assert f"Doppler curvature fell by {losses[0]:.1%} and {losses[1]:.1%}" in markdown
+    assert "missed-owner-support.md)" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
     assert "DS30-0210 solver and publication audit" not in markdown

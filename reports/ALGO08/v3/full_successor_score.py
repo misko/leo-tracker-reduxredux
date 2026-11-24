@@ -800,6 +800,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "the original full-length receiver outputs as a reference. [DS30-0086 transfer test]"
               "(https://github.com/misko/leo-tracker-reduxredux/blob/0488b1f9f405458c829b3d05b84e5db6213e07bb/"
               "reports/ALGO08/v3/ds30-0086-joint-recovery.md)", "",
+              "ALGO08v3 used 44 of the 104 missing measurements on DS30-0049 and 323 of the 564 on DS30-0086 "
+              "in its final satellite assignments. Removing those measurements from the installed tracks took away "
+              "13.8% and 13.0% of their observations. Because of where they fell in time, support for measuring "
+              "Doppler curvature fell by "
+              "23.6% and 15.7%. The calculation held the satellite assignments fixed. "
+              "[Missing observations and their times](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "8d31ce0b915162d851b98e56222b8e7849979a5d/reports/ALGO08/v3/missed-owner-support.md)", "",
               "Restoring all 104 detections recovered 41 of the 44 missing installed assignments with the "
               "same satellite and role. Fitted error improved by 377 m and remained 2.243 km above ALGO08v3. "
               "The four changes were tested independently. "
