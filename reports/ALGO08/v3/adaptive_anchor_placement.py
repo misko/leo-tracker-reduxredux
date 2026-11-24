@@ -214,7 +214,8 @@ def scope_scores(visits, schedules, scope):
     summaries = {}
     for policy, predictions in schedules.items():
         results = {}
-        for name, include in (("complete", eligible), ("partial", set(range(len(visits)))-eligible)):
+        partial = set(range(len(visits))) - eligible
+        for name, include in (("complete", eligible), ("partial", partial)):
             windows = [choice for choice in predictions if choice["index"] in include]
             groups_stats, clocks, actions = {}, Counter(), Counter()
             for choice in windows:
@@ -242,7 +243,7 @@ def scope_scores(visits, schedules, scope):
                                  clocks=dict(clocks), stats=groups_stats)
         if (results["complete"]["actions"].get("full_visits",0) != len(complete)
                 or any(sum(x["aperture"]==FULL for x in predictions if x["index"] in block)!=1
-                       for block in map(set,complete))):
+                       for block in map(set, complete))):
             raise ValueError("Complete-cycle stereo budgets diverged")
         summaries[policy] = results
     return dict(complete_cycles=len(complete), paired_visits=len(schedules["periodic"]),
@@ -309,8 +310,10 @@ def unknown_predecessors(visits):
             old = prior[lane]
             exposed += any(unmeasured and row["counter"]-t <= MAX_GAP for t,unmeasured in old)
             old.append((row["counter"],unknown))
-    return dict(unmeasured_short_lanes=sum(2 for v in visits if SHORT not in v["choices"]),
-                later_lanes_with_missing_short_alternative_in_original_history_window=exposed)
+    return dict(
+        unmeasured_short_lanes=sum(2 for v in visits if SHORT not in v["choices"]),
+        later_lanes_with_missing_short_alternative_in_original_history_window=exposed,
+    )
 
 
 def run(output, continuation):
@@ -320,28 +323,31 @@ def run(output, continuation):
         protocol_sha256=digest((HERE/"anchor-placement-protocol.md").read_bytes()),
         source_sha256=digest(Path(__file__).read_bytes()), archive_sha256=ARCHIVES,
     )
-    for name, scope in (("DS30-0049-prefix",main),("DS30-0016-paired-stratum",held)):
+    for name, scope in (("DS30-0049-prefix", main), ("DS30-0016-paired-stratum", held)):
         visits = pair_tape(scope)
-        variants = {policy:freeze_schedule(visits,policy) for policy in POLICIES}
+        variants = {policy: freeze_schedule(visits, policy) for policy in POLICIES}
         all_data[name] = visits, variants, scope
         prediction[name] = variants
     output.mkdir(mode=0o700)
     seal = save(output/"predictions.json",prediction)
     reports = {name:scope_scores(*inputs) for name,inputs in all_data.items()}
     visits, variants, scope = all_data["DS30-0049-prefix"]
-    replay = {name:causal_readout(visits,row,continuation,scope) for name,row in variants.items()}
+    replay = {
+        name: causal_readout(visits, row, continuation, scope) for name, row in variants.items()
+    }
     original = replay["periodic"]
     held_scores = scope["original_held"]["log_score_gain_by_radio"]
     if not original["standard_eof_role_layout"] or any(
         abs(original["held_log_gain"][radio]-held_scores[str(radio)])>1e-10 for radio in (0,1)
     ):
-        raise ValueError("The fully observed fixed-role held selector did not reproduce its receipt")
+        raise ValueError("The fixed-role held replay differs from the original receipt")
     reports["DS30-0049-prefix"]["replay"] = replay
     reports["DS30-0016-paired-stratum"]["unresolved"] = unknown_predecessors(
         all_data["DS30-0016-paired-stratum"][0])
-    print(save(output/"result.json",dict(
+    print(save(output/"result.json", dict(
         prediction_sha256=seal, cases=reports, original_waveform_reads=0, detector_calls=0,
-        solver_calls=0, continuation_component="released kernel; adaptive held witnesses diagnostic",
+        solver_calls=0,
+        continuation_component="released kernel and diagnostic adaptive held witnesses",
     )))
 
 
