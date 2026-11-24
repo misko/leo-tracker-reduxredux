@@ -9,8 +9,8 @@ from .legacy_snapshot_reuse import MAX_BYTES, SnapshotSlot, descriptor_port
 class AlternatingSnapshots:
     """One producer, with lifetimes tied to each consumer's buffer export."""
 
-    def __init__(self, maximum=MAX_BYTES):
-        self._slots = SnapshotSlot(maximum), SnapshotSlot(maximum)
+    def __init__(self, maximum=MAX_BYTES, *, reserve=0):
+        self._slots = SnapshotSlot(maximum, reserve=reserve), SnapshotSlot(maximum, reserve=reserve)
         self._next = 0
 
     def borrow(self, size):
@@ -27,14 +27,14 @@ class AlternatingSnapshots:
 
 
 @contextmanager
-def binding(frontier, audit):
+def binding(frontier, audit, *, reserve=0):
     """Replace the allocation only inside the already verified producer."""
     ordinary = frontier.load_prefetch
 
     def load():
         fetch = ordinary()
         namespace = fetch.__wrapped__.__globals__
-        pool = AlternatingSnapshots()
+        pool = AlternatingSnapshots(reserve=reserve)
         read = descriptor_port(namespace["read_regular_descriptor"], pool)
 
         @contextmanager

@@ -17,10 +17,11 @@ INGRESS_SHA = "c58f76ae56022aca3893b04bfe4732f24185e9b98294c543a31abf752c264fa8"
 class SnapshotSlot:
     """Offer one buffer-backed lease, even if its last reference is a view."""
 
-    def __init__(self, maximum=MAX_BYTES):
-        if not 0 < maximum <= MAX_BYTES:
+    def __init__(self, maximum=MAX_BYTES, *, reserve=0):
+        if not 0 < maximum <= MAX_BYTES or type(reserve) is not int or not 0 <= reserve <= maximum:
             raise ValueError("Expected a bounded private snapshot slot")
         self.maximum = maximum
+        self.reserve = reserve
         self.buffer = None
         self.in_use = False
         self.closed = False
@@ -42,9 +43,10 @@ class SnapshotSlot:
                 self.counts["ordinary"] += 1
                 return np.empty(size, dtype=np.uint8)
             if self.buffer is None or self.buffer.size < size:
-                self.buffer = np.empty(size, dtype=np.uint8)
+                capacity = max(size, self.reserve)
+                self.buffer = np.empty(capacity, dtype=np.uint8)
                 self.counts["allocations"] += 1
-                self.counts["peak_bytes"] = max(size, self.counts["peak_bytes"])
+                self.counts["peak_bytes"] = max(capacity, self.counts["peak_bytes"])
             else:
                 self.counts["reuses"] += 1
             lease = self.buffer[:size]
