@@ -23,3 +23,15 @@ def test_relocating_an_offer_wraps_the_existing_screen_translation(east, screen_
     assert moved["center"] == (37., target)
     assert moved["screen_center"] == pytest.approx((38., expected))
     assert moved["width_km"] == source["width_km"]
+
+
+def test_opposite_screen_is_legal_but_a_seam_crossing_offered_square_is_rejected():
+    from leo.contracts.algo08_region import Algo08Region
+
+    original = dict(center=(37.906, -122.545), screen_center=(37.5, -122.0), width_km=25.0)
+    moved, _ = relocated_offer(original, 179.8)
+    accepted = Algo08Region.parse(moved)
+    assert accepted.center[1] > 0 > accepted.screen_center[1]
+    crossing, _ = relocated_offer(original, 179.98)
+    with pytest.raises(ValueError, match="longitude seam"):
+        Algo08Region.parse(crossing)
