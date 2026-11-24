@@ -288,6 +288,7 @@ def run(output):
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     run(parser.parse_args().output)
