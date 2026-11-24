@@ -119,6 +119,9 @@ def snapshot(folder, authority, started, expected_build):
 
 
 def score(root):
+    # The offline validator uses the workspace read-only accessor. The older
+    # installed launcher source has no create=False argument on this port.
+    sys.path.insert(0, str(batch.ROOT / "src"))
     logs, admission = (read(root / name) for name in ("process.json", "admission.json"))
     candidate = root / "candidate"
     old = REFERENCE / "candidate"
