@@ -5,6 +5,7 @@ import pytest
 
 from reports.ALGO08.v3 import integrated_packed_member as member
 from reports.ALGO08.v3 import legacy_block_raw_entry as legacy
+from reports.ALGO08.v3.integrated_packed_cost import replace_acquisition, score
 
 
 def test_packed_selection_reuses_scientific_flags_without_original_acquisition_modes():
@@ -30,3 +31,21 @@ def test_original_port_rejects_strict_and_mixed_input_modes():
         legacy.run(args, allow_cairo_orbits=True)
     with pytest.raises(ValueError, match="cannot use original block replay"):
         legacy.run(args, allow_cairo_orbits=True, allow_strict_packed=True)
+
+
+def test_cost_replaces_acquisition_once_and_charges_prepared_setup():
+    assert replace_acquisition(7., 3., 2., .1) == pytest.approx(6.1)
+    with pytest.raises(ValueError):
+        replace_acquisition(7., 8., 2., .1)
+
+
+def test_sealed_cost_ledger_keeps_prepare_retrofit_and_owned_writer_distinct():
+    result = score()
+    row = result["modeled_integrated"]["positive_first"]
+    ready = row["prepared_projection_positive_only"]
+    conversion = result["historical_strict"]["conversion_and_readback_s"][0]
+    assert row["existing_first_use_positive"]["summed_s"] == pytest.approx(ready["summed_s"] + conversion)
+    writer = result["owned_0016"]["packed"]
+    assert row["owned_write_to_exit_positive_projection"]["candidate_s"] == pytest.approx(
+        ready["summed_s"] - row["observed_processes_s"][1] + writer["write_s"] + writer["independent_readback_s"])
+    assert ready["remaining_to_half_s"] > 0
