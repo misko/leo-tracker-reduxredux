@@ -94,8 +94,8 @@ def enrolled():
     return request, inventory, packets, controls
 
 
-def warm_staged(refs):
-    from empty_bootstrap import checked, clock, now
+def warm_staged(archive, refs):
+    from empty_bootstrap import clock, now
     from visit_frame_raw_0016 import resident
 
     started = now()
@@ -110,7 +110,7 @@ def warm_staged(refs):
     if sum(body.byte_size for body in bodies) > 5_000_000:
         raise ValueError("Only a bounded recheck of the previously staged RAM bodies is admitted")
     for ref in bodies:
-        checked(ref.path, ref.sha256[7:])
+        archive.read(ref)
     return dict(remaining_page_bytes_before=needed, checked_bytes=sum(ref.byte_size for ref in bodies),
                 check=clock(started), residency=resident(names))
 
@@ -135,10 +135,11 @@ def cache(root):
     from leo.operations.tle_archive import TleArchiveReader
 
     archive = json.loads(checked(staged(ORIGINAL/"pair.json"), PAIR_SHA))["archive"]
-    references = TleArchiveReader(staged(Path(archive["root"]))).list_snapshots("space-track")
+    reader = TleArchiveReader(staged(Path(archive["root"])))
+    references = reader.list_snapshots("space-track")
     if canonical_digest({r.path.name: r.sha256 for r in references}) != archive["snapshots_sha256"]:
         raise ValueError("The resident owner census must bind the original archive")
-    data = dict(archive=archive, **warm_staged(references))
+    data = dict(archive=archive, **warm_staged(reader, references))
     with root.open("x") as output:
         json.dump(data, output, sort_keys=True, allow_nan=False)
 
