@@ -146,6 +146,8 @@ def score(root, output="result.json", *, runtime_ready=False):
         run["horizontal_error_km"] = {arm: distance_km(site, row["latlon"])
             for arm, row in actual["terminal"]["arms"].items() if row.get("latlon")}
         detail = traces[mode] = read(root/mode/"selective/joint-research-receipt.json")
+        run["publication_elapsed_s"] = detail["publication_elapsed_s"]
+        run["publication_cpu_s"] = detail["publication_cpu_s"]
         run["early_regional"] = detail["early_regional"]
         run["projector"] = detail["solve"]["geographic_projector"]
         run["catalogue_handoff"] = detail["solve"]["prepared_exterior"]

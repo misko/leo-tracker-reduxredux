@@ -15,14 +15,17 @@ def read_receipt(stem):
 
 def panels():
     north = read_receipt("north-orbit-index-active")
+    combined = read_receipt("combined-raw-north")
     medium = read_receipt("catalogue-block-portable-0316")["result"]
-    if north["diagnostic_fallback"] or not medium["rank_validated"]:
+    if (north["diagnostic_fallback"] or combined["candidate"]["diagnostic_fallback"]
+            or combined["rank"]["counts"]["admitted_ranks"] != 1 or not medium["rank_validated"]):
         raise ValueError("Panel requires a verified original region check and complete cold rank")
     return [
         ("North simulation", "Original samples through exit", [
             ("ALGO08v3", north["prior"]["named"]["clock"]["elapsed_s"]),
             ("Guarded receiver", north["prior"]["selective"]["clock"]["elapsed_s"]),
-            ("Guarded + cold index", north["clock"]["elapsed_s"])]),
+            ("Guarded + cold index", north["clock"]["elapsed_s"]),
+            ("Portable + block rank", combined["candidate"]["clock"]["elapsed_s"])]),
         ("Physical DS30-0316", "Saved detections through exit", [
             ("ALGO08v3", medium["historical"]["recent_named"]["process"]["elapsed_s"]),
             ("Ordinary research solver", medium["ordinary"]["through_exit"]["elapsed_s"]),
