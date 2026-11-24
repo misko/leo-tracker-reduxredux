@@ -83,7 +83,7 @@ def build(root):
         verified(stock_relink, pin)
         old, = (Path(arg) for arg in link if Path(arg).name == "timing_first_receiver.o")
         code = old.with_suffix(".c")
-        code_pin = RELEASE_SHA["full"] if mode == "full" else SOURCE_SHA["short"]
+        code_pin = RELEASE_SHA["full"] if mode == "full" else SOURCE_SHA
         c = directory / code.name
         c.write_text(overlay(verified(code, code_pin).decode()))
         object_file = c.with_suffix(".o")
