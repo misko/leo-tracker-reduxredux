@@ -67,7 +67,7 @@ def resident_packed(root, members, codec):
     return observed
 
 
-def transform(root, clip, observed):
+def transform(root, clip, observed, *, member_count=19):
     from aperture_trial import write
     from empty_bootstrap import BASELINE, BASELINE_PIN, PAYLOAD, checked
     from leo.storage.short_window import ShortWindowReader
@@ -123,7 +123,7 @@ def transform(root, clip, observed):
                                   verification=verify, original_reads=dict(opened), checked_derivative=counts))
             dirs.append(folder)
             members.append(expect)
-    if (len(members) != 19 or sum(d["original"]["compressed_bytes"] for d in documents) != clip["compressed_bytes"]
+    if (len(members) != member_count or sum(d["original"]["compressed_bytes"] for d in documents) != clip["compressed_bytes"]
             or sum(d["original"]["window_count"] for d in documents) != clip["issued"]):
         raise ValueError("The derivative must bind every original member and visit")
     mapping = sidecars/"map.json"
