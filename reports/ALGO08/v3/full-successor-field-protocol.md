@@ -10,6 +10,8 @@ Report paired elapsed and CPU distributions, fix, withholding and failure counts
 
 Run the scorer from the research checkout with the final driver export. It checks the assigned population, original input identity, one frozen build per role, terminal outcomes, both calibration arms and process clocks before writing the report.
 
+Gauss retains the paired ledger at `/srv/postgres-nvme/leo-ds30-evaluation-20261124`. The immutable plan SHA-256 is `9deecea6ce5237d01d277370f57b2666f3b84ab96bba72fe0b668c7701d0fc99`. It assigns ALGO08v3 first on 228 recordings and the successor first on 227. The campaign unit is `leo-ds30-paired-evaluation-20261124.service`. The result export includes failures, the actual launch order, child and independent verification clocks, and the digest of each selected attempt. [Driver and restart instructions](ds30-paired-evaluation.md) · [Frozen candidate, checked inputs and restore procedure](integrated-original-batch.md)
+
 ```sh
 python -m reports.ALGO08.v3.full_successor_score "$campaign_root/rows.jsonl" "$report_dir"
 ```
