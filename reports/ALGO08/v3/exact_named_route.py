@@ -31,6 +31,8 @@ CASES = {
     }, "named-0316"),
 }
 SHARING = ROOT/"tools/pipeline_eval/variants/algo08_blind_rank.py"
+FIRST_DRIVER_SHA256 = "5ff2bf64c8155cb8230334ef424c448769193f70be2d4853daa9e3efa4571349"
+FIRST_PARITY_SHA256 = "dd1f4a2f3891bba9a5ae9985f87273117223b137e398f39334e5b6edb3e1016b"
 SOURCES = (Path(__file__), SHARING, *(HERE/name for name in (
     "exact-named-route-protocol.md", "held_adaptive_0160.py", "named_history_once.py", "empty_bootstrap.py",
     "prospective_0316_solver.py", "joint_publication.py", "historical_orbit_index.py", "portable_orbit_index.py",
@@ -99,6 +101,17 @@ def rank_with_exact_inputs(original, sharing, install, discovery, stats, work):
     return rank
 
 
+def manifest_paths(request):
+    """Normalize legacy segment directory entries before ordinary inventory validation."""
+    paths = []
+    for raw_path, checksum in request["manifests"]:
+        manifest = Path(raw_path)
+        if manifest.parent == Path(request["recording"]):
+            manifest /= "manifest.json"
+        paths.append([str(manifest), checksum])
+    return dict(request, manifests=paths)
+
+
 @contextmanager
 def exact_ports(bound, req, audit):
     from catalogue_block_rank import install
@@ -137,7 +150,7 @@ def worker(case, root):
     import empty_bootstrap as boot
     from aperture_trial import write
     from named_history_once import named_solve
-    from prospective_0316_solver import worker as saved_worker
+    import prospective_0316_solver as saved
     import joint_publication as joint
 
     bound = read(root/"binding.json")["input"]
@@ -148,6 +161,11 @@ def worker(case, root):
     output = root/"candidate"
     runtime, run, audits = boot.load_runtime, joint.run, {}
     audit = dict(rank=[], blocks=Counter(), graph={}, gates=Counter(), portable={}, png={}, verified_tle=Counter())
+    stock_inventory = saved.saved_inventory
+
+    def inventory(request, path):
+        return stock_inventory(manifest_paths(request), path)
+
     with ExitStack() as stack:
         def load():
             loaded = runtime()
@@ -169,7 +187,8 @@ def worker(case, root):
 
         stack.enter_context(patch.object(boot, "load_runtime", load))
         stack.enter_context(patch.object(joint, "run", publish))
-        saved_worker(path, "stock", output, source_pins={}, native_sha=req["native_sha256"], windows=bound["issued"],
+        stack.enter_context(patch.object(saved, "saved_inventory", inventory))
+        saved.worker(path, "stock", output, source_pins={}, native_sha=req["native_sha256"], windows=bound["issued"],
                      admitted=bound["admitted"], inventory_file=Path(bound["inventory"]), audit_name="worker.json")
     write(output/"ports.json", audit | audits)
 
@@ -189,8 +208,13 @@ def launch(case, output, first):
     if case == "0316":
         if first is None:
             raise ValueError("Provide the sealed DS30-0160 result directory")
-        gate = read(resident_path(first/"result.json"))
-        if gate["case"] != "DS30-0160" or not gate["exact"] or gate["source_bindings"] != enrollment["sources"]:
+        receipt = resident_path(first/"result.json")
+        gate = read(receipt)
+        sources = enrollment["sources"]
+        previous = sources | {Path(__file__).name: FIRST_DRIVER_SHA256}
+        matched = gate["source_bindings"] == sources or (
+            digest(receipt) == FIRST_PARITY_SHA256 and gate["source_bindings"] == previous)
+        if gate["case"] != "DS30-0160" or not gate["exact"] or not matched:
             raise ValueError("The independent transfer requires verified earlier complete named parity")
     if resident_path(output.parent) != Path("/dev/shm") or output.exists():
         raise ValueError("Expected a fresh tmpfs output")

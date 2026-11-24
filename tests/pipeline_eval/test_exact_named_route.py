@@ -67,3 +67,19 @@ def test_transfer_gate_requires_ordered_owners_and_real_publication():
     changed["products"]["images"].pop("4")
     states = parity(original, changed)
     assert {name for name, equal in states.items() if not equal} == {"ordered_owners", "eight_pngs"}
+
+
+def test_normalize_legacy_directory_binding_without_reordering_or_changing_digests():
+    root = "/recordings/original"
+    request = dict(recording=root, manifests=[
+        [f"{root}/segment-2", "digest-second"], [f"{root}/segment-1/manifest.json", "digest-first"],
+        ["/recordings/other/segment", "unmatched"],
+    ])
+    unchanged = deepcopy(request)
+    bound = exact_named_route.manifest_paths(request)
+    assert request == unchanged
+    assert bound["manifests"] == [
+        [f"{root}/segment-2/manifest.json", "digest-second"], [f"{root}/segment-1/manifest.json", "digest-first"],
+        ["/recordings/other/segment", "unmatched"],
+    ]
+    assert exact_named_route.manifest_paths(bound) == bound
