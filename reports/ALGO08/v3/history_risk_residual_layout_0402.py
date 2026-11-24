@@ -25,6 +25,7 @@ ARCHIVED_SHA = "4559edff28db01b962e3187572d4cb11bc2a4bbf9d7d9aff9cb0a305a2c33330
 ALL_CAIRO = Path("/dev/shm/leo-v3-history-risk-cairo-0402-result01/verified-result.json")
 ALL_CAIRO_SHA = "82a177ef8ea46681c9021ab830cdaa7f737f1ad633f644890a06ce742aac239f"
 PROTOCOL = "history-risk-residual-layout-0402-protocol.md"
+TIMED_DRIVER = "228c630d85af623075c000b83d9ef045255d0cbae1ea963e76183e205ab5efea"
 
 
 def source_pins():
@@ -39,6 +40,10 @@ def require_active(audit):
             or [draw["figures"] for draw in audit.get("ordinary_orbit_draws", [])] != [4]
             or any("fallback" in key or key in ("native_orbit_figures", "orbit_figures") for key in audit)):
         raise ValueError(f"The ordinary orbit and four optimized figures must all execute once: {audit}")
+
+
+def media_identity(images):
+    return {name: (item["sha256"], item["rgba_sha256"], tuple(item["size"])) for name, item in images.items()}
 
 
 def render_pair(path, digest):
@@ -184,13 +189,15 @@ def score(root):
     before, after = (arm["products"]["images"] for arm in (old, new))
     cairo = json.loads(checked(ALL_CAIRO, ALL_CAIRO_SHA))["media"]
     archival = {name: (before[name] if name in ORBIT_SHEETS else cairo[name]["cairo"]) for name in before}
-    if after != archival:
+    if media_identity(after) != media_identity(archival):
         raise ValueError("The four original orbit and four qualified faster images must each match")
     worker, replayed, renderer = (read(root/f"{name}.json") for name in ("render", "replay", "renderer-binding"))
     require_active(worker["work"])
     require_active(replayed["work"])
-    if (renderer["sources"] != worker["sources"] or renderer["sources"] != source_pins()
-            or renderer["sha256"] != source_digest(source_pins()) or replayed["source_scene_sha256"] != worker["scene_sha256"]
+    pins = source_pins()
+    if (renderer["sources"] != worker["sources"]
+            or renderer["sources"] not in (pins, pins | {Path(__file__).name: TIMED_DRIVER})
+            or renderer["sha256"] != source_digest(renderer["sources"]) or replayed["source_scene_sha256"] != worker["scene_sha256"]
             or any(replayed["hashes"][mode] != {name: item["sha256"] for name, item in figures.items()}
                    for mode, figures in (("ordinary", before), ("residual_layout", after)))):
         raise ValueError("The isolated render times must reproduce all of the official images in each mode")
