@@ -36,12 +36,14 @@ def test_owner_claim_denominators_and_missing_owner_rows():
     assert partial['owners']['successor']['states']['sparse_only'] == 1
     result = layer(rows, {'installed': stock, 'successor': candidate}, arm='fitted_c')
     assert result['owners']['installed']['states']['candidate_empty'] == 1
-    assert result['jointly_owned'] == {'shared_ids': 1, 'shared_satellite': 0, 'shared_satellite_role': 0}
+    shared = result['jointly_owned']
+    assert (shared['shared_ids'], shared['shared_satellite'], shared['shared_satellite_role']) == (1, 0, 0)
+    assert shared['shared_by_state']['signed_shift'] == 1
     with pytest.raises(ValueError, match='no admitted passed factor'):
         layer(rows, {'installed': candidate}, arm='fitted_c')
 
 
-def test_signed_opportunity_join_and_scheduled_anchor(tmp_path):
+def test_signed_opportunity_join_and_scheduled_anchor():
     row = dict(edge='lower', channel=3, actual_rf_hz=11_200_000_000)
     probes = [dict(row, visit_index=v, valid_start_counter=2_000_000*v, receiver_id=r,
                    candidates=[factor(-1000.)]) for v in range(9) for r in (0,1)]

@@ -1,7 +1,6 @@
 """Compare sealed 20/8 and 20 ms evidence without opening original sample or orbit data."""
 
 import argparse
-from collections import Counter
 import json
 from math import remainder, sqrt
 import os
@@ -58,7 +57,8 @@ def layer(members, rosters, *, arm=None):
     counts = dict.fromkeys(CLASSES, 0)
     errors = []
     owners = {role: None if role not in rosters else dict.fromkeys(CLASSES, 0) for role in BUILDS}
-    jointly_owned = None if len(rosters) != len(BUILDS) else Counter(shared_ids=0, shared_satellite=0, shared_satellite_role=0)
+    jointly_owned = None if len(rosters) != len(BUILDS) else dict(shared_ids=0, shared_satellite=0, shared_satellite_role=0,
+                                                                 shared_by_state=dict.fromkeys(CLASSES, 0))
     for oid, status, delta in members:
         counts[status] += 1
         if delta is not None:
@@ -74,12 +74,13 @@ def layer(members, rosters, *, arm=None):
             jointly_owned["shared_ids"] += 1
             jointly_owned["shared_satellite"] += int(old[0] == new[0])
             jointly_owned["shared_satellite_role"] += int(old == new)
+            jointly_owned["shared_by_state"][status] += 1
     if arm is not None:
         if ((owners["installed"] and (owners["installed"]["both_empty"] or owners["installed"]["sparse_only"]))
                 or (owners["successor"] and (owners["successor"]["both_empty"] or owners["successor"]["candidate_empty"]))):
             raise ValueError("A signed owner has no admitted passed factor in its calibrated build")
         return dict(owners={r: None if a is None else dict(total=sum(a.values()), states=a) for r,a in owners.items()},
-                    jointly_owned=None if jointly_owned is None else dict(jointly_owned))
+                    jointly_owned=jointly_owned)
     stock_positive = sum(counts[s] for s in ("candidate_empty", "signed_shift", "epoch_only", "same_carrier"))
     candidate_positive = sum(counts[s] for s in ("sparse_only", "signed_shift", "epoch_only", "same_carrier"))
     return dict(lanes=len(members), states=counts, installed_positive=stock_positive, candidate_positive=candidate_positive,
@@ -258,10 +259,14 @@ def freeze(output, campaign=CAMPAIGN):
     if tuple(sorted(PROSPECTIVE, key=lambda k: ordered[k][0])) != PROSPECTIVE:
         raise ValueError("Prospective order must match the frozen original execution order")
     prospective, status = choose_prospective(campaign)
-    cases = {}
-    for case in (*SEEN, *((prospective,) if prospective else ())):
-        cases[case] = read_case(campaign, case, ordered[case][1])
-    packet_seal = dict(cases=cases, prospective=dict(chosen=prospective, availability=status))
+    cases = {case: read_case(campaign, case, ordered[case][1]) for case in SEEN}
+    prospective_note = dict(chosen=prospective, availability=status)
+    if prospective is not None:
+        try:
+            cases[prospective] = read_case(campaign, prospective, ordered[prospective][1])
+        except (ValueError, FileNotFoundError) as error:
+            prospective_note["unscorable"] = str(error)
+    packet_seal = dict(cases=cases, prospective=prospective_note)
     write(output, packet_seal)
     print(signed.tag(output.read_bytes()))
 
