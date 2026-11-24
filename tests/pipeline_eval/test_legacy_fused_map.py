@@ -24,15 +24,18 @@ def native(tmp_path_factory):
     return fused.load(binary)
 
 
-def capture(tmp_path, *, fault=None, literal_only=False, empty_tail=False):
+def capture(tmp_path, *, fault=None, literal_only=False, empty_tail=False, uniform=False):
     # Distances cross bounded ring wraps, and sample windows cross block ends.
     rng = np.random.default_rng(71)
-    raw = rng.integers(-4096, 4096, size=655_360, dtype="<i2").reshape(-1, 2, 2)
+    raw = rng.integers(-4096, 4096, size=700_000 if uniform else 655_360, dtype="<i2").reshape(-1, 2, 2)
     data = raw.reshape(-1).view(np.uint8)
     if not literal_only:
         for start in (131_072, 393_216, 917_504):
             data[start+4096:start+12_288] = data[start+64:start+8256].copy()
             data[start+32_000:start+48_000] = data[start-16_000:start]
+    if uniform:
+        for start in range(262_144, len(data) - 8_192, 131_072):
+            data[start+1024:start+8192] = data[start-60_000:start-52_832]
     windows = [raw[first:first+35_000] for first in range(0, len(raw), 35_000)]
     if empty_tail:
         windows.append(raw[:0])
@@ -62,6 +65,49 @@ def capture(tmp_path, *, fault=None, literal_only=False, empty_tail=False):
     manifest.write_bytes(canonical_json_bytes(document))
     original = ShortWindowReader(path)
     return original, original.manifest.chunks[0], bytes(frame), windows
+
+
+@pytest.mark.parametrize("fault", [None, "checksum"])
+def test_owned_cross_block_history_yields_immutable_independent_windows(tmp_path, native, fault):
+    reader, chunk, frame, expected = capture(tmp_path, uniform=True, fault=fault)
+    member = fused.FusedMember(reader, chunk, native, None, allow_literal=True,
+                              owned_windows=True, hash_prefix=True)
+    assert member.owned_capacity == expected[0].nbytes + multi.MAX_BLOCK
+    try:
+        visits = member.windows()
+        retained = next(visits)
+        assert not retained.samples.flags.writeable
+        if fault is None:
+            remainder = tuple(visits)
+        else:
+            with pytest.raises(core.MapError, match="EOF, checksum"):
+                tuple(visits)
+            with pytest.raises(core.MapError, match="before clean original EOF"):
+                member.sidecar()
+            return
+    finally:
+        member.close()
+    all_windows = (retained, *remainder)
+    for window, standard in zip(all_windows, expected, strict=True):
+        np.testing.assert_array_equal(window.samples, standard)
+        assert not window.samples.flags.writeable
+    assert all(not np.shares_memory(a.samples, b.samples) for a, b in zip(all_windows, all_windows[1:]))
+    assert member.sidecar()[0] == multi.seal(reader, chunk, frame, all_windows)
+
+
+def test_owned_window_mode_uses_ring_on_mixed_or_empty_extents(tmp_path, native):
+    reader, chunk, _, expected = capture(tmp_path, empty_tail=True)
+    member = fused.FusedMember(reader, chunk, native, None, allow_literal=True,
+                              owned_windows=True, hash_prefix=True)
+    try:
+        assert member.owned_capacity == 0
+        results = tuple(member.windows())
+        assert len(results) == len(expected)
+        assert results[-1].samples.size == 0
+        for window, standard in zip(results, expected, strict=True):
+            np.testing.assert_array_equal(window.samples, standard)
+    finally:
+        member.close()
 
 
 def test_fused_ring_matches_independent_history_and_existing_map(tmp_path, native):

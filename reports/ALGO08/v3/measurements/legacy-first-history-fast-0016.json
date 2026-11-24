@@ -1,0 +1,697 @@
+{
+  "builds": {
+    "hash": {
+      "binary": "sha256:559e49ee3b6ad7ceec969058c3676b563c2e7e7b9a43714042c310ff6fe5c053",
+      "command": [
+        "cc",
+        "-O3",
+        "-std=c11",
+        "-fPIC",
+        "-shared",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-deprecated-declarations",
+        "/dev/shm/leo-v3-legacy-fresh-0169/tools/pipeline_eval/variants/experimental/paired_sha256.c",
+        "-o",
+        "/dev/shm/leo-v3-legacy-first-owned-0016-result01/hash.so",
+        "-lcrypto"
+      ],
+      "source": "sha256:26fb3959951d68bceebf19605a502d93f23c83fc918866a351bf5bb83a3d5b18",
+      "standard": "sha256:cb8a3f9f88e608a04744c7776c22cb5d31b063e43cd1af657951b90adfe3e933"
+    },
+    "history": {
+      "binary_sha256": "sha256:11b8f2a21e7020ded58155ed75310399fafa9d1ef11f9a59981b309ee973a461",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3/legacy_fused_history.c",
+        "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7",
+        "-o",
+        "/dev/shm/leo-v3-legacy-first-owned-0016-result01/history.so"
+      ],
+      "libzstd_sha256": "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80",
+      "native_source_sha256": "sha256:0273c210f0f008bd26dedd29d99a3d7848286a005e491531299e54bf40004fc6"
+    },
+    "replay": {
+      "binary_sha256": "sha256:ebe28b1326a99d49191616726195dc20bfdd2b59dcb63884cae1c959a1154ca4",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-deprecated-declarations",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3/legacy_block_seek.c",
+        "-lzstd",
+        "-o",
+        "/dev/shm/leo-v3-legacy-first-owned-0016-result01/replay.so"
+      ],
+      "source_sha256": "sha256:f57d181e31fc07aaf5e0047aef0954666b4143f77f8c8bce6ecdcb4ac6b8e4e7"
+    }
+  },
+  "cache": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000003.ci16.zst": 78317175,
+      "manifest.json": 6812,
+      "windows-000003.jsonl": 173187
+    },
+    "snapshot": {
+      "cached_pages": 19166,
+      "ended_unix_ns": 1795516791252109931,
+      "members": 3,
+      "observed_file_pages": 19166,
+      "observed_members": 3,
+      "started_unix_ns": 1795516791251744819,
+      "unavailable": {}
+    }
+  },
+  "exact": {
+    "lanes": 114,
+    "positive": 38,
+    "raw_native": "sha256:ffbf0b87476eadd97f5377c30d369a45259c091c1e3cdc09352668c51382ed5b",
+    "residual": 3,
+    "selected": "sha256:218d1fd7078f3d154c6b9d3b692e5b5b9886fef04d7f05bac5d97edb8babf5cd",
+    "visits": {
+      "full": 8,
+      "invalid": 7,
+      "short_primary": 49
+    },
+    "window_spans": "sha256:2a0f04974d02df0e0acd329e7c1bfd4dbeac7d86b5c51d8746ca7abac1180e96"
+  },
+  "machine": {
+    "cpu": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15
+  },
+  "orders": [
+    [
+      "released",
+      "rebuilt",
+      "owned",
+      "prefix",
+      "combined"
+    ],
+    [
+      "combined",
+      "prefix",
+      "owned",
+      "rebuilt",
+      "released"
+    ]
+  ],
+  "post_cache": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000003.ci16.zst": 78317175,
+      "manifest.json": 6812,
+      "windows-000003.jsonl": 173187
+    },
+    "snapshot": {
+      "cached_pages": 19166,
+      "ended_unix_ns": 1795516794249714449,
+      "members": 3,
+      "observed_file_pages": 19166,
+      "observed_members": 3,
+      "started_unix_ns": 1795516794249361631,
+      "unavailable": {}
+    }
+  },
+  "repeats": [
+    {
+      "combined": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4718995,
+          "input_blocks": 0,
+          "wall_ns": 4718755
+        },
+        "signed_receiver": {
+          "cpu_ns": 110562739,
+          "wall_ns": 110588430
+        },
+        "timing": {
+          "cpu_ns": 248893173,
+          "input_blocks": 0,
+          "wall_ns": 248908134
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32486269,
+            "input_blocks": 0,
+            "wall_ns": 32486011
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 24504617,
+          "hash_prefix": true,
+          "hash_wall_ns": 24501533,
+          "history_and_context_bytes": 96168,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 667651,
+            "input_blocks": 0,
+            "wall_ns": 667603
+          },
+          "native_read_cpu_ns": 61379404,
+          "native_read_wall_ns": 61386180,
+          "owned_window_capacity": 1731072,
+          "plan_and_history": {
+            "cpu_ns": 1741170,
+            "input_blocks": 0,
+            "wall_ns": 1741086
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "owned": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 63356727,
+          "input_blocks": 0,
+          "wall_ns": 63357658
+        },
+        "signed_receiver": {
+          "cpu_ns": 111202172,
+          "wall_ns": 111230031
+        },
+        "timing": {
+          "cpu_ns": 317029190,
+          "input_blocks": 0,
+          "wall_ns": 317035721
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32152793,
+            "input_blocks": 0,
+            "wall_ns": 32152559
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32702767,
+          "hash_prefix": false,
+          "hash_wall_ns": 32698268,
+          "history_and_context_bytes": 96168,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 653643,
+            "input_blocks": 0,
+            "wall_ns": 653680
+          },
+          "native_read_cpu_ns": 62244097,
+          "native_read_wall_ns": 62239600,
+          "owned_window_capacity": 1731072,
+          "plan_and_history": {
+            "cpu_ns": 1751621,
+            "input_blocks": 0,
+            "wall_ns": 1751274
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "prefix": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4734890,
+          "input_blocks": 0,
+          "wall_ns": 4734925
+        },
+        "signed_receiver": {
+          "cpu_ns": 112432965,
+          "wall_ns": 112460678
+        },
+        "timing": {
+          "cpu_ns": 255274509,
+          "input_blocks": 0,
+          "wall_ns": 255279706
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32305221,
+            "input_blocks": 0,
+            "wall_ns": 32305508
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 24513141,
+          "hash_prefix": true,
+          "hash_wall_ns": 24507978,
+          "history_and_context_bytes": 882664,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 720614,
+            "input_blocks": 0,
+            "wall_ns": 720620
+          },
+          "native_read_cpu_ns": 65299391,
+          "native_read_wall_ns": 65292635,
+          "owned_window_capacity": 0,
+          "plan_and_history": {
+            "cpu_ns": 2038606,
+            "input_blocks": 0,
+            "wall_ns": 2038508
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "rebuilt": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4756333,
+          "input_blocks": 0,
+          "wall_ns": 4756183
+        },
+        "signed_receiver": {
+          "cpu_ns": 112688266,
+          "wall_ns": 112716393
+        },
+        "timing": {
+          "cpu_ns": 266379798,
+          "input_blocks": 0,
+          "wall_ns": 266395730
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32700130,
+            "input_blocks": 0,
+            "wall_ns": 32699988
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32615592,
+          "hash_prefix": false,
+          "hash_wall_ns": 32611276,
+          "history_and_context_bytes": 882664,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 624152,
+            "input_blocks": 0,
+            "wall_ns": 624125
+          },
+          "native_read_cpu_ns": 67937228,
+          "native_read_wall_ns": 67932197,
+          "owned_window_capacity": 0,
+          "plan_and_history": {
+            "cpu_ns": 2009833,
+            "input_blocks": 0,
+            "wall_ns": 2009665
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "released": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 5542345,
+          "input_blocks": 0,
+          "wall_ns": 5542420
+        },
+        "signed_receiver": {
+          "cpu_ns": 116573428,
+          "wall_ns": 116601759
+        },
+        "timing": {
+          "cpu_ns": 283919155,
+          "input_blocks": 16,
+          "wall_ns": 284709735
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32606171,
+            "input_blocks": 0,
+            "wall_ns": 32623065
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32773835,
+          "hash_prefix": false,
+          "hash_wall_ns": 32769386,
+          "history_and_context_bytes": 882664,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 1053378,
+            "input_blocks": 0,
+            "wall_ns": 1053607
+          },
+          "native_read_cpu_ns": 70035391,
+          "native_read_wall_ns": 70029612,
+          "owned_window_capacity": 0,
+          "plan_and_history": {
+            "cpu_ns": 2796151,
+            "input_blocks": 16,
+            "wall_ns": 3560417
+          },
+          "retained_exception_buffer": 393216
+        }
+      }
+    },
+    {
+      "combined": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4535498,
+          "input_blocks": 0,
+          "wall_ns": 4535520
+        },
+        "signed_receiver": {
+          "cpu_ns": 111943232,
+          "wall_ns": 111970894
+        },
+        "timing": {
+          "cpu_ns": 250757704,
+          "input_blocks": 0,
+          "wall_ns": 250766940
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32225199,
+            "input_blocks": 0,
+            "wall_ns": 32225172
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 24523369,
+          "hash_prefix": true,
+          "hash_wall_ns": 24523941,
+          "history_and_context_bytes": 96168,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 639577,
+            "input_blocks": 0,
+            "wall_ns": 639607
+          },
+          "native_read_cpu_ns": 62010872,
+          "native_read_wall_ns": 62007017,
+          "owned_window_capacity": 1731072,
+          "plan_and_history": {
+            "cpu_ns": 1776505,
+            "input_blocks": 0,
+            "wall_ns": 1776341
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "owned": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4883416,
+          "input_blocks": 0,
+          "wall_ns": 4883102
+        },
+        "signed_receiver": {
+          "cpu_ns": 113270761,
+          "wall_ns": 113294200
+        },
+        "timing": {
+          "cpu_ns": 260647297,
+          "input_blocks": 0,
+          "wall_ns": 260652667
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32123462,
+            "input_blocks": 0,
+            "wall_ns": 32123617
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32772495,
+          "hash_prefix": false,
+          "hash_wall_ns": 32770150,
+          "history_and_context_bytes": 96168,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 684270,
+            "input_blocks": 0,
+            "wall_ns": 684347
+          },
+          "native_read_cpu_ns": 62005621,
+          "native_read_wall_ns": 62002740,
+          "owned_window_capacity": 1731072,
+          "plan_and_history": {
+            "cpu_ns": 1896539,
+            "input_blocks": 0,
+            "wall_ns": 1896244
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "prefix": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4942895,
+          "input_blocks": 0,
+          "wall_ns": 4942926
+        },
+        "signed_receiver": {
+          "cpu_ns": 110701743,
+          "wall_ns": 110725398
+        },
+        "timing": {
+          "cpu_ns": 251283371,
+          "input_blocks": 0,
+          "wall_ns": 251288625
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32211826,
+            "input_blocks": 0,
+            "wall_ns": 32211687
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 24289987,
+          "hash_prefix": true,
+          "hash_wall_ns": 24286208,
+          "history_and_context_bytes": 882664,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 632094,
+            "input_blocks": 0,
+            "wall_ns": 632070
+          },
+          "native_read_cpu_ns": 64164612,
+          "native_read_wall_ns": 64161185,
+          "owned_window_capacity": 0,
+          "plan_and_history": {
+            "cpu_ns": 1813809,
+            "input_blocks": 0,
+            "wall_ns": 1813635
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "rebuilt": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 5147957,
+          "input_blocks": 0,
+          "wall_ns": 5147966
+        },
+        "signed_receiver": {
+          "cpu_ns": 113463117,
+          "wall_ns": 113505749
+        },
+        "timing": {
+          "cpu_ns": 263898823,
+          "input_blocks": 0,
+          "wall_ns": 263917470
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 33291473,
+            "input_blocks": 0,
+            "wall_ns": 33291391
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32572771,
+          "hash_prefix": false,
+          "hash_wall_ns": 32569421,
+          "history_and_context_bytes": 882664,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 795041,
+            "input_blocks": 0,
+            "wall_ns": 795051
+          },
+          "native_read_cpu_ns": 64029021,
+          "native_read_wall_ns": 64025405,
+          "owned_window_capacity": 0,
+          "plan_and_history": {
+            "cpu_ns": 1905526,
+            "input_blocks": 0,
+            "wall_ns": 1905015
+          },
+          "retained_exception_buffer": 393216
+        }
+      },
+      "released": {
+        "map": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+        "map_bytes": 427753,
+        "reopened": {
+          "original_encoded_reused": 78317175,
+          "prefix_bytes": 640000,
+          "prefix_sha256": "sha256:a85d214f043aa406497d21043f0c2326e2c485abd2290072d9cae1ee2c7977bd"
+        },
+        "seal_reopen_and_sync": {
+          "cpu_ns": 4895886,
+          "input_blocks": 0,
+          "wall_ns": 4895779
+        },
+        "signed_receiver": {
+          "cpu_ns": 113483285,
+          "wall_ns": 113509586
+        },
+        "timing": {
+          "cpu_ns": 264348572,
+          "input_blocks": 0,
+          "wall_ns": 264354050
+        },
+        "verification_and_history": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32905176,
+            "input_blocks": 0,
+            "wall_ns": 32905193
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32724614,
+          "hash_prefix": false,
+          "hash_wall_ns": 32721614,
+          "history_and_context_bytes": 882664,
+          "largest_sample_window_bytes": 1600000,
+          "metadata": {
+            "cpu_ns": 662395,
+            "input_blocks": 0,
+            "wall_ns": 662385
+          },
+          "native_read_cpu_ns": 64875714,
+          "native_read_wall_ns": 64871817,
+          "owned_window_capacity": 0,
+          "plan_and_history": {
+            "cpu_ns": 1938053,
+            "input_blocks": 0,
+            "wall_ns": 1937778
+          },
+          "retained_exception_buffer": 393216
+        }
+      }
+    }
+  ],
+  "source": {
+    "chunk_index": 3,
+    "index_sha256": "sha256:1d6c96e627299d8d201054c0c75115d316cc5f865967bfc80d0f1c3c0de78732",
+    "manifest_sha256": "sha256:1530e4a7376f569f52d2b41dfdfc732489b036df73a8cff9b0feabecbc8cb3cc",
+    "member_sha256": "sha256:cef714908ca0d71c2f3d4d3be95b1081a5d2dcb62cb65ac026ca3c7f8a698133",
+    "raw_sha256": "sha256:1380ef6d4bde20b906714366db97450009655c9c4720cbe6aaccaf99c5329de7"
+  }
+}

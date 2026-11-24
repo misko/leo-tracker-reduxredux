@@ -57,6 +57,29 @@ def test_unavailable_library_uses_standard_hashes(tmp_path):
     compare_hashes(hashes)
 
 
+def compare_prefix_hashes(hashes):
+    rng = Random(9071)
+    expected = sha256()
+    for length, cut in ((1024, 640), (111, 0), (1024, 639), (17, 17), (0, 0), (1024, 640)):
+        raw = memoryview(rng.randbytes(length + 1))[1:]
+        assert hashes.window_and_prefix(raw, cut) == (sha256(raw).digest(), sha256(raw[:cut]).digest())
+        expected.update(raw)
+        assert hashes.digest() == expected.digest()
+    for bad in (-1, length + 1):
+        with pytest.raises(ValueError, match="outside"):
+            hashes.window_and_prefix(raw, bad)
+    assert hashes.digest() == expected.digest()
+
+
+@pytest.mark.hardware
+def test_native_prefix_snapshot_preserves_full_member_at_partial_and_aligned_cuts(native):
+    compare_prefix_hashes(PairedSha256(native))
+
+
+def test_prefix_snapshot_has_portable_hashlib_path():
+    compare_prefix_hashes(PairedSha256())
+
+
 def _sealed(tmp_path):
     writer = ShortWindowWriter(tmp_path, "sealed", configuration={"window_ms": 20},
                                radio={"id": "synthetic"}, receiver_ids=(0, 1), chunk_windows=4)

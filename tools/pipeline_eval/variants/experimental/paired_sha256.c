@@ -124,22 +124,33 @@ int leo_paired_sha256_init(SHA256_CTX *chunk) {
     return SHA256_Init(chunk);
 }
 
-int leo_paired_sha256_window(SHA256_CTX *chunk, const uint8_t *data, size_t size, uint8_t *digest) {
-    SHA256_CTX window;
-    if (!SHA256_Init(&window)) {
-        return 0;
-    }
+static int update_pair(SHA256_CTX *window, SHA256_CTX *chunk, const uint8_t *data, size_t size) {
 #ifdef LEOPAIRED_X86_SHA
-    if (chunk->num == 0 && size >= SHA256_CBLOCK && leo_paired_sha256_supported()) {
+    if (window->num == 0 && chunk->num == 0 && size >= SHA256_CBLOCK && leo_paired_sha256_supported()) {
         const size_t full = size - size % SHA256_CBLOCK;
-        blocks(&window, chunk, data, full);
+        blocks(window, chunk, data, full);
         size -= full;
         data += full;
     }
 #endif
     /* OpenSSL owns buffering, off-block-boundary updates and padding. */
-    return SHA256_Update(&window, data, size) && SHA256_Update(chunk, data, size) &&
-        SHA256_Final(digest, &window);
+    return SHA256_Update(window, data, size) && SHA256_Update(chunk, data, size);
+}
+
+int leo_paired_sha256_window(SHA256_CTX *chunk, const uint8_t *data, size_t size, uint8_t *digest) {
+    SHA256_CTX window;
+    return SHA256_Init(&window) && update_pair(&window, chunk, data, size) && SHA256_Final(digest, &window);
+}
+
+int leo_paired_sha256_window_prefix(SHA256_CTX *chunk, const uint8_t *data, size_t size,
+                                    size_t prefix, uint8_t *digest, uint8_t *prefix_digest) {
+    SHA256_CTX window;
+    if (prefix > size || !SHA256_Init(&window) || !update_pair(&window, chunk, data, prefix)) {
+        return 0;
+    }
+    SHA256_CTX snapshot = window;
+    return SHA256_Final(prefix_digest, &snapshot) &&
+        update_pair(&window, chunk, data + prefix, size - prefix) && SHA256_Final(digest, &window);
 }
 
 int leo_paired_sha256_digest(const SHA256_CTX *chunk, uint8_t *digest) {
