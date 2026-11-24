@@ -135,6 +135,9 @@ def referenced_binding(root):
 
 def launch(root):
     from eight_ms_south_transfer import environment_for
+    from portable_orbit_index_trial import local_launcher_tools
+
+    local_launcher_tools()
     from short_raw_diagnostic import measure
 
     old_root, snapshot, omitted_offer, binding = referenced_binding(root)
