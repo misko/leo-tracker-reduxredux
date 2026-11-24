@@ -64,14 +64,20 @@ def matched_budget(raw, saved):
                 required_MB_s=mb/available if available > 0 else None)
 
 
-def exact_case_report():
-    panel = json.loads(checked(DATA / "exact-named-saved-panel.json",
-        "1b78a16f6ca23ca7dad27db73b482aeda6ab1858343118d7e9815b5a7622385b"))
+def exact_case_report(size=3):
+    panels = {
+        3: ("exact-named-saved-panel.json", "1b78a16f6ca23ca7dad27db73b482aeda6ab1858343118d7e9815b5a7622385b"),
+        4: ("exact-named-saved-panel-four.json", "ffabb26e6e518afc44e026396efa06ce28609e1380223090bfb2bb6a85902b43"),
+    }
+    filename, digest = panels[size]
+    panel = json.loads(checked(DATA / filename, digest))
     raw = json.loads(checked(DATA / "acquisition-throughput.json", RAW_CLOCKS_SHA))["rows"]
     prefixes = json.loads(gzip.decompress(checked(DATA / "physical-stage-envelope.json.gz",
         "f8ec74a516fe6682a3f08b133a6a3a180052734ccbcc30f4ef585d9e089d24bf")))
     cases = {}
     hashes = panel["earlier_receipts"] | {"0374": panel["dense_receipt_sha256"]}
+    if size == 4:
+        hashes["0402"] = panel["fourth_receipt_sha256"]
     for row in select(raw, list(panel["per_case"])):
         case = row["case"]
         content = gzip.decompress((DATA / f"exact-named-{case}.json.gz").read_bytes())
@@ -94,5 +100,7 @@ def exact_case_report():
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("--exact-cases", action="store_true", help="Use each case's own measured solver saving")
-    print(json.dumps(exact_case_report() if cli.parse_args().exact_cases else report(), indent=2, allow_nan=False))
+    cli.add_argument("--exact-cases", type=int, nargs="?", const=3, choices=(3, 4),
+                     help="Use the three- or four-recording panel's measured solver savings (default 3)")
+    exact_cases = cli.parse_args().exact_cases
+    print(json.dumps(exact_case_report(exact_cases) if exact_cases else report(), indent=2, allow_nan=False))

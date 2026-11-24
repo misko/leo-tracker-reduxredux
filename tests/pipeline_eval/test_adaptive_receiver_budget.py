@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
-from adaptive_receiver_budget import matched_budget, receiver_budget
+from adaptive_receiver_budget import exact_case_report, matched_budget, receiver_budget
 
 
 def test_publication_includes_the_tail_and_charges_unsplit_runs():
@@ -37,3 +37,13 @@ def test_saved_slowdown_is_charged_and_can_make_half_time_unreachable():
     raw = dict(stages=[5, 4, 1], compressed_MB=120)
     clocks = dict(named=dict(elapsed_s=7), candidate=dict(elapsed_s=8))
     assert matched_budget(raw, clocks)["required_MB_s"] is None
+
+
+def test_fourth_signed_case_exceeds_half_time_even_with_free_acquisition():
+    report = exact_case_report(4)
+    assert set(report["cases"]) == {"DS30-0160", "DS30-0316", "DS30-0374", "DS30-0402"}
+    expensive = report["cases"]["DS30-0402"]
+    assert expensive["acquisition_budget_s"] == pytest.approx(-2.82947, abs=0.00001)
+    assert expensive["required_MB_s"] is None
+    assert report["median_ratio_at_verify_only_rate"] > 0.5
+    assert report["summed_ratio_at_verify_only_rate"] > 0.5
