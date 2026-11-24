@@ -167,6 +167,7 @@ def worker(root, binding, size, *, entrypoint=None):
     options = list(binding["candidate_options"])
     for flag, value in (("--recording", source), ("--output", root)):
         options[options.index(flag) + 1] = str(value)
+    args = entry.parser().parse_args(options) if entrypoint is None else None
     live = {}
     load, staged = boot.load_runtime, boot.staged_scanner
     with ExitStack() as patches:
@@ -259,7 +260,7 @@ def worker(root, binding, size, *, entrypoint=None):
         patches.enter_context(patch.object(boot, "load_runtime", loaded))
         try:
             if entrypoint is None:
-                entry.run(entry.parser().parse_args(options))
+                entry.run(args)
             else:
                 with patch.object(sys, "argv", [__file__, *options]):
                     entrypoint()
