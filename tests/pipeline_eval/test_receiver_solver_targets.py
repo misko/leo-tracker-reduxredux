@@ -2,7 +2,7 @@ from statistics import median
 
 import pytest
 
-from reports.ALGO08.v3.receiver_solver_targets import targets
+from reports.ALGO08.v3.receiver_solver_targets import design_point, targets
 
 
 def test_even_panel_uses_the_two_middle_ratios_and_keeps_withheld_costs():
@@ -27,3 +27,12 @@ def test_zero_solver_work_can_be_unreachable_at_a_fixed_receiver_rate():
     assert targets([(10, 7, 0, 2)], 1)["both"] == pytest.approx(1.)
     with pytest.raises(ValueError, match="disjoint"):
         targets([(10, 7, 5, 3)], 1)
+
+
+def test_design_point_charges_each_measured_scope_once():
+    # 15 seconds in native become 10, and 14 seconds of solver become 10.
+    # The withheld case still pays its entire four seconds outside those stages.
+    result = design_point([(80, 39, 15, 14), (10, 4, 0, 0)])
+    assert result["excess_over_half_s"] == pytest.approx(-11)
+    assert result["summed_speedup"] == pytest.approx(90 / 34)
+    assert result["median_paired_speedup"] == pytest.approx(1 / median([30 / 80, 4 / 10]))
