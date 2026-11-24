@@ -1,5 +1,6 @@
 """Analyze fixed signed owner groups from authenticated saved receiver packets."""
 
+import argparse
 from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from itertools import pairwise
@@ -8,7 +9,7 @@ from math import fsum, isfinite, sqrt
 from pathlib import Path
 from statistics import fmean
 
-from satellite_set_transfer import FIRST30, ledger
+from satellite_set_transfer import FIRST30, kendall, ledger
 from signed_cfo_time import ARMS, MAX_GAP, SAMPLE_RATE, difference
 from signed_cfo_time_readout import bind_pair, document, opportunities, owners, read_native, tag
 
@@ -19,6 +20,7 @@ FIELD = Path("/srv/postgres-nvme/leo-ds30-evaluation-20261124")
 ENROLLMENT = Path("/tmp/leo-first30-native-ledger.aHNPOF")
 CASES = ("DS30-0049", "DS30-0086", "DS30-0220")
 DEVELOPMENT = "76ffa1841268d1f9dd8348a3549c8927655653abdcc804697b6a36f00aebf8ce"
+FEATURES = "3a9547ed318c0a22b726e02a06adf161c144313f6ecbe0a781c9f23b06770c23"
 INTERVENTIONS = {
     "matched-donor": "9e129a016bdd533d7c82706b402665bea6cd2d34c0628c0bda62fe414cae1a6a",
     "shifted-winner": "d5d07b8134c3a2e4c3f06745e6899f8ad02207b0997f5bab39332083887f3b87",
@@ -76,7 +78,7 @@ def proposals(groups, lanes):
     return result
 
 
-def descent(groups):
+def measure_cfo(groups):
     # Every group uses the same evaluation rows before and after correction.
     count = proposed = 0
     raw = centered = corrected = affine = slope_energy = 0.
@@ -155,7 +157,7 @@ def group_readout(old, candidate, a, b):
                         held_anchors.append(correction)
             by_piece.append(retained)
     union = span[0]+span[1]-span[2]
-    strict_score = descent(by_piece)
+    strict_score = measure_cfo(by_piece)
     # The advancement denominator includes strict matches in short or singleton pieces.
     strict_score["fraction_of_all_strict"] = strict_score["proposed"]/len(strict) if strict else None
     strict_score["qualifies"] &= bool(strict and strict_score["fraction_of_all_strict"] >= .1)
@@ -250,9 +252,9 @@ def compare_case(case, pair):
             modified = opportunities(variant)
             bind_pair(stock[2], variant, a, modified)
             evidence = saved["witness"]["evidence"]
-            epoch = {arm: entry["owner_sha256"] for arm, entry in evidence["detail"]["arms"].items()}
-            changed = evidence_rows(evidence, native_pin, epoch)
-            variants[name] = dict(native_sha256=native_pin, owner_sha256=epoch, arms={})
+            owner_pins = {arm: entry["owner_sha256"] for arm, entry in evidence["detail"]["arms"].items()}
+            changed = evidence_rows(evidence, native_pin, owner_pins)
+            variants[name] = dict(native_sha256=native_pin, owner_sha256=owner_pins, arms={})
             for arm in ARMS:
                 info = group_readout(old[arm], changed[arm], a, modified)
                 info["intervention"] = exact_changes(a, b, modified, old[arm], new[arm], changed[arm])
@@ -271,5 +273,39 @@ def readout():
                 for case in HELD for arm in ARMS))
 
 
+def geographic_score(path):
+    seal = document(path, FEATURES)
+    cases, variants = {}, {}
+    source = document(MEASUREMENTS / "ds30-0049-saved-crossover.json.gz", DEVELOPMENT)["cells"]
+    cases[CASES[0]] = {arm: {name: source[cell]["arms"][arm]["error_m"] for name, cell in (
+        ("installed/full", "installed-installed"), ("installed/mixed", "installed-successor"),
+        ("charted/full", "successor-installed"), ("charted/mixed", "successor-successor"))} for arm in ARMS}
+    for case, (_, pin) in HELD.items():
+        prior = document(MEASUREMENTS / f"field-receiver-solver-cross-{case[-4:]}.json.gz", pin)
+        cases[case] = {arm: {cell: 1_000*error for cell, error in prior["score"]["arms"][arm]["error_km"].items()}
+                       for arm in ARMS}
+    for name, pin in INTERVENTIONS.items():
+        receipt_name = "shifted-winner-repair" if name == "shifted-winner" else name
+        saved = document(MEASUREMENTS / f"ds30-0049-{receipt_name}.json.gz", pin)
+        variants[name] = {arm: saved["score"]["arms"][arm]["counterfactual_m"] for arm in ARMS}
+    changes = {case: {arm: {solver: rows[solver+"/mixed"]-rows[solver+"/full"] for solver in ("installed", "charted")}
+                      for arm, rows in trend.items()} for case, trend in cases.items()}
+    predictors = {arm: {} for arm in ARMS}
+    for arm in ARMS:
+        rows = {case: entry["arms"][arm] for case, entry in seal["cases"].items()}
+        series = dict(absolute_owner_count_delta={c: abs(r["owner_rows"][1]-r["owner_rows"][0]) for c,r in rows.items()},
+                      interval_jaccard_loss={c: r["interval_jaccard_loss"] for c,r in rows.items()},
+                      centered_cfo_rms={c: r["correction"]["centered_rms_hz"] for c,r in rows.items()})
+        for name, x in series.items():
+            predictors[arm][name] = {solver: kendall([(x[case], changes[case][arm][solver]) for case in CASES])
+                                     for solver in ("installed", "charted")}
+    return dict(features_sha256=FEATURES, error_m=cases, localizations_0049_interventions_m=variants,
+                receiver_effect_m=changes, descriptive_ranks=predictors, advances=seal["advances"])
+
+
 if __name__ == "__main__":
-    print(json.dumps(readout(), indent=2, sort_keys=True, allow_nan=False))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--score", type=Path, help="Add archived outcomes to the exact sealed feature receipt")
+    args = parser.parse_args()
+    print(json.dumps(geographic_score(args.score) if args.score else readout(), indent=2, sort_keys=True,
+                     allow_nan=False))

@@ -6,7 +6,7 @@ import sys
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
-from owner_path_correction import CFO, SAMPLE_RATE, exact_changes, group_readout, pieces, proposals
+from owner_path_correction import CFO, MEASUREMENTS, SAMPLE_RATE, exact_changes, geographic_score, group_readout, pieces, proposals
 
 
 def lane(t, cfo, *, short=True, radio=0, epoch=0):
@@ -57,3 +57,14 @@ def test_intervention_counts_a_restored_owner_only_if_exact_row_matches():
     mixed = {"b": (42, "conditional")}
     assert exact_changes(before, sparse, masked, old, mixed, old) == dict(
         changed_winners=1, changed_now_owned=1, restored_stock_owner=1, restored_with_exact_stock_tuple=1)
+
+
+def test_archived_geography_join_refuses_unsealed_receiver_features(tmp_path):
+    feature = MEASUREMENTS / "owner-path-correction-features.json"
+    archived = geographic_score(feature)
+    assert not archived["advances"]
+    assert archived["receiver_effect_m"]["DS30-0220"]["fitted_c"]["charted"] > 1_000
+    unsealed = tmp_path / feature.name
+    unsealed.write_bytes(feature.read_bytes() + b"\n")
+    with pytest.raises(ValueError, match="Sealed input differs"):
+        geographic_score(unsealed)
