@@ -1,6 +1,7 @@
 """Run one optional exact paired repair on the verified saved 0220 detector input."""
 
 import argparse
+from contextlib import contextmanager
 import fcntl
 from hashlib import sha256
 import json
@@ -55,10 +56,13 @@ def field_worker_import():
 
 def candidate(stage):
     scope = {}
-    field, crossover = field_worker_import()
-    original = crossover.charted
+    field, _ = field_worker_import()
+    import exact_named_raw as raw
 
-    def charted(*args, **kwargs):
+    original = raw.risk_solve
+
+    @contextmanager
+    def risk_solve(*args, **kwargs):
         import blind_joint_repair as repair
 
         path = Path(repair.__file__)
@@ -66,12 +70,11 @@ def candidate(stage):
             raise ValueError("Expected the authenticated, unchanged repair source")
         checked(path, PINS[path])
         budget = WorkBudget(repair.small_rejection)
-        with patch.object(repair, "small_rejection", budget.admit):
-            result = original(*args, **kwargs)
+        with patch.object(repair, "small_rejection", budget.admit), original(*args, **kwargs):
+            yield
         scope["additional_attempt"] = budget.over_cap_counts
-        return result
 
-    with patch.object(crossover, "charted", charted):
+    with patch.object(raw, "risk_solve", risk_solve):
         field.worker(CASE, stage)
     write(stage / "repair-policy.json", scope | dict(raw_timing_credit=0, protocol_sha256=pin(PROTOCOL),
                                                     source_sha256=pin(Path(__file__))))
