@@ -5,7 +5,7 @@ from collections import Counter
 import gzip
 from hashlib import sha256
 import json
-from math import hypot, isfinite
+from math import cos, hypot, isfinite, radians
 from pathlib import Path
 import signal
 import subprocess
@@ -16,7 +16,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from empty_bootstrap import RELEASE, checked
-from history_risk_0016_omitted import HERE, input_binding, packet, read
+from history_risk_0016_omitted import HERE, input_binding, packet
 from history_risk_weak_physical import deny_original
 
 
@@ -26,6 +26,7 @@ EXPECTED_PIN = "fd8cfe8a08ba896922c148e5050d3561e1f30cc875a9cf5dc7b942f55874d2cf
 TRACK_CONFIG_PIN = "a7a252b2fd9a9fe7c617f4565b171c159846705803f4fb80ab755ba9ea94710a"
 SCORE_PIN = "6e7ae57a5762be3028756e3033c070de587c461707dda059692aee5d7c717b96"
 AUDIT_PIN = "667105870a1add0f2f5930617469cf31f1fef301"
+REFERENCE_PIN = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
 GAP_S = 0.96
 
 
@@ -219,11 +220,18 @@ def archive_admission(request, reader_class, identity):
     return path, refs, sum(row["size"] for row in census)
 
 
+def site_reference():
+    path = HERE.parent.parent/"2026_11_21_ds30_full/reference-audit.json"
+    rows = json.loads(checked(path, REFERENCE_PIN))["cases"]
+    (survey,) = (r["reference"] for r in rows if r["dataset_label"] == "DS30-0016" and r["authority_eligible"])
+    return [survey["latitude_deg"], survey["longitude_deg"]]
+
+
 def run(output, started):
     import empty_bootstrap as boot
 
     _, _, _, _, _ = boot.load_runtime()
-    from aperture_trial import machine
+    from aperture_trial import archive_identity, machine
     from exact_named_raw import staged_path
     from held_adaptive_0160 import catalogue_scope
     from leo.analysis.localization_v3.elements import ElementParser
@@ -232,7 +240,6 @@ def run(output, started):
     from leo.analysis.polynomial_tracklets import TrackConfig
     from leo.operations.causal_tle_catalogue import causal_catalogue
     from leo.operations.tle_archive import TleArchiveReader
-    from tools.pipeline_eval.qualification.paired_publication import archive_identity
     from tools.pipeline_eval.variants.experimental import regional_reassignment as kernel
     from tools.pipeline_eval.variants.experimental.regional_exterior_veto import evaluate
     from tools.pipeline_eval.variants.experimental.regional_veto_short_circuit import evaluate_terminal, probe_layout
@@ -305,10 +312,7 @@ def run(output, started):
         return
 
     # Reference coordinates and earlier owners are diagnostic inputs only after the blind score seal.
-    from eight_ms_held_score import geographic_reference
-
-    truth, ref_pin = geographic_reference("weak")
-    from math import cos, radians
+    truth = site_reference()
     site_xy = [(truth[1] - region.center[1]) * 111.32 * cos(radians(region.center[0])),
                (truth[0] - region.center[0]) * 111.]
     families = sorted({int(row[1]) for row in control["result"]["owner_changes"]["c0"]["changed"]})
@@ -323,7 +327,7 @@ def run(output, started):
     gains = {rx: score - old["receivers"][rx]["inside_score"] for rx, score in oracle_point["receiver_scores"].items()}
     distances = {rx: hypot(*(a-b for a, b in zip(row["exterior_xy_km"], site_xy, strict=True)))
                  for rx, row in extended["receivers"].items()}
-    write(output/"reference-diagnostic.json", dict(blind_scout_sha256=sealed, reference_sha256=ref_pin,
+    write(output/"reference-diagnostic.json", dict(blind_scout_sha256=sealed, reference_sha256=REFERENCE_PIN,
           containing_owner_families=families, family_terms=replacements, score=oracle,
           gain_vs_original_inside=gains, augmented_exterior_distance_to_reference_km=distances,
           total_scored_points=result["evaluated_points"] + 1, total=clocks(started)))
