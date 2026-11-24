@@ -19,6 +19,16 @@ def same_carrier(stock, sparse):
     return abs(delta) <= MAX_CFO_HZ and abs(offset) <= MAX_EPOCH_SAMPLES
 
 
+def bind_derived(sparse, probes, recipe):
+    detector = signed.canonical(recipe)
+    source = sparse["source"]
+    analysis = signed.canonical(["cancellation", source["raw_recording_authority_digest"], detector[7:], probes])
+    packet = dict(sparse, source=dict(source, probes=probes, analysis_manifest_sha256=analysis),
+                 provenance=dict(sparse["provenance"], detector_sha256=detector, run_id="blind-compact-"+analysis[7:39]))
+    return packet, dict(recipe=recipe, recipe_sha256=detector, derived_native_sha256=signed.canonical(packet),
+                        raw_authority=source["raw_recording_authority_digest"], same_signed_clocks=True)
+
+
 def derive(stock, sparse):
     left, right = (signed.opportunities(n) for n in (stock, sparse))
     signed.bind_pair(stock, sparse, left, right)
@@ -56,21 +66,16 @@ def derive(stock, sparse):
         signed_cfo_hz=MAX_CFO_HZ, no_cfo_alias_rolling=True, wrapped_epoch_samples=MAX_EPOCH_SAMPLES,
         period_samples=[40_000,3], nonanchor_only=True, row_schedule="original stereo stream every eighth admitted visit",
         unchanged_opportunities=True, donation_sha256=signed.canonical(donations))
-    detector = signed.canonical(recipe)
-    source = sparse["source"]
-    analysis = signed.canonical(["cancellation", source["raw_recording_authority_digest"], detector[7:], probes])
-    packet = dict(sparse, source=dict(source, probes=probes, analysis_manifest_sha256=analysis),
-                 provenance=dict(sparse["provenance"], detector_sha256=detector, run_id="blind-compact-"+analysis[7:39]))
+    packet, custody = bind_derived(sparse, probes, recipe)
     residual = [row["original"]["fractional_tracking_cfo_hz"]-row["donor"]["fractional_tracking_cfo_hz"] for row in donations]
     changes = dict(Counter(field for row in donations for field in row["original"]
                           if row["original"][field] != row["donor"][field]))
-    return packet, dict(recipe=recipe, recipe_sha256=detector, derived_native_sha256=signed.canonical(packet),
-        coverage=counts, donations=donations, feature_changes=changes, raw_authority=source["raw_recording_authority_digest"],
-        same_signed_clocks=True, same_membership=True, substituted=len(donations),
+    return packet, dict(custody, coverage=counts, donations=donations, feature_changes=changes,
+        same_membership=True, substituted=len(donations),
         input_matched_rms_from_installed_hz=sqrt(fmean(x*x for x in residual)))
 
 
-def owner_counts(ordered, donations):
-    by_id = {entry["observation_id"] for entry in donations}
-    return {arm: dict(total=len(values), donated=sum(row[0] in by_id for row in values))
+def owner_counts(ordered, changes, *, label="donated"):
+    by_id = {entry["observation_id"] for entry in changes}
+    return {arm: {"total": len(values), label: sum(row[0] in by_id for row in values)}
             for arm, values in ordered.items()}
