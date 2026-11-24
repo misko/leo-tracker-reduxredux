@@ -16,7 +16,7 @@ REQUESTS = Path("/dev/shm/leo-v3-named-south-transfer-01")
 NAMED = {"containing": (BENCH/"exact-curved-lookahead-south-inside/pair.json", "48fed3c62639ef81fb99e4b76921bcacd999e769a78ebb607b2b886b6f0951f0"),
          "near-omitted": (BENCH/"exact-curved-lookahead-south-offers.json", "5181abf1c8a36d45dfe140e8851f0a423b69ec69b8ca231a3f87bcc9fdcecca9")}
 MODES = {
-    "containing": ("e3ba4f9153eb1cc2348666aea2a9b3afdb98c8b3ac8e792413063d98ed5830fd", Path("/var/tmp/leo-short-graph-20261123-south-inside"),
+    "containing": ("e3ba4f9153eb1cc2348666aea2a9b3afdb98c8b3ec8e792413063d98ed5830fd", Path("/var/tmp/leo-short-graph-20261123-south-inside"),
                    "5d7b28ab3ce6dd3f06e09153481eb125dfad45a11486cc863fdd2fd2e018ce64"),
     "near-omitted": ("3ac64915a3fe5d5115ce0428ed0b133e00343bae45d0321acff804f62626c1b7", Path("/var/tmp/leo-regional-track.O238AD0C/south-near"),
                      "df45f0df4baec45322d790ec8971fdd40d298fda15fa19be3b60b3c92b8a5c40"),
@@ -59,9 +59,12 @@ def run(root):
     targets = {}
     pins = {HERE/"grid_feature_projection.c": PROJECTION_SOURCE_SHA, PROJECTION: LIBRARY_SHA}
     staged_archive = None
-    for mode, (request_pin, _, _) in MODES.items():
-        original = load_checked(REQUESTS/f"{mode}-request.json", request_pin)
+    for mode, (request_pin, control_root, control_pin) in MODES.items():
+        request_path = REQUESTS/f"{mode}-request.json"
+        original = load_checked(request_path, request_pin)
         _, control = historic(mode)
+        named_file, named_pin = NAMED[mode]
+        pins.update({request_path: request_pin, control_root/"joint-research-receipt.json": control_pin, named_file: named_pin})
         inventory, offer = Path(original["saved_inventory"]), Path(original["region"])
         pins.update({inventory: original["inventory"][7:], offer: original["offer_sha256"]})
         offer_value = Algo08Region.parse(load_checked(offer, original["offer_sha256"])).document()
@@ -86,6 +89,8 @@ def run(root):
     (root/"candidate-detections.json").write_bytes(canonical_json_bytes(masked))
     write(root/"plan.json", dict(plan=plan, native_sha256=SOURCE_SHA,
                                  archive=staged_archive, inputs={str(p):v for p,v in pins.items()}, host=host(),
+                                 source_sha256={name:digest(HERE/name) for name in
+                                                ("whole_stereo_blocks_south.py","whole_stereo_blocks.py","whole_stereo_blocks_trial.py")},
                                  protocol_sha256=digest(HERE/"whole-stereo-blocks-south-protocol.md"),
                                  receiver_history=exposure(native, masked, set(plan["skipped_visits"]))))
     for mode, request in targets.items():
