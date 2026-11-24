@@ -87,17 +87,17 @@ def worker(root):
 
 def launch(root):
     from empty_bootstrap import RELEASE, checked
-    from dense_geographic_trial import host
     from eight_ms_south_transfer import environment_for
     from exact_named_raw import staged_path
-    from exact_named_route import checked_catalogue
     from history_risk_weak_physical import controls, deny_original
-    from leo.contracts.digests import canonical_digest
-    from leo.operations.tle_archive import TleArchiveReader
     from portable_orbit_index_trial import local_launcher_tools
 
     sys.addaudithook(deny_original)
     local_launcher_tools()
+    from dense_geographic_trial import host
+    from exact_named_route import checked_catalogue
+    from leo.contracts.digests import canonical_digest
+    from leo.operations.tle_archive import TleArchiveReader
     from short_raw_diagnostic import measure
 
     machine = host()
@@ -178,7 +178,7 @@ def compare_artists(left, right):
 def score(root):
     from empty_bootstrap import checked
     from direct_residual_figures_trial import pixels
-    from history_risk_weak_physical import deny_original, score as original_score
+    from history_risk_weak_physical import deny_original
     from leo.contracts.fast_standard_analysis import PLOTS
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from publication_media_checks import verify_position_sidecars
@@ -188,8 +188,11 @@ def score(root):
     runs = {}
     for mode in MODES:
         arm = root/mode
-        original_score(arm)
-        result = read(arm/"verified-result.json")
+        previous = arm/"verified-result.json"
+        if not previous.is_file():
+            subprocess.run([sys.executable, "-IB", HERE/"history_risk_weak_physical.py", "score", arm],
+                           check=True, timeout=30)
+        result = read(previous)
         scientific = result["scientific"]
         evidence, ports = scientific["evidence"], scientific["ports"]
         if (result["terminal"] != known["terminal"] or result["arms"] != known["arms"]
