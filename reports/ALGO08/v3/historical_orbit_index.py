@@ -2,8 +2,10 @@
 
 import argparse
 from contextlib import contextmanager
+from functools import partial
 from hashlib import sha256
 import json
+from math import pi
 from pathlib import Path
 from resource import RUSAGE_SELF, getrusage
 import sys
@@ -12,6 +14,18 @@ from unittest.mock import patch
 
 
 HOUR_NS = 3_600_000_000_000
+INPUTS_PIN = "d23c4b2470b9c81f9714633d430d63ee477980cfe4c96848acb7619693174e22"
+PARSER_PIN = "3146dcb19ec88ef5e03f0b29c04fa6773c3fd575aa2c22ccbbca6ddc6ca48143"
+EXPORTER_PIN = "43a57182525d1b04148981ba316046a6ffd36931d98132bdac24777eecbc998d"
+
+
+class UnsupportedExport(ValueError):
+    """The pinned exporter could reject an unelected indexed record."""
+
+
+def export_supported(satellite):
+    return (0 <= satellite.inclo <= pi and 0 <= satellite.nodeo <= 2*pi
+            and 0 <= satellite.argpo <= 2*pi and 0 <= satellite.mo <= 2*pi)
 
 
 class SourceIndex:
@@ -41,6 +55,8 @@ class SourceIndex:
                         f"unparsable element set for catalog object {record.satellite_number}"
                     ) from error
                 epoch, = installed.ElementSetCatalogue((), (), (satellite,)).element_epoch_utc_ns()
+                if not export_supported(satellite):
+                    raise UnsupportedExport(f"Uncertified historical export for {record.satellite_number}")
                 occurrence = lines, int(satellite.satnum), epoch
                 self.pairs[lines] = occurrence
             pair, number, epoch = occurrence
@@ -70,11 +86,13 @@ class VerifiedIndexReader:
         self.reader, self.index = reader, index
         self.active = None
         self.reads = self.bytes = self.hits = 0
+        self.stats = {}
 
     def list_snapshots(self, provider):
         return self.reader.list_snapshots(provider)
 
     def read(self, snapshot):
+        self.active = None
         text = self.reader.read(snapshot)
         self.active = snapshot.sha256, text
         self.reads += 1
@@ -88,6 +106,8 @@ class VerifiedIndexReader:
         self.active = None
         self.hits += digest in self.index.bodies
         return self.index.catalogue(digest, text)
+
+    __call__ = parse
 
 
 def phase_history(reader, elements, metadata, *, element_parser, export, distinct):
@@ -149,6 +169,48 @@ def elected_elements():
           patch.object(inputs, "prepare_phase_history", past)):
         yield counts
     counts["distinct_scan_objects"] = len(satellites)
+
+
+def installed_guard():
+    from empty_bootstrap import PAYLOAD, RELEASE
+    from leo.operations import localization_v3_inputs as inputs
+    from sgp4 import exporter
+    from tools.pipeline_eval.variants import algo08_causal_reuse as installed
+
+    paths = ((Path(inputs.__file__).resolve(), RELEASE/"src/leo/operations/localization_v3_inputs.py", INPUTS_PIN),
+             (Path(installed.__file__).resolve(), PAYLOAD/"tools/pipeline_eval/variants/algo08_causal_reuse.py", PARSER_PIN),
+             (Path(exporter.__file__).resolve(), RELEASE/"venv/lib/python3.12/site-packages/sgp4/exporter.py", EXPORTER_PIN))
+    return installed.accelerated and all(path == expected and sha256(path.read_bytes()).hexdigest() == pin
+                                         for path, expected, pin in paths)
+
+
+def guarded_preparation(ordinary, audit):
+    """One guarded, scan-local build through the installed preparation caller."""
+    from tools.pipeline_eval.variants import algo08_causal_reuse as installed
+
+    guarded = (isinstance(ordinary, partial) and ordinary.func is installed.prepare and installed_guard())
+    attempts = audit.setdefault("attempts", [])
+
+    def prepare(document, reader, config, **options):
+        start = process_time(), perf_counter()
+        if not guarded:
+            attempts.append(dict(guard=False, fallback="unrecognized installed preparation or exporter"))
+            return ordinary(document, reader, config, **options)
+        index = SourceIndex()
+        staged = VerifiedIndexReader(reader, index)
+        try:
+            with elected_elements() as materialized, patch.object(installed, "CausalPreparationParser", return_value=staged):
+                prepared = ordinary(document, staged, config, **options)
+        except UnsupportedExport as error:
+            attempts.append(dict(guard=True, fallback=str(error), abandoned_cpu_s=process_time()-start[0],
+                                 abandoned_elapsed_s=perf_counter()-start[1]))
+            return ordinary(document, reader, config, **options)
+        attempts.append(dict(guard=True, fallback=None, cpu_s=process_time()-start[0], elapsed_s=perf_counter()-start[1],
+                             source_pairs=len(index.pairs), bodies=len(index.bodies), verified_reads=staged.reads,
+                             verified_bytes=staged.bytes, **materialized))
+        return prepared
+
+    return prepare
 
 
 DENSE = Path("/dev/shm/leo-held-anchor-selected-dense-01")
@@ -242,16 +304,10 @@ def run(output):
 
     _, spec, _, _, checks = load_runtime()
     from leo.analysis.localization_v3.tracks import TrackConfig
-    from leo.operations import localization_v3_inputs as inputs
-    from tools.pipeline_eval.variants import algo08_causal_reuse as installed
     from tools.pipeline_eval.variants.experimental.tle_records import batch_records
 
-    if (not installed.accelerated or not spec["defer_preparation_gc"]
-            or Path(inputs.__file__).resolve() != RELEASE/"src/leo/operations/localization_v3_inputs.py"
-            or Path(installed.__file__).resolve() != PAYLOAD/"tools/pipeline_eval/variants/algo08_causal_reuse.py"):
+    if not installed_guard() or not spec["defer_preparation_gc"]:
         raise ValueError("Expected the original accelerated causal preparation")
-    checked(Path(inputs.__file__), "d23c4b2470b9c81f9714633d430d63ee477980cfe4c96848acb7619693174e22")
-    checked(Path(installed.__file__), "3146dcb19ec88ef5e03f0b29c04fa6773c3fd575aa2c22ccbbca6ddc6ca48143")
     native = spec["tle_parser"]
     checked(Path(native["library"]), native["sha256"])
     config = TrackConfig(**json.loads(checked(RELEASE/"assets/tracks.json", TRACK_PIN))["config"])

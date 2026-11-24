@@ -1,6 +1,7 @@
 """Check immutable input authority and exact ordering before materialization."""
 
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -9,6 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
+import historical_orbit_index as trial
 from historical_orbit_index import HOUR_NS, SourceIndex, VerifiedIndexReader, phase_history
 
 
@@ -48,7 +50,8 @@ def test_source_pairs_reuse_authoritative_number_and_epoch_only(monkeypatch):
     from tools.pipeline_eval.variants import algo08_causal_reuse as installed
 
     calls = []
-    satellite = SimpleNamespace(satnum=25544, jdsatepoch=2440588.5, jdsatepochF=.5)
+    satellite = SimpleNamespace(satnum=25544, jdsatepoch=2440588.5, jdsatepochF=.5,
+                                inclo=0., nodeo=0., argpo=0., mo=0.)
 
     def make(*lines):
         calls.append(lines)
@@ -93,3 +96,42 @@ def test_phase_exports_only_original_winners_preserving_causal_ties():
     assert exported == [("old",), ("latest",)]
     assert [row["snapshot_sha256"] for row in result["past_versions"]["1"]] == ["early", "later"]
     assert result["sources"][0] == dict(collected_utc_ns=cutoff-10, sha256="early")
+
+
+@pytest.mark.parametrize("malformed", ("inclo", "nodeo", "argpo", "mo"))
+def test_guard_checks_each_original_exporter_domain(malformed):
+    values = dict(inclo=0., nodeo=0., argpo=0., mo=0.)
+    assert trial.export_supported(SimpleNamespace(**values))
+    values[malformed] = float("nan")
+    assert not trial.export_supported(SimpleNamespace(**values))
+    values[malformed] = -1.
+    assert not trial.export_supported(SimpleNamespace(**values))
+
+
+@pytest.mark.parametrize("error", (trial.UnsupportedExport("skip could hide malformed history"), ValueError("ordinary error")))
+def test_guard_restores_the_original_ports_for_the_original_error(error, monkeypatch):
+    from tools.pipeline_eval.variants import algo08_causal_reuse as installed
+
+    monkeypatch.setattr(trial, "installed_guard", lambda: True)
+    archive = object()
+    reads = []
+    ordinary_parser = installed.CausalPreparationParser
+
+    def application(document, reader, config, *, element_parser):
+        reads.append(reader)
+        if isinstance(reader, VerifiedIndexReader):
+            raise error
+        assert reader is archive and type(element_parser) is ordinary_parser
+        raise RuntimeError("unaltered original historical outcome")
+
+    audit = {}
+    prepare = trial.guarded_preparation(partial(installed.prepare, application, statistics={}), audit)
+    if isinstance(error, trial.UnsupportedExport):
+        with pytest.raises(RuntimeError, match="unaltered original historical outcome"):
+            prepare({}, archive, {})
+        assert reads[-1] is archive and len(reads) == 2
+        assert audit["attempts"][0]["fallback"] == str(error)
+    else:
+        with pytest.raises(ValueError, match="ordinary error"):
+            prepare({}, archive, {})
+        assert len(reads) == 1
