@@ -5,6 +5,7 @@ from collections import Counter
 import gzip
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -92,11 +93,12 @@ def admit(root):
     from dense_geographic_trial import host
     from empty_bootstrap import checked
     from exact_named_raw import staged_path
+    from full_short_physical import CACHE_LIB, CACHE_SHA
     from leo.operations.tle_archive import TleArchiveReader
     from leo.storage.fast_scan import FastScanStore
     from reports.ALGO08.v3 import legacy_block_input as ports
+    from tools.pipeline_eval.qualification.cache_residency import cache_snapshot, load_query
     from tools.pipeline_eval.qualification.paired_publication import archive_identity
-    from visit_frame_raw_0016 import resident
 
     historical, _, _, strict, _ = controls()
     previous, launch, _, _ = control("north")
@@ -143,9 +145,14 @@ def admit(root):
     for flag in LIBRARIES:
         item = launch["libraries"][flag]
         checked(Path(item["path"]), item["sha256"])
+    checked(CACHE_LIB, CACHE_SHA)
+    catalogue = cache_snapshot([(path.parent, path.name, row.byte_size) for path, row in zip(bodies, refs, strict=True)],
+                               os.sysconf("SC_PAGE_SIZE"), load_query(CACHE_LIB))
+    if catalogue["unavailable"] or catalogue["observed_members"] != len(bodies):
+        raise ValueError("The original tmpfs catalogue cannot be observed")
     bindings = dict(request=request, originals=original, machine=machine, references=RECEIPTS,
                     command=command, sources=source_pins(), producer=producer, prior_maps_read=0,
-                    archives=dict(catalogue=resident(bodies), cached=cache(), recording_leaves=len(paths) + 1))
+                    archives=dict(catalogue=catalogue, cached=cache(), recording_leaves=len(paths) + 1))
     return bindings, cache, previous / "fonts"
 
 
