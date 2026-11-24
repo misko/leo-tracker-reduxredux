@@ -98,8 +98,8 @@ def test_publication_layout_uses_existing_renderer_on_unsupported_packet(monkeyp
     seen = []
 
     @contextmanager
-    def unsupported(*, enabled):
-        assert enabled
+    def unsupported(*, enabled, explicit_orbits):
+        assert enabled and explicit_orbits
         raise layout.UnsupportedWebLayout("unrecognized template")
         yield
 

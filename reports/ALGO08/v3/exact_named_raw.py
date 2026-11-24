@@ -168,12 +168,14 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from named_history_once import named_solve
     from verified_png_reads import VerifiedPngReads
+    from installed_receiver_control import required
 
+    stock_receiver = required(args)
     if (Path(algo08_scan.__file__).resolve() != boot.PAYLOAD / boot.SCANNER
             or Path(algo08_position.__file__).resolve() != boot.PAYLOAD / "tools/algo08_position.py"
             or digest(SHARING) != SHARING_PIN
-            or specification["detector_sha256"] == handoff.receiver):
-        raise ValueError("Expected named localization and an independently identified 20/8 ms packet")
+            or (specification["detector_sha256"] == handoff.receiver) != stock_receiver):
+        raise ValueError("Expected the named solver and the genuine detector identity for this mode")
     bound, request = request_from_handoff(args, handoff)
     audit = dict(rank=[], blocks=Counter(), graph={}, gates=Counter(), portable={}, png={}, verified_tle=Counter())
     routed = getattr(args, "history_risk_route", False)
@@ -228,7 +230,8 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
     if routed:
         decision = audit["history_risk"].get("choice", {})
         detail["raw_route"] = "history_risk_installed"
-        detail["solver_recipe"]["recipe"] = "20/8 ms, held history, earlier-orbit dispatch and standard layout"
+        detail["solver_recipe"]["recipe"] = ("installed 20 ms chronological detections, earlier-orbit dispatch and standard layout"
+            if stock_receiver else "20/8 ms, held history, earlier-orbit dispatch and standard layout")
         detail["solver_recipe"]["history_risk"] = dict(requested=True, choice=decision.get("route"),
                                                        reason=decision.get("reason"), optional_prefit_exterior_probe=False)
         detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in RISK_SOURCES})
@@ -333,6 +336,9 @@ def parser():
     command.add_argument("--portable-orbit-producer-sha256")
     command.add_argument("--history-risk-route", action="store_true",
                          help="Use the reviewed earlier-orbit health check before numerical discovery")
+    command.add_argument("--installed-stock-receiver", action="store_true",
+                         help="Retain the installed 20 ms two-scan detector and chronological selector")
+    command.add_argument("--assert-stock-native-sha256", help="Optional saved native parity assertion before solving")
     command.add_argument("--strict-packed-eight", action="store_true",
                          help="Use the complete independently verified packed 20/8 ms input")
     command.add_argument("--packed-ci16-map", type=Path, help="Trusted all-member strict packed map")
