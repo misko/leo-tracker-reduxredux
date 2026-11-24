@@ -889,6 +889,11 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "stage to reach both 2× targets. The model includes startup, reading, input verification, decoding and "
               "detection. [Measured stage boundaries and assumptions](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "96451b64b82e48a1a0564816b45cec785c1f3f98/reports/ALGO08/v3/installed-receiver-first30.md)", "",
+              "For a future candidate, making the current native callbacks 1.5× faster and the entire solver "
+              "1.4× faster projects to 2.001× summed speedup on the first 30 and 2.085× on the next 16. "
+              "This calculation holds all other measured costs and the current positions fixed. The first group "
+              "has only 0.57 seconds of total margin. [Case-level timing budget](https://github.com/misko/"
+              "leo-tracker-reduxredux/blob/73fe5a470c715022e864d8a3872c8f5aaa0b8b22/reports/ALGO08/v3/receiver-solver-targets.md)", "",
               "The two receivers agreed on 83,058 short-aperture peaks under the prespecified matching rule. "
               "A correction for when each receiver measured the carrier changed held disagreement from "
               "97.480 to 97.460 Hz RMS after subtracting the mean for each recording and radio. The same "
