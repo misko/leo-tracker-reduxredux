@@ -140,7 +140,13 @@ def verify(root):
     if timing["exit_code"]:
         raise ValueError("The candidate must exit successfully before scoring")
     control = json.loads(checked(PRIOR/"result.json", CONTROL_SHA))["runs"]["stock"]
-    if json.loads(checked(PRIOR/"stock-verified.json", CONTROL_SCIENCE_SHA)) != control:
+    initial = json.loads(checked(PRIOR/"stock-verified.json", CONTROL_SCIENCE_SHA))
+    initial_science = dict(initial["science"])
+    initial_products = initial_science.pop("products")
+    control_products = control["persisted_sidecar_digests"] | {"images": control["science"]["images"]}
+    if (initial_products != control_products or initial["process"] != control["process"]
+            or initial["worker"] != control["worker"]
+            or any(control["science"][key] != value for key, value in initial_science.items())):
         raise ValueError("The prior same-packet control changed")
     request = read(root/"binding.json")
     _, original, details = baseline.checked_case()
