@@ -95,7 +95,7 @@ def stage(root):
                 stream.write(data)
     write(root/"binding.json", dict(host=host(), sources=pins(), cases={case: audit for case, (_, audit) in cases.items()},
           commit=subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip(),
-          stage_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), verification_cpu_s=process_time()-start[0],
+          stage_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), verification_cpu_s=process_time()-start,
           protocol_sha256=PROTOCOL_SHA))
 
 
