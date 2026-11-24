@@ -32,16 +32,17 @@ def choose(dataset, bindings, release):
     for member in dataset["members"]:
         case = member["dataset_label"]
         raw = member["raw_recording"]
-        if (case in TRIED or member["recording_state"] != "complete" or member["sample_rate_hz"] != 10_000_000
-                or member["window_count"] < MIN_VISITS or not member["glrt_availability"]["available"]
-                or case not in bindings or raw["integrity_errors"] or not raw["chunks"]):
+        if (case in TRIED or member["sample_rate_hz"] != 10_000_000 or member["window_count"] < MIN_VISITS
+                or case not in bindings or raw["integrity_errors"] or not raw["chunks"]
+                or sum(chunk["window_count"] for chunk in raw["chunks"]) != member["window_count"]):
             continue
         size = sum(chunk["compressed_bytes"] for chunk in raw["chunks"])
         if any(chunk["observed_payload_bytes"] != chunk["compressed_bytes"] for chunk in raw["chunks"]):
             raise ValueError("Compressed source size was never settled in the original metadata")
         index = sum(chunk["index_bytes"] for chunk in raw["chunks"])
         rows.append(dict(case=case, original=raw["root"], encoded_bytes=size, index_bytes=index,
-                         visits=member["window_count"], segments=len(raw["segments"]), members=len(raw["chunks"]),
+                         visits=member["window_count"], admitted=bindings[case]["usable_visits"],
+                         capture_state=member["recording_state"], segments=len(raw["segments"]), members=len(raw["chunks"]),
                          release=case in release, binding_sha256=bindings[case]["binding_sha256"]))
     ordered = sorted(rows, key=lambda row: (row["encoded_bytes"], row["case"]))
     fitting = [row for row in ordered if row["encoded_bytes"]+row["index_bytes"] < MAX_BYTES]
