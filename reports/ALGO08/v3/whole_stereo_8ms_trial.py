@@ -32,6 +32,16 @@ def pins():
     return {path.name: sha256(path.read_bytes()).hexdigest() for path in SOURCES}
 
 
+def verified_plan(binding):
+    from combined_raw_trial import source_at
+
+    originals, current = binding["sources"], pins()
+    entry = Path(__file__).name
+    if {k:v for k,v in originals.items() if k != entry} != {k:v for k,v in current.items() if k != entry}:
+        raise ValueError("A checked planner or scientific dependency changed after census")
+    source_at(binding["commit"], entry, originals[entry])
+
+
 def study_plan(root):
     from dense_geographic_trial import host
     from north_held_anchor_pair import tmpfs
@@ -61,7 +71,9 @@ def worker(root, label):
     entry = read(root/case/"plan.json")
     binding = read(root/"binding.json")
     manifest = read(root/f"{label}-launch.json")
-    if binding["sources"] != pins() or manifest["plan_sha256"] != sha256((root/case/"plan.json").read_bytes()).hexdigest():
+    verified_plan(binding)
+    if (manifest["entry_sha256"] != pins()[Path(__file__).name]
+            or manifest["plan_sha256"] != sha256((root/case/"plan.json").read_bytes()).hexdigest()):
         raise ValueError("The solver needs its frozen signed saved planner and current selected packet")
     orbit, rank = {}, {}
     with combined_runtime(orbit, rank, PRODUCER, use_blocks=True):
@@ -109,7 +121,8 @@ def launch(root, label):
     from short_raw_diagnostic import measure
 
     binding = read(root/"binding.json")
-    if binding["sources"] != pins() or binding["host"] != host():
+    verified_plan(binding)
+    if binding["host"] != host():
         raise ValueError("One original frozen worker and CPU assignment is required")
     if label != "north" and (not (root/"north-score.json").is_file() or label != followup(read(root/"north-score.json"))):
         raise ValueError("The sealed North accuracy branch did not admit this follow-up")
@@ -125,6 +138,7 @@ def launch(root, label):
                    env=env, check=True, timeout=25)
     args = ["/usr/bin/timeout", "--kill-after=2s", "40s", python, "-IB", Path(__file__), "worker", root, label]
     write(root/f"{label}-launch.json", dict(plan_sha256=sha256(census.read_bytes()).hexdigest(),
+                                           entry_sha256=pins()[Path(__file__).name],
                                            command=list(map(str,args))))
     clock = measure(args, env, root/f"{label}-publication")
     write(root/f"{label}-clock.json", clock)
@@ -134,6 +148,7 @@ def launch(root, label):
 
 def seal(root, label):
     from empty_bootstrap import checked
+    from leo.contracts.algo08_region import Algo08Region
     from preloaded_saved_score import science
     from raw_cfo_north_trial import native_file
     from tools.pipeline_eval.qualification.paired_publication import evidence
@@ -144,8 +159,9 @@ def seal(root, label):
     saved = read(target/RECEIPT)
     receipt, identity = saved["receipt"], execution["identity"]
     verified = evidence(target, receipt, clock["started_unix_ns"], read_only=True)
+    offered = Algo08Region.parse(identity["original_offer"]).document()
     if (clock["exit_code"] or saved["waveform_calls"] or saved["handoffs"] != 1 or not saved["staged_inventory"]
-            or saved["native_sha256"] != identity["native_sha256"] or receipt["region"] != identity["original_offer"]
+            or saved["native_sha256"] != identity["native_sha256"] or receipt["region"] != offered
             or verified["raw_authority"] != identity["authority"]):
         raise ValueError("Saved solver did not reproduce the expected raw bindings and one waveform-free handoff")
     checked(native_file(target), identity["native_sha256"][7:])
