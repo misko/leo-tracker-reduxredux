@@ -41,22 +41,11 @@ def correction_rows(native):
     return rows
 
 
-def graph_rows(rows, corrections):
-    if corrections.keys() != {row["observation_id"] for row in rows} or len(rows) != len(corrections):
-        raise ValueError("Timestamp correction and Graph disagree on the original winners")
-    adjusted = []
-    for row in rows:
-        nominal, offset, cfo = corrections[row["observation_id"]]
-        if nominal != row["time_s"] or cfo != row["measured_cfo_hz"]:
-            raise ValueError("Timestamp correction and Graph disagree on original coordinates")
-        adjusted.append(dict(row, time_s=nominal+offset) if offset else row)
-    return sorted(adjusted, key=lambda r: (r["receiver"], r["channel"], r["time_s"], r["observation_id"]))
-
-
 @contextmanager
 def effective_graph_time(mode, native, audit, *, native_pin=NATIVE):
     from leo.analysis.localization_v3 import tracks
     from leo.contracts.digests import canonical_digest
+    from sparse8_time_math import graph_rows
 
     original = tracks.winning_observations
 
@@ -139,6 +128,7 @@ def worker(mode, stage, *, verify_only=False, case=CASE, authority_pin=AUTHORITY
     positive = {}
     if verify_only:
         from leo.analysis.localization_v3.tracks import winning_observations
+        from sparse8_time_math import graph_rows
 
         raw.request_from_handoff(options, handoff)
         corrections = correction_rows(native)

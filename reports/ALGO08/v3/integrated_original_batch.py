@@ -31,6 +31,8 @@ PATH_OPTIONS = ("--short-binary", "--geographic-library", "--regional-track-libr
 SIGNED_OPTIONS = ("--legacy-first-map-history", "--legacy-first-map-fast", "--portable-orbit-index")
 FLAGS = ("--history-risk-route", "--cairo-six-sheets", "--verify-original-once", "--sparse8-primary")
 SNAPSHOT_SOURCES = ("prefetch_snapshots.py", "legacy_snapshot_reuse.py")
+ENTRY_SOURCES = ("integrated_original_entry.py", "unified_short_bootstrap.py")
+EFFECTIVE_TIME_SOURCES = ("anchor_exposure.py", "sparse8_effective_time.py", "sparse8_time_math.py")
 
 
 def tagged_bytes(body):
@@ -78,7 +80,7 @@ def checked_artifact(entry):
     return path
 
 
-def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
+def make_build(charted_admission, *, reuse_prefetched_snapshots=False, sparse8_effective_time=False):
     """Freeze one externally reviewed build once, using the existing chart receipt."""
     from integrated_original_entry import PNG_LIBRARY, PNG_SHA
 
@@ -92,8 +94,12 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
     for flag in SIGNED_OPTIONS[1:]:
         native[flag] = dict(path=option(flag), sha256=option(flag + "-sha256"))
     source_pins = dict(charted["sources"])
-    required_sources = (Path(__file__).name, *stock_control.SOURCES)
-    for name in (*required_sources, *(SNAPSHOT_SOURCES if reuse_prefetched_snapshots else ())):
+    required_sources = {Path(__file__).name, *ENTRY_SOURCES, *stock_control.SOURCES}
+    if reuse_prefetched_snapshots:
+        required_sources.update(SNAPSHOT_SOURCES)
+    if sparse8_effective_time:
+        required_sources.update(EFFECTIVE_TIME_SOURCES)
+    for name in sorted(required_sources):
         source = HERE / name
         source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     return dict(
@@ -104,7 +110,8 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
     )
 
 
-def load_build(path, pin, *, reuse_prefetched_snapshots=False, installed_stock_receiver=False):
+def load_build(path, pin, *, reuse_prefetched_snapshots=False, installed_stock_receiver=False,
+               sparse8_effective_time=False):
     book = document(path, pin)
     if (book.get("schema") != BUILD_SCHEMA or book.get("charted_commit") != CHARTED_COMMIT
             or book.get("charted_admission") != CHARTED_ADMISSION
@@ -122,6 +129,14 @@ def load_build(path, pin, *, reuse_prefetched_snapshots=False, installed_stock_r
     if installed_stock_receiver and any(str((HERE / name).relative_to(ROOT)) not in book["sources"]
                                          for name in stock_control.SOURCES):
         raise ValueError("The build must pin the installed-detector control sources")
+    if sparse8_effective_time:
+        if any(str((HERE / name).relative_to(ROOT)) not in book["sources"] for name in EFFECTIVE_TIME_SOURCES):
+            raise ValueError("The opt-in source and its arithmetic must be pinned in this build")
+        from empty_bootstrap import RELEASE
+        from sparse8_effective_time import CLOCK_SOURCE_PINS
+
+        for name, checksum in CLOCK_SOURCE_PINS.items():
+            checked(RELEASE / "src/leo/analysis" / name, checksum)
     native = {flag: checked_artifact(entry) for flag, entry in book["native"].items()}
     png = checked_artifact(book["png"])
     producer = checked_artifact(book["portable_producer"])
@@ -275,6 +290,8 @@ def original_argv(args, book, authority):
         expected = getattr(args, "assert_stock_native_sha256", None)
         if expected is not None:
             argv.extend(("--assert-stock-native-sha256", expected))
+    if getattr(args, "sparse8_effective_time", False):
+        argv.append("--sparse8-effective-time")
     return argv
 
 
@@ -383,6 +400,8 @@ def main(argv=None):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--authority-sha256")
     parser.add_argument("--build-sha256")
+    parser.add_argument("--sparse8-effective-time", action="store_true",
+                        help="Use the separately pinned effective Graph time opt-in")
     parser.add_argument("--reuse-prefetched-snapshots", action="store_true",
                         help="Research-only private lookahead buffers, requiring separately pinned source")
     parser.add_argument("--installed-stock-receiver", action="store_true",
@@ -400,7 +419,8 @@ def main(argv=None):
         if args.build is None:
             parser.error("supply --build for the new build manifest")
         write(args.build, make_build(args.freeze_build_from_chart,
-                                    reuse_prefetched_snapshots=args.reuse_prefetched_snapshots))
+                                    reuse_prefetched_snapshots=args.reuse_prefetched_snapshots,
+                                    sparse8_effective_time=args.sparse8_effective_time))
         print(tagged_bytes(args.build.read_bytes()))
         return
     if not args.verify and not all((args.recording, args.archive, args.region, args.bulk_root)):
@@ -414,7 +434,8 @@ def main(argv=None):
         parser.error("supply the frozen --build and --build-sha256")
     book, assets, cutoff = load_build(args.build, args.build_sha256,
                                       reuse_prefetched_snapshots=args.reuse_prefetched_snapshots,
-                                      installed_stock_receiver=stock)
+                                      installed_stock_receiver=stock,
+                                      sparse8_effective_time=args.sparse8_effective_time)
     if args.verify:
         print(json.dumps(dict(schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, build_sha256=args.build_sha256)))
         return

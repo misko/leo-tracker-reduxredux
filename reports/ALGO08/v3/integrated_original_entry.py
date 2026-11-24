@@ -1,6 +1,6 @@
 """Compose the checked sparse receiver and positive-only rank and PNG ports."""
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 import sys
 from unittest.mock import patch
@@ -45,7 +45,13 @@ def positive_ports(original, spec, audit):
 
         if not callable(algo08_position.solve) or not callable(algo08_scan.solve):
             raise ValueError("The installed positive solver is unavailable")
-        with (single_rank_refusal(),
+        effective_time = nullcontext()
+        if getattr(args[0], "sparse8_effective_time", False):
+            from sparse8_effective_time import binding
+
+            effective_time = binding(args[3].native, kwargs.get("receiver_aperture_evidence"),
+                                     audit.setdefault("sparse8_effective_time", {}))
+        with (single_rank_refusal(), effective_time,
               patch.object(png, "VerifiedPngReads", verification_factory(png.VerifiedPngReads, audit.setdefault("png_native", {})))):
             return publish(*args, **kwargs)
 
@@ -64,6 +70,8 @@ def main():
         cli = parser()
         receiver_policy = cli.add_mutually_exclusive_group(required=True)
         receiver_policy.add_argument("--sparse8-primary", action="store_true")
+        cli.add_argument("--sparse8-effective-time", action="store_true",
+                         help="Use the qualified short measurement epoch in the solver when source provenance permits")
         receiver_policy.add_argument("--full-primary-nonanchors", action="store_true",
                                      help="Use full-aperture primaries between unchanged two-scan anchors")
         receiver_variant = cli.add_mutually_exclusive_group()

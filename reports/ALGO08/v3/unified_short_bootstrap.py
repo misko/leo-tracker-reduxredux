@@ -432,10 +432,13 @@ def run(args, *, publisher=None):
             extent = (graph_proof or {}).get("curvature_extent", {})
             with (adaptive_map_layout(args.output) if adaptive_map else nullcontext()):
                 publish = publish_active if publisher is None else publisher
+                effective_time = ({"receiver_aperture_evidence": route_selection}
+                                  if getattr(args, "sparse8_effective_time", False) else {})
                 terminal, research = publish(args, publication, specification, handoff, layout_audit,
                                                     graph_audit=graph_audit, png_read_audit=png_read_audit,
                                                     detector_import_audit=detector_import_audit,
-                                                    no_active_curvature_sha256=extent.get("native_sha256"))
+                                                    no_active_curvature_sha256=extent.get("native_sha256"),
+                                                    **effective_time)
             route = research.get("raw_route", "optimized_installed_graph")
         else:
             staged.check_inert_solver_assets(assets)
