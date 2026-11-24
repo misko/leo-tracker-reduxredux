@@ -9,6 +9,7 @@ from time import perf_counter, process_time
 
 
 ARCHIVED = Path("/dev/shm/leo-v3-south-cfo-route-02")
+PUBLISHED = "cee62c62dddca08dc2e256791c28febd76da38d27a300e36c07e34a836a0c25f"
 PINS = {
     "request": "44963383f603983d543c4122b0ec055049a157bc817b82e8aff9d9da6be66f70",
     "unrefined": "a10693d167757124a036cfcd63e90966760e52b755f4bb834605ccaf74426d2e",
@@ -62,6 +63,13 @@ def staged_json(path, pin):
     if not any(resolved.is_relative_to(prefix) for prefix in (Path("/dev/shm"), Path("/tmp"))):
         raise ValueError("Only pre-existing staged JSON is eligible")
     return json.loads(checked(resolved, pin))
+
+
+def sealed_json(output, document):
+    with output.open("x") as out:
+        json.dump(document, out, indent=2, sort_keys=True, allow_nan=False)
+        out.write("\n")
+    return sha256(output.read_bytes()).hexdigest()
 
 
 def replay(output):
@@ -124,10 +132,118 @@ def replay(output):
     with output.open("x") as out:
         json.dump(document, out, indent=2, sort_keys=True, allow_nan=False)
         out.write("\n")
-    return sha256(output.read_bytes()).hexdigest()
+    return sealed_json(output, document)
+
+
+def publication(folder, receipt, clock, authority, native, old_media):
+    from empty_bootstrap import checked
+    from joint_publication import artifacts
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from raw_cfo_north_trial import native_file
+    from tools.pipeline_eval.qualification.paired_publication import evidence
+
+    checked(native_file(folder), native[7:])
+    checked(folder / "fast-scan-inputs" / (authority["session"] + ".json"), authority["inventory"][7:])
+    verified = evidence(folder, receipt, clock["started_unix_ns"], read_only=True)
+    media = artifacts(folder, receipt)
+    storage = FastStandardAnalysisStore(folder)
+    run = receipt["run_id"]
+    if (clock["exit_code"] or receipt["decision"] != "complete"
+            or receipt["session_id"] != authority["session"] or receipt["window_count"] != authority["measurements"]["issued"]
+            or verified["raw_authority"] != authority["raw_authority"] or storage.detail(run)["input_sha256"] != native
+            or canonical_digest(media) != canonical_digest(old_media)):
+        raise ValueError("The archived offer terminal or media has changed")
+    grid, path = storage.position_grid(run), storage.position_path(run)
+    position = media["images"]["position"]["sha256"]
+    if (not grid["complete"] or not grid["matched_c_grid"] or not path["stages"]
+            or not len(grid["points"]) == grid["evaluated_points"] == grid["planned_points"] > 0
+            or any(item["binding"]["position_png_sha256"] != position for item in (grid, path))):
+        raise ValueError("Incomplete original two-arm evidence or mismatched position PNG")
+    return verified, media, grid["evaluated_points"]
+
+
+def score(route_file, route_pin, output):
+    route = staged_json(route_file, route_pin)
+    if not route["identical_payload"] or route["continued_probe_sha256"] != route["archive_probe_sha256"]:
+        raise ValueError("Archived scores require exact ordered inference measurements")
+
+    from leo.contracts.algo08_region import Algo08Region
+    from raw_cfo_north_score import owner_summary
+    from south_cfo_route import MODES, NAMED
+    from south_cfo_route_score import NAMED_SCORED, NAMED_SCORED_PIN
+    from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
+    from tools.pipeline_eval.scoring import distance_km
+
+    chosen = staged_json(ARCHIVED / "result.json", PUBLISHED)
+    named = staged_json(NAMED_SCORED, NAMED_SCORED_PIN)
+    truth = named["truth"]
+    if (not chosen["verified"] or not named["verified"] or truth != chosen["truth"]
+            or chosen["binding"]["archive"]["snapshots_sha256"] != route["archive"]
+            or chosen["seal"]["native_sha256"] != route["archived_native"]
+            or chosen["chosen"]["pre_refinement_probes_sha256"] != chosen["seal"]["comparison"]["original_probe_sha256"]):
+        raise ValueError("Original result, original named and route seal disagree")
+    native = staged_json(chosen["seal"]["packet"], route["archived_native"][7:])
+    amended = {tuple(row[:2]) for row in chosen["retained_cfo_edits"]}
+    labels, edits = set(), set()
+    for lane in native["source"]["probes"]:
+        if lane["candidates"]:
+            text = f"{route['session']}:{lane['receiver_id']}:{lane['valid_start_counter']}"
+            identifier = "sha256:" + sha256(text.encode()).hexdigest()
+            labels.add(identifier)
+            if (lane["visit_index"], lane["receiver_id"]) in amended:
+                edits.add(identifier)
+    if len(labels) != route["measurements"]["archived"] or len(edits) != len(amended):
+        raise ValueError("Archived owner evidence has an ambiguous original observation or edit")
+    comparisons = {}
+    for mode in MODES:
+        original, control = chosen["cases"][mode], named["cases"][mode]
+        folder, control_folder = ARCHIVED / mode, NAMED_SCORED.parent / mode
+        receipt, control_receipt = original["receipt"], control["worker"]["receipt"]
+        offer = Algo08Region.parse(staged_json(chosen["binding"]["offers"][mode], route["offers"][mode][7:])).document()
+        if not receipt["region"] == control_receipt["region"] == control["offer"] == offer:
+            raise ValueError("Original offers differ between published arms")
+        if mode == "near-omitted":
+            saved = json.loads((folder / "saved-south-cfo-route.json").read_bytes())
+            if (saved["receipt"] != receipt or saved["native_sha256"] != route["archived_native"]
+                    or saved["handoffs"] != 1 or not saved["staged_inventory"] or saved["waveform_calls"]):
+                raise ValueError("The mirror did not use exactly one byte-identical saved handoff")
+        verified, media, points = publication(folder, receipt, original["clock"], route, route["archived_native"], original["media"])
+        control_verified, control_media, control_points = publication(control_folder, control_receipt,
+            control["external_clock"], route, "sha256:" + NAMED[1], control["media"])
+        trial = json.loads((folder / "joint-research-receipt.json").read_bytes())
+        arms = {}
+        for arm in ("c0", "fitted_c"):
+            owners = owner_summary(trial["selected_rows"][arm], labels, edits)
+            current, prior = verified["arms"][arm], control_verified["arms"][arm]
+            error, prior_error = (distance_km(truth, row["latlon"]) for row in (current, prior))
+            if (owners != original["owners"][arm] or owners["bound_sha256"] != verified["owners"][arm]
+                    or control_verified["owners"][arm] != control["named_owner_digests"][arm]
+                    or error != original["arms"][arm]["error_km"] or prior_error != original["named"][arm]["error_km"]
+                    or current["latlon"] != original["arms"][arm]["latlon"] or prior["latlon"] != original["named"][arm]["latlon"]
+                    or current["rf_rms_hz"] != original["arms"][arm]["rf_rms_hz"]
+                    or prior["rf_rms_hz"] != original["named"][arm]["rf_rms_hz"]):
+                raise ValueError("Archive alias changed original arm estimates, RF error or owners")
+            arms[arm] = dict(error_km=error, rf_rms_hz=current["rf_rms_hz"], owners=owners,
+                named_error_km=prior_error, named_rf_rms_hz=prior["rf_rms_hz"],
+                named_owner_count=sum(control["selected_roles"][arm].values()),
+                named_owner_sha256=control_verified["owners"][arm],
+                delta_from_named_km=error-prior_error)
+        truth_face = face_clearance_km(receipt["region"], truth)
+        if abs(truth_face - (.1 if mode == "containing" else -.1)) > .001:
+            raise ValueError("The scored original offer no longer brackets the signed boundary")
+        comparisons[mode] = dict(status=original["status"], named_status=original["named_status"],
+            truth_face_km=truth_face, arms=arms, media=media, named_media=control_media,
+            grid_points=points, named_grid_points=control_points,
+            terminal_sha256=receipt["terminal_sha256"], named_terminal_sha256=control_receipt["terminal_sha256"])
+    return sealed_json(output, dict(pre_score_route_sha256=route_pin, route=route,
+        archived_result_sha256=PUBLISHED, named_result_sha256=NAMED_SCORED_PIN, offers=comparisons,
+        solver_invocations=0, waveform_reads=0, new_detector_publication=False))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    print(replay(parser.parse_args().output))
+    parser.add_argument("--score-sealed", nargs=2, metavar=("ROUTE", "SHA256"))
+    args = parser.parse_args()
+    print(replay(args.output) if args.score_sealed is None else score(*args.score_sealed, args.output))

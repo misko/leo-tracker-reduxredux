@@ -9,6 +9,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
 from anchor_holds import history_rows
+import continued_cfo_south
 from continued_cfo_south import projection
 from held_cycle_refined import CFO
 
@@ -73,3 +74,16 @@ def test_history_missing_or_changed_authentic_measurement_is_an_error(field, pat
         refined["delivery_clocks"].append(1)
     with pytest.raises(ValueError, match=pattern):
         projection(original, refined, {"route": "history"})
+
+
+def test_changed_projection_cannot_reuse_archived_terminal(monkeypatch):
+    reads = []
+
+    def stage(path, digest):
+        reads.append((path, digest))
+        return dict(identical_payload=False)
+
+    monkeypatch.setattr(continued_cfo_south, "staged_json", stage)
+    with pytest.raises(ValueError, match="exact ordered inference measurements"):
+        continued_cfo_south.score("route.json", "route-pin", "score.json")
+    assert reads == [("route.json", "route-pin")]
