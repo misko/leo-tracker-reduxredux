@@ -203,7 +203,9 @@ def score(root):
     chosen = live["selection"]
     source = native["source"]
     probes = source["probes"]
-    if (clock["exit_code"] or clock["input_blocks"] or clock["cpu_s"] > 10
+    original_blocks = sum(member[phase]["input_blocks"] for member in audit["members"]
+                          for phase in ("metadata", "complete_encoded_auth"))
+    if (clock["exit_code"] or original_blocks or clock["cpu_s"] > 10
             or audit["finished_raw_authority"] != request["authority"] or actual != wanted
             or source["input_manifest_sha256"] != request["inventory"] or source["session_id"] != request["session"]
             or chosen["choice"]["route"] != "unfiltered" or chosen["native_sha256"] != request["native"]
@@ -217,13 +219,21 @@ def score(root):
                   for metric, row in pair.items()} for pair in book["prefix"]]
     normal["selector_file_to_detection"] = normal["detection_s"] - normal["selector_file_s"]
     normal["after_detector_s"] = normal["process"]["elapsed_s"] - normal["detection_s"]
+    normal["to_acquisition_phase_estimate_s"] = normal["selector_file_s"] - sum(
+        normal["phases"][key]["elapsed_s"] for key in ("authenticated_raw_acquisition", "held_anchor_route_selection"))
+    normal["member_phase_cpu_s"] = dict(
+        encoded_auth=sum(row["complete_encoded_auth"]["cpu_ns"] for row in book["roster"]) / 1e9,
+        direct_to_owned_decode=sum(row["native_read_cpu_ns"] for row in book["roster"]) / 1e9,
+        decoded_hash=sum(row["hash_cpu_ns"] for row in book["roster"]) / 1e9)
     write(root / "result.json", dict(case=CASE, bytes=COMPRESSED, members=MEMBERS, windows=WINDOWS,
         timing=timing, normal=normal, forecasts=forecasts, launch=launched, source=audit, receiver=receiver,
         selection=chosen, native_sha256=request["native"], complete_bytes_equal=True,
         probes=len(probes), exclusions=len(native["provenance"]["excluded_windows"]),
         selected_factors=sum(len(probe["candidates"]) for probe in probes),
         prefix_receipt_sha256=PREFIX_PIN, normal_receipt_sha256=PRIOR_PIN, normal_audit_sha256=NORMAL_AUDIT,
-        normal_selector_sha256=NORMAL_SELECTOR, solver_children=0, waveform_backing_bytes=0))
+        normal_selector_sha256=NORMAL_SELECTOR, solver_children=0, waveform_backing_bytes=0,
+        original_metadata_and_payload_input_blocks=original_blocks, machine=book["machine"],
+        as_run_driver_sha256=book["driver_sha256"], original_request=request))
 
 
 if __name__ == "__main__":
