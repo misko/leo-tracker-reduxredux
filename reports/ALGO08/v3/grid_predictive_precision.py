@@ -3,9 +3,13 @@
 import numpy as np
 from scipy.linalg import cho_solve, cholesky
 from scipy.linalg.blas import dsyrk
+from scipy.linalg.lapack import dpocon
 
 
-def predictive_precision(raw, design, sigma, groups, capture, member_count):
+PRECISION_FLOOR = np.sqrt(np.finfo(np.float64).eps)
+
+
+def predictive_precision(raw, design, sigma, groups, capture, member_count, *, check_condition=False):
     """Apply the determinant lemma after eliminating each group's bias.
 
     In the exported order let P = LLᵀ, R = design / sigma, r = raw / sigma,
@@ -38,8 +42,18 @@ def predictive_precision(raw, design, sigma, groups, capture, member_count):
 
     gram = dsyrk(1., lower, lower=1)
     gram = dsyrk(1., rows, beta=1., c=gram, trans=1, lower=1, overwrite_c=1)
+    diagonal = gram.diagonal().copy() if check_condition else None
     gram = dsyrk(-1., curve_design, beta=1., c=gram, trans=1, lower=1, overwrite_c=1)
     root = cholesky(gram, lower=True, check_finite=True)
+    if check_condition:
+        if np.any(gram.diagonal() <= PRECISION_FLOOR * diagonal):
+            raise ValueError("Predictive bias subtraction loses the diagonal precision margin")
+        # Bound the full symmetric 1-norm using the original computed triangle.
+        triangle = np.abs(np.tril(gram))
+        norm = max(triangle.sum(axis=0) + triangle.sum(axis=1) - triangle.diagonal())
+        reciprocal, info = dpocon(root, norm, uplo="L")
+        if info or not np.isfinite(reciprocal) or reciprocal < PRECISION_FLOOR:
+            raise ValueError("Poorly conditioned predictive coefficient system")
     coefficient = cho_solve((root, True), rows.T @ values - curve_design.T @ curve_values,
                             check_finite=True)
     # Keep the published residual in the original whitened coordinate system.
@@ -55,3 +69,25 @@ def predictive_precision(raw, design, sigma, groups, capture, member_count):
         raise ValueError("Non-finite or negative predictive volume")
     return dict(objective=objective, normalization_constant=normalization,
                 residual=np.r_[innovation, rotated, np.sqrt(volume)])
+
+
+def guarded_predictor(incumbent, counts):
+    """Restrict the option to the incumbent's complete, checked grid operands."""
+    def evaluate(raw, design, sigma, groups, capture, member_count, *, include_residual=False):
+        if include_residual and capture.valid():
+            # The original compact residual omits a structural zero prefix.
+            if not np.any(design[:, capture.order[0]]):
+                counts["original_compact_layout"] += 1
+            else:
+                try:
+                    result = predictive_precision(raw, design, sigma, groups, capture, member_count,
+                                                  check_condition=True)
+                except (ValueError, ArithmeticError, np.linalg.LinAlgError):
+                    counts["rejected_or_unsupported"] += 1
+                else:
+                    counts["precision"] += 1
+                    return result, dict(prefix=0, biases=1 + np.count_nonzero(groups[1:] != groups[:-1]))
+        counts["incumbent"] += 1
+        return incumbent(raw, design, sigma, groups, capture, member_count, include_residual=include_residual)
+
+    return evaluate
