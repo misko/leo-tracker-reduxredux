@@ -28,7 +28,8 @@ LOCK = Path("/tmp/leo-algo08v2-2x-bench/gauss.lock")
 STAGING_LOCK = Path("/dev/shm/leo-v3-guarded-selective-0016-staging.lock")
 STOPPED_RECEIPT = HERE / "measurements/guarded-cfo-0016-stopped-stage.json.gz"
 STOPPED_SHA = "8271a2d880a00db4e118a536df20c126ade2ed5e80a69fa79b0e67760933c3d1"
-STOPPED_ROOT = Path("/dev/shm/leo-v3-guarded-selective-0016-stage01")
+STAGING_FILESYSTEM = Path("/dev/shm")
+STOPPED_ROOT = STAGING_FILESYSTEM / "leo-v3-guarded-selective-0016-stage01"
 MB = 1024**2
 BLOCK = MB
 RATE = 2 * MB
@@ -284,9 +285,8 @@ def stage_locked(root, *, resume):
     total = sum(extents.values())
     enrolled = [Extent(source.relative_to(RECORDING), size, pin)
                 for kind in COPY_ORDER for source,size,pin in files[kind]]
-    tmpfs = Path("/dev/shm")
     available = os.statvfs(root.parent)
-    if root.parent.stat().st_dev != tmpfs.stat().st_dev or root.resolve() != root:
+    if root.parent.stat().st_dev != STAGING_FILESYSTEM.stat().st_dev or root.resolve() != root:
         raise ValueError("Expected a confined stage in local tmpfs")
     if not resume:
         root.mkdir(mode=0o750)

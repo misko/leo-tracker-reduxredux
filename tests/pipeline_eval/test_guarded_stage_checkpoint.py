@@ -119,6 +119,7 @@ def test_two_concurrent_stagers_cannot_hold_the_same_lock(tmp_path):
 
 
 def test_finished_stage_invocation_verifies_local_files_without_source_copy(tmp_path, monkeypatch):
+    monkeypatch.setattr(stage, "STAGING_FILESYSTEM", tmp_path)
     recording = tmp_path / "source"
     root = tmp_path / "staged"
     manifest, index, payload = "manifest", "index", "payload"
