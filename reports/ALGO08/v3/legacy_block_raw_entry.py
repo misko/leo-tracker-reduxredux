@@ -65,15 +65,16 @@ def run(args):
             with patch.object(scan, "render", render):
                 yield
 
+    load = boot.load_runtime
     with ExitStack() as stack, patch.object(history_cairo_render, "binding", checked_renderer):
-        if any(fields):
-            if not all(fields):
-                raise ValueError(
-                    "Detached custody and native decoder require their external SHA-256 pins"
-                )
+
+        def load_with_maps():
+            nonlocal audit
+            runtime = load()
             started = boot.now()
-            with patch.object(sys, "path", [*sys.path, str(boot.RELEASE / "src"), str(ROOT)]):
+            with patch.object(sys, "path", [*sys.path, str(ROOT)]):
                 from reports.ALGO08.v3 import legacy_block_input, legacy_block_seek
+
             custody, pin, library, lib_pin = fields
             plan = legacy_block_input.load_custody(custody, pin)
             legacy_block_input.checked_file(library, lib_pin, 2_000_000)
@@ -92,6 +93,12 @@ def run(args):
                 )
             )
             audit["setup"] = boot.clock(started)
+            return runtime
+
+        if any(fields):
+            if not all(fields):
+                raise ValueError("Provide both detached map and native decoder SHA-256 pins")
+            stack.enter_context(patch.object(boot, "load_runtime", load_with_maps))
         terminal = route.run(args)
     if audit is not None:
         route.write(args.output / "legacy-map-acquisition.json", audit, scientific=True)

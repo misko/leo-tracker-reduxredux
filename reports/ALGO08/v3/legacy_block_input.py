@@ -14,7 +14,7 @@ from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader
 
 from . import legacy_block_seek as legacy
-from .seekable_member_trial import clock, elapsed
+from .legacy_block_seek import clock, elapsed
 
 SCHEMA = "private-algo08-legacy-map-custody-v1"
 MAX_CUSTODY = 256_000
