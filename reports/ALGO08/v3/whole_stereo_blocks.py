@@ -17,6 +17,10 @@ DENSE = Path("/dev/shm/leo-held-anchor-selected-dense-01")
 REQUEST_SHA = "8abec0e2f60def947cd03883662611c3fcfdbd5f255eb0ba60e8306085abf502"
 NATIVE_SHA = "ad13073239fe7e4e276debf3c667c0a997408d9efb5e07e309b5ab6fff4d0a85"
 RAW_SHA = "51521b26848532823922cc43a198b7f91d59d3f1d81e155e5862b04b53193f38"
+WEAK = Path("/dev/shm/leo-cumulative-grid-projection-01/weak-pair")
+WEAK_CONTROL_SHA = "80b1a0701d45a37fcce1dd35fa526185f2f25fcc89f6a95b0d73654de1b2db9b"
+WEAK_RAW = Path("/dev/shm/leo-eight-ms-DS30-0016-warm/12ms/full-short-recipe.json")
+WEAK_RAW_SHA = "70594e676776ac7f1a12464865f7118c05b0126b236a2bed73616c0b8407ac1a"
 RECEIVER_SHA = "13c4ecdb521d02960e61572e8d401a54f165e2c7882112889ede0582abb3ca40"
 CONTINUATION_SHA = "f13fc2e02be5474de37b3efb5fba195e3a45daf534e3fa4e7d60c76500cef9ee"
 GATE_S = 3.49
@@ -146,30 +150,41 @@ def price(native_cost, audit):
                 skip_rate=removed/original["short_primary"], fixed_authenticated_reads=True)
 
 
-def plan(root):
+def plan(root, case="DS30-0008"):
     start = process_time()
     if not root.parent.resolve(strict=True).is_relative_to(Path("/dev/shm")):
         raise ValueError("Use a fresh tmpfs trial directory")
-    request = load_checked(DENSE/"request.json", REQUEST_SHA)
-    original = load_checked(DENSE/"original-detections.json", NATIVE_SHA)
+    if case == "DS30-0008":
+        request_pin, raw_pin = REQUEST_SHA, RAW_SHA
+        request = load_checked(DENSE/"request.json", request_pin)
+        original_pin, packet_path = NATIVE_SHA, DENSE/"original-detections.json"
+        raw = load_checked(HERE/"measurements/dense-full-short-raw.json.gz", raw_pin)
+        if (raw["candidate"]["native_sha256"] != request["original"]["native_sha256"]
+                or raw["binding"]["archive"]["snapshots_sha256"] != request["archive"]["snapshots_sha256"]):
+            raise ValueError("The dense receiver and original archive changed")
+        native_cost = raw["candidate"]["recipe"]["receiver_audit"]
+    else:
+        request_pin, raw_pin = WEAK_CONTROL_SHA, WEAK_RAW_SHA
+        request = load_checked(WEAK/"result.json", request_pin)["inputs"]
+        original_pin, packet_path = request["native"][7:], WEAK/"detections.json"
+        native_cost = load_checked(WEAK_RAW, raw_pin)["receiver_audit"]
+    original = load_checked(packet_path, original_pin)
     decisions = schedule(original)
     packet, proof = project(original, decisions)
     clock = process_time()-start
-    raw = load_checked(HERE/"measurements/dense-full-short-raw.json.gz", RAW_SHA)
-    native_cost = raw["candidate"]["recipe"]["receiver_audit"]
-    if (request["original"]["native_sha256"] != "sha256:"+NATIVE_SHA or raw["candidate"]["native_sha256"] != "sha256:"+NATIVE_SHA
-            or native_cost["analysis_manifest"] != original["source"]["analysis_manifest_sha256"]
-            or native_cost["recording_authority"] != request["authority"] or request["archive"]["snapshots_sha256"] != raw["binding"]["archive"]["snapshots_sha256"]):
-        raise ValueError("The current dense native and acquisition budget do not share original identity")
+    if (native_cost["analysis_manifest"] != original["source"]["analysis_manifest_sha256"]
+            or native_cost["recording_authority"] != request["authority"]
+            or native_cost["input_manifest"] != request["inventory"]):
+        raise ValueError("The native packet and acquisition budget do not share original identity")
     from leo.contracts.digests import canonical_json_bytes
 
     root.mkdir()
     (root/"candidate-detections.json").write_bytes(canonical_json_bytes(packet))
     clocks = price(native_cost, proof)
     with (root/"plan.json").open("x") as stream:
-        json.dump(dict(frozen_plan=proof, budget=clocks, planning_including_source_cpu_s=clock,
-                       source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), request_sha256=REQUEST_SHA,
-                       raw_receipt_sha256=RAW_SHA, original_native_sha256=NATIVE_SHA,
+        json.dump(dict(case=case, frozen_plan=proof, budget=clocks, planning_including_source_cpu_s=clock,
+                       source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), request_sha256=request_pin,
+                       raw_receipt_sha256=raw_pin, original_native_sha256=original_pin,
                        protocol_sha256=sha256((HERE/"whole-stereo-blocks-protocol.md").read_bytes()).hexdigest()),
                   stream, indent=2, sort_keys=True, allow_nan=False)
         stream.write("\n")
@@ -182,4 +197,6 @@ def plan(root):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    plan(parser.parse_args().output)
+    parser.add_argument("--case", choices=("DS30-0008", "DS30-0016"), default="DS30-0008")
+    args = parser.parse_args()
+    plan(args.output, args.case)
