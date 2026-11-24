@@ -48,6 +48,19 @@ The first physical trial exposed an assumption in the split format. The ordinary
 
 The sealed DS30 inventory contains **45,080 compressed members across 455 recordings**. In **43 recordings**, one member's declared decoded length is shorter than `1,600,000 bytes × issued visits`. The difference totals 83,960,496 bytes across the 43 members. All 43 recordings were marked incomplete. DS30-0016 was the one additional incomplete recording with nominal totals in every member. Matching the cohort by original content identity shows that **28 of the 43 affected recordings produced fixes in both calibration arms** in the historical compact two-scan evaluation. DS30-0316 also exhibits the length discrepancy and subsequently fixed with named v3. Checking member lengths establishes a lower bound on variable extents. The census used only the committed inventory and outcome tables. [Reproduce the census](strict_extent_census.py) · [DS30 source and historical fixes](../../2026_11_21_ds30_full/README.md)
 
+A new private format revision preserves every original byte and visit, including partial and empty captures. On the complete original DS30-0107 input both pipelines withheld for insufficient curvature. With a packed archive available the candidate took **0.486 s** versus **1.388 s** for installed v3 (**2.859×**). Including **0.319 s** for one-time conversion and complete readback gives **0.805 s (1.725×)**. The candidate authenticated 58 encoded parts, retained both exclusions and processed all 54 admitted radio opportunities. Both calibration arms returned null positions, and the web product checks confirmed the expected absence of figures. This measures one physical withholding decision. Position accuracy requires a physical recording that returns a fix. [Physical pair, format revision and integrity checks](strict-packed-0107.md)
+
+## Choosing the solver from earlier orbit quality
+
+A location-independent check propagated the available earlier orbital elements at three times before fitting. If any element failed that check, the candidate used the full exact solver. Otherwise it used the faster discovery procedure and the original final fit. Both branches reused one preparation. These two development recordings were already known to exercise different branches. [Selection rule and paired publications](history-risk-route.md)
+
+| Same saved physical detections | Installed v3 | Routed worker | Horizontal error, fixed / fitted |
+|---|---:|---:|---|
+| DS30-0160, earlier orbit failed | 15.999 s | 10.471 s | Reproduced **798 / 1,089 m** and all 1,037 assignments per arm. The earlier lean run gave 822 / 1,325 m. |
+| DS30-0316, earlier orbits passed | 18.358 s | 12.371 s | **1,917 / 1,834 m**, versus 1,945 / 1,863 m for v3. The lean branch added 26 assignments per arm and increased conditional RF RMS by 0.36 / 0.38 Hz. |
+
+From saved detections through process exit, summed speedup was **1.504×**. Charging the new launcher's input checks gave **1.450×** against the historical worker clocks. Both cases returned fixes and eight verified figures. The trial establishes the decision and costs on these packets. An independently enrolled recording is needed to evaluate transfer of the rule. [Timing and product verification](history-risk-route.md)
+
 ## Keeping ALGO08v3's original position solution
 
 The next solver experiment kept the original satellite selection, repairs, fits, and standard figures and reused repeated computations. All four physical recordings returned exactly the original ordered satellite assignments, both calibration endpoints and RF residuals, the 179-location grid, the path and all eight PNGs. Each comparison starts with the same original signed 20 ms detections. The named comparison clocks are historical. [First two recordings](exact-named-route.md) · [Third recording](exact-named-dense.md) · [Fourth recording and cohort](exact-named-0402.md)
