@@ -32,6 +32,14 @@ def run(root):
     from empty_bootstrap import RELEASE, checked, load_runtime
 
     load_runtime()
+    from tools import pipeline_eval
+    from tools.pipeline_eval import qualification
+
+    # The scored worker stays isolated. The launcher also needs the local,
+    # read-only tools used to verify earlier publications and external clocks.
+    research = HERE.parents[2]/"tools/pipeline_eval"
+    pipeline_eval.__path__.append(str(research))
+    qualification.__path__.append(str(research/"qualification"))
     from aperture_trial import read, write
     from full_short_physical import environment
     from historical_orbit_index import case_inputs
