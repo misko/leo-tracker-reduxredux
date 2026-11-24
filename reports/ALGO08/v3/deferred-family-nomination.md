@@ -38,12 +38,26 @@ original second-screen problem, where they were rejected. The original
 isolated candidate set contained T006 and two other qualifying curves
 on different families. Its uniqueness check ran zero isolated fits.
 Singleton closure thus contributes a different reason for prioritizing
-one of three existing options. It contributes no new discrete interval
-or family assignment and no independent radio. The original predictive
-list contained no 57791 candidate, and signed history did not qualify.
-A later test would need a newly justified hypothesis and an independently
-reserved radio or time block under the existing alias and noise gates.
-Nothing in these tapes supplies that independent evidence.
+one of three existing options. It contributes zero new family, alias,
+or member-interval hypotheses. The exact isolated T006 fit never ran.
+Using both full intervals in the original second-screen problem leaves
+the outcome of a separately scheduled fixed-support isolated fit open.
+The original isolation clock of 1.87 ms measures selection only. The
+9.340 s stage child stopped at the second gate, before isolated or
+paired refits. Later charted repair timings concern different support.
+
+The original predictive list supplied no 57791 candidate and signed
+history did not qualify. Suitable independent evidence would be a
+same-family detection on RX2, with the receiver nuisance state learned
+from other accepted tracks, or an untouched contiguous RF time block
+with a temporal guard gap and withheld from all fitting and selection.
+Seal causal predictions for the family and competing aliases using
+only the training block, then compare the held residuals with the
+original alias and noise gates and a clutter alternative in both
+calibration arms. Two overlapping channels on RX1 share receiver
+state, so they cannot supply independent radio evidence. These tapes
+contain neither form of held support. This assignment stops at the
+discrete comparison.
 
 ## Coverage after the nomination seal
 
