@@ -237,6 +237,20 @@ def write(path, document, *, scientific=False):
         stream.write("\n")
 
 
+def check_strict_input(args):
+    mapping = getattr(args, "packed_ci16_map", None)
+    digest = getattr(args, "packed_ci16_map_sha256", None)
+    codec = getattr(args, "packed_ci16_codec", None)
+    if not getattr(args, "strict_packed_eight", False):
+        if any(value is not None for value in (mapping, digest, codec)):
+            raise ValueError("Packed input in this entry requires --strict-packed-eight")
+        return
+    if mapping is None or codec is None or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest or ""):
+        raise ValueError("Provide a staged packed map, its trusted SHA-256 and the pinned codec together")
+    staged_path(mapping)
+    staged_path(codec)
+
+
 def run(args):
     import unified_short_bootstrap as raw
 
@@ -245,6 +259,7 @@ def run(args):
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", args.archive_sha256):
         raise ValueError("Supply the pinned causal archive digest")
     sys.addaudithook(deny_backing(args.recording))
+    check_strict_input(args)
     terminal = raw.run(args, publisher=publish_active)
     if not (args.output/"exact-named-raw-witness.json").exists():
         witness = json.loads((args.output/"unified-short-bootstrap.json").read_bytes())
@@ -268,6 +283,11 @@ def parser():
     command.add_argument("--portable-orbit-producer-sha256")
     command.add_argument("--history-risk-route", action="store_true",
                          help="Use the reviewed earlier-orbit health check before numerical discovery")
+    command.add_argument("--strict-packed-eight", action="store_true",
+                         help="Use the complete independently verified packed 20/8 ms input")
+    command.add_argument("--packed-ci16-map", type=Path, help="Trusted all-member strict packed map")
+    command.add_argument("--packed-ci16-map-sha256", help="Independently verified map SHA-256")
+    command.add_argument("--packed-ci16-codec", type=Path, help="Native codec pinned by the trusted map")
     command.set_defaults(eight_ms_native_history=True, held_anchor_route=True, prove_empty_graph=True,
                          prove_graph_time_support=True, prove_no_active_curvature=True, one_pass_web_png=False,
                          exact_graph_reuse=False, reuse_verified_png_reads=False, lazy_scanner_detector=False)

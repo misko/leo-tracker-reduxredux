@@ -52,6 +52,26 @@ def test_parser_keeps_the_same_receiver_and_named_layout_in_every_region():
     assert args.prove_graph_time_support and args.prove_no_active_curvature
     assert not args.one_pass_web_png and args.portable_orbit_index is None
     assert args.history_risk_route is False
+    assert args.strict_packed_eight is False
+
+
+def test_strict_packed_checks_all_pins_before_ordinary_acquisition(monkeypatch):
+    seen = []
+    monkeypatch.setattr(entry, "staged_path", seen.append)
+    args = SimpleNamespace(strict_packed_eight=False)
+    entry.check_strict_input(args)
+    assert seen == []
+    args.packed_ci16_map = Path("/dev/shm/map.json")
+    with pytest.raises(ValueError, match="requires --strict-packed-eight"):
+        entry.check_strict_input(args)
+    args.strict_packed_eight = True
+    args.packed_ci16_codec = Path("/dev/shm/codec.so")
+    with pytest.raises(ValueError, match="together"):
+        entry.check_strict_input(args)
+    assert seen == []
+    args.packed_ci16_map_sha256 = "sha256:"+"a"*64
+    entry.check_strict_input(args)
+    assert seen == [args.packed_ci16_map, args.packed_ci16_codec]
 
 
 def test_history_risk_scope_calls_original_solve_and_boundary_once(monkeypatch):
