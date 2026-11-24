@@ -266,8 +266,10 @@ def score(root):
     from aperture_trial import write
     from exact_named_route_score import parity
     from held_adaptive_0160_score import verified
+    from portable_orbit_index_trial import local_launcher_tools
 
     sys.addaudithook(deny_backing)
+    local_launcher_tools()
     request = json.loads(active.checked(active.STAGE/"request.json", active.REQUEST_PIN))
     previous = json.loads(active.checked(ORIGINAL/"result.json", ORIGINAL_SEAL))
     before = verified(ORIGINAL/"routed/candidate", previous["clock"], "worker.json", request)
