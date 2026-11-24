@@ -53,8 +53,12 @@ def roster(root=ROOT):
     for case, original in lookup.items():
         survey = surveyed[case]
         point = survey["reference"] if survey["authority_eligible"] else None
+        start, stop = survey["capture_start_utc_ns"], survey["capture_end_utc_ns"]
+        if start != original["captured_utc_ns"] or not isinstance(stop, int) or stop <= start:
+            raise ValueError("Audited recording span must agree with the original start")
         assigned[case] = dict(case_id=original["case_id"], raw_authority=original["raw_authority_digest"],
                               physical_content=original["raw_recording"]["identity_sha256"],
+                              capture_span_s=(stop - start) / 1e9,
                               capture_day=datetime.fromtimestamp(original["captured_utc_ns"] // 10**9,
                                                                  timezone.utc).date().isoformat(),
                               recording_state=original["recording_state"], release_100=case in historical,
@@ -126,6 +130,25 @@ def paired_timing(pairs, metric):
         return dict(pairs=0, summed_speedup=None, median_paired_speedup=None)
     return dict(pairs=len(matched), summed_speedup=sum(a for a, _ in matched) / sum(b for _, b in matched),
                 median_paired_speedup=1 / median(b / a for a, b in matched))
+
+
+def capture_pace(pairs, assigned):
+    """Compare fully charged offline runtime with each recording's own audited observing span."""
+    results = {}
+    for label, group in (("all", pairs), ("complete", [p for p in pairs if p[0]["recording_state"] == "complete"]),
+                         ("interrupted", [p for p in pairs if p[0]["recording_state"] == "incomplete"])):
+        spans = [assigned[a["case"]]["capture_span_s"] for a, _ in group]
+        entry = dict(pairs=len(group), span_s=distribution(spans))
+        for i, role in enumerate(BUILDS):
+            rows = [p[i] for p in group]
+            ratios = [r["elapsed_s"] / span for r, span in zip(rows, spans, strict=True)]
+            in_time = [r for r, ratio in zip(rows, ratios, strict=True) if ratio <= 1.]
+            entry[role] = dict(wall_over_span=distribution(ratios), finished_within_span=len(in_time),
+                               within_1km_and_span={arm: sum(r[arm + "_error_km"] is not None and
+                                                             r[arm + "_error_km"] <= 1. for r in in_time)
+                                                    for arm in ARMS})
+        results[label] = entry
+    return results
 
 
 def capture_day_sensitivity(pairs, assigned):
@@ -379,7 +402,7 @@ def compare_centers(pairs, assigned, offer):
 
 
 def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None,
-                 prior=None, capture_days=None):
+                 prior=None, capture_days=None, pace=None):
     from reports.ALGO08.v3.accuracy_repair_budget import repair_budget
     from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
@@ -424,6 +447,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     metadata["empirical_accuracy_gap"] = {arm: empirical_accuracy_gap(pairs, arm) for arm in ARMS}
     if capture_days is not None:
         metadata["capture_day_sensitivity"] = capture_days
+    if pace is not None:
+        metadata["runtime_relative_to_observing_span"] = pace
     if renderer_revision is not None:
         if len(renderer_revision) != 40 or any(c not in "0123456789abcdef" for c in renderer_revision):
             raise ValueError("Expected a full Git revision for the report renderer")
@@ -537,6 +562,26 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                      f"{new['installed']['c0']['within_1km']} / {new['successor']['c0']['within_1km']} | "
                      f"{new['installed']['fitted_c']['within_1km']} / {new['successor']['fitted_c']['within_1km']} |")
     sensitivity = full["time_accounting"]["removing_positive_candidate_wall_minus_cpu"]
+    if pace is not None:
+        lines += ["", "### Replay time compared with recording duration", "",
+                  "Each recording is counted once per build. A wall-time ratio of 0.4 means the replay took "
+                  "40 seconds per 100 seconds of observation. A failed or withheld run can finish within the "
+                  "observing span. The last two columns also require a returned position within 1 km.", "",
+                  "| Captures | Build | Finished within own observing span | Median / P90 wall time ÷ span | "
+                  "Within span and 1 km, fixed zero | Within span and 1 km, fitted |",
+                  "|---|---|---:|---:|---:|---:|"]
+        for key, name in (("all", "All"), ("complete", "Complete"), ("interrupted", "Interrupted")):
+            group = pace[key]
+            for role, build in (("installed", "ALGO08v3"), ("successor", "Candidate")):
+                stats = group[role]
+                ratio = stats["wall_over_span"]
+                accuracy = stats["within_1km_and_span"]
+                lines.append(f"| {name} | {build} | {stats['finished_within_span']}/{group['pairs']} | "
+                             f"{number(ratio['p50'],3)} / {number(ratio['p90'],3)} | "
+                             f"{accuracy['c0']}/{group['pairs']} | {accuracy['fitted_c']}/{group['pairs']} |")
+        lines += ["", "The observing span comes from the audited capture start and end timestamps. "
+                  "Gauss processed the saved waveform after capture. Streaming first-fix latency and "
+                  "throughput on the embedded target require separate measurements."]
     lines += ["", "Savings subtract candidate seconds from ALGO08v3 seconds. Wall time minus CPU time can include "
               "storage waits, scheduling delays and clock-accounting differences. As a sensitivity check, removing "
               "every positive wall-minus-CPU second from the candidate on each recording, while holding its CPU cost "
@@ -846,4 +891,4 @@ if __name__ == "__main__":
     write_report(actual_pairs, args.output, {case: r["release_100"] for case, r in assigned.items()},
                  export_sha256, renderer_revision=args.renderer_revision,
                  position_moments=shared_position_moments(raw_rows, assigned), prior=prior,
-                 capture_days=capture_day_sensitivity(actual_pairs, assigned))
+                 capture_days=capture_day_sensitivity(actual_pairs, assigned), pace=capture_pace(actual_pairs, assigned))

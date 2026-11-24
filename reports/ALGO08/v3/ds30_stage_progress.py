@@ -7,7 +7,7 @@ import json
 from math import fsum
 from pathlib import Path
 
-from .full_successor_score import BUILDS, field_stage_history, frozen_stage_order, paired_rows, roster
+from .full_successor_score import BUILDS, capture_pace, field_stage_history, frozen_stage_order, paired_rows, roster
 
 
 PLAN = "sha256:9deecea6ce5237d01d277370f57b2666f3b84ab96bba72fe0b668c7701d0fc99"
@@ -55,7 +55,8 @@ def progress(raw, seal):
     return dict(export_sha256=seal["combined_sha256"], assigned=len(assigned), verified=len(pairs),
                 remaining=len(assigned) - len(pairs), observed_pairs_at_half_time=half_time,
                 additional_pairs_needed_for_median=max(0, len(assigned) // 2 + 1 - half_time),
-                observed_candidate_wall_minus_half_baseline_s=signed_excess, **history)
+                observed_candidate_wall_minus_half_baseline_s=signed_excess,
+                runtime_relative_to_observing_span=capture_pace(pairs, assigned), **history)
 
 
 def main():

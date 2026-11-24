@@ -8,7 +8,7 @@ import sys
 import pytest
 from PIL import Image
 
-from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, compare_centers, empirical_accuracy_gap,
+from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, capture_pace, compare_centers, empirical_accuracy_gap,
                                   field_stage_history, frozen_stage_order, outcomes_summary, paired_rf_and_error, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
@@ -25,6 +25,23 @@ def test_all_ds30_and_historical_subset_are_identified_independently():
     assert sum(r["release_100"] for r in assigned.values()) == 100
     assert sum(r["recording_state"] == "incomplete" for r in assigned.values()) == 44
     assert all(r["reference"] is not None for r in assigned.values())
+    assert all(r["capture_span_s"] > 0 for r in assigned.values())
+
+
+def test_capture_pace_charges_each_recording_and_distinguishes_timely_withholds_and_accurate_fixes():
+    def row(case, state, seconds, zero, fitted):
+        return dict(case=case, recording_state=state, elapsed_s=seconds,
+                    c0_error_km=zero, fitted_c_error_km=fitted)
+    pairs = [(row("short", "incomplete", 1., None, None), row("short", "incomplete", 2., .1, .1)),
+             (row("long", "complete", 60., 1.1, 1.), row("long", "complete", 30., .9, 1.2))]
+    assigned = {"short": dict(capture_span_s=1.), "long": dict(capture_span_s=60.)}
+    stats = capture_pace(pairs, assigned)
+    assert stats["all"]["installed"]["finished_within_span"] == 2
+    assert stats["all"]["successor"]["finished_within_span"] == 1
+    assert stats["all"]["successor"]["wall_over_span"]["p50"] == 1.25
+    assert stats["all"]["installed"]["within_1km_and_span"] == {"c0": 0, "fitted_c": 1}
+    assert stats["complete"]["successor"]["within_1km_and_span"] == {"c0": 1, "fitted_c": 0}
+    assert stats["interrupted"]["successor"]["within_1km_and_span"] == {"c0": 0, "fitted_c": 0}
 
 
 def test_cli_checks_expected_export_before_scoring(tmp_path):
@@ -232,8 +249,10 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     prior = compare_centers(pairs, assigned, offer)
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64,
                  renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior,
-                 capture_days=capture_day_sensitivity(pairs, assigned))
+                 capture_days=capture_day_sensitivity(pairs, assigned), pace=capture_pace(pairs, assigned))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    assert report["runtime_relative_to_observing_span"]["interrupted"]["pairs"] == 44
+    assert "Replay time compared with recording duration" in (tmp_path / "README.md").read_text()
     stages = report["field_stages"]["stages"]
     assert [r["last_position"] for r in stages] == [2, 8, 30, 100, 455]
     assert [r["newly_added"]["pairs"] for r in stages] == [2, 6, 22, 70, 355]
