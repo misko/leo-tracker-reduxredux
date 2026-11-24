@@ -1,0 +1,33 @@
+# Completed original DS30-0163 first member and signed acquisition comparison
+
+One new quiet opportunity completed the original first DS30-0163 compressed member in **98.191 s**, transferring only the **43,068,882 bytes** missing from the sealed local checkpoint. The actual installed and integrated sparse 20/8 paths then read the same fully verified resident member. Launch through detector publication was **1.792421 s on installed ALGO08v3** and **0.626073 s on the integrated entry**. Their inner authenticated receivers took **0.380194 s** and **0.235510 s**. Both children stopped before any position solver or PNG publication. [Frozen opportunity](first-member-0163-resume-protocol.md) · [Stage, clocks and typed detector outputs](measurements/first-member-0163-resume-acquisition.json.gz)
+
+## Original member custody
+
+The new `/tmp/leo-v3-0163-first-idle-resume01` checkpoint began from a separately verified local copy of the original **35,651,584-byte** prefix, manifest and index. The original archived device, inode, file version and full signed SHA-256 were checked before access. The resumed read started at that byte offset. All **42** new source reads passed the same strict quiet interlock and shared Gauss lock. There were no original-prefix, original-index or original-manifest body rereads. Pacing used at most 1,048,576 bytes per call and 2,097,152 B/s, idle I/O, CPU2 and nice 15. The slot finished before its 120-second cap. Wait for eligible intervals was **75.613 s**, process CPU in the opportunity was **0.134 s**, and the longest admitted read took **0.117 s**. The original stopped checkpoint and its journal still verify independently. [Prior checkpoint](first-member-0163-idle.md) · [Quiet resume entry](first_member_0163_resume.py)
+
+The released reader verified the full **78,720,466-byte** compressed member (`1ec1091d…`), **102,400,000 decoded bytes** (`ea7de2e9…`), and all 64 original chronological visit hashes. Later members were outside the new stage and both receiver processes. The transport receipt SHA-256 is `3624c9ac33bce434fd141fc3a1a0d2f47857dd429752301cb29892753b9c00d6`. [Machine receipt](measurements/first-member-0163-resume-acquisition.json.gz)
+
+## Member-only receiver comparison
+
+The installed reference ran its actual released full-20 ms detector and chronological continuation, followed by the unchanged immutable detection write. The integrated entry ran the pinned sparse 8 ms primary, original two-scan full anchors, and native verified-once decoder without a prepared derivative. The original offer, cutoff, signed counters, RF, receiver identities, ordered clocks and all measurement opportunities bound both inputs. The scoped derived session shares original parent authority and includes only this member. Both saw **64 issued visits, 55 admitted visits, 9 exclusions and 110 typed stereo lane rows**. The two actual timed workers did no original backing reads. [Acquisition boundary and parity checks](first_member_0163_acquisition.py)
+
+| Measured member boundary | Installed ALGO08v3 | Integrated sparse 20/8 |
+|---|---:|---:|
+| Launch through signed detections, wall s | 1.792421 | 0.626073 |
+| Launch through worker exit, wall / CPU s | 1.995754 / 1.681703 | 0.692939 / 0.686808 |
+| Inner receiver, wall / CPU s | 0.380194 / 0.361035 | 0.235510 / 0.235505 |
+| Selected factors / empty lanes | 8 / 102 | 36 / 74 |
+| Full / short native lane calls | 110 / 0 | 16 / 94 |
+
+The launch-through-detection ratio is **2.863×** on this single warmed member. The inner receiver ratio is **1.614×**. Installed recorded 7,248 process input blocks and the integrated child zero, while all enrolled waveform files were resident. The counters do not identify files. Neither the orbits nor geometry of the complete recording entered the measured part. The order was installed then integrated, with no repeated scientific run after correcting an earlier isolated import failure at **0.047449 wall s** before admission or waveform. Staging time, one-time acquisition of the checkpoint, and offline score verification remain outside the two receiver clocks. [Both installed and candidate clocks](measurements/first-member-0163-resume-acquisition.json.gz)
+
+The named member’s complete typed factors matched the archived full named prefix. The integrated path’s earlier 29-visit overlap matched the separately frozen detached generic and sparse pre-held measurements, including every empty row. Its current end-of-member held selector chose `unfiltered`. The remaining 35 original visits are new sparse-detector evidence from this replay. That selection concerns the first member. A full recording can supply different held-history evidence. [Prior detached sparse parity](attested-sparse-budget.md)
+
+## Offline join to the existing full installed position
+
+The signed original visit, RF, receiver and absolute sample counter identify each lane. The full archived session plus receiver and counter reconstruct the existing publication’s owner ID, while each factor identity hashes the complete typed native row. The original 20 ms prefix exactly matches the archived full named prefix. Exactly **7 of 3,055** ordered owners in each calibration arm fall in this first member, the same seven IDs and all conditional. Each had a single factor in the installed member and the full archived input, so the existing lane-to-original-factor join is unambiguous. All seven stay nonempty under the sparse prefix selection and every factor differs in typed bytes. The 28 added positive lanes were originally empty and unowned. No originally selected lane became empty. [Matched owners and factor hashes](measurements/first-member-0163-owner-join.json)
+
+Comparing the unique singleton rows on each owned lane gives six signed CFO changes from **−127.16 to +144.27 Hz**. Visit 61, receiver 0, channel 6 changed by **+117,998.56 Hz** and **+859 integer epoch samples**, with a different candidate rank. This is a same-lane replacement rather than an exact factor match. The seven owned lanes occur on visits 45–63. These comparisons expose first-member measurement changes on a previously used part of the support while leaving the full candidate receiver selection and both localization outcomes undetermined. No replacement, refit or position estimate ran. [Owner join implementation](first_member_0163_owner_join.py) · [Existing full named control](ds30-0163-combined.md)
+
+Twenty focused and adjacent tests passed. The stage ran at `336f1024c`; the successful two receiver children used `2c0f72b49`. The detector result was sealed at `b7a826ccd` before the owner join. No new RF, cold-repeat source bytes or experiment after the one authorized opportunity were collected.
