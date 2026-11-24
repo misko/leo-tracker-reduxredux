@@ -170,6 +170,8 @@ def launch(root):
 
 def map_parity(folder, independent, pin, req, windows, kinds):
     from reports.ALGO08.v3 import legacy_block_input as port
+    from reports.ALGO08.v3.legacy_block_multi import MAX_SIDECAR
+    from reports.ALGO08.v3.legacy_block_seek import MAX_MAP
 
     bundle = folder / "legacy-first-maps"
     plan = port.load_custody(bundle / "custody.json", pin)
@@ -184,9 +186,10 @@ def map_parity(folder, independent, pin, req, windows, kinds):
         raise ValueError("The fresh complete replay bundle must match independently constructed custody")
     for row, declaration in zip(audit["members"], plan["members"], strict=True):
         leaf, sha = declaration["map"], declaration["map_sha256"]
-        content = port.checked_file(bundle / leaf, sha, port.MAX_CUSTODY)
+        limit = MAX_SIDECAR if declaration["map_kind"] == "exception" else MAX_MAP
+        content = port.checked_file(bundle / leaf, sha, limit)
         if (any(row[key] != value for key, value in declaration.items())
-                or content != port.checked_file(independent / leaf, sha, port.MAX_CUSTODY)
+                or content != port.checked_file(independent / leaf, sha, limit)
                 or len(content) != row["map_bytes"]
                 or row["proof"]["original_encoded_reused"] != declaration["encoded"]
                 or row["proof"]["prefix_bytes"] != 640_000):
