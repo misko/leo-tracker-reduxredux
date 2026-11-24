@@ -23,7 +23,7 @@ from finalist_rejection_bound import MEASUREMENTS, OPTIMIZER_PIN, TRACE, checked
 RUNTIME = Path("/dev/shm/leo-v3-finalist-tangent/reports/ALGO08/v3")
 DRIVER_PIN = "b84a2a0b84fec3101230200c97b476249d58beb57bcd5b96161f87cafb950e23"
 CAPACITY = 8
-CPU_BUDGET_S = 19.9
+CPU_BUDGET_S = 29.9
 
 
 def times(start):
@@ -85,6 +85,7 @@ def experiment(prepared, region, bound, archived, *, started, expected):
     original, cell = secant_port(position.bounded_gauss_newton)
     checked(Path(original.__code__.co_filename), OPTIMIZER_PIN)
     observed = {}
+    reuse_checks = []
 
     def optimize(residual, *args, **kwargs):
         if observed or type(getattr(residual, "__self__", None)) is not position.NormalPosition:
@@ -96,8 +97,11 @@ def experiment(prepared, region, bound, archived, *, started, expected):
         def tracked(point):
             if process_time()-started[0] >= CPU_BUDGET_S:
                 raise RuntimeError("Saved finalist reached its hard numerical budget")
+            prior_hits = memo.hits
             r = memo(point)
-            requests.append(dict(point=point.tolist(), score=float(r@r)))
+            requests.append(dict(point=point.copy(), score=float(r@r)))
+            if memo.hits > prior_hits:
+                reuse_checks.append((residual, point.copy(), r.copy()))
             return r
 
         optimized = original(tracked, *args, **kwargs)
@@ -106,16 +110,25 @@ def experiment(prepared, region, bound, archived, *, started, expected):
 
     begin = process_time(), perf_counter()
     with use_optimizer(position, cell, optimize):
-        model, _, _ = position.refreshed(scan, scan.radio_sigma_hz, nodes[chosen["branch"]-1], "c0", rounds=1, iterations=48)
+        model, _, history = position.refreshed(scan, scan.radio_sigma_hz, nodes[chosen["branch"]-1], "c0", rounds=1, iterations=48)
     fit_time = times(begin)
-    got = json.loads(json.dumps(observed["result"], default=lambda value: value.tolist()))
+    observed = json.loads(json.dumps(observed, default=lambda value: value.tolist()))
+    phase_history = json.loads(json.dumps(history, default=lambda value: value.tolist()))
+    got = observed["result"]
     before = control["result"]
     archive_requests = [{key: row[key] for key in ("point", "score")} for row in control["full_calls"]]
+    audit_clock = process_time(), perf_counter()
+    audit_count = 0
+    for residual, point, reused in reuse_checks:
+        fresh = residual(point)
+        audit_count += (fresh.shape == reused.shape and fresh.dtype == reused.dtype and fresh.tobytes() == reused.tobytes())
+    audit = dict(times(audit_clock), exact_array_audits=len(reuse_checks), bitwise_identical=audit_count)
     verification = dict(ordered_requests_exact=observed["requests"] == archive_requests, optimizer_exact=got == before,
                         accepted_history_exact=got["history"] == before["history"], endpoint_delta_km=dist(got["parameters"], before["parameters"]),
                         score_delta=got["score"]-before["score"], same_stop=got["stopped"] == before["stopped"],
-                        recorded_rows_match=int(model.keep.sum()) == expected["results"]["control"]["active_rows"])
-    return dict(status="complete", rank=rank, setup=setup, fit_scope=fit_time, optimizer=observed, verification=verification,
+                        recorded_rows_match=int(model.keep.sum()) == expected["results"]["control"]["active_rows"],
+                        phase_history_exact=phase_history == expected["results"]["control"]["phase_history"][:1])
+    return dict(status="complete", rank=rank, setup=setup, fit_scope=fit_time, optimizer=observed, verification=verification, audit=audit,
                 prior_optimizer_cpu_s=control["cpu_ns"]/1e9,
                 prior_two_phase_fit_elapsed_s=expected["results"]["control"]["phase_elapsed_ns"]/1e9,
                 additional_waveform_reads=0, other_position_solves=0)
@@ -123,7 +136,7 @@ def experiment(prepared, region, bound, archived, *, started, expected):
 
 def worker(target):
     started = process_time(), perf_counter()
-    resource.setrlimit(resource.RLIMIT_CPU, (20, 20))
+    resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
     previous = runtime()
     _, inventory, archived = previous.admission()
     trace = original_trace()
