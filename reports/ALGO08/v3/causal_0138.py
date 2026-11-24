@@ -8,9 +8,6 @@ import os
 from pathlib import Path
 from time import perf_counter_ns, process_time_ns
 
-from leo.contracts.digests import canonical_digest
-from leo.operations.tle_archive import TleArchiveReader
-
 from duration_heldout import NATIVE, PAIR_PIN, PANEL, SPEC
 
 
@@ -39,6 +36,8 @@ def checked(path, pin):
 
 
 def snapshot_digest(refs):
+    from leo.contracts.digests import canonical_digest
+
     return canonical_digest({ref.path.name: ref.sha256 for ref in refs})
 
 
@@ -47,6 +46,8 @@ def length_digest(ref):
 
 
 def inspect_donors():
+    from leo.operations.tle_archive import TleArchiveReader
+
     readers = {}
     for root, (expected, count, nbytes) in DONORS.items():
         if root.resolve(strict=True) != root or root.stat().st_dev != SHM.stat().st_dev:
@@ -76,6 +77,8 @@ def exact_plan(readers, cutoff, pin):
 
 
 def verify_archive(root, plan):
+    from leo.operations.tle_archive import TleArchiveReader
+
     reader = TleArchiveReader(root)
     actual = reader.list_snapshots()
     expected = [(row.path.name, length_digest(row)) for row, *_ in plan]
