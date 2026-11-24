@@ -1,0 +1,240 @@
+{
+  "blocks": 782,
+  "build": {
+    "binary_sha256": "sha256:b8bdc15f2e98d8afb024f98315dc930d79d12208823b201135bd40671ae16a29",
+    "command": [
+      "cc",
+      "-std=c11",
+      "-O3",
+      "-shared",
+      "-fPIC",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wno-deprecated-declarations",
+      "/dev/shm/leo-v3-legacy-block-seek-0016/reports/ALGO08/v3/legacy_block_seek.c",
+      "-lzstd",
+      "-o",
+      "/dev/shm/leo-v3-legacy-block-seek-0016-result02/legacy-block-seek.so"
+    ],
+    "source_sha256": "sha256:0b7ae1f7f33eaa636767ac32740c4058bc81e52cf798449288043056cf06373f"
+  },
+  "corruption": {
+    "issued_visits": 0,
+    "omitted_suffix": {
+      "block": 103,
+      "decoded_offset": 13500416,
+      "encoded_offset": 10487819,
+      "omitted_blocks": 381,
+      "sequence": 8
+    },
+    "rejected_by": {
+      "selective": "short-window member changed: iq-000000.ci16.zst",
+      "stock": "short-window member changed: iq-000000.ci16.zst"
+    },
+    "sidecar": "detached map differs from independently pinned bytes"
+  },
+  "evidence": {
+    "lanes": 116,
+    "positive_lanes": 43,
+    "raw_native": "sha256:03e0ff8583d0db6f1f57aab01e89df76f0b4b432e6e6f6e9d1cc7ab02a8aafb0",
+    "residual_candidates": 4,
+    "selected": "sha256:7b31f9772b896b24d786d1a4265a23aaf182b2b9e248fddbc7df3de53039ba86",
+    "visits": {
+      "full": 8,
+      "invalid": 6,
+      "short_primary": 50
+    }
+  },
+  "full_receiver_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+  "io_policy": "best-effort: prio 7",
+  "map_clock": {
+    "cpu_ns": 10152137,
+    "input_blocks": 0,
+    "wall_ns": 10152321
+  },
+  "map_work": {
+    "block_census": {
+      "cpu_ns": 1479358,
+      "input_blocks": 0,
+      "wall_ns": 1479020
+    },
+    "prefix_pins_and_seal": {
+      "cpu_ns": 8519684,
+      "input_blocks": 0,
+      "wall_ns": 8519511
+    }
+  },
+  "new_huffman_tables": 304,
+  "orders": [
+    [
+      "stock",
+      "selective"
+    ],
+    [
+      "selective",
+      "stock"
+    ]
+  ],
+  "reader_file": "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/src/leo/storage/short_window.py",
+  "ready": [
+    {
+      "selective": {
+        "actual_reader": "selective",
+        "authenticated_encoded_bytes": 78554951,
+        "c_detector": {
+          "cpu_ns": 122367204,
+          "wall_ns": 122399566
+        },
+        "decoded_and_committed_bytes": 44800000,
+        "selective": {
+          "complete_encoded_auth": {
+            "cpu_ns": 159940194,
+            "input_blocks": 0,
+            "wall_ns": 159942114
+          },
+          "dependency_blocks": 10,
+          "dependency_decoded": 1310720,
+          "dependency_encoded": 1006576,
+          "metadata": {
+            "cpu_ns": 967815,
+            "input_blocks": 0,
+            "wall_ns": 967825
+          },
+          "native_scratch_bytes": 227080,
+          "requested_blocks": 391,
+          "requested_decoded": 51249152,
+          "requested_encoded": 39190546,
+          "requested_span_and_hash": {
+            "cpu_ns": 41016593,
+            "input_blocks": 0,
+            "wall_ns": 41032651
+          },
+          "structure_and_native_context": {
+            "cpu_ns": 2250911,
+            "input_blocks": 0,
+            "wall_ns": 2250545
+          }
+        },
+        "timing": {
+          "cpu_ns": 329820848,
+          "input_blocks": 0,
+          "wall_ns": 329845071
+        }
+      },
+      "stock": {
+        "actual_reader": "stock",
+        "authenticated_encoded_bytes": 78554951,
+        "c_detector": {
+          "cpu_ns": 129502674,
+          "wall_ns": 129528362
+        },
+        "decoded_and_committed_bytes": 102400000,
+        "selective": null,
+        "timing": {
+          "cpu_ns": 393392922,
+          "input_blocks": 0,
+          "wall_ns": 393400685
+        }
+      }
+    },
+    {
+      "selective": {
+        "actual_reader": "selective",
+        "authenticated_encoded_bytes": 78554951,
+        "c_detector": {
+          "cpu_ns": 124310644,
+          "wall_ns": 124354409
+        },
+        "decoded_and_committed_bytes": 44800000,
+        "selective": {
+          "complete_encoded_auth": {
+            "cpu_ns": 116073346,
+            "input_blocks": 0,
+            "wall_ns": 116083821
+          },
+          "dependency_blocks": 10,
+          "dependency_decoded": 1310720,
+          "dependency_encoded": 1006576,
+          "metadata": {
+            "cpu_ns": 999308,
+            "input_blocks": 0,
+            "wall_ns": 999008
+          },
+          "native_scratch_bytes": 227080,
+          "requested_blocks": 391,
+          "requested_decoded": 51249152,
+          "requested_encoded": 39190546,
+          "requested_span_and_hash": {
+            "cpu_ns": 41299655,
+            "input_blocks": 0,
+            "wall_ns": 41297241
+          },
+          "structure_and_native_context": {
+            "cpu_ns": 2015812,
+            "input_blocks": 0,
+            "wall_ns": 2015589
+          }
+        },
+        "timing": {
+          "cpu_ns": 288473058,
+          "input_blocks": 0,
+          "wall_ns": 288488783
+        }
+      },
+      "stock": {
+        "actual_reader": "stock",
+        "authenticated_encoded_bytes": 78554951,
+        "c_detector": {
+          "cpu_ns": 129391816,
+          "wall_ns": 129416335
+        },
+        "decoded_and_committed_bytes": 102400000,
+        "selective": null,
+        "timing": {
+          "cpu_ns": 371698930,
+          "input_blocks": 0,
+          "wall_ns": 371782804
+        }
+      }
+    }
+  ],
+  "runner_sha256": "05a1c4de3c272f49b25d24f85e5a2f986682d7aeada9c04c270a655209bb15aa",
+  "short_receiver_sha256": "fe4ba7b7613654c268353f9e4a78c2bbb916904e06387ace304b0866818f0e3d",
+  "sidecar_bytes": 34319,
+  "sidecar_sha256": "sha256:bd75aeb795d7e42f69bd14c35139bbbecd8100deac7c717e6218e73c70307d70",
+  "source": {
+    "cache": {
+      "cached_pages": 19224,
+      "ended_unix_ns": 1795510903131074944,
+      "members": 3,
+      "observed_file_pages": 19224,
+      "observed_members": 3,
+      "started_unix_ns": 1795510903130732732,
+      "unavailable": {}
+    },
+    "case": "DS30-0016",
+    "compressed": "sha256:4773bee9d16a0291338408540c4b4e83c6ce960bb2ed01ef1e5e65a25d38ea4a",
+    "decoded": "sha256:defed2edfa130b9c1cbee028b9c5daa3700265a9bc2ecc1d0b5105fc67089b43",
+    "index": "sha256:dfe2b6d4971a48811462a2ad1f97e85a7574fa949c0b8f10fe4222e0ab20c609",
+    "manifest": "sha256:1530e4a7376f569f52d2b41dfdfc732489b036df73a8cff9b0feabecbc8cb3cc",
+    "prior_probes": null,
+    "raw_bytes": 102400000,
+    "source": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000",
+    "timing": {
+      "cpu_ns": 238887623,
+      "input_blocks": 8,
+      "wall_ns": 240097004
+    }
+  },
+  "stock_authority": {
+    "cpu_ns": 239600543,
+    "input_blocks": 8,
+    "wall_ns": 240812894
+  },
+  "verify_and_build": {
+    "cpu_ns": 249759946,
+    "input_blocks": 8,
+    "wall_ns": 250972574
+  }
+}
