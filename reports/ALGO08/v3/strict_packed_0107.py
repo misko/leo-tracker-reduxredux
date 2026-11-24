@@ -31,7 +31,34 @@ def candidate_command(previous, recording, archive, offer, target, *, packed, re
     return adaptive.adaptive_command(ordinary, target, strict=packed)
 
 
-def run(root):
+def prepared_derivative(root, clip, pin):
+    from ci16_packing import Packing
+    from packed_combined_input import member_map
+    from seekable_member import EIGHT_MS_SAMPLES, open_member
+
+    conversion = json.loads(checked(root/"conversion.json", pin))
+    section, = conversion["sections"]
+    request = conversion["request"]
+    original, recovered = section["original"], section["checked_derivative"]
+    if (not conversion["independent_check"] or recovered["full_checks"] != clip["issued"] or
+            recovered["decoded_bytes"] != original["uncompressed_bytes"] or original["compressed_bytes"] != clip["compressed_bytes"] or
+            Path(request["codec"]) != root/"packing.so" or Path(request["map"]) != root/"conversion/map.json"):
+        raise ValueError("Only the exact independently verified conversion can be resumed")
+    path, library = Path(request["map"]), Path(request["codec"])
+    codec_pin, entries = member_map(checked(path, request["map_sha256"][7:]), strict_eight=True, variable_extents=True)
+    checked(library, codec_pin[7:])
+    key = clip["manifests"][0]["digest"], section["binding"]["chunk_index"]
+    binding = section["binding"]
+    if entries != {key: (binding["directory"], binding["seek_sha256"])}:
+        raise ValueError("The saved map differs from the verified original member")
+    folder, codec = path.parent/binding["directory"], Packing(library)
+    with open_member(folder, binding["seek_sha256"], codec=codec, prefix_samples=EIGHT_MS_SAMPLES, variable_extents=True) as reader:
+        if reader.manifest_sha256 != key[0] or reader.chunk.model_dump(mode="json") != original:
+            raise ValueError("The saved seekable metadata differs from the original")
+    return request, [folder], codec
+
+
+def run(root, *, prepared_pin=None):
     from dense_geographic_trial import host
     from seekable_eight_raw import clocks, elapsed
 
@@ -58,13 +85,19 @@ def run(root):
         raise ValueError("Require the whole original staged source resident before conversion")
     clip = dict(recording=str(RECORDING), compressed_bytes=CASE.compressed_bytes, issued=CASE.windows,
                 manifests=[dict(path=str(members["manifest"][0]), digest=members["manifest"][2])])
-    root.mkdir()
+    if prepared_pin is None:
+        root.mkdir()
     setup = elapsed(begin)
-    packed, dirs, codec = strict.transform(root, clip, observed, member_count=1, variable_extents=True)
+    if prepared_pin is None:
+        packed, dirs, codec = strict.transform(root, clip, observed, member_count=1, variable_extents=True)
+    else:
+        packed, dirs, codec = prepared_derivative(root, clip, prepared_pin)
     candidate = partial(candidate_command, packed=packed, reference=archived["binding"]["commands"]["candidate"])
-    write(root/"plan.json", dict(revision=revision, runtime_base_revision=MERGED, checkout=tree, source_sha256=paired.digest(paired.HERE/SOURCE),
+    plan_path = root/("plan.json" if prepared_pin is None else "resumed-plan.json")
+    write(plan_path, dict(revision=revision, runtime_base_revision=MERGED, checkout=str(tree), source_sha256=paired.digest(paired.HERE/SOURCE),
          original=clip, named_and_ordinary_reference_sha256=EARLIER[1], admission_cost=setup,
-         source_residency=observed, derivative_request=packed, machine=machine, launch_order=paired.ORDER))
+         source_residency=observed, derivative_request=packed, machine=machine, launch_order=paired.ORDER,
+         resumed_conversion_sha256=prepared_pin))
     before = strict.resident_packed(Path(packed["map"]).parent, dirs, codec)
     started = clocks()
     paired.launch(root/"pair", candidate_factory=candidate,
@@ -120,7 +153,8 @@ def score(root, output):
         tmp = Path(stage)/"score.json"
         withhold.score(root/"pair", tmp)
         proof = read(tmp)
-    conversion, paid, plan = (read(root/f"{name}.json") for name in ("conversion", "paid", "plan"))
+    plan_name = "resumed-plan" if (root/"resumed-plan.json").is_file() else "plan"
+    conversion, paid, plan = (read(root/f"{name}.json") for name in ("conversion", "paid", plan_name))
     build, = conversion["sections"]
     index = root/"conversion"/build["binding"]["directory"]/"source-index.jsonl"
     rows = [json.loads(line) for line in checked(index, build["original"]["index_sha256"].removeprefix("sha256:")).splitlines()]
@@ -162,9 +196,10 @@ if __name__ == "__main__":
     parser.add_argument("action", choices=("run", "score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--verified-conversion-sha256")
     args = parser.parse_args()
     if args.action == "run":
-        run(args.root)
+        run(args.root, prepared_pin=args.verified_conversion_sha256)
     elif args.output is not None and not args.output.resolve().is_relative_to(args.root.resolve()):
         score(args.root, args.output)
     else:
