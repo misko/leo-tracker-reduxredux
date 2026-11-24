@@ -137,6 +137,29 @@ def same_withhold(current, reference):
         raise ValueError("The Cairo-enabled candidate changed signed probes, exclusions, or the zero-product terminal")
 
 
+def scan_opportunities(report):
+    lanes = ("channel", "receiver_id", "processed", "skipped")
+    fields = ("window_count", "counts", "recording_name", "session_id", "time_basis", "rf_mapping_authorities")
+    return {key: report[key] for key in fields} | {"lanes": [{key: lane[key] for key in lanes} for lane in report["channels"]]}
+
+
+def verify_scans(root, current, reference, stock):
+    from leo.contracts.digests import canonical_digest
+
+    def report(folder, result):
+        path = folder/"fast-scan-reports"/(result["science"]["receipt"]["run_id"]+".json")
+        return path.read_bytes()
+
+    new = report(root/"candidate", current)
+    prior = report(OLD_ROOT/"candidate", reference)
+    deployed = report(OLD_ROOT/"stock", stock)
+    scan = scan_opportunities(json.loads(new))
+    if new != prior or scan != scan_opportunities(json.loads(deployed)):
+        raise ValueError("The published scan changed the original lane opportunities")
+    return dict(candidate_sha256=sha256(new).hexdigest(), original_candidate_sha256=sha256(prior).hexdigest(),
+                original_stock_sha256=sha256(deployed).hexdigest(), scan_opportunities_sha256=canonical_digest(scan))
+
+
 def summarize(clocks):
     if set(clocks) != {"DS30-0107", "DS30-0016"}:
         raise ValueError("Use exactly the one fix and one withholding recording")
@@ -176,10 +199,13 @@ def score(root, destination):
     current = raw.published(root, "candidate", measured, req, expected["candidate"])
     same_withhold(current, reference["runs"]["candidate"])
     stock = reference["runs"]["stock"]
+    stock_clock = stock["process"]["clock"]
+    stock_exit = stock_clock["started_unix_ns"] + round(stock_clock["elapsed_s"]*1e9)
     if (current["opportunities"] != stock["opportunities"] or current["excluded"] != stock["excluded"]
-            or measured["clock"]["started_unix_ns"] <= stock["process"]["clock"]["started_unix_ns"]):
+            or measured["clock"]["started_unix_ns"] <= stock_exit):
         raise ValueError("The candidate did not use the same signed opportunities after the original pair")
-    clocks = {"DS30-0107": dict(candidate=measured["clock"], stock=stock["process"]["clock"]),
+    reports = verify_scans(root, current, reference["runs"]["candidate"], stock)
+    clocks = {"DS30-0107": dict(candidate=measured["clock"], stock=stock_clock),
               "DS30-0016": dict(candidate=weak["optional_process"]["clock"], stock=weak["reused_stock"])}
     setups = {"DS30-0107": admission["setup_wall_s"], "DS30-0016": weak["admission"]["prepared_wall_s"]}
     charged = {case: dict(row, candidate=row["candidate"] | {"elapsed_s": row["candidate"]["elapsed_s"]+setups[case]})
@@ -190,7 +216,7 @@ def score(root, destination):
           ordinary_candidate_clocks={"DS30-0107": reference["measured_exits"]["candidate"]["clock"],
                                      "DS30-0016": weak["measured_ordinary"]},
           decisions={"DS30-0107": "withheld", "DS30-0016": "complete"},
-          optional_0107=current, verification_0016=weak["checks"],
+          optional_0107=current, scans_0107=reports, verification_0016=weak["checks"],
           pre_score_sha256=sha256(seal.read_bytes()).hexdigest()))
 
 
