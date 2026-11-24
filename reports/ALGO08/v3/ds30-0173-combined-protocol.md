@@ -32,3 +32,20 @@ Report fix counts, comparable calibration error deltas, summed
 and reciprocal median paired clock ratios, with and without
 common admission. Preserve DS30-0163's installed-first order
 and failed-start cost separately. [Earlier combined result](ds30-0163-combined.md)
+
+## Frozen original input
+
+The original packet digest is
+`d367716257b431537296e66f00835b214c8837428e18ec2af92e8da187d0f8df`.
+Its inventory is
+`b509df18a0649101840de09bb0e5bc46bbf22af4bcbacee9db13eaad3ae1eca4`.
+The original 25 km offer is
+`2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236`
+and the original causal cutoff is **1794801660638609596 UTC ns**.
+The catalogue roster is
+`sha256:aaf1d16e45645d5a6b8fb975f5ce81bfe67076795f58086b71bdf9d92a6821ad`.
+The release's installed signed terminal is
+`sha256:afdd2d7838e9e57172ac5bf71e7c51ef29eeb4823b75854fa87b0ef6db42d8df`.
+The original 28.329 s post-detection duration yields a **61.658 s**
+estimate under the unchanged enrollment rule. That estimate is
+separate from any new saved-worker measurement.
