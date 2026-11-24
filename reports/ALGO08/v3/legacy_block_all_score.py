@@ -41,12 +41,17 @@ def score(root, control_pin):
     from aperture_trial import write
     from history_risk_residual_layout_0402 import media_identity
     from legacy_block_raw_score import snapshot
+    from leo.contracts.digests import canonical_digest
     from publication_media_checks import verify_position_sidecars
 
     control = qualified_control(control_pin)
     ordinary = control["products"]["ordinary"]
     book = read(root / "admission.json")
-    checks = dict(source_pins=book["sources"] == runtime_pins(), prediction=read(root / "prediction-seal.json") == seal(root),
+    reviewer = "reports/ALGO08/v3/legacy_block_all_score.py"
+    measured, scoring = book["sources"], runtime_pins()
+    checks = dict(source_pins=set(measured) == set(scoring) and all(
+        measured[name] == pin for name, pin in scoring.items() if name != reviewer),
+                  prediction=read(root / "prediction-seal.json") == seal(root),
                   assigned_request=book["request"] == control["admission"]["request"],
                   original_control=book["preparation"]["ordinary_control_sha256"] == control_pin,
                   same_causal_producer=book["producer"] == control["admission"]["producer"])
@@ -57,8 +62,9 @@ def score(root, control_pin):
     current = snapshot(root / "indexed", log, book["request"], book["producer"])
     check_receipt = ("decision", "session_id", "run_id", "terminal_sha256", "region", "window_count", "counts")
     checks.update({key: current["receipt"][key] == ordinary["receipt"][key] for key in check_receipt})
-    checks.update({key: current[key] == ordinary[key] for key in ("native_sha256", "native_source", "ordered_owners",
-                                                                   "positions", "history_risk")})
+    checks.update({key: current[key] == ordinary[key] for key in ("native_sha256", "native_source", "ordered_owners", "history_risk")})
+    # Pillow returns a pair of DPI floats; the sealed parsed JSON carries their list representation.
+    checks["positions"] = canonical_digest(current["positions"]) == canonical_digest(ordinary["positions"])
     checks.update({key: current["published"][key] == ordinary["published"][key]
                    for key in ("raw_authority", "arms", "owners", "scientific_digests")})
     checks["all_figures"] = media_identity(current["images"]) == media_identity(ordinary["images"])
@@ -82,4 +88,5 @@ def score(root, control_pin):
             prior_portable_producer=book["prior_index_build"][metric])
     write(root / "result.json", dict(qualified=True, checks=checks, case="DS30-0016", ordinary_control_sha256=control_pin,
         input=input_audit, admission=book, sidecars=sidecars, prices=amounts,
-        products=dict(ordinary=ordinary, indexed=current), prediction_seal=digest(root / "prediction-seal.json")))
+        products=dict(ordinary=ordinary, indexed=current), prediction_seal=digest(root / "prediction-seal.json"),
+        scorer=dict(at_measurement=measured[reviewer], at_verification=scoring[reviewer])))
