@@ -265,16 +265,42 @@ def launch(root, probe, prior):
 def score(root):
     from aperture_trial import write
     from exact_named_route_score import parity
-    from held_adaptive_0160_score import verified
-    from portable_orbit_index_trial import local_launcher_tools
+    from joint_publication import artifacts
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 
     sys.addaudithook(deny_backing)
-    local_launcher_tools()
     request = json.loads(active.checked(active.STAGE/"request.json", active.REQUEST_PIN))
     previous = json.loads(active.checked(ORIGINAL/"result.json", ORIGINAL_SEAL))
-    before = verified(ORIGINAL/"routed/candidate", previous["clock"], "worker.json", request)
     paid = json.loads((root/"clock.json").read_bytes())
-    after = verified(root/"candidate", paid, "worker.json", request)
+
+    def verified(output, clock):
+        read = lambda path: json.loads(path.read_bytes())
+        worker = read(output/"worker.json")
+        research = read(output/"joint-research-receipt.json")
+        receipt = worker["receipt"]
+        run = receipt["run_id"]
+        store = FastStandardAnalysisStore(output)
+        terminal = read(output/"fast-scan-automatic-work"/run/"terminal.json")
+        packet, = (output/"fast-scan-automatic-work").glob("*/detections.json")
+        detail, grid, path = store.detail(run), store.position_grid(run), store.position_path(run)
+        figures = artifacts(output, receipt)
+        if (clock["exit_code"] or not worker["no_waveform"] or worker["handoffs"] != 1
+                or research["receipt"] != receipt or receipt["decision"] != "complete"
+                or digest(packet) != request["native_sha256"]
+                or terminal["native_sha256"] != "sha256:"+request["native_sha256"]
+                or receipt["session_id"] != request["session"] or detail["raw_authority"] != request["raw_authority"]
+                or canonical_digest(terminal) != receipt["terminal_sha256"] or not grid["complete"]
+                or grid["evaluated_points"] != 179 or not grid["matched_c_grid"]
+                or any(s["binding"]["position_png_sha256"] != figures["images"]["position"]["sha256"]
+                       for s in (grid, path))):
+            raise ValueError("Expected the complete original standard publication and exact saved packet")
+        science = dict(raw_authority=detail["raw_authority"], arms=detail["arms"], scientific_digests={
+            "grid": canonical_digest(grid_body(grid)), "path": canonical_digest(path)})
+        return dict(worker=worker, rows=research["selected_rows"], terminal=terminal, products=figures, science=science)
+
+    before = verified(ORIGINAL/"routed/candidate", previous["clock"])
+    after = verified(root/"candidate", paid)
     same = parity(before, after)
     if not all(same.values()):
         raise ValueError(f"Grid-only composition changed a standard product or science: {same}")
