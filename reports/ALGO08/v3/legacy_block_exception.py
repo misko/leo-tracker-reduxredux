@@ -22,35 +22,48 @@ class UnsupportedExceptionLayout(ValueError):
     """Authentic layout not supported by this selective reader."""
 
 
-def layout(frame, expected):
-    """Accept one four-byte match, with no following use of its table."""
+def exception_layout(frame, expected, *, isolated_four_byte=False):
+    """Locate one match-bearing block and prove its decoded length by conservation."""
     spans = []
-    try:
-        info = inspect(frame, expected, block_spans=spans)
-    except ValueError as error:
-        raise UnsupportedExceptionLayout(str(error)) from error
+    info = inspect(frame, expected, block_spans=spans)
     if (not info["checksum"] or frame[4] & 3 or not 0 < expected < 2**32 or len(frame) >= 2**32
-            or info["sequences"] != 1 or info["match_bytes"] != 4
+            or sum(bool(sequences) for _, _, _, sequences in spans) != 1
             or info["block_counts"] != {"compressed": len(spans)}
             or set(info["literal_counts"]) - {"huffman_new", "huffman_reused"}):
-        raise UnsupportedExceptionLayout("Expected one checksummed Huffman frame with one match of four bytes")
+        raise ValueError("Expected one checksummed Huffman frame with exactly one match-bearing block")
+    if isolated_four_byte and (info["sequences"] != 1 or info["match_bytes"] != 4):
+        raise UnsupportedExceptionLayout("Expected one four-byte match")
     view, blocks = memoryview(frame), []
-    origin, decoded, exception = None, 0, None
+    origin, decoded, exception, table = None, 0, None, None
     for ordinal, (encoded, length, count, sequences) in enumerate(spans):
-        mode, _, _, _, streams = literal_section(view[encoded:encoded+length])
+        mode, header, payload, _, streams = literal_section(view[encoded:encoded+length])
         if mode == "huffman_new":
             origin = ordinal
         if sequences:
             exception = ordinal
-            count += 4
-        if (streams != 4 or not 0 < count <= MAX_BLOCK or origin is None
-                or origin == exception and not sequences):
-            raise UnsupportedExceptionLayout("An ordinary decode depends on an exceptional table owner or invalid block")
+            if mode == "huffman_new":
+                table = (ordinal, header + payload, count)
+            count += info["match_bytes"]
+        if streams != 4 or not 0 < count <= MAX_BLOCK or origin is None:
+            raise ValueError("Invalid four-stream block or table origin")
         blocks.append([encoded, length, decoded, count, origin])
         decoded += count
     if decoded != expected or exception is None:
-        raise UnsupportedExceptionLayout("The block map does not cover the signed member exactly")
-    return blocks, exception
+        raise ValueError("The block map does not cover the signed member exactly")
+    if not any(row[4] == exception for row in blocks[exception + 1:]):
+        table = None
+    return blocks, exception, table
+
+
+def layout(frame, expected):
+    """The original isolated four-byte exception proof."""
+    try:
+        blocks, ordinal, table = exception_layout(frame, expected, isolated_four_byte=True)
+    except ValueError as error:
+        raise UnsupportedExceptionLayout(str(error)) from error
+    if table:
+        raise UnsupportedExceptionLayout("An ordinary decode depends on an exceptional table owner")
+    return blocks, ordinal
 
 
 def overlaps(block, start, length):
@@ -59,9 +72,12 @@ def overlaps(block, start, length):
     return max(start, decoded), end
 
 
-def encode_sidecar(core, reader, chunk, frame, windows):
+def encode_sidecar(core, reader, chunk, frame, windows, *, replay_table=False):
     """Require the complete verified stock result, including trailing checks."""
-    blocks, ordinal = layout(frame, chunk.uncompressed_bytes)
+    if replay_table:
+        blocks, ordinal, _ = exception_layout(frame, chunk.uncompressed_bytes)
+    else:
+        blocks, ordinal = layout(frame, chunk.uncompressed_bytes)
     offset, prefixes, captured = 0, [], bytearray()
     for sequence, window in enumerate(windows, chunk.first_sequence):
         row = window.index
@@ -119,7 +135,7 @@ def open_optional(core, reader, chunk, sidecar, pin, binary):
 class SelectiveException:
     """Use the common literal decoder on independent spans of the same signed frame."""
 
-    def __init__(self, core, reader, chunk, sidecar, pin, binary):
+    def __init__(self, core, reader, chunk, sidecar, pin, binary, *, replay_table=False):
         self.core, self.chunk, self.binary, self.context = core, chunk, binary, None
         stage = clock()
         if (reader.manifest.schema_version != 2 or reader.manifest.receiver_ids != (0, 1)
@@ -130,20 +146,32 @@ class SelectiveException:
         self.metadata = elapsed(stage)
         stage = clock()
         self.frame = reader._member(chunk.payload_relative_path, chunk.compressed_bytes, chunk.compressed_sha256)
-        self.pointer = ct.c_char_p(self.frame)
+        self.pointer = ct.cast(np.frombuffer(self.frame, dtype=np.uint8).ctypes.data, ct.c_char_p)
         self.authentication = elapsed(stage)
         stage = clock()
-        self.blocks, self.ordinal = layout(self.frame, chunk.uncompressed_bytes)
+        self.seed = None
+        try:
+            if replay_table:
+                self.blocks, self.ordinal, self.seed = exception_layout(self.frame, chunk.uncompressed_bytes)
+            else:
+                self.blocks, self.ordinal = layout(self.frame, chunk.uncompressed_bytes)
+        except ValueError as error:
+            raise core.UnsupportedLayout(str(error)) from error
         if (self.blocks != self.document["blocks"] or self.ordinal != self.document["ordinal"]
                 or len(self.exception) != self.blocks[self.ordinal][3]):
             raise core.MapError("The certified exception layout differs from the original authenticated bytes")
         self.native_blocks = (core.Block * len(self.blocks))(*(core.Block(*row) for row in self.blocks))
         self.offsets = [row[2] for row in self.blocks]
+        self.decoded_offsets = self.offsets
         self.counts = core.Counts()
         self.reads = Counter()
         self.context = binary.legacy_open()
         if not self.context:
             raise core.UnsupportedLayout("The common legacy decoder failed to initialize")
+        if self.seed and not binary.legacy_configure_origin(self.context, *self.seed):
+            self.close()
+            raise core.UnsupportedLayout("The authenticated literal section cannot restore the table")
+        self.scratch = binary.legacy_scratch(self.context)
         self.setup = elapsed(stage)
 
     def close(self):

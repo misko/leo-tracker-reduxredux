@@ -52,6 +52,9 @@ class Native:
     def legacy_open(self):
         return 1
 
+    def legacy_scratch(self, _context):
+        return 0
+
     def legacy_span(self, _context, _pointer, _size, _blocks, _count, _at, start, length, address, _counts):
         self.spans.append((start, length))
         if self.decline:

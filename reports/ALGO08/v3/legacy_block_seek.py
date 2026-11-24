@@ -110,6 +110,10 @@ def load(path):
     binary.legacy_close.restype = None
     binary.legacy_scratch.argtypes = [ct.c_void_p]
     binary.legacy_scratch.restype = ct.c_size_t
+    binary.legacy_configure_origin.argtypes = [ct.c_void_p, ct.c_uint32, ct.c_uint32, ct.c_uint32]
+    binary.legacy_configure_origin.restype = ct.c_int
+    binary.legacy_origin_replays.argtypes = [ct.c_void_p]
+    binary.legacy_origin_replays.restype = ct.c_uint32
     binary.legacy_span.argtypes = [
         ct.c_void_p, ct.c_char_p, ct.c_size_t, ct.POINTER(Block), ct.c_uint32, ct.c_uint32,
         ct.c_uint32, ct.c_uint32, ct.c_void_p, ct.POINTER(Counts),
@@ -271,21 +275,23 @@ def open_source(reader, chunk, sidecar, pin, binary):
     return Selective(reader, chunk, sidecar, pin, binary)
 
 
-def measure(mode, scope, native, sidecar, pin, binary, evidence_rows, *, verify_words=False):
+def measure(mode, scope, native, sidecar, pin, binary, evidence_rows, *, verify_words=False,
+            member_index=0, open_selective=open_source):
     start = clock()
     try:
         return measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows,
-                               verify_words=verify_words)
+                               verify_words=verify_words, member_index=member_index, open_selective=open_selective)
     except UnsupportedLayout:
         if mode == "stock":
             raise
         timing, proof, table, uses = measure_attempt(
-            "stock", scope, native, None, None, binary, evidence_rows)
+            "stock", scope, native, None, None, binary, evidence_rows, member_index=member_index)
         timing["fallback_including_declined_work"] = elapsed(start)
         return timing, proof, table, uses
 
 
-def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *, verify_words=False):
+def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *, verify_words=False,
+                    member_index=0, open_selective=open_source):
     from tools.pipeline_eval.qualification.blind_compact_run import _probe, factor_candidate
 
     from .future_capture_storage import qualified
@@ -297,11 +303,11 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
     reader = ShortWindowReader(directory)
     if reader.manifest_sha256 != source_pin:
         raise BundleCorruptionError("original legacy manifest pin changed")
-    chunk = reader.manifest.chunks[0]
+    chunk = reader.manifest.chunks[member_index]
     table = None
     if mode == "selective" and sidecar is not None:
         data = short_window.ScannerIqStore._read_regular(sidecar, MAX_MAP) if isinstance(sidecar, Path) else sidecar
-        table = open_source(reader, chunk, data, pin, binary)
+        table = open_selective(reader, chunk, data, pin, binary)
     schedule = StereoSchedule(full_coverage=True)
     targets = {item["target_id"]: item for item in reader.manifest.configuration["targets"]}
     visits, probes, lanes, uses = Counter(), [], [], []
@@ -312,7 +318,7 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
             windows = ((row, None) for row in table.rows)
         else:
             windows = ((window.index, window.samples) for window in reader.windows(
-                start_sequence=0, stop_sequence=chunk.window_count))
+                start_sequence=chunk.first_sequence, stop_sequence=chunk.first_sequence + chunk.window_count))
         for (row, samples), original in zip(windows, evidence_rows, strict=True):
             if row != original.index:
                 raise ValueError("unexpected original window order")
@@ -329,7 +335,7 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
                 samples = table.read(row, full=full)
                 selective_io.update(elapsed(start))
             if verify_words and not np.array_equal(
-                    samples, original.samples if full else original.samples[:80_000]):
+                    samples if full else samples[:80_000], original.samples if full else original.samples[:80_000]):
                 raise ValueError("original signed CI16 span changed")
             window = window_from(row, target, samples)
             center = target["rf_center_hz"] - target["lnb_lo_hz"] - row.acquisition["actual_if_center_hz"]
@@ -345,6 +351,9 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
                 probes.append(_probe(window, lane, [best] if best is not None else []))
         if table is not None:
             counts = table.counts.report()
+            if hasattr(table, "reads"):
+                counts["exception_reads"] = dict(table.reads)
+                counts["table_replays"] = binary.legacy_origin_replays(table.context)
     proof = dict(raw_native=canonical_digest(lanes), selected=canonical_digest(probes), lanes=len(lanes),
                  visits=dict(visits), positive_lanes=sum(bool(row["candidates"]) for row in probes),
                  residual_candidates=sum(candidate[0] != 0 for _, _, _, rows in lanes for candidate in rows))
@@ -359,13 +368,13 @@ def measure_attempt(mode, scope, native, sidecar, pin, binary, evidence_rows, *,
     return timing, proof, table, uses
 
 
-def corruption(reader, chunk, scope, sidecar, pin, binary, witness, ingress):
+def corruption(reader, chunk, scope, sidecar, pin, binary, witness, ingress, *, open_selective=open_source):
     # Exercise a private mutated snapshot with the original pin, never mutate
     # the actual recording or put a waveform duplicate on disk.
     mutated = bytearray(sidecar)
     mutated[1] ^= 1
     try:
-        Selective(reader, chunk, mutated, pin, binary)
+        open_selective(reader, chunk, mutated, pin, binary)
     except MapError as error:
         damaged_map = str(error)
     else:
@@ -387,9 +396,10 @@ def corruption(reader, chunk, scope, sidecar, pin, binary, witness, ingress):
             for path in ("selective", "stock"):
                 try:
                     if path == "selective":
-                        Selective(reader, chunk, sidecar, pin, binary)
+                        open_selective(reader, chunk, sidecar, pin, binary)
                     else:
-                        next(reader.windows(stop_sequence=chunk.window_count))
+                        next(reader.windows(start_sequence=chunk.first_sequence,
+                                            stop_sequence=chunk.first_sequence + chunk.window_count))
                 except BundleCorruptionError as error:
                     if f"short-window member changed: {chunk.payload_relative_path}" != str(error):
                         raise
