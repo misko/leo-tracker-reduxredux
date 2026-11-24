@@ -93,7 +93,9 @@ def worker(root):
           patch.object(algo08_scan, "scan_report", partial(scan_report, algo08_scan.scan_report)),
           patch.object(algo08_scan, "solve", timed(algo08_scan.solve, "solve")),
           patch.object(algo08_position, "selected_packet", selected_packet)):
-        receipt = publication.run(SimpleNamespace(recording=recording, archive=archive, region=offer, bulk_root=output), spec)
+        # load_runtime already enabled the installed lazy exports before importing the scanner.
+        args = SimpleNamespace(recording=recording, archive=archive, region=offer, bulk_root=output)
+        receipt = publication.run(args, dict(spec, startup="stock"))
     write(output / "member-receipt.json", dict(acquisition=measured, stage_clocks=stage_clocks,
                                                 selected_rows=owners, receipt=receipt))
     print(json.dumps(receipt))
