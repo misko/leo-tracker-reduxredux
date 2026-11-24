@@ -238,16 +238,12 @@ def run(args):
         effective_detector = canonical_digest(recipe).removeprefix("sha256:")
         mixer = StereoLaneReceiver(args.short_binary, SHORT_SHA, lane_mask)
     else:
-<<<<<<< HEAD
         mixer = MixedApertureDetector(args.short_binary, short_pin, full_coverage=True)
-=======
-        mixer = MixedApertureDetector(args.short_binary, SHORT_SHA, full_coverage=True)
     if whole_blocks:
         from live_stereo_blocks import bind
 
         recipe = bind(mixer, "sha256:" + RECIPE_SHA)
         effective_detector = canonical_digest(recipe)[7:]
->>>>>>> b9a51bdbb (Run the frozen whole stereo schedule in the original unfiltered receiver)
     frequency_changes = None
     if getattr(args, "select_before_cfo", False):
         if lane_mask or getattr(args, "held_anchor_route", False) or "fixed_epoch_cfo_refinement" not in recipe:
