@@ -117,9 +117,11 @@ def hydrate(reader, ingress, paired, hasher):
 
     with (patch.object(ShortWindowReader, "_member", scoped), ingress(), paired(hasher)):
         windows = tuple(reader.windows())
+    fixed_geometry = all(not window.samples.flags.writeable
+                         and window.samples.shape == (200_000, 2, 2) for window in windows)
     if (len(windows) != reader.manifest.window_count
             or opened != {name: pair[0] for name, pair in allowed.items()}
-            or any(w.samples.flags.writeable or w.samples.shape != (200_000, 2, 2) for w in windows)):
+            or not fixed_geometry):
         raise ValueError("Expected complete original immutable stereo windows")
     return windows, dict(opened)
 
@@ -145,7 +147,8 @@ def verify_ports(roots, documents, pins, codec, ingress, paired, hasher):
             if [entry["manifest_digest"] for entry in entries] != expected_pins:
                 raise ValueError("The released inventory rejected the ordinary capture authority")
             with ingress(), paired(hasher):
-                hashes = [w.iq_sha256 for entry in entries for w in FastSegmentSource(entry).windows()]
+                hashes = [window.iq_sha256 for entry in entries
+                          for window in FastSegmentSource(entry).windows()]
             audits, compatibility = [], "accepted by released FastScanStore"
         else:
             try:
@@ -220,7 +223,8 @@ def run(output):
     checked_lease()
     machine = current_machine()
     if (machine["cpu"] != [2] or machine["nice"] < 15 or "prio 7" not in machine["ionice"]
-            or set(machine["threads"].values()) != {"1"} or os.environ.get("OMP_THREAD_LIMIT") != "1"):
+            or set(machine["threads"].values()) != {"1"}
+            or os.environ.get("OMP_THREAD_LIMIT") != "1"):
         raise ValueError("Expected one low-priority Gauss core under the shared slot")
     custody = json.loads(checked(STAGE / "staging.json", STAGE_PIN))
     origin = STAGE / Path(custody["recording"]).name
@@ -233,7 +237,8 @@ def run(output):
     checked(library, CODEC_PIN)
     codec = Packing(library)
     checked(CACHE_LIBRARY, CACHE_SHA)
-    cache_tools = Path(__file__).resolve().parents[3] / "tools/pipeline_eval/qualification/cache_residency.py"
+    repo = Path(__file__).resolve().parents[3]
+    cache_tools = repo / "tools/pipeline_eval/qualification/cache_residency.py"
     cache = run_path(str(cache_tools))
     query = cache["load_query"](CACHE_LIBRARY)
     hasher = Path(spec["paired_sha256"]["library"])
@@ -294,7 +299,8 @@ def run(output):
         stages.append(dict(segment=i, order=order, hydrate=hydrated, reads=reads, cache=state,
                            decoded_bytes=decoded_bytes, writer=arm_clocks))
         first += count
-    if (first != WINDOWS or canonical_digest([custody["inventory"], windows_sha]) != custody["raw_authority"]):
+    raw_authority = canonical_digest([custody["inventory"], windows_sha])
+    if first != WINDOWS or raw_authority != custody["raw_authority"]:
         raise ValueError("Exact staged recording authority did not reproduce")
 
     pins, commit_cost = {}, {}
@@ -312,7 +318,8 @@ def run(output):
     strict_members = compare_strict(roots, documents)
     if len(strict_members) != MEMBER_COUNT:
         raise ValueError("Expected every strict derivative member")
-    receipt = dict(case="DS30-0016", source_custody_sha256=STAGE_PIN, source=stages, runtime=runtime,
+    receipt = dict(case="DS30-0016", source_custody_sha256=STAGE_PIN, source=stages,
+                   runtime=runtime,
                    machine=machine, roots=pins, commit=commit_cost, readback=check,
                    documents=documents, owned_window_sha256=canonical_digest(windows_sha),
                    codec=codec.programme(), strict_member_commitments=strict_members,
