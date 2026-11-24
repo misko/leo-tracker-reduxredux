@@ -1,21 +1,26 @@
+import json
+
+import numpy as np
+
 from reports.ALGO08.v3.exact_named_south_omitted import observe_boundary
 
 
 def test_boundary_observer_preserves_inactive_decision_and_both_coordinates():
-    endpoints = {"c0": (12.27, -0.31), "fitted_c": (12.24, -0.58)}
+    endpoints = {"c0": np.array([12.27, -0.31]), "fitted_c": np.array([12.24, -0.58])}
     expected = {"bound_arms": [], "evaluated": False, "would_withhold": False}
 
     def score():
         raise AssertionError("Inactive candidate must not pay exterior probes")
 
     def inspect(points, width, probe, *, terminal_only=False):
-        assert points == endpoints and width == 25.0 and probe is score and terminal_only
+        assert points is endpoints and width == 25.0 and probe is score and terminal_only
         return expected
 
     proof = []
     result = observe_boundary(inspect, proof)(endpoints, 25.0, score, terminal_only=True)
     assert result is expected
-    assert proof == [{"width_km": 25.0, "endpoints_east_north_km": endpoints, **expected}]
+    assert json.loads(json.dumps(proof)) == [{"width_km": 25.0, **expected,
+            "endpoints_east_north_km": {"c0": [12.27, -0.31], "fitted_c": [12.24, -0.58]}}]
 
 
 def test_boundary_observer_forwards_exterior_probe_evidence():

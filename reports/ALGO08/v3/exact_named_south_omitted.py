@@ -1,6 +1,7 @@
 """Stress the exact named publication on one sealed South near-omitted offer."""
 
 import argparse
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -45,10 +46,58 @@ def freeze():
 def observe_boundary(inspect, audit):
     def observed(endpoints, width_km, score, **options):
         decision = inspect(endpoints, width_km, score, **options)
-        audit.append(dict(width_km=width_km, endpoints_east_north_km=endpoints, **decision))
+        coordinates = {arm: [float(x) for x in point] if point is not None else None
+                       for arm, point in endpoints.items()}
+        audit.append(dict(width_km=width_km, endpoints_east_north_km=coordinates, **decision))
         return decision
 
     return observed
+
+
+def recover_science(root):
+    """Finish an ndarray audit failure from the terminal, exact path and partial receipt."""
+    from empty_bootstrap import load_runtime
+    from exact_named_raw import write
+    from exact_named_raw_transfer import read
+
+    load_runtime()
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from tools.pipeline_eval.variants.experimental.regional_bound_guard import bound_arms
+
+    partial = root/"scientific-seal.json"
+    measured = read(root/"clock.json")["clock"]
+    data = partial.read_text()
+    prefix = '{\n  "result": '
+    if (measured["exit_code"] != 1 or "ndarray is not JSON serializable" not in measured["stderr_tail"]
+            or not data.startswith(prefix)):
+        raise ValueError("Expected the documented post-publication serialization failure")
+    publication, end = json.JSONDecoder().raw_decode(data[len(prefix):])
+    if '\n  "boundary": [\n' not in data[len(prefix)+end:] or publication["decision"] != "complete":
+        raise ValueError("The original boundary observer must have returned during a complete publication")
+    output = root/"candidate"
+    witness = read(output/"exact-named-raw-witness.json")
+    history = witness["ports"]["history"]
+    store = FastStandardAnalysisStore(output)
+    detail, path = store.detail(publication["run_id"]), store.position_path(publication["run_id"])
+    terminal, = output.glob("fast-scan-automatic-work/*/terminal.json")
+    native, = output.glob("fast-scan-automatic-work/*/detections.json")
+    if (detail != witness["evidence"]["detail"] or detail["input_sha256"] != PACKET
+            or canonical_digest(read(terminal)) != publication["terminal_sha256"]
+            or "sha256:"+sha256(native.read_bytes()).hexdigest() != PACKET
+            or canonical_digest(path) != witness["evidence"]["sidecars"]["path"]
+            or witness["timing"]["solve"] == [] or history["solves"] != 1 or history["exterior_proof"]
+            or len(path["stages"]) != 1):
+        raise ValueError("The installed path or terminal no longer supports the audited result")
+    width = path["box_width_km"]
+    endpoints = {arm: row["endpoint"] for arm, row in path["stages"][0]["arms"].items()}
+    if bound_arms(endpoints, width) != []:
+        raise ValueError("The path must preserve both unconstrained optimizer endpoints")
+    boundary = dict(width_km=width, endpoints_east_north_km=endpoints,
+                    bound_arms=[], evaluated=False, would_withhold=False)
+    write(root/"recovered-seal.json", dict(result=publication, boundary=[boundary], native_sha256=PACKET,
+          waveform_calls=0, handoffs=1, recovery="bind original position path and no-call exterior port",
+          original_partial_sha256=sha256(data.encode()).hexdigest()))
 
 
 def worker(root):
@@ -136,8 +185,10 @@ def score(root):
     from tools.pipeline_eval.scoring import distance_km
 
     binding = read(root/"binding.json")
-    sealed = read(root/"scientific-seal.json")
     measured = read(root/"clock.json")
+    recovery = measured["clock"]["exit_code"] != 0
+    seal_path = root/("recovered-seal.json" if recovery else "scientific-seal.json")
+    sealed = read(seal_path)
     req, old = binding["request"], binding["comparator"]
     named = json.loads(checked(Path(old["path"]), old["sha256"]))["cases"][MODE]
     reference = json.loads(checked(HERE.parent/"regional-release/scoring-key.json", KEY_SHA))
@@ -146,10 +197,13 @@ def score(root):
     offer = Algo08Region.parse(json.loads(checked(Path(req["offers"][MODE]), req["offer_sha256"][MODE]))).document()
     published = sealed["result"]
     witness = read(root/"candidate/exact-named-raw-witness.json")
+    terminal_path, = (root/"candidate").glob("fast-scan-automatic-work/*/terminal.json")
+    terminal = read(terminal_path)
     verified = witness["evidence"]
     named_arms = named["historical_named"]["arms"]
     clearance = face_clearance_km(offer, truth)
-    if (measured["clock"]["exit_code"] or sealed["waveform_calls"] or sealed["handoffs"] != 1
+    if (recovery and sealed.get("recovery") != "bind original position path and no-call exterior port"
+            or sealed["waveform_calls"] or sealed["handoffs"] != 1
             or sealed["native_sha256"] != PACKET or abs(clearance+.100) > 1e-9
             or any(doc != offer for doc in (published["region"], verified["detail"]["region"], named["historical_named"]["offer"]))
             or named["named_status"] != "false_fix"):
@@ -160,22 +214,24 @@ def score(root):
         raise ValueError("Expected original grid, both arms and eight standard figures")
     arms = {}
     for arm in ARM_NAMES:
-        candidate = verified["detail"]["arms"].get(arm, {})
+        candidate = terminal["arms"][arm]
         rows = {}
-        for name, (latlon, rf) in (("candidate", (candidate.get("endpoint_latlon"), candidate.get("residual_rms_hz"))),
+        for name, (latlon, rf) in (("candidate", (candidate["latlon"], candidate.get("rf_rms_hz"))),
                                   ("named", (named_arms[arm]["latlon"], named_arms[arm]["rf_rms_hz"]))):
             rows[name] = dict(position=latlon, rf_rms_hz=rf, error_km=distance_km(truth, latlon),
                               face_inward_km=face_clearance_km(offer, latlon) if latlon else None)
+        rows["candidate"]["plot_residual_rms_hz"] = verified["detail"]["arms"].get(arm, {}).get("residual_rms_hz")
         arms[arm] = rows
     write(root/"result.json", dict(offer=offer, truth_face_inward_km=clearance, reference_sha256=KEY_SHA,
         candidate_status=geographic_status(clearance, published["decision"]), named_status=named["named_status"],
         named_control=named["historical_named"], arms=arms, measured=measured, candidate_geometry=sealed["boundary"],
-        candidate_witness=witness, seal_sha256=pin(root/"scientific-seal.json")))
+        observations_published=verified["owner_rows"], fallback_status=sealed.get("recovery"),
+        candidate_witness=witness, seal_sha256=pin(seal_path)))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("launch", "worker", "score"))
+    parser.add_argument("action", choices=("launch", "worker", "recover", "score"))
     parser.add_argument("root", type=Path)
     opts = parser.parse_args()
-    {"launch": launch, "worker": worker, "score": score}[opts.action](opts.root)
+    {"launch": launch, "worker": worker, "recover": recover_science, "score": score}[opts.action](opts.root)
