@@ -209,6 +209,12 @@ def write_report(pairs, output, enrollment, receipt_digest):
              f"Speedup at the median paired ratio was **{number(full['wall']['median_paired_speedup'])}×**. "
              f"ALGO08v3 returned **{full['installed']['fitted_c']['fixes']}/{k}** fitted positions "
              f"and the candidate returned **{full['successor']['fitted_c']['fixes']}/{k}**.", "",
+             "Gauss ran one pipeline at a time on a single CPU core. The candidate uses 8 ms primary "
+             "signal searches between 20 ms two-scan anchors. Both builds read the original waveforms "
+             "and use the same search region and causal orbit data for each recording. "
+             "The 100-recording panels below use fresh paired measurements on the original release subset. "
+             "[Frozen builds and benchmark protocol](https://github.com/misko/leo-tracker-reduxredux/blob/"
+             "6e18e827eca1ae6caa78e65d2b0746c3b4f424b2/reports/ALGO08/v3/full-successor-field-protocol.md)", "",
              "## Runtime", "", "![Runtime distributions and run order](runtime.png)", "",
              "![Wall and CPU time histograms](runtime-histogram.png)", "",
              "The runtime histograms count all measured exits, including withheld and failed attempts. "
