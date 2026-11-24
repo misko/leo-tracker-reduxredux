@@ -60,7 +60,7 @@ def measure(path, size, pin, read, mode):
         before = resource.getrusage(resource.RUSAGE_SELF)
         started = process_time_ns(), perf_counter_ns()
         if mode == "whole":
-            contents = read(fd, size)
+            contents = read(fd, path, size)
             clocks["whole_read_cpu_ns"] = process_time_ns() - started[0]
             if len(contents) != size:
                 raise ValueError("The released complete descriptor returned a changed extent")
@@ -86,12 +86,18 @@ def run(path, case):
         raise ValueError("Only the original staged compressed artifact is eligible")
     spec = json.loads(release.verified(release.PAYLOAD / "spec.json", release.SPEC_SHA))
     view = release.frozen_function(spec, "receiver_ingress.py", "compressed_input_buffer")
-    read = view.__wrapped__.__globals__["read_regular_descriptor"]
+    bindings = view.__wrapped__.__globals__
+    port = "read_regular_descriptor" if "read_regular_descriptor" in bindings else "read_regular"
+    original = bindings[port]
+
+    def read(fd, path, size):
+        return original(fd if port == "read_regular_descriptor" else path, size)
+
     before = stage.residency(case)
     runs = [{mode: measure(payload, member["compressed_bytes"], member["compressed_sha256"], read, mode) for mode in order}
             for order in ORDERS]
     after = stage.residency(case)
-    write(path, dict(case=case, machine=machine, runs=runs, orders=ORDERS, resident_before=before,
+    write(path, dict(case=case, machine=machine, runs=runs, orders=ORDERS, original_port=port, resident_before=before,
                      resident_after=after, source_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
 
 
