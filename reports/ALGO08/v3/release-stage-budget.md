@@ -67,6 +67,17 @@ The next independently assigned recording, DS30-0419, gives a practical intake t
 
 A metadata check selected the first original payload before checking its availability. It contained 64 visits and 79.164 MB of compressed data. Gauss reported **0 of 19,328 pages resident**. The NVMe capture-spool entry pointed back to the RAID, and the local memory filesystems contained no matching original. The probe read zero waveform bytes. The raw intake timing remains open. [First-member selection and cache check](first-member-0419.md)
 
+### Intake budget after two blind solver comparisons
+
+On DS30-0289 the candidate spent longer in the solver and recovered a fix that installed v3 withheld. This leaves less of the 2× time budget for reading and processing the recording. The table charges the complete saved candidate and its measured admission on each recording. The original v3 denominator already includes its receiver, solver and publication.
+
+| Blind recording | Original v3 raw-to-exit | Candidate saved solver plus admission | Time left for intake at 2× | Required intake through detections |
+|---|---:|---:|---:|---:|
+| DS30-0419 | 93.571 s | 16.940 s | 29.846 s | 280.5 MB/s |
+| DS30-0289 | 92.380 s | 27.639 s | 18.551 s | 441.7 MB/s |
+
+If the receiver delivers a uniform effective rate and each recording keeps its measured downstream cost, these two blind cases need **342.8 MB/s** to pass both aggregate timing gates. The rate includes startup and detection publication. The paired median sets the threshold, with the summed-time threshold just below at **342.3 MB/s**. DS30-0289 originally had zero input pages resident. Throughput measured on warm DS30-0016 files does not account for that original storage condition. [Blind fix and withholding clocks](nomination-handoff-0289-local.md) · [Reproducible budget and original byte bounds](intake_scale_check.py)
+
 ### Five original solver failures and two saved-input recoveries
 
 ![Historical acquisition and failed solver intervals for five recordings, alongside two saved-input recoveries](development/failed-intake-clocks.png)
