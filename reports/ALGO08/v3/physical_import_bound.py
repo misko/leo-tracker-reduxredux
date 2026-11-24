@@ -25,7 +25,7 @@ PINS = {
     HERE/"empty_bootstrap.py": "2d789b4fb28447a623f6118bb53a2b734645a9bbedb7a263007f52f4acc429a0",
 }
 SEALED = (HERE/"measurements/strict-cairo-0107.json.gz", "8e30886adeb6ec4b475a6f023fa0ed32b79bdc3e6b267710f1e75fef34850145")
-ORIGINAL = (HERE/"measurements/history-risk-0107-cairo.json.gz", "6f6923e6a4be803069581d5a254148c6e322d9e0c4ea4e93de1062dd2bb485e9")
+ORIGINAL = (HERE/"measurements/history-risk-0107-cairo.json.gz", "4ea664e98f4920267a1afa2de86409349530030c2ad99836cd722ebdee1f6cb8")
 ORDER = (("stock", "tiny"), ("candidate", "tiny"), ("candidate", "weak"), ("stock", "weak"))
 IMPORT_LINE = re.compile(r"import time:\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(.+)")
 ACTIVE_PHASE = "physical import probe: candidate active-only roots"
@@ -42,9 +42,8 @@ def controls():
     import gzip
 
     sealed = json.loads(gzip.decompress(checked(*SEALED)))
-    raw = gzip.decompress(ORIGINAL[0].read_bytes())
-    old = json.loads(raw)
-    if sha256(raw).hexdigest() != ORIGINAL[1] or not sealed["qualified"] or not old["qualified"]:
+    old = json.loads(gzip.decompress(checked(*ORIGINAL)))
+    if not sealed["qualified"] or not old["qualified"]:
         raise ValueError("Expected the complete physical two-case evidence")
     return sealed, old["admission"]["candidate_libraries"]
 
