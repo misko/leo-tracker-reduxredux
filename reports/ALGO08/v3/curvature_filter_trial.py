@@ -89,7 +89,6 @@ def run(case, output):
     from leo.analysis.localization_v3.region import SearchRegion
     from leo.analysis.localization_v3.tracks import TrackConfig
     from leo.application.localization_v3 import prepare_native_scan
-    from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.variants import v5_core
     from tools.pipeline_eval.variants.algo08_causal_reuse import CausalPreparationParser
     from tools.pipeline_eval.variants.algo08_causal_table import causal_table
@@ -114,7 +113,9 @@ def run(case, output):
         raise ValueError("Expected fully prepared signed factors on the strict parser")
     with geographic_projection(projection):
         started = now()
-        scan = v5_core.scan_context(prepared, region, canonical_digest(prepared["noise"]), None, "previous")
+        # This diagnostic does not create a terminal. The prepared noise
+        # model itself is retained by the installed context.
+        scan = v5_core.scan_context(prepared, region, None, None, "previous")
         context = clocks(started)
         started = now()
         evidence, decision = eligibility(scan)
