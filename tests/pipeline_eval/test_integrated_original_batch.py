@@ -1,6 +1,7 @@
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import TestCase
+from unittest.mock import patch
 from tempfile import TemporaryDirectory
 import os
 import sys
@@ -62,3 +63,14 @@ class IntegratedOriginalBatchTest(TestCase):
                 guard("open", ("/srv/bulk/unrelated", "r", os.O_RDONLY))
             with self.assertRaises(ValueError):
                 guard("open", ("/mnt/qnap01/unrelated", "r", os.O_RDONLY))
+
+    def test_private_lookahead_option_requires_pins_for_both_sources(self):
+        artifact = {"path": "/checked.so", "sha256": "b" * 64}
+        sources = {str(Path(batch.__file__).relative_to(batch.ROOT)): "a" * 64}
+        book = dict(schema=batch.BUILD_SCHEMA, charted_commit=batch.CHARTED_COMMIT,
+                    charted_admission=batch.CHARTED_ADMISSION, sources=sources,
+                    native={flag: artifact for flag in (*batch.PATH_OPTIONS, *batch.SIGNED_OPTIONS)})
+        with (patch.object(batch, "document", return_value=book), patch.object(batch, "checked") as checked,
+              self.assertRaisesRegex(ValueError, "pin both private snapshot sources")):
+            batch.load_build(Path("build.json"), "c" * 64, reuse_prefetched_snapshots=True)
+        self.assertEqual(checked.call_count, 1)
