@@ -23,16 +23,14 @@ def test_census_preserves_current_stamps_and_distinct_content():
 
 
 def test_adapter_keeps_original_guarded_receiver_args_and_charges_prep(monkeypatch, tmp_path):
-    import active_preparation_trial
     import continued_cfo
-    import historical_orbit_index
+    import north_orbit_index_raw
 
     output = tmp_path/"containing"
     bound = []
 
     @contextmanager
-    def preparation(method, audit):
-        assert method is historical_orbit_index.guarded_preparation
+    def preparation(audit):
         bound.append(True)
         yield
         audit["attempts"] = [{"guard": True}]
@@ -42,7 +40,7 @@ def test_adapter_keeps_original_guarded_receiver_args_and_charges_prep(monkeypat
         assert bound and library is None and guarded_pack == tmp_path/"guarded"
         assert argv == ["--recording", "/tmp/original", "--region", "/tmp/offer", "--output", str(output)]
 
-    monkeypatch.setattr(active_preparation_trial, "bind_preparation", preparation)
+    monkeypatch.setattr(north_orbit_index_raw, "bind_runtime", preparation)
     monkeypatch.setattr(continued_cfo, "raw_entry", original)
     main(["--anchored-cfo-pack", str(tmp_path/"guarded"), "--recording", "/tmp/original", "--output", str(output),
           "--region", "/tmp/offer"])

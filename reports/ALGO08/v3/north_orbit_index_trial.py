@@ -16,6 +16,8 @@ SELECTIVE_PINS = {"binding": "ed37b61ea850c8f6eca9362c17a06c97fa141b0323a327ece7
                   "score": "5be2a821f7646466ebd261264bea2eb6ab52eb246ea06a6923f8b4b54ea81cae"}
 PORTABLE = Path("/dev/shm/leo-v3-portable-orbit-publication-01/result.json")
 PORTABLE_PIN = "f052e299962f557ee220b7485f3d356fbdee3b7797ee1bc1217341e57b37c2d2"
+FALLBACK = Path("/dev/shm/leo-v3-north-historical-orbits-result01")
+FALLBACK_PIN = "d332e7b04bd7712fa296ed5bae941ab978a6d89b2a0f1eecae30eb80ff2b4a8c"
 HOUR_NS = 3_600_000_000_000
 
 
@@ -60,8 +62,7 @@ def launch(root):
     control()
     if counts["72"]["unique_bodies"] <= 1:
         raise ValueError("A single immutable source body cannot price historical materialization")
-    helpers = ("north_orbit_index_raw.py", "north_orbit_index_trial.py", "historical_orbit_index.py",
-               "active_preparation_trial.py", "continued_cfo.py")
+    helpers = ("north_orbit_index_raw.py", "north_orbit_index_trial.py", "historical_orbit_index.py", "continued_cfo.py")
     original_launch(root, continued=True, entrypoint=HERE/"north_orbit_index_raw.py",
         trial_protocol=HERE/"north-orbit-index-protocol.md", extra_sources=tuple(HERE/name for name in helpers))
 
@@ -77,6 +78,7 @@ def score(root):
     existing_seal(root)
     existing_score(root)
     new, old = read(root/"sealed.json"), archives["sealed"]
+    fallback = json.loads(checked(FALLBACK/"sealed.json", FALLBACK_PIN))
     audit = read(root/"orbits-indexed.json")
     attempt, = audit["attempts"]
     named = references()[1]["stock"]
@@ -88,6 +90,7 @@ def score(root):
             or new["candidate"]["native_sha256"] != old["candidate"]["native_sha256"]
             or current["held_anchor_route"] != old["raw"]["held_anchor_route"]
             or current["receipt"]["terminal_sha256"] != old["raw"]["receipt"]["terminal_sha256"]
+            or current["receipt"]["terminal_sha256"] != fallback["raw"]["receipt"]["terminal_sha256"]
             or current["receipt"]["region"] != named["verified"]["receipt"]["region"]
             or scientific(root/"containing") != scientific(SELECTIVE/"containing")):
         raise ValueError("The cold index did not activate or changed the sealed selective publication")
@@ -100,17 +103,60 @@ def score(root):
         phases=current["phases"], solve=new["solver"]["solve"], clock=new["clock"], audit=audit,
         graph_and_media=new["candidate"], ordered_roles=new["roles"], prior=historical,
         score=read(root/"score.json"), comparisons=new["comparisons"], cache=new["cache"],
+        fallback=dict(sealed_sha256=FALLBACK_PIN, clock=fallback["clock"], phases=fallback["raw"]["phases"],
+                      solve=fallback["solver"]["solve"]),
         source_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
+
+
+def preflight():
+    from contextlib import nullcontext
+    from functools import partial
+    from unittest.mock import patch
+
+    import empty_bootstrap
+    import joint_publication
+    from historical_orbit_index import installed_guard, preparation_port
+    from north_orbit_index_raw import bind_runtime
+
+    runtime = empty_bootstrap.load_runtime()
+    from leo.operations.tle_archive import TleArchiveReader
+    from tools import algo08_position
+    from tools.pipeline_eval.variants import algo08_causal_reuse as installed
+    from tools.pipeline_eval.variants.experimental.regional_bound_guard import bound_exterior_veto
+
+    source, _ = admitted_inputs()
+    reader = TleArchiveReader(Path(source["binding"]["request"]["archive"]["root"]))
+    causal = partial(installed.prepare, algo08_position.prepare_native_scan, statistics={})
+    audit = {}
+    with patch.object(algo08_position, "prepare_native_scan", causal), bound_exterior_veto(reader, terminal_only=True):
+        original = algo08_position.prepare_native_scan
+        if not installed_guard() or preparation_port(original, installed.prepare) != "regional":
+            raise ValueError("The real installed regional wrapper did not qualify")
+
+        def probe(*, raw_context):
+            with raw_context(None):
+                if algo08_position.prepare_native_scan is original or audit != {"attempts": []}:
+                    raise ValueError("The shared publication port did not bind index preparation")
+
+        with (patch.object(empty_bootstrap, "load_runtime", return_value=runtime),
+              patch.object(joint_publication, "run", probe), bind_runtime(audit)):
+            empty_bootstrap.load_runtime()
+            joint_publication.run(raw_context=lambda scan: nullcontext())
+        if algo08_position.prepare_native_scan is not original:
+            raise ValueError("The probe did not restore the original preparation")
+    print("Installed raw publication wrapper activated without archive or waveform reads")
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("screen", "launch", "score"))
+    cli.add_argument("mode", choices=("screen", "preflight", "launch", "score"))
     cli.add_argument("root", nargs="?", type=Path)
     args = cli.parse_args()
     if args.mode == "screen":
         _, sizes = admitted_inputs()
         print(json.dumps(sizes, indent=2, sort_keys=True))
+    elif args.mode == "preflight":
+        preflight()
     else:
         if args.root is None:
             cli.error("An output root is required")
