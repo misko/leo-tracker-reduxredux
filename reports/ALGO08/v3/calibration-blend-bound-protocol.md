@@ -1,0 +1,7 @@
+# Can calibration choice recover the candidate's lost position accuracy?
+
+On a recording where both builds returned positions, compare ALGO08v3's deployed fitted position error with the smallest error attainable anywhere on the shortest great-circle segment connecting the candidate's two published positions (fixed `c = 0` and fitted `c`). Permit the hypothetical selector to know the reference independently on every recording. Its best error is a lower bound for any rule that chooses either published endpoint or interpolates between them on that segment. It gives no bound on a new nonlinear fit, a changed association, a different receiver or extrapolation beyond the segment.
+
+Report fitted regressions greater than 1 m and the subset where even this optimistic selector still loses by more than 1 m. Retain the signed RF RMS for both ordinary calibration arms separately. Exclude withheld and failed positions from the segment calculation and retain them in fix-rate denominators. The selector is a post-publication diagnostic with zero field timing credit. Supply no reference to either candidate.
+
+The first ten matched originals through DS30-0086 include previously seen outcomes. Evaluate all ten as development evidence. The next three assigned recordings are DS30-0220, DS30-0144 and DS30-0170. Their individual endpoints and calibration results have not been inspected for this test. Freeze this definition before reading their arm values. Apply the same calculation to every matched fix in the completed 455-pair report.
