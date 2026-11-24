@@ -8,7 +8,7 @@ import sys
 import pytest
 from PIL import Image
 
-from full_successor_score import (PINS, calibration_segment_error_km, compare_centers, outcomes_summary, paired_rf_and_error, paired_rows,
+from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, compare_centers, outcomes_summary, paired_rf_and_error, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
 
@@ -198,8 +198,21 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     offer = dict(center=[48., 7.], screen_center=[48., 6.], width_km=25)
     prior = compare_centers(pairs, assigned, offer)
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64,
-                 renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior)
+                 renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior,
+                 capture_days=capture_day_sensitivity(pairs, assigned))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    days = report["capture_day_sensitivity"]
+    assert len(days) == 8 and days["2026-11-13"]["on_day"]["pairs"] == 44
+    assert sum(row["on_day"]["pairs"] for row in days.values()) == 455
+    for row in days.values():
+        measured, remaining = row["on_day"], row["omitting_day"]
+        assert measured["pairs"] + remaining["pairs"] == 455
+        for arm in ("c0", "fitted_c"):
+            for role in ("installed", "successor"):
+                assert measured["within_1km"][arm][role] + remaining["within_1km"][arm][role] == (
+                    report["cohorts"]["All DS30 recordings"][role][arm]["within_1km"])
+    assert days["2026-11-13"]["omitting_day"]["wall"]["summed_speedup"] == 2.
+    assert days["2026-11-14"]["omitting_day"]["wall"]["summed_speedup"] < 2.
     for arm in ("c0", "fitted_c"):
         for radius in (1, 2):
             label = f"within_{radius}km"
@@ -235,6 +248,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
+    assert "| 2026-11-13 | 44 |" in markdown
     receipts = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/measurements"
     first = json.loads(gzip.decompress((receipts / "ds30-0049-saved-crossover.json.gz").read_bytes()))
     errors = [first["cells"][cell]["arms"]["fitted_c"]["error_m"] / 1000 for cell in

@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import csv
+from datetime import datetime, timezone
 import gzip
 from hashlib import sha256
 import io
@@ -53,6 +54,8 @@ def roster(root=ROOT):
         point = survey["reference"] if survey["authority_eligible"] else None
         assigned[case] = dict(case_id=original["case_id"], raw_authority=original["raw_authority_digest"],
                               physical_content=original["raw_recording"]["identity_sha256"],
+                              capture_day=datetime.fromtimestamp(original["captured_utc_ns"] // 10**9,
+                                                                 timezone.utc).date().isoformat(),
                               recording_state=original["recording_state"], release_100=case in historical,
                               reference=[point["latitude_deg"], point["longitude_deg"]] if point else None)
     return assigned
@@ -83,6 +86,27 @@ def paired_timing(pairs, metric):
         return dict(pairs=0, summed_speedup=None, median_paired_speedup=None)
     return dict(pairs=len(matched), summed_speedup=sum(a for a, _ in matched) / sum(b for _, b in matched),
                 median_paired_speedup=1 / median(b / a for a, b in matched))
+
+
+def capture_day_sensitivity(pairs, assigned):
+    """Keep both builds together when measuring the influence of a UTC capture day."""
+    by_day = {}
+    for pair in pairs:
+        day = assigned[pair[0]["case"]]["capture_day"]
+        by_day.setdefault(day, []).append(pair)
+
+    def totals(group):
+        counts = {}
+        for arm in ARMS:
+            key = arm + "_error_km"
+            counts[arm] = {
+                role: sum(pair[i][key] is not None and pair[i][key] <= 1. for pair in group)
+                for i, role in enumerate(BUILDS)}
+        return dict(pairs=len(group), wall=paired_timing(group, "elapsed_s"), within_1km=counts)
+
+    return {day: dict(on_day=totals(by_day[day]), omitting_day=totals([
+                p for other_day, group in by_day.items() if other_day != day for p in group]))
+            for day in sorted(by_day)}
 
 
 def paired_rf_and_error(pairs, arm):
@@ -292,7 +316,8 @@ def compare_centers(pairs, assigned, offer):
                 screen_center_distance_km=distance_km(offer["screen_center"], reference), fixes=data)
 
 
-def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None, prior=None):
+def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None,
+                 prior=None, capture_days=None):
     from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
@@ -329,6 +354,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
     metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
+    if capture_days is not None:
+        metadata["capture_day_sensitivity"] = capture_days
     if renderer_revision is not None:
         if len(renderer_revision) != 40 or any(c not in "0123456789abcdef" for c in renderer_revision):
             raise ValueError("Expected a full Git revision for the report renderer")
@@ -446,6 +473,23 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                          f"{o['fixes']}/{k} | {o['within_1km']}/{k} | {o['within_2km']}/{k} | "
                          f"{number(o['error_km']['p50'],3)} / {number(o['error_km']['p90'],3)} | "
                          f"{number(o['rf_rms_hz']['p50'])} |")
+    if capture_days:
+        lines += ["", "### Variation by recording date", "",
+                  "Each row groups recordings by their original UTC capture date. Coverage counts every "
+                  "attempt on that date. The last column recomputes both timing measures on the other dates.",
+                  "", "| UTC date | Pairs | Summed wall speedup | Within 1 km, fixed zero (v3 / candidate) | "
+                  "Within 1 km, fitted (v3 / candidate) | Omitting date, summed / median paired speedup |",
+                  "|---|---:|---:|---:|---:|---:|"]
+        for day, split in capture_days.items():
+            group = split["on_day"]
+            zero, fitted = (group["within_1km"][arm] for arm in ARMS)
+            remaining = split["omitting_day"]["wall"]
+            lines.append(f"| {day} | {group['pairs']} | {number(group['wall']['summed_speedup'])}× | "
+                         f"{zero['installed']} / {zero['successor']} | {fitted['installed']} / {fitted['successor']} | "
+                         f"{number(remaining['summed_speedup'])}× / {number(remaining['median_paired_speedup'])}× |")
+        lines += ["", "All dates share the Gauss receiver site. Omitting a date measures how much that day's "
+                  "recordings affect the comparison. The JSON also gives 1 km coverage on each remaining set.",
+                  "", "### Paired changes in position error"]
     lines += ["", "| Calibration | Shared scored fixes | Fixes gained / lost | Within 1 km gained / lost | "
               "Within 2 km gained / lost | Median / P90 change in error on shared fixes (m) |",
               "|---|---:|---:|---:|---:|---:|"]
@@ -657,4 +701,5 @@ if __name__ == "__main__":
         prior["offered_region_sha256"] = OFFER
     write_report(actual_pairs, args.output, {case: r["release_100"] for case, r in assigned.items()},
                  export_sha256, renderer_revision=args.renderer_revision,
-                 position_moments=shared_position_moments(raw_rows, assigned), prior=prior)
+                 position_moments=shared_position_moments(raw_rows, assigned), prior=prior,
+                 capture_days=capture_day_sensitivity(actual_pairs, assigned))
