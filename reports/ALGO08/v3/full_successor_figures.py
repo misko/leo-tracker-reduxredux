@@ -263,6 +263,48 @@ def _write_histograms(pairs, output_dir):
         FigureCanvasAgg(_histogram_figure(pairs, runtime=runtime)).print_png(output_dir / name)
 
 
+def paired_speed_errors(pairs, arms):
+    """Return wall speedup and largest signed error change across the requested calibration arms."""
+    keys = [arm + "_error_km" for arm in arms]
+    return [(base["elapsed_s"] / candidate["elapsed_s"], max(candidate[k] - base[k] for k in keys))
+            for base, candidate in pairs if all(base[k] is not None and candidate[k] is not None for k in keys)]
+
+
+def paired_change_figure(pairs, title):
+    from matplotlib.figure import Figure
+    from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
+
+    panels = [(name, paired_speed_errors(pairs, (arm,))) for name, arm in
+              (("Fixed c = 0", "c0"), ("Fitted c", "fitted_c"))]
+    speeds = [1., 2.] + [x for _, points in panels for x, _ in points]
+    limit = max([.1] + [abs(y) for _, points in panels for _, y in points]) * 1.15
+    xmin, xmax = min(speeds) / 1.09, max(speeds) * 1.09
+    figure = Figure(figsize=(10.5, 5.5), dpi=145, layout="constrained")
+    figure.suptitle(title, fontsize=16, fontweight="bold")
+    axes = figure.subplots(1, 2, sharex=True, sharey=True)
+    for ax, (name, points) in zip(axes, panels, strict=True):
+        ax.set_xscale("log", base=2)
+        ax.set_yscale("symlog", linthresh=.1)
+        ax.set(xlim=(xmin, xmax), ylim=(-limit, limit), xlabel="ALGO08v3 / candidate wall time",
+               title=f"{name}  ·  {len(points)}/{len(pairs)} pairs with two scored fixes")
+        ax.axhline(0, linewidth=1, color="#415360")
+        ax.axvline(2, linewidth=1, linestyle="--", color="#415360")
+        ax.fill_between([2, xmax], -limit, 0, color="#e1f2eb", zorder=0)
+        ax.xaxis.set_major_locator(LogLocator(base=2, subs=(1, 1.5), numticks=12))
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}×"))
+        ax.xaxis.set_minor_formatter(NullFormatter())
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", alpha=.18)
+        ax.scatter([x for x, _ in points], [y for _, y in points], s=26, alpha=.66, color="#215675",
+                   edgecolor="white", linewidth=.4, zorder=3)
+        if not points:
+            ax.text(.5, .6, "No pairs with two scored fixes", ha="center", transform=ax.transAxes)
+    axes[0].set_ylabel("Candidate minus ALGO08v3 horizontal error (km)")
+    figure.supxlabel("Shading marks recordings at least 2× faster with equal or smaller error.", fontsize=10)
+    return figure
+
+
 def render_distribution_figures(
     scored_csv: Path, output_dir: Path, *, enrollment: Mapping[str, bool],
 ) -> tuple[Path, Path]:
@@ -273,4 +315,9 @@ def render_distribution_figures(
     pairs = _read_pairs(scored_csv, enrollment)
     ecdfs = _write_figures(pairs, output_dir)
     _write_histograms(pairs, output_dir)
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+    change = paired_change_figure([(p["installed"], p["successor"]) for p in pairs],
+                                  "Runtime and position error on the same DS30 recordings")
+    FigureCanvasAgg(change).print_png(output_dir / "paired-speed-and-error.png")
     return ecdfs

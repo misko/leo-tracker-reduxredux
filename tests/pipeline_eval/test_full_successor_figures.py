@@ -142,3 +142,17 @@ def test_histograms_keep_extremes_and_render_empty_error_cohort():
     error = figures._histogram_figure(cases, runtime=False)
     assert all(ax.texts[0].get_text() == "No scored fixes" for ax in error.axes)
     assert all(sum(patch.get_data().values) == 0 for ax in error.axes for patch in ax.patches)
+
+
+def test_speed_and_error_keep_pairs_and_both_calibration_signs():
+    def arm(wall, zero, fitted):
+        return dict(elapsed_s=wall, c0_error_km=zero, fitted_c_error_km=fitted)
+
+    pairs = [(arm(10, 1, 1), arm(5, .5, 1.5)), (arm(2, .5, .5), arm(5, .5, .5)),
+             (arm(3, 1, None), arm(1, 0, None))]
+    assert figures.paired_speed_errors(pairs, ("c0",)) == [(2, -.5), (.4, 0), (3, -1)]
+    assert figures.paired_speed_errors(pairs, ("c0", "fitted_c")) == [(2, .5), (.4, 0)]
+    plot = figures.paired_change_figure(pairs, "Paired fixes")
+    assert [len(ax.collections[-1].get_offsets()) for ax in plot.axes] == [3, 2]
+    empty = figures.paired_change_figure([], "No observations")
+    assert all(any("No pairs" in t.get_text() for t in ax.texts) for ax in empty.axes)

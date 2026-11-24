@@ -165,6 +165,11 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         "required_speedup": 2.0, "summed_speedup": False, "median_paired_speedup": True, "both_met": False}
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
     assert report["paired_error_changes"]["fitted_c"]["gained"] == 1
+    joint = report["position_error_on_twice_as_fast_recordings"]
+    assert joint["twice_as_fast"] == 454
+    assert joint["calibrations"]["both"] == {
+        "shared_scored": 453, "twice_as_fast_with_shared_error": 453, "same_or_smaller_error": 451,
+        "larger_error": 2, "twice_as_fast_without_shared_error": 1}
     assert report["calibration_blend_bound"] == {
         "shared_scored": 453, "tolerance_km": .001, "fitted_regressions": 2, "regressions_remaining": 1}
     assert report["paired_outcomes"] == [{"installed": "complete", "successor": "complete", "recordings": 453},
@@ -176,7 +181,8 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     markdown = (tmp_path / "README.md").read_text()
     assert "met **1 of 2** wall-time targets" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
-    for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png"):
+    for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png",
+                   "paired-speed-and-error.png"):
         with Image.open(tmp_path / figure) as png:
             assert png.format == "PNG"
             png.verify()

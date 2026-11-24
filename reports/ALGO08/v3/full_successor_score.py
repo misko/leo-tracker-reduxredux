@@ -217,7 +217,7 @@ def paired_rows(rows, assigned):
 
 
 def write_report(pairs, output, enrollment, receipt_digest):
-    from reports.ALGO08.v3.full_successor_figures import render_distribution_figures
+    from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
     all_rows = [r for pair in pairs for r in pair]
@@ -264,6 +264,16 @@ def write_report(pairs, output, enrollment, receipt_digest):
                             lost=sum(a[arm + "_fix"] and not b[arm + "_fix"] for a, b in pairs),
                             largest_increases=sorted((item for item in delta if item[0] > 0), reverse=True)[:5])
     metadata["paired_error_changes"] = changes
+    fast = sum(a["elapsed_s"] >= 2 * b["elapsed_s"] for a, b in pairs)
+    joint_performance = {}
+    for label, arms in (("c0", ("c0",)), ("fitted_c", ("fitted_c",)), ("both", ARMS)):
+        points = paired_speed_errors(pairs, arms)
+        fast_errors = [delta for speed, delta in points if speed >= 2]
+        joint_performance[label] = dict(shared_scored=len(points), twice_as_fast_with_shared_error=len(fast_errors),
+                                        same_or_smaller_error=sum(delta <= 0 for delta in fast_errors),
+                                        larger_error=sum(delta > 0 for delta in fast_errors),
+                                        twice_as_fast_without_shared_error=fast - len(fast_errors))
+    metadata["position_error_on_twice_as_fast_recordings"] = dict(twice_as_fast=fast, calibrations=joint_performance)
     blendable = [(a, b) for a, b in pairs if a["fitted_c_error_km"] is not None
                  and b["calibration_segment_min_error_km"] is not None]
     regressions = [(a, b) for a, b in blendable if b["fitted_c_error_km"] - a["fitted_c_error_km"] > .001]
@@ -350,6 +360,19 @@ def write_report(pairs, output, enrollment, receipt_digest):
         metres = [number(1000 * delta[p], 1) if delta[p] is not None else "—" for p in ("p50", "p90")]
         lines.append(f"| {dict(c0='Fixed zero', fitted_c='Fitted')[arm]} | {c['shared']} | {c['gained']} / {c['lost']} | "
                      f"{metres[0]} / {metres[1]} |")
+    lines += ["", "### When speed and accuracy coincide", "",
+              "![Wall speedup and change in horizontal position error on each recording](paired-speed-and-error.png)", "",
+              f"On **{fast}/{k}** recordings the candidate took half the ALGO08v3 wall time or less. "
+              "Each dot compares two scored fixes on one recording. Lower dots indicate smaller candidate error. "
+              "The table accounts for every recording that reached this speed, including cases without two scored fixes.", "",
+              "| Calibration | Equal or smaller error | Larger error | Lacking a paired error |",
+              "|---|---:|---:|---:|"]
+    for label, key in (("Fixed zero", "c0"), ("Fitted", "fitted_c"), ("Both calibrations", "both")):
+        data = joint_performance[key]
+        lines.append(f"| {label} | {data['same_or_smaller_error']} | {data['larger_error']} | "
+                     f"{data['twice_as_fast_without_shared_error']} |")
+    lines += ["", "The last row requires equal or smaller error in both calibrations. The two timing targets at "
+              "the start of the report apply to the whole panel."]
     lines += ["", "| Capture state | Paired recordings | ALGO08v3 fitted fixes | Candidate fitted fixes | "
               "ALGO08v3 / candidate fitted P90 error among fixes (km) |", "|---|---:|---:|---:|---:|"]
     for name in ("Complete captures", "Interrupted captures"):
