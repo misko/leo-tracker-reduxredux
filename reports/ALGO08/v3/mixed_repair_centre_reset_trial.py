@@ -172,9 +172,40 @@ def launch_inputs():
     return enrolled, spec, publication, args, handoff, paths, resident, before, sources, acceleration, artifacts
 
 
+def charted_adapter():
+    # Import the saved adapter without letting its checkout precedence leak
+    # into the historical publisher or the modules in its source witness.
+    with patch.object(sys, "path", list(sys.path)):
+        from ds30_0049_saved_crossover import charted
+    return charted
+
+
+def witness_sources(publisher, paths):
+    root = Path(publisher).resolve().parents[3]
+    return {Path(path).resolve().relative_to(root).as_posix(): digest(Path(path)) for path in paths}
+
+
+def assert_witness_sources(expected):
+    import exact_named_raw as raw
+    from exact_named_route import SOURCES
+    from history_cairo_render import SOURCES as CAIRO_SOURCES
+
+    paths = {*SOURCES, Path(raw.__file__), raw.HERE / "named_hybrid_baseline.py",
+             *(raw.HERE / name for name in raw.RISK_SOURCES + CAIRO_SOURCES)}
+    actual = witness_sources(raw.__file__, paths)
+    if actual != expected:
+        raise ValueError("Source witness must resolve to the complete archived charted manifest before inference")
+    for path in paths:
+        loaded = sys.modules.get(path.stem)
+        if loaded is not None and Path(loaded.__file__).resolve() != path.resolve():
+            raise ValueError(f"Charted module already loaded outside its witness root: {path.stem}")
+    return actual
+
+
 def worker(root):
     enrolled, spec, publication, args, handoff, paths, resident, before, sources, acceleration, _ = launch_inputs()
-    from ds30_0049_saved_crossover import charted
+    charted = charted_adapter()
+    assert_witness_sources(enrolled.chart_m["source_sha256"])
     from leo.storage.fast_scan import FastSegmentSource
     from leo.storage.short_window import ShortWindowReader
 
@@ -303,7 +334,8 @@ def verify(root):
 
 def check_inputs(output):
     enrolled, spec, _, request, handoff, _, _, archive, _, _, artifacts = launch_inputs()
-    from ds30_0049_saved_crossover import charted
+    charted = charted_adapter()
+    manifest = assert_witness_sources(enrolled.chart_m["source_sha256"])
     from combined_successor_raw_entry import smoke
     import legacy_first_map_acceleration as acceleration
 
@@ -323,7 +355,8 @@ def check_inputs(output):
                       archive_sha256=request.archive_sha256, charted_build_sha256=BUILD,
                       installed_spec_receiver_sha256=spec["detector_sha256"],
                       exact_local_artifacts=sorted(str(item) for item in artifacts), numerical_calls=0,
-                      source_relative_tools=lazy, positive_ports=json.loads(traced.getvalue())))
+                      source_relative_tools=lazy, positive_ports=json.loads(traced.getvalue()),
+                      validated_logical_witness_sources=manifest))
 
 
 def main():

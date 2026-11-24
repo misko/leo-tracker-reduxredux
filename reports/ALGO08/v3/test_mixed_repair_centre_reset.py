@@ -1,11 +1,13 @@
 """Test the scoped operation with tiny, fixed-support numerical stand-ins."""
 
 from types import SimpleNamespace
+import sys
 
 import numpy as np
 import pytest
 
 from mixed_repair_centre_reset import ARMS, eligible, with_reset
+from mixed_repair_centre_reset_trial import charted_adapter, digest, witness_sources
 
 
 def record(norad=10):
@@ -85,3 +87,29 @@ def test_failed_numeric_trial_keeps_original(inputs):
 
     assert with_reset(update, fail, None, None, enabled=True)({}, ordinary, trial) is ordinary
     assert trial["ordinary_centre_reset"]["status"] == "original_pair_retained"
+
+
+def test_adapter_import_does_not_leak_checkout_precedence(tmp_path, monkeypatch):
+    name = "ds30_0049_saved_crossover"
+    (tmp_path / (name + ".py")).write_text("import sys\nsys.path.insert(0, 'temporary wrapper path')\n"
+                                           "def charted(): return 'saved adapter'\n")
+    monkeypatch.delitem(sys.modules, name, raising=False)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    before = list(sys.path)
+    try:
+        assert charted_adapter()() == "saved adapter"
+        assert sys.path == before
+    finally:
+        sys.modules.pop(name, None)
+
+
+def test_witness_rejects_same_bytes_from_another_checkout(tmp_path):
+    original = tmp_path / "archived/reports/ALGO08/v3"
+    original.mkdir(parents=True)
+    path = original / "exact_named_raw.py"
+    path.write_bytes(b"original publication source\n")
+    assert witness_sources(path, [path]) == {"reports/ALGO08/v3/exact_named_raw.py": digest(path)}
+    foreign = tmp_path / path.name
+    foreign.write_bytes(path.read_bytes())
+    with pytest.raises(ValueError):
+        witness_sources(path, [foreign])
