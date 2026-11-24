@@ -1,5 +1,7 @@
 """Check the complete original chronology and the paid correction witness."""
 
+from collections import Counter
+from contextlib import contextmanager
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -7,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
-from continued_cfo import ContinuedChanges, lane_key
+from continued_cfo import ContinuedChanges, lane_key, raw_entry
 from held_cycle_refined import CFO, FACTOR_FIELDS
 
 
@@ -54,3 +56,77 @@ def test_only_paid_corrections_restore_original_pre_cfo_history():
     assert select.projected_history(native)[6]["candidates"][0][CFO] == 2400.
     with pytest.raises(ValueError, match="different signed chronology"):
         select.projected_history(native[::-1])
+
+
+def test_verified_guard_delegates_to_the_real_continuation_gate(monkeypatch):
+    import anchored_cfo_raw as guard
+    import held_cycle_refined as selection
+
+    exact, mixed = guard.exact, guard.mixed
+    base = exact.RefinedShortDetector
+    original_detector, original_recipe = base.detector, guard.recipe
+    tail = []
+    full = SimpleNamespace(close=lambda: tail.append("closed"))
+    pack = Path("reviewed")
+    paths = {"original-cfo.so": pack / "original-cfo.so"}
+
+    @contextmanager
+    def source(self, *args, **kwargs):
+        # The guarded native opener is scoped to entering the receive context.
+        assert mixed.NativePath is not workspace
+
+        def receive(window):
+            if window.index:
+                self.visits["short_primary"] += 1
+            return [probe(window.index, frequency=1000.+100*window.index), probe(window.index, radio=1)]
+
+        yield receive
+
+    def workspace(*args):
+        return full
+
+    def refine(row, waveform, native, policy, center):
+        assert native is full and center == 20
+        tail.append(lane_key(row))
+        return row, "updated", True
+
+    def launch(library, args):
+        assert library == paths["original-cfo.so"]
+        assert args == ["--named-survivor-finish", "--select-before-cfo"]
+        assert selection.FrequencyChanges is ContinuedChanges
+        policy = exact.recipe({}, "stock-recipe")
+        assert {"guarded_phase", "continued_cfo", "fixed_epoch_cfo_refinement"} <= policy.keys()
+        detector = object.__new__(guard.GuardedDetector)
+        detector.policy = SimpleNamespace(continued_changes=ContinuedChanges())
+        detector.visits, detector.lanes = Counter(), {}
+        detector.cpu_ns = detector.wall_ns = 0
+        with detector.detector("method", "lower", binary="verified", pilot="pilot") as receive:
+            for index in range(4):
+                window = SimpleNamespace(index=index, target={"rf_center_hz": 121, "lnb_lo_hz": 1},
+                                         acquisition={"actual_if_center_hz": 100}, samples=None)
+                assert len(receive(window)) == 2
+        assert detector.lanes[("lower", 0)] == {"attempted": 1, "updated": 1, "changed": 1}
+        assert len(detector.policy.continued_changes.lanes) == 8
+
+    monkeypatch.setattr(guard, "verified_pack", lambda origin: paths if origin == pack else None)
+    monkeypatch.setattr(guard, "guarded_probe", refine)
+    monkeypatch.setattr(mixed, "NativePath", workspace)
+    monkeypatch.setattr(mixed, "verified", lambda *args: b"\0\0\0\0")
+    monkeypatch.setattr(mixed.MixedApertureDetector, "detector", source)
+    monkeypatch.setattr(exact, "run_cli", launch)
+    raw_entry(None, ["--named-survivor-finish"], guarded_pack=pack)
+    assert tail == [(3, 0), "closed"]
+    assert exact.RefinedShortDetector is base and base.detector is original_detector
+    assert guard.recipe is original_recipe and selection.FrequencyChanges is not ContinuedChanges
+
+
+def test_north_verification_detects_signed_factor_and_opportunity_differences():
+    from continued_cfo_north_trial import compare_rows
+
+    original = [probe(0, frequency=-1800), probe(1)]
+    revised = [probe(0, frequency=-1795), probe(1)]
+    assert compare_rows(original, original)["changed_lanes"] == 0
+    result = compare_rows(revised, original)
+    assert result["changed_lanes"] == 1 and result["max_changed_cfo_hz"] == 5
+    with pytest.raises(ValueError, match="chronological opportunity"):
+        compare_rows(original[::-1], original)

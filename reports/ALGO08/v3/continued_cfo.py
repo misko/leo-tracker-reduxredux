@@ -4,8 +4,12 @@ from collections import Counter
 from contextlib import ExitStack, contextmanager
 from hashlib import sha256
 from pathlib import Path
+import sys
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
+
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from held_cycle_refined import FACTOR_FIELDS, FrequencyChanges, select_refined
 
@@ -92,61 +96,69 @@ def select_paid(native, detector_recipe, changes, session, inventory, receipt_fi
         return select_refined(native, detector_recipe, changes, session, inventory, receipt_file)
 
 
-def raw_entry(library, argv):
-    """Optional genuine raw entry. The saved comparison never calls it."""
+def raw_entry(library, argv, *, guarded_pack=None):
+    """Run the same continuation gate with the exact or guarded native receiver."""
     import numpy as np
     import held_cycle_refined as selection
     import short_cfo_raw as exact
 
-    base = exact.RefinedShortDetector
+    if (library is None) == (guarded_pack is None):
+        raise ValueError("Choose exactly one native CFO library or verified guarded pack")
     mixed = exact.mixed.MixedApertureDetector
-    before = exact.recipe
 
-    class SelectiveDetector(base):
-        @contextmanager
-        def detector(self, method, edge, *, binary=None, pilot=None):
-            full = None
-            with mixed.detector(self, method, edge, binary=binary, pilot=pilot) as receive, ExitStack() as close:
-                def refined(window):
-                    nonlocal full
-                    old = self.visits["short_primary"]
-                    probes = receive(window)
-                    short = self.visits["short_primary"] != old
-                    paid = [self.policy.continued_changes.consider(row, short) for row in probes]
-                    if not any(paid):
-                        return probes
-                    target, scope = window.target, window.acquisition
-                    center = target["rf_center_hz"]-target["lnb_lo_hz"]-scope["actual_if_center_hz"]
-                    for n, (probe, allowed) in enumerate(zip(probes, paid, strict=True)):
-                        if not allowed:
-                            continue
-                        cpu, wall = process_time_ns(), perf_counter_ns()
-                        if full is None:
-                            asset = np.frombuffer(exact.mixed.verified(pilot, exact.mixed.PILOT_SHA[edge]), dtype="<f4")
-                            full = exact.mixed.NativePath(binary, asset, "full")
-                            close.callback(full.close)
-                        probes[n], reason, changed = exact.refined_probe(probe, window.samples, full, self.policy, center)
-                        self.lanes.setdefault((edge, probe["receiver_id"]), Counter()).update(
-                            {"attempted": 1, "changed": int(changed), reason: 1})
-                        self.cpu_ns += process_time_ns()-cpu
-                        self.wall_ns += perf_counter_ns()-wall
+    @contextmanager
+    def detector(self, method, edge, *, binary=None, pilot=None):
+        full = None
+        with mixed.detector(self, method, edge, binary=binary, pilot=pilot) as receive, ExitStack() as close:
+            def refined(window):
+                nonlocal full
+                old = self.visits["short_primary"]
+                probes = receive(window)
+                short = self.visits["short_primary"] != old
+                paid = [self.policy.continued_changes.consider(row, short) for row in probes]
+                if not any(paid):
                     return probes
+                target, scope = window.target, window.acquisition
+                center = target["rf_center_hz"]-target["lnb_lo_hz"]-scope["actual_if_center_hz"]
+                for n, (probe, allowed) in enumerate(zip(probes, paid, strict=True)):
+                    if not allowed:
+                        continue
+                    cpu, wall = process_time_ns(), perf_counter_ns()
+                    if full is None:
+                        asset = np.frombuffer(exact.mixed.verified(pilot, exact.mixed.PILOT_SHA[edge]), dtype="<f4")
+                        full = exact.mixed.NativePath(binary, asset, "full")
+                        close.callback(full.close)
+                    probes[n], reason, changed = exact.refined_probe(probe, window.samples, full, self.policy, center)
+                    self.lanes.setdefault((edge, probe["receiver_id"]), Counter()).update(
+                        {"attempted": 1, "changed": int(changed), reason: 1})
+                    self.cpu_ns += process_time_ns()-cpu
+                    self.wall_ns += perf_counter_ns()-wall
+                return probes
 
-                yield refined
+            yield refined
 
-    with (patch.object(exact, "RefinedShortDetector", SelectiveDetector),
-          patch.object(exact, "recipe", lambda *args: recipe(before(*args))),
+    args = [*argv, "--select-before-cfo"]
+    with (patch.object(exact.RefinedShortDetector, "detector", detector),
           patch.object(selection, "FrequencyChanges", ContinuedChanges),
           patch.object(selection, "select_refined", select_paid)):
-        exact.run_cli(library, [*argv, "--select-before-cfo"])
+        if guarded_pack is None:
+            before = exact.recipe
+            with patch.object(exact, "recipe", lambda *args: recipe(before(*args))):
+                return exact.run_cli(library, args)
+
+        import anchored_cfo_raw as guarded
+
+        before = guarded.recipe
+        with patch.object(guarded, "recipe", lambda *args: recipe(before(*args))):
+            return guarded.run_cli(guarded_pack, args)
 
 
 if __name__ == "__main__":
     import argparse
-    import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
     cli = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
-    cli.add_argument("--cfo-refinement-library", type=Path, required=True)
+    native = cli.add_mutually_exclusive_group(required=True)
+    native.add_argument("--cfo-refinement-library", type=Path)
+    native.add_argument("--anchored-cfo-pack", type=Path)
     args, inherited = cli.parse_known_args()
-    raw_entry(args.cfo_refinement_library, inherited)
+    raw_entry(args.cfo_refinement_library, inherited, guarded_pack=args.anchored_cfo_pack)

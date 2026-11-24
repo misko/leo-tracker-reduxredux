@@ -77,7 +77,7 @@ def validate_workload(request, assignment, machine, reference_machine):
         raise ValueError("Candidate and historical control require the same raw assignment and worker settings")
 
 
-def launch(root):
+def launch(root, *, continued=False):
     from anchored_cfo_raw import verified_pack
     from dense_geographic_trial import host
     from full_short_physical import CACHE_LIB, CACHE_SHA, environment
@@ -120,20 +120,24 @@ def launch(root):
     python = RELEASE / "venv/bin/python"
     subprocess.run([python, "-Bc", "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
                    env=env, check=True, timeout=25)
-    entry = HERE / "anchored_cfo_raw.py"
+    guarded_entry = HERE / "anchored_cfo_raw.py"
+    entry = HERE / "continued_cfo.py" if continued else guarded_entry
+    protocol = HERE / "continued-cfo-north-protocol.md" if continued else PROTOCOL
+    sources = {entry, guarded_entry, Path(__file__), protocol, HERE / "held_cycle_refined.py",
+               HERE / "unified_short_bootstrap.py", HERE / "short_cfo_raw.py"}
+    if continued:
+        sources.add(HERE / "continued_cfo_north_trial.py")
     cli = [python, "-IB", entry, "--anchored-cfo-pack", PACK]
     options = subprocess.run([*cli, "--help"], env=env, capture_output=True, timeout=15, check=True).stdout
-    if SELECTOR.encode() not in options.split():
-        raise ValueError("The guarded normal entry did not expose the frozen joint selector flag")
+    if any(flag.encode() not in options.split() for flag in (SELECTOR, "--named-survivor-finish")):
+        raise ValueError("The guarded normal entry did not expose the frozen joint selector and finish")
     output = root / "containing"
     command = ["/usr/bin/timeout", "--kill-after=2s", "90s", *cli, "--recording", request["recording"],
                "--archive", request["archive"]["root"], "--region", request["inside_offer"], "--output", output,
-               *library_flags, *CURVATURE_FLAGS, *PUBLICATION_FLAGS, SELECTOR]
+               *library_flags, *CURVATURE_FLAGS, *PUBLICATION_FLAGS, *(() if continued else (SELECTOR,))]
     binding = dict(request=request, assignment=assignment, historical=REFERENCE_PINS, command=list(map(str, command)),
                    machine=machine, selector=SELECTOR, commit=commit, libraries=pins, pack_sha256=PACK_SHA,
-                   source_sha256={path.name: sha256(path.read_bytes()).hexdigest()
-                                  for path in (entry, Path(__file__), PROTOCOL, HERE / "held_cycle_refined.py",
-                                               HERE / "unified_short_bootstrap.py", HERE / "short_cfo_raw.py")})
+                   source_sha256={path.name: sha256(path.read_bytes()).hexdigest() for path in sorted(sources)})
     write(root / "binding.json", binding)
     query, store = load_query(CACHE_LIB), FastScanStore(root)
     write(root / "cache-before.json", cache_snapshot_for_run(store, request, manifests, query))
