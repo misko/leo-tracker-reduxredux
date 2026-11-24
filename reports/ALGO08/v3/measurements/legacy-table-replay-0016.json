@@ -1,0 +1,346 @@
+{
+  "block": [
+    23377481,
+    97636,
+    30408704,
+    131072,
+    232
+  ],
+  "build": {
+    "binary_sha256": "sha256:ebe28b1326a99d49191616726195dc20bfdd2b59dcb63884cae1c959a1154ca4",
+    "command": [
+      "cc",
+      "-std=c11",
+      "-O3",
+      "-shared",
+      "-fPIC",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wno-deprecated-declarations",
+      "/dev/shm/leo-v3-legacy-table-replay-0016/reports/ALGO08/v3/legacy_block_seek.c",
+      "-lzstd",
+      "-o",
+      "/dev/shm/leo-v3-legacy-table-replay-0016-result01/legacy-block-seek.so"
+    ],
+    "source_sha256": "sha256:f57d181e31fc07aaf5e0047aef0954666b4143f77f8c8bce6ecdcb4ac6b8e4e7"
+  },
+  "chunk": {
+    "chunk_index": 4,
+    "compressed_bytes": 49036352,
+    "compressed_sha256": "sha256:b9b5e3e65e0d0088a5714489ea6ad0bdf97a0c1f20d61e95cc5cfcf7e0cd0a2d",
+    "first_sequence": 256,
+    "index_bytes": 108240,
+    "index_relative_path": "windows-000004.jsonl",
+    "index_sha256": "sha256:81f21f5fdf4119e8655e7f875808489178ab8a8bf2b603e715e2814778cfefde",
+    "payload_relative_path": "iq-000004.ci16.zst",
+    "uncompressed_bytes": 64000000,
+    "uncompressed_sha256": "sha256:249a85538688dfeae65e9c2f5ab07555d7ee1e088f750aff77984170a2132c4f",
+    "window_count": 40
+  },
+  "corruption": {
+    "issued_visits": 0,
+    "omitted_suffix": {
+      "block": 103,
+      "decoded_offset": 13500416,
+      "encoded_offset": 10492784,
+      "omitted_blocks": 220,
+      "sequence": 264
+    },
+    "rejected_by": {
+      "selective": "short-window member changed: iq-000004.ci16.zst",
+      "stock": "short-window member changed: iq-000004.ci16.zst"
+    },
+    "sidecar": "The detached exception sidecar disagrees with its external pin"
+  },
+  "evidence": {
+    "lanes": 72,
+    "positive_lanes": 28,
+    "raw_native": "sha256:2512469d4fcda861e9d47b3c1736c6cb6f69b02b25c9a6d0ac47ee4eb38d76ff",
+    "residual_candidates": 5,
+    "selected": "sha256:92eebf3cb86e86e8ab8549178336d2dac49a7d159289e46ade79519096770c16",
+    "visits": {
+      "full": 8,
+      "invalid": 4,
+      "short_primary": 28
+    }
+  },
+  "exception_bytes": 131072,
+  "exception_sha256": "sha256:72e03863b41e747deb852c54bb2ed81e301582fa178d3aca3d15b8ce991dcd2e",
+  "forced_all_full": {
+    "checked": 40,
+    "reads": {
+      "exception_bytes": 131072,
+      "exception_visits": 1,
+      "full": 40,
+      "returned_bytes": 64000000
+    },
+    "table_replays": 1
+  },
+  "forced_consumer": {
+    "consumer": 233,
+    "counts": {
+      "dependency_blocks": 1,
+      "dependency_decoded": 131065,
+      "dependency_encoded": 97628,
+      "requested_blocks": 1,
+      "requested_decoded": 131072,
+      "requested_encoded": 97573
+    },
+    "owner": 232,
+    "owner_refused_native_output": true,
+    "returned_sha256": "sha256:9379c2400e3a3acf3d95fd405ca2c0541336ad88d67bcb812cf64ac33fea46a0",
+    "table_replays": 1
+  },
+  "io_policy": "best-effort: prio 7",
+  "manifest_sha256": "sha256:48c9225baa0327877da41508a17ccca3175808670a174470142ecf228e1cc2a3",
+  "orders": [
+    [
+      "stock",
+      "selective"
+    ],
+    [
+      "selective",
+      "stock"
+    ]
+  ],
+  "ready": [
+    {
+      "selective": {
+        "actual_reader": "selective",
+        "authenticated_encoded_bytes": 49036352,
+        "c_detector": {
+          "cpu_ns": 91926598,
+          "wall_ns": 91962648
+        },
+        "decoded_and_committed_bytes": 30720000,
+        "selective": {
+          "complete_encoded_auth": {
+            "cpu_ns": 21162998,
+            "input_blocks": 0,
+            "wall_ns": 21162674
+          },
+          "dependency_blocks": 8,
+          "dependency_decoded": 1048569,
+          "dependency_encoded": 800387,
+          "exception_reads": {
+            "exception_bytes": 131072,
+            "exception_visits": 1,
+            "full": 8,
+            "prefix": 28,
+            "returned_bytes": 30720000
+          },
+          "metadata": {
+            "cpu_ns": 798754,
+            "input_blocks": 0,
+            "wall_ns": 798662
+          },
+          "native_scratch_bytes": 324732,
+          "requested_blocks": 261,
+          "requested_decoded": 34209792,
+          "requested_encoded": 26131092,
+          "requested_span_and_hash": {
+            "cpu_ns": 29197098,
+            "input_blocks": 0,
+            "wall_ns": 29195608
+          },
+          "structure_and_native_context": {
+            "cpu_ns": 1209972,
+            "input_blocks": 0,
+            "wall_ns": 1209472
+          },
+          "table_replays": 1
+        },
+        "timing": {
+          "cpu_ns": 147510685,
+          "input_blocks": 0,
+          "wall_ns": 147513190
+        }
+      },
+      "stock": {
+        "actual_reader": "stock",
+        "authenticated_encoded_bytes": 49036352,
+        "c_detector": {
+          "cpu_ns": 90504248,
+          "wall_ns": 90513472
+        },
+        "decoded_and_committed_bytes": 64000000,
+        "selective": null,
+        "timing": {
+          "cpu_ns": 179417018,
+          "input_blocks": 0,
+          "wall_ns": 179420406
+        }
+      }
+    },
+    {
+      "selective": {
+        "actual_reader": "selective",
+        "authenticated_encoded_bytes": 49036352,
+        "c_detector": {
+          "cpu_ns": 88213706,
+          "wall_ns": 88239789
+        },
+        "decoded_and_committed_bytes": 30720000,
+        "selective": {
+          "complete_encoded_auth": {
+            "cpu_ns": 20931318,
+            "input_blocks": 0,
+            "wall_ns": 20931008
+          },
+          "dependency_blocks": 8,
+          "dependency_decoded": 1048569,
+          "dependency_encoded": 800387,
+          "exception_reads": {
+            "exception_bytes": 131072,
+            "exception_visits": 1,
+            "full": 8,
+            "prefix": 28,
+            "returned_bytes": 30720000
+          },
+          "metadata": {
+            "cpu_ns": 716921,
+            "input_blocks": 0,
+            "wall_ns": 716809
+          },
+          "native_scratch_bytes": 324732,
+          "requested_blocks": 261,
+          "requested_decoded": 34209792,
+          "requested_encoded": 26131092,
+          "requested_span_and_hash": {
+            "cpu_ns": 28058571,
+            "input_blocks": 0,
+            "wall_ns": 28056987
+          },
+          "structure_and_native_context": {
+            "cpu_ns": 1161161,
+            "input_blocks": 0,
+            "wall_ns": 1160888
+          },
+          "table_replays": 1
+        },
+        "timing": {
+          "cpu_ns": 141868668,
+          "input_blocks": 0,
+          "wall_ns": 141871511
+        }
+      },
+      "stock": {
+        "actual_reader": "stock",
+        "authenticated_encoded_bytes": 49036352,
+        "c_detector": {
+          "cpu_ns": 95290871,
+          "wall_ns": 95305904
+        },
+        "decoded_and_committed_bytes": 64000000,
+        "selective": null,
+        "timing": {
+          "cpu_ns": 185149989,
+          "input_blocks": 0,
+          "wall_ns": 185153606
+        }
+      }
+    }
+  ],
+  "receiver_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+  "residence": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000004.ci16.zst": 49036352,
+      "manifest.json": 5424,
+      "windows-000004.jsonl": 108240
+    },
+    "snapshot": {
+      "cached_pages": 12001,
+      "ended_unix_ns": 1795511372534827783,
+      "members": 3,
+      "observed_file_pages": 12001,
+      "observed_members": 3,
+      "started_unix_ns": 1795511372534485969,
+      "unavailable": {}
+    }
+  },
+  "schedule_scope": "fresh last-member-only per original recipe",
+  "scheduled_exact": {
+    "actual_reader": "selective",
+    "authenticated_encoded_bytes": 49036352,
+    "c_detector": {
+      "cpu_ns": 92481985,
+      "wall_ns": 92508177
+    },
+    "decoded_and_committed_bytes": 30720000,
+    "selective": {
+      "complete_encoded_auth": {
+        "cpu_ns": 21519256,
+        "input_blocks": 0,
+        "wall_ns": 21518634
+      },
+      "dependency_blocks": 8,
+      "dependency_decoded": 1048569,
+      "dependency_encoded": 800387,
+      "exception_reads": {
+        "exception_bytes": 131072,
+        "exception_visits": 1,
+        "full": 8,
+        "prefix": 28,
+        "returned_bytes": 30720000
+      },
+      "metadata": {
+        "cpu_ns": 974337,
+        "input_blocks": 0,
+        "wall_ns": 974040
+      },
+      "native_scratch_bytes": 324732,
+      "requested_blocks": 261,
+      "requested_decoded": 34209792,
+      "requested_encoded": 26131092,
+      "requested_span_and_hash": {
+        "cpu_ns": 28948800,
+        "input_blocks": 0,
+        "wall_ns": 28947938
+      },
+      "structure_and_native_context": {
+        "cpu_ns": 2140536,
+        "input_blocks": 0,
+        "wall_ns": 2139833
+      },
+      "table_replays": 1
+    },
+    "timing": {
+      "cpu_ns": 163162896,
+      "input_blocks": 0,
+      "wall_ns": 163166285
+    }
+  },
+  "short_sha256": "fe4ba7b7613654c268353f9e4a78c2bbb916904e06387ace304b0866818f0e3d",
+  "sidecar_bytes": 152689,
+  "sidecar_creation": {
+    "cpu_ns": 31924022,
+    "input_blocks": 0,
+    "wall_ns": 31923603
+  },
+  "sidecar_sha256": "sha256:060043c66e6fb27c5389a902c4984a3428054995fec64b7122e1e7769835b3e0",
+  "source": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000001",
+  "stock_authority": {
+    "cpu_ns": 107952060,
+    "input_blocks": 0,
+    "wall_ns": 107962208
+  },
+  "tables": {
+    "consumers": [
+      233
+    ],
+    "owner": 232,
+    "seed": [
+      232,
+      97627,
+      131065
+    ]
+  },
+  "verification_through_map": {
+    "cpu_ns": 139903582,
+    "input_blocks": 0,
+    "wall_ns": 139917470
+  }
+}
