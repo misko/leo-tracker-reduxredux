@@ -31,4 +31,17 @@ The coarse dyadic prior caps were constant across the measured exteriors within 
 
 The dense bounded adapter projected all **80,457,300** satellite-time cells before any track-score savings. With that measured projection fixed, even removing every other cost in the bounded route would leave at most **211 ms** against the concurrent 699 ms fused stage. The fused control interleaves projection and mixture evaluation, so its inclusive time cannot also be counted as removable track work. The shared all-location geometry setup remains charged independently in all modes. [Current fused kernel](regional-probe-block.md) · [Separated measurements](measurements/regional-decision-bound.json.gz)
 
+## Unique projection support of the observed prefixes
+
+| Offer | Actually computed cells | Cells required if projection were lazy | Avoidable cells | Of those, attributable to stopping beyond receiver-1 geometry alone |
+|---|---:|---:|---:|---:|
+| Dense | 80,457,300 | 52,869,618 | 27,587,682 (34.3%) | 17,893,332 |
+| Medium | 20,502,625 | 10,399,675 | 10,102,950 (49.3%) | 6,170,450 |
+| South far, failed precheck only | 1,078,560 | 1,078,560 | 0 | 0 |
+| South near | 5,386,500 | 4,032,180 | 1,354,320 (25.1%) | 1,354,320 |
+
+Each exterior counts the union of every receiver-1 track endpoint needed for the cap and every retained measurement time in its actual stopped prefix. The complete interior witness counts every receiver-1 time. The number of projected orbits stays fixed. Dense had 4,158 original times, 3,657 receiver-1 times, 244 endpoint times and 1,780–3,518 required times per exterior. Medium had 1,147, 927, 58 and 473–877, respectively. Tracks were matched to signed observation counters from existing physical traces. The two South offers share track supports recovered through the released Graph on their exact saved detector packet. No projection or regional scoring was retimed for this census. [Cell inventory and checks](measurements/regional-lazy-geometry.json) · [Counter](regional_lazy_geometry.py)
+
+The current fused kernel is orbit-first. It projects all times and immediately updates every track before moving to the next orbit. It cannot consume the completed-track cap without changing that work order. A lazy projection port would have to keep selected columns across successive track batches. The table grants no fallback, propagation, input or time credit. [Fused loop](regional_probe_block.c)
+
 Each fixture ran one fixed-order stage comparison on the same prepared geometry under the shared Gauss CPU 2 lock, nice 15, I/O priority 7 and one numerical thread. Small deltas remain subject to order and timing variation. An initial import-order error stopped before the proof ran. The corrected invocation ran all four staged cases, with no waveform reads or position fits. Six focused tests passed. The uncompressed receipt SHA-256 is `2a9da8107bf494e6c6d3155ff8c790fb8f236b9cb1d3970b822361ba2b33e1c7`. [Driver](regional_decision_bound_trial.py) · [Tests](../../../tests/pipeline_eval/test_regional_decision_bound.py)

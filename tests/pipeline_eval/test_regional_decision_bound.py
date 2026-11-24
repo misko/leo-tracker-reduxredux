@@ -3,6 +3,7 @@ from math import exp, log, log1p
 import pytest
 
 from reports.ALGO08.v3.regional_decision_bound import below, disprove, mixture_cap
+from reports.ALGO08.v3.regional_lazy_geometry import cell_bound
 
 
 @pytest.mark.parametrize("peak, visible,total", [(0., 1, 1), (35., 50, 1000), (3000., 100, 11177), (-50., 100, 1000)])
@@ -34,3 +35,13 @@ def test_witness_tests_only_far_exteriors_and_falls_back_when_unresolved():
     assert len(seen) == 24
     assert disprove(points, 25., lambda _: 2., lambda *_: False) is None
     assert disprove(points[:-1], 25., lambda _: 2., proves) is None
+
+
+def test_lazy_ceiling_keeps_all_cap_endpoints_even_for_unscored_tracks():
+    receiver = [[1, 2, 3, 4], [4, 5, 6]]
+    result = cell_bound([*receiver, [1, 9]], receiver, [0, 1, 2], 10)
+    assert result["exterior_unique_times"] == [3, 5, 6]
+    assert result["all_cells"] == 280
+    assert result["receiver_only_cells"] == 240
+    assert result["lazy_cells"] == 200
+    assert result["prefix_only_avoided_cells"] == 40
