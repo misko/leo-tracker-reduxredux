@@ -243,6 +243,11 @@ def write_report(pairs, output, enrollment, receipt_digest):
     if worst:
         lines += ["", "The largest fitted-error increases on shared fixes were " +
                   ", ".join(f"{case} (+{delta:.3f} km)" for delta, case in worst) + "."]
+    lines += ["", "A separate crossover on DS30-0049 tested both solvers on each saved receiver output. "
+              "Both solvers returned 1.420 km fitted error on the installed detections and 4.040 km on the "
+              "candidate detections. The receiver change accounted for the difference on this recording. "
+              "[DS30-0049 crossover and verification](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "5dad70d7d0c273b2aa17fa546d622bcd8e490789/reports/ALGO08/v3/ds30-0049-saved-crossover.md)"]
     lines += ["",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
