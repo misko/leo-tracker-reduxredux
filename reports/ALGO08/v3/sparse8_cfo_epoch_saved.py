@@ -54,7 +54,7 @@ def graph_rows(rows, corrections):
 
 
 @contextmanager
-def effective_graph_time(mode, native, audit):
+def effective_graph_time(mode, native, audit, *, native_pin=NATIVE):
     from leo.analysis.localization_v3 import tracks
     from leo.contracts.digests import canonical_digest
 
@@ -62,7 +62,7 @@ def effective_graph_time(mode, native, audit):
 
     def prepare(packet):
         rows, metadata = original(packet)
-        if packet is not native and canonical_digest(packet) != "sha256:" + NATIVE:
+        if packet is not native and canonical_digest(packet) != "sha256:" + native_pin:
             raise ValueError("Unexpected detector input at the effective-time boundary")
         if mode == "centroid":
             cpu, wall = process_time_ns(), perf_counter_ns()
@@ -87,7 +87,7 @@ def deny_backing(event, args):
         raise ValueError(f"Saved-only job refuses original data access: {path}")
 
 
-def worker(mode, stage, *, verify_only=False):
+def worker(mode, stage, *, verify_only=False, case=CASE, authority_pin=AUTHORITY, native_pin=NATIVE, protocol=PROTOCOL):
     started = process_time_ns(), perf_counter_ns()
     sys.path[:0] = [str(CHARTED / "reports/ALGO08/v3"), str(CHARTED), str(HERE)]
     sys.addaudithook(deny_backing)
@@ -106,7 +106,7 @@ def worker(mode, stage, *, verify_only=False):
     from sparse8_cfo_epoch import RECIPE
     from unified_short_bootstrap import Handoff
 
-    authority = chart.document(stage / "authority.json", AUTHORITY)
+    authority = chart.document(stage / "authority.json", authority_pin)
     session = authority["session_id"]
     recording = Path(authority["recording"])
     archive, offer = stage / "tle", stage / "offer.json"
@@ -114,12 +114,12 @@ def worker(mode, stage, *, verify_only=False):
     cutoff = authority["causal_cutoff_utc_ns"]
     if chart.archive_digest(archive, cutoff) != authority["archive_sha256"] or producer_cutoff >= cutoff:
         raise ValueError("The earlier TLE roster or dispatch differs from the original request")
-    native = chart.document(stage / "native.json", NATIVE)
+    native = chart.document(stage / "native.json", native_pin)
     chart.match_native(authority, native)
     inventory_digest = authority["inventory_sha256"]
     inventory = chart.document(stage / "inventory.json", inventory_digest)
     chart.match_inventory(authority, session, inventory_digest, inventory)
-    boot.bind_native(native, session, inventory_digest, RECIPE, expected="sha256:"+NATIVE)
+    boot.bind_native(native, session, inventory_digest, RECIPE, expected="sha256:"+native_pin)
 
     def saved_inventory(_store, path, *, verify_windows=True):
         if Path(path) != recording or verify_windows:
@@ -145,30 +145,30 @@ def worker(mode, stage, *, verify_only=False):
         rows, _ = winning_observations(native)
         graph_rows(rows, corrections)
         by_offset_us = Counter(round(shift*1e6, 4) for _, shift, _ in corrections.values())
-        print(json.dumps(dict(case=CASE, native=NATIVE, corrections=len(corrections),
+        print(json.dumps(dict(case=case, native=native_pin, corrections=len(corrections),
                               by_offset_us=dict(sorted(by_offset_us.items())))))
         return
     with (patch.object(FastScanStore, "inventory", saved_inventory),
           patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
-          effective_graph_time(mode, native, audit),
+          effective_graph_time(mode, native, audit, native_pin=native_pin),
           integrated.positive_ports(combined.solver_ports, acceleration, positive)):
         terminal, evidence = raw.publish_active(options, publication, specification, handoff)
     if not audit["graph_input_digests"] or len(set(audit["graph_input_digests"])) != 1:
         raise ValueError("The cached publication did not use one consistent Graph input")
     (published_native,) = options.output.glob("fast-scan-automatic-work/*/detections.json")
-    chart.checked(published_native, NATIVE)
+    chart.checked(published_native, native_pin)
     chart.checked(options.output / "fast-scan-inputs" / f"{session}.json", inventory_digest)
     timing = dict(cpu_s=(process_time_ns()-started[0])*1e-9, elapsed_s=(perf_counter_ns()-started[1])*1e-9)
-    provenance = dict(case=CASE, mode=mode, terminal=terminal, receiver_sha256=RECIPE,
-                      native_sha256=NATIVE, authority_sha256=AUTHORITY, build_sha256=BUILD_PIN,
-                      protocol_sha256=chart.tagged_bytes(PROTOCOL.read_bytes()),
+    provenance = dict(case=case, mode=mode, terminal=terminal, receiver_sha256=RECIPE,
+                      native_sha256=native_pin, authority_sha256=authority_pin, build_sha256=BUILD_PIN,
+                      protocol_sha256=chart.tagged_bytes(protocol.read_bytes()),
                       correction_source_sha256=chart.tagged_bytes((HERE / "sparse8_cfo_epoch.py").read_bytes()),
                       worker_source_sha256=chart.tagged_bytes(Path(__file__).read_bytes()),
                       survey_reads=0, waveform_reads=0, acquisition_handoffs=handoff.calls,
                       graph_time=audit, timing=timing, evidence=dict(evidence=evidence["evidence"]),
                       witness_sha256=chart.tagged_bytes((options.output / "exact-named-raw-witness.json").read_bytes()))
     chart.write(stage / f"{mode}-receipt.json", provenance)
-    print(json.dumps(dict(case=CASE, mode=mode, decision=terminal["decision"], timing=timing)))
+    print(json.dumps(dict(case=case, mode=mode, decision=terminal["decision"], timing=timing)))
 
 
 if __name__ == "__main__":
@@ -176,5 +176,17 @@ if __name__ == "__main__":
     parser.add_argument("mode", choices=MODES)
     parser.add_argument("stage", type=Path)
     parser.add_argument("--verify-only", action="store_true")
+    parser.add_argument("--admission")
     args = parser.parse_args()
-    worker(args.mode, args.stage, verify_only=args.verify_only)
+    admission = {}
+    if args.admission:
+        from hashlib import sha256
+
+        body = (args.stage / "admission.json").read_bytes()
+        if sha256(body).hexdigest() != args.admission:
+            raise ValueError("Saved challenge admission digest changed")
+        admission = json.loads(body)
+        if set(admission) != {"case", "authority_pin", "native_pin"}:
+            raise ValueError("Unexpected saved challenge admission")
+        admission["protocol"] = HERE / "sparse8-cfo-epoch-transfer-protocol.md"
+    worker(args.mode, args.stage, verify_only=args.verify_only, **admission)
