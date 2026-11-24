@@ -1,6 +1,6 @@
 import pytest
 
-from reports.ALGO08.v3.saved_solver_intake_budget import compare, load
+from reports.ALGO08.v3.saved_solver_intake_budget import compare, include_holdout, load
 
 
 def test_saved_worker_startup_and_admission_are_both_charged():
@@ -24,3 +24,18 @@ def test_all_six_real_pairs_and_both_boundary_assumptions():
         assert scenario["gate"]["sum_ratio"] < .5
         assert scenario["at_283_MB_s"]["median_ratio"] > .5
         assert len(scenario["per_case_MB_s"]) == 6
+
+
+def test_seventh_case_charges_admission_and_keeps_impossible_case_in_both_panel_gates():
+    results = include_holdout()
+    for trial in results.values():
+        row = trial["holdout"]
+        assert row["saved_wall_s"] == pytest.approx(trial["child_s"] + trial["admission_s"])
+        for scenario in trial["scenarios"].values():
+            rates = scenario["per_case_MB_s"]
+            assert len(rates) == 7 and rates["DS30-0255"] is None
+            assert max(scenario["gate"][k] for k in ("median_ratio", "sum_ratio")) == pytest.approx(.5)
+    before = results["as_enrolled"]["scenarios"]["saved_wall_s"]["gate"]
+    after = results["after_handoff"]["scenarios"]["saved_wall_s"]["gate"]
+    assert before["required_MB_s"] == pytest.approx(449.3, abs=.1)
+    assert after["required_MB_s"] == pytest.approx(407.7, abs=.1)

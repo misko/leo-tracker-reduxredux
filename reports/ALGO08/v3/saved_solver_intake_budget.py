@@ -1,5 +1,6 @@
 """Price the remaining original-input work on six cases with measured solver pairs."""
 
+import argparse
 import gzip
 import json
 from pathlib import Path
@@ -31,6 +32,10 @@ def compare(intake, solver):
         cases.append(dict(case=case, size=raw["byte_high"], elapsed_s=raw["elapsed_s"],
                           named_post_s=raw["post_s"], named_saved_s=named, saved_wall_s=routed,
                           scaled_post_s=raw["post_s"] * routed / named))
+    return dict(cases=cases, scenarios=scenarios_for(cases))
+
+
+def scenarios_for(cases):
     scenarios = {}
     for field in ("saved_wall_s", "scaled_post_s"):
         rows = [dict(row, post_s=row[field]) for row in cases]
@@ -40,7 +45,7 @@ def compare(intake, solver):
             per_case_MB_s={r["case"]: r["size"] / 1e6 / (r["elapsed_s"]/2-r["post_s"])
                            if r["post_s"] < r["elapsed_s"]/2 else None for r in rows},
         )
-    return dict(cases=cases, scenarios=scenarios)
+    return scenarios
 
 
 def load():
@@ -49,5 +54,36 @@ def load():
     return compare(intake, solver)
 
 
+def include_holdout():
+    intake = json.loads(checked(MEASUREMENTS / "release-intake-rate.json", INTAKE_PIN))
+    holdout = json.loads(gzip.decompress(checked(
+        MEASUREMENTS / "unseen-saved-holdout-0255.json.gz",
+        "b05e24a1986f103db2b7155302978a2e8934b5be44bfb6c9183c1d2632ae822f")))
+    followup = json.loads(gzip.decompress(checked(
+        MEASUREMENTS / "nomination-handoff-0255.json.gz",
+        "52597f4dddbe7b6de19d2dbc990916578578c7a4378021b8c594aff99a631817")))
+    cases = load()["cases"]
+    raw, = (r for r in intake["rows"] if r["case"] == holdout["case"])
+    if (any(r["case"] == raw["case"] for r in cases) or raw["byte_low"] != raw["byte_high"]
+            or raw["elapsed_s"] != holdout["prior_installed_raw"]["elapsed_s"]
+            or not all(holdout["checks"].values()) or not followup["qualified"]):
+        raise ValueError("Holdout must add a distinct qualified recording with matched clocks and exact size")
+    installed = holdout["time"]["elapsed_s"]["installed"]
+    result = {}
+    for name, child, admission in (
+        ("as_enrolled", holdout["time"]["elapsed_s"]["routed"], holdout["admission"]["setup"]["elapsed_s"]),
+        ("after_handoff", followup["clock"]["elapsed_s"], followup["admission"]["setup"]["elapsed_s"]),
+    ):
+        worker = child + admission
+        row = dict(case=raw["case"], elapsed_s=raw["elapsed_s"], size=raw["byte_high"],
+                   saved_wall_s=worker, scaled_post_s=raw["post_s"] * worker / installed)
+        result[name] = dict(child_s=child, admission_s=admission, holdout=row,
+                            scenarios=scenarios_for([*cases, row]))
+    return result
+
+
 if __name__ == "__main__":
-    print(json.dumps(load(), indent=2, allow_nan=False))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--with-holdout", action="store_true", help="Append the independently selected seventh case")
+    args = parser.parse_args()
+    print(json.dumps(include_holdout() if args.with_holdout else load(), indent=2, allow_nan=False))
