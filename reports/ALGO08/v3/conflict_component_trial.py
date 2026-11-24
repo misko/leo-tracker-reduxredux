@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from hashlib import sha256
 import json
 from pathlib import Path
+import subprocess
 import sys
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
@@ -165,20 +166,13 @@ def worker(case, output):
     import unified_short_bootstrap as unified
     from aperture_trial import write
     from conflict_components import exclusive_edges, joined_sizes
-    from leo.operations.tle_archive import TleArchiveReader
 
-    job, clocks = request(case)
-    output.mkdir()
-    write(output/"binding.json", job)
+    binding = json.loads((output/"binding.json").read_bytes())
+    job, clocks = binding["job"], binding["historical"]
     target = output/"rank"
-    publish, read_tle = unified.publish_active, TleArchiveReader.read
+    publish = unified.publish_active
     alternatives, graph, report = [], [], {}
     archive = Path(job["archive"]["root"]).resolve(strict=True)
-
-    def only_staged(reader, snapshot):
-        if reader.root.resolve(strict=True) != archive:
-            raise ValueError("Read outside exact staged archive")
-        return read_tle(reader, snapshot)
 
     def observed(*args, **kwargs):
         import cold_finalist_race as race
@@ -188,10 +182,16 @@ def worker(case, output):
         from leo.analysis import graph_tracklets
         from leo.application.localization_v3_engine import _json_value
         from leo.contracts.digests import canonical_digest
+        from leo.operations.tle_archive import TleArchiveReader
         from tools.pipeline_eval.variants import v5_core
 
-        finish, route = graph_tracklets.finish_lane, joint.full_catalogue_route
+        finish, route, read_tle = graph_tracklets.finish_lane, joint.full_catalogue_route, TleArchiveReader.read
         removed = Counter()
+
+        def only_staged(reader, snapshot):
+            if reader.root.resolve(strict=True) != archive:
+                raise ValueError("Read outside exact staged archive")
+            return read_tle(reader, snapshot)
 
         def observe_lane(t, y, order, n, models, config, **options):
             supports = {i: model["indices"].tolist() for i, model in enumerate(models)}
@@ -230,7 +230,7 @@ def worker(case, output):
 
     try:
         with patch.object(unified, "publish_active", observed):
-            baseline.worker(output/"binding.json", "combined", target)
+            baseline.worker(output/"job.json", "combined", target)
     except StopBeforeFinalists:
         if any(target.glob("fast-scan-automatic-work/*/terminal.json")):
             raise ValueError("The probe reached a position publication")
@@ -239,10 +239,29 @@ def worker(case, output):
     raise ValueError("The paid pre-finalist rank was not reached")
 
 
+def launch(case, output):
+    from aperture_trial import RELEASE, write
+    from dense_geographic_trial import host
+    from full_short_physical import environment
+
+    machine = host()
+    if output.parent.resolve(strict=True) != Path("/dev/shm"):
+        raise ValueError("Require a fresh tmpfs output")
+    job, clocks = request(case)
+    output.mkdir()
+    (output/"tmp").mkdir()
+    write(output/"binding.json", dict(job=job, historical=clocks, machine=machine))
+    write(output/"job.json", job)
+    env = environment(output)
+    env["TMPDIR"] = str(output/"tmp")
+    subprocess.run([RELEASE/"venv/bin/python", "-IB", __file__, case, output, "--child"], env=env, check=True, timeout=45)
+
+
 if __name__ == "__main__":
     sys.path.insert(0, str(HERE))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case", choices=tuple(ROOTS))
     parser.add_argument("output", type=Path)
+    parser.add_argument("--child", action="store_true")
     options = parser.parse_args()
-    worker(options.case, options.output)
+    (worker if options.child else launch)(options.case, options.output)
