@@ -103,7 +103,7 @@ def compare(root, output):
         native_validations=candidate_worker["receipt"]["tle_records"], no_waveform=True))
 
 
-def launch(root):
+def launch(root, *, worker_path=None):
     from portable_orbit_index_trial import local_launcher_tools
 
     local_launcher_tools()
@@ -123,7 +123,7 @@ def launch(root):
     env = environment(root)
     env.update(TMPDIR=str(root/"tmp"), XDG_CACHE_HOME=str(root/"tmp"))
     command = ["/usr/bin/timeout", "--kill-after=2s", "60s", RELEASE/"venv/bin/python", "-IB",
-               __file__, "worker", root]
+               worker_path or __file__, "worker", root]
     clock = measure(command, env, root/"portable")
     write(root/"portable.clock.json", clock)
     if clock["exit_code"]:
