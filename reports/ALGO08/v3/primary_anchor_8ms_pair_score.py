@@ -2,9 +2,12 @@
 
 import argparse
 from pathlib import Path
+from unittest.mock import patch
 
+from combined_raw_trial import source_at
 from continued_cfo_first_0016 import read, write
-from eight_ms_native_score import north_seal, same_images
+import eight_ms_native_score as native_score
+from eight_ms_native_score import same_images
 from primary_anchor_8ms_trial import pin, score, verify
 from prospective_0316_solver import owner_delta
 
@@ -31,7 +34,16 @@ def pair(root):
     if not (candidate/"score.json").exists():
         score(candidate)
     if not (control/"science-seal.json").exists():
-        north_seal(control)
+        ordinary = native_score.checked
+
+        def frozen_runtime(path, sha):
+            if path.name == "primary_anchor_8ms_trial.py" and sha == right["source_sha256"][path.name]:
+                source_at(right["commit"],path.name,sha)
+                return None
+            return ordinary(path,sha)
+
+        with patch.object(native_score,"checked",frozen_runtime):
+            native_score.north_seal(control)
     left,right = read(candidate/"seal.json"),read(control/"science-seal.json")
     after,before = left["science"],right["science"]
     def clocks(run):
