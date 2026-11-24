@@ -11,6 +11,7 @@ import sys
 
 
 HERE = Path(__file__).resolve().parent
+sys.path[:0] = [str(HERE), str(HERE.parents[2])]
 JOB_SHA = "867b8b84d56e9fb11ea8650dda731d58583fe963d1ea765a44a1336fe475575d"
 ACCEPTING = Path("/dev/shm/leo-v3-history-risk-0169-01/risk-route.json")
 ACCEPTING_SHA = "6922f4bb992a339fae2bc532c69618d41243dbc24e6e3ddf8952410805421b30"
