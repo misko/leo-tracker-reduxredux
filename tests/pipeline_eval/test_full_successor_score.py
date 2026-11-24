@@ -372,6 +372,11 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert f"{counts[1][0]} of the {counts[1][1]} on DS30-0086" in markdown
     assert f"Doppler curvature fell by {losses[0]:.1%} and {losses[1]:.1%}" in markdown
     assert "missed-owner-support.md)" in markdown
+    arrival = json.loads((receipts / "empty-lane-arrival-score.json").read_bytes())["cases"]["DS30-0086"]
+    owned = arrival["owners"]["fitted_c"]
+    assert f"{owned['windows']['primary']['interpolated']} of the {owned['installed_positive_denominator']}" in markdown
+    assert f"proposed {arrival['queries']:,} windows, including {arrival['installed_empty_queries']:,}" in markdown
+    assert "empty-lane-arrival.md)" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
     assert "DS30-0210 solver and publication audit" not in markdown

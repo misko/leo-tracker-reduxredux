@@ -807,6 +807,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "23.6% and 15.7%. The calculation held the satellite assignments fixed. "
               "[Missing observations and their times](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "8d31ce0b915162d851b98e56222b8e7849979a5d/reports/ALGO08/v3/missed-owner-support.md)", "",
+              "On DS30-0086 alone, interpolating between neighboring candidate detections placed 65 of the 323 "
+              "missing assigned observations within 250 Hz and two samples of the installed receiver. Holding "
+              "the earlier arrival phase fixed matched one. The rule proposed 1,342 windows, including 1,139 "
+              "where the installed receiver also found no signal above its threshold. These counts describe where "
+              "a targeted receiver could search. [Predicted frequency and pilot arrival on saved measurements]"
+              "(https://github.com/misko/leo-tracker-reduxredux/blob/cd5c97fb9bab8f79a8ea198d57ac8ca032b824c6/"
+              "reports/ALGO08/v3/empty-lane-arrival.md)", "",
               "Restoring all 104 detections recovered 41 of the 44 missing installed assignments with the "
               "same satellite and role. Fitted error improved by 377 m and remained 2.243 km above ALGO08v3. "
               "The four changes were tested independently. "
