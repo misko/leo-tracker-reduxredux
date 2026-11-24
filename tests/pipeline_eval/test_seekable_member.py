@@ -124,3 +124,43 @@ def test_full_readback_also_checks_original_member_digest(tmp_path):
     with (seek.open_member(path, pin) as member,
           pytest.raises(ValueError, match="Original decoded member digest")):
         member.verify_all()
+
+
+def test_complete_encoded_verification_rejects_an_unneeded_tail(tmp_path):
+    path, pin, _ = seal(tmp_path)
+    tail = path / "tail.zst"
+    data = bytearray(tail.read_bytes())
+    data[-1] ^= 1
+    set_contents(tail, data)
+    with seek.open_member(path, pin) as member, pytest.raises(ValueError, match="digest"):
+        member.verify_encoded()
+
+
+def test_complete_encoded_authentication_reads_each_byte_only_once(tmp_path):
+    path, pin, raw = seal(tmp_path)
+    with seek.open_member(path, pin) as member:
+        member.verify_encoded()
+        paid = sum((path / name).stat().st_size for name in seek.PART_FILES)
+        assert member.payload_bytes == paid and member.verified_encoded_frames == 6
+        assert member.read(1, full=False) == raw[1][:seek.PART_BYTES[0]]
+        assert member.read(2, full=True) == raw[2]
+        assert member.payload_bytes == paid
+        assert member.frames == 3
+        assert member.verify_all() == seek.digest(b"".join(raw))
+        with pytest.raises(ValueError, match="precede"):
+            member.verify_encoded()
+
+
+@pytest.mark.parametrize("split", ["split-level-1", "split-level-fast"])
+def test_capture_writers_keep_raw_signal_and_signed_index(tmp_path, split):
+    from reports.ALGO08.v3.future_capture_storage import capture, full_recovery
+
+    reader, raw = original(tmp_path)
+    windows = tuple(reader.windows(start_sequence=0, stop_sequence=len(raw)))
+    mode_root, mode_pin, mode_result = capture(tmp_path / split, split, reader.manifest, windows)
+    plain_root, plain_pin, plain_result = capture(tmp_path / "ordinary", "ordinary", reader.manifest, windows)
+    expected = seek.digest(b"".join(raw))
+    assert mode_result["decoded_sha256"] == plain_result["decoded_sha256"] == expected
+    assert mode_result["index_sha256"] == plain_result["index_sha256"]
+    assert full_recovery(mode_root, split, mode_pin, expected)["decoded"] == expected
+    assert full_recovery(plain_root, "ordinary", plain_pin, expected)["decoded"] == expected

@@ -135,6 +135,8 @@ class Reader:
         self.files = []
         self.payload_bytes = self.decoded_bytes = 0
         self.metadata_bytes = self.frames = self.full_checks = 0
+        self.verified_encoded_frames = 0
+        self.verified_payloads = None
         root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
         try:
             inputs = [read_metadata(root_fd, name) for name in (
@@ -175,6 +177,7 @@ class Reader:
         self.decoder = zstd.ZstdDecompressor()
 
     def close(self):
+        self.verified_payloads = None
         while self.files:
             os.close(self.files.pop()[0])
 
@@ -182,6 +185,18 @@ class Reader:
         return dict(metadata_bytes=self.metadata_bytes, payload_bytes=self.payload_bytes,
                     decoded_bytes=self.decoded_bytes, frames=self.frames,
                     full_checks=self.full_checks)
+
+    def verify_encoded(self):
+        """Authenticate every committed compressed byte before delivering any aperture."""
+        if self.frames or self.verified_payloads is not None:
+            raise ValueError("Complete compressed verification must precede visits")
+        payloads = [memoryview(held_pread(fd, identity, identity[4], 0)) for fd, identity in self.files]
+        for record in self.records:
+            for data, (offset, size, encoded_pin, _) in zip(payloads, record["parts"], strict=True):
+                check(data[offset:offset + size], encoded_pin)
+        self.verified_payloads = payloads
+        self.verified_encoded_frames = len(self.records) * len(payloads)
+        self.payload_bytes = sum(map(len, payloads))
 
     def read(self, sequence, *, full):
         if type(sequence) is not int:
@@ -193,9 +208,13 @@ class Reader:
         row = self.rows[index]
         for i in range(2 if full else 1):
             offset, size, encoded_pin, raw_pin = self.records[index]["parts"][i]
-            fd, identity = self.files[i]
-            encoded = held_pread(fd, identity, size, offset)
-            check(encoded, encoded_pin)
+            if self.verified_payloads is None:
+                fd, identity = self.files[i]
+                encoded = held_pread(fd, identity, size, offset)
+                check(encoded, encoded_pin)
+                self.payload_bytes += size
+            else:
+                encoded = self.verified_payloads[i][offset:offset + size]
             expected = PART_BYTES[i]
             if zstd.frame_content_size(encoded) != expected:
                 raise ValueError("Frame claims a different decoded extent")
@@ -203,7 +222,6 @@ class Reader:
             if len(raw) != expected:
                 raise ValueError("Frame returned a different decoded extent")
             check(raw, raw_pin)
-            self.payload_bytes += size
             self.decoded_bytes += expected
             self.frames += 1
             parts.append(raw)
