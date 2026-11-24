@@ -40,14 +40,20 @@ def finite_positive(value):
 
 def raw_rows(data, expected, options_for):
     case, admission = data["case"], data["admission"]
+    if data.get("qualified") is not True:
+        raise ValueError(f"{case} requires a qualified original-waveform score")
     req, ref = admission["request"], expected["request"]
     base, runs, logs = expected["stock"], data["runs"], data["measured_exits"]
+    parsed_options = options_for(admission["commands"]["candidate"]).copy()
+    # The two frozen commands predate the optional Cairo renderer.
+    if "cairo_six_sheets" not in admission["active_options"] and parsed_options.get("cairo_six_sheets") is False:
+        del parsed_options["cairo_six_sheets"]
     if (tuple(admission["order"]) != MODES or set(runs) != set(MODES) or set(logs) != set(MODES)
             or not data["same_opportunities"] or admission["stock"] != expected["installed"]
             or any(req[key] != value for key, value in ref.items() if key not in ("archive", "saved_inventory", "packet"))
             or req["archive"]["snapshots_sha256"] != ref["archive"]["snapshots_sha256"]
             or not finite_positive(admission["setup_wall_s"]) or admission["conditioning_bytes"] or admission["original_backing_bytes"]
-            or options_for(admission["commands"]["candidate"]) != admission["active_options"]
+            or parsed_options != admission["active_options"]
             or not admission["active_options"]["history_risk_route"]
             or not finite_positive(logs["candidate"]["clock"]["started_unix_ns"])
             or logs["candidate"]["clock"]["started_unix_ns"] >= logs["stock"]["clock"]["started_unix_ns"]
