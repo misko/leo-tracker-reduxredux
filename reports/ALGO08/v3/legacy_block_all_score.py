@@ -73,10 +73,12 @@ def score(root, control_pin):
     for metric in ("elapsed_s", "cpu_s"):
         cost = prep["total"][metric] + (prep["build"]["compiler_cpu_s"] if metric == "cpu_s" else 0)
         historic = control["prices"][metric]["measured_full_preparation"]
+        recovery = prep.get("recovery_reuse", {}).get("clock", {}).get(metric, 0)
         amounts[metric] = dict(ordinary=ordinary["process"][metric], five_maps=prior[metric],
             all_members=current["process"][metric], measured_incremental_preparation=cost,
             prior_complete_five_map_validation=historic, first_use_from_verified_five_maps=cost+current["process"][metric],
             all_observed_first_use_with_historical_preparation=cost+historic+current["process"][metric],
+            preacquisition_recovery_reuse=recovery,
             prior_portable_producer=book["prior_index_build"][metric])
     write(root / "result.json", dict(qualified=True, checks=checks, case="DS30-0016", ordinary_control_sha256=control_pin,
         input=input_audit, admission=book, sidecars=sidecars, prices=amounts,

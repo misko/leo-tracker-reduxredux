@@ -152,11 +152,49 @@ def runtime_pins():
 base_runtime_pins = base.runtime_pins
 
 
-def launch(root, control_pin):
+def reuse_maps(root, previous, session, inventory, expected, control_pin):
+    from empty_bootstrap import clock, now
+    from reports.ALGO08.v3 import legacy_block_input as port, legacy_block_multi as multi
+    from leo.storage.writer import _fsync_directory
+
+    start = now()
+    book = read(previous / "admission.json")
+    prior = read(previous / "indexed-clock.json")
+    log = (previous / "indexed.stderr").read_text()
+    plan = book["plan"]
+    if (previous.resolve(strict=True) != Path("/dev/shm/leo-v3-legacy-all-0016-result01")
+            or prior["clock"]["exit_code"] != 1 or (previous / "indexed").exists()
+            or "legacy_block_all_entry.py" not in log or "in mapped_codec" not in log
+            or "No module named 'tools.pipeline_eval.variants.experimental.receiver_benchmark'" not in log
+            or (plan["session"], plan["inventory"], plan["raw_authority"], plan["windows"]) != (session, inventory, expected, 808)
+            or book["preparation"]["admitted_kinds"] != {"literal": 5, "exception": 8}
+            or book["preparation"]["ordinary_control_sha256"] != control_pin):
+        raise ValueError("Reuse is authorized only for the sealed pre-acquisition import failure")
+    source, folder = previous / "maps", root / "maps"
+    folder.mkdir(mode=0o700)
+    pins = {row["map"]: (row["map_sha256"], multi.MAX_SIDECAR) for row in plan["members"]}
+    pins.update({"custody.json": (book["map_custody_sha256"], port.MAX_CUSTODY),
+                 "legacy-block.so": (book["preparation"]["build"]["binary_sha256"], 2_000_000)})
+    for name, (pin, limit) in pins.items():
+        port.checked_file(source / name, pin, limit)
+        (folder / name).hardlink_to(source / name)
+    _fsync_directory(folder)
+    _fsync_directory(root)
+    if port.load_custody(folder / "custody.json", book["map_custody_sha256"]) != plan:
+        raise ValueError("Prepared map custody changed during relocation")
+    extra = dict(clock=clock(start), root=str(previous), before_waveform=True, failed_clock=prior["clock"],
+                 admission_sha256=digest(previous / "admission.json"), clock_sha256=digest(previous / "indexed-clock.json"),
+                 stderr_sha256=digest(previous / "indexed.stderr"))
+    return plan, book["map_custody_sha256"], dict(book["preparation"], recovery_reuse=extra)
+
+
+def launch(root, control_pin, *, reuse=None):
     control = qualified_control(control_pin)
     ordinary = control["admission"]["commands"]["ordinary"]
 
     def maps(root, session, inventory_pin, inventory, expected, census):
+        if reuse is not None:
+            return reuse_maps(root, reuse, session, inventory_pin, expected, control_pin)
         return prepare(root, session, inventory_pin, inventory, expected, census, control, control_pin)
 
     def command(_previous, root, _portable, build, plan_pin):
@@ -174,9 +212,10 @@ if __name__ == "__main__":
     cli.add_argument("action", choices=("launch", "score"))
     cli.add_argument("root", type=Path)
     cli.add_argument("--ordinary-control-sha256", required=True)
+    cli.add_argument("--reuse-prepared", type=Path)
     arguments = cli.parse_args()
     if arguments.action == "launch":
-        launch(arguments.root, arguments.ordinary_control_sha256)
+        launch(arguments.root, arguments.ordinary_control_sha256, reuse=arguments.reuse_prepared)
     else:
         from legacy_block_all_score import score
 

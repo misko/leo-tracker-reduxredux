@@ -11,9 +11,7 @@ import numpy as np
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 
 from . import legacy_block_seek as core
-from .legacy_block_exception import PREFIX, UnsupportedExceptionLayout
-from .seekable_member_trial import clock, elapsed
-from .sparse_cold_input import verified
+from .legacy_block_seek import PREFIX_BYTES as PREFIX, clock, elapsed
 from .zstd_structure import MAX_BLOCK, inspect, literal_section
 
 
@@ -24,6 +22,10 @@ MAX_SIDECAR = 4 + MAX_HEADER + MAX_EXCEPTIONS * MAX_BLOCK
 ZSTD = Path("/usr/lib/x86_64-linux-gnu/libzstd.so.1")
 ZSTD_PIN = "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80"
 DATA_TYPES = (2, 3)  # ZSTDnit_block and ZSTDnit_lastBlock in the pinned header ABI.
+
+
+class UnsupportedExceptionLayout(core.UnsupportedLayout):
+    """The signed frame exceeds the explicit scope of optional selective reads."""
 
 
 def describe(frame, expected):
@@ -53,6 +55,8 @@ def describe(frame, expected):
 
 
 def load_history():
+    from .sparse_cold_input import verified
+
     verified(ZSTD, ZSTD_PIN)
     lib = ct.CDLL(str(ZSTD))
     address, size = ct.c_void_p, ct.c_size_t
@@ -205,7 +209,8 @@ class Selective:
         self.metadata = elapsed(stage)
         stage = clock()
         self.frame = reader._member(chunk.payload_relative_path, chunk.compressed_bytes, chunk.compressed_sha256)
-        self.pointer = ct.c_char_p(self.frame)
+        self.storage = np.frombuffer(self.frame, dtype=np.uint8)
+        self.pointer = ct.cast(self.storage.ctypes.data, ct.c_char_p)
         self.authentication = elapsed(stage)
         stage = clock()
         descriptions, ordinals, owner = describe(self.frame, chunk.uncompressed_bytes)
