@@ -169,7 +169,7 @@ def observe_curves(scan, audit):
     audit.update(counts=dict(counts), cpu_ns=dict(elapsed), protected_per_group=dict(sorted(histogram.items())), calls=per_call)
 
 
-def worker(case, request, inventory, output):
+def worker(case, request, inventory, output, *, prototype=False):
     original = archived()
     expected = json.loads(read_checked(BASE/(case+"-control")/"result.json", BASELINES[case]))
     result = {}
@@ -190,8 +190,12 @@ def worker(case, request, inventory, output):
                 raise ValueError("Archived cold catalogue extent changed")
             # The archived full-catalogue route already wraps this callable
             # with its actual centre tables, scratch and repeat caches.
-            with observe_curves(scan, result):
-                ranked = v5_core.ranked_initial_nodes(scan)
+            if prototype:
+                ranked, paired = paired_rank(prepared, region, bound, scan, v5_core)
+                result["paired"] = paired
+            else:
+                with observe_curves(scan, result):
+                    ranked = v5_core.ranked_initial_nodes(scan)
             signatures = [[list(row) for row in signature(node)] for node in ranked]
             if signatures != expected["stages"]["work"]["ordered"]:
                 raise ValueError("The exact instrumented rank disagrees with the sealed input")
@@ -230,7 +234,44 @@ def worker(case, request, inventory, output):
     raise ValueError("The original rank was never reached")
 
 
-def run(case, root):
+def paired_rank(prepared, region, bound, scan, core):
+    import catalogue_block_rank as prototype
+    import cold_track_row_entry as entry
+    from blind_joint_finish import digest
+    from leo.analysis.localization_v3.discovery import signature
+    from leo.application.localization_v3_engine import _json_value
+    from leo.contracts.digests import canonical_digest
+
+    def timed(context):
+        start = process_time_ns(), perf_counter_ns()
+        nodes = core.ranked_initial_nodes(context)
+        return nodes, dict(cpu_ns=process_time_ns()-start[0], elapsed_ns=perf_counter_ns()-start[1])
+
+    def readout(nodes):
+        return json.loads(json.dumps(nodes, default=_json_value, allow_nan=False))
+
+    baseline, baseline_clock = timed(scan)
+    candidate_scan = core.scan_context(prepared, region, digest(prepared["noise"]), bound, "previous")
+    work = Counter()
+
+    def install(current, tables, _global_counts, *, borrow=False):
+        return prototype.install(current, tables, work, borrow=borrow)
+
+    with patch.object(entry, "shared_association_rows", install):
+        candidate, elapsed = timed(candidate_scan)
+    base, test = readout(baseline), readout(candidate)
+    changed = []
+    for rank, (left, right) in enumerate(zip(base, test, strict=False), 1):
+        for row1, row2 in zip(left["seed"]["rows"], right["seed"]["rows"], strict=False):
+            if row1 != row2:
+                changed.append(dict(rank=rank, curve=row1["component"], keys=sorted(k for k in row1 if row1[k] != row2[k])))
+    return baseline, dict(control=baseline_clock, candidate=elapsed, cold_nodes_byte_equal=base == test,
+                          ordered_signatures_match=[signature(node) for node in baseline] == [signature(node) for node in candidate],
+                          control_digest=canonical_digest(base), candidate_digest=canonical_digest(test),
+                          changed_diagnostics=changed, candidate_work=dict(work))
+
+
+def run(case, root, *, prototype=False):
     original = archived()
     from aperture_trial import RELEASE, read, write
     from dense_geographic_trial import host
@@ -250,10 +291,13 @@ def run(case, root):
     env["TMPDIR"] = str(root/"tmp")
     output = root/"rank"
     command = [RELEASE/"venv/bin/python", "-IB", __file__, "worker", case, output, "--request", path, "--inventory", inventory]
+    names = [Path(__file__).name, "catalogue_block_bound.py", "catalogue-block-bound-protocol.md"]
+    if prototype:
+        command.append("--prototype")
+        names.append("catalogue_block_rank.py")
     write(root/"binding.json", dict(case=case, machine=host(), request=request, inventory=str(inventory),
                                     archived_driver=COLD_DRIVER, archived_control=BASELINES[case], archived_profile=PROFILE,
-                                    source={name: sha256((HERE/name).read_bytes()).hexdigest() for name in
-                                            (Path(__file__).name, "catalogue_block_bound.py", "catalogue-block-bound-protocol.md")},
+                                    prototype=prototype, source={name: sha256((HERE/name).read_bytes()).hexdigest() for name in names},
                                     archived_full_solve_cpu=baseline["solve"]["cpu_s"]))
     clock = measure(command, env, output)
     write(root/"clock.json", dict(clock=clock, command=list(map(str, command))))
@@ -275,8 +319,11 @@ if __name__ == "__main__":
     cli.add_argument("output", type=Path)
     cli.add_argument("--request", type=Path)
     cli.add_argument("--inventory", type=Path)
+    cli.add_argument("--prototype", action="store_true")
     args = cli.parse_args()
+    if args.prototype and args.case != "medium":
+        cli.error("Use the frozen medium-only prototype")
     if args.mode == "worker":
-        worker(args.case, args.request, args.inventory, args.output)
+        worker(args.case, args.request, args.inventory, args.output, prototype=args.prototype)
     else:
-        run(args.case, args.output)
+        run(args.case, args.output, prototype=args.prototype)
