@@ -16,7 +16,9 @@ from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-sys.path[:0] = [str(HERE), str(ROOT)]
+sys.path.insert(0, str(HERE))
+# Resolve installed tools before checkout modules in the namespace.
+sys.path.append(str(ROOT))
 
 from held_adaptive_0160 import PINS, catalogue_scope, digest, resident_path
 

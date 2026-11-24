@@ -32,7 +32,8 @@ SOURCE_FILES = (
 FLAGS = dict(named_survivor_finish=True, reuse_verified_png_reads=True, direct_orbit_figures=True,
              direct_residual_figures=True, one_pass_web_png=True, exact_graph_reuse=True)
 ARMS = ("c0", "fitted_c")
-sys.path[:0] = [str(HERE), str(ROOT)]
+sys.path.insert(0, str(HERE))
+sys.path.append(str(ROOT))
 
 
 def digest(path):
