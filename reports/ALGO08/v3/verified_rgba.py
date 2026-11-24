@@ -26,6 +26,7 @@ def layout(data):
     offset = len(SIGNATURE)
     extent = None
     width = height = 0
+    ancillary = set()
     while len(data) - offset >= 12:
         length, name = CHUNK.unpack_from(data, offset)
         start = offset + CHUNK.size
@@ -42,8 +43,21 @@ def layout(data):
             extent = start, length
         elif name == b"IEND" and length == 0 and extent is not None and end + 4 == len(data):
             return width, height, extent
-        elif name not in (b"tEXt", b"pHYs"):
-            return None
+        else:
+            if extent is not None or name in ancillary:
+                return None
+            if name == b"pHYs":
+                if length != 9 or data[end-1] not in (0, 1):
+                    return None
+            elif name == b"tEXt":
+                if length > 4096:
+                    return None
+                key, _, value = data[start:end].partition(b"\0")
+                if key != b"Software" or not value or b"\0" in value or not value.isascii():
+                    return None
+            else:
+                return None
+            ancillary.add(name)
         offset = end + 4
     return None
 
