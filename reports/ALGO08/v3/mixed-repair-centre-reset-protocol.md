@@ -29,7 +29,7 @@ and exact ordered observation/component/NORAD/role parity with the prior
 repair record. Return the prior repair for a numerically ineligible
 trial. Let the normal signed-route exterior guard and standard publication
 act on any admitted pair. Keep the charted fallback behavior. The
-inferrence hook is default-off and scoped to one paired trial per saved
+inference hook is default-off and scoped to one paired trial per saved
 publication. The mode is research only. Draw no exactness or expected
 geographic benefit from an accepted gate or lower objective alone.
 
@@ -67,3 +67,9 @@ signatures and final owner rows as insufficient for an isolated kernel
 replay. If the needed state is missing, prepare a sealed one-case saved
 launch for review and stop before invoking it. Do not read waveform or
 backing data, obtain a lease, or run another full numerical solve here.
+For the approved launch, the numerical child has a 25 s scheduling
+timeout against the official 30 s storage check. Use one nonblocking
+lease attempt within two seconds of a fresh official storage deferral,
+with idle I/O and one CPU2 thread. Stop after ten minutes if no eligible
+deferral arrives. Contention, timeout or experimental rejection ends
+the attempt.
