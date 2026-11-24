@@ -81,6 +81,27 @@ def test_missing_or_reordered_rank_and_prefix_remain_independent(admitted):
     assert r.record.counts["rank_reuses"] == 0
 
 
+@pytest.mark.parametrize("bad", ("score", "anchor", "phase", "labels", "node"))
+def test_bad_checkpoint_does_not_arm_resume(admitted, bad):
+    r = admitted
+    node, anchor, phase, score = r.outcomes[0]
+    if bad == "score":
+        score = np.inf
+    elif bad == "anchor":
+        anchor[0] = np.nan
+    elif bad == "phase":
+        phase[0] = 15.1
+    elif bad == "labels":
+        phase = {1: -1.5}
+    else:
+        node = deepcopy(node)
+        node["aliases"][0] += 1
+    r.outcomes[0] = node, anchor, phase, score
+    r.record.capture(r.owned, r.ranked, r.outcomes)
+    assert r.record.checkpoint is None
+    assert r.record.counts["invalid_prefix"] == 1
+
+
 @pytest.mark.parametrize("mismatch", ("new_input", "changed_bank", "changed_bound", "changed_region", "other_prior"))
 def test_mismatched_owner_geometry_or_prior_reranks(admitted, mismatch):
     r = admitted
