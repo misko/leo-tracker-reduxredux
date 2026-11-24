@@ -10,6 +10,9 @@ import sys
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
 
+HERE = Path(__file__).resolve().parent
+sys.path[:0] = [str(HERE), str(HERE.parents[2])]
+
 from ds30_0359_cairo_saved import JOB_PIN, READY, READY_PIN
 
 
