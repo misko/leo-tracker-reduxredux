@@ -19,7 +19,7 @@ IMAGES = {"ch1-4-all", "ch5-8-all", "ch1-4-unassociated", "ch5-8-unassociated", 
 
 
 def publication(target, clock, mode, offer, authority, packet_sha):
-    from history_risk_0016_cairo import active_renderer
+    from reports.ALGO08.v3.history_risk_0016_cairo import active_renderer
     import integrated_original_batch as batch
     from leo.presentation.localization_v3 import owner_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -93,6 +93,12 @@ def score(root):
     authority, _, _, _, _, roster, offers = inputs(freeze, producer, batch)
     authority["archive_sha256"] = roster
     from clean_saved_0169_trial import output_seal
+    from tools import pipeline_eval
+    from tools.pipeline_eval import qualification
+
+    research = RUNTIME.parents[2] / "tools/pipeline_eval"
+    pipeline_eval.__path__.append(str(research))
+    qualification.__path__.append(str(research / "qualification"))
     from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
     from tools.pipeline_eval.scoring import distance_km
 
