@@ -4,6 +4,8 @@ import pytest
 
 from anchor_only_0049 import prove_graph_rows, source_views
 from empty_recovery_0049 import restore_empty_lanes
+from joint_recovery_0049 import interaction, restore_coverage_and_winner
+from joint_recovery_0049_admission import device_stats
 from matched_donor_0049 import derive, owner_counts, replace_disagreement, same_carrier
 from signed_cfo_time_readout import canonical, opportunities
 from sparse_only_drop_0049 import exclude_sparse_only
@@ -41,6 +43,57 @@ def test_threshold_uses_original_signed_frequency_and_wrapped_native_epoch():
     assert not same_carrier(anchor, factor(-949.99, period+1.75))
     assert not same_carrier(anchor, factor(-950.0, -period-2.01))
     assert not same_carrier(anchor, factor(-1200.0+1/4.4e-6))
+
+
+def test_joint_derivation_edits_only_empties_and_disagreeing_nonanchors():
+    stock, sparse = native_pair()
+    sparse["source"]["probes"][0]["candidates"] = []
+    installed_before, sparse_before = deepcopy((stock, sparse))
+    joint, audit = restore_coverage_and_winner(stock, sparse)
+    assert (stock, sparse) == (installed_before, sparse_before)
+    assert [row["visit"] for row in audit["edits"]] == [2, 2, 4, 4]
+    assert [row["edit"] for row in audit["edits"]] == ["replaced"]*2 + ["inserted"]*2
+    assert (audit["original_winners"], audit["derived_winners"], audit["unchanged_lanes"]) == (7,9,8)
+    edited = {row["observation_id"]: row for row in audit["edits"]}
+    original, final, installed = list(map(opportunities, (sparse, joint, stock)))
+    assert list(original) == list(final)
+    for oid in original:
+        if oid in edited:
+            assert final[oid]["row"] == dict(original[oid]["row"], candidates=[installed[oid]["factor"]])
+            assert edited[oid]["original"] == original[oid]["factor"]
+        else:
+            assert final[oid] == original[oid]
+    assert audit["recipe"]["ordered_edit_sha256"] == canonical(audit["edits"])
+    assert audit["derived_native_sha256"] == canonical(joint)
+    assert audit["recipe"]["constituent_recipes"] == {
+        "inserted": restore_empty_lanes(stock, sparse)[1]["recipe_sha256"],
+        "replaced": replace_disagreement(stock, sparse)[1]["recipe_sha256"],
+    }
+
+
+def test_joint_rejects_mismatched_authority_or_absent_constituent():
+    stock, sparse = native_pair()
+    sparse["delivery_clocks"] = [3]
+    with pytest.raises(ValueError, match="original chronology"):
+        restore_coverage_and_winner(stock, sparse)
+    stock, sparse = native_pair()
+    sparse["source"]["probes"][8:10] = stock["source"]["probes"][8:10]
+    with pytest.raises(ValueError, match="No installed winner"):
+        restore_coverage_and_winner(stock, sparse)
+
+
+def test_joint_gain_reports_interaction_against_a_common_sparse_start():
+    row = interaction(4000, 1400, 3600, 3750, 3200)
+    assert row == dict(empty_gain_m=400, shifted_gain_m=250, sum_individual_gains_m=650,
+                       joint_gain_m=800, joint_minus_sum_m=150, remaining_installed_gap_m=1800)
+
+
+def test_device_gate_uses_only_the_exact_hot_storage_mounts():
+    devs = device_stats(["14 1 252:5 / /srv/bulk rw", "16 1 259:7 / /srv/postgres-nvme rw",
+                         "19 1 1:1 / /srv/bulk/other rw"])
+    assert str(devs["/srv/bulk"]) == "/sys/dev/block/252:5/stat"
+    with pytest.raises(ValueError, match="changed"):
+        device_stats(["22 1 252:5 / /srv/bulk rw"])
 
 
 def test_only_matching_nonanchors_change_and_maintain_original_opportunity_metadata():
