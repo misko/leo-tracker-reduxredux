@@ -45,7 +45,7 @@ def matching_pair():
                  raw_authority_sha256="a"*64, first="installed", elapsed_s=1., cpu_s=.9,
                  requested_raw_authority_sha256="a"*64, authority_sha256="b"*64,
                  attempt_result_sha256="e"*64, timing_scope="raw_launcher_through_exit_plus_common_publication_verification",
-                 generation=1, child_started_unix_ns=1 if k == "installed" else 3,
+                 generation=1, same_lease=True, child_started_unix_ns=1 if k == "installed" else 3,
                  child_finished_unix_ns=2 if k == "installed" else 4,
                  child_elapsed_s=.95, child_cpu_s=.86, validator_elapsed_s=.05, validator_cpu_s=.04,
                  outcome="complete", arms=arms([48., 7.])) for k in ("installed", "successor")]
@@ -59,6 +59,7 @@ def test_requires_complete_matched_pair_and_keeps_two_different_outcomes():
     rows[1].update(outcome="withheld", arms=arms(None))
     a, b = paired_rows(rows, assigned)[0]
     assert (a["c0_error_km"], b["c0_error_km"], b["fitted_c_fix"]) == (0., None, False)
+    assert b["between_children_s"] == 1e-9
     with pytest.raises(ValueError, match="Duplicate"):
         paired_rows(rows + rows[:1], assigned)
 

@@ -132,6 +132,7 @@ def paired_rows(rows, assigned):
                                        authority_sha256=r["authority_sha256"], build_sha256=r["build_sha256"],
                                        attempt_result_sha256=r["attempt_result_sha256"], timing_scope=r["timing_scope"],
                                        terminal_sha256=r.get("terminal_sha256"), reason=r.get("reason"),
+                                       same_lease=r["same_lease"],
                                        generation=r["generation"], child_started_unix_ns=start,
                                        child_finished_unix_ns=end,
                                        elapsed_s=r["elapsed_s"], cpu_s=r["cpu_s"],
@@ -142,11 +143,14 @@ def paired_rows(rows, assigned):
     pairs = []
     for case in assigned:
         a, b = (by_key[case, role] for role in BUILDS)
-        if any(a[key] != b[key] for key in ("first", "authority_sha256", "requested_raw_authority_sha256", "generation")):
+        if any(a[key] != b[key] for key in ("first", "authority_sha256", "requested_raw_authority_sha256",
+                                           "generation", "same_lease")) or type(a["same_lease"]) is not bool:
             raise ValueError(f"Unmatched original input or run order on {case}")
         first, second = (a, b) if a["first"] == "installed" else (b, a)
         if first["child_finished_unix_ns"] > second["child_started_unix_ns"]:
             raise ValueError(f"Actual child clocks disagree with assigned launch order on {case}")
+        gap = (second["child_started_unix_ns"] - first["child_finished_unix_ns"]) / 1e9
+        a["between_children_s"] = b["between_children_s"] = gap
         pairs.append((a, b))
     return pairs
 
@@ -168,6 +172,8 @@ def write_report(pairs, output, enrollment, receipt_digest):
         "Interrupted captures": [pair for pair in pairs if pair[0]["recording_state"] == "incomplete"],
         "ALGO08v3 ran first": [pair for pair in pairs if pair[0]["first"] == "installed"],
         "Candidate ran first": [pair for pair in pairs if pair[0]["first"] == "successor"],
+        "Both arms in one benchmark slot": [pair for pair in pairs if pair[0]["same_lease"]],
+        "Benchmark slot reacquired between arms": [pair for pair in pairs if not pair[0]["same_lease"]],
         "Both builds returned a fix": [pair for pair in pairs if all(r["outcome"] == "complete" for r in pair)],
     }
     summaries = {}
