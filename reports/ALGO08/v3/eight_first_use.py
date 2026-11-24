@@ -20,8 +20,11 @@ from seekable_eight_raw import (BUILD, PREFIX, clocks, elapsed, opportunities, o
                               receive, residency, source)
 
 
-CASE = "DS30-0008"
-ORDERS = (("named20", "ordinary8", "packed8"), ("packed8", "ordinary8"))
+ORDERS = {
+    "DS30-0008": (("named20", "ordinary8", "packed8"), ("packed8", "ordinary8")),
+    "DS30-0169": (("packed8", "ordinary8", "named20"), ("ordinary8", "packed8")),
+}
+ADMITTED = {"DS30-0008": 64, "DS30-0169": 51}
 
 
 def bound_capture():
@@ -85,7 +88,7 @@ def receive_copy(scope, directory, root_pin, record, arm, reference, expected_wi
     return summary, actual, selection
 
 
-def run(root):
+def run(root, case):
     import empty_bootstrap as staged
 
     started = clocks()
@@ -109,7 +112,7 @@ def run(root):
         raise ValueError("Commit the frozen protocol and source before the bounded rehearsal")
     revision = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
     machine = host()
-    entry, chunk = source(CASE)
+    entry, chunk = source(case)
     observer = run_path(str(checkout/"tools/pipeline_eval/qualification/cache_residency.py"))
     ambient = residency(entry, chunk, observer)
     root.mkdir()
@@ -136,14 +139,14 @@ def run(root):
         raise ValueError("Did not authenticate all original windows exactly once for the emulator")
     hydration = elapsed(start)
     hashes = [window.index.iq_sha256 for window in windows]
-    write(root/"binding.json", dict(machine=machine, commit=revision, case=CASE, original=entry, original_member=chunk,
+    write(root/"binding.json", dict(machine=machine, commit=revision, case=case, original=entry, original_member=chunk,
          original_page_residency=ambient, source_reads=dict(accessed), codec=scope.codec.programme(),
          release_init=release_init, compile_clock=compile_clock, shared_setup=shared_setup, hydrated_fixture=hydration,
-         writer_sha256=writer_sha, receiver_recipe=recipe, short_geometry=geometry, orders=ORDERS,
+         writer_sha256=writer_sha, receiver_recipe=recipe, short_geometry=geometry, orders=ORDERS[case],
          report_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), authority_inputs=hashes))
 
     results, full_reference, mixed_reference = [], None, None
-    for ordinal, order in enumerate(ORDERS, 1):
+    for ordinal, order in enumerate(ORDERS[case], 1):
         result = {}
         for arm in order:
             output = root/f"{ordinal}-{arm}"
@@ -157,6 +160,9 @@ def run(root):
             _fsync_directory(output)
             summary, actual, selection = receive_copy(scope, directory, pin, captured, arm, chunk, hashes,
                                                       output/"eof.json", recipe)
+            if (actual["provenance"]["processed_windows"] != ADMITTED[case]
+                    or actual["provenance"]["invalid_capture"] != 64-ADMITTED[case]):
+                raise ValueError("The original case eligibility changed")
             immutable_json(output/"native.json", actual)
             summary["through_first_complete_verified_output"] = elapsed(start)
             if full_reference is None:
@@ -171,7 +177,8 @@ def run(root):
                     raise ValueError("The stored format changed an actual signed 20/8 input or held EOF choice")
             result[arm] = summary
         results.append(result)
-    write(root/"result.json", dict(case=CASE, arms=results, exact_opportunities=True, exact_20_8_factors_and_selector=True,
+    write(root/"result.json", dict(case=case, arms=results, exact_opportunities=True, exact_20_8_factors_and_selector=True,
+                                  admitted=ADMITTED[case], excluded=64-ADMITTED[case],
                                   bound_original_cache_after=residency(entry, chunk, observer),
                                   no_backing_waveform_access=True))
 
@@ -179,4 +186,6 @@ def run(root):
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("output", type=Path)
-    run(cli.parse_args().output)
+    cli.add_argument("--case", choices=ORDERS, default="DS30-0008")
+    args = cli.parse_args()
+    run(args.output, args.case)
