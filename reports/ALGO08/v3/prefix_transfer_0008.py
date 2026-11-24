@@ -143,6 +143,7 @@ def resident(path):
 
 def launch(root, bundle, pin):
     from clean_saved_0169_trial import output_seal
+    from clean_saved_publication import load_job
     from cropped_physical_iq_gate import SOURCE, SOURCE_SHA256
     from dense_geographic_trial import host
     from empty_bootstrap import RELEASE, clock, now
@@ -162,7 +163,7 @@ def launch(root, bundle, pin):
     libs = json.loads(checked(BASE/"job.json", PINS["job.json"]))["binding"]["packets"]
     offer = Path(req["offer_file"])
     archive = req["local_archive"]["root"]
-    common = {str(inventory): req["inventory"], str(offer): req["offer_sha256"]}
+    common = {str(inventory): req["inventory"].removeprefix("sha256:"), str(offer): req["offer_sha256"]}
     common.update({path: libs[path] for path in req["local_libraries"].values()})
     for path, value in common.items():
         checked(Path(path), value)
@@ -195,6 +196,8 @@ def launch(root, bundle, pin):
         job = folder/"job.json"
         write(job, dict(binding=bound, original_archive=req["original_archive"]))
         job_pin = digest(job)
+        with patch("exact_named_route.resident_path", resident):
+            load_job(job, job_pin)
         write(folder/"admission.json", dict(source_pins=sources, job_sha256=job_pin))
         write(target/"binding.json", dict(input=bound))
         commands[mode] = ["/usr/bin/timeout", "--kill-after=2s", "150s", str(RELEASE/"venv/bin/python"),
