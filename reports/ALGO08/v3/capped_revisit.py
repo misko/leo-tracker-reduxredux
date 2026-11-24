@@ -29,8 +29,12 @@ HERTZ = "fractional_tracking_cfo_hz"
 BUDGET_INTERVAL = 16
 SAMPLE_RATE = 10_000_000
 JOINT = {
-    "DS30-0049": "ds30-0049-joint-recovery.json.gz",
-    "DS30-0086": "ds30-0086-joint-recovery.json.gz",
+    "DS30-0049": "a499eae7931cd21971ffb9e85d436cdb390028b3317f8bd5310e63f71e4a7ca7",
+    "DS30-0086": "0eed59fc1df0f7e430886688e1157a893ff7243fa8b123057525146f72c3263e",
+}
+PREDICTIONS = {
+    "development": "7120c29d4bd64a13884fe9cc111ab59bc3a24d3394d88d343263ddd0fa590e1a",
+    "held": "adc72492146c072113e420be0990c80c52beea33f1a8a050577374f9b1426025",
 }
 
 
@@ -67,12 +71,13 @@ class StreamBudget:
     pending: dict | None = None
 
     def consider(self, observation, peer_positive):
+        """Return any new credit and whether to spend it on this observation now."""
         now = observation["counter"]
         factor = observation["factor"]
         hz = factor[HERTZ] if factor is not None else None
         if (hz is not None and not isfinite(hz)) or (self.history and now <= self.history[-1][0]):
             raise ValueError("Expected finite signed CFO and increasing hardware chronology")
-        opened = None
+        opened = reason = None
         if observation["short"]:
             self.short_count += 1
             phase = self.short_count % BUDGET_INTERVAL
@@ -84,7 +89,6 @@ class StreamBudget:
                     predicted = forecast(self.history, now)
                     active_peer = bool(peer_positive and self.history and self.history[-1][1] is not None
                                        and now-self.history[-1][0] <= 2*SAMPLE_RATE)
-                    reason = None
                     if hz is None and (predicted or active_peer):
                         reason = "expected_missing"
                     elif hz is not None and predicted and abs(hz-predicted[0]) > 250+2*predicted[1]:
@@ -94,7 +98,7 @@ class StreamBudget:
                     if reason:
                         self.pending.update(chosen=observation["id"], reason=reason)
         self.history.append((now, hz))
-        return opened
+        return opened, reason
 
 
 def schedule(opportunities):
@@ -107,7 +111,7 @@ def schedule(opportunities):
             if factor_count != int(row["factor"] is not None):
                 raise ValueError("The input is not the original unfiltered single-factor packet")
             stream = tuple(row["row"][name] for name in STREAM)
-            opened = streams[stream].consider(row, peer["factor"] is not None)
+            opened, _ = streams[stream].consider(row, peer["factor"] is not None)
             if opened is not None:
                 credits.append(opened)
     return credits
@@ -275,6 +279,87 @@ def score(snapshot, prediction, pin):
                 cases_with_more_combined_hits=better, advances=advance)
 
 
+def joint_owners(case, original, candidate, stock, mixed):
+    """Prove the joint owner rows used the same edit ledger as the new score."""
+    receipt = signed.document(DATA / f"ds30-{case[-4:]}-joint-recovery.json.gz", JOINT[case])
+    plan = receipt["plan"]
+    derived = plan["change"]["derived_native_sha256"]
+    witness = receipt["witness"]["evidence"]
+    detail = witness["detail"]
+    digests = {arm: row["owner_sha256"] for arm, row in detail["arms"].items()}
+    if (plan["installed_native_sha256"] != original["native_sha256"]
+            or plan["original_native_sha256"] != candidate["native_sha256"]
+            or detail["input_sha256"] != derived or receipt["worker"]["input"] != derived
+            or receipt["score"]["decision"] != "complete" or witness["owner_maps"] != digests):
+        raise ValueError("The scored joint recovery differs from the two verified originals")
+    edits = plan["change"]["edits"]
+    targets = target_sets(stock, mixed)
+    edit_classes = {"missing": "inserted", "disagreeing": "replaced"}
+    for label, edit in edit_classes.items():
+        rows = [entry for entry in edits if entry["edit"] == edit]
+        ids = {entry["observation_id"] for entry in rows}
+        if len(rows) != len(ids) or ids != targets[label] or any(
+                stock[e["observation_id"]]["factor"] != e["installed"]
+                or mixed[e["observation_id"]]["factor"] != e["original"] for e in rows):
+            raise ValueError("Archived joint edit identities or typed native tuples differ")
+    if len(edits) != len(targets["combined"]):
+        raise ValueError("The joint ledger contains undeclared edits")
+    maps = signed.owners(witness["owner_rows"], digests)
+    if any(len(values) != detail["arms"][arm]["associated_points"] for arm, values in maps.items()):
+        raise ValueError("The joint owner counts differ from their published detail")
+    return targets, maps
+
+
+def first_with_same_short_status(credits, mixed):
+    """Post-seal control isolating empty/positive allocation from within-class choice."""
+    selected = set()
+    for credit in credits:
+        if credit["chosen"] is not None:
+            short_empty = mixed[credit["chosen"]]["factor"] is None
+            selected.add(next(oid for oid in credit["lanes"] if (mixed[oid]["factor"] is None) == short_empty))
+    return selected
+
+
+def published_availability_and_joint_score(snapshot):
+    cases = {}
+    for cohort, pin in PREDICTIONS.items():
+        frozen = signed.document(DATA / f"capped-revisit-{cohort}-plan.json.gz", pin)
+        rows = enrollment(snapshot, cohort)
+        for case, data in frozen["cases"].items():
+            row = rows[case, "installed"]
+            original = signed_attempt(FIELD, row)
+            full = signed.read_native((FIELD / row["attempt"]).parent / "publication", original["native_sha256"])
+            candidate, native, mixed, _ = candidate_packet(rows[case, "successor"])
+            stock = signed.opportunities(full)
+            signed.bind_pair(full, native, stock, mixed)
+            _, chosen, periodic = compare(data["credits"], {})
+            status_matched = first_with_same_short_status(data["credits"], mixed)
+            positive = {oid for oid, lane in stock.items() if lane["factor"] is not None}
+            targets = target_sets(stock, mixed)
+            details = cases[case] = dict(callbacks=len(chosen), native_sha256=[original["native_sha256"], candidate["native_sha256"]],
+                                         installed_selected_positive_count=dict(nomination=len(chosen & positive),
+                                                                                periodic=len(periodic & positive)),
+                                         empty_short_callbacks={kind: sum(mixed[oid]["factor"] is None for oid in ids)
+                                                                for kind, ids in (("nomination", chosen), ("periodic", periodic))},
+                                         same_status_control=counts(status_matched, targets),
+                                         actual_live_revisit_outcomes=None, joint_selected_owners=None)
+            if case in JOINT:
+                targets, maps = joint_owners(case, original, candidate, stock, mixed)
+                side = {}
+                for arm, owners in maps.items():
+                    available = {label: ids.intersection(owners) for label, ids in targets.items()}
+                    by_radio = {str(rx): {label: {oid for oid in ids if mixed[oid]["radio"] == rx}
+                                          for label, ids in available.items()} for rx in (0,1)}
+                    side[arm] = dict(nomination=counts(chosen, available), periodic=counts(periodic, available),
+                                     combined_owners_by_radio={rx: dict(eligible=len(labels["combined"]),
+                                                                        nomination=len(chosen & labels["combined"]),
+                                                                        periodic=len(periodic & labels["combined"]))
+                                                               for rx, labels in by_radio.items()})
+                details["joint_selected_owners"] = side
+                details["joint_receipt_sha256"] = JOINT[case]
+    return dict(primary_prediction_sha256=PREDICTIONS, cases=cases)
+
+
 def main():
     arguments = argparse.ArgumentParser(description=__doc__)
     arguments.add_argument("export", type=Path)
@@ -284,9 +369,15 @@ def main():
     s = commands.add_parser("score")
     s.add_argument("prediction", type=Path)
     s.add_argument("sha256")
+    commands.add_parser("joint-score")
     args = arguments.parse_args()
     sys.addaudithook(lambda event, params: saved_only(event, params, prediction=args.action == "predict"))
-    result = predict(args.export, args.cohort) if args.action == "predict" else score(args.export, args.prediction, args.sha256)
+    if args.action == "predict":
+        result = predict(args.export, args.cohort)
+    elif args.action == "score":
+        result = score(args.export, args.prediction, args.sha256)
+    else:
+        result = published_availability_and_joint_score(args.export)
     print(json.dumps(result, sort_keys=True, separators=(",", ":"), allow_nan=False))
 
 

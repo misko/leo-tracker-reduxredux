@@ -1,6 +1,8 @@
 """Exercise the streaming revisit budget without installed labels or waveforms."""
 
-from reports.ALGO08.v3.capped_revisit import HERTZ, SAMPLE_RATE, StreamBudget, compare, forecast, owner_bounds, target_sets
+from reports.ALGO08.v3.capped_revisit import (
+    HERTZ, SAMPLE_RATE, StreamBudget, compare, first_with_same_short_status, forecast, owner_bounds, target_sets,
+)
 
 
 def detection(hz, epoch=0):
@@ -24,7 +26,7 @@ def test_prefix_budget_and_deadline_ignore_anchors_and_pending_tail():
     stream = StreamBudget()
     credits = []
     for i in range(1, 37):
-        opened = stream.consider(observation(i, short=i != 20), False)
+        opened, _ = stream.consider(observation(i, short=i != 20), False)
         if opened is not None:
             credits.append(opened)
         assert sum(bool(r["chosen"]) for r in credits) <= stream.short_count//16
@@ -41,8 +43,9 @@ def test_seeded_missing_and_disagreeing_use_only_prior_and_current_values():
     for hz, reason in ((None, "expected_missing"), (5_000., "forecast_departure")):
         stream = StreamBudget()
         for i in range(1, 16):
-            assert stream.consider(observation(i, i*20.), False) is None
-        credit = stream.consider(observation(16, hz), False)
+            assert stream.consider(observation(i, i*20.), False) == (None, None)
+        credit, trigger = stream.consider(observation(16, hz), False)
+        assert trigger == reason
         assert credit == dict(lanes=["16"], chosen="16", reason=reason)
         stream.consider(observation(17, -50_000.), True)
         assert credit["chosen"] == "16"
@@ -57,3 +60,9 @@ def test_installed_scoring_distinguishes_disjoint_joint_oracle_classes():
     assert target_sets(original, mixed) == dict(missing={"empty"}, disagreeing={"changed"}, combined={"empty", "changed"})
     assert owner_bounds(20, 100, 90) == [10, 20]
     assert owner_bounds(80, 100, 30) == [10, 30]
+
+
+def test_posthoc_control_matches_each_spent_credits_observation_type():
+    lanes = {str(i): observation(i, None if i in (2, 4) else 11.) for i in range(1, 7)}
+    credits = [dict(lanes=["1", "2", "3", "4"], chosen="4"), dict(lanes=["5", "6"], chosen=None)]
+    assert first_with_same_short_status(credits, lanes) == {"2"}
