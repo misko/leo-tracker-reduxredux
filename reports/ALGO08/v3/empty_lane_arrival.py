@@ -55,7 +55,8 @@ def prepare(plan, candidate):
             continue
         lane = candidate[oid]
         counter = target["counter"]
-        if counter != lane["counter"] or oid != target["observation_id"] or lane["radio"] != target["radio"]:
+        if (counter != lane["counter"] or oid != target["observation_id"] or lane["radio"] != target["radio"]
+                or any(target[key] != lane["row"][key] for key in ("visit_index","edge","channel","actual_rf_hz"))):
             raise ValueError("Candidate target window identity changed")
         bracket, = target["brackets"]
         center, = bracket["signed_centers_hz"]

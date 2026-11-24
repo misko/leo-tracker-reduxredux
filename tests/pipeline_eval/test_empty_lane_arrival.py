@@ -32,7 +32,7 @@ def test_two_bad_brackets_cannot_collectively_pass_a_joint_gate():
 def test_only_frozen_unique_predictions_use_authenticated_donor_epochs():
     def source(clock, hz=None):
         r = lane(clock, 102.)
-        r.update(short=True, radio=0, row=dict(edge="upper", actual_rf_hz=1000, channel=1))
+        r.update(short=True, radio=0, row=dict(edge="upper", actual_rf_hz=1000, channel=1, visit_index=clock))
         if hz is None:
             r["factor"] = None
         else:
@@ -47,7 +47,8 @@ def test_only_frozen_unique_predictions_use_authenticated_donor_epochs():
                     fractional_epoch_offset_samples=r["factor"]["fractional_epoch_offset_samples"])
     bracket = dict(left=donor("left"), right=donor("right"), right_weight=.5, signed_centers_hz=[60.])
     plan = dict(empty_short_count=2, opportunities=dict(
-        target=dict(observation_id="target", counter=40, radio=0, status="unique_signed_bracket", brackets=[bracket]),
+        target=dict(observation_id="target", counter=40, radio=0, status="unique_signed_bracket", brackets=[bracket],
+                    **candidate["target"]["row"]),
         ambiguous=dict(status="multiple_graph_pieces")))
     empty, pred, _ = prepare(plan, candidate)
     installed = dict(target=source(40,60.), ambiguous=source(45,90.))
@@ -56,6 +57,10 @@ def test_only_frozen_unique_predictions_use_authenticated_donor_epochs():
     assert scored["windows"]["primary"]["interpolated"] == 1
     assert scored["windows"]["primary"]["quarter_period_control"] == 0
     assert score_group(empty, pred, installed, {"ambiguous"})["installed_positive_queries"] == 0
+    plan["opportunities"]["target"]["channel"] = 2
+    with pytest.raises(ValueError, match="target window"):
+        prepare(plan, candidate)
+    plan["opportunities"]["target"]["channel"] = 1
     bracket["left"]["integer_epoch_sample"] += 1
     with pytest.raises(ValueError, match="phase donor"):
         prepare(plan, candidate)
