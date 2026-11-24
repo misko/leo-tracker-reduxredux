@@ -73,7 +73,7 @@ def census():
                 candidates=observations, prior_bulk_xfs_excluded=True)
 
 
-def admit():
+def admit(census_path, census_pin):
     from exact_named_raw import staged_path
 
     prior = json.loads(pinned(PRIOR / "verified-once.json", PRIOR_PIN))
@@ -97,8 +97,13 @@ def admit():
     selected = json.loads((output / "unified-short-bootstrap.json").read_bytes())["held_anchor_route"]
     if selected["choice"]["route"] != "unfiltered" or selected["native_sha256"] != request["native"]:
         raise ValueError("The same-mode archival packet must retain unfiltered factors")
+    available = json.loads(pinned(census_path, census_pin))
+    if (available["case"], available["available_prefix_members"], available["prior_bulk_xfs_excluded"]) != (
+            "DS30-0008", 1, True):
+        raise ValueError("Expect the earlier metadata-only single-member original census")
     return dict(case="DS30-0016", source=str(source), scopes=scopes, original=request, candidate_options=options,
-                reference_native=str(old_native), input_census=census(), reference_choice="unfiltered")
+                reference_native=str(old_native), input_census=available, input_census_sha256=census_pin,
+                reference_choice="unfiltered")
 
 
 def files(binding, scope):
@@ -242,7 +247,7 @@ def worker(root, binding, size):
     (root / "worker.json").write_text(json.dumps(live, sort_keys=True, allow_nan=False) + "\n")
 
 
-def launch(root):
+def launch(root, census_path, census_pin):
     from aperture_trial import write
     from dense_geographic_trial import host
     from empty_bootstrap import RELEASE
@@ -250,7 +255,7 @@ def launch(root):
     from short_raw_diagnostic import measure
     from visit_frame_raw_0016 import resident
 
-    binding = admit() | {"machine": host(), "driver_sha256": sha256(Path(__file__).read_bytes()).hexdigest()}
+    binding = admit(census_path, census_pin) | {"machine": host(), "driver_sha256": sha256(Path(__file__).read_bytes()).hexdigest()}
     root.mkdir(mode=0o700)
     request = root / "binding.json"
     write(request, binding)
@@ -334,12 +339,20 @@ def score(root):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("launch", "worker", "score"))
+    parser.add_argument("action", choices=("census", "launch", "worker", "score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--binding", type=Path)
     parser.add_argument("--size", type=int)
+    parser.add_argument("--census", type=Path)
+    parser.add_argument("--census-sha256")
     args = parser.parse_args()
     if args.action == "worker":
         worker(args.root, json.loads(args.binding.read_bytes()), args.size)
+    elif args.action == "census":
+        with args.root.open("x") as stream:
+            json.dump(census(), stream, indent=2, sort_keys=True)
+            stream.write("\n")
+    elif args.action == "launch":
+        launch(args.root, args.census, args.census_sha256)
     else:
-        {"launch": launch, "score": score}[args.action](args.root)
+        score(args.root)
