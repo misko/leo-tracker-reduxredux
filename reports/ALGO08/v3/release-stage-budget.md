@@ -37,6 +37,21 @@ The summed-time gate sets the threshold in all four rows. For scale, the 991.735
 
 The historical cache observer counted pages for each original compressed member. We recovered exact sizes for 55 recordings from the earlier signed extent ledger. For the remaining 45 we bounded each rounded-up final page between one byte and a full page. Across all 100 jobs the original payloads total **788.684–788.703 GB**. Propagating both ends of that interval changes the 288.3 MB/s target by less than 0.01 MB/s. No waveform was reopened. [Original page-count implementation](../../../tools/pipeline_eval/qualification/cache_residency.py) · [55 exact recording sizes](measurements/acquisition-throughput.json) · [100-case throughput calculation](release_intake_rate.py) · [Per-record bounds and gates](measurements/release-intake-rate.json)
 
+### How much intake time do the measured solvers leave?
+
+Six of the 100 recordings have fresh saved-packet solver comparisons as well as original v3 process clocks. We can replace the uniform 1.5× solver assumption with the observed result for each of those six. Using each routed worker's full elapsed time, including its admission, leaves a required intake rate of **361.7 MB/s** for the six together. Scaling the historical post-detection interval by each matched solver speedup yields **359.7 MB/s**. In both calculations the median paired time ratio sets the threshold. A uniform 283.1 MB/s would yield about **1.74×** median speedup on these six under either assumption.
+
+| Recording | Original compressed GB | Installed raw-to-exit (s) | Routed saved-packet worker with admission (s) | Intake MB/s needed to halve this case using the worker time |
+|---|---:|---:|---:|---:|
+| DS30-0160 | 4.59 | 33.93 | 10.89 | 756 |
+| DS30-0316 | 3.74 | 40.37 | 12.81 | 508 |
+| DS30-0374 | 8.41 | 84.85 | 16.66 | 327 |
+| DS30-0402 | 8.18 | 121.44 | 27.66 | 247 |
+| DS30-0169 | 5.19 | 73.67 | 12.48 | 213 |
+| DS30-0138 | 8.24 | 85.73 | 22.60 | 407 |
+
+The rates divide original compressed bytes by the time left for intake after paying the solver out of half the installed runtime. The two boundary assumptions account differently for a separately launched solver's startup. All six were fixes. Four original processes started with their entire input resident. These were reruns from installed 20 ms detections, so the measured solver times may change when a faster receiver supplies different detections. On the median-duration DS30-0138, a full original-input candidate would have to publish its detections in **20.26 s** to halve the original time if it then spent the measured 22.60 s on the solver and outputs. That gives a specific target for a triaged receiver experiment. [Saved solver comparisons](history-risk-0138.md) · [Calculation for both assumptions](saved_solver_intake_budget.py) · [Case-level clocks and thresholds](measurements/saved-solver-intake-budget.json)
+
 ### What the intake experiments bought
 
 **Lossless storage.** On a 64-visit original member from DS30-0169, separately compressing the high bytes reduced the payload from 76.800 MB to 69.107 MB against the earlier 12-bit aperture format. Writing and verifying the first read took **320–321 ms CPU**, up from **184–186 ms**. Every sample survived exactly. For a subsequent cold replay, the saved 7.693 MB could offset about 8 ms of extra decoder CPU. An illustrative serial read at 207.5 MB/s would save about 29 ms net per member. The actual experiment used resident data and measured no cold replay or position fix. [Codec comparison and charged conversion](ci16-planes.md)
