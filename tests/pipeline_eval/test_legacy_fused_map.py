@@ -262,7 +262,7 @@ def unsupported_capture(path, *, bad_checksum=False):
     return ShortWindowReader(folder)
 
 
-def acquire_without_preparing_maps(readers, history, replay, pending, audit, *, expected=None):
+def acquire_without_preparing_maps(readers, history, replay, pending, audit, *, expected=None, build_maps=True):
     class Source:
         def __init__(self, entry):
             self.reader = ShortWindowReader(Path(entry["path"]))
@@ -291,10 +291,58 @@ def acquire_without_preparing_maps(readers, history, replay, pending, audit, *, 
         return SimpleNamespace(FastSegmentSource=Source, acquire=acquire)
 
     boot = SimpleNamespace(staged_scanner=staged)
-    with first.binding(boot, expected, history, None, replay, pending, audit):
+    with first.binding(boot, expected, history, None, replay, pending, audit, accelerate=not build_maps,
+                       build_maps=build_maps):
         scan = boot.staged_scanner({}, detector=True)
         scan.acquire("fresh", pin, inventory, None)
     return inventory, pin
+
+
+def test_verify_once_exhausts_owned_mixed_and_ordinary_frames_without_map_work(tmp_path, native, monkeypatch):
+    uniform, _, _, _ = capture(tmp_path / "owned", uniform=True)
+    mixed, _, _, _ = capture(tmp_path / "mixed", empty_tail=True)
+    other, metadata, frame, windows = capture(tmp_path / "other")
+    # An authentic standard member with two independent frames takes the
+    # original stock stream path and consumes the authenticated snapshot.
+    split = len(windows[0])
+    words = np.concatenate(windows)
+    codec = zstd.ZstdCompressor(level=1, write_checksum=True)
+    compound = codec.compress(words[:split]) + codec.compress(words[split:])
+    manifest = other.path / "manifest.json"
+    doc = json.loads(manifest.read_bytes())
+    doc["chunks"][0].update(compressed_bytes=len(compound), compressed_sha256=sha256_digest(compound))
+    (other.path / metadata.payload_relative_path).write_bytes(compound)
+    manifest.write_bytes(canonical_json_bytes(doc))
+    other = ShortWindowReader(other.path)
+    assert compound != frame
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Verify-once cannot plan a replay map")
+
+    monkeypatch.setattr(multi, "describe", forbidden)
+    monkeypatch.setattr(first, "reopen", forbidden)
+    pending, audit = {}, {}
+    inventory, pin = acquire_without_preparing_maps((uniform, mixed, other), native, None, pending, audit,
+                                                    build_maps=False)
+    assert not pending and "verified_plan" not in audit
+    assert audit["verified_source"]["inventory"] == pin
+    assert audit["verified_source"]["windows"] == inventory["window_count"]
+    first_member, mixed_member, stock_member = audit["members"]
+    assert first_member["owned_window_capacity"] and mixed_member["owned_window_capacity"] == 0
+    assert all("block_map_workspace_bytes" not in row and not row.get("hash_prefix") for row in audit["members"])
+    assert stock_member["fallback"]
+
+
+@pytest.mark.parametrize("fault", ["encoded", "window", "member", "checksum"])
+def test_verify_once_refuses_later_corruption_without_attesting_earlier_windows(tmp_path, native, fault):
+    good, _, _, _ = capture(tmp_path / "good", uniform=True)
+    bad, chunk, frame, _ = capture(tmp_path / "bad", fault=fault, empty_tail=True)
+    if fault == "encoded":
+        (bad.path / chunk.payload_relative_path).write_bytes(frame[:-1] + bytes((frame[-1] ^ 1,)))
+    pending, audit = {}, {}
+    with pytest.raises(BundleCorruptionError):
+        acquire_without_preparing_maps((good, bad), native, None, pending, audit, build_maps=False)
+    assert not pending and not audit["members"] and "verified_source" not in audit
 
 
 def test_discover_literal_exception_and_ordinary_custody_without_a_prior_map(tmp_path, native):

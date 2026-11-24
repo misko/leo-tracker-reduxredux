@@ -1,4 +1,4 @@
-/* Exact whole-frame decode with bounded libzstd history and sparse block capture. */
+/* Exact whole-frame decode with bounded libzstd history and optional block capture. */
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
 
@@ -42,6 +42,7 @@ history *fused_history_open_owned(const unsigned char *source, size_t encoded, s
         !expected || expected > UINT32_MAX || encoded > UINT32_MAX ||
         (header.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN && header.frameContentSize != expected))
         return NULL;
+    if (!plan && ZSTD_findFrameCompressedSize(source, encoded) != encoded) return NULL;
     /* There can be up to one copied block tail before the first direct block
        in a window. Even then the contiguous prefix must hold the full history
        when libzstd crosses to a new destination. */
@@ -78,6 +79,11 @@ history *fused_history_open(const unsigned char *source, size_t encoded, size_t 
                             unsigned char *escapes, size_t exceptions)
 {
     return fused_history_open_owned(source, encoded, expected, plan, nblocks, result, escapes, exceptions, 0);
+}
+
+history *fused_history_open_unindexed(const unsigned char *source, size_t encoded, size_t expected, size_t owned)
+{
+    return fused_history_open_owned(source, encoded, expected, NULL, 0, NULL, NULL, 0, owned);
 }
 
 void fused_history_close(history *state)
@@ -118,17 +124,21 @@ static int next_block(history *state, unsigned char *destination, size_t capacit
             if (count) return -1;
             continue;
         }
-        if (state->nth >= state->nblocks || !count || count > state->max_block) return -1;
-        const description *entry = state->plan + state->nth;
-        if (entry->encoded != encoded_at || entry->length != bytes || entry->origin > state->nth ||
-            (entry->sequences ? (uint64_t)entry->literals + (uint64_t)3 * entry->sequences > count
-                              : entry->literals != count)) return -1;
-        state->result[state->nth++] = (block){entry->encoded, entry->length, (uint32_t)state->decoded,
-                                               (uint32_t)count, entry->origin};
-        if (entry->sequences) {
-            if (state->retained >= state->exceptions) return -1;
-            memcpy(state->escapes + state->retained++ * BLOCK_MAX, output, count);
+        if (count > state->max_block) return -1;
+        if (state->plan) {
+            if (state->nth >= state->nblocks || !count) return -1;
+            const description *entry = state->plan + state->nth;
+            if (entry->encoded != encoded_at || entry->length != bytes || entry->origin > state->nth ||
+                (entry->sequences ? (uint64_t)entry->literals + (uint64_t)3 * entry->sequences > count
+                                  : entry->literals != count)) return -1;
+            state->result[state->nth++] = (block){entry->encoded, entry->length, (uint32_t)state->decoded,
+                                                  (uint32_t)count, entry->origin};
+            if (entry->sequences) {
+                if (state->retained >= state->exceptions) return -1;
+                memcpy(state->escapes + state->retained++ * BLOCK_MAX, output, count);
+            }
         }
+        if (!count) continue;
         state->pending_data = output;
         state->pending = count;
         if (destination) state->output_end = output + count;
