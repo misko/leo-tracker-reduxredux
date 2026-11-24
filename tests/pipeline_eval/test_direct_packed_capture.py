@@ -10,7 +10,7 @@ from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
 from reports.ALGO08.v3.direct_packed_capture import Capture, close_file, write_capture
 from reports.ALGO08.v3.north_direct_multichunk import normalized_native
 from reports.ALGO08.v3.north_direct_multichunk_score import physical_owners
-from reports.ALGO08.v3.seekable_member import SAMPLES, WINDOW_BYTES, ShortWindowIndexV2, digest
+from reports.ALGO08.v3.seekable_member import SAMPLES, WINDOW_BYTES, ShortWindowIndexV2, digest, Reader
 
 
 @pytest.fixture
@@ -31,11 +31,11 @@ def example(tmp_path):
     with TemporaryDirectory(dir="/dev/shm", prefix="test-direct-packed-") as directory:
         recording = Path(directory)/"capture"
         pin, document = write_capture(recording, header, owned, (2, 1), codec)
-        yield recording, pin, document, codec, owned
+        yield recording, pin, document, codec, owned, header
 
 
 def test_independent_multichunk_authority_and_complete_readback(example):
-    recording, pin, document, codec, owned = example
+    recording, pin, document, codec, owned, _ = example
     capture = Capture(recording, pin, codec)
     _, _, inventory = capture.inventory(recording)
     actual = tuple(capture.segment(inventory["segments"][0]).windows())
@@ -49,11 +49,12 @@ def test_independent_multichunk_authority_and_complete_readback(example):
         capture.segment(inventory["segments"][0])
 
 
-def test_root_pin_and_corrupt_end_of_member_rejected(example):
-    recording, pin, document, codec, _ = example
+@pytest.mark.parametrize("reuse", [False, True])
+def test_root_pin_and_corrupt_end_of_member_rejected(example, reuse):
+    recording, pin, document, codec, _, _ = example
     with pytest.raises(ValueError, match="digest"):
         Capture(recording, digest(b"some other issuer"), codec)
-    capture = Capture(recording, pin, codec)
+    capture = Capture(recording, pin, codec, reuse_prefix_sha=reuse)
     damaged = recording/document["chunks"][1]["directory"]/codec.part_files[1]
     encoded = bytearray(damaged.read_bytes())
     encoded[-1] ^= 1
@@ -65,13 +66,38 @@ def test_root_pin_and_corrupt_end_of_member_rejected(example):
 
 
 def test_arbitrary_validly_hashed_chronology_still_rejected(example):
-    recording, _, document, codec, _ = example
+    recording, _, document, codec, _, _ = example
     metadata = recording/"capture.json"
     metadata.unlink()
     document["chunks"][1]["first_sequence"] = 3
     pin = close_file(metadata, document)
     with pytest.raises(ValueError, match="geometry"):
         Capture(recording, pin, codec)
+
+
+def test_prefix_sha_reuse_preserves_exact_archive_and_rejects_lying_digest(example, monkeypatch):
+    recording, pin, original, codec, owned, header = example
+    optimized = recording.with_name("reuse")
+    actual_pin, document = write_capture(optimized, header, owned, (2, 1), codec, reuse_prefix_sha=True)
+    assert actual_pin == pin and document == original
+    files = [file.relative_to(recording) for file in recording.rglob("*") if file.is_file()]
+    assert all((recording/file).read_bytes() == (optimized/file).read_bytes() for file in files)
+    assert len(list(Capture(optimized, pin, codec, reuse_prefix_sha=True).windows())) == len(owned)
+
+    # Retain all expected encoded and part commitments, then change one signed window pin.
+    read = Reader.read
+
+    def broken(reader, sequence, **options):
+        reader.rows[0] = reader.rows[0].model_copy(update={"iq_sha256": digest(b"different")})
+        return read(reader, sequence, **options)
+
+    monkeypatch.setattr(Reader, "read", broken)
+    with pytest.raises(ValueError, match="digest"):
+        list(Capture(optimized, pin, codec, reuse_prefix_sha=True).windows())
+    altered = owned[0].index.model_copy(update={"iq_sha256": digest(b"different")})
+    with pytest.raises(ValueError, match="logical index"):
+        write_capture(recording.with_name("bad"), header, [SimpleNamespace(index=altered, samples=owned[0].samples)],
+                      (1,), codec, reuse_prefix_sha=True)
 
 
 def test_native_normalization_preserves_candidate_order_and_policy():

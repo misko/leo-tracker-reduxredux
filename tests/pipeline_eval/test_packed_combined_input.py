@@ -170,7 +170,8 @@ def variable_member(tmp_path, binary, sizes):
     return scan, entry, directory, mapping, pin
 
 
-def test_variable_member_restores_original_partial_and_empty_bytes(tmp_path, binary):
+@pytest.mark.parametrize("reuse", [False, True])
+def test_variable_member_restores_original_partial_and_empty_bytes(tmp_path, binary, reuse):
     sizes = (0, 79_999, 80_000, 136_857, 200_000)
     scan, entry, directory, mapping, pin = variable_member(tmp_path, binary, sizes)
     original = list(scan.FastSegmentSource(entry).windows())
@@ -179,7 +180,8 @@ def test_variable_member_restores_original_partial_and_empty_bytes(tmp_path, bin
         directory, pin, codec=codec, prefix_samples=seek.EIGHT_MS_SAMPLES,
     ):
         pytest.fail("The fixed profile must reject a variable-extent member")
-    with seek.open_member(directory, pin, codec=codec, prefix_samples=seek.EIGHT_MS_SAMPLES, variable_extents=True) as reader:
+    with seek.open_member(directory, pin, codec=codec, prefix_samples=seek.EIGHT_MS_SAMPLES, variable_extents=True,
+                          reuse_prefix_sha=reuse) as reader:
         reader.verify_encoded()
         assert reader.empty_parts == 4
         for sequence, size in enumerate(sizes):

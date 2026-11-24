@@ -26,7 +26,7 @@ def close_file(path, document):
     return seek.digest(encoded)
 
 
-def write_capture(root, header, owned, counts, codec):
+def write_capture(root, header, owned, counts, codec, *, reuse_prefix_sha=False):
     if root.exists() or not counts or sum(counts) != len(owned) or any(not 0 < n <= 64 for n in counts):
         raise ValueError("Expected a new complete chronological capture")
     pending = root.with_name("." + root.name + ".partial")
@@ -47,14 +47,26 @@ def write_capture(root, header, owned, counts, codec):
                 raw = memoryview(window.samples.reshape(-1)).cast("B")
                 if ((row.sequence, row.payload_offset_bytes, row.payload_bytes) !=
                         (first+j, j*seek.WINDOW_BYTES, seek.WINDOW_BYTES)
-                        or len(raw) != seek.WINDOW_BYTES or seek.digest(raw) != row.iq_sha256):
+                        or len(raw) != seek.WINDOW_BYTES):
+                    raise ValueError("Owned input differs from its logical index")
+                words = raw[:prefix], raw[prefix:]
+                prefix_pin = None
+                if reuse_prefix_sha:
+                    window_sha = sha256(words[0])
+                    prefix_pin = "sha256:" + window_sha.hexdigest()
+                    window_sha.update(words[1])
+                    raw_pin = "sha256:" + window_sha.hexdigest()
+                else:
+                    raw_pin = seek.digest(raw)
+                if raw_pin != row.iq_sha256:
                     raise ValueError("Owned input differs from its logical index")
                 original.append(canonical_json_bytes(row.model_dump(mode="json")) + b"\n")
                 whole.update(raw)
                 record = []
-                for stream, words in zip(streams, (raw[:prefix], raw[prefix:]), strict=True):
-                    encoded = codec.compress(words)
-                    record.append([stream.tell(), len(encoded), seek.digest(encoded), seek.digest(words)])
+                for k, (stream, aperture) in enumerate(zip(streams, words, strict=True)):
+                    encoded = codec.compress(aperture)
+                    part_pin = prefix_pin if k == 0 and prefix_pin is not None else seek.digest(aperture)
+                    record.append([stream.tell(), len(encoded), seek.digest(encoded), part_pin])
                     stream.write(encoded)
                 records.append(dict(sequence=row.sequence, parts=record))
             for stream in streams:
@@ -105,7 +117,7 @@ def parse_metadata(manifest_bytes, index_bytes, chunk_index, *, chunk, root):
 
 
 class Capture:
-    def __init__(self, path, pin, codec):
+    def __init__(self, path, pin, codec, *, reuse_prefix_sha=False):
         self.path = path.resolve(strict=True)
         if self.path != path or not self.path.is_relative_to("/dev/shm"):
             raise ValueError("The experimental capture must be an exact local tmpfs path")
@@ -117,6 +129,7 @@ class Capture:
         seek.check(payload, pin)
         self.document = root = json.loads(payload)
         self.codec = codec
+        self.reuse_prefix_sha = reuse_prefix_sha
         if (root["schema"] != SCHEMA or root["codec_sha256"] != codec.programme()["binary_sha256"]
                 or root["sample_rate_hz"] != 10_000_000 or root["receiver_ids"] != [0, 1]
                 or root["configuration"]["sample_rate_hz"] != 10_000_000
@@ -166,7 +179,7 @@ class Capture:
             record = dict(chunk_index=chunk["chunk_index"], seek_sha256=chunk["seek_sha256"])
             validate = partial(parse_metadata, chunk=chunk, root=self.document)
             with seek.open_member(self.path / chunk["directory"], chunk["seek_sha256"], codec=self.codec,
-                                  prefix_samples=PREFIX, parse_metadata=validate) as reader:
+                                  prefix_samples=PREFIX, parse_metadata=validate, reuse_prefix_sha=self.reuse_prefix_sha) as reader:
                 reader.verify_encoded()
                 yield from packed_windows(reader, self, record)
             self.audit.append(record)
