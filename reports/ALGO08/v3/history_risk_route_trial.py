@@ -25,6 +25,7 @@ EXACT = {
     "0160": (Path("/dev/shm/leo-v3-exact-named-0160-result01"), "dd1f4a2f3891bba9a5ae9985f87273117223b137e398f39334e5b6edb3e1016b"),
     "0316": (Path("/dev/shm/leo-v3-exact-named-0316-result02"), "f53bfaad5a6b849398dce78bd7669c6d845f6bd886474a96ce71981c49464bc8"),
     "0374": (Path("/dev/shm/leo-v3-exact-named-0374-result01"), "cdc50f9118442a98be515c57115a351f83464476920f83356f4d8bf6140cd99a"),
+    "0402": (Path("/dev/shm/leo-v3-exact-named-0402-result01"), "a5cb53af5129ea1490f0993043d47d2d0746e39d34b440c0f0dee4f049495291"),
 }
 LEAN = Path("/dev/shm/leo-v3-final-0316-transfer-result02")
 LEAN_WITNESS_SHA = "ebbaed6c90a1d03b229b4199835bcc399984eee2524755b8b2e7d0470c907d1f"
@@ -35,6 +36,10 @@ EXPECTED = {"0160": "named", "0316": "lean"}
 
 
 def request_binding(case):
+    if case == "0402":
+        import exact_named_0402 as dense
+
+        return dense.binding(case), dense.request_view(exact.read(dense.REQUEST))
     if case != "0374":
         bound = exact.bind(case)
         return bound, exact.read(Path(bound["request"]))
@@ -52,6 +57,8 @@ def sources(case):
              "blind_joint_route.py", "blind_joint_finish.py", "blind_joint_repair.py", "blind_joint_signed.py")
     if case == "0374":
         names += ("history-risk-0374-protocol.md", "exact_named_dense.py")
+    elif case == "0402":
+        names += ("history-risk-0402-protocol.md", "exact_named_0402.py")
     return {name: exact.digest(HERE/name) for name in names}
 
 
@@ -101,7 +108,7 @@ def worker(case, output):
 
     try:
         with patch.object(history, "named_solve", named), patch.object(exact, "exact_ports", exact_ports):
-            if case != "0374":
+            if case in EXPECTED:
                 exact.worker(case, output)
             else:
                 bound, request = request_binding(case)
@@ -149,7 +156,8 @@ def launch(case, output):
     (output/"tmp").mkdir()
     for file in (Path(entry["stage"])/"fonts").glob("fontlist-*.json"):
         os.link(exact.resident_path(file), output/"fonts"/file.name)
-    command = ["/usr/bin/timeout", "--kill-after=2s", "55s", RELEASE/"venv/bin/python",
+    limit = "125s" if case == "0402" else "55s"
+    command = ["/usr/bin/timeout", "--kill-after=2s", limit, RELEASE/"venv/bin/python",
                "-IB", HERE/Path(__file__).name, "worker", case, output]
     write(output/"binding.json", dict(input=entry, machine=machine, command=list(map(str, command)),
           resident_bytes=sum(row["size"] for row in residence), resident_snapshots=len(refs)))
@@ -197,13 +205,15 @@ def score(case, output):
         if (trial["decision"] != "complete" or trial["named_survivor_fit"]["status"] != "accepted"
                 or actual["terminal"] != lean["terminal"] or actual["rows"] != lean["rows"]):
             raise ValueError("The clear branch did not reproduce the genuine lean named-survivor publication")
-    else:
+    elif case == "0374":
         stage = Path(assignment["stage"])
         prior_clock = pinned(stage/"combined-clock.json", DENSE_LEAN_CLOCK_SHA256)
         pinned(stage/"combined/joint-research-receipt.json", DENSE_LEAN_WITNESS_SHA256)
         lean = verified(stage/"combined", prior_clock, "named-final-0374-worker.json", req)
         if proof["route"] == "named" and (not all(matches.values()) or route["lean_attempts"]):
             raise ValueError("Flagged held transfer differs from the named publication")
+    elif proof["route"] == "named" and (not all(matches.values()) or route["lean_attempts"]):
+        raise ValueError("Flagged held transfer differs from the named publication")
     original = {"named": named["science"], "routed": actual["science"]}
     if lean is not None:
         original["lean"] = lean["science"]
