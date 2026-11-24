@@ -58,3 +58,56 @@ contains each eligible or short segment, exact counter bounds, original
 candidate and ownership answers, and source pins. Seven component tests
 passed. No IQ, orbital archive, survey, solver, or native receiver
 was used. The deterministic saved Graph was rebuilt in memory.
+
+## Outcome-independent primitive challenge
+
+The [second protocol](deferred-family-primitive-challenge-protocol.md)
+freezes the first 96 s from the signed original clock, using the
+released maximum Graph window, and the corresponding RX2 frequency.
+Selection uses the clock and RF of the earlier training lane. It
+does not inspect held CFOs, Graph membership, or candidate ranks.
+This fixes **268 RX2 opportunities**, while T000 starts at 97.179 s
+and ends at 161.363 s. Their overlap is zero. I kept the prespecified
+window and recorded both calibration scores as unmeasured. Moving the
+window to follow that full-packet Graph segment would reuse the held
+outcome to select the evidence.
+
+Excluding this entire window and its guard from both radios left
+6,256 training opportunities and 2,401 positives. The freshly
+rebuilt detached training Graph has 45 tracks, 35 curved, with curves
+in both RF banks on each radio. All 38 original training members
+survive intact on two training-only components with different track
+indices. The count supplies structural calibration capacity. It does
+not demonstrate that unrelated families, the target, or its rivals
+would be nominated in a new causal selection. Filename authority and
+`fincore` matched all 50 already staged causal snapshots, 89,349,592
+bytes, without opening payloads or warming archive pages. The offer
+and catalogue pins are preserved in the [primitive receipt](measurements/deferred-family-primitive-challenge-0220.json).
+
+The earlier dense-family evaluator can reuse the released wrapped
+score and training-only clutter rates in an eventual independent test.
+Its existing fit cannot supply the proposed separated nuisance model.
+It jointly estimates shared nuisance with hypothesis-labelled anchors,
+and creates its held geometry with a family label already present in
+that fitted design. Freezing that fit would carry family data into
+the shared nuisance state. The released ordinary design assigns one
+constant per track. A cross-track transmitter intercept proportional
+to RF lies in the span of those columns on the training intervals,
+so the data cannot separate it from those offsets without a different
+prior or physical evidence. The separate family event term represents
+a timed RF step with an assigned prior. This packet supplies no
+independent event or released transfer prior for a stationary
+intercept. A causal family phase prior is physically distinct from
+an additive transmitter offset and can be retained without learning
+it from candidate outcomes.
+
+The closest measured fixed-center producer and first score used
+15.137 s on the dense 3,879-point training cohort and 5.878 s on the
+1,031-point comparison. The larger measurement leaves 2.863 s under
+an 18 s cap for all differences. Neither measured a fresh time-fold
+candidate search, an unrelated-only receiver fit, or a separate
+family-only conditional calculation. These are comparison clocks,
+not a supported cost bound for an eligible DS30-0220 test. No
+numerical lease or forecast was launched. The split tests confirm
+that changing held CFOs or detection status leaves the held schedule
+and detached training rows unchanged.
