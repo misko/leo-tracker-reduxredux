@@ -3,6 +3,7 @@
 import argparse
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 from resource import RUSAGE_CHILDREN, getrusage
 from shutil import copytree
@@ -45,7 +46,19 @@ def resident(request, chunks):
     return dict(wave=recorded, causal=causal_cache(request))
 
 
-def launch(root, mode, controls):
+def observe(path):
+    from aperture_trial import write
+    from empty_bootstrap import clock, now
+    from south_cfo_route import assigned
+
+    start = now()
+    request, chunks = assigned()
+    residence = resident(request, chunks)
+    write(path, dict(inventory=request["inventory"], recording=request["recording"],
+                     residence=residence, clock=clock(start), owner=os.geteuid()))
+
+
+def launch(root, mode, controls, preflight):
     from aperture_trial import write
     from clean_saved_0169_trial import output_seal
     from dense_geographic_trial import host
@@ -54,7 +67,7 @@ def launch(root, mode, controls):
     from exact_named_raw import portable_binding, staged_path
     from integrated_original_entry import PNG_LIBRARY, PNG_SHA
     from short_raw_diagnostic import measure
-    from south_cfo_route import assigned
+    from south_cfo_route import admissible, assigned
 
     start = now()
     staged_path(root.parent)
@@ -84,14 +97,21 @@ def launch(root, mode, controls):
     from legacy_first_map_entry import parser
     args = parser().parse_args([value for value in argv[6:] if value != "--sparse8-primary"])
     portable = portable_binding(args, request["cutoff_utc_ns"])
-    before = resident(request, chunks)
+    preflight_data = preflight.read_bytes()
+    before = json.loads(preflight_data)
+    owner = Path(request["recording"]).stat().st_uid
+    if ((before["owner"], preflight.stat().st_uid) != (owner, owner)
+            or (before["recording"], before["inventory"]) != (request["recording"], request["inventory"])
+            or not admissible(before["residence"]["wave"])):
+        raise ValueError("Expected passive residency witnessed by the original input owner")
     root.mkdir(mode=0o700)
     (root / "tmp").mkdir()
     copytree(staged_path(controls / "fonts", root=controls), root / "fonts")
     write(root / "admission.json", dict(mode=mode, command=argv, request=request, chunks=chunks, machine=current,
           baseline_sources=physical["sources"], physical_admission_sha256=PHYSICAL_PIN, controls_sha256=CONTROL_PIN,
           portable=portable, original_conditioning_bytes=0, prior_map_files_used=0, installed_children=0,
-          candidate_children=1, git_revision=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+          candidate_children=1, owner_preflight_sha256=sha256(preflight_data).hexdigest(),
+          git_revision=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
           protocol_sha256=sha256((HERE / "integrated-south-protocol.md").read_bytes()).hexdigest(), setup=clock(start)))
     env = environment_for(root)
     start, usage = now(), getrusage(RUSAGE_CHILDREN)
@@ -106,17 +126,24 @@ def launch(root, mode, controls):
         raise ValueError("The isolated startup did not bind the exact waveform-denied receiver and solver")
     measured = measure(argv, env, args.output)
     write(root / "candidate-clock.json", dict(clock=measured, cache_before=before, command=argv))
-    write(root / "residency-after.json", resident(request, chunks))
     write(root / "prediction-seal.json", output_seal(root))
 
 
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("root", type=Path)
-    cli.add_argument("mode", choices=MODES)
-    cli.add_argument("controls", type=Path)
+    commands = cli.add_subparsers(dest="action", required=True)
+    passive = commands.add_parser("observe")
+    passive.add_argument("path", type=Path)
+    live = commands.add_parser("launch")
+    live.add_argument("root", type=Path)
+    live.add_argument("mode", choices=MODES)
+    live.add_argument("controls", type=Path)
+    live.add_argument("preflight", type=Path)
     args = cli.parse_args()
-    launch(args.root, args.mode, args.controls)
+    if args.action == "observe":
+        observe(args.path)
+    else:
+        launch(args.root, args.mode, args.controls, args.preflight)
 
 
 if __name__ == "__main__":
