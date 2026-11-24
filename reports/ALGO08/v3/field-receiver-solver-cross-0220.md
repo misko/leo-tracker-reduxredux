@@ -1,0 +1,16 @@
+# DS30-0220 current receiver–solver crossover
+
+The three authenticated cells establish that changing from the complete installed receiver to the original mixed receiver under fixed charted policy increased horizontal error by **1.094 km fixed-zero and 1.002 km fitted**. The actual endpoints moved **1.303 km and 1.174 km**. The fourth cell, installed policy on the original mixed packet, is prepared and has yet to run. It will test whether this loss persists under installed inference. [Frozen follow-up](field-receiver-solver-cross-0220-protocol.md) · [Earlier three-cell evidence](field-installed-packet-saved.md)
+
+| Solver / receiver packet | Horizontal error fixed / fitted | Conditional RF RMS fixed / fitted | All-owned RF RMS fixed / fitted | Owners per arm | Process scope and wall / CPU |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Installed / full | 0.318 / 0.369 km | 138.101 / 137.798 Hz | 156.127 / 153.577 Hz | 2,817 | Historical verified raw, 117.961 s wall |
+| Installed / mixed | Pending | Pending | Pending | Pending | One saved child permitted |
+| Charted / full | 0.318 / 0.369 km | 138.101 / 137.798 Hz | 156.127 / 153.577 Hz | 2,817 | Historical saved, 45.626 / 44.375 s |
+| Charted / mixed | 1.412 / 1.371 km | 159.782 / 159.682 Hz | 178.475 / 169.269 Hz | 1,961 | Historical verified raw, 56.418 s wall |
+
+The original full detector packet is `sha256:0762782f73e352449ef921a419258777879b8dc3aad3b3e5e14bbb652d8aaa02`; the exact original mixed packet is `sha256:868ee4137fbac20bc917ea2b3128bb26ff36cd3ffb2a4d6f81fb7e164b0ef6a5`. Both charted publications use the same configured solver and source bytes verified before admission. The full packet takes the charted ordinary fallback after the initial repair rejection, and that fallback exactly reproduces the published installed fix. The mixed packet accepts the lean route after repair. The configured solver reacts differently to each receiver. A firm cross-policy attribution and interaction estimate need the missing installed/mixed cell.
+
+The approved fourth cell uses the unchanged installed `6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f` backend and the exact saved native packet from the official mixed raw publication. The owner-private archive has 50/50 resident snapshots, 89,349,592 file bytes and 21,850 observed pages. Its immutable name list matches `sha256:70836c97494b8afeeb69ded63de9e6dffaee83b3b1697d305e49eccf338d867e`. The actual `-IB` preflight resolves the production backend, the saved acquisition handoff and the independent standard-product scorer. The preflight requires no original waveform or backing catalogue reads. Three focused tests passed.
+
+The freeze is `c04968e30`, the runnable source is `7be338bac`, and the preflight seal is `7340a32a4722c7c03e122f2558b48fa0d98c53b36df9ff80506a136cd16980c0` at `/dev/shm/leo-v3-field-receiver-solver-cross-0220-01/admission.json`. The installed release interpreter can invoke `field_receiver_solver_cross.py launch /dev/shm/leo-v3-field-receiver-solver-cross-0220-01 --case DS30-0220 --pin sha256:7340a32a4722c7c03e122f2558b48fa0d98c53b36df9ff80506a136cd16980c0` under the frozen one-core low-priority settings. `score` takes the resulting prediction seal and the same case. An active ordinary evaluation lease causes deferral. [Runner and verifier](field_receiver_solver_cross.py)
