@@ -5,8 +5,10 @@ import shutil
 import sys
 from collections import Counter
 from hashlib import sha256
+from inspect import getfile, unwrap
 from pathlib import Path
 from resource import RUSAGE_CHILDREN, getrusage
+from runpy import run_path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -87,13 +89,17 @@ def prepare(root, session, inventory_pin, inventory, expected, census):
     build = codec.build(library) | {"clock": boot.clock(start)}
     final = getrusage(RUSAGE_CHILDREN)
     build["compiler_cpu_s"] = (final.ru_utime - usage.ru_utime) + (final.ru_stime - usage.ru_stime)
-    _, spec, _, _, _ = boot.load_runtime()
     from leo.contracts.digests import canonical_json_bytes
     from leo.storage.writer import _fsync_directory
 
     from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decoded_hashes
     from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
 
+    boot.checked(boot.BASELINE, boot.BASELINE_PIN)
+    spec = run_path(str(boot.BASELINE))["checked_spec"](boot.PAYLOAD)
+    for operation in (paired_decoded_hashes, compressed_input_buffer):
+        path = Path(getfile(unwrap(operation)))
+        boot.checked(path, spec["sources"][str(path.relative_to(ROOT))])
     paired = spec["paired_sha256"]
     paired_library = Path(paired["library"])
     boot.checked(paired_library, paired["sha256"])
@@ -177,7 +183,7 @@ def prepare(root, session, inventory_pin, inventory, expected, census):
 def launch(root):
     import empty_bootstrap as boot
 
-    sys.path[:0] = [str(boot.PAYLOAD), str(boot.RELEASE / "src"), str(boot.RELEASE)]
+    sys.path.extend((str(boot.RELEASE / "src"), str(boot.RELEASE)))
     from aperture_trial import write
     from combined_raw_trial import PRODUCER, checked_producer
     from dense_geographic_trial import host
