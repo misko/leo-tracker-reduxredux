@@ -2,6 +2,7 @@
 
 import argparse
 from collections import defaultdict
+from gzip import decompress
 import json
 from math import fsum
 from pathlib import Path
@@ -126,6 +127,15 @@ def score(snapshot, packet):
     return dict(feature_ledger=packet["ledger"], results=summary)
 
 
+def read_features(path, pin):
+    body = path.read_bytes()
+    if path.suffix == ".gz":
+        body = decompress(body)
+    if digest(body) != "sha256:" + pin.removeprefix("sha256:"):
+        raise ValueError("Saved time-support features differ from their sealed JSON")
+    return body
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("snapshot", type=Path)
@@ -139,6 +149,6 @@ if __name__ == "__main__":
     else:
         if not args.feature_pin:
             parser.error("Supply the SHA-256 of the sealed features")
-        body = checked(args.score_features, args.feature_pin)
+        body = read_features(args.score_features, args.feature_pin)
         result = score(args.snapshot, json.loads(body)) | dict(features=digest(body))
     print(json.dumps(result, sort_keys=True, allow_nan=False, separators=(",",":")))

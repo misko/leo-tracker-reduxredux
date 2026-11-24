@@ -1,7 +1,20 @@
+from gzip import compress
+from hashlib import sha256
+
 import numpy as np
 import pytest
 
-from reports.ALGO08.v3.owner_time_support import MAX_GAP, SAMPLE_RATE, design, support
+from reports.ALGO08.v3.owner_time_support import MAX_GAP, SAMPLE_RATE, design, read_features, support
+
+
+@pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+def test_feature_identity_is_the_same_across_storage_encodings(tmp_path, suffix):
+    body = b'{"features":[]}\n'
+    path = tmp_path / ("sealed" + suffix)
+    path.write_bytes(compress(body) if suffix.endswith(".gz") else body)
+    assert read_features(path, sha256(body).hexdigest()) == body
+    with pytest.raises(ValueError, match="sealed JSON"):
+        read_features(path, "0"*64)
 
 
 def test_quadratic_information_matches_independent_least_squares():
