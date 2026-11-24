@@ -171,14 +171,20 @@ def compare(case, fresh):
     a, b = base["publication"], test["publication"]
     if canonical_digest(a) != base["publication_sha256"] or canonical_digest(b) != test["publication_sha256"]:
         raise ValueError("Invalid science manifest")
-    same.update(arms=a["arms"] == b["arms"], grid=without_timers(grid) == without_timers(new_grid),
+    def grid_science(value):
+        return without_timers({key: row for key, row in value.items() if key not in {"sample_cpu_s", "refinement_cpu_s"}})
+
+    same.update(arms=a["arms"] == b["arms"], grid=grid_science(grid) == grid_science(new_grid),
                 path=without_timers(path) == without_timers(new_path), phase=base["phase_state_sha256"] == test["phase_state_sha256"],
                 exact_pngs=images == new_images, geographic_decision=without_timers(baseline["route_details"]["exterior"]) ==
                     without_timers(details["exterior"]))
 
-    def coords(document):
-        return dict(arms={arm: dict(latlon=row["endpoint_latlon"], rf_rms_hz=row["residual_rms_hz"])
-                          for arm, row in document["arms"].items()})
+    controls = {}
+    for mode, root, receipt in (("control", old_root, old["receipt"]), ("signed_first", new_root, new["receipt"])):
+        controls[mode] = adaptive.read(root/"fast-scan-automatic-work"/receipt["run_id"]/"terminal.json")
+        if canonical_digest(controls[mode]) != receipt["terminal_sha256"] or controls[mode]["native_sha256"] != (
+                "sha256:" + new["native_sha256"].removeprefix("sha256:")):
+            raise ValueError("The genuine terminal changed or points to another signed input")
 
     medium = case == "DS30-0316"
     if medium:
@@ -190,7 +196,9 @@ def compare(case, fresh):
         png = new["png"]
     same.update(named_activation=finishes[0] == finishes[1] and finishes[1]["paid_final_fit"],
                 verified_reads=png["verified"] == png["reused"] == 8 and not png["fallbacks"])
-    result.update(geography=calibration_comparison(dict(control=coords(a), signed_first=coords(b)), case),
+    result.update(geography=calibration_comparison(controls, case), terminal_arms={mode: row["arms"] for mode, row in controls.items()},
+                  figure_residual_rms_hz={mode: {arm: row["residual_rms_hz"] for arm, row in document["arms"].items()}
+                                         for mode, document in (("control", a), ("signed_first", b))},
                   original_grid_points=grid["evaluated_points"], candidate_grid_points=new_grid["evaluated_points"], figures=new_images,
                   owner_counts={arm: len(rows) for arm, rows in candidate["selected_rows"].items()},
                   owner_changes={arm: owner_delta(baseline["selected_rows"][arm], rows)
@@ -209,7 +217,9 @@ def ordinary_costs(route):
                 endpoint=trial.get("endpoint_trim", route.get("endpoint_trim")),
                 provisional_status=trial.get("status"), repair_status=route.get("repair", {}).get("status"),
                 late_signed=route.get("signed_total_clocks"), named_arms=signed.get("named_arm_clocks"),
-                standard_evidence=route.get("standard_evidence_clocks"), inference_fallback=route.get("fallback_clocks"))
+                standard_evidence=route.get("standard_evidence_clocks"), inference_fallback=route.get("fallback_clocks"),
+                cold=route.get("cold_clocks"), initial_gate=route.get("initial_gate_clocks"), salvage=route.get("salvage_clocks"),
+                predictive=route.get("predictive_clocks"), through_inference_proposal=route.get("candidate_pre_evidence_clocks"))
 
 
 if __name__ == "__main__":
