@@ -1,4 +1,5 @@
 import csv
+import gzip
 import json
 from pathlib import Path
 import subprocess
@@ -234,9 +235,18 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
-    assert "| DS30-0086 | 0.410 | 0.457 | 0.378 | 0.382 |" in markdown
+    receipts = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/measurements"
+    first = json.loads(gzip.decompress((receipts / "ds30-0049-saved-crossover.json.gz").read_bytes()))
+    errors = [first["cells"][cell]["arms"]["fitted_c"]["error_m"] / 1000 for cell in
+              ("installed-installed", "successor-installed", "installed-successor", "successor-successor")]
+    assert "| DS30-0049 | " + " | ".join(f"{value:.3f}" for value in errors) + " |" in markdown
+    for case in ("0086", "0220"):
+        path = receipts / f"field-receiver-solver-cross-{case}.json.gz"
+        receipt = json.loads(gzip.decompress(path.read_bytes()))
+        measured = receipt["score"]["arms"]["fitted_c"]["error_km"]
+        values = [measured[k] for k in ("installed/full", "charted/full", "installed/mixed", "charted/mixed")]
+        assert f"| DS30-{case} | " + " | ".join(f"{value:.3f}" for value in values) + " |" in markdown
     assert "field-receiver-solver-cross-0086.md)" in markdown
-    assert "| DS30-0220 | 0.369 | 0.369 | 0.546 | 1.371 |" in markdown
     assert "3258963eb3aa9c134c0081ae4ab40287a9c16668" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
