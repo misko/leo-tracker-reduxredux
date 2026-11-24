@@ -1,0 +1,117 @@
+"""Freeze and verify one resident North publication with the cold source index."""
+
+import argparse
+from hashlib import sha256
+import json
+from pathlib import Path
+import sys
+
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+SELECTIVE = Path("/dev/shm/leo-v3-continued-north-result01")
+SELECTIVE_PINS = {"binding": "ed37b61ea850c8f6eca9362c17a06c97fa141b0323a327ece77bd0285337ac3b",
+                  "sealed": "4411ba5508e7cec22d0ded179af3da1d50fc2c8a3e75c235852a646e66dfb424",
+                  "clock": "a4f9836e229c68f9878348c10e6c0964846920ef48fb86f91245e27955fcdd06",
+                  "score": "5be2a821f7646466ebd261264bea2eb6ab52eb246ea06a6923f8b4b54ea81cae"}
+PORTABLE = Path("/dev/shm/leo-v3-portable-orbit-publication-01/result.json")
+PORTABLE_PIN = "f052e299962f557ee220b7485f3d356fbdee3b7797ee1bc1217341e57b37c2d2"
+HOUR_NS = 3_600_000_000_000
+
+
+def snapshot_census(snapshots, cutoff):
+    result = {}
+    for hours in (48, 72):
+        rows = [s for s in snapshots if 0 <= cutoff-s.collected_utc_ns <= hours*HOUR_NS]
+        bodies = {s.sha256: s.byte_size for s in rows}
+        result[str(hours)] = dict(references=len(rows), unique_bodies=len(bodies), total_bytes=sum(s.byte_size for s in rows),
+                                  unique_bytes=sum(bodies.values()), body_digests=sorted(bodies))
+    return result
+
+
+def admitted_inputs():
+    from empty_bootstrap import checked
+    from leo.contracts.digests import canonical_digest
+    from leo.operations.tle_archive import TleArchiveReader
+
+    originals = {name: json.loads(checked(SELECTIVE/f"{name}.json", pin)) for name, pin in SELECTIVE_PINS.items()}
+    prior = originals["sealed"]
+    if (prior["binding_sha256"] != SELECTIVE_PINS["binding"] or prior["clock"] != originals["clock"]
+            or originals["score"]["sealed_sha256"] != SELECTIVE_PINS["sealed"]
+            or originals["clock"]["exit_code"] or not all(prior["comparisons"].values())):
+        raise ValueError("The archived selective control did not complete and verify")
+    portable = json.loads(checked(PORTABLE, PORTABLE_PIN))
+    if portable["processes"]["candidate"]["exit_code"] or any(row["fallback"] for row in portable["audit"]["attempts"]):
+        raise ValueError("The prerequisite saved portable publication is incomplete")
+    request = originals["binding"]["request"]
+    archive = Path(request["archive"]["root"])
+    snapshots = TleArchiveReader(archive).list_snapshots("space-track")
+    if (any(not s.path.resolve(strict=True).is_relative_to(archive) for s in snapshots)
+            or canonical_digest({s.path.name: s.sha256 for s in snapshots}) != request["archive"]["snapshots_sha256"]):
+        raise ValueError("The sealed original North archive inventory changed")
+    return originals, snapshot_census(snapshots, request["cutoff_utc_ns"])
+
+
+def launch(root):
+    from continued_cfo_north_trial import control
+    from joint_held_north_raw import launch as original_launch
+
+    _, counts = admitted_inputs()
+    control()
+    if counts["72"]["unique_bodies"] <= 1:
+        raise ValueError("A single immutable source body cannot price historical materialization")
+    helpers = ("north_orbit_index_raw.py", "north_orbit_index_trial.py", "historical_orbit_index.py",
+               "active_preparation_trial.py", "continued_cfo.py")
+    original_launch(root, continued=True, entrypoint=HERE/"north_orbit_index_raw.py",
+        trial_protocol=HERE/"north-orbit-index-protocol.md", extra_sources=tuple(HERE/name for name in helpers))
+
+
+def score(root):
+    from aperture_trial import read, write
+    from continued_cfo_north_trial import score as existing_score, seal as existing_seal
+    from empty_bootstrap import checked
+    from joint_held_north_raw import check_arms, references
+    from regional_history_score import scientific
+
+    archives, counts = admitted_inputs()
+    existing_seal(root)
+    existing_score(root)
+    new, old = read(root/"sealed.json"), archives["sealed"]
+    audit = read(root/"orbits-indexed.json")
+    attempt, = audit["attempts"]
+    named = references()[1]["stock"]
+    check_arms(named["verified"]["arms"])
+    current = new["raw"]
+    if (not attempt["guard"] or attempt["fallback"] is not None or attempt["port"] != "regional"
+            or audit["adapter_sha256"] != read(root/"binding.json")["source_sha256"]["historical_orbit_index.py"]
+            or attempt["bodies"] != counts["72"]["unique_bodies"] or not all(new["comparisons"].values())
+            or new["candidate"]["native_sha256"] != old["candidate"]["native_sha256"]
+            or current["held_anchor_route"] != old["raw"]["held_anchor_route"]
+            or current["receipt"]["terminal_sha256"] != old["raw"]["receipt"]["terminal_sha256"]
+            or current["receipt"]["region"] != named["verified"]["receipt"]["region"]
+            or scientific(root/"containing") != scientific(SELECTIVE/"containing")):
+        raise ValueError("The cold index did not activate or changed the sealed selective publication")
+    historical = {"selective": dict(clock=old["clock"], phases=old["raw"]["phases"],
+                  solve=old["solver"]["solve"], evidence=old["candidate"], roles=old["roles"]),
+                  "all_paid": dict(clock=old["controls"]["guarded_clock"], phases=old["controls"]["guarded_phases"]),
+                  "named": named}
+    write(root/"result.json", dict(candidate_seal_sha256=sha256((root/"sealed.json").read_bytes()).hexdigest(),
+        selected_reference_pins=SELECTIVE_PINS, saved_portable_sha256=PORTABLE_PIN, archive_sizes=counts,
+        phases=current["phases"], solve=new["solver"]["solve"], clock=new["clock"], audit=audit,
+        graph_and_media=new["candidate"], ordered_roles=new["roles"], prior=historical,
+        score=read(root/"score.json"), comparisons=new["comparisons"], cache=new["cache"],
+        source_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
+
+
+if __name__ == "__main__":
+    cli = argparse.ArgumentParser(description=__doc__)
+    cli.add_argument("mode", choices=("screen", "launch", "score"))
+    cli.add_argument("root", nargs="?", type=Path)
+    args = cli.parse_args()
+    if args.mode == "screen":
+        _, sizes = admitted_inputs()
+        print(json.dumps(sizes, indent=2, sort_keys=True))
+    else:
+        if args.root is None:
+            cli.error("An output root is required")
+        (launch if args.mode == "launch" else score)(args.root)

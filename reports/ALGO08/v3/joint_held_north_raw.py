@@ -77,7 +77,7 @@ def validate_workload(request, assignment, machine, reference_machine):
         raise ValueError("Candidate and historical control require the same raw assignment and worker settings")
 
 
-def launch(root, *, continued=False):
+def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra_sources=()):
     from anchored_cfo_raw import verified_pack
     from dense_geographic_trial import host
     from full_short_physical import CACHE_LIB, CACHE_SHA, environment
@@ -121,12 +121,13 @@ def launch(root, *, continued=False):
     subprocess.run([python, "-Bc", "from matplotlib import font_manager; font_manager.findfont('DejaVu Sans')"],
                    env=env, check=True, timeout=25)
     guarded_entry = HERE / "anchored_cfo_raw.py"
-    entry = HERE / "continued_cfo.py" if continued else guarded_entry
-    protocol = HERE / "continued-cfo-north-protocol.md" if continued else PROTOCOL
+    entry = entrypoint or (HERE / "continued_cfo.py" if continued else guarded_entry)
+    protocol = trial_protocol or (HERE / "continued-cfo-north-protocol.md" if continued else PROTOCOL)
     sources = {entry, guarded_entry, Path(__file__), protocol, HERE / "held_cycle_refined.py",
                HERE / "unified_short_bootstrap.py", HERE / "short_cfo_raw.py"}
     if continued:
         sources.add(HERE / "continued_cfo_north_trial.py")
+    sources.update(extra_sources)
     cli = [python, "-IB", entry, "--anchored-cfo-pack", PACK]
     options = subprocess.run([*cli, "--help"], env=env, capture_output=True, timeout=15, check=True).stdout
     if any(flag.encode() not in options.split() for flag in (SELECTOR, "--named-survivor-finish")):
