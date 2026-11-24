@@ -40,22 +40,43 @@ def observations():
     return rows
 
 
-def render(rows, output):
+def combined_development():
+    trial = read_receipt("combined-successor-0289.json.gz",
+                         "c95d1fea9a23f1a96484eff9111b012772ee1e17ec9f5c6b13b73079e8cb54dd")
+    if trial["admission"]["case"] != "DS30-0289" or trial["clock"]["exit_code"] != 0:
+        raise ValueError("The chart requires the completed DS30-0289 development comparison")
+    errors = {}
+    for arm in ("c0", "fitted_c"):
+        values = [trial["science"][worker][arm]["horizontal_error_m"] for worker in ("installed", "successor")]
+        errors[arm] = [m / 1000 if m is not None else None for m in values]
+    return dict(case=trial["admission"]["case"], cohort="development",
+                elapsed_s=[trial["controls"]["installed"]["elapsed_s"], trial["clock"]["elapsed_s"]], **errors)
+
+
+def combined_blind(trial):
+    if trial["study"]["independent_cases"] != [trial["case"]] or not trial["checks"]["same_input_and_offer"]:
+        raise ValueError("Expected the prespecified blind comparison on the same saved input and offer")
+    elapsed = trial["time"]["elapsed_s"]
+    return row(trial["case"], "blind", elapsed["installed"], elapsed["routed"], trial["geographic"])
+
+
+def render(rows, output, *, title="Runtime and position error on the same saved detections",
+           candidate_label="Frozen candidate",
+           note="Clocks include publication and exit on one core. Installed v3 withheld on DS30-0289."):
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     from matplotlib.ticker import MaxNLocator
 
     fig, axes = plt.subplots(1, 3, figsize=(10.2, 3.85), sharey=True)
     fig.subplots_adjust(left=.21, right=.975, top=.66, bottom=.20, wspace=.19)
-    fig.suptitle("Runtime and position error on the same saved detections",
-                 ha="left", x=.025, y=.97, weight="bold", fontsize=16)
+    fig.suptitle(title, ha="left", x=.025, y=.97, weight="bold", fontsize=16)
     colors = ["#415677", "#007c6b"]
     handles = [
         Line2D([], [], marker="o", linestyle="none", markeredgecolor=colors[0],
                markerfacecolor="white", markersize=9, markeredgewidth=1.7),
         Line2D([], [], marker="o", linestyle="none", color=colors[1], markersize=5),
     ]
-    fig.legend(handles, ["Installed ALGO08v3", "Frozen candidate"], frameon=False,
+    fig.legend(handles, ["Installed ALGO08v3", candidate_label], frameon=False,
                loc="upper left", bbox_to_anchor=(.018,.89), ncol=2)
     error_max = max((x for r in rows for arm in ("c0", "fitted_c") for x in r[arm]
                      if x is not None), default=1.)
@@ -80,8 +101,7 @@ def render(rows, output):
         ax.spines[:].set_visible(False)
     axes[0].set_yticks(range(len(rows)), [f"{r['case']}  ·  {r['cohort']}" for r in rows])
     axes[0].set_ylim(len(rows)-.55, -.55)
-    fig.text(.025,.037, "Clocks include publication and exit on one core. Installed v3 withheld on DS30-0289.",
-             fontsize=9, color="#415064")
+    fig.text(.025,.037, note, fontsize=9, color="#415064")
     fig.savefig(output, facecolor="white", dpi=150)
     plt.close(fig)
 
@@ -89,4 +109,13 @@ def render(rows, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    render(observations(), parser.parse_args().output)
+    parser.add_argument("--combined", action="store_true", help="Plot the revised two-centre solver comparisons")
+    args = parser.parse_args()
+    if args.combined:
+        blind = read_receipt("ds30-0163-combined.json.gz",
+                             "9c28657f1dd8a8f31b2f564522d47b42e9b83347f9f816e75c435022f6398801")
+        render([combined_development(), combined_blind(blind)], args.output,
+               title="Revised solver on the same saved DS30 detections", candidate_label="Revised solver",
+               note="One core, through publication and exit. Input admission timed separately. Installed v3 withheld on DS30-0289.")
+    else:
+        render(observations(), args.output)
