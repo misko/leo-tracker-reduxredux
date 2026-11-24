@@ -18,6 +18,17 @@ def test_signed_first_selection_cannot_move_to_a_later_segment(tmp_path):
         select_first(request, dict(inventory, segments=[next_, first]))
 
 
+def test_first_member_port_respects_explicit_blind_case_and_inventory(tmp_path):
+    first = {"path": str(tmp_path / "first"), "scope": "segment-00000000", "manifest_digest": "sha256:first"}
+    pin = "a" * 64
+    req = {"case": "DS30-0173", "inventory": "sha256:" + pin, "issued": 64,
+           "recording": str(tmp_path), "manifests": [[first["path"] + "/manifest.json", "sha256:first"]]}
+    inventory = {"segments": [first], "window_count": 64}
+    assert select_first(req, inventory, case="DS30-0173", inventory_pin=pin)[1] == first
+    with pytest.raises(ValueError, match="enrolled case"):
+        select_first(req, inventory, case="DS30-0163", inventory_pin=pin)
+
+
 def test_payload_observation_reads_no_data_and_retains_query_errors(tmp_path, monkeypatch):
     target = tmp_path / "member.ci16.zst"
     content = b"x" * 8193

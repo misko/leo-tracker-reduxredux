@@ -40,10 +40,10 @@ def metadata(path, pin, limit):
         return authenticate(content, pin)
 
 
-def select_first(request, inventory):
-    if (request["case"] != "DS30-0419" or request["inventory"] != "sha256:" + INVENTORY_PIN
+def select_first(request, inventory, *, case="DS30-0419", inventory_pin=INVENTORY_PIN):
+    if (request["case"] != case or request["inventory"] != "sha256:" + inventory_pin
             or inventory["window_count"] != request["issued"] or not inventory["segments"]):
-        raise ValueError("Require the originally signed DS30-0419 inventory")
+        raise ValueError("Require the originally signed inventory for the enrolled case")
     first = inventory["segments"][0]
     folder = Path(first["path"])
     if (folder.parent != Path(request["recording"]) or first["scope"] != "segment-00000000"
