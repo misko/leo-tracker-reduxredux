@@ -41,3 +41,14 @@ def test_field_reweight_preserves_distinct_cpu_and_elapsed_denominators():
     assert projection["field_short_combined_elapsed_share"] == pytest.approx(0.688123570)
     joint = projection["ceilings"]["lag_carrier_and_refinement"]
     assert joint["donor_replacement_ns_before_first30_complete_gate"] == pytest.approx(12912.314)
+
+
+def test_separate_donor_allowances_charge_replacement_on_empty_and_positive_lanes():
+    prices = profile.individual_donor_budgets(result())
+    for case, budget in (("DS30-0163", 12682.506), ("DS30-0419", 5562.286)):
+        scopes = prices[case]
+        assert scopes["lag_timing+carrier_grid"]["summed_gate_replacement_ns_per_lane"] is None
+        three = scopes["lag_timing+carrier_grid+full_rate_refine"]
+        assert three["summed_gate_replacement_ns_per_lane"] == pytest.approx(budget)
+        assert three["free_summed_speedup"] > 2
+        assert three["median_speedup_at_summed_cap"] > 2

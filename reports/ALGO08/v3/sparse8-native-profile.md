@@ -51,6 +51,17 @@ A concrete joint scout would have to generate the same signed timing/carrier req
 
 The profile command requires the already authenticated detached operands, exact archived source/build, and the one nonblocking CPU2 admission. The offline pricing command can run on the sealed receipt without these inputs.
 
+### Sensitivity to which recording supplies the stage costs
+
+Using DS30-0163 and DS30-0419 separately gives the following projections for the first 30 complete benchmark pairs. The calculation uses each recording's actual fraction of empty short calls, measured short-call wall time and measured solver time. It assumes the whole solver becomes 1.4× faster and the 20 ms anchors keep their original cost. The first two columns grant free replacement stages. The last column asks how much CPU an actual replacement could spend on each short lane before the summed wall gain falls below 2×. At that allowance both median speedups still exceed 2.05×. [Paired timing targets](receiver-solver-targets.md)
+
+| Source prefix | Free lag and carrier stages, summed speedup | Also free full-rate refinement, summed speedup | Allowance for all three replacement stages |
+|---|---:|---:|---:|
+| DS30-0163 | 1.942× | 2.008× | 12.68 µs/lane |
+| DS30-0419 | 1.939× | 2.003× | 5.56 µs/lane |
+
+The allowance depends materially on the prefix, particularly the six measured lanes in DS30-0419. Both projections assume that a fraction of donor CPU removed saves the same fraction of original wall time and preserves every scientific result. Use `price-per-prefix` in place of `price` below to reproduce these figures.
+
 ```sh
 python -B -m reports.ALGO08.v3.sparse8_native_profile price \
   reports/ALGO08/v3/measurements/sparse8-native-profile.json

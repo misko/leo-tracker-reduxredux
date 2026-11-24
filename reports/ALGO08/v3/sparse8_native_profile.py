@@ -286,9 +286,51 @@ def summarize(rows):
     return out
 
 
-def field_totals():
+def field_receipt():
     path = HERE/"measurements/first30-empty-call-roof.json.gz"
-    return json.loads(gzip.decompress(checked(path, FIELD)))["modes"]
+    return json.loads(gzip.decompress(checked(path, FIELD)))
+
+
+def field_totals():
+    return field_receipt()["modes"]
+
+
+def individual_donor_budgets(data):
+    """Use each prefix separately, weighting positive and empty costs per original recording."""
+    from .receiver_solver_targets import first30
+
+    cases = {row["case"]: row for row in first30()}
+    receivers = field_receipt()["cases"]
+    results = {}
+    for donor, sample in data["cases"].items():
+        options = {}
+        clocks = [sample["summary"][label]["exclusive_per_lane_cpu_ns"] for label in ("empty", "positive")]
+        for stages in (("lag_timing", "carrier_grid"), ("lag_timing", "carrier_grid", "full_rate_refine")):
+            rows = []
+            for receiver in receivers:
+                c = cases[receiver["case"]]
+                if c["pins"]["result"] != receiver["candidate_join_sha256"]:
+                    raise ValueError("Stage and detector clocks came from different workers")
+                mode = receiver["modes"]["short_primary"]
+                lanes, empty = mode.get("lanes", 0), mode.get("empty_lanes", 0)
+                counts = (empty, lanes - empty)
+                total = sum(n * sum(t.values()) for n, t in zip(counts, clocks, strict=True))
+                eligible = sum(n * sum(t[s] for s in stages) for n, t in zip(counts, clocks, strict=True))
+                # One nanosecond of donor CPU maps to this many seconds of original short-call wall.
+                scale = mode["elapsed_ns"] / 1e9 / total if lanes else 0.
+                solve = c["phases"]["outer"]["elapsed_s"]["solve"]
+                free = c["actual_wall_s"] - solve * (1 - 1 / 1.4) - scale * eligible
+                rows.append((c["stock_wall_s"], free, scale * lanes))
+            margin = sum(a / 2 - b for a, b, _ in rows)
+            cap_ns = margin / sum(k for _, _, k in rows) if margin >= 0 else None
+            options["+".join(stages)] = dict(
+                free_summed_speedup=sum(a for a, _, _ in rows) / sum(b for _, b, _ in rows),
+                free_median_speedup=1 / median(b / a for a, b, _ in rows),
+                free_margin_s=margin, summed_gate_replacement_ns_per_lane=cap_ns,
+                median_speedup_at_summed_cap=None if cap_ns is None else
+                1 / median((b + k * cap_ns) / a for a, b, k in rows))
+        results[donor] = options
+    return results
 
 
 def priced_stages(data):
@@ -390,7 +432,7 @@ def profile(root):
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("build", "profile", "price"))
+    cli.add_argument("mode", choices=("build", "profile", "price", "price-per-prefix"))
     cli.add_argument("output", type=lambda path: Path(path).resolve())
     args = cli.parse_args()
     if args.mode == "build":
@@ -398,5 +440,7 @@ if __name__ == "__main__":
         build(args.output)
     elif args.mode == "profile":
         profile(args.output)
+    elif args.mode == "price-per-prefix":
+        print(json.dumps(individual_donor_budgets(json.loads(args.output.read_bytes())), indent=2, allow_nan=False))
     else:
         print(json.dumps(priced_stages(json.loads(args.output.read_bytes())), sort_keys=True, indent=2, allow_nan=False))
