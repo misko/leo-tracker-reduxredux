@@ -19,6 +19,7 @@ MANIFEST = "a4ce879975be0593f1adeb7c106f31660c6c423f17e2c7858985244530dc0eb8"
 REFERENCE = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
 RELEASE_100 = "8535781f2ed67016fe42c6ff820f503e9876c1b0f356f3cf2d9c1b6e8d216aa2"
 BUILDS = ("installed", "successor")
+VERIFIED = {"complete", "withheld", "solver_failed"}
 
 
 def checked(data, pin):
@@ -102,8 +103,12 @@ def paired_rows(rows, assigned):
             raise ValueError("Case identity or assigned run order changed")
         if r["outcome"] not in ("complete", "withheld", "solver_failed", "worker_failed", "invalid_publication"):
             raise ValueError(f"Recording has an unresolved or unmeasured arm: {case}, {algorithm}")
-        for field in ("build_sha256", "raw_authority_sha256"):
-            digest = r[field].removeprefix("sha256:")
+        requested = r["requested_raw_authority_sha256"]
+        observed = r["raw_authority_sha256"]
+        if (observed is not None and observed != requested) or (r["outcome"] in VERIFIED and not observed):
+            raise ValueError("Observed input authority disagrees with the enrolled original")
+        for field in ("build_sha256", "requested_raw_authority_sha256", "authority_sha256", "attempt_result_sha256"):
+            digest = (r.get(field) or "").removeprefix("sha256:")
             if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
                 raise ValueError(f"Missing or invalid {field}")
         for field in ("elapsed_s", "cpu_s"):
@@ -116,8 +121,13 @@ def paired_rows(rows, assigned):
         by_key[case, algorithm] = dict(case=case, algorithm=algorithm, case_id=r["case_id"],
                                        first=r["first"], release_100=int(assigned[case]["release_100"]),
                                        recording_state=assigned[case]["recording_state"], outcome=r["outcome"],
-                                       raw_authority_sha256=r["raw_authority_sha256"], build_sha256=r["build_sha256"],
-                                       elapsed_s=r["elapsed_s"], cpu_s=r["cpu_s"], **scores)
+                                       requested_raw_authority_sha256=requested, raw_authority_sha256=observed,
+                                       authority_sha256=r["authority_sha256"], build_sha256=r["build_sha256"],
+                                       attempt_result_sha256=r["attempt_result_sha256"], timing_scope=r["timing_scope"],
+                                       terminal_sha256=r.get("terminal_sha256"), reason=r.get("reason"),
+                                       elapsed_s=r["elapsed_s"], cpu_s=r["cpu_s"],
+                                       child_elapsed_s=r["child_elapsed_s"], child_cpu_s=r["child_cpu_s"],
+                                       validator_elapsed_s=r["validator_elapsed_s"], validator_cpu_s=r["validator_cpu_s"], **scores)
     if len(by_key) != 2 * len(assigned):
         raise ValueError(f"Only {len(by_key)} measured arms for {len(assigned)} assigned recordings")
     if any(len(pins) != 1 for pins in builds.values()):
@@ -125,7 +135,7 @@ def paired_rows(rows, assigned):
     pairs = []
     for case in assigned:
         a, b = (by_key[case, role] for role in BUILDS)
-        if a["first"] != b["first"] or a["raw_authority_sha256"] != b["raw_authority_sha256"]:
+        if any(a[key] != b[key] for key in ("first", "authority_sha256", "requested_raw_authority_sha256")):
             raise ValueError(f"Unmatched original input or run order on {case}")
         pairs.append((a, b))
     return pairs
@@ -176,7 +186,7 @@ def write_report(pairs, output, enrollment, receipt_digest):
         return "—" if x is None else f"{x:.{digits}f}"
 
     lines = ["# DS30 field report · ALGO08v3 and its single-core successor", "",
-             f"Both pipelines ran from original recorded waveforms on the same **{k} recordings**. "
+             f"Both pipelines were timed on the same **{k} original recordings**. "
              f"The summed wall-time speedup was **{number(full['wall']['summed_speedup'])}×**. "
              f"Speedup at the median paired ratio was **{number(full['wall']['median_paired_speedup'])}×**. "
              f"ALGO08v3 returned **{full['installed']['fitted_c']['fixes']}/{k}** fitted positions "
@@ -187,7 +197,8 @@ def write_report(pairs, output, enrollment, receipt_digest):
     for name, obj in summaries.items():
         lines.append(f"| {name} | {obj['assigned']} | {number(obj['wall']['summed_speedup'])}× | "
                      f"{number(obj['wall']['median_paired_speedup'])}× | {number(obj['cpu']['summed_speedup'])}× |")
-    lines += ["", "Times cover process launch through verified publication or recorded failure. The summed ratio divides total "
+    lines += ["", "Successful times cover process launch through exit and independent publication verification for both builds. "
+              "A failure contributes wall and CPU through exit. The per-recording data give the child-only and verifier clocks separately. The summed ratio divides total "
               "ALGO08v3 seconds by total candidate seconds. The paired measure is the reciprocal of the median candidate-to-ALGO08v3 time ratio. "
               "The second worker can benefit from pages cached by the first.", "", "## Position error", "",
               "![Position errors with all assigned recordings in the denominator](position-error.png)", "",

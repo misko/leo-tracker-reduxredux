@@ -42,6 +42,9 @@ def matching_pair():
                                   recording_state="complete")}
     rows = [dict(case="DS30-test", case_id="original", algorithm=k, build_sha256=str(i)*64,
                  raw_authority_sha256="a"*64, first="installed", elapsed_s=1., cpu_s=.9,
+                 requested_raw_authority_sha256="a"*64, authority_sha256="b"*64,
+                 attempt_result_sha256="e"*64, timing_scope="raw_launcher_through_exit_plus_common_publication_verification",
+                 child_elapsed_s=.95, child_cpu_s=.86, validator_elapsed_s=.05, validator_cpu_s=.04,
                  outcome="complete", arms=arms([48., 7.])) for i, k in enumerate(("installed", "successor"), 1)]
     return rows, assigned
 
@@ -64,6 +67,17 @@ def test_unpaired_and_unmeasured_rows_cannot_produce_full_distribution(field, va
     rows, assigned = matching_pair()
     rows[1][field] = value
     with pytest.raises(ValueError):
+        paired_rows(rows, assigned)
+
+
+def test_records_a_timed_failed_attempt_without_implying_observed_receiver_data():
+    rows, assigned = matching_pair()
+    rows[1].update(outcome="worker_failed", raw_authority_sha256=None, arms=arms(None),
+                   timing_scope="raw_launch_to_exit")
+    _, candidate = paired_rows(rows, assigned)[0]
+    assert candidate["elapsed_s"] == 1 and candidate["raw_authority_sha256"] is None
+    rows[1]["outcome"] = "solver_failed"
+    with pytest.raises(ValueError, match="Observed input"):
         paired_rows(rows, assigned)
 
 
