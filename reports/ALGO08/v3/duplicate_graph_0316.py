@@ -5,6 +5,7 @@ from collections import Counter
 from contextlib import ExitStack
 import json
 from pathlib import Path
+import subprocess
 import sys
 from unittest.mock import patch
 
@@ -13,9 +14,16 @@ HERE = Path(__file__).resolve().parent
 CONTROL = Path("/dev/shm/leo-v3-block-portable-0316-result01")
 CONTROL_PIN = "4f960d24dce6efccecd834cfc5955cb9977872819d85c14fd0820a173b6b0aea"
 TRACE_PIN = "1b95d3d9b74875c277659fd7b8e0b6547abeeabbfc7071a068aebc31c30c5b6d"
+RUNTIME = Path("/dev/shm/leo-v3-block-portable-0316")
+RUNTIME_COMMIT = "cc5cb9e27ff2c9d310722ca20661ce455dade62c"
 
 
 def worker(root):
+    git = ["git", "-c", f"safe.directory={RUNTIME}", "-C", str(RUNTIME)]
+    if (subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip() != RUNTIME_COMMIT
+            or subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True).strip()):
+        raise ValueError("The matched physical control requires its original runtime checkout")
+    sys.path.insert(0, str(RUNTIME / "reports/ALGO08/v3"))
     import empty_bootstrap as staged
     from aperture_trial import write
     from catalogue_block_portable_0316 import worker as run_original
@@ -31,6 +39,13 @@ def worker(root):
         stack.enter_context(patch.object(staged, "load_runtime", load))
         run_original(root)
     write(root / "duplicate.json", dict(counts))
+
+
+def validate_pair(clock, duplicates, old_worker, new_worker, old, new):
+    if (clock["exit_code"] or not duplicates["calls"] or not new_worker["no_waveform"] or new_worker["handoffs"] != 1
+            or new_worker["native_sha256"] != old_worker["native_sha256"] or old["receipt"]["region"] != new["receipt"]["region"]
+            or old["receipt"]["tle_records"] != new["receipt"]["tle_records"]):
+        raise ValueError("The full saved comparison changed its input, region or causal archive")
 
 
 def compare(root):
@@ -50,10 +65,7 @@ def compare(root):
     control_clock, clock = (read(p / "portable.clock.json") for p in (CONTROL, root))
     old_worker, new_worker = (read(p / "portable/saved-0316-worker.json") for p in (CONTROL, root))
     duplicates = read(root / "duplicate.json")
-    if (clock["exit_code"] or not duplicates["calls"] or not new_worker["no_waveform"] or new_worker["handoffs"] != 1
-            or new_worker["native_sha256"] != old_worker["native_sha256"] or old["receipt"]["region"] != new["receipt"]["region"]
-            or old["receipt"]["tle_records"] != new["receipt"]["tle_records"]):
-        raise ValueError("The full saved comparison changed its input, region or causal archive")
+    validate_pair(clock, duplicates, old_worker, new_worker, old, new)
 
     arms, outputs = {}, {}
     for key, path, research, timing in (("original", CONTROL, old, control_clock), ("filtered", root, new, clock)):
@@ -73,20 +85,18 @@ def compare(root):
     geography = calibration_comparison(arms, "DS30-0316")
     if geography["runs"]["original"] != previous["geography"]["runs"]["candidate"]:
         raise ValueError("Physical control no longer reproduces the independently scored reference")
-    proof = lambda research: without_timers(research["early_regional"])
+    old_proof, new_proof = (without_timers(doc["early_regional"]) for doc in (old, new))
     write(root / "comparison.json", dict(
         control_sha256=CONTROL_PIN, trace_sha256=TRACE_PIN, duplicates=duplicates, waveform_reads=0,
         detector=new_worker["native_sha256"], geography=geography, named=previous["geography"]["runs"],
         outputs=outputs, rank=read(root / "rank.json"), prepared=read(root / "portable-preparation.json"),
-        same_proof=proof(old) == proof(new), before_proof=proof(old), after_proof=proof(new),
+        same_proof=old_proof == new_proof, before_proof=old_proof, after_proof=new_proof,
         same_projection=old["solve"].get("geographic_projector") == new["solve"].get("geographic_projector"),
         same_handoff=old["solve"].get("prepared_exterior") == new["solve"].get("prepared_exterior"),
         owners=owner_delta(old["selected_rows"], new["selected_rows"]) if new["receipt"]["decision"] == "complete" else None))
 
 
 def launch(root):
-    from portable_orbit_index_trial import local_launcher_tools
-    local_launcher_tools()
     from aperture_trial import RELEASE, write
     from dense_geographic_trial import host
     from empty_bootstrap import checked
@@ -121,7 +131,4 @@ if __name__ == "__main__":
     cli.add_argument("action", choices=("launch", "worker", "compare"))
     cli.add_argument("root", type=Path)
     args = cli.parse_args()
-    if args.action == "compare":
-        from portable_orbit_index_trial import local_launcher_tools
-        local_launcher_tools()
     {"launch": launch, "worker": worker, "compare": compare}[args.action](args.root)
