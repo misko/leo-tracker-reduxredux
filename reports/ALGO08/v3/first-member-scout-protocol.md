@@ -19,7 +19,12 @@ certificate for splicing ordinary rows onto a different detector.
 Qualify the splice on exact row content and full chronological slot metadata
 after stripping any documented chain-specific outer provenance, or on a
 verified small numerical roundoff specific to the same binary algorithm plus
-identical factor eligibility and support. Stop after the owner join if the
+identical factor eligibility and support. Use the earlier guarded phase
+comparison's 1e-10 absolute score tolerance, and require exact signed CFO,
+integer and fractional epoch, rank, gate and candidate ordering. If a shorter
+row equals its guarded ordinary counterpart exactly, preserve the original
+full-recording row to avoid adding verifier roundoff to the intervention.
+Stop after the owner join if the
 identity, physical clocks, candidate phase, source recipe or rows do not
 qualify. For an admissible splice, replace only the first-member candidate
 lists with authentic pre-tail scout rows on exactly identical slot metadata.
