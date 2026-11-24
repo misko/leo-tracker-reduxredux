@@ -17,6 +17,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 MODIFIED_PORTS = "20/8 ms all visits, held history; original named solve and layout with exact reuse"
 ARM_NAMES = ("c0", "fitted_c")
+RISK_SOURCES = ("history_risk_route.py", "early_causal_history.py", "prepared_exterior.py",
+                "cold_finalist_race.py", "certified_salvage.py", "isolated_salvage.py",
+                "named_survivor_fit.py", "blind_joint_route.py", "blind_joint_finish.py",
+                "blind_joint_repair.py", "blind_joint_signed.py", "lighter_joint_estimator.py")
 
 
 def staged_path(path, *, root=None):
@@ -128,6 +132,30 @@ def evidence(output, receipt, packet, owners, *, verified_read=None):
     return dict(result, detail=details)
 
 
+@contextmanager
+def risk_solve(scan, cutoff, original_rank, audit):
+    from history_risk_route import binding
+    from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+    ordinary, inspect = scan.solve, regional_bound_guard.inspect_boundary
+    audit["boundary_checks"] = []
+
+    def boundary(endpoints, width_km, score, *, terminal_only=False):
+        result = inspect(endpoints, width_km, score, terminal_only=terminal_only)
+        audit["boundary_checks"].append(dict(width_km=width_km, terminal_only=terminal_only,
+            endpoints_east_north_km={arm: [float(v) for v in value] if value is not None else None
+                                     for arm, value in endpoints.items()}, result=result))
+        return result
+
+    def solve(native, reader, assets, offer):
+        with binding(reader, cutoff, audit, original_rank):
+            return ordinary(native, reader, assets, offer)
+
+    with (patch.object(scan, "solve", solve),
+          patch.object(regional_bound_guard, "inspect_boundary", boundary)):
+        yield
+
+
 def publish_active(args, publication, specification, handoff, _layout=None, **_options):
     """Consume exactly one authenticated native handoff under the named specification."""
     import empty_bootstrap as boot
@@ -147,14 +175,23 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
         raise ValueError("Expected named localization and an independently identified 20/8 ms packet")
     bound, request = request_from_handoff(args, handoff)
     audit = dict(rank=[], blocks=Counter(), graph={}, gates=Counter(), portable={}, png={}, verified_tle=Counter())
+    routed = getattr(args, "history_risk_route", False)
     cache = VerifiedPngReads(args.output, figure_evidence, audit["png"])
     times, owners = {name: [] for name in ("analyze", "solve", "render")}, []
 
     @contextmanager
     def active():
-        with (handoff.install(algo08_scan),
-              exact_ports(bound, request, audit, resident=lambda path: staged_path(path, root=args.archive)),
-              cache.capture(FastStandardAnalysisStore)):
+        with ExitStack() as ports:
+            if routed:
+                from tools.pipeline_eval.variants import v5_core
+
+                original_rank = v5_core.ranked_initial_nodes
+            ports.enter_context(handoff.install(algo08_scan))
+            ports.enter_context(exact_ports(bound, request, audit, resident=lambda path: staged_path(path, root=args.archive)))
+            ports.enter_context(cache.capture(FastStandardAnalysisStore))
+            if routed:
+                audit["history_risk"] = risk = {}
+                ports.enter_context(risk_solve(algo08_scan, request["causal_cutoff_utc_ns"], original_rank, risk))
             yield
 
     args.output.mkdir()
@@ -178,11 +215,23 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
         evidence=sealed, timing=times, installed=installed, verification=verification, ports=audit,
         source_sha256={str(path.relative_to(HERE.parents[2])): digest(path)
                        for path in {*SOURCES, Path(__file__), HERE/"named_hybrid_baseline.py"}})
-    write(args.output/"exact-named-raw-witness.json", detail)
+    if routed:
+        decision = audit["history_risk"].get("choice", {})
+        detail["raw_route"] = "history_risk_installed"
+        detail["solver_recipe"]["recipe"] = "20/8 ms, held history, earlier-orbit dispatch and standard layout"
+        detail["solver_recipe"]["history_risk"] = dict(requested=True, choice=decision.get("route"),
+                                                       reason=decision.get("reason"), optional_prefit_exterior_probe=False)
+        detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in RISK_SOURCES})
+    write(args.output/"exact-named-raw-witness.json", detail, scientific=routed)
     return terminal, detail
 
 
-def write(path, document):
+def write(path, document, *, scientific=False):
+    if scientific:
+        from aperture_trial import write as write_scientific
+
+        write_scientific(path, document)
+        return
     with path.open("x") as stream:
         json.dump(document, stream, indent=2, allow_nan=False)
         stream.write("\n")
@@ -202,7 +251,10 @@ def run(args):
         if terminal["decision"] != "withheld" or witness["scientific_imports_after"]:
             raise ValueError("Expected an authenticated receiver-side withhold")
         checked = evidence(args.output, terminal, witness["native_sha256"], [])
-        write(args.output/"exact-named-raw-witness.json", dict(raw_route=witness["route"], ports=None, evidence=checked))
+        result = dict(raw_route=witness["route"], ports=None, evidence=checked)
+        if getattr(args, "history_risk_route", False):
+            result["history_risk"] = dict(requested=True, reason="receiver_side_withhold")
+        write(args.output/"exact-named-raw-witness.json", result)
     return terminal
 
 
@@ -214,6 +266,8 @@ def parser():
     command.add_argument("--archive-sha256", required=True)
     command.add_argument("--portable-orbit-index-sha256")
     command.add_argument("--portable-orbit-producer-sha256")
+    command.add_argument("--history-risk-route", action="store_true",
+                         help="Use the reviewed earlier-orbit health check before numerical discovery")
     command.set_defaults(eight_ms_native_history=True, held_anchor_route=True, prove_empty_graph=True,
                          prove_graph_time_support=True, prove_no_active_curvature=True, one_pass_web_png=False,
                          exact_graph_reuse=False, reuse_verified_png_reads=False, lazy_scanner_detector=False)

@@ -1,7 +1,9 @@
 from contextlib import ExitStack, contextmanager
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from reports.ALGO08.v3 import exact_named_raw as entry
@@ -49,6 +51,54 @@ def test_parser_keeps_the_same_receiver_and_named_layout_in_every_region():
     assert args.eight_ms_native_history and args.held_anchor_route
     assert args.prove_graph_time_support and args.prove_no_active_curvature
     assert not args.one_pass_web_png and args.portable_orbit_index is None
+    assert args.history_risk_route is False
+
+
+def test_history_risk_scope_calls_original_solve_and_boundary_once(monkeypatch):
+    import history_risk_route
+    from tools.pipeline_eval.variants.experimental import regional_bound_guard
+
+    events = []
+    audit = {}
+    native, reader, assets, offer, stock_rank = (object() for _ in range(5))
+    expected = {"bound_arms": [], "evaluated": False, "would_withhold": False}
+    endpoints = {"c0": (12.0, -1.0), "fitted_c": (11.0, -1.0)}
+
+    @contextmanager
+    def binding(source, cutoff, proof, rank):
+        assert (source, cutoff, proof, rank) == (reader, 25, audit, stock_rank)
+        events.append("binding")
+        yield
+        events.append("restore")
+
+    def inspect(points, width, score, *, terminal_only):
+        assert points is endpoints and width == 25.0 and terminal_only
+        return expected
+
+    def ordinary(*args):
+        assert args == (native, reader, assets, offer)
+        events.append("solve")
+        return regional_bound_guard.inspect_boundary(endpoints, 25.0, object(), terminal_only=True)
+
+    monkeypatch.setattr(history_risk_route, "binding", binding)
+    monkeypatch.setattr(regional_bound_guard, "inspect_boundary", inspect)
+    scan = SimpleNamespace(solve=ordinary)
+    with entry.risk_solve(scan, 25, stock_rank, audit):
+        assert scan.solve(native, reader, assets, offer) is expected
+    assert scan.solve is ordinary and regional_bound_guard.inspect_boundary is inspect
+    assert events == ["binding", "solve", "restore"]
+    assert audit["boundary_checks"] == [dict(width_km=25.0, terminal_only=True, result=expected,
+                                             endpoints_east_north_km={"c0": [12.0, -1.0], "fitted_c": [11.0, -1.0]})]
+
+
+def test_scientific_witness_serializes_real_lean_trace_structure(tmp_path):
+    prefix = [dict(branch=np.int64(1), cpu_ns=6343617, parameters=np.array([2.5, -1.25, 0.0, 0.6]))]
+    cold = dict(cold=dict(prefix=prefix))
+    route = dict(ports=dict(history_risk=dict(lean_attempts=[cold])))
+    witness = tmp_path/"exact-named-raw-witness.json"
+    entry.write(witness, route, scientific=True)
+    loaded = json.loads(witness.read_text())["ports"]["history_risk"]["lean_attempts"][0]["cold"]["prefix"]
+    assert loaded == [dict(branch=1, cpu_ns=6343617, parameters=[2.5, -1.25, 0, 0.6])]
 
 
 def test_staged_scope_denies_symlinks_and_escapes(tmp_path):
