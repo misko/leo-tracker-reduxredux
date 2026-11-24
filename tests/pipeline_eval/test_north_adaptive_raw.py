@@ -51,3 +51,8 @@ class AdaptiveRawTrialTests(unittest.TestCase):
         self.assertTrue(trial.same_page_counts({"payload": dict(row, started_unix_ns=1)},
                                                {"payload": dict(row, started_unix_ns=2)}))
         self.assertFalse(trial.same_page_counts({"payload": row}, {"payload": dict(row, cached_pages=49)}))
+
+    def test_selector_identity_excludes_its_measured_clock(self):
+        self.assertEqual(trial.selection_identity({"choice": "history", "selector": {"cpu_s": 0.15}}),
+                         trial.selection_identity({"choice": "history", "selector": {"cpu_s": 0.30}}))
+        self.assertNotEqual(trial.selection_identity({"choice": "history"}), trial.selection_identity({"choice": "raw"}))

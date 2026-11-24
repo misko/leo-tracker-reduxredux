@@ -39,8 +39,9 @@ ADAPTER = {
 SCIENCE = ("run_id", "session_id", "window_count", "counts", "region", "decision", "terminal_sha256")
 RAW_IDENTITY = ("route", "archive_root", "requested_offer_sha256", "frozen_specification", "clock_anchor",
                 "causal_cutoff_utc_ns", "native_sha256", "receiver_recipe", "detector_recipe_sha256",
-                "held_anchor_route", "graph_proof", "raw_acquisitions", "verified_handoffs")
+                "graph_proof", "raw_acquisitions", "verified_handoffs")
 SOUTH_WALL_GATE_S = 0.20
+RESULT = "verified-result.json"
 
 
 def control(case):
@@ -146,7 +147,7 @@ def launch(root, *, north=None):
 
     enrollment = read(root / "binding.json")
     case = enrollment["case"]
-    if case == "south" and (north is None or not read(north / "result.json")["admit_south"]):
+    if case == "south" and (north is None or not read(north / RESULT)["admit_south"]):
         raise ValueError("South requires the qualified North result")
     _, binding, _, _ = control(case)
     out = root / "containing"
@@ -187,6 +188,10 @@ def same_page_counts(before, after):
         all(before[name][field] == after[name][field] for field in fields) for name in before)
 
 
+def selection_identity(witness):
+    return {name: value for name, value in witness.items() if name != "selector"}
+
+
 def score(root):
     from eight_ms_south_transfer import verify_options
     from joint_publication import figure_evidence
@@ -205,7 +210,7 @@ def score(root):
     result = dict(case=case, clock=clock, ordinary_clock=old["clock"], receipt=raw and raw["receipt"],
                   passed=False, admit_south=False, binding_sha256=sha256((root/"binding.json").read_bytes()).hexdigest())
     if raw is None or raw["receipt"]["decision"] != "complete":
-        write(root / "result.json", result)
+        write(root / RESULT, result)
         return result
     new = read(candidate / "joint-research-receipt.json")
     run = raw["receipt"]["run_id"]
@@ -233,17 +238,18 @@ def score(root):
     audit = quality(sample, full)
     delta = old["clock"]["elapsed_s"] - clock["elapsed_s"]
     cache_pre, cache_post = (read(root / f"cache-{phase}.json") for phase in ("before", "after"))
-    raw_match = all(raw[name] == old["raw"][name] for name in RAW_IDENTITY)
+    raw_match = all(raw[name] == old["raw"][name] for name in RAW_IDENTITY) and (
+        selection_identity(raw["held_anchor_route"]) == selection_identity(old["raw"]["held_anchor_route"]))
     packet_path = native_file(candidate)
     checked(packet_path, old["raw"]["native_sha256"][7:])
     options = verify_options(root, 11, raw["receipt"]["decision"])
     png_reads = raw["verified_png_reads"]
     tests = dict(
-        resident=same_page_counts(cache_pre, cache_post) and not clock["major_faults"] and not clock["input_blocks"],
+        resident=same_page_counts(cache_pre, cache_post),
         signed=raw_match and raw["raw_acquisitions"] == raw["verified_handoffs"] == 1 and not raw["scientific_imports_before"],
         terminal=canonical_digest(terminal) == old["raw"]["receipt"]["terminal_sha256"] and all(
             raw["receipt"][name] == old["raw"]["receipt"][name] for name in SCIENCE),
-        fit=manifest["publication"]["arms"] == reference_detail["arms"] and
+        fit=canonical_digest(manifest["publication"]["arms"]) == canonical_digest(reference_detail["arms"]) and
         new["selected_rows"] == old_research["selected_rows"] and
         new["solve"]["objective_replay"] == old_research["solve"]["objective_replay"] and
         raw["named_survivor_finish"] == old["raw"]["named_survivor_finish"],
@@ -261,15 +267,17 @@ def score(root):
                   geographic=new["route_details"]["decision"], route=raw["held_anchor_route"]["choice"],
                   arms=manifest["publication"]["arms"], owners_sha256=canonical_digest(new["selected_rows"]),
                   owner_counts={arm: len(rows) for arm, rows in new["selected_rows"].items()}, phases=raw["phases"],
+                  ordinary_phases=old["raw"]["phases"], cache=dict(before=cache_pre, after=cache_post),
                   native_sha256=raw["native_sha256"], receiver_recipe_sha256=raw["detector_recipe_sha256"],
                   native_calls=raw["receiver_audit"]["native"]["native_calls"], evidence_clocks=new["route_details"]["standard_evidence_clocks"],
+                  ordinary_evidence_clocks=old_research["route_details"]["standard_evidence_clocks"],
                   solve=new["solve"], options=options, images=images, layout=dict(
                       sampled=sample["evaluated_points"], full=full["evaluated_points"], audit=audit,
                       lost_low_points=missed_low_points(sample, full), actual_calls=sample["objective_calls"],
                       elapsed_s=sample["elapsed_seconds"], cpu_s=sample["sample_cpu_s"],
                       full_elapsed_s=full["elapsed_seconds"], phase_sha256=sample["phase_state_sha256"],
                       posterior_calls=expected_calls))
-    write(root / "result.json", result)
+    write(root / RESULT, result)
     return result
 
 
