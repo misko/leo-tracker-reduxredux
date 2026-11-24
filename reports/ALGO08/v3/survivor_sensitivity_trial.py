@@ -111,6 +111,9 @@ def worker(case, root):
 
 
 def launch(split, root):
+    from portable_orbit_index_trial import local_launcher_tools
+
+    local_launcher_tools()
     from aperture_trial import RELEASE, write
     from dense_geographic_trial import host
     from full_short_physical import environment
