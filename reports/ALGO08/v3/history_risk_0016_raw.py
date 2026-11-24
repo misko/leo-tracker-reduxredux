@@ -334,7 +334,7 @@ def process_receipt(output, mode):
     return json.loads(output.with_suffix(".stdout").read_text().splitlines()[-1]), None
 
 
-def published(root, mode, log, request, stock, saved, *, adapters=None):
+def published(root, mode, log, request, stock, saved, *, adapters=None, strict_map_sha256=None):
     from empty_bootstrap import bind_native, checked
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
@@ -365,6 +365,11 @@ def published(root, mode, log, request, stock, saved, *, adapters=None):
     witness, owners = None, {}
     if candidate:
         witness = read(output/"exact-named-raw-witness.json")
+        packed = raw.get("packed_ci16_input")
+        storage_ok = (packed is None if strict_map_sha256 is None else
+                      type(packed) is dict and packed.get("strict_packed_eight") is True
+                      and packed.get("map_sha256") == strict_map_sha256 and packed.get("fallback") is None
+                      and packed.get("original_windows") == 0)
         enrolled_recipe = {key: value for key, value in saved["scientific"]["solver_recipe"].items() if key != "history_risk"}
         actual_recipe = {key: witness.get("solver_recipe", {}).get(key) for key in enrolled_recipe}
         if (witness["evidence"]["detail"]["terminal_sha256"] != terminal["terminal_sha256"]
@@ -372,7 +377,7 @@ def published(root, mode, log, request, stock, saved, *, adapters=None):
                 or raw["verified_handoffs"] != 1 or raw["requested_offer_sha256"] != request["offer_sha256"]
                 or raw["archive_root"] != request["archive"]["root"] or raw["frozen_specification"] != pairs.V3_IDENTITY["frozen_specification"]
                 or raw["stock_launcher_sha256"] != pairs.V3_LAUNCHER_SHA or raw["scientific_imports_before"]
-                or raw.get("packed_ci16_input") is not None
+                or not storage_ok
                 or terminal["decision"] == "complete" and (raw["route"] != "history_risk_installed"
                     or actual_recipe != enrolled_recipe or not witness["solver_recipe"]["history_risk"]["requested"]
                     or witness["source_sha256"].get(ADAPTERS[0]) != (adapters or {}).get(ADAPTERS[0]))):
