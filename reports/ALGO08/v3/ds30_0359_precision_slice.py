@@ -18,6 +18,7 @@ from ds30_0359_cairo_saved import JOB_PIN, READY, READY_PIN
 
 ROOT = Path("/dev/shm/leo-v3-0359-composed-saved-result01")
 ADMISSION_PIN = "a37356faa7f27d355edbd60141bccc9156ddac5a106699cfb3f643e74ca43842"
+BINDING_PIN = "b2732e831464a820bdcf41845117bb66de696d51f42f2e20b9e16b3b93d40406"
 PAIR = Path("/dev/shm/leo-v3-0359-predictive-grid-result01/paired-grid.json")
 PAIR_PIN = "f81614a716b22e9e9d1e9fdce9712dbb8bd57588fdd466180d3c5a1cac9db502"
 ORDINALS = frozenset(range(0, 48, 3))
@@ -39,9 +40,12 @@ def paired_clock(operation):
 def run(output):
     import empty_bootstrap as boot
     from aperture_trial import write
+    from exact_named_route import resident_path
     from reports.ALGO08.v3 import ds30_0163_combined as original
 
     started = boot.now()
+    if resident_path(output.parent) != Path("/dev/shm"):
+        raise ValueError("Use a new private child of /dev/shm")
     past = json.loads(boot.checked(PAIR, PAIR_PIN))["calls"]
     if len(past) != GRID_CALLS:
         raise ValueError("The archived grid control is incomplete")
@@ -49,9 +53,11 @@ def run(output):
     if len(order) != 2:
         raise ValueError("Both calibration arms are required")
     admission = boot.checked(ROOT / "admission.json", ADMISSION_PIN)
+    binding = boot.checked(ROOT / "routed" / "binding.json", BINDING_PIN)
     output.mkdir(mode=0o700)
     (output / "routed").mkdir()
     (output / "admission.json").write_bytes(admission)
+    (output / "routed" / "binding.json").write_bytes(binding)
     counts, records = Counter(), []
     active_arm = None
     original_load = boot.load_runtime
@@ -141,7 +147,7 @@ def run(output):
         qualified_slice=qualified, timing_gate_cpu_ns=500_000_000, full_grid_scaling_cpu_ns=bound,
         eligible_for_full_validation=qualified and bound >= 500_000_000,
         predicted_full_grid_calls=GRID_CALLS, ordinals=sorted(ORDINALS), checked_cpu_ns=cpu, checked_wall_ns=wall,
-        controls=dict(admission_sha256=ADMISSION_PIN, paired_grid_sha256=PAIR_PIN,
+        controls=dict(admission_sha256=ADMISSION_PIN, binding_sha256=BINDING_PIN, paired_grid_sha256=PAIR_PIN,
                       staged_admission_sha256=READY_PIN, job_sha256=JOB_PIN),
         source_sha256={name: sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                        for name in (Path(__file__).name, "grid_predictive_precision.py",
