@@ -99,8 +99,11 @@ def held_clocks(campaign, *, split_apertures=False):
                       installed_result=stock["attempt_result_sha256"], candidate_pins=d["pins"])
         if split_apertures:
             source = (campaign / candidate["attempt"]).parent / "publication/unified-short-bootstrap.json"
-            modes = json.loads(checked(source, d["pins"]["raw"]))["receiver_audit"]["native"]["native_wall_ns"]
-            record.update(aperture_seconds(modes, record["native_s"]))
+            raw = json.loads(checked(source, d["pins"]["raw"]))
+            native = raw["receiver_audit"]["native"]
+            record.update(aperture_seconds(native["native_wall_ns"], record["native_s"]))
+            record["short_lanes"] = native["native_calls"].get("short_primary", 0)
+            record["short_positives"] = native["factors"].get("short_primary", 0)
         result.append(record)
     return result
 
