@@ -1,8 +1,7 @@
 """One passive admission opportunity for the frozen original DS30-0049 prefix."""
 
 import argparse
-from collections import Counter
-import json
+from collections import Counter, deque
 import os
 from pathlib import Path
 import subprocess
@@ -10,10 +9,14 @@ import sys
 from time import monotonic, sleep
 
 from . import empty_lane_directed_replay as replay
+from guarded_stage_idle import FULL_LIMIT, QUEUE_LIMIT
 
 
 TIMEOUT_S = 18
 FIELD_SLEEP_S = 30
+WATCH_S = 300
+SAMPLE_S = 1.
+ROLLING_S = 2.
 
 
 def lock_present(path, locks):
@@ -27,13 +30,32 @@ def lock_present(path, locks):
     return False
 
 
-def eligible(event, deferred, storage, busy):
+def rolling_window(previous, current):
+    if not previous.keys() or previous.keys() != current.keys():
+        return None
+    result = {}
+    for name, old in previous.items():
+        new = current[name]
+        span = new["at"] - old["at"]
+        if not ROLLING_S <= span <= ROLLING_S + 2 * SAMPLE_S:
+            return None
+        result[name] = dict(span_s=span, queue_mean=(new["weighted_ms"] - old["weighted_ms"]) / (span * 1000),
+                            full_pct=(new["full_total_us"] - old["full_total_us"]) / (span * 10_000))
+    return result
+
+
+def eligible(event, deferred, storage, busy, rolling):
     if not deferred or event["age_s"] >= 4 or FIELD_SLEEP_S - event["age_s"] < TIMEOUT_S + 6:
         return "no-fresh-field-sleep"
     if busy:
         return "shared-lease-present"
-    if any(row["full_avg10"] >= 20. or row["in_flight"] > 2 for row in storage.values()):
+    if any(row["full_avg10"] >= FULL_LIMIT or row["in_flight"] > QUEUE_LIMIT for row in storage.values()):
         return "storage-pressure"
+    if rolling is None:
+        return "rolling-window-unavailable"
+    if any(not (0 <= row["queue_mean"] <= QUEUE_LIMIT and 0 <= row["full_pct"] < FULL_LIMIT)
+           for row in rolling.values()):
+        return "rolling-storage-pressure"
     return None
 
 
@@ -48,13 +70,22 @@ def wait(output, plan, pin):
         raise ValueError("The passive watcher requires the unchanged frozen worker")
     # The ordinary driver sleeps for 30 seconds after a failed quiet-window check.
     # Watch only metadata, and leave time for it to resume even if the child reaches its bound.
-    counts = Counter()
+    samples = deque(maxlen=4)
+    counts, last_refusals = Counter(), {}
     start = monotonic()
-    while monotonic() - start < 180:
+    while monotonic() - start < WATCH_S:
         event, deferred = replay.prefix.occupied()
         storage = storage_sample()
-        busy = lock_present(replay.LOCK, Path("/proc/locks").read_text())
-        reason = eligible(event, deferred, storage, busy)
+        previous, rolling = None, None
+        for candidate in reversed(samples):
+            rolling = rolling_window(candidate, storage)
+            if rolling is not None:
+                previous = candidate
+                break
+        samples.append(storage)
+        busy = deferred and lock_present(replay.LOCK, Path("/proc/locks").read_text())
+        observation = dict(event=event, storage=storage, earlier_storage=previous, rolling=rolling, lease_busy=busy)
+        reason = eligible(event, deferred, storage, busy, rolling)
         if reason is None:
             try:
                 pages = resident(inputs["original_source"]["files"])
@@ -67,14 +98,15 @@ def wait(output, plan, pin):
                            str(output / "waveforms.json"), "--plan", str(plan), "--plan-sha256", pin]
                 result = subprocess.run(command, capture_output=True, text=True)
                 replay.prefix.write(output / "watch.json", dict(launched=True, exit_code=result.returncode,
-                                    event=event, storage=storage, residency=pages, polls=dict(counts),
+                                    **observation, residency=pages, polls=dict(counts), last_refusals=last_refusals,
                                     elapsed_s=monotonic()-start, stdout=result.stdout, stderr=result.stderr))
                 return result.returncode
         else:
             counts[reason] += 1
-        sleep(2.)
+            last_refusals[reason] = observation
+        sleep(SAMPLE_S)
     replay.prefix.write(output / "watch.json", dict(launched=False, reason="readiness-window-expired",
-                        event=event, storage=storage, polls=dict(counts), elapsed_s=monotonic()-start))
+                        **observation, polls=dict(counts), last_refusals=last_refusals, elapsed_s=monotonic()-start))
     return replay.ABSTAIN_EXIT
 
 

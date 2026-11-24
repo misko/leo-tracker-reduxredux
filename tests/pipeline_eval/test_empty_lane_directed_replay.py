@@ -85,15 +85,33 @@ def test_original_match_no_carrier_alias_and_stage_is_readonly():
 
 def test_passive_admission_requires_fresh_sleep_quiet_and_free_lock(tmp_path):
     quiet = {'original': dict(full_avg10=4., in_flight=0), 'output': dict(full_avg10=4., in_flight=2)}
-    assert watch.eligible(dict(age_s=0.5), True, quiet, False) is None
-    assert watch.eligible(dict(age_s=4.), True, quiet, False) == 'no-fresh-field-sleep'
-    assert watch.eligible(dict(age_s=0.5), False, quiet, False) == 'no-fresh-field-sleep'
-    assert watch.eligible(dict(age_s=0.5), True, quiet, True) == 'shared-lease-present'
+    rolling = dict.fromkeys(quiet, dict(queue_mean=1.5, full_pct=2.))
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False, rolling) is None
+    assert watch.eligible(dict(age_s=4.), True, quiet, False, rolling) == 'no-fresh-field-sleep'
+    assert watch.eligible(dict(age_s=0.5), False, quiet, False, rolling) == 'no-fresh-field-sleep'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, True, rolling) == 'shared-lease-present'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False, None) == 'rolling-window-unavailable'
     quiet['output']['in_flight'] += 1
-    assert watch.eligible(dict(age_s=0.5), True, quiet, False) == 'storage-pressure'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False, rolling) == 'storage-pressure'
     lease = tmp_path / 'lease'
     lease.touch()
     stat = lease.stat()
     key = f'{major(stat.st_dev):x}:{minor(stat.st_dev):x}:{stat.st_ino}'
     assert watch.lock_present(lease, f'17: FLOCK ADVISORY WRITE 1290 {key} 0 EOF\n')
     assert not watch.lock_present(lease, f'18: POSIX ADVISORY WRITE 1291 00:00:{stat.st_ino} 0 EOF\n')
+
+
+def test_passive_rolling_metrics_reject_busy_interval_with_quiet_endpoints():
+    a = dict(original=dict(at=12., weighted_ms=1000, full_total_us=500_000))
+    b = dict(original=dict(at=14.1, weighted_ms=8138, full_total_us=510_000, full_avg10=1., in_flight=0))
+    rolling = watch.rolling_window(a, b)
+    assert rolling['original']['queue_mean'] == pytest.approx(7138 / 2100.)
+    assert rolling['original']['full_pct'] == pytest.approx(10000 / 21000.)
+    assert watch.eligible(dict(age_s=0.5), True, b, False, rolling) == 'rolling-storage-pressure'
+    b['original']['weighted_ms'] = 5200
+    b['original']['at'] = 14.25
+    assert watch.eligible(dict(age_s=0.5), True, b, False, watch.rolling_window(a, b)) is None
+    b['original']['at'] = 13.99
+    assert watch.rolling_window(a, b) is None
+    b['original']['at'] = 18.
+    assert watch.rolling_window(a, b) is None
