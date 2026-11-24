@@ -77,7 +77,7 @@ def regular(fd, name, limit=None, expected=None):
 
 def capture(recording, logical, member, work):
     from leo.contracts.digests import canonical_digest
-    from leo.contracts.short_window import ShortWindowIndexV2
+    from leo.contracts.multirate_window_recording import ShortWindowIndexV2
     from leo.storage.fast_scan import FastScanStore
 
     raw = member["raw_recording"]
