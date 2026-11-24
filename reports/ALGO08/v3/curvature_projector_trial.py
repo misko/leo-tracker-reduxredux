@@ -77,6 +77,12 @@ def phase_vector(scan, labels, reference):
     return phases
 
 
+def phase_inputs(bank, row_labels):
+    labels, per_observation = np.unique(row_labels, return_inverse=True)
+    subset = dict(time_s=bank["time_s"], position_km=bank["position_km"][labels], velocity_km_s=bank["velocity_km_s"][labels])
+    return labels, per_observation, subset
+
+
 def diagnostic(scan, common, states):
     from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
 
@@ -88,6 +94,7 @@ def diagnostic(scan, common, states):
     boundaries = np.cumsum([len(r.times) for r in rows])[:-1]
     groups = {r: [i for i, rx in enumerate(receivers) if rx == r] for r in sorted(set(receivers))}
     projectors = {r: ReceiverProjector([rows[i] for i in idx]) for r, idx in groups.items()}
+    sparse = [phase_inputs(scan.sky, layout) for layout in labels]
     setup = cost(started)
     result = {}
     for arm, records in states.items():
@@ -95,20 +102,23 @@ def diagnostic(scan, common, states):
         for name in ("reference", "posterior"):
             started = now()
             entries = []
-            for j, record in enumerate(records):
-                phases = record[name]
-                if not np.isfinite(phases[labels[j]]).all():
+            for (used, per_observation, bank), record in zip(sparse, records, strict=True):
+                phases = record[name][used]
+                if not np.isfinite(phases).all():
                     raise ValueError("Actual bounded phase state missing an observation owner")
-                f, elevation = paired_phase_frequency(scan.sky, times, labels[j], phases, *record["latlon"])
+                f, elevation = paired_phase_frequency(bank, times, per_observation, phases, *record["latlon"])
                 per_track = np.split(f, boundaries)
                 scores = [projectors[r].score([per_track[i] for i in ids]) for r, ids in groups.items()]
                 entries.append(dict(score=sum(scores), below_horizon=int(np.count_nonzero(elevation < 0.))))
             result[arm][name] = dict(scores=entries, clock=cost(started),
                                      preferred=rank_preference([v["score"] for v in entries]))
+    exact_states = {arm: [dict(norad=scan.norads[used], reference_s=r["reference"][used],
+                              posterior_s=r["posterior"][used])
+                          for (used, _, _), r in zip(sparse, records, strict=True)] for arm, records in states.items()}
     return dict(points=len(times), tracks=len(rows), dimensions={str(r): p.dimension for r, p in projectors.items()},
                 smooth_ranks={str(r): p.rank for r, p in projectors.items()},
                 differing_row_labels=int(np.count_nonzero(labels[0] != labels[1])),
-                table=table_cpu, projector=setup, arms=result)
+                table=table_cpu, projector=setup, arms=result, exact_states=exact_states)
 
 
 def load_dense(root):
