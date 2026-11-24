@@ -201,6 +201,9 @@ def write_report(pairs, output, enrollment, receipt_digest):
         summaries[name] = stats
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
+    full = summaries["All DS30 recordings"]
+    gates = {metric: full["wall"][metric] >= 2.0 for metric in ("summed_speedup", "median_paired_speedup")}
+    metadata["twofold_wall_time_target"] = {"required_speedup": 2.0, **gates, "both_met": all(gates.values())}
     changes = {}
     for arm in ARMS:
         key = arm + "_error_km"
@@ -219,7 +222,6 @@ def write_report(pairs, output, enrollment, receipt_digest):
         for row, _ in pairs if row["relocation_proof_sha256"] is not None]
     (output / "summary.json").write_text(json.dumps(metadata, indent=2, allow_nan=False) + "\n")
     render_distribution_figures(output / "recordings.csv", output, enrollment=enrollment)
-    full = summaries["All DS30 recordings"]
     k = full["assigned"]
     def number(x, digits=2):
         return "—" if x is None else f"{x:.{digits}f}"
@@ -230,6 +232,12 @@ def write_report(pairs, output, enrollment, receipt_digest):
              f"Speedup at the median paired ratio was **{number(full['wall']['median_paired_speedup'])}×**. "
              f"ALGO08v3 returned **{full['installed']['fitted_c']['fixes']}/{k}** fitted positions "
              f"and the candidate returned **{full['successor']['fitted_c']['fixes']}/{k}**.", "",
+             f"The candidate met **{sum(gates.values())} of 2** wall-time targets. "
+             f"The summed speedup {'reached' if gates['summed_speedup'] else 'fell below'} 2×. "
+             f"The median paired speedup {'reached' if gates['median_paired_speedup'] else 'fell below'} 2×. "
+             f"Across all {k} attempts, ALGO08v3 returned a fitted position within 1 km on "
+             f"**{full['installed']['fitted_c']['within_1km']}** and the candidate did so on "
+             f"**{full['successor']['fitted_c']['within_1km']}**.", "",
              "Gauss ran one pipeline at a time on a single CPU core. The candidate uses 8 ms primary "
              "signal searches between 20 ms two-scan anchors. Both builds read the original waveforms "
              "and use the same search region and causal orbit data for each recording. "

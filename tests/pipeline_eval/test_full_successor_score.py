@@ -112,7 +112,9 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     for i, (case, item) in enumerate(assigned.items()):
         for role in template:
             fix = role["algorithm"] == "installed" or i > 0
+            wall = 2. if role["algorithm"] == "installed" and i > 0 else 1.
             rows.append({**role, "case": case, "case_id": item["case_id"],
+                         "elapsed_s": wall, "child_elapsed_s": wall - role["validator_elapsed_s"],
                          "historical_first100": item["release_100"], "manifest_raw_authority_sha256": item["raw_authority"],
                          "first": "installed" if i % 2 else "successor",
                          "child_started_unix_ns": 1 if (role["algorithm"] == "installed") == bool(i % 2) else 3,
@@ -125,6 +127,8 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64)
     report = json.loads((tmp_path / "summary.json").read_bytes())
     assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
+    assert report["twofold_wall_time_target"] == {
+        "required_speedup": 2.0, "summed_speedup": False, "median_paired_speedup": True, "both_met": False}
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
     assert report["paired_error_changes"]["fitted_c"]["gained"] == 1
     assert report["paired_outcomes"] == [{"installed": "complete", "successor": "complete", "recordings": 453},
@@ -134,6 +138,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
+    assert "met **1 of 2** wall-time targets" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
     for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png"):
         with Image.open(tmp_path / figure) as png:
