@@ -1,0 +1,136 @@
+{
+  "awaiting_positive_qualification": true,
+  "case": "DS30-0107",
+  "files": {
+    "index": {
+      "bytes": 78609,
+      "path": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261115-002130-7ec6871a-1-upper/fast8-auto-20261115-002130-7ec6871a-1-upper-segment-00000000/windows-000000.jsonl",
+      "sha256": "sha256:5fa9f31f1400e15b12e26ebd755f9c60b2f935394c3595c13cdd15a8641a7f61",
+      "stage": "/dev/shm/leo-v3-continued-cfo-0107-pair01/fast8-auto-20261115-002130-7ec6871a-1-upper/fast8-auto-20261115-002130-7ec6871a-1-upper-segment-00000000/windows-000000.jsonl"
+    },
+    "manifest": {
+      "bytes": 3542,
+      "path": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261115-002130-7ec6871a-1-upper/fast8-auto-20261115-002130-7ec6871a-1-upper-segment-00000000/manifest.json",
+      "sha256": "sha256:c64d0bb3bcefb4e42eb0a7816bee9d14f47574a7d200129bb10c95a6ac4be49c",
+      "stage": "/dev/shm/leo-v3-continued-cfo-0107-pair01/fast8-auto-20261115-002130-7ec6871a-1-upper/fast8-auto-20261115-002130-7ec6871a-1-upper-segment-00000000/manifest.json"
+    },
+    "payload": {
+      "bytes": 33519983,
+      "path": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261115-002130-7ec6871a-1-upper/fast8-auto-20261115-002130-7ec6871a-1-upper-segment-00000000/iq-000000.ci16.zst",
+      "sha256": "sha256:92ea76e61434d5174604d25bf6213444195d73a89f7c70461e3e0c8a98f8288e",
+      "stage": "/dev/shm/leo-v3-continued-cfo-0107-pair01/fast8-auto-20261115-002130-7ec6871a-1-upper/fast8-auto-20261115-002130-7ec6871a-1-upper-segment-00000000/iq-000000.ci16.zst"
+    }
+  },
+  "frozen_protocol_sha256": "bd31676cb8e8b1d24d610303d598f7f33fb9c3b3fc0f4bc352e5ffd1ba89321c",
+  "geometry": {
+    "decoded_bytes": 44294856,
+    "nonfull": [
+      {
+        "bytes": 1094856,
+        "iq_sha256": "sha256:065d411b5984f741bf87bde63484093145d9fc44191ef4dbd7335d3adf0d29ad",
+        "sample_count": 136857,
+        "sequence": 27
+      },
+      {
+        "bytes": 0,
+        "iq_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sample_count": 0,
+        "sequence": 28
+      }
+    ],
+    "sample_extents": {
+      "0": 1,
+      "136857": 1,
+      "200000": 27
+    },
+    "visits": 29
+  },
+  "metadata_pins": {
+    "/dev/shm/leo-v3-continued-cfo-0107-pair01/admission.json": "81a5aa37a01356e56619945b194c831314fdf856175c55a1f90492b2585d6260",
+    "/dev/shm/leo-v3-history-risk-0107-cairo-result01/admission.json": "fd434a13bc6d12d1bcd14941f3445d78f1652b2e19a2e5359078637ed8ad4e06",
+    "/dev/shm/leo-v3-history-risk-0107-cairo-score02.json": "6f6923e6a4be803069581d5a254148c6e322d9e0c4ea4e93de1062dd2bb485e9"
+  },
+  "portable": {
+    "body_sha256": "fc51655ff19185cc382aeed925e466cea7290453256d45f80446aceef6f9e30e",
+    "earlier_cutoff": 1794556783056720638,
+    "expected_activation": "on numerical entry only",
+    "overlap": 11,
+    "producer_sha256": "c1c2f5d911c978ad7673a2a53f05e272806f87c539f2f0a552b7e02916fe9c8b"
+  },
+  "prior_ordinary_command": [
+    "/usr/bin/timeout",
+    "--kill-after=2s",
+    "75s",
+    "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+    "-IB",
+    "/dev/shm/leo-v3-raw-cairo-clean/reports/ALGO08/v3/exact_named_raw.py",
+    "--recording",
+    "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261115-002130-7ec6871a-1-upper",
+    "--archive",
+    "/dev/shm/leo-v3-continued-cfo-0107-pair01/tle",
+    "--region",
+    "/dev/shm/leo-v3-continued-cfo-0107-pair01/offer.json",
+    "--archive-sha256",
+    "sha256:056baef0073d49b8b02e3258eb6608d341ad6e1c41d5a8339c15834d82dd5665",
+    "--history-risk-route",
+    "--output",
+    "/dev/shm/leo-v3-history-risk-0107-cairo-result01/candidate",
+    "--short-binary",
+    "/var/tmp/leo-v3-eight-ms-build-padded/8ms/short-primary.so",
+    "--geographic-library",
+    "/dev/shm/leo-v3-saved-0402-pair-01/geographic_library.so",
+    "--regional-track-library",
+    "/dev/shm/leo-v3-saved-0402-pair-01/regional_track_library.so",
+    "--frontier-block-library",
+    "/dev/shm/leo-v3-saved-0402-pair-01/frontier_block_library.so",
+    "--cairo-six-sheets"
+  ],
+  "raw_children": 0,
+  "reader_source": {
+    "files": {
+      "exact_named_raw.py": "0495af4960cf0dc7df62034fa66fcdfa41798fc1dc2a7c035e2e6eeec5994186",
+      "history_cairo_render.py": "84140a9e162665dae43d86bd06ac7dd7b85610089a0eb9ce498de8a844538cbe",
+      "legacy_block_input.py": "644a07b33d78620dfca8d228726d82429b5fe503011e4546839314fcd4d4ad39",
+      "legacy_block_raw_entry.py": "b112530f8d9a2af09d103b03b0fa5691cd21b248e1b939a1dd1acea8a12abf57",
+      "legacy_block_seek.c": "0b7ae1f7f33eaa636767ac32740c4058bc81e52cf798449288043056cf06373f",
+      "legacy_block_seek.py": "05a1c4de3c272f49b25d24f85e5a2f986682d7aeada9c04c270a655209bb15aa",
+      "unified_short_bootstrap.py": "07aa0f80f0114af2b22134da8fdff9f9c74e8384631dc834e6b6fd022df9a297"
+    },
+    "finalized_after_positive_control": true,
+    "revision": "a7856208582ee181d11dbf074610b05a8cf0f124"
+  },
+  "request": {
+    "archive": {
+      "root": "/dev/shm/leo-v3-continued-cfo-0107-pair01/tle",
+      "snapshots_sha256": "sha256:056baef0073d49b8b02e3258eb6608d341ad6e1c41d5a8339c15834d82dd5665"
+    },
+    "authority": "sha256:fb9fcc8e0670737cbe1fc5f794a99b6790dc2840d9d652b8587208ab536ebcf7",
+    "cutoff_utc_ns": 1794702096144017710,
+    "detector": "sha256:9dc69c5b4a6a2a14986d21fe0927e2c89ebd5065841453c107b280a1ccb20afe",
+    "inventory": "sha256:4c05fc0cbe26fcae1c42a85417b4ba20be683f1c8ea0b3fce0eb7a5c273f473d",
+    "native": "sha256:0625488fb005e1d4c1ec8d7c9d2949af9c0d8fd191f222b9a797d2ed519c2de5",
+    "offer_sha256": "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236",
+    "recording": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261115-002130-7ec6871a-1-upper",
+    "region": "/dev/shm/leo-v3-continued-cfo-0107-pair01/offer.json",
+    "session": "fast-4c05fc0cbe26fcae1c42a85417b4ba20"
+  },
+  "resident": {
+    "catalogue": {
+      "bytes": 91161057,
+      "files": 51,
+      "status": "fully resident by passive page census"
+    },
+    "index": {
+      "bytes": 2691412,
+      "files": 2,
+      "status": "fully resident by passive page census"
+    },
+    "input": {
+      "bytes": 33602134,
+      "files": 3,
+      "status": "fully resident by passive page census"
+    }
+  },
+  "signed_stage": "/dev/shm/leo-v3-continued-cfo-0107-pair01/fast8-auto-20261115-002130-7ec6871a-1-upper",
+  "waveform_opened_bytes": 0
+}
