@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from reports.ALGO08.v3.accepted_confidence_trace import ConfidenceTrace, binding, fingerprint, summarize
 
@@ -18,9 +19,11 @@ def test_hash_uses_order_shape_dtype_and_signed_zero():
         assert fingerprint(row) != fingerprint(different)
 
 
-def test_live_confidence_keeps_values_and_separates_projection_from_receiver_nuisance(monkeypatch):
+@pytest.mark.parametrize("capacity", (None, 0, 32*2**20))
+def test_live_confidence_keeps_values_and_separates_projection_from_receiver_nuisance(monkeypatch, capacity):
     monkeypatch.syspath_prepend(str(HERE))
     import lighter_joint_estimator as estimator
+    from accepted_confidence_projection_reuse import ProjectionReuse
 
     saved = json.loads((HERE/"measurements/accepted-lean-small-operands.json").read_bytes())
     t, values = np.array(saved["times"]), np.array(saved["values"])
@@ -51,14 +54,17 @@ def test_live_confidence_keeps_values_and_separates_projection_from_receiver_nui
     baseline = {"arms": {"c0": {"record": dict(phase_reference=np.zeros(1), endpoint_east_north_km=np.zeros(2))}}}
     original = estimator.minimum_confidence
     expected = original(scan, node, keep, baseline, receipts=[])
-    trace, receipts = ConfidenceTrace(), []
+    trace = ConfidenceTrace() if capacity is None else ProjectionReuse(byte_limit=capacity)
+    receipts = []
     with binding(estimator, trace):
         for _ in range(2):
             assert estimator.minimum_confidence(scan, node, keep, baseline, receipts=receipts).tobytes() == expected.tobytes()
         beta[0] = 1.0
-        estimator.minimum_confidence(scan, node, keep, baseline, receipts=receipts)
+        assert estimator.minimum_confidence(scan, node, keep, baseline, receipts=receipts).tobytes() == original(
+            scan, node, keep, baseline, receipts=[]).tobytes()
         keep[0] = keep[len(t)] = False
-        estimator.minimum_confidence(scan, node, keep, baseline, receipts=receipts)
+        assert estimator.minimum_confidence(scan, node, keep, baseline, receipts=receipts).tobytes() == original(
+            scan, node, keep, baseline, receipts=[]).tobytes()
 
     assert estimator.minimum_confidence is original
     assert len(receipts) == len(trace.records) == 4
@@ -72,3 +78,7 @@ def test_live_confidence_keeps_values_and_separates_projection_from_receiver_nui
     assert len(totals["exact_input_repeats"]["projections"]) == 10
     assert len(totals["exact_input_repeats"]["profiles"]) == 10
     assert all(row["output_identical"] for rows in totals["exact_input_repeats"].values() for row in rows)
+    if capacity is not None:
+        assert trace.original_calls == (10 if capacity else 20)
+        assert trace.hits == (10 if capacity else 0)
+        assert trace.held_bytes <= capacity
