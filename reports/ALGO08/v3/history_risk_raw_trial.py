@@ -17,6 +17,7 @@ CONTROL_PIN = "e654af8ddfc9c9bf0b479f722003e984a35ca47eab8a94c4540bee57f0dc6b86"
 SOURCES = (Path(__file__).name, "history-risk-raw-protocol.md", "exact_named_raw.py", "exact_named_route.py",
            "named_history_once.py", "unified_short_bootstrap.py")
 PREBUILT_FLAGS = ("--portable-orbit-index", "--portable-orbit-index-sha256", "--portable-orbit-producer-sha256")
+OMISSION_SOURCES = (*SOURCES, "exact_named_raw_transfer.py", "history-risk-raw-omission-protocol.md")
 
 
 def prior_controls():
@@ -45,6 +46,10 @@ def without_prebuilt(options):
     return [item for key, value in pairs if key not in PREBUILT_FLAGS for item in (key, value)]
 
 
+def source_hashes(names):
+    return {name: sha256((HERE/name).read_bytes()).hexdigest() for name in names}
+
+
 def launch(root):
     start = process_time(), perf_counter()
     from eight_ms_south_transfer import environment_for
@@ -70,7 +75,7 @@ def launch(root):
     command = ["/usr/bin/timeout", "--kill-after=2s", "75s", sys.executable, "-IB", str(HERE/"exact_named_raw.py"),
                *without_prebuilt(job["candidate_args"]), "--history-risk-route"]
     cache_before = observe_cache()
-    sources = {name: sha256((HERE/name).read_bytes()).hexdigest() for name in (*SOURCES, *RISK_SOURCES)}
+    sources = source_hashes((*SOURCES, *RISK_SOURCES))
     write(root/"binding.json", dict(request=job["request"], machine=job["machine"], control_receipt_sha256=CONTROL_PIN,
                                    command=command, cache_before=cache_before, sources=sources,
                                    index="cold-original-archive", setup=clock(start)))
@@ -202,7 +207,8 @@ def launch_omission(root, raw_root):
     args = ["/usr/bin/timeout", "--kill-after=2s", "45s", sys.executable, "-IB", __file__, "omitted-worker", str(root)]
     write(root/"binding.json", dict(request=raw_job["request"], candidate_args=raw_job["command"][7:],
         source=str(raw_root/"candidate"), source_raw_receipt=verdict["binding_sha256"], omitted_offer_sha256=offer_sha,
-        source_native=verdict["signed_native"], machine=machine, setup=clock(start), command=args))
+        source_native=verdict["signed_native"], machine=machine, setup=clock(start), command=args,
+        sources=source_hashes(OMISSION_SOURCES)))
     measured = measure(args, environment_for(root), root/"north-far-saved")
     write(root/"clock.json", measured)
     if measured["exit_code"]:
@@ -213,6 +219,8 @@ def omitted_worker(root):
     from exact_named_raw_transfer import omitted, read
 
     binding = read(root/"binding.json")
+    if binding["sources"] != source_hashes(OMISSION_SOURCES):
+        raise ValueError("The frozen missing-region check changed")
     omitted(root, binding, positive=Path(binding["source"]))
 
 
