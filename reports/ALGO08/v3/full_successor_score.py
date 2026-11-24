@@ -529,6 +529,12 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "e9536f1014191a14b83676ff88a2baf244f034cd/reports/ALGO08/v3/ds30-0049-sparse-only-drop.md) · "
               "[Missing detections](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "abc05f858d5c05b99bc94ed36201f1826b611eec/reports/ALGO08/v3/ds30-0049-empty-recovery.md)"]
+    lines += ["", "A second control started from the installed detections. Adding just 12 extra detections "
+              "from the candidate’s full-length anchor visits increased fitted error from **1.420 to 2.453 km**. "
+              "Four of the 12 received satellite assignments. The fitted RF residual moved by only 0.29 Hz. "
+              "This isolates the effect of these anchors with installed short-visit evidence. "
+              "[Anchor-only control](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "9c881a8106ceb548efc032fbfd4883f39c8018b6/reports/ALGO08/v3/ds30-0049-anchor-only.md)"]
     lines += ["", "### Changing the offered search region", "",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
