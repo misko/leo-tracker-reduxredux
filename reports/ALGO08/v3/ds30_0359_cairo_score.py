@@ -3,6 +3,7 @@
 import argparse
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from reports.ALGO08.v3.ds30_0359_cairo_saved import BASE, JOB_PIN, PRIOR_PIN, PROTOCOL, READY, SCENE, digest, read
@@ -32,16 +33,15 @@ def score(root):
     from clean_saved_publication import load_job
     from empty_bootstrap import checked, clock, now
     from history_risk_cairo_physical import clean
-    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from prospective_0316_solver import inspect
     from publication_media_checks import verify_position_sidecars
-    from reports.ALGO08.v3.ds30_0359_cairo_visual import evidence as visualize
 
     began = now()
     before = json.loads(checked(BASE / "result.json", PRIOR_PIN))
     admission, paid = read(root / "admission.json"), read(root / "routed/clock.json")
     seal = root / "prediction-seal.json"
-    if read(seal) != output_seal(root) or admission["protocol_sha256"] != digest(PROTOCOL):
+    sealed_artifacts = read(seal)
+    if sealed_artifacts != output_seal(root) or admission["protocol_sha256"] != digest(PROTOCOL):
         raise ValueError("The original paid candidate predictions changed")
     clocks = dict(installed=before["jobs"]["installed"]["clock"], ordinary=before["jobs"]["routed"]["clock"], candidate=paid)
     result = dict(case="DS30-0359", prior_case_exposure=True, new_candidate_children=1, original_reads=0,
@@ -87,11 +87,11 @@ def score(root):
     )
     orbit = {"qualified": False, "reason": "The candidate used an ordinary orbit fallback"}
     if native["live_orbit_calls"] == 1 and checks["six_cairo"]:
-        capture = root / SCENE
-        try:
-            orbit = visualize(capture, tuple(FastStandardAnalysisStore(path) for path in scopes), run, images)
-        except (ValueError, KeyError) as error:
-            orbit = {"qualified": False, "reason": str(error)}
+        request = dict(capture=str(root / SCENE), sha256=sealed_artifacts[SCENE].removeprefix("sha256:"),
+                       stores=list(map(str, scopes)), run=run, images=images)
+        visual = subprocess.run([sys.executable, "-IB", str(Path(__file__).with_name("ds30_0359_cairo_visual.py"))],
+                                input=json.dumps(request), text=True, capture_output=True, check=False, timeout=45)
+        orbit = json.loads(visual.stdout) if visual.returncode == 0 else {"qualified": False, "reason": visual.stderr}
     checks["visual"] = orbit["qualified"]
     additional = {metric: admission["setup"][metric] + admission["smoke"]["clock"][metric]
                   for metric in ("elapsed_s", "cpu_s")}

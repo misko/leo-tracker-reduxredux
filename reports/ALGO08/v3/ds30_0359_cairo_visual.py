@@ -3,7 +3,10 @@
 from functools import partial
 from hashlib import sha256
 from io import BytesIO
+import json
+from pathlib import Path
 import pickle
+import sys
 from unittest.mock import patch
 
 
@@ -17,16 +20,13 @@ def artist_check(stock, direct):
     return {key: stock[key] == direct[key] for key in ("heading", "footer", "legend", "axes", "ticks")}
 
 
-def products(capture):
+def products(capture, specification):
     import empty_bootstrap as boot
-
-    _, specification, _, _, _ = boot.load_runtime()
     from direct_orbit_entry import native_orbits
     import direct_orbit_figures as orbit
     from history_cairo_artists import native_orbit, stock_orbit
     from leo.presentation import orbit_plot
     from matplotlib import image
-    from pathlib import Path
     from tools.pipeline_eval.variants.experimental import lossless_png, raster_layout, shared_orbit_figures as shared
 
     # The captured file is authored by the candidate and hash checked against
@@ -84,12 +84,12 @@ def products(capture):
     return ordinary, cairo, dict(zip(names, map(artist_check, stock_artists, cairo_artists), strict=True)), gaps, metrics
 
 
-def evidence(capture, stores, run, images):
+def evidence(capture, stores, run, images, specification):
     from history_risk_cairo_0402 import failed_layers
     from named_weak_visual import registered_orbits
     from PIL import Image
 
-    ordinary, cairo, artists, gaps, metrics = products(capture)
+    ordinary, cairo, artists, gaps, metrics = products(capture, specification)
     reproduction, raster, dimensions, registration_errors = {}, {}, {}, {}
     for name in ordinary:
         first, second = [store.artifact(run, name, row[name]["sha256"])
@@ -112,3 +112,17 @@ def evidence(capture, stores, run, images):
     return dict(checks=checks, qualified=all(checks.values()), reproduction=reproduction, artists=artists,
                 legend_gap_px=gaps, registration=raster, failed_layers=failed,
                 registration_errors=registration_errors, render_replay=metrics)
+
+
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import empty_bootstrap as boot
+
+    request = json.load(sys.stdin)
+    capture = Path(request["capture"])
+    boot.checked(capture, request["sha256"])
+    _, specification, _, _, _ = boot.load_runtime()
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+
+    stores = tuple(FastStandardAnalysisStore(Path(path)) for path in request["stores"])
+    print(json.dumps(evidence(capture, stores, request["run"], request["images"], specification), allow_nan=False))
