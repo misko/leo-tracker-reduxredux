@@ -67,3 +67,19 @@ from ready timing. Initial and corrected receipts are retained.
   `0f20009514737da994f1f819bb54080dd38a360233259e0cddacf7edf97c382c`
 - [Initial receipt](measurements/frame-visit-0016-initial.json), SHA-256
   `48ee39e5cd2722ae5e2a3468bbef4dc5e46f0650b9308ff8fd678f258f520450`
+
+## Reader handoff
+
+`SelectiveMember(reader, side_pin, chunk=reader.manifest.chunks[i], side_name=name)`
+opens one declared member and authenticates its complete encoded payload before
+allowing reads. The same keyword arguments work with `read_table` for
+metadata-only validation. Use a basename such as `visit-frames-000001.json`,
+offsets relative to the compressed member, and sequences absolute within the
+segment. The detached producer authority must independently bind the table
+pathname and its SHA-256 digest to the segment manifest and chunk. Without
+keywords the original one-member API still uses `visit-frames.json`.
+`SelectiveMember.read(row, full=...)` accepts a row from the verified
+`SelectiveMember.rows` and returns contiguous CI16 at the requested length.
+The reader extension passed all ten component tests, including an explicit
+second-member table, cross-member and path-escape refusals and corruption in the
+second member. Existing timing receipts reflect the original one-member code.
