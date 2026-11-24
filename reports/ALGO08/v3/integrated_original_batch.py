@@ -28,6 +28,7 @@ THREADS = ("OMP_NUM_THREADS", "OMP_THREAD_LIMIT", "OPENBLAS_NUM_THREADS", "MKL_N
 PATH_OPTIONS = ("--short-binary", "--geographic-library", "--regional-track-library", "--frontier-block-library")
 SIGNED_OPTIONS = ("--legacy-first-map-history", "--legacy-first-map-fast", "--portable-orbit-index")
 FLAGS = ("--history-risk-route", "--cairo-six-sheets", "--verify-original-once", "--sparse8-primary")
+SNAPSHOT_SOURCES = ("prefetch_snapshots.py", "legacy_snapshot_reuse.py")
 
 
 def tagged_bytes(body):
@@ -75,7 +76,7 @@ def checked_artifact(entry):
     return path
 
 
-def make_build(charted_admission):
+def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
     """Freeze one externally reviewed build once, using the existing chart receipt."""
     from integrated_original_entry import PNG_LIBRARY, PNG_SHA
 
@@ -90,6 +91,10 @@ def make_build(charted_admission):
         native[flag] = dict(path=option(flag), sha256=option(flag + "-sha256"))
     source_pins = dict(charted["sources"])
     source_pins[str(Path(__file__).relative_to(ROOT))] = tagged_bytes(Path(__file__).read_bytes())
+    if reuse_prefetched_snapshots:
+        for name in SNAPSHOT_SOURCES:
+            source = HERE / name
+            source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     return dict(
         schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, charted_admission=CHARTED_ADMISSION,
         sources=source_pins, native=native, png=dict(path=str(PNG_LIBRARY), sha256=PNG_SHA),
@@ -98,7 +103,7 @@ def make_build(charted_admission):
     )
 
 
-def load_build(path, pin):
+def load_build(path, pin, *, reuse_prefetched_snapshots=False):
     book = document(path, pin)
     if (book.get("schema") != BUILD_SCHEMA or book.get("charted_commit") != CHARTED_COMMIT
             or book.get("charted_admission") != CHARTED_ADMISSION
@@ -110,6 +115,9 @@ def load_build(path, pin):
         if not source.is_relative_to(ROOT) or source != ROOT / name:
             raise ValueError(f"Source leaves its frozen checkout: {name}")
         checked(source, checksum)
+    if reuse_prefetched_snapshots and any(str((HERE / name).relative_to(ROOT)) not in book["sources"]
+                                          for name in SNAPSHOT_SOURCES):
+        raise ValueError("The build must pin both private snapshot sources")
     native = {flag: checked_artifact(entry) for flag, entry in book["native"].items()}
     png = checked_artifact(book["png"])
     producer = checked_artifact(book["portable_producer"])
@@ -270,6 +278,7 @@ def run(args, authority, region_bytes, book, assets, producer_cutoff):
     eligible = producer_cutoff < authority["causal_cutoff_utc_ns"]
     allowed, guard = paths_for(args, assets)
     parsed_region = None
+    snapshots = [] if getattr(args, "reuse_prefetched_snapshots", False) else None
     sys.addaudithook(guard)
 
     def staged(*call, **options):
@@ -308,6 +317,18 @@ def run(args, authority, region_bytes, book, assets, producer_cutoff):
         return original_portable(config, cutoff) if eligible else None
 
     with ExitStack() as scope:
+        if snapshots is not None:
+            loaded = boot.load_runtime
+
+            def load_with_snapshots():
+                runtime = loaded()
+                import combined_frontier_run as frontier
+                from reports.ALGO08.v3.prefetch_snapshots import binding
+
+                scope.enter_context(binding(frontier, snapshots))
+                return runtime
+
+            scope.enter_context(patch.object(boot, "load_runtime", load_with_snapshots))
         scope.enter_context(patch.object(boot, "staged_scanner", staged))
         scope.enter_context(patch.object(raw, "staged_path", allowed))
         scope.enter_context(patch.object(raw, "deny_backing", lambda _: guard))
@@ -329,6 +350,12 @@ def run(args, authority, region_bytes, book, assets, producer_cutoff):
         raise ValueError("Invalid standard run identifier")
     terminal = args.bulk_root / "fast-scan-automatic-work" / run_id / "terminal.json"
     checked(terminal, receipt["terminal_sha256"])
+    if snapshots is not None:
+        if len(snapshots) != 1:
+            raise ValueError("Expected one scoped private snapshot producer")
+        sources = {name: book["sources"][str((HERE / name).relative_to(ROOT))] for name in SNAPSHOT_SOURCES}
+        write(args.bulk_root / "prefetch-snapshots.json", dict(slots=snapshots[0], source_sha256=sources,
+              native_sha256=witness["native_sha256"], statistics=witness["prefetch"]))
     marker = dict(schema=RELEASE_SCHEMA, build_sha256=args.build_sha256, authority_sha256=args.authority_sha256,
                   archive_sha256=authority["archive_sha256"], session_id=receipt["session_id"], run_id=run_id,
                   terminal_sha256=receipt["terminal_sha256"], decision=receipt["decision"],
@@ -343,6 +370,8 @@ def main(argv=None):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--authority-sha256")
     parser.add_argument("--build-sha256")
+    parser.add_argument("--reuse-prefetched-snapshots", action="store_true",
+                        help="Research-only private lookahead buffers, requiring separately pinned source")
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--verify", action="store_true")
     actions.add_argument("--preflight", action="store_true")
@@ -353,7 +382,8 @@ def main(argv=None):
     if args.freeze_build_from_chart:
         if args.build is None:
             parser.error("supply --build for the new build manifest")
-        write(args.build, make_build(args.freeze_build_from_chart))
+        write(args.build, make_build(args.freeze_build_from_chart,
+                                    reuse_prefetched_snapshots=args.reuse_prefetched_snapshots))
         print(tagged_bytes(args.build.read_bytes()))
         return
     if not args.verify and not all((args.recording, args.archive, args.region, args.bulk_root)):
@@ -365,7 +395,8 @@ def main(argv=None):
         return
     if not args.build or not args.build_sha256:
         parser.error("supply the frozen --build and --build-sha256")
-    book, assets, cutoff = load_build(args.build, args.build_sha256)
+    book, assets, cutoff = load_build(args.build, args.build_sha256,
+                                      reuse_prefetched_snapshots=args.reuse_prefetched_snapshots)
     if args.verify:
         print(json.dumps(dict(schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, build_sha256=args.build_sha256)))
         return
