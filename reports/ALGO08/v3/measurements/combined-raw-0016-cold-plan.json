@@ -1,0 +1,109 @@
+{
+  "case": "DS30-0016",
+  "order": [
+    "candidate",
+    "stock"
+  ],
+  "output": "/dev/shm/leo-v3-combined-raw-0016-result01",
+  "recording": "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261113-112146-b04f5461-1-lower",
+  "stage_receipt": "/dev/shm/leo-v3-guarded-selective-0016-stage01/staging.json",
+  "orbit_mode": "cold",
+  "producer": null,
+  "pack_sha256": "0d590b0c7e4ffc468fb17804146362b8534d33d115d83055ae7bbc1dafd967a9",
+  "receiver_recipe_sha256": "sha256:e49d5059997055d791239d18c0d5051c5060147ed4d8b6a8cbc608076bfbb29e",
+  "offer": {
+    "center": [
+      37.906,
+      -122.545
+    ],
+    "screen_center": [
+      37.5,
+      -122.0
+    ],
+    "width_km": 25.0
+  },
+  "offer_sha256": "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236",
+  "archive": {
+    "copied_bytes": 35763855,
+    "logical_bytes": 82259111,
+    "sha256": "sha256:25bf630b8588a27a23f90de971041ce95b249ce5e1fd2f72144aa8b73945fafc",
+    "snapshots": 46,
+    "unique": 20
+  },
+  "native_library_sha256": {
+    "block": "adfbfca33caee3c6b337ddf401db1112e525867e451ad010eb30cb65965ce042",
+    "geographic": "b8c8e0bb22e62fc69585909f193c76ab22ab4f2892d7fcbedd2cc31c78c573ee",
+    "projection": "7ac9f74eb08d1992bde8738dbc8f6ec9687eb7fe4f5d5f4ae3301ddfa061d0fb",
+    "regional": "5e96851c0f9c479dbb176eeb3f2ba143c461d590a9b35b00fb5c1d7ce984d098",
+    "short": "06570a53032c770d99cc9678b8660e1bb502b71f30fc47c8b1a4a8e31bc19ba9"
+  },
+  "inventory": "sha256:e22b918df63370a0590757b70f71a0e620792cf90cf78a833e601af7a0b395a6",
+  "named": {
+    "version": "ALGO08v3",
+    "frozen_specification": "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
+    "detector_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5"
+  },
+  "combined_raw_sources": {
+    "combined_raw_research.py": "76247ed206c8a50a3c9097d567da89ded3df854d62646caf860ca4f9b18aa55b",
+    "combined_raw_trial.py": "bb72ef98191340338b2252a7e7c3d9ca3fee049db4f59def8e1f0bc4e76b4096",
+    "combined-raw-protocol.md": "f4d79dac33c89a6251b2f2b6523b6089718dcdb41ad1a7f8c8f9911845a8e6aa",
+    "north_orbit_index_raw.py": "d2e2e5ba3f4dba8ad29a2aea48c6469fdc1d91bcd7f2dd9288e9e0559b63795b",
+    "historical_orbit_index.py": "b1d43a1593d25e6232dd8c37b0e548015ca19de10359c43c22e483fb3f8285fe",
+    "portable_orbit_index.py": "5abc8ad7f21ed688dea8b45c20718810f9b3c46d68749a413b985bbabf46db9b",
+    "portable_orbit_compatibility.py": "1c78f21b2715fee8e59e35d6f8eb37377b654d32902318817c8146ceea19d01c",
+    "catalogue_block_port.py": "58822bc2ac42266d4677674bdeeef6e2eb4ee059992ea8ec9c29ffd18c2fd021",
+    "catalogue_block_rank.py": "961bce0676c4cf55da4e72a417f0120aba398d48c4389b905aa3655f0d0f3311",
+    "catalogue_block_bound.py": "757ddbd34b1c933d062d7e1613c5f039c6bb18bf13914b6d09ab51d2578fbe33",
+    "cold_track_row_entry.py": "dfe479e9c6ed3cf9f29f207428888adb8d885aeea20bc4f9efd36e7fb8cef7ae",
+    "continued_cfo.py": "2aba2329564cbe8a0d7697b7b65dd94072e3fbdbfdd1143ea3823fad57ee66b0"
+  },
+  "commands": {
+    "candidate": [
+      "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+      "-IB",
+      "/dev/shm/leo-v3-combined-raw/reports/ALGO08/v3/combined_raw_research.py",
+      "--anchored-cfo-pack",
+      "/dev/shm/leo-anchored-cfo-raw-pack01",
+      "--catalogue-block-rank",
+      "--recording",
+      "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261113-112146-b04f5461-1-lower",
+      "--region",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/offer.json",
+      "--archive",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/tle",
+      "--output",
+      "/dev/shm/leo-v3-combined-raw-0016-result01/candidate",
+      "--short-binary",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/short.so",
+      "--geographic-library",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/geographic.so",
+      "--regional-track-library",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/regional.so",
+      "--frontier-block-library",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/block.so",
+      "--grid-feature-projection-library",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/projection.so",
+      "--prove-empty-graph",
+      "--prove-graph-time-support",
+      "--named-survivor-finish",
+      "--exact-graph-reuse",
+      "--reuse-verified-png-reads",
+      "--one-pass-web-png",
+      "--direct-residual-figures",
+      "--direct-orbit-figures",
+      "--prove-no-active-curvature",
+      "--withhold-empty-family-calibration"
+    ],
+    "stock": [
+      "/opt/leo-algo08/algo08v3/run",
+      "--recording",
+      "/srv/bulk/leo/fast-scan-recordings/fast8-auto-20261113-112146-b04f5461-1-lower",
+      "--region",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/offer.json",
+      "--archive",
+      "/dev/shm/leo-v3-raw-0016-best-results-01/tle",
+      "--bulk-root",
+      "/dev/shm/leo-v3-combined-raw-0016-result01/stock"
+    ]
+  }
+}

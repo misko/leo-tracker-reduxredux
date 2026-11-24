@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 import sys
 
+import pytest
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
@@ -72,3 +74,15 @@ def test_planned_physical_commands_keep_the_same_causal_inputs(tmp_path):
         assert all(cmd[cmd.index(opt)+1] == path for cmd in cmds.values())
     assert ENTRY in cmds["candidate"] and "--catalogue-block-rank" in cmds["candidate"]
     assert cmds["stock"][0] == tmp_path / "named" and "--catalogue-block-rank" not in cmds["stock"]
+
+
+def test_incomplete_physical_stage_does_not_enter_original_launch(tmp_path, monkeypatch):
+    import guarded_cfo_0016_raw
+    from combined_raw_trial import physical_launch
+
+    def reject(*args, **kwargs):
+        raise AssertionError("No code should touch the original physical input")
+
+    monkeypatch.setattr(guarded_cfo_0016_raw, "launch", reject)
+    with pytest.raises(ValueError, match="No authenticated full DS30-0016 stage"):
+        physical_launch(tmp_path / "results", tmp_path)
