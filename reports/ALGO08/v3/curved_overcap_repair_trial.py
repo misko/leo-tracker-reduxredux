@@ -47,9 +47,14 @@ def field_worker_import():
     checked(FIELD / "field_installed_packet_saved.py", FIELD_PIN)
     checked(FIELD / "ds30_0049_saved_crossover.py", HELPER_PIN)
     sys.path[:0] = [str(SOURCE), str(SOURCE.parents[2]), str(FIELD), str(FIELD.parents[2])]
+    import integrated_original_batch as batch
     import field_installed_packet_saved as field
-    import ds30_0049_saved_crossover as crossover
-    if Path(crossover.__file__) != FIELD / "ds30_0049_saved_crossover.py":
+
+    with patch.object(sys, "path", list(sys.path)):
+        import ds30_0049_saved_crossover as crossover
+    if (Path(crossover.__file__) != FIELD / "ds30_0049_saved_crossover.py"
+            or Path(batch.__file__) != SOURCE / "integrated_original_batch.py"
+            or crossover.batch is not batch):
         raise ValueError("The saved worker did not bind its archived crossover")
     return field, crossover
 
