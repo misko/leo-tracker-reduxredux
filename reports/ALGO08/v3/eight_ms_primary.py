@@ -28,13 +28,14 @@ def checked_shape(samples, frames):
     return geometry
 
 
-def build(archive, output, installed, assets):
+def build(archive, output, installed, assets, *, shapes=None):
     host = check_machine()
-    geometries = {arm: checked_shape(*shape) for arm, shape in SHAPES.items()}
+    shapes = SHAPES if shapes is None else shapes
+    geometries = {arm: checked_shape(*shape) for arm, shape in shapes.items()}
     output.mkdir(exist_ok=False)
     started = perf_counter_ns()
     before = resource.getrusage(resource.RUSAGE_CHILDREN)
-    scout = short_signed_trial.build(archive, output / "scouts", installed, assets, apertures=SHAPES)
+    scout = short_signed_trial.build(archive, output / "scouts", installed, assets, apertures=shapes)
     primary = {}
     for arm, source in scout["arms"].items():
         path = output / arm
