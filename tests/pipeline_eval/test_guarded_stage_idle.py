@@ -1,5 +1,6 @@
 import fcntl
 from hashlib import sha256
+import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -10,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 import guarded_cfo_0016_stage as stage
 from guarded_stage_idle import IdleAdmission, IdleWindowExpired, Load, QuietInterval
+from guarded_stage_checkpoint import Extent, verified_extents
 
 
 class Clock:
@@ -114,3 +116,28 @@ def test_busy_storage_times_out_with_no_member_or_checkpoint_mutation(tmp_path):
                           SimpleNamespace(), journal=journal, admission=gate)
     assert not output.exists() and not journal.exists()
     assert gate.reads == 0
+
+
+def test_between_read_pressure_preserves_the_newly_sealed_prefix(tmp_path, monkeypatch):
+    named = tmp_path / "gauss"
+    named.touch()
+    clock = Clock()
+    stage_root = tmp_path / "staged"
+    (stage_root / "segment").mkdir(parents=True)
+    original = tmp_path / "source"
+    original.write_bytes(b"abcdefgh")
+    extent = Extent(Path("segment/payload"), 8, "sha256:" + sha256(b"abcdefgh").hexdigest())
+    output = stage_root / extent.relative
+    journal = stage_root / "checkpoint"
+    paid = []
+    gate = IdleAdmission(named, 5., lambda **event: None, now=clock.now, wait=clock.wait,
+                         observe=lambda device, now: state(now(), queued=7 if paid else 0))
+    monkeypatch.setattr(stage, "BLOCK", 3)
+    monkeypatch.setattr(stage, "sleep", clock.wait)
+    with named.open("rb") as lock, pytest.raises(IdleWindowExpired):
+        stage.copy_member(original, output, extent.size, extent.sha256, lock,
+                          SimpleNamespace(progress=lambda _, n: paid.append(n)), journal=journal, admission=gate)
+    assert paid == [3] and gate.reads == 1
+    completed, partial = verified_extents(stage_root, [extent], json.loads(journal.read_text()))
+    assert not completed and partial.offset == 3
+    assert output.read_bytes() == b"abc"
