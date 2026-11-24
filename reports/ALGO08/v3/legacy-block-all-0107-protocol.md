@@ -1,0 +1,5 @@
+# One DS30-0107 replay with the exact all-member entry
+
+Use the sole literal-compatible DS30-0107 map already authenticated by the first 0107 pair. Copy its commitment unchanged into a detached custody document with the general reader's explicit `literal` tag. Verify and hard-link the exact map and all-member native library. Charge those checks separately. Do not reopen an original member for preparation.
+
+Run one child using the as-measured 765139c70 runtime, same known original recording, same 20/8 receiver, risk solver, portable artifact and conservative renderer flags as the qualified full-map DS30-0016 candidate. Pair it with the sealed 0107 ordinary worker. Use one shared low-priority Gauss slot and reverify signed native detections, support, null calibration arms, reason and absent outputs. Price both median paired and summed gates using actual child clocks and charged admission, with original map preparation cost retained once for first use. Keep the earlier basic trial, bootstrap-only probes and all-member cohort distinct. No additional raw child.
