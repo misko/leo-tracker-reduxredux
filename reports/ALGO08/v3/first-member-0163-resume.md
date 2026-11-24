@@ -30,4 +30,17 @@ The signed original visit, RF, receiver and absolute sample counter identify eac
 
 Comparing the unique singleton rows on each owned lane gives six signed CFO changes from **−127.16 to +144.27 Hz**. Visit 61, receiver 0, channel 6 changed by **+117,998.56 Hz** and **+859 integer epoch samples**, with a different candidate rank. This is a same-lane replacement rather than an exact factor match. The seven owned lanes occur on visits 45–63. These comparisons expose first-member measurement changes on a previously used part of the support while leaving the full candidate receiver selection and both localization outcomes undetermined. No replacement, refit or position estimate ran. [Owner join implementation](first_member_0163_owner_join.py) · [Existing full named control](ds30-0163-combined.md)
 
-Twenty focused and adjacent tests passed. The stage ran at `336f1024c`; the successful two receiver children used `2c0f72b49`. The detector result was sealed at `b7a826ccd` before the owner join. No new RF, cold-repeat source bytes or experiment after the one authorized opportunity were collected.
+## Visit 61 fixed-owner alias check
+
+Both installed calibration arms assigned this original observation to NORAD **67635**, conditional. Both detectors share hardware start counter **32,520,379,791,826**, lower edge and **11,959,687,500 Hz RF**. The native within-probe epochs are **989 + 0.691711 samples** and **1848 − 0.119122 samples**, at ranks 1 and 0. Their absolute integer epochs are **32,520,379,792,815** and **32,520,379,793,674**. The sub-sample separation is **858.189 samples**, or **85.819 µs at 10 MS/s**. These are different atoms from the same original opportunity. [Exact native factors and peer rows](measurements/first-member-0163-alias.json)
+
+The released fit uses signed residual `CFO + k × 227272.727… Hz − prediction` with a fixed native alias per curved fragment. The installed publication computes per-point residuals in memory for figures. It retains the owner IDs and aggregate residual summaries, so the exact archived visit 61 residual and prediction are unavailable for both calibration arms. The frozen fallback uses four original single-factor peers with the same RF, receiver, conditional role and owner. Visits **45, 53, 101 and 109** qualify in both arms and require no peer alias lifts. The target is excluded. Their affine interpolation predicts **−49,105.863 Hz** at the target, with leave-one-peer-out predictions **−49,144.851 to −49,074.512 Hz**. This is a local continuity estimate under both identical owner books, with a descriptive leave-one-out spread. [Frozen fallback](first-member-0163-alias-protocol.md) · [Fixed-owner arithmetic](first_member_0163_alias.py)
+
+| Saved factor | Signed CFO | Ordinary residual vs. peer prediction | Nearest diagnostic `k` | Nearest residual |
+|---|---:|---:|---:|---:|
+| Installed | −49,126.353 Hz | −20.490 Hz | 0 | −20.490 Hz |
+| Sparse | +68,872.210 Hz | +117,978.073 Hz | −1 | −109,294.654 Hz |
+
+The sparse nearest residual stays **−109,326.006 to −109,255.667 Hz** under all four leave-one-out predictions, always with `k = −1`. The exact modulo difference between the two native CFOs is **−109,274.164 Hz**. The discrepancy survives the native alias wrap. A one-point nearest integer is diagnostic and supplies no new track alias, satellite identification, or calibration estimate. [Typed fixed-owner comparison](measurements/first-member-0163-alias.json)
+
+Twenty-two focused and adjacent tests passed. The stage ran at `336f1024c`. The successful two receiver children used `2c0f72b49`. The detector result was sealed at `b7a826ccd` before the owner join. The later checks read only saved artifacts.
