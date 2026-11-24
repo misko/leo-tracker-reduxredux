@@ -115,7 +115,7 @@ class Trace:
 
         def observed_prefetch():
             fetch = load_prefetch()
-            scope = fetch.__globals__
+            scope = fetch.__wrapped__.__globals__
             read = scope["prefetch_member"]
 
             def measure(root, name, size, stats):
