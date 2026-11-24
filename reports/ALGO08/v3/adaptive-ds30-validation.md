@@ -11,17 +11,39 @@
 
 The last three rows cannot supply a cohort runtime or fix-rate estimate for a new end-to-end release. In particular, charging the index construction to the dense case addresses one cost. It still leaves original waveform processing outside both saved clocks. The candidate used an adaptive grid and all eight figures were verified on each saved positive. On DS30-0160 the omitted grid locations have no same-fit full-grid reference. The physical DS30 cases also share a site.
 
+## Complete North simulation with the split archive
+
+Both single-core processes started from stored waveforms, used the same 1,200 scheduled visits and supplied region, and finished their position publication with eight verified figures. The candidate took **9.811 s**, versus **17.255 s** for a fresh installed ALGO08v3 control. It used **9.801 CPU s** versus **17.248 CPU s**. The candidate ran first. These are individual measurements on a previously evaluated simulation. [Paired experiment, clocks and figure checks](north-strict-read.md)
+
+| What the user starts with | ALGO08v3 | Candidate | Speedup |
+|---|---:|---:|---:|
+| Each reader's verified archive ready | 17.255 s | 9.811 s | 1.759× |
+| Existing v3 archive, one analysis including conversion and independent readback | 17.255 s | 18.069 s | 0.955× |
+
+The earlier installed control on these waveforms took 16.133 s, giving 1.644× for the ready archive. Against the fresh control the candidate still needs to save **1.183 s** to reach 2×. The packed payload occupied 1.586 GB versus 1.579 GB for the original. The reader saved decoding work by accessing short observation windows separately. The total speedup also includes changing the detector, solver and renderer. [Reader and solver clocks](north-strict-read.md)
+
+| Horizontal error and frequency residuals | ALGO08v3, zero / fitted calibration | Candidate, zero / fitted calibration |
+|---|---:|---:|
+| Horizontal error | 105.7 / 140.8 m | 112.0 / 128.1 m |
+| Conditional RMS | 5.41 / 5.17 Hz | 9.13 / 8.92 Hz |
+| RMS across all assigned observations | 9.70 / 18.57 Hz | 44.98 / 50.42 Hz |
+
+The lean and exact solvers produced the same positions and ordered assignments on the same 20/8 ms detector packet for North and physical DS30-0016. On identical full-20 ms packets the lean solver lost 49 assignments per arm on DS30-0160, added 26 on DS30-0316 and lost 83 on DS30-0374. Both final fits on DS30-0316 passed the original signed check. That check alone cannot certify equivalent satellite assignments. [Five-packet solver audit](lean-named-parity.md)
+
 ## Keeping ALGO08v3's original position solution
 
-The next solver experiment kept the original satellite selection, repairs, fits, and standard figures and reused repeated computations. All three physical recordings returned exactly the original ordered satellite assignments, both calibration endpoints and RF residuals, the 179-location grid, the path and all eight PNGs. Each comparison starts with the same original signed 20 ms detections. The named comparison clocks are historical. [First two recordings](exact-named-route.md) · [Dense transfer](exact-named-dense.md)
+The next solver experiment kept the original satellite selection, repairs, fits, and standard figures and reused repeated computations. All four physical recordings returned exactly the original ordered satellite assignments, both calibration endpoints and RF residuals, the 179-location grid, the path and all eight PNGs. Each comparison starts with the same original signed 20 ms detections. The named comparison clocks are historical. [First two recordings](exact-named-route.md) · [Third recording](exact-named-dense.md) · [Fourth recording and cohort](exact-named-0402.md)
 
 | Recording | Named v3 elapsed | Exact solver elapsed | Speedup | Horizontal error for both methods, fixed / fitted |
 |---|---:|---:|---:|---:|
 | DS30-0160 | 15.999 s | 10.330 s | 1.55× | 798 / 1,089 m |
 | DS30-0316 | 18.358 s | 16.887 s | 1.09× | 1,945 / 1,863 m |
 | DS30-0374 | 28.324 s | 23.630 s | 1.20× | 1,855 / 1,935 m |
+| DS30-0402 | 73.351 s | 66.203 s | 1.11× | 864 / 860 m |
 
 On the first recording the saved speedup was **1.55×**. Across the first two, total time fell **34.357 → 27.217 s** (**1.26×**), with **1.28×** by the median paired ratio. Adding the prospectively selected 6,770-visit DS30-0374 brought the totals to **62.681 → 50.847 s** (**1.23×**), with **1.20×** by the median paired ratio. Both solvers fixed 3/3. DS30-0160 avoided repeating a fit after recovering a missing prior orbit. DS30-0316 took the ordinary inference path and had no such retry. These cases differ in how much work the solver can reuse.
+
+With DS30-0402 included, both solvers fixed **4/4**. Total elapsed fell from **136.033 to 117.050 s**, a **1.162×** speedup. The median within-recording candidate/v3 time ratio was **0.868** and the summed ratio was **0.860**, against a target of 0.500. DS30-0402 was already a development case. Its constrained optimization ran 393 visits across ten fits. An earlier configuration checked the fitted arm first and used a wider compiled likelihood, preserving the same science in **49.712 s** on this recording. The four-case comparison uses the same frozen solver on every recording. [Four-case results](exact-named-0402.md) · [Earlier DS30-0402 configuration](wide-private-0402.md)
 
 The candidate launches could use the same prebuilt orbit index. Its signed digest and producer match the independently timed **4.320 s** build. Charging that build once across the three completed runs gives **55.168 s**, or **1.14×** versus named v3. DS30-0316 also incurred a 1.127 s rejected startup before its legacy manifest path convention was corrected. Including both that startup and the index gives **56.295 s**, or **1.11×**. The candidate reused four indexed catalogue bodies on DS30-0160 and zero on DS30-0316. [Index build clock](weak-all8-adaptive.md) · [Per-case activation](exact-named-route.md)
 
