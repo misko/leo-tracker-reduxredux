@@ -70,8 +70,11 @@ def run_wait(proof, pin, max_wait):
         raise ValueError("Reopen only a documented terminal relocation rejection")
     sidecar = ROOT / "relocation" / case
     if study.summary(sidecar):
-        raise ValueError("A relocation pair already has a durable disposition")
+        overlay(proof, pin)
+        combine()
+        return 0
     while monotonic() < deadline:
+        retained_attempts(sidecar)
         if not (PRECEDING / "pair.json").is_file():
             sleep(10)
             continue
@@ -89,6 +92,16 @@ def run_wait(proof, pin, max_wait):
                 return 0
         sleep(10)
     return 75
+
+
+def retained_attempts(sidecar):
+    for arm in ARMS:
+        for attempt in (sidecar / arm).glob("attempt-*"):
+            result = attempt / "result.json"
+            if not result.is_file():
+                raise ValueError(f"Preserve and examine the interrupted arm before any restart: {attempt}")
+            if read(result)["outcome"] not in study.VERIFIED:
+                raise ValueError(f"Preserve the failed verification without a retry: {attempt}")
 
 
 def link_immutable(source, target):

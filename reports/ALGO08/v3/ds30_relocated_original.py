@@ -308,7 +308,10 @@ def measured_pair(proof_file, pin, output):
               frozen_order=proof["assigned_order"], initial_campaign_disposition=study.summary(study.OUTPUT / "cases" / case)))
         lease_id = uuid4().hex
         for arm in proof["assigned_order"]:
-            if study.outcome(output, arm)[0] is not None:
+            observed, _ = study.outcome(output, arm)
+            if observed is not None:
+                if observed["outcome"] not in study.VERIFIED:
+                    raise ValueError("A prior arm failed validation; verify it before further acquisition")
                 continue
             quiet, state = study.quiet_window()
             if not quiet:
@@ -318,6 +321,8 @@ def measured_pair(proof_file, pin, output):
             result = study.next_attempt(output, arm)
             run_attempt(result, plan, inputs, offer, authority, arm, lease.fileno(), lease_id, 2, state, study.storage_sample)
             unchanged(proof)
+            if study.outcome(output, arm)[0]["outcome"] not in study.VERIFIED:
+                raise ValueError("The measured arm failed validation; the other arm remains unopened")
         successor, path = study.outcome(output, "successor")
         if successor["outcome"] in study.VERIFIED:
             pin_acquisition = verify_encoded_successor(path.parent / "publication", proof)

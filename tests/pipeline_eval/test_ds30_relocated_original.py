@@ -91,3 +91,15 @@ def test_combined_row_binds_old_and_actual_raw_identities(tmp_path, monkeypatch)
     assert row["generation"] == 2 and row["verified_pair"]
     with pytest.raises(ValueError, match="outside its original roster row"):
         ledger.update_row(source | {"raw_identity_sha256": "other"}, proof)
+
+
+def test_admission_restart_never_reexecutes_unfinished_or_failed_arm(tmp_path):
+    from ds30_paired_inputs import write
+
+    attempt = tmp_path / "successor/attempt-000001"
+    write(attempt / "process.json", {"elapsed_s": 1})
+    with pytest.raises(ValueError, match="interrupted arm"):
+        ledger.retained_attempts(tmp_path)
+    write(attempt / "result.json", {"outcome": "invalid_publication"})
+    with pytest.raises(ValueError, match="without a retry"):
+        ledger.retained_attempts(tmp_path)
