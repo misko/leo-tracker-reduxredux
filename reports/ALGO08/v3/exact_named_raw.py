@@ -218,14 +218,20 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
     if routed:
         decision = audit["history_risk"].get("choice", {})
         detail["raw_route"] = "history_risk_installed"
+        detail["solver_recipe"]["recipe"] = "20/8 ms, held history, earlier-orbit dispatch and standard layout"
         detail["solver_recipe"]["history_risk"] = dict(requested=True, choice=decision.get("route"),
-                                                       reason=decision.get("reason"))
+                                                       reason=decision.get("reason"), optional_prefit_exterior_probe=False)
         detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in RISK_SOURCES})
-    write(args.output/"exact-named-raw-witness.json", detail)
+    write(args.output/"exact-named-raw-witness.json", detail, scientific=routed)
     return terminal, detail
 
 
-def write(path, document):
+def write(path, document, *, scientific=False):
+    if scientific:
+        from aperture_trial import write as write_scientific
+
+        write_scientific(path, document)
+        return
     with path.open("x") as stream:
         json.dump(document, stream, indent=2, allow_nan=False)
         stream.write("\n")

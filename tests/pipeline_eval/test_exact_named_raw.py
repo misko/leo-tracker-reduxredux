@@ -1,7 +1,9 @@
 from contextlib import ExitStack, contextmanager
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from reports.ALGO08.v3 import exact_named_raw as entry
@@ -87,6 +89,16 @@ def test_history_risk_scope_calls_original_solve_and_boundary_once(monkeypatch):
     assert events == ["binding", "solve", "restore"]
     assert audit["boundary_checks"] == [dict(width_km=25.0, terminal_only=True, result=expected,
                                              endpoints_east_north_km={"c0": [12.0, -1.0], "fitted_c": [11.0, -1.0]})]
+
+
+def test_scientific_witness_serializes_real_lean_trace_structure(tmp_path):
+    prefix = [dict(branch=np.int64(1), cpu_ns=6343617, parameters=np.array([2.5, -1.25, 0.0, 0.6]))]
+    cold = dict(cold=dict(prefix=prefix))
+    route = dict(ports=dict(history_risk=dict(lean_attempts=[cold])))
+    witness = tmp_path/"exact-named-raw-witness.json"
+    entry.write(witness, route, scientific=True)
+    loaded = json.loads(witness.read_text())["ports"]["history_risk"]["lean_attempts"][0]["cold"]["prefix"]
+    assert loaded == [dict(branch=1, cpu_ns=6343617, parameters=[2.5, -1.25, 0, 0.6])]
 
 
 def test_staged_scope_denies_symlinks_and_escapes(tmp_path):
