@@ -52,44 +52,50 @@ def attrs():
     return dict(cpu=2, nice=15, ionice=priority, threads={key: 1 for key in THREADS})
 
 
-def run(stage, requested_mode):
+def launch(stage, mode, admission=None):
     config = attrs()
     worker = HERE / "sparse8_cfo_epoch_saved.py"
-    stages = {}
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        for mode in (requested_mode,):
-            if mode == "centroid":
-                control = ordinary_receipt(stage)
-                if document(stage / "ordinary-clock.json")["exit_code"] and not document(control).get("recovered"):
-                    raise ValueError("The ordinary saved publication must complete first")
-            scratch = stage / f"{mode}-scratch"
-            scratch.mkdir()
-            environment = os.environ | dict(
-                TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch), XDG_CACHE_HOME=str(scratch))
-            result = stage / f"{mode}-receipt.json"
-            with (stage / f"{mode}.stdout").open("x") as out, (stage / f"{mode}.stderr").open("x") as err:
-                usage0 = getrusage(RUSAGE_CHILDREN)
-                unix, start = time_ns(), perf_counter_ns()
-                command = [sys.executable, "-IB", str(worker), mode, str(stage)]
-                try:
-                    completed = subprocess.run(command, stdout=out, stderr=err, check=False, timeout=120,
-                                               env=environment, stdin=subprocess.DEVNULL)
-                    exit_code = completed.returncode
-                except subprocess.TimeoutExpired:
-                    exit_code = 124
-                elapsed = (perf_counter_ns()-start)*1e-9
-                finished = time_ns()
-                usage1 = getrusage(RUSAGE_CHILDREN)
-            clock = dict(started_unix_ns=unix, finished_unix_ns=finished, elapsed_s=elapsed, exit_code=exit_code,
-                         cpu_s=usage1.ru_utime-usage0.ru_utime+usage1.ru_stime-usage0.ru_stime,
-                         major_faults=usage1.ru_majflt-usage0.ru_majflt, command=command,
-                         input_blocks=usage1.ru_inblock-usage0.ru_inblock)
-            clock_pin = write(stage / f"{mode}-clock.json", clock)
-            if exit_code:
-                raise RuntimeError(f"{mode} exited {exit_code}. See {stage / (mode+'.stderr')}")
-            result.chmod(0o400)
-            stages[mode] = dict(clock_sha256=clock_pin, receipt_sha256=identifier(result))
+        scratch = stage / f"{mode}-scratch"
+        scratch.mkdir()
+        environment = os.environ | dict(
+            TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch), XDG_CACHE_HOME=str(scratch))
+        result = stage / f"{mode}-receipt.json"
+        command = [sys.executable, "-IB", str(worker), mode, str(stage)]
+        if admission is not None:
+            command.extend(("--admission", admission))
+        with (stage / f"{mode}.stdout").open("x") as out, (stage / f"{mode}.stderr").open("x") as err:
+            usage0 = getrusage(RUSAGE_CHILDREN)
+            unix, start = time_ns(), perf_counter_ns()
+            try:
+                completed = subprocess.run(command, stdout=out, stderr=err, check=False, timeout=120,
+                                           env=environment, stdin=subprocess.DEVNULL)
+                exit_code = completed.returncode
+            except subprocess.TimeoutExpired:
+                exit_code = 124
+            elapsed = (perf_counter_ns()-start)*1e-9
+            finished = time_ns()
+            usage1 = getrusage(RUSAGE_CHILDREN)
+        clock = dict(started_unix_ns=unix, finished_unix_ns=finished, elapsed_s=elapsed, exit_code=exit_code,
+                     cpu_s=usage1.ru_utime-usage0.ru_utime+usage1.ru_stime-usage0.ru_stime,
+                     major_faults=usage1.ru_majflt-usage0.ru_majflt, command=command,
+                     input_blocks=usage1.ru_inblock-usage0.ru_inblock)
+        clock_pin = write(stage / f"{mode}-clock.json", clock)
+        if exit_code:
+            raise RuntimeError(f"{mode} exited {exit_code}. See {stage / (mode+'.stderr')}")
+        result.chmod(0o400)
+        products = dict(clock_sha256=clock_pin, receipt_sha256=identifier(result))
+    return products, config
+
+
+def run(stage, requested_mode):
+    if requested_mode == "centroid":
+        control = ordinary_receipt(stage)
+        if document(stage / "ordinary-clock.json")["exit_code"] and not document(control).get("recovered"):
+            raise ValueError("The ordinary saved publication must complete first")
+    products, config = launch(stage, requested_mode)
+    stages = {requested_mode: products}
     if requested_mode == "ordinary":
         print(stages[requested_mode]["receipt_sha256"], flush=True)
         return
@@ -138,14 +144,14 @@ def recover_ordinary(stage):
     print(write(stage / "ordinary-recovered.json", result))
 
 
-def geography():
+def geography(case=CASE):
     root = HERE.parents[2]
     body = subprocess.check_output([
         "git", "-c", f"safe.directory={root}", "-C", str(root), "show",
         "2d0ad2dfd:reports/2026_11_21_ds30_full/reference-audit.json"])
     if sha256(body).hexdigest() != REFERENCES:
         raise ValueError("The reviewed survey audit differs")
-    row, = (row for row in json.loads(body)["cases"] if row["dataset_label"] == CASE
+    row, = (row for row in json.loads(body)["cases"] if row["dataset_label"] == case
             and row["authority_eligible"] and row["sealed_metadata_digests_verified"])
     return [row["reference"][name] for name in ("latitude_deg", "longitude_deg")]
 
