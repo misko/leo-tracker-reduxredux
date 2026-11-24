@@ -84,6 +84,36 @@ def paired_timing(pairs, metric):
                 median_paired_speedup=1 / median(b / a for a, b in matched))
 
 
+def calibration_segment_error_km(reference, zero, fitted):
+    """Closest possible horizontal error on the minor arc joining the two published solutions."""
+    if reference is None or zero is None or fitted is None:
+        return None
+    radius = 6371.0088  # The sphere used by scoring.distance_km.
+    length = distance_km(zero, fitted) / radius
+    if math.pi - length < 1e-12:
+        return None  # The endpoints do not specify a unique shortest arc.
+    start_error = distance_km(zero, reference)
+    endpoint_minimum = min(start_error, distance_km(fitted, reference))
+    if length < 1e-12 or endpoint_minimum == 0:
+        return endpoint_minimum
+    lat, lon = map(math.radians, zero)
+
+    def bearing_to(point):
+        other_lat, other_lon = map(math.radians, point)
+        east = math.cos(other_lat) * math.sin(other_lon - lon)
+        north = (math.cos(lat) * math.sin(other_lat)
+                 - math.sin(lat) * math.cos(other_lat) * math.cos(other_lon - lon))
+        return math.atan2(east, north)
+
+    angle = bearing_to(reference) - bearing_to(fitted)
+    separation = start_error / radius
+    along = math.atan2(math.sin(separation) * math.cos(angle), math.cos(separation))
+    if not 0 < along < length:
+        return endpoint_minimum
+    cross = abs(math.sin(separation) * math.sin(angle))
+    return min(endpoint_minimum, radius * math.asin(min(1., cross)))
+
+
 def score_arms(arms, reference):
     output = {}
     for name in ARMS:
@@ -93,6 +123,8 @@ def score_arms(arms, reference):
             raise ValueError("Invalid calibrated RF residual")
         output.update({name + "_fix": point is not None, name + "_error_km": distance_km(reference, point),
                        name + "_rf_rms_hz": rms})
+    output["calibration_segment_min_error_km"] = calibration_segment_error_km(
+        reference, arms["c0"]["latlon"], arms["fitted_c"]["latlon"])
     return output
 
 
@@ -213,6 +245,13 @@ def write_report(pairs, output, enrollment, receipt_digest):
                             lost=sum(a[arm + "_fix"] and not b[arm + "_fix"] for a, b in pairs),
                             largest_increases=sorted((item for item in delta if item[0] > 0), reverse=True)[:5])
     metadata["paired_error_changes"] = changes
+    blendable = [(a, b) for a, b in pairs if a["fitted_c_error_km"] is not None
+                 and b["calibration_segment_min_error_km"] is not None]
+    regressions = [(a, b) for a, b in blendable if b["fitted_c_error_km"] - a["fitted_c_error_km"] > .001]
+    residual = [b["calibration_segment_min_error_km"] - a["fitted_c_error_km"] for a, b in regressions]
+    metadata["calibration_blend_bound"] = dict(shared_scored=len(blendable), tolerance_km=.001,
+                                               fitted_regressions=len(regressions),
+                                               regressions_remaining=sum(d > .001 for d in residual))
     joint = Counter((a["outcome"], b["outcome"]) for a, b in pairs)
     metadata["paired_outcomes"] = [
         {"installed": a, "successor": b, "recordings": n} for (a, b), n in sorted(joint.items())]
@@ -290,6 +329,13 @@ def write_report(pairs, output, enrollment, receipt_digest):
     if worst:
         lines += ["", "The largest fitted-error increases on shared fixes were " +
                   ", ".join(f"{case} (+{delta:.3f} km)" for delta, case in worst) + "."]
+    if regressions:
+        lines += ["", f"The candidate's fitted error increased by more than 1 m on {len(regressions)} of "
+                  f"{len(blendable)} shared fixes. On **{metadata['calibration_blend_bound']['regressions_remaining']} "
+                  f"of those {len(regressions)}**, even the point closest to the reference on the shortest arc "
+                  "between its fixed-zero and fitted solutions still exceeded ALGO08v3's fitted error by more "
+                  "than 1 m. This retrospective bound applies to choosing or interpolating the published endpoints. "
+                  "A fresh nonlinear fit can move beyond them."]
     lines += ["", "A separate crossover on DS30-0049 tested both solvers on each saved receiver output. "
               "Both solvers returned 1.420 km fitted error on the installed detections and 4.040 km on the "
               "candidate detections. The receiver change accounted for the difference on this recording. "
@@ -299,6 +345,13 @@ def write_report(pairs, output, enrollment, receipt_digest):
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
               "authority. All recordings come from the Gauss roof. The results measure repeatability at this site.", "",
+              "A separate South simulation tested a different offered region on previously authenticated detector "
+              "packets. With the receiver 1 km inside the north face, fitted errors were 1,099 m for ALGO08v3 "
+              "and 363 m for the candidate. With the receiver 1 km outside, both published a false fix. "
+              "The candidate's two estimates reached the north face and its 25 exterior probes still allowed "
+              "publication. These saved-input trials are separate from the measured DS30 distributions. "
+              "[South region test and verified products](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "b8bbee45a207f6de4e766ae925de15a3dbf0c804/reports/ALGO08/v3/frozen-south-north-face.md)", "",
               "### Outcomes on the same recording", ""]
     labels = {"complete": "Fix", "withheld": "Withheld", "solver_failed": "Solver failure",
               "worker_failed": "Worker failure", "invalid_publication": "Invalid publication"}

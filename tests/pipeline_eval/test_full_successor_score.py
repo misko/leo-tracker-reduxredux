@@ -4,7 +4,8 @@ import json
 import pytest
 from PIL import Image
 
-from full_successor_score import PINS, outcomes_summary, paired_rows, paired_timing, roster, score_arms, write_report
+from full_successor_score import (PINS, calibration_segment_error_km, outcomes_summary, paired_rows,
+                                  paired_timing, roster, score_arms, write_report)
 
 
 def arms(point):
@@ -36,6 +37,16 @@ def test_failed_fix_remains_in_population_and_rf_summaries_are_separate():
     assert result["fitted_c"]["rf_rms_hz"]["p50"] == 100
     with pytest.raises(ValueError, match="every assigned"):
         outcomes_summary(rows[:1], {"a", "b"})
+
+
+def test_calibration_segment_treats_clipped_endpoints_and_antimeridian_as_geography():
+    degree = 111.1950802335
+    assert calibration_segment_error_km([1, 180], [0, 179], [0, -179]) == pytest.approx(degree)
+    assert calibration_segment_error_km([0, 180], [0, -179], [0, 179]) == pytest.approx(0, abs=1e-8)
+    assert calibration_segment_error_km([0, 3], [0, 1], [0, 2]) == pytest.approx(degree)
+    assert calibration_segment_error_km([0, 0], [0, 1], [0, 1]) == pytest.approx(degree)
+    assert calibration_segment_error_km([5, 1], [0, 0], [0, 180]) is None
+    assert calibration_segment_error_km([0, 0], None, None) is None
 
 
 def matching_pair():
@@ -121,6 +132,13 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
                          "child_finished_unix_ns": 2 if (role["algorithm"] == "installed") == bool(i % 2) else 4,
                          "outcome": "complete" if fix else "withheld",
                          "arms": arms([48., 7.] if fix else None)})
+            if i in (5, 6):
+                lat, lon = item["reference"]
+                endpoints = arms([lat + .001, lon])
+                if role["algorithm"] == "successor":
+                    endpoints = arms([lat + .02, lon])
+                    endpoints["c0"]["latlon"] = [lat + (-.01 if i == 5 else .01), lon]
+                rows[-1]["arms"] = endpoints
     failed = next(row for row in rows if row["case"] == "DS30-0397" and row["algorithm"] == "installed")
     failed.update(outcome="solver_failed", arms=arms(None), timing_scope="raw_launch_to_exit")
     pairs = paired_rows(rows, assigned)
@@ -131,6 +149,8 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         "required_speedup": 2.0, "summed_speedup": False, "median_paired_speedup": True, "both_met": False}
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
     assert report["paired_error_changes"]["fitted_c"]["gained"] == 1
+    assert report["calibration_blend_bound"] == {
+        "shared_scored": 453, "tolerance_km": .001, "fitted_regressions": 2, "regressions_remaining": 1}
     assert report["paired_outcomes"] == [{"installed": "complete", "successor": "complete", "recordings": 453},
                                          {"installed": "complete", "successor": "withheld", "recordings": 1},
                                          {"installed": "solver_failed", "successor": "complete", "recordings": 1}]
