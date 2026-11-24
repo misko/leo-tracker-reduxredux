@@ -61,7 +61,7 @@ def compare_rows(actual, previous):
                 max_changed_cfo_hz=max_delta, signed_probe_sha256=canonical_digest(actual))
 
 
-def seal(root):
+def seal(root, *, verified_source=None, allow_resident_process_paging=False):
     from anchor_exposure import enroll
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -71,10 +71,13 @@ def seal(root):
     stock = controls["stock"]
     binding, clock = (read(root / f"{key}.json") for key in ("binding", "clock"))
     for name, pin in binding["source_sha256"].items():
-        checked(HERE / name, pin)
+        if verified_source is None:
+            checked(HERE / name, pin)
+        else:
+            verified_source(name, pin)
     matched = ("request", "assignment", "historical", "machine", "selector", "libraries", "pack_sha256")
-    if (any(binding[k] != old_binding[k] for k in matched)
-            or any(clock[k] for k in ("exit_code", "major_faults", "input_blocks"))):
+    if (any(binding[k] != old_binding[k] for k in matched) or clock["exit_code"]
+            or not allow_resident_process_paging and any(clock[k] for k in ("major_faults", "input_blocks"))):
         raise ValueError("Pair does not match the original resident assignment and native libraries")
     cache = {when: read(root / f"cache-{when}.json") for when in ("before", "after")}
     for state in cache.values():

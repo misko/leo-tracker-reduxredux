@@ -10,7 +10,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 
 from north_orbit_index_raw import main
-from north_orbit_index_trial import HOUR_NS, snapshot_census
+from north_orbit_index_trial import HOUR_NS, diagnostics, snapshot_census
 
 
 def test_census_preserves_current_stamps_and_distinct_content():
@@ -47,3 +47,13 @@ def test_adapter_keeps_original_guarded_receiver_args_and_charges_prep(monkeypat
     audit = json.loads((tmp_path/"orbits-indexed.json").read_bytes())
     assert audit["attempts"] == [{"guard": True}]
     assert len(audit["adapter_sha256"]) == 64
+
+
+def test_verified_diagnostics_compare_proof_and_fallback_rather_than_clocks():
+    source = dict(early_regional=[dict(result=dict(probes_evaluated=25, stop="inside_score"), cpu_s=1.)],
+                  solve=dict(orbit_policy="stock"), route_details=dict(exterior={"evaluated": True}, decision="complete"))
+    verified = diagnostics(source)
+    source["early_regional"][0]["cpu_s"] = 2.
+    assert diagnostics(source) == verified
+    source["route_details"]["fallback_clocks"] = {"cpu_s": 2.}
+    assert diagnostics(source) != verified and diagnostics(source)["infer_fallback"]

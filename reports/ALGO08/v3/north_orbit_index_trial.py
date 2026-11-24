@@ -4,6 +4,7 @@ import argparse
 from hashlib import sha256
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -18,6 +19,7 @@ PORTABLE = Path("/dev/shm/leo-v3-portable-orbit-publication-01/result.json")
 PORTABLE_PIN = "f052e299962f557ee220b7485f3d356fbdee3b7797ee1bc1217341e57b37c2d2"
 FALLBACK = Path("/dev/shm/leo-v3-north-historical-orbits-result01")
 FALLBACK_PIN = "d332e7b04bd7712fa296ed5bae941ab978a6d89b2a0f1eecae30eb80ff2b4a8c"
+RESEARCH_PIN = "9faf7ab1bbb401e84089ea9a370562e1ca8387838bf23c20ea120584a5eb7154"
 HOUR_NS = 3_600_000_000_000
 
 
@@ -67,41 +69,89 @@ def launch(root):
         trial_protocol=HERE/"north-orbit-index-protocol.md", extra_sources=tuple(HERE/name for name in helpers))
 
 
-def score(root):
+def diagnostics(research):
+    route = research["route_details"]
+    return dict(probes=[row["result"] for row in research["early_regional"]], exterior=route["exterior"],
+                decision=route["decision"], fallback_reason=route.get("reason"), infer_fallback="fallback_clocks" in route,
+                orbit_policy=research["solve"]["orbit_policy"])
+
+
+def score(root, *, retain_broken=False):
     from aperture_trial import read, write
-    from continued_cfo_north_trial import score as existing_score, seal as existing_seal
+    from continued_cfo_north_trial import control, score as existing_score, seal as existing_seal
     from empty_bootstrap import checked
-    from joint_held_north_raw import check_arms, references
-    from regional_history_score import scientific
+    from joint_held_north_raw import REFERENCE, check_arms, compare_figure, references
+    from leo.contracts.digests import canonical_digest
+    from north_held_anchor_pair import publication_evidence, tmpfs
+    from regional_history_score import one, scientific
 
     archives, counts = admitted_inputs()
-    existing_seal(root)
+    binding = read(root/"binding.json")
+
+    def verified_source(name, pin):
+        path = f"reports/ALGO08/v3/{name}"
+        content = subprocess.check_output(["git", "-C", str(HERE.parents[2]), "show", f"{binding['commit']}:{path}"])
+        if sha256(content).hexdigest() != pin:
+            raise ValueError(f"The frozen scoring input changed for {name}")
+
+    # Process-level paging can include program and library pages. The original
+    # signed waveform and its index remain physically backed by resident tmpfs.
+    for port in ("recording", "inside_offer"):
+        tmpfs(Path(binding["request"][port]))
+    tmpfs(Path(binding["request"]["archive"]["root"]))
+    existing_seal(root, verified_source=verified_source, allow_resident_process_paging=True)
     existing_score(root)
     new, old = read(root/"sealed.json"), archives["sealed"]
     fallback = json.loads(checked(FALLBACK/"sealed.json", FALLBACK_PIN))
     audit = read(root/"orbits-indexed.json")
     attempt, = audit["attempts"]
-    named = references()[1]["stock"]
+    named_binding, original = references()
+    named = original["stock"]
+    named_folder = REFERENCE/"stock"
+    attested_named = publication_evidence(named_folder, named["verified"]["receipt"], named["clock"], named_binding["assignment"])
+    attested_named.pop("native")
+    named_manifest = read(one(named_folder, "manifest.json"))
     check_arms(named["verified"]["arms"])
+    _, all_paid = control()
+    prior_research = json.loads(checked(SELECTIVE/"containing/joint-research-receipt.json", RESEARCH_PIN))
+    matched_diag = diagnostics(read(root/"containing/joint-research-receipt.json"))
+    old_diag = diagnostics(prior_research)
+    if retain_broken:
+        if (matched_diag["fallback_reason"] != "exterior_evidence_unavailable" or not matched_diag["infer_fallback"]
+                or not any(row.get("diagnostic_error", "").startswith("every item must be a Satrec")
+                           for row in matched_diag["probes"])):
+            raise ValueError("Expected the known misplaced-materialization diagnostic")
+    elif matched_diag != old_diag or matched_diag["infer_fallback"] or any("diagnostic_error" in row for row in matched_diag["probes"]):
+        raise ValueError("Indexed preparation changed the original exterior diagnostics")
     current = new["raw"]
     if (not attempt["guard"] or attempt["fallback"] is not None or attempt["port"] != "regional"
-            or audit["adapter_sha256"] != read(root/"binding.json")["source_sha256"]["historical_orbit_index.py"]
+            or audit["adapter_sha256"] != binding["source_sha256"]["historical_orbit_index.py"]
             or attempt["bodies"] != counts["72"]["unique_bodies"] or not all(new["comparisons"].values())
             or new["candidate"]["native_sha256"] != old["candidate"]["native_sha256"]
             or current["held_anchor_route"] != old["raw"]["held_anchor_route"]
             or current["receipt"]["terminal_sha256"] != old["raw"]["receipt"]["terminal_sha256"]
             or current["receipt"]["terminal_sha256"] != fallback["raw"]["receipt"]["terminal_sha256"]
             or current["receipt"]["region"] != named["verified"]["receipt"]["region"]
+            or any(canonical_digest(attested_named[key]) != canonical_digest(named[key])
+                   for key in ("grid_points", "verified", "figures", "native_sha256"))
+            or any(named_manifest["arms"][arm]["owner_sha256"] != owner for arm, owner in named["verified"]["owners"].items())
             or scientific(root/"containing") != scientific(SELECTIVE/"containing")):
         raise ValueError("The cold index did not activate or changed the sealed selective publication")
     historical = {"selective": dict(clock=old["clock"], phases=old["raw"]["phases"],
                   solve=old["solver"]["solve"], evidence=old["candidate"], roles=old["roles"]),
-                  "all_paid": dict(clock=old["controls"]["guarded_clock"], phases=old["controls"]["guarded_phases"]),
+                  "all_paid": dict(clock=old["controls"]["guarded_clock"], phases=old["controls"]["guarded_phases"],
+                                   evidence=all_paid["candidate"], roles=all_paid["owners"]),
                   "named": named}
     write(root/"result.json", dict(candidate_seal_sha256=sha256((root/"sealed.json").read_bytes()).hexdigest(),
         selected_reference_pins=SELECTIVE_PINS, saved_portable_sha256=PORTABLE_PIN, archive_sizes=counts,
         phases=current["phases"], solve=new["solver"]["solve"], clock=new["clock"], audit=audit,
         graph_and_media=new["candidate"], ordered_roles=new["roles"], prior=historical,
+        diagnostics=matched_diag, original_diagnostics=old_diag, diagnostic_fallback=retain_broken,
+        named_owner_counts={arm: data["associated_points"] for arm, data in named_manifest["arms"].items()},
+        named_grid_path_match={name: digest == named["verified"]["scientific_digests"][name]
+                               for name, digest in new["candidate"]["verified"]["scientific_digests"].items()},
+        named_figures={name: compare_figure(image, named["figures"][name])
+                       for name, image in new["candidate"]["figures"].items()},
         score=read(root/"score.json"), comparisons=new["comparisons"], cache=new["cache"],
         fallback=dict(sealed_sha256=FALLBACK_PIN, clock=fallback["clock"], phases=fallback["raw"]["phases"],
                       solve=fallback["solver"]["solve"]),
@@ -151,6 +201,7 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("mode", choices=("screen", "preflight", "launch", "score"))
     cli.add_argument("root", nargs="?", type=Path)
+    cli.add_argument("--retain-broken", action="store_true")
     args = cli.parse_args()
     if args.mode == "screen":
         _, sizes = admitted_inputs()
@@ -160,4 +211,7 @@ if __name__ == "__main__":
     else:
         if args.root is None:
             cli.error("An output root is required")
-        (launch if args.mode == "launch" else score)(args.root)
+        if args.mode == "launch":
+            launch(args.root)
+        else:
+            score(args.root, retain_broken=args.retain_broken)
