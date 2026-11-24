@@ -1,0 +1,20 @@
+# DS30-0004 can prove repair rejection once the fixed arm finishes
+
+The completed `c = 0` arm rejected **138 of 2,490** curved observations, already above the released **124-point** repair cap. This alone forces the original paired gate to fail. The ordinary repair removes the union of incompatible curved fragments, so the fitted-`c` arm can only preserve or increase the removal count. The measured fitted arm rejected 71 observations, all on fragments already rejected by the fixed arm. The original repair refused without refitting. It also counted 86 of 1,037 predictive points and 7 of 121 tracks removed, above their own caps. The curved count alone is sufficient. [Released paired gate](../../../src/leo/analysis/localization_v3/history_policy.py) · [Original repair](blind_joint_repair.py) · [DS30-0004 saved comparison](history-risk-0004.md)
+
+| Already measured DS30-0004 stage | CPU s | Elapsed s |
+| --- | ---: | ---: |
+| Cold nomination and refinement | 5.034 | 5.035 |
+| Initial curved gates and preparation | 2.280 | 2.281 |
+| Curved salvage | 1.668 | 1.668 |
+| Predictive stage clock reported by the worker | 0.251 | 0.251 |
+| Both final ordinary arms together | 0.731 | 0.835 |
+| Ordinary repair preparation through rejection | 0.0037 | 0.0037 |
+| Entire rejected lean attempt | 10.472 | 10.578 |
+| Original solver fallback | 36.860 | 37.214 |
+
+The certificate requires the finalized first arm. Its maximum effect is one remaining arm plus repair preparation. The receipt has a combined arm clock, so **0.734 CPU s / 0.839 elapsed s** is a deliberately generous upper bound that includes the first arm. Even this bound leaves **9.738 CPU s** in the rejected attempt and **9.184 s** of the observed routed-versus-named wall regression. It cannot remove the 8.982 CPU s already spent on cold, initial gate and salvage. The listed substage clocks cover selected stages rather than the whole attempt. [Sealed arithmetic and source pins](measurements/repair-cap-prefix.json)
+
+The scope is the ordinary fixed-support finish with the ordinary cap-based repair. The isolated salvage branch has a distinct endpoint certificate and cannot use this control as a substitute. The early gate runs at a fitted cold point and uses a different retained mask and model state. DS30-0004 went from 3,257 offered observations to 2,097 initial survivors and regained 864 during salvage before settling at 2,490. The finalized gates depend on the fitted point, phase, nuisance, aliases and conditional residuals. The cold shortlist ambiguity and early failure counts therefore provide no monotone lower bound on the final masked losses. Earlier North work measured up to 0.722 CPU s of repeat cold ranking and regional proof inside that recording's fallback. This certificate removes a different call and does not transfer the North savings. [Curved fit and gate chronology](blind_joint_finish.py) · [Earlier North fallback study](north-fallback-overlap.md)
+
+The source-pinned prototype abstains unless the finished first-arm gate rows are complete, unique and have exactly the admitted curved point count. It refuses only on strict integer exceedance of the released cap. DS30-0016 passed directly with 0 of 92 lost, and DS30-0402 kept the original successful repair with 62 of 4,103 lost. Fixture tests exercised the exact cap boundary, malformed prefixes and every second-arm failure subset of a fixed example against the original acceptance functions. Three tests passed under the shared one-core lock. The real saved audit also ran under that lock using sealed receipts. No fitter or waveform execution was repeated, and no solver binding was changed. The unchanged arms, signed RF, owner rows, grid and eight images in the original DS30-0004 comparison establish the fallback outcome that the certificate would preserve. The two-arm per-call wall difference and any live guard cost remain unmeasured. [Prototype](repair_cap_prefix.py) · [Tests](../../../tests/pipeline_eval/test_repair_cap_prefix.py)
