@@ -33,9 +33,14 @@ EXACT_ROUTE_SHA256 = "8799f632207d4a1b65954e454766605dcad109a799b9b81a08158c3a2e
 DENSE_LEAN_CLOCK_SHA256 = "06eb41d41537adb0783b049258f0964e1fce5b744093a79b1994b4d1ff346c02"
 DENSE_LEAN_WITNESS_SHA256 = "46080930eec33cf3586d8dc226c86d56324b734ef18349445b502bd31556d4e9"
 EXPECTED = {"0160": "named", "0316": "lean"}
+CASES = (*EXACT, "0169")
 
 
 def request_binding(case):
+    if case == "0169":
+        from history_risk_0169_input import bind
+
+        return bind()
     if case == "0402":
         import exact_named_0402 as dense
 
@@ -59,6 +64,8 @@ def sources(case):
         names += ("history-risk-0374-protocol.md", "exact_named_dense.py")
     elif case == "0402":
         names += ("history-risk-0402-protocol.md", "exact_named_0402.py")
+    elif case == "0169":
+        names += ("history-risk-held-0169-protocol.md", "history_risk_0169_input.py")
     return {name: exact.digest(HERE/name) for name in names}
 
 
@@ -134,9 +141,14 @@ def launch(case, output, *, stock_command=None):
     started = process_time_ns(), perf_counter_ns()
     machine = host()
     entry, request = request_binding(case)
-    archive, archive_pin = EXACT[case]
-    if not pinned(archive/"result.json", archive_pin)["exact"]:
-        raise ValueError("The ordinary exact reference was not verified")
+    if case == "0169":
+        from history_risk_0169_input import PINS
+
+        archive_pin = PINS["stock/joint-research-receipt.json"]
+    else:
+        archive, archive_pin = EXACT[case]
+        if not pinned(archive/"result.json", archive_pin)["exact"]:
+            raise ValueError("The ordinary exact reference was not verified")
     pinned(*EARLIER)
     if case == "0316":
         pinned(LEAN/"candidate/joint-research-receipt.json", LEAN_WITNESS_SHA)
@@ -180,9 +192,18 @@ def score(case, output):
     assignment = exact.read(output/"binding.json")["input"]
     req = exact.read(Path(assignment["request"]))
     clock = exact.read(output/"clock.json")
-    control_path, control_pin = EXACT[case]
-    control = pinned(control_path/"result.json", control_pin)
-    named = verified(control_path/"candidate", control["clocks"]["candidate"], "worker.json", req)
+    if case == "0169":
+        from history_risk_0169_input import PINS, STAGE, STOCK_WORKER
+
+        baseline = pinned(STAGE/"stock-clock.json", PINS["stock-clock.json"])["timing"]
+        pinned(STAGE/"stock"/STOCK_WORKER, PINS[f"stock/{STOCK_WORKER}"])
+        pinned(STAGE/"stock/joint-research-receipt.json", PINS["stock/joint-research-receipt.json"])
+        named = verified(STAGE/"stock", baseline, STOCK_WORKER, req)
+        control = {"clocks": {"named": baseline, "candidate": None}}
+    else:
+        control_path, control_pin = EXACT[case]
+        control = pinned(control_path/"result.json", control_pin)
+        named = verified(control_path/"candidate", control["clocks"]["candidate"], "worker.json", req)
     actual = verified(output/"candidate", clock, "worker.json", req)
     route, = exact.read(output/"risk-route.json")["solves"]
     ports = exact.read(output/"candidate/ports.json")
@@ -190,10 +211,19 @@ def score(case, output):
     if (case in EXPECTED and proof["route"] != EXPECTED[case]
             or "census" in proof and proof["census"]["cutoff_utc_ns"] != req["causal_cutoff_utc_ns"]):
         raise ValueError("The risk flag did not choose the frozen authentic branch")
-    if (len(ports["history"]["prepare"]) != 1 or route["inference_calls"] != 1
-            or ports["history"]["solves"] != 1 or len(actual["products"]["images"]) != 8
-            or actual["sample"]["evaluated_points"] != 179 or not actual["sample"]["complete"]):
-        raise ValueError("The candidate owes one real preparation and a complete saved publication")
+    preparation_count = len(ports["history"]["prepare"])
+    if ports["history"]["solves"] != 1 or not preparation_count or not route["inference_calls"]:
+        raise ValueError("The candidate owes a real preparation and a complete saved publication")
+    if case != "0169" and (preparation_count != 1 or route["inference_calls"] != 1):
+        raise ValueError("The archived route trial used one preparation and one inference")
+    complete = actual["worker"]["receipt"]["decision"] == "complete"
+    if complete:
+        if (len(actual["products"]["images"]) != 8 or actual["sample"]["evaluated_points"] != 179
+                or not actual["sample"]["complete"]):
+            raise ValueError("A fix must carry its complete standard publication")
+    elif (case != "0169" or actual["products"]["images"] or actual["sample"] is not None or actual["path"] is not None
+          or any(row["latlon"] is not None or row.get("rf_rms_hz") is not None for row in actual["terminal"]["arms"].values())):
+        raise ValueError("Expected a standard withholding decision with no fix media")
     matches = parity(named, actual)
     lean = None
     if case == "0160":
@@ -229,7 +259,7 @@ def score(case, output):
           lean_owner_delta={arm: owner_delta(lean["rows"][arm], actual["rows"][arm]) for arm in ("c0", "fitted_c")} if lean else None,
           lean_attempts=[{k: row[k] for k in ("candidate_pre_evidence_clocks", "named_survivor_fit", "exterior_clocks",
                                              "standard_evidence_clocks", "decision") if k in row} for row in route["lean_attempts"]],
-          owners={arm: owner_delta(named["rows"][arm], actual["rows"][arm]) for arm in ("c0", "fitted_c")},
+          owners={arm: owner_delta(named["rows"][arm], actual["rows"].get(arm, [])) for arm in ("c0", "fitted_c")},
           published=dict(worker=actual["worker"], terminal=actual["terminal"], products=actual["products"], science=actual["science"]),
           scientific=calibration_comparison({k: dict(arms=v) for k, v in summaries.items()}, req["case"]),
           binds={file: exact.digest(output/file) for file in
@@ -239,7 +269,7 @@ def score(case, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("launch", "worker", "score"))
-    parser.add_argument("case", choices=EXACT)
+    parser.add_argument("case", choices=CASES)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     {"launch": launch, "worker": worker, "score": score}[args.action](args.case, args.output)
