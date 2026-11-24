@@ -101,7 +101,9 @@ def run(args):
             stack.enter_context(patch.object(boot, "load_runtime", load_with_maps))
         terminal = route.run(args)
     if audit is not None:
-        route.write(args.output / "legacy-map-acquisition.json", audit, scientific=True)
+        from legacy_map_receipt import write
+
+        write(args.output / "legacy-map-acquisition.json", audit)
     return terminal
 
 
