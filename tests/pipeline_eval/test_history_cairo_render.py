@@ -53,3 +53,17 @@ def test_artist_limits_are_sealed_but_residual_ticks_may_change():
     plotted["residual"][0] = dict(sheet, axes=[dict(axis, xlim=[0, 250])])
     with pytest.raises(ValueError, match="xlim"):
         compare_artists(stock, plotted)
+
+
+def test_shared_axis_witness_keeps_only_drawn_labels():
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
+    from reports.ALGO08.v3.history_cairo_artists import visible_ticks
+
+    figure = Figure()
+    first, last = figure.subplots(2, sharex=True)
+    last.set_xticks([0., 0.5, 1.])
+    FigureCanvasAgg(figure).draw()
+    assert visible_ticks(first)[0] == []
+    assert visible_ticks(last)[0] == [(0., "0.0"), (0.5, "0.5"), (1., "1.0")]

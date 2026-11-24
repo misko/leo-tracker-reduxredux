@@ -30,9 +30,9 @@ def collections(axis):
 
 
 def visible_ticks(axis):
-    return [[(round(float(x), 10), label.get_text()) for x, label in zip(ticks, labels, strict=True) if lo <= x <= hi]
-            for ticks, labels, (lo, hi) in ((axis.get_xticks(), axis.get_xticklabels(), axis.get_xlim()),
-                                           (axis.get_yticks(), axis.get_yticklabels(), axis.get_ylim()))]
+    return [[(round(float(tick.get_loc()), 10), label.get_text()) for tick in direction.get_major_ticks()
+             for label in (tick.label1, tick.label2) if label.get_visible() and lo <= tick.get_loc() <= hi]
+            for direction, (lo, hi) in ((axis.xaxis, axis.get_xlim()), (axis.yaxis, axis.get_ylim()))]
 
 
 def direct_ticks(ticks):
@@ -63,8 +63,11 @@ def native_orbit(plot, ticks):
                          xlim=plot["xlim"], ylim=plot["ylim"],
                          lines=[(color, coordinates(values)) for color, values in row["curves"]],
                          offsets=[(color, coordinates(values)) for color, values in [(GRAY, row["loose"]), *row["associated"]]]))
+    labels = [direct_ticks(axis) for axis in ticks]
+    for horizontal, _ in labels[:-1]:
+        horizontal.clear()
     return dict(heading="\n".join(plot["headings"]), footer=plot["footers"][0],
-                legend=[name for name, _ in plot["legend"]], axes=axes, ticks=[direct_ticks(axis) for axis in ticks])
+                legend=[name for name, _ in plot["legend"]], axes=axes, ticks=labels)
 
 
 def stock_residual(figure):
