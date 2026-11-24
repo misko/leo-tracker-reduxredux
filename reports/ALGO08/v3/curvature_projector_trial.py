@@ -1,11 +1,12 @@
 """Price whole-curve projection on one sealed dense family pair and one South pair."""
 
 import argparse
-from hashlib import sha256
+from hashlib import file_digest, sha256
 import json
 from pathlib import Path
 import sys
 from time import perf_counter, process_time
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
@@ -39,6 +40,12 @@ def verify(path, expected):
     if sha256(data).hexdigest() != expected:
         raise ValueError(f"Enrolled source or receipt changed: {path}")
     return data
+
+
+def numeric(value):
+    if isinstance(value, (np.ndarray, np.generic)):
+        return value.tolist()
+    raise TypeError(f"Unsupported trial receipt value {type(value).__name__}")
 
 
 def table(scan, memberships, common_keys):
@@ -83,12 +90,15 @@ def phase_inputs(bank, row_labels):
     return labels, per_observation, subset
 
 
-def diagnostic(scan, common, states):
+def diagnostic(scan, common, states, sealed_table=None):
     from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
 
-    started = now()
-    rows, labels, receivers = table(scan, common, common[0].keys() & common[1].keys())
-    table_cpu = cost(started)
+    if sealed_table is None:
+        started = now()
+        rows, labels, receivers = table(scan, common, common[0].keys() & common[1].keys())
+        table_cpu = cost(started)
+    else:
+        rows, labels, receivers, table_cpu = sealed_table
     started = now()
     times = np.concatenate([r.times for r in rows])
     boundaries = np.cumsum([len(r.times) for r in rows])[:-1]
@@ -119,6 +129,50 @@ def diagnostic(scan, common, states):
                 smooth_ranks={str(r): p.rank for r, p in projectors.items()},
                 differing_row_labels=int(np.count_nonzero(labels[0] != labels[1])),
                 table=table_cpu, projector=setup, arms=result, exact_states=exact_states)
+
+
+def save_cache(path, scan, maps, changed, states, references):
+    layouts, bank_labels = {}, set()
+    for label, use in (("whole", maps[0].keys() & maps[1].keys()), ("changed_only", changed)):
+        started = now()
+        rows, labels, receivers = table(scan, maps, use)
+        table_clock = cost(started)
+        bank_labels.update(np.unique(np.concatenate(labels)))
+        layouts[label] = dict(rows=[vars(r) for r in rows], labels=labels, receivers=receivers, clock=table_clock)
+    used = np.array(sorted(bank_labels), dtype=int)
+    for layout in layouts.values():
+        layout["labels"] = [np.searchsorted(used, group) for group in layout["labels"]]
+    for arm in states:
+        states[arm] = [dict(r, column_present=np.isfinite(r["reference"][used]),
+                            reference=r["reference"][used][np.isfinite(r["reference"][used])],
+                            posterior=r["posterior"][used]) for r in states[arm]]
+    manifest = dict(norads=scan.norads[used], states=states, phases_and_receipts=references, layouts=layouts)
+    with path.open("xb") as handle:
+        np.savez(handle, document=np.array(json.dumps(manifest, separators=(",", ":"), allow_nan=False, default=numeric)),
+                 time_s=scan.sky["time_s"], position_km=scan.sky["position_km"][used],
+                 velocity_km_s=scan.sky["velocity_km_s"][used])
+
+
+def score_cache(path):
+    with path.open("rb") as handle:
+        digest = file_digest(handle, "sha256").hexdigest()
+    with np.load(path, allow_pickle=False) as packet:
+        document = json.loads(packet["document"].item())
+        sky = {k: packet[k] for k in ("time_s", "position_km", "velocity_km_s")}
+    scan = SimpleNamespace(sky=sky, norads=np.array(document["norads"]))
+    for records in document["states"].values():
+        for state in records:
+            mask = state.pop("column_present")
+            original = state["reference"]
+            state["reference"] = np.full(len(mask), np.nan)
+            state["reference"][mask] = original
+            state["posterior"] = np.array(state["posterior"])
+    result = dict(document["phases_and_receipts"], cache_sha256=digest)
+    for name, layout in document["layouts"].items():
+        rows = [CurveRows(**{k: value if k == "rf_ratio" else np.array(value) for k, value in r.items()}) for r in layout["rows"]]
+        match = rows, [np.array(l) for l in layout["labels"]], layout["receivers"], layout["clock"]
+        result[name] = diagnostic(scan, None, document["states"], sealed_table=match)
+    return result
 
 
 def load_dense(root):
@@ -197,10 +251,12 @@ def dense(root):
     if mappings[0] != mappings[1]:
         raise ValueError("Expected identical observation support across calibration arms")
     maps = mappings[0]
-    return dict(pinned_control=DENSE_SEAL, captured=1, capture_clock=replay, compared_candidates=[family.NEW, family.OLD],
-                next_stage=reference, whole=diagnostic(scan, maps, states),
-                changed_only=diagnostic(scan, [{k: m[k] for k in arcs} for m in maps], states),
-                signed_original_rows=len(current["c0"]), changed_rows=len(changed), full_data_conditioned=True)
+    fixed_receipts = dict(pinned_control=DENSE_SEAL, captured=1, capture_clock=replay, compared_candidates=[family.NEW, family.OLD],
+                          next_stage=reference, signed_original_rows=len(current["c0"]), changed_rows=len(changed),
+                          full_data_conditioned=True)
+    capsule = root/"dense-fixed-state.npz"
+    save_cache(capsule, scan, maps, arcs.keys(), states, fixed_receipts)
+    return score_cache(capsule)
 
 
 def south():
@@ -280,17 +336,15 @@ def run(case, root):
 
     machine = host()
     started = now()
-    result = dense(root) if case == "dense" else south()
+    if case == "dense-score":
+        result = score_cache(root/"dense-fixed-state.npz")
+    else:
+        result = dense(root) if case == "dense" else south()
     for arm in ARMS:
         result["next_stage_preferred_"+arm] = rank_preference([entry["objective"] for entry in result["next_stage"][arm]])
     result.update(machine=machine, original_waveform_reads=0, grid_evaluations=0, plots=0, total=cost(started),
                   source={p.name: sha256(p.read_bytes()).hexdigest() for p in
                           (Path(__file__), HERE/"curvature_projector.py", HERE/"curvature-projector-protocol.md")})
-    def numeric(value):
-        if isinstance(value, (np.ndarray, np.generic)):
-            return value.tolist()
-        raise TypeError(f"Unsupported trial receipt value {type(value).__name__}")
-
     serial = json.dumps(result, sort_keys=True, indent=2, allow_nan=False, default=numeric)
     with (root/f"{case}.json").open("x") as file:
         file.write(serial+"\n")
@@ -298,7 +352,7 @@ def run(case, root):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("case", choices=("dense", "south"))
+    parser.add_argument("case", choices=("dense", "south", "dense-score"))
     parser.add_argument("root", type=Path)
     args = parser.parse_args()
     if args.root.resolve().parent != Path("/dev/shm"):

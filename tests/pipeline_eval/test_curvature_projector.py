@@ -7,7 +7,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 
 from curvature_projector import CurveRows, ReceiverProjector, rank_preference
-from curvature_projector_trial import phase_inputs, phase_vector
+from curvature_projector_trial import phase_inputs, phase_vector, save_cache, score_cache
 
 
 def test_weighted_projection_matches_one_combined_design():
@@ -65,3 +65,27 @@ def test_only_actual_nominated_phase_rows_cross_the_paired_phase_port():
     frequency, elevation = paired_phase_frequency(subset, np.array([4., 4., 4.]), remapped, phases[used], 0., 0.)
     assert np.isfinite(frequency).all() and np.isfinite(elevation).all()
     assert frequency[0] == frequency[2] != frequency[1]
+
+
+def test_fixed_state_capsule_recreates_both_models_without_original_scan(tmp_path):
+    from types import SimpleNamespace
+
+    times = np.array([2., 4., 6., 8.])
+    ids = ["a", "b", "c", "d"]
+    track = dict(key="curve", receiver=1, observation_ids=ids, times=times, values=times**2, rf_hz=11.5e9)
+    bank = dict(time_s=np.array([0., 10.]), position_km=np.tile([7000., 0., 0.], (2, 2, 1)),
+                velocity_km_s=np.tile([1., 4., 0.], (2, 2, 1)))
+    scan = SimpleNamespace(norads=np.array([100, 102]), sky=bank, tracks=[track], rx_basis=[times[:, None]**2],
+                           radio_sigma_hz=50., fixed_window_noise={"extra_parameter_BIC_gain": 0,
+                                                                   "per_observation_noise_sigma_hz": {}})
+    maps = [{"curve": ("conditional", n, frozenset(ids))} for n in (100, 102)]
+    states = {"c0": [dict(latlon=[0., 0.], reference=phase_vector(scan, [i], [0.25+i]), posterior=np.array([1., 2.]))
+                     for i in (0, 1)]}
+    capsule = tmp_path/"state.npz"
+    save_cache(capsule, scan, maps, {"curve"}, states, {"truth_from_runtime": False})
+    result = score_cache(capsule)
+    assert result["whole"]["points"] == result["changed_only"]["differing_row_labels"] == 4
+    assert not result["truth_from_runtime"]
+    restored = result["whole"]["exact_states"]["c0"]
+    assert [r["norad"].tolist() for r in restored] == [[100], [102]]
+    assert [r["reference_s"].tolist() for r in restored] == [[0.25], [1.25]]
