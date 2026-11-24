@@ -7,8 +7,10 @@ from reports.ALGO08.v3 import integrated_original_trial as trial
 
 
 def test_sparse_recipe_requires_checked_new_identity():
-    from full_short_run import (EIGHT_MS_RECIPE_SHA, SPARSE_EIGHT_MS_RECIPE_SHA, SPARSE_EIGHT_MS_SHA,
-                                checked_recipe, verify_recipe)
+    from reports.ALGO08.v3.full_short_run import (
+        EIGHT_MS_RECIPE_SHA, SPARSE_EIGHT_MS_RECIPE_SHA, SPARSE_EIGHT_MS_SHA,
+        checked_recipe, verify_recipe,
+    )
 
     regular = checked_recipe(True)
     sparse = checked_recipe(True, short_pin=SPARSE_EIGHT_MS_SHA)

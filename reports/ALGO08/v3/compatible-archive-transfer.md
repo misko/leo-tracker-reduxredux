@@ -4,10 +4,14 @@ The deployment baseline is ALGO08v3. Each timed worker runs on one core. The rel
 
 | Comparison against installed ALGO08v3 | Installed wall | Candidate wall | Summed speedup | Paired median speedup |
 |---|---:|---:|---:|---:|
+| Integrated pipeline, original files, DS30-0016 then DS30-0107 | 12.242 s | 7.562 s | 1.619× | 1.932× |
+| Same two originals and archived comparator, reverse candidate order | 12.242 s | 7.712 s | 1.587× | 1.824× |
 | Measured raw input through exit, DS30-0016 and DS30-0107 | 12.242 s | 8.464 s | 1.446× | 1.764× |
 | Cairo renderer on DS30-0016, with measured DS30-0107 time carried forward | 12.242 s | 8.048 s (estimate) | 1.521× | 1.827× |
 | Measured from saved detections through exit, blind DS30-0163, 0173 and 0359 | 79.510 s | 44.293 s | 1.795× | 1.756× |
 | Same three blind workers with measured common admission charged to each | 82.852 s | 47.634 s | 1.739× | 1.721× |
+
+**Integrated receiver, solver and publication.** On the fixing recording the candidate used a sparse short-window receiver, ranked once when the initial search declined to nominate candidates, and independently decoded each of the eight final PNGs with a native verifier. Across two full runs it took **6.985 and 7.053 s** and retained the earlier candidate’s measurements, both positions, all assignments, grid, path and eight images. The withholding recording took **0.577 and 0.659 s** and retained both null positions. The combined worker times in the table start at launch and end after validation and exit. Including separate research admission and startup probes brings the candidate pair totals to **12.164 and 12.415 s**. Both recordings were fully resident on Gauss. The two runs miss the summed 2× target by **1.44 and 1.59 s**. [Both run orders, stage times and output verification](integrated-original.md)
 
 **Complete original recordings.** Both versions fixed on DS30-0016 and withheld on DS30-0107. Fixed-zero / fitted error on DS30-0016 improved from **1,644 / 1,661 m to 490 / 980 m**. Both recordings were resident. Separate research admission and startup probes added 5.108 s to the 8.464 s candidate total. The installed comparison uses archived worker clocks. [Original inputs, timing boundaries and output checks](combined-successor-original.md)
 
