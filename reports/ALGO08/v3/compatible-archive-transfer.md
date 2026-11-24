@@ -8,10 +8,17 @@ The deployment baseline is ALGO08v3. Each timed worker runs on one core. The rel
 | Same two originals and archived comparator, reverse candidate order | 12.242 s | 7.712 s | 1.587× | 1.824× |
 | Integrated fix-first run against fresh installed repeat | 12.134 s | 7.562 s | 1.605× | 1.825× |
 | Integrated withhold-first run against the same fresh installed repeat | 12.134 s | 7.712 s | 1.573× | 1.714× |
+| Same two recordings, starting with verified packed input, fix first | 12.134 s | 6.670 s | 1.819× | 2.015× |
 | Measured raw input through exit, DS30-0016 and DS30-0107 | 12.242 s | 8.464 s | 1.446× | 1.764× |
 | Cairo renderer on DS30-0016, with measured DS30-0107 time carried forward | 12.242 s | 8.048 s (estimate) | 1.521× | 1.827× |
 | Measured from saved detections through exit, blind DS30-0163, 0173 and 0359 | 79.510 s | 44.293 s | 1.795× | 1.756× |
 | Same three blind workers with measured common admission charged to each | 82.852 s | 47.634 s | 1.739× | 1.721× |
+
+**What the input format buys.** The verified packed input saved **0.89–1.04 s** across the same two recordings. The candidate took **6.124 s** on the fix and **0.546 s** on the withhold, including the packed-source checks. It needed another **0.603 s** to halve total wall time. Only one prepared pair ran because it missed the prespecified 1.9× total-time threshold for a repeat in reverse order. Creating and verifying those packed files from existing originals had previously taken **5.304 s**. Adding that cost gives **11.974 s**, or **1.013×** against installed, as a first-use estimate. The fixing case reproduced both calibration estimates, all 115 ordered assignments per arm, the complete 179-point grid, the fit path and every PNG byte from the original-input candidate. Both calibration arms withheld on the other case. [Prepared input timings, checks and conversion costs](integrated-packed-full.md)
+
+![Elapsed time on the same two DS30 recordings, with the cost of preparing existing originals shown separately](development/packed-input-pair.png)
+
+**Dense recording with saved detections.** On DS30-0359, replacing the ordinary renderer and PNG checks preserved the two fitted positions and all 3,640 ordered assignments per arm. The worker took **17.411 s**, compared with **17.171 s** for the previous candidate and **31.947 s** for installed v3. Exporting the scene for the audit accounted for **0.874 s**. Even subtracting that time leaves a **0.564 s** gap to half of installed time. All four orbit plots failed the prespecified gray-layer agreement test. The weakest comparison scored **95.51%** against a **98%** minimum. The ordinary renderer remains the qualifying reference for this recording. [Dense recording timings and failed visual checks](ds30-0359-cairo-saved.md)
 
 The fresh installed comparison took **1.273 s** on DS30-0107 and **10.861 s** on DS30-0016, and reproduced the original installed outputs. Against that pair, the candidate cleared the summed 1.6× threshold by **22 ms** in its first order and missed it by **128 ms** in reverse. Across 18 possible pairings of the nine independent private-tmpfs installed runs, the candidate met both 1.6× gates in 16 pairings for the first order and one for the reverse. Those are sensitivity calculations on two recordings. **The 1.6× result does not repeat across run orders, and neither order reaches 2×.** [All installed clocks, input residency and qualification checks](raw-denominator-audit.md)
 
