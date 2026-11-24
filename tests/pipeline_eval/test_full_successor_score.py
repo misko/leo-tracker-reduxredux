@@ -8,7 +8,8 @@ import pytest
 from PIL import Image
 
 from full_successor_score import (PINS, calibration_segment_error_km, outcomes_summary, paired_rows,
-                                  paired_timing, roster, score_arms, shared_position_moments, time_accounting, write_report)
+                                  paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
+                                  time_accounting, write_report)
 
 
 def arms(point):
@@ -64,6 +65,18 @@ def test_cpu_and_residual_contributions_add_to_wall_savings():
         "pairs": 2, "summed_speedup": 2, "median_paired_speedup": 1 / .7}
     assert time_accounting(pairs[1:])["cpu_fraction_of_wall_savings"] is None
     assert time_accounting([])["removing_positive_candidate_wall_minus_cpu"]["pairs"] == 0
+
+
+def test_squared_error_influence_uses_identical_fixes_and_can_exceed_net():
+    pairs = [({"case": case, "c0_error_km": a}, {"case": case, "c0_error_km": b})
+             for case, a, b in [("A", 1, 3), ("B", 2, 1), ("C", None, 25)]]
+    report = squared_error_influence(pairs, "c0")
+    assert (report["shared"], report["worse"], report["remaining_shared"]) == (2, 1, 1)
+    assert report["largest"] == {"case": "A", "squared_excess_km2": 8, "fraction_of_net_excess": 8/5}
+    assert report["remaining_rms_km"] == {"installed": 2, "successor": 1}
+    assert squared_error_influence(pairs[:1], "c0")["remaining_rms_km"] is None
+    assert squared_error_influence(pairs[1:], "c0")["largest"] is None
+    assert squared_error_influence([], "c0")["shared"] == 0
 
 
 def test_calibration_segment_treats_clipped_endpoints_and_antimeridian_as_geography():

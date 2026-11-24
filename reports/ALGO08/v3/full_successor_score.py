@@ -84,6 +84,27 @@ def paired_timing(pairs, metric):
                 median_paired_speedup=1 / median(b / a for a, b in matched))
 
 
+def squared_error_influence(pairs, arm):
+    """Price the largest single contribution to the excess squared error on shared fixes."""
+    key = arm + "_error_km"
+    shared = [(a["case"], a[key], b[key]) for a, b in pairs if a[key] is not None and b[key] is not None]
+    ordered = sorted(shared, key=lambda row: (-(row[2]**2 - row[1]**2), row[0]))
+    excess = [candidate**2 - base**2 for _, base, candidate in ordered]
+    net = math.fsum(excess)
+    result = dict(shared=len(ordered), worse=sum(d > 0 for d in excess), net_sum_squared_excess_km2=net,
+                  largest=None, remaining_shared=0, remaining_rms_km=None)
+    if not excess or excess[0] <= 0:
+        return result
+    result["largest"] = dict(case=ordered[0][0], squared_excess_km2=excess[0],
+                             fraction_of_net_excess=excess[0]/net if net > 0 else None)
+    rest = ordered[1:]
+    result["remaining_shared"] = len(rest)
+    if rest:
+        result["remaining_rms_km"] = {role: math.sqrt(math.fsum(row[i]**2 for row in rest)/len(rest))
+                                      for i, role in enumerate(BUILDS, start=1)}
+    return result
+
+
 def time_accounting(pairs):
     totals = {}
     for i, role in enumerate(BUILDS):
@@ -289,6 +310,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                             lost=sum(a[arm + "_fix"] and not b[arm + "_fix"] for a, b in pairs),
                             largest_increases=sorted((item for item in delta if item[0] > 0), reverse=True)[:5])
     metadata["paired_error_changes"] = changes
+    influences = {arm: squared_error_influence(pairs, arm) for arm in ARMS}
+    metadata["squared_error_influence_on_shared_fixes"] = influences
     fast = sum(a["elapsed_s"] >= 2 * b["elapsed_s"] for a, b in pairs)
     joint_performance = {}
     for label, arms in (("c0", ("c0",)), ("fitted_c", ("fitted_c",)), ("both", ARMS)):
@@ -426,6 +449,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     if worst:
         lines += ["", "The largest fitted-error increases on shared fixes were " +
                   ", ".join(f"{case} (+{delta:.3f} km)" for delta, case in worst) + "."]
+    influence = influences["fitted_c"]
+    if influence["remaining_rms_km"]:
+        rms = influence["remaining_rms_km"]
+        lines += ["", f"Excluding just {influence['largest']['case']}, the largest contributor to excess squared "
+                  f"fitted error, leaves {influence['remaining_shared']} shared fixes. On those same fixes the RMS "
+                  f"error is **{rms['installed']:.3f} km for ALGO08v3** and **{rms['successor']:.3f} km for the "
+                  "candidate**. The primary results above retain this recording."]
     if regressions:
         lines += ["", f"The candidate's fitted error increased by more than 1 m on {len(regressions)} of "
                   f"{len(blendable)} shared fixes. On **{metadata['calibration_blend_bound']['regressions_remaining']} "
