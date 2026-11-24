@@ -96,3 +96,23 @@ def test_error_after_launch_is_not_treated_as_retryable_lock_contention(monkeypa
             use_lease=acquired, cached=dict, launch=launch,
         )
     assert starts == [7]
+
+
+def test_resident_native_override_still_requires_exact_signed_bytes(tmp_path):
+    import json
+    from hashlib import sha256
+
+    import signed_cfo_time_readout as signed
+
+    source = dict(sample_rate_hz=signed.SAMPLE_RATE, probes=[], raw_recording_authority_digest="raw")
+    detector = "sha256:"+("8"*64)
+    source["analysis_manifest_sha256"] = signed.canonical(
+        ["cancellation", "raw", detector[7:], source["probes"]],
+    )
+    packet = dict(source=source, provenance=dict(detector_sha256=detector))
+    resident = tmp_path/"native.json"
+    resident.write_text(json.dumps(packet))
+    pin = sha256(resident.read_bytes()).hexdigest()
+    assert signed.read_native(tmp_path/"absent", pin, path=resident) == packet
+    with pytest.raises(ValueError, match="Sealed input differs"):
+        signed.read_native(tmp_path/"absent", "0"*64, path=resident)

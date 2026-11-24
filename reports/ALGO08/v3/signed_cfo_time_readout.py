@@ -42,8 +42,9 @@ def document(path, expected=None):
     return json.loads(gzip.decompress(data) if path.suffix == ".gz" else data)
 
 
-def read_native(folder, expected):
-    path, = (folder/"fast-scan-automatic-work").glob("*/detections.json")
+def read_native(folder, expected, *, path=None):
+    if path is None:
+        path, = (folder/"fast-scan-automatic-work").glob("*/detections.json")
     native = document(path, expected)
     view, book = native["source"], native["provenance"]
     if (view["sample_rate_hz"] != SAMPLE_RATE or view["analysis_manifest_sha256"]
@@ -78,11 +79,11 @@ def candidate(case):
     return qualified_candidate(folder, raw, input_sha, offer)
 
 
-def qualified_candidate(folder, raw, input_sha, offer):
+def qualified_candidate(folder, raw, input_sha, offer, *, native_path=None):
     """Bind a selected publication to the frozen unfiltered 20/8 native recipe."""
     witness = document(folder/"exact-named-raw-witness.json")
     held = raw["held_anchor_route"]
-    native = read_native(folder, input_sha)
+    native = read_native(folder, input_sha, path=native_path)
     parent = {key: val for key, val in held["receiver_recipe"].items() if key != "held_native_8ms"}
     probes = native["source"]["probes"]
     source = native["source"]
