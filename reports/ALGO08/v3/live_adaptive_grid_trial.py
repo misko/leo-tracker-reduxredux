@@ -13,6 +13,7 @@ SOURCE = Path("/dev/shm/leo-v3-dense-hybrid-combined/reports/ALGO08/v3")
 CONTROL = Path("/dev/shm/leo-v3-dense-hybrid-combined-result01")
 NATIVE = "sha256:161d3ff4a85777f81217a929fdf0c999eb09f48575322ab46dcdcd773a95e23a"
 EXPERIMENT = (Path(__file__), HERE/"live_adaptive_grid.py", HERE/"live_adaptive_grid_entry.py", HERE/"live-adaptive-grid-protocol.md")
+RECEIPT_SCIENCE = ("run_id", "session_id", "window_count", "counts", "region", "decision", "terminal_sha256")
 sys.path[:0] = [str(SOURCE), str(HERE.parents[2])]
 
 
@@ -110,7 +111,7 @@ def score(root):
     run = receipt["run_id"]
     terminal = [read(r/"fast-scan-automatic-work"/run/"terminal.json") for r in (c, a)]
     terminal_same = terminal[0] == terminal[1] and canonical_digest(terminal[0]) == receipt["terminal_sha256"]
-    if (not terminal_same or new_worker["receipt"] != receipt or receipt["decision"] != "complete"
+    if (not terminal_same or any(new_worker["receipt"][k] != receipt[k] for k in RECEIPT_SCIENCE) or receipt["decision"] != "complete"
             or old_worker["native_sha256"] != NATIVE or new_worker["native_sha256"] != NATIVE
             or old_worker["detector_recipe_sha256"] != new_worker["detector_recipe_sha256"]
             or not all(worker["handoffs"] == 1 and not worker["waveform_calls"] and worker["staged_inventory"] for worker in (old_worker, new_worker))
@@ -124,6 +125,11 @@ def score(root):
     full, full_path = before_store.position_grid(run), before_store.position_path(run)
     current = read_manifest(a, run)
     adaptive, path = (read_sidecar(a, run, name) for name in ("sample", "path"))
+    expected_calls = [2*grid["evaluated_points"]-2 for grid in (full, adaptive)]
+    for trace, count in zip((old, new), expected_calls, strict=True):
+        handoff = trace["receipt"]["posterior_grid_handoff"]
+        if handoff["factor_calls"] != count or handoff["prediction_calls"] != count:
+            raise ValueError("Expected the same native posterior grid handoff at every paid non-endpoint score")
     plots = current["publication"]["artifacts"]
     folder = research_folder(a, run)
     if (a/"fast-scan-standard-v2").exists() or current["kind"] != NAMESPACE:
@@ -154,7 +160,8 @@ def score(root):
                    paired_binding=enrollment["paired_binding_sha256"], sample_sha256=current["sidecars_sha256"]["sample"],
                    arms=current["publication"]["arms"], terminal_sha256=receipt["terminal_sha256"],
                    original_owner_rows_sha256=canonical_digest(new["selected_rows"]))
-    return dict(layout=summary, match=terminal_same, original_waveform_reads=0,
+    return dict(layout=summary, match=terminal_same, original_waveform_reads=0, scorer_sha256=pin(Path(__file__)),
+                native_posterior_evaluations=expected_calls,
                 clocks=dict(reference=reference_clock, adaptive=candidate_clock,
                             old_solve=old["solve"], new_solve=new["solve"],
                             old_evidence=old["route_details"]["standard_evidence_clocks"],
