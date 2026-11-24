@@ -1,0 +1,255 @@
+{
+  "case": "DS30-0016",
+  "corruption": {
+    "detector_callback": false,
+    "map_exists": false,
+    "rejected": "short-window member changed: iq-000003.ci16.zst"
+  },
+  "evidence": {
+    "lanes": 114,
+    "positive": 38,
+    "raw_native": "sha256:ffbf0b87476eadd97f5377c30d369a45259c091c1e3cdc09352668c51382ed5b",
+    "residual": 3,
+    "selected": "sha256:218d1fd7078f3d154c6b9d3b692e5b5b9886fef04d7f05bac5d97edb8babf5cd",
+    "visits": {
+      "full": 8,
+      "invalid": 7,
+      "short_primary": 49
+    },
+    "window_spans": "sha256:2a0f04974d02df0e0acd329e7c1bfd4dbeac7d86b5c51d8746ca7abac1180e96"
+  },
+  "global_member": 3,
+  "native_build": {
+    "fused": {
+      "binary_sha256": "sha256:70d834e0d148f22f3b08cdd74fc14ee6c589b45bf1e7a1949894ae9b01d9054e",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "/dev/shm/leo-v3-legacy-fused-map-0016/reports/ALGO08/v3/legacy_fused_history.c",
+        "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7",
+        "-o",
+        "/dev/shm/leo-v3-legacy-fused-map-0016-result01/first-pass.so"
+      ],
+      "libzstd_sha256": "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80",
+      "native_source_sha256": "sha256:300874a6e1a129a35286b36b333896fd4426396442aa7ea7fd27e8ddc5c2ba8f"
+    },
+    "selective": {
+      "binary_sha256": "sha256:b8bdc15f2e98d8afb024f98315dc930d79d12208823b201135bd40671ae16a29",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-deprecated-declarations",
+        "/dev/shm/leo-v3-legacy-fused-map-0016/reports/ALGO08/v3/legacy_block_seek.c",
+        "-lzstd",
+        "-o",
+        "/dev/shm/leo-v3-legacy-fused-map-0016-result01/ready.so"
+      ],
+      "source_sha256": "sha256:0b7ae1f7f33eaa636767ac32740c4058bc81e52cf798449288043056cf06373f"
+    }
+  },
+  "orders": [
+    [
+      "stock",
+      "fused"
+    ],
+    [
+      "fused",
+      "stock"
+    ]
+  ],
+  "original": {
+    "chunk_index": 3,
+    "index_sha256": "sha256:1d6c96e627299d8d201054c0c75115d316cc5f865967bfc80d0f1c3c0de78732",
+    "manifest_sha256": "sha256:1530e4a7376f569f52d2b41dfdfc732489b036df73a8cff9b0feabecbc8cb3cc",
+    "member_sha256": "sha256:cef714908ca0d71c2f3d4d3be95b1081a5d2dcb62cb65ac026ca3c7f8a698133",
+    "raw_sha256": "sha256:1380ef6d4bde20b906714366db97450009655c9c4720cbe6aaccaf99c5329de7"
+  },
+  "policy": {
+    "cpu_affinity": [
+      2
+    ],
+    "ionice": "best-effort: prio 7",
+    "nice": 15,
+    "schedule": "isolated member 20/8"
+  },
+  "ready_evidence": {
+    "lanes": 114,
+    "positive": 38,
+    "raw_native": "sha256:ffbf0b87476eadd97f5377c30d369a45259c091c1e3cdc09352668c51382ed5b",
+    "residual": 3,
+    "selected": "sha256:218d1fd7078f3d154c6b9d3b692e5b5b9886fef04d7f05bac5d97edb8babf5cd",
+    "visits": {
+      "full": 8,
+      "invalid": 7,
+      "short_primary": 49
+    },
+    "window_spans": "sha256:2a0f04974d02df0e0acd329e7c1bfd4dbeac7d86b5c51d8746ca7abac1180e96"
+  },
+  "ready_map_sha256": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+  "ready_requests": {
+    "exception_bytes": 166400,
+    "exception_spans": 2,
+    "full": 8,
+    "prefix": 49,
+    "returned_bytes": 44160000
+  },
+  "receiver_sha256": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+  "residency": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000003.ci16.zst": 78317175,
+      "manifest.json": 6812,
+      "windows-000003.jsonl": 173187
+    },
+    "snapshot": {
+      "cached_pages": 19166,
+      "ended_unix_ns": 1795511902745813939,
+      "members": 3,
+      "observed_file_pages": 19166,
+      "observed_members": 3,
+      "started_unix_ns": 1795511902745351845,
+      "unavailable": {}
+    }
+  },
+  "runs": [
+    {
+      "fused": {
+        "map": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32034570,
+            "input_blocks": 0,
+            "wall_ns": 32034422
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 33031392,
+          "hash_wall_ns": 33038039,
+          "history_and_context_bytes": 882648,
+          "largest_sample_window_bytes": 1600000,
+          "map_bytes": 427753,
+          "map_sha256": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+          "metadata": {
+            "cpu_ns": 749924,
+            "input_blocks": 0,
+            "wall_ns": 749801
+          },
+          "native_read_cpu_ns": 68798433,
+          "native_read_wall_ns": 68791784,
+          "plan_and_history": {
+            "cpu_ns": 2315634,
+            "input_blocks": 0,
+            "wall_ns": 2315093
+          },
+          "retained_exception_buffer": 393216,
+          "seal_and_sync": {
+            "cpu_ns": 838965,
+            "input_blocks": 0,
+            "wall_ns": 839022
+          }
+        },
+        "native_receiver": {
+          "cpu_ns": 115912609,
+          "wall_ns": 115942158
+        },
+        "timing": {
+          "cpu_ns": 268130541,
+          "input_blocks": 0,
+          "wall_ns": 268148122
+        }
+      },
+      "stock": {
+        "map": null,
+        "native_receiver": {
+          "cpu_ns": 117201988,
+          "wall_ns": 117223514
+        },
+        "timing": {
+          "cpu_ns": 279674511,
+          "input_blocks": 0,
+          "wall_ns": 279701441
+        }
+      }
+    },
+    {
+      "fused": {
+        "map": {
+          "block_map_workspace_bytes": 31280,
+          "complete_encoded_auth": {
+            "cpu_ns": 32644352,
+            "input_blocks": 0,
+            "wall_ns": 32644362
+          },
+          "exceptional_ordinals": [
+            120,
+            135,
+            676
+          ],
+          "hash_cpu_ns": 32739837,
+          "hash_wall_ns": 32734789,
+          "history_and_context_bytes": 882648,
+          "largest_sample_window_bytes": 1600000,
+          "map_bytes": 427753,
+          "map_sha256": "sha256:9c998a1c40c848ab8c28a82f497190e6ce105eb1ae366e64cce5deed59c88d9d",
+          "metadata": {
+            "cpu_ns": 693893,
+            "input_blocks": 0,
+            "wall_ns": 693942
+          },
+          "native_read_cpu_ns": 68149515,
+          "native_read_wall_ns": 68143251,
+          "plan_and_history": {
+            "cpu_ns": 2337340,
+            "input_blocks": 0,
+            "wall_ns": 2336760
+          },
+          "retained_exception_buffer": 393216,
+          "seal_and_sync": {
+            "cpu_ns": 887863,
+            "input_blocks": 0,
+            "wall_ns": 887714
+          }
+        },
+        "native_receiver": {
+          "cpu_ns": 113907061,
+          "wall_ns": 113935968
+        },
+        "timing": {
+          "cpu_ns": 265586828,
+          "input_blocks": 0,
+          "wall_ns": 265595575
+        }
+      },
+      "stock": {
+        "map": null,
+        "native_receiver": {
+          "cpu_ns": 115632086,
+          "wall_ns": 115649807
+        },
+        "timing": {
+          "cpu_ns": 266309825,
+          "input_blocks": 0,
+          "wall_ns": 266319846
+        }
+      }
+    }
+  ],
+  "short_sha256": "fe4ba7b7613654c268353f9e4a78c2bbb916904e06387ace304b0866818f0e3d",
+  "source": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000"
+}
