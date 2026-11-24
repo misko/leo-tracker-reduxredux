@@ -212,9 +212,11 @@ def launch(root, bundle, pin):
 
 
 def worker(folder, pin, mode):
+    from empty_bootstrap import RELEASE, checked as secure
+
+    sys.path.insert(0, str(RELEASE/"src"))
     import exact_named_route as exact
     import prospective_0316_solver as saved
-    from empty_bootstrap import checked as secure
     from history_risk_weak_physical import deny_original
     from leo.contracts.digests import canonical_digest
     from nomination_handoff_0255_publication import worker as frozen
