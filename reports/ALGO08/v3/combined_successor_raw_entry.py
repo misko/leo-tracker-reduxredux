@@ -62,11 +62,14 @@ def smoke(args, acceleration):
     import grid_phase_state_reuse as phase
     import history_risk_route as risk
     from tools import algo08_position, algo08_scan
+    from combined_frontier_run import load_prefetch
 
     if (Path(algo08_scan.__file__) != boot.PAYLOAD/boot.SCANNER
             or Path(algo08_position.__file__) != boot.PAYLOAD/"tools/algo08_position.py"):
         raise ValueError("Scientific startup did not bind the original installed runtime")
     spec = acceleration.checked_artifacts(args.legacy_first_map_fast, args.legacy_first_map_fast_sha256)
+    if not callable(load_prefetch()):
+        raise ValueError("The original receiver lookahead did not bind")
     original, grid, route = algo08_scan.solve, phase.cached_predictive_grid, risk.binding
     answer = (dict(decision="withheld"), dict(timing={}, ports={}))
 
@@ -81,7 +84,7 @@ def smoke(args, acceleration):
         actual = raw.publish_active(None, None, None, None)
     if actual is not answer or algo08_scan.solve is not original or args.output.exists():
         raise ValueError("The scoped raw publisher did not retain its return contract")
-    print(json.dumps(dict(solver_setup=True, witness_shape=[sorted(part) for part in actual],
+    print(json.dumps(dict(solver_setup=True, lookahead_setup=True, witness_shape=[sorted(part) for part in actual],
                           native_grid_setup=audit["grid"], raw_children=0, waveform_opens=0)))
 
 

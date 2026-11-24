@@ -21,6 +21,8 @@ EXTRA = [SCOPE/name for name in (
     Path(__file__).name, PORT.name, "combined-successor-original-protocol.md", "combined_successor.py",
     "nomination_handoff.py", "two_centre_seeds.py", "live_orbit_support.py", "solver_exception_0022.py")]
 EXTRA.append(Path("tools/pipeline_eval/variants/v5_orbit_domain.py"))
+EXTRA.extend(Path("tools/pipeline_eval/variants/experimental")/f"{name}.py" for name in (
+    "receiver_ingress", "receiver_member_lookahead", "receiver_member_prefetch"))
 
 
 def command_for(old, target):
@@ -137,7 +139,7 @@ def launch(root, case):
     probe.check_returncode()
     scanner, solver = (json.loads(line) for line in probe.stdout.splitlines())
     if (not scanner["reached_scanner"] or scanner["waveform_opens"] or scanner["audit"]["authority_mode"] != "verified-once"
-            or not solver["solver_setup"] or solver["waveform_opens"]
+            or not solver["solver_setup"] or not solver["lookahead_setup"] or solver["waveform_opens"]
             or solver["witness_shape"] != [["decision"], ["ports", "timing"]] or (folder/"candidate").exists()):
         raise ValueError("Expected isolated original receiver and guarded solver startup without waveform access")
     measure_mode(folder, "candidate", argv, env, lambda: resident(enrolled["wavepaths"]), require_success=False)
