@@ -1,0 +1,342 @@
+{
+  "measured": [
+    {
+      "name": "DS30-0016/positive_first",
+      "calls": {
+        "full": 186,
+        "short_primary": 1240
+      },
+      "encoded_bytes": 991734597,
+      "cpu_s": 2.8935501849999996,
+      "cpu_s_per_call": {
+        "full": 0.0025164239193548386,
+        "short_primary": 0.0008141091427419354
+      },
+      "other_cpu_s_per_byte": 1.4278013525830435e-09
+    },
+    {
+      "name": "DS30-0016/withholding_first",
+      "calls": {
+        "full": 186,
+        "short_primary": 1240
+      },
+      "encoded_bytes": 991734597,
+      "cpu_s": 2.9227474030000002,
+      "cpu_s_per_call": {
+        "full": 0.0025606263010752688,
+        "short_primary": 0.0008285847241935485
+      },
+      "other_cpu_s_per_byte": 1.430852424925537e-09
+    },
+    {
+      "name": "South/containing",
+      "calls": {
+        "full": 304,
+        "short_primary": 2096
+      },
+      "encoded_bytes": 1574298988,
+      "cpu_s": 5.518752014,
+      "cpu_s_per_call": {
+        "full": 0.003109167884868421,
+        "short_primary": 0.0009525291803435114
+      },
+      "other_cpu_s_per_byte": 1.6369595830547537e-09
+    },
+    {
+      "name": "South/near-omitted",
+      "calls": {
+        "full": 304,
+        "short_primary": 2096
+      },
+      "encoded_bytes": 1574298988,
+      "cpu_s": 4.743233607,
+      "cpu_s_per_call": {
+        "full": 0.002528584865131579,
+        "short_primary": 0.000870200786259542
+      },
+      "other_cpu_s_per_byte": 1.3660702168983415e-09
+    }
+  ],
+  "cross_recording_checks": [
+    {
+      "source": "DS30-0016/positive_first",
+      "target": "South/containing",
+      "predicted_s": 4.719151859107484,
+      "measured_s": 5.518752014,
+      "error_s": -0.7996001548925165
+    },
+    {
+      "source": "DS30-0016/positive_first",
+      "target": "South/near-omitted",
+      "predicted_s": 4.719151859107484,
+      "measured_s": 4.743233607,
+      "error_s": -0.024081747892515715
+    },
+    {
+      "source": "DS30-0016/withholding_first",
+      "target": "South/containing",
+      "predicted_s": 4.7677335019741784,
+      "measured_s": 5.518752014,
+      "error_s": -0.7510185120258219
+    },
+    {
+      "source": "DS30-0016/withholding_first",
+      "target": "South/near-omitted",
+      "predicted_s": 4.7677335019741784,
+      "measured_s": 4.743233607,
+      "error_s": 0.024499894974178815
+    },
+    {
+      "source": "South/containing",
+      "target": "DS30-0016/positive_first",
+      "predicted_s": 3.3828708626175747,
+      "measured_s": 2.8935501849999996,
+      "error_s": 0.48932067761757514
+    },
+    {
+      "source": "South/containing",
+      "target": "DS30-0016/withholding_first",
+      "predicted_s": 3.3828708626175747,
+      "measured_s": 2.9227474030000002,
+      "error_s": 0.4601234596175745
+    },
+    {
+      "source": "South/near-omitted",
+      "target": "DS30-0016/positive_first",
+      "predicted_s": 2.904144855905685,
+      "measured_s": 2.8935501849999996,
+      "error_s": 0.010594670905685444
+    },
+    {
+      "source": "South/near-omitted",
+      "target": "DS30-0016/withholding_first",
+      "predicted_s": 2.904144855905685,
+      "measured_s": 2.9227474030000002,
+      "error_s": -0.01860254709431519
+    }
+  ],
+  "projected": [
+    {
+      "case": "DS30-0163",
+      "encoded_bytes": 8356273818,
+      "calls": {
+        "full": 1338,
+        "short_primary": 9322
+      },
+      "streams": [
+        {
+          "edge": "lower",
+          "channel": 1,
+          "rf_hz": 10709687500.0,
+          "admitted": 771
+        },
+        {
+          "edge": "lower",
+          "channel": 2,
+          "rf_hz": 10959687500.0,
+          "admitted": 779
+        },
+        {
+          "edge": "lower",
+          "channel": 3,
+          "rf_hz": 11209687500.0,
+          "admitted": 424
+        },
+        {
+          "edge": "lower",
+          "channel": 4,
+          "rf_hz": 11459687500.0,
+          "admitted": 846
+        },
+        {
+          "edge": "lower",
+          "channel": 5,
+          "rf_hz": 11709687500.0,
+          "admitted": 840
+        },
+        {
+          "edge": "lower",
+          "channel": 6,
+          "rf_hz": 11959687500.0,
+          "admitted": 417
+        },
+        {
+          "edge": "lower",
+          "channel": 7,
+          "rf_hz": 12209687500.0,
+          "admitted": 414
+        },
+        {
+          "edge": "lower",
+          "channel": 8,
+          "rf_hz": 12459687500.0,
+          "admitted": 839
+        }
+      ],
+      "native_sha256": "f026bb3822ad7a946979a091c55b06d11d7c675e667c564f7d984e9f38fb2651",
+      "intake_allowance_s": 38.267176310531795,
+      "transfer": {
+        "DS30-0016/positive_first": 22.887199692631768,
+        "DS30-0016/withholding_first": 23.106779445598043,
+        "South/containing": 26.718426154120795,
+        "South/near-omitted": 22.910515066074694
+      },
+      "remaining_s": {
+        "DS30-0016/positive_first": 15.379976617900027,
+        "DS30-0016/withholding_first": 15.160396864933752,
+        "South/containing": 11.548750156411,
+        "South/near-omitted": 15.3566612444571
+      }
+    },
+    {
+      "case": "DS30-0173",
+      "encoded_bytes": 8411184197,
+      "calls": {
+        "full": 1190,
+        "short_primary": 8276
+      },
+      "streams": [
+        {
+          "edge": "upper",
+          "channel": 1,
+          "rf_hz": 10940312500.0,
+          "admitted": 828
+        },
+        {
+          "edge": "upper",
+          "channel": 2,
+          "rf_hz": 11190312500.0,
+          "admitted": 419
+        },
+        {
+          "edge": "upper",
+          "channel": 3,
+          "rf_hz": 11440312500.0,
+          "admitted": 829
+        },
+        {
+          "edge": "upper",
+          "channel": 4,
+          "rf_hz": 11690312500.0,
+          "admitted": 738
+        },
+        {
+          "edge": "upper",
+          "channel": 5,
+          "rf_hz": 11940312500.0,
+          "admitted": 421
+        },
+        {
+          "edge": "upper",
+          "channel": 6,
+          "rf_hz": 12190312500.0,
+          "admitted": 407
+        },
+        {
+          "edge": "upper",
+          "channel": 7,
+          "rf_hz": 12440312500.0,
+          "admitted": 451
+        },
+        {
+          "edge": "upper",
+          "channel": 8,
+          "rf_hz": 12690312500.0,
+          "admitted": 640
+        }
+      ],
+      "native_sha256": "d367716257b431537296e66f00835b214c8837428e18ec2af92e8da187d0f8df",
+      "intake_allowance_s": 34.83975407388061,
+      "transfer": {
+        "DS30-0016/positive_first": 21.741611902666236,
+        "DS30-0016/withholding_first": 21.939675780478183,
+        "South/containing": 25.351809855634176,
+        "South/near-omitted": 21.701065916958242
+      },
+      "remaining_s": {
+        "DS30-0016/positive_first": 13.098142171214377,
+        "DS30-0016/withholding_first": 12.90007829340243,
+        "South/containing": 9.487944218246437,
+        "South/near-omitted": 13.13868815692237
+      }
+    },
+    {
+      "case": "DS30-0359",
+      "encoded_bytes": 8381102358,
+      "calls": {
+        "full": 1296,
+        "short_primary": 9024
+      },
+      "streams": [
+        {
+          "edge": "lower",
+          "channel": 1,
+          "rf_hz": 10709687500.0,
+          "admitted": 687
+        },
+        {
+          "edge": "lower",
+          "channel": 2,
+          "rf_hz": 10959687500.0,
+          "admitted": 497
+        },
+        {
+          "edge": "lower",
+          "channel": 3,
+          "rf_hz": 11209687500.0,
+          "admitted": 733
+        },
+        {
+          "edge": "lower",
+          "channel": 4,
+          "rf_hz": 11459687500.0,
+          "admitted": 847
+        },
+        {
+          "edge": "lower",
+          "channel": 5,
+          "rf_hz": 11709687500.0,
+          "admitted": 720
+        },
+        {
+          "edge": "lower",
+          "channel": 6,
+          "rf_hz": 11959687500.0,
+          "admitted": 419
+        },
+        {
+          "edge": "lower",
+          "channel": 7,
+          "rf_hz": 12209687500.0,
+          "admitted": 417
+        },
+        {
+          "edge": "lower",
+          "channel": 8,
+          "rf_hz": 12459687500.0,
+          "admitted": 840
+        }
+      ],
+      "native_sha256": "d3e6871b303bc664a06165cf5acf3aaf8da56648bfa239b8d8076b5de0a10ddf",
+      "intake_allowance_s": 26.587574194185436,
+      "transfer": {
+        "DS30-0016/positive_first": 22.574355586476432,
+        "DS30-0016/withholding_first": 22.787840869809568,
+        "South/containing": 26.344630723700213,
+        "South/near-omitted": 22.578912196456898
+      },
+      "remaining_s": {
+        "DS30-0016/positive_first": 4.013218607709003,
+        "DS30-0016/withholding_first": 3.799733324375868,
+        "South/containing": 0.2429434704852227,
+        "South/near-omitted": 4.008661997728538
+      }
+    }
+  ],
+  "uniform_extra_s_per_case_for_both_timing_gates": {
+    "DS30-0016/positive_first": 10.830445798941136,
+    "DS30-0016/withholding_first": 10.62006949423735,
+    "South/containing": 7.093212615047553,
+    "South/near-omitted": 10.834670466369337
+  }
+}
