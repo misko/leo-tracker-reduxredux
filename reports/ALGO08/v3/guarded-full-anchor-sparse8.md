@@ -1,0 +1,32 @@
+# Guarded 20 ms anchors with the existing sparse 8 ms receiver
+
+Replacing only the full verifier's fractional rotation saved **2.279 ms** and **5.190 ms** of full native CPU per 16 anchor lanes on the original DS30-0163 and DS30-0169 first members. Full and complete mixed callback CPU and wall time improved in all four alternating comparisons per member. Ordered factors, signed timing and CFO, gates and held choices matched. Some full scores changed by (10^{-14}), so the prototype records its own detector recipe. The gain does not materially close the short original 0016/0107 gap. A conditional 0.185–0.420 CPU s on modeled 0359 gives limited extra room.
+
+## Registered path
+
+The isolated research entry accepts `--guarded-full-anchor-library` with the existing `--sparse8-primary` and `--verify-original-once` options. It pins the actual full guarded `f13593d1…` relink, its original `2258f592…` base and the reviewed guard/fallback sources. It verifies the unchanged `c5b57b06…` sparse 8 ms binary. The full call still uses `cancellation_factors` and both original scans. The short call retains `cancellation_primary_factors` and the exact native 8 ms CFO. The original all-visit dual-radio cadence, signed search limits, held selector and downstream option path stay in effect. The opt-in does no separate short CFO refinement.
+
+The exact stock parent/held recipes remained `c5d73bad…` / `ce13caaa…` in both comparisons. The guarded parent/held recipes were `9213e10e…` / `b0dab5b8…`. The recipe includes the new adapter digest and both C identities. The previously validated native guard re-anchors every 32 samples for safe spectra, with the original exact fallback on ambiguous bins, margin gates, rank order or unmet numerical conditions. No guard changed in this trial. [Opt-in](guarded_full_anchor.py) · [Existing guard and fallback](anchored-phase.md)
+
+## Paid component comparison
+
+The installed reader authenticated each original member once. Both 64-row files preserved all window digests, original invalid exclusions, exact order and the same 10 MS/s read-only stereo arrays. On 0163 the exact sparse baseline matched the sealed integrated pre-held packet. On 0169 it also matched the earlier authenticated native 8 ms comparison. Separate audited exact native full calls matched the unmodified original DSO byte for byte before being compared with guarded. Each timed callback loop included all original admitted visits and both antennas, with its actual pre-held probe construction. The paired clocks exclude verification of the fixture and the separate detailed trace.
+
+| Original first member | Issued / admitted visits | Full / short lanes | Median full native CPU saved, paired range | Median whole callback CPU / elapsed saved |
+| --- | ---: | ---: | ---: | ---: |
+| DS30-0163 | 64 / 55 | 16 / 94 | **2.279 ms**, 0.799–2.588 ms | **2.333 / 2.116 ms** |
+| DS30-0169 | 64 / 51 | 16 / 86 | **5.190 ms**, 4.735–6.951 ms | **4.599 / 4.599 ms** |
+
+The exact callback CPU medians were 110.395 and 124.952 ms. The paired mixed callback CPU improvements were 2.11% and 3.68%. One-time completed intake took 249.665 and 185.531 ms elapsed. It included the original full compressed, index, window, decoded-member and checksum verification. After the first library load, guarded configuration plus context setup cost 0.095–0.422 ms more than the exact setup in paired CPU clocks. The first exact context charged 511.598 CPU ms and 695.210 elapsed ms for initial dependency load and was kept out of the paired callback credit. Setup and callback clocks are stored for every arm.
+
+## Native and held evidence
+
+The **180 short probes match byte for byte**, including empty lanes and the previously investigated 0163 visit 61. The 32 full lanes produced the same 27 raw factors, including 12 residual ranks, and the same 17 empty anchor lanes. All 27 observed fractional verifier completions carried the exact same gate bits, seed epoch/carrier, fractional phase and residual. None of those completions failed the fractional gate. The exact path's rolled control scores span 0.032830–0.051669. Their maximum continuous deviation was (2.70\times10^{-14}), and the maximum raw exact deviation was (9.59\times10^{-14}). The verifier used recurrence for 26 of 27 attempts and took the original exact fallback for one DS30-0169 lane. The receipt's `final_failed_integer_gate` field is the count of absent bit 1. The ordinary factor verifier computes that bit only in its integer diagnostic entry, so this field supplies no integer-rejection count.
+
+Both actual held selectors returned the same `unfiltered` choice, observed and selected 36 and 56 factors, and used zero refinements. The maximum selected margin change was (7.31\times10^{-14}). The tolerance in this experiment is the original guarded native parity criterion for a separate detector identity. Full scientific comparison thresholds are unchanged. Two first members do not establish downstream geometry, owners, positions or full-recording validity. A margin perturbation could matter on a nearly tied downstream choice. No solver ran here.
+
+## Transfer budget
+
+The median paid full native reductions were **142.46 and 324.37 µs per anchor lane**. Applying each observed member rate separately to the 202 already measured anchor calls on 0016/0107 gives **0.029–0.066 CPU s**, less than 5% of the approximately 1.5 s current summed elapsed deficit. Applying the same rates to the inferred 1,296 anchors on 0359 gives **0.185–0.420 CPU s** on its modeled 22.57–26.35 s acquisition CPU boundary. These are rate transfers with unknown later signal mix and available wall time. They carry no measured completion or downstream credit. The larger 0169 gain came with 21 paid fractional checks on its 16 lanes, compared with six on 0163. [Measured native schedule and long model](receiver-mix-budget.md) · [Short original pair budget](original-decoded-fusion-budget.md)
+
+As-run freeze `17a41146e`. Use the installed interpreter with the pinned payload, release `src`, repository and `reports/ALGO08/v3` on `PYTHONPATH`, then run `python -BPs -m reports.ALGO08.v3.guarded_full_anchor_trial FRESH_LOCAL_RESULT` under the shared Gauss CPU2 flock, nice 15, I/O priority 7 and one thread. Only the two previously verified tmpfs originals entered. The [protocol](guarded-full-anchor-sparse8-protocol.md) lists the forced scope. The [sealed receipt](measurements/guarded-full-anchor-sparse8.json.gz) SHA-256 is `01e1b4ad6a2f2c62bad2421a5ddb82065d0705fe384e0cb83b90e854eb6e58db`.

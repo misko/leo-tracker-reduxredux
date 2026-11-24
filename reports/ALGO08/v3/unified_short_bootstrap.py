@@ -244,8 +244,12 @@ def run(args, *, publisher=None):
     from tools.pipeline_eval.variants.experimental.receiver_ingress import compressed_input_buffer
 
     sparse8 = getattr(args, "sparse8_primary", False)
+    guarded_full = getattr(args, "guarded_full_anchor_library", None)
     if sparse8 and (not eight_ms or full_anchor_primary is not None):
         raise ValueError("Sparse short primary requires native 8 ms and original two-scan anchors")
+    if guarded_full is not None and (not sparse8 or not getattr(args, "verify_original_once", False)
+                                     or getattr(args, "packed_ci16_map", None) is not None):
+        raise ValueError("Guarded full anchors require sparse 8 ms and verified-once original input")
     short_pin = (SPARSE_EIGHT_MS_SHA if sparse8 else EIGHT_MS_SHA) if eight_ms else SHORT_SHA
     inputs = ((args.short_binary, short_pin), (args.geographic_library, GEOGRAPHIC_SHA),
               (args.regional_track_library, TRACK_SCORES_SHA), (args.frontier_block_library, BLOCK_SHA))
@@ -272,6 +276,11 @@ def run(args, *, publisher=None):
     else:
         mixer = (MixedApertureDetector(args.short_binary, short_pin, full_coverage=True) if anchor_helper is None
                  else AnchorPrimaryMixer(args.short_binary, short_pin, anchor_helper))
+    if guarded_full is not None:
+        from guarded_full_anchor import configure
+
+        mixer, recipe = configure(args.short_binary, short_pin, original_recipe, guarded_full)
+        effective_detector = canonical_digest(recipe)[7:]
     if whole_blocks:
         from live_stereo_blocks import bind
 
@@ -405,6 +414,8 @@ def run(args, *, publisher=None):
         dependencies += ("eight_ms_native_receiver.py", "eight_ms_held_fit.py")
     if anchor_helper is not None:
         dependencies += ("mixed_aperture_receiver.py", "primary_anchor_8ms.py")
+    if guarded_full is not None:
+        dependencies += ("guarded_full_anchor.py", "anchored_phase.py", "anchored_phase.inc")
     if frequency_changes is not None:
         dependencies += ("held_cycle_refined.py",)
     if lane_mask:

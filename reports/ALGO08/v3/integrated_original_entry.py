@@ -63,6 +63,8 @@ def main():
     def options():
         cli = parser()
         cli.add_argument("--sparse8-primary", action="store_true", required=True)
+        cli.add_argument("--guarded-full-anchor-library", type=Path,
+                         help="Research-only guarded full anchors with the original sparse 8 ms primary")
         return cli
 
     def smoke(args, acceleration):
