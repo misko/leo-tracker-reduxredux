@@ -18,14 +18,14 @@ IMAGES = {"ch1-4-all", "ch5-8-all", "ch1-4-unassociated", "ch5-8-unassociated", 
           "ch5-8-residuals", "track-rms", "position"}
 
 
-def publication(target, clock, mode, offer, authority, packet_sha):
+def publication(target, clock, mode, offer, authority, packet_sha, *, worker_name="saved-south-worker.json"):
     from reports.ALGO08.v3.history_risk_0016_cairo import active_renderer
     import integrated_original_batch as batch
     from leo.presentation.localization_v3 import owner_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from PIL import Image
 
-    worker = read(target / "saved-south-worker.json")
+    worker = read(target / worker_name)
     receipt, rows = worker["receipt"], worker["ordered_owners"]
     run_id = receipt["run_id"]
     terminal = batch.document(target / "fast-scan-automatic-work" / run_id / "terminal.json", receipt["terminal_sha256"])
