@@ -1,0 +1,185 @@
+{
+  "case": "DS30-0169",
+  "evidence": {
+    "lanes": 102,
+    "positive": 56,
+    "raw_native": "sha256:43d9cb7df4b36748c047a92100e977468fc284d8da9db0133d5df2e7326d3c50",
+    "residual": 10,
+    "selected": "sha256:7676253ce922b674bd8f7e7d05365b73b5939b9d5eb5b6c3a80379a053ff67f4",
+    "visits": {
+      "full": 8,
+      "invalid": 13,
+      "short_primary": 43
+    },
+    "window_spans": "sha256:97cdf94067ae38ef1049caf01b99b1a741fac955d582bcaa1263cb513e5147bb"
+  },
+  "following_guard": "First-use member lies outside the declared original source slice",
+  "later_member_opens": [],
+  "native_build": {
+    "history": {
+      "binary_sha256": "sha256:70d834e0d148f22f3b08cdd74fc14ee6c589b45bf1e7a1949894ae9b01d9054e",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3/legacy_fused_history.c",
+        "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7",
+        "-o",
+        "/dev/shm/leo-v3-legacy-fresh-0169-result01/history.so"
+      ],
+      "libzstd_sha256": "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80",
+      "native_source_sha256": "sha256:300874a6e1a129a35286b36b333896fd4426396442aa7ea7fd27e8ddc5c2ba8f"
+    },
+    "replay": {
+      "binary_sha256": "sha256:ebe28b1326a99d49191616726195dc20bfdd2b59dcb63884cae1c959a1154ca4",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-shared",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-deprecated-declarations",
+        "/dev/shm/leo-v3-legacy-fresh-0169/reports/ALGO08/v3/legacy_block_seek.c",
+        "-lzstd",
+        "-o",
+        "/dev/shm/leo-v3-legacy-fresh-0169-result01/replay.so"
+      ],
+      "source_sha256": "sha256:f57d181e31fc07aaf5e0047aef0954666b4143f77f8c8bce6ecdcb4ac6b8e4e7"
+    }
+  },
+  "pin": "sha256:78c7e767e9482e3d9d36c19928eb054097434eff0bceab5498d6890d5e304b09",
+  "plan": {
+    "members": [
+      {
+        "chunk_index": 0,
+        "decoded": 102400000,
+        "encoded": 78852856,
+        "first_sequence": 0,
+        "index_sha256": "sha256:e3d1f28198726802776c1e300eb4a9beb750b981c505743306738285263271de",
+        "manifest_sha256": "sha256:de13da9f410c21fd0ef0544906f40a3a0c081d5deae74ae4fd60d7fac25f2514",
+        "map": "member-000000.json",
+        "map_kind": "literal",
+        "map_sha256": "sha256:e49efbd73addadc9f7005a65d3baac7983531d642769c10740ddf8a7a383c2a8",
+        "member_sha256": "sha256:889c12fd0c940d4a95b47829e4d78947ab8207a023b1657b201e5f37074fe21d",
+        "raw_sha256": "sha256:0cdb857cb3139a3b50c89abe15727b495ea29871e732d024a88d0832fd2aafa4",
+        "windows": 64
+      }
+    ],
+    "original_inventory_sha256": "sha256:be9e6e39a10a89a298054d08ea51db53b5aec7667ecf9a725373582ac092972d",
+    "original_manifest_sha256": "sha256:de13da9f410c21fd0ef0544906f40a3a0c081d5deae74ae4fd60d7fac25f2514",
+    "raw_authority": "sha256:089f67081dd421f5965c1fcf90bd7f7730c5edcdae20fc903c2c91600f72d309",
+    "schema": "private-algo08-legacy-map-single-original-member-v1",
+    "scope_sha256": "sha256:95a438f0904e4568b6f2a3618b7fbf691c29d0e2d352fd3727cc83d35b72aa9a",
+    "windows": 64
+  },
+  "prior_maps_read": 0,
+  "producer": {
+    "block_map_workspace_bytes": 31280,
+    "chunk_index": 0,
+    "complete_encoded_auth": {
+      "cpu_ns": 31983808,
+      "input_blocks": 0,
+      "wall_ns": 31983915
+    },
+    "decoded": 102400000,
+    "encoded": 78852856,
+    "exceptional_ordinals": [],
+    "first_sequence": 0,
+    "hash_cpu_ns": 32504361,
+    "hash_wall_ns": 32499758,
+    "history_and_context_bytes": 882648,
+    "index_sha256": "sha256:e3d1f28198726802776c1e300eb4a9beb750b981c505743306738285263271de",
+    "largest_sample_window_bytes": 1600000,
+    "manifest_sha256": "sha256:de13da9f410c21fd0ef0544906f40a3a0c081d5deae74ae4fd60d7fac25f2514",
+    "map": "member-000000.json",
+    "map_bytes": 34450,
+    "map_kind": "literal",
+    "map_reopen": {
+      "cpu_ns": 3464730,
+      "input_blocks": 0,
+      "wall_ns": 3464491
+    },
+    "map_serialize": {
+      "cpu_ns": 1052336,
+      "input_blocks": 0,
+      "wall_ns": 1052034
+    },
+    "map_sha256": "sha256:e49efbd73addadc9f7005a65d3baac7983531d642769c10740ddf8a7a383c2a8",
+    "member_sha256": "sha256:889c12fd0c940d4a95b47829e4d78947ab8207a023b1657b201e5f37074fe21d",
+    "metadata": {
+      "cpu_ns": 808514,
+      "input_blocks": 0,
+      "wall_ns": 808437
+    },
+    "native_read_cpu_ns": 70691135,
+    "native_read_wall_ns": 70688081,
+    "plan_and_history": {
+      "cpu_ns": 1901160,
+      "input_blocks": 0,
+      "wall_ns": 1900840
+    },
+    "proof": {
+      "original_encoded_reused": 78852856,
+      "prefix_bytes": 640000,
+      "prefix_sha256": "sha256:0f967b0e24f0c9929f2ae779e9ef74158f134e35ae31c02c343b533653216505"
+    },
+    "raw_sha256": "sha256:0cdb857cb3139a3b50c89abe15727b495ea29871e732d024a88d0832fd2aafa4",
+    "retained_exception_buffer": 0,
+    "windows": 64
+  },
+  "producer_with_native_and_word_comparison": {
+    "cpu_ns": 292681393,
+    "input_blocks": 0,
+    "wall_ns": 292713312
+  },
+  "replay": {
+    "clock": {
+      "cpu_ns": 163332832,
+      "input_blocks": 0,
+      "wall_ns": 163339652
+    },
+    "full": 64,
+    "prefix": 64,
+    "requested_decode": {
+      "dependency_blocks": 19,
+      "dependency_decoded": 2490368,
+      "dependency_encoded": 1915813,
+      "requested_blocks": 1156,
+      "requested_decoded": 151420928,
+      "requested_encoded": 116609511
+    }
+  },
+  "resident": {
+    "descriptor_pages": {},
+    "filesystem": "tmpfs",
+    "members": {
+      "iq-000000.ci16.zst": 78852856,
+      "manifest.json": 6812,
+      "windows-000000.jsonl": 173459
+    },
+    "snapshot": {
+      "cached_pages": 19297,
+      "ended_unix_ns": 1795514430166401226,
+      "members": 3,
+      "observed_file_pages": 19297,
+      "observed_members": 3,
+      "started_unix_ns": 1795514430166076791,
+      "unavailable": {}
+    }
+  },
+  "scope": "only the signed original first member",
+  "source": "/dev/shm/leo-receiver-ceiling-0169-results01/fast8-auto-20261116-022353-b914c97a-1-lower-segment-00000000",
+  "stock_verification": {
+    "cpu_ns": 171062622,
+    "input_blocks": 0,
+    "wall_ns": 171074749
+  }
+}

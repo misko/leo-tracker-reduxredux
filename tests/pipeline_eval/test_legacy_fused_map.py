@@ -313,3 +313,14 @@ def test_later_corruption_clears_provisional_maps_and_cannot_publish(tmp_path, n
         acquire_without_preparing_maps((valid, broken), native, core.load(binary), pending, audit)
     assert not pending and not audit["members"] and "verified_plan" not in audit
     assert not (tmp_path / "maps").exists()
+
+
+def test_bounded_first_use_refuses_a_following_member_before_its_opener():
+    enrolled = SimpleNamespace(first_sequence=0, window_count=64)
+    following = SimpleNamespace(first_sequence=64, window_count=64)
+    reader = SimpleNamespace(manifest=SimpleNamespace(chunks=[enrolled, following]))
+    source = SimpleNamespace(reader=reader, start_sequence=0, stop_sequence=64)
+    with patch.object(ShortWindowReader, "_member", side_effect=AssertionError("must not open")) as read:
+        with pytest.raises(BundleCorruptionError, match="outside the declared original source slice"):
+            next(first.member_windows(source, following, {}, "later", None, None, None, []))
+        read.assert_not_called()
