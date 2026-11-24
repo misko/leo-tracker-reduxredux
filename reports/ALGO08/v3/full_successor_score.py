@@ -671,11 +671,22 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "and 29 on DS30-0086, where the final geographic difference was small. The counts identify "
               "when the paths diverged. [Detection-by-detection screen replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "ca74fa45e5e16028aa1d6012cd415fe689c8271a/reports/ALGO08/v3/pre-screen-owner.md)"]
+    lines += ["", "Two saved runs stopped at the second screen to record its decisions. On DS30-0220, "
+              "139 of the 156 detections fell on curves that failed the slope and profile-noise checks. "
+              "The remaining 17 passed their individual checks but lost support from another channel on the same radio. "
+              "The same slope and noise checks also removed 38 on DS30-0086. "
+              "[Measured rejection reasons](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "8fa3872d7db96babacad8a5f2d12dfa449caa136/reports/ALGO08/v3/second-curve-gate.md)", "",
+              "Across the first 30 pairs excluding those two controls, retrying the original pipeline whenever this screen dropped at "
+              "least 10% of the incoming observations would have added 600 wall seconds. It recovered "
+              "one recording within 2 km in each calibration and gained none within 1 km. "
+              "[Held and prospective tests of the retry rule](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "51d8522310d81deac483b657769d5cea9ad091b9/reports/ALGO08/v3/ds30-second-screen-attrition.md)"]
     lines += ["", "### What would another speedup require?", "",
               "On the first 30 pairs, halving everything ALGO08v3 did before writing its detector packet "
               "would give **1.48× summed** end-to-end speedup. Keeping the original solver and subsequent "
               "work at their measured costs would require a **4.29×** speedup across that whole initial "
-              "stage to reach both 2× targets. The model includes startup, reading, verification, decoding and "
+              "stage to reach both 2× targets. The model includes startup, reading, input verification, decoding and "
               "detection. [Measured stage boundaries and assumptions](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "96451b64b82e48a1a0564816b45cec785c1f3f98/reports/ALGO08/v3/installed-receiver-first30.md)", "",
               "The two receivers agreed on 83,058 short-aperture peaks under the prespecified matching rule. "
