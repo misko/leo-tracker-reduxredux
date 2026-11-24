@@ -27,16 +27,17 @@ CASE = ORIGINAL.workload
 ORDER = CASE.order
 
 
-def commands(root, pack, named):
+def commands(root, pack, named, *, candidate_entry=None, candidate_options=()):
     common = ["--recording", RECORDING, "--region", PRIOR / "offer.json", "--archive", PRIOR / "tle"]
-    candidate = [RELEASE / "venv/bin/python", "-IB", HERE / "continued_cfo.py", "--anchored-cfo-pack", pack,
+    entry = candidate_entry or HERE / "continued_cfo.py"
+    candidate = [RELEASE / "venv/bin/python", "-IB", entry, "--anchored-cfo-pack", pack, *candidate_options,
                  *common, "--output", root / "candidate"]
     for option, library in LIBRARIES.items():
         candidate.extend((option, PRIOR / (library + ".so")))
     return {"candidate": [*candidate, *ROUTE_FLAGS], "stock": [named, *common, "--bulk-root", root / "stock"]}
 
 
-def upstream():
+def upstream(*, verify_historical_source=None):
     from anchored_cfo_raw import verified_pack
     from full_short_physical import REGION_SHA
     from joint_held_north_raw import PACK, PACK_SHA
@@ -54,7 +55,10 @@ def upstream():
             or archive_identity(PRIOR / "tle")["snapshots_sha256"] != ORIGINAL.archive):
         raise ValueError("Verified guarded recipe or original physical archive changed")
     for source, digest in north["source_sha256"].items():
-        checked(HERE / source, digest)
+        if verify_historical_source is None:
+            checked(HERE / source, digest)
+        else:
+            verify_historical_source(north["commit"], source, digest)
     for option, name in LIBRARIES.items():
         pin = north["libraries"][option]["sha256"]
         if previous["library_sha256"][name] != pin:
@@ -68,13 +72,16 @@ def upstream():
 def seal(root):
     names = ["admission.json", "candidate-held-cycle-refined.json"]
     paths = [root / name for name in names]
+    admission = json.loads((root/"admission.json").read_bytes())
+    if "combined_raw_sources" in admission:
+        paths.extend(root / name for name in ("orbits-indexed.json", "catalogue-block-rank.json"))
     for mode in ORDER:
         paths.extend(root / f"{mode}{suffix}" for suffix in ("-clock.json", ".stdout", ".stderr"))
         paths.extend(path for path in (root / mode).rglob("*") if path.is_file())
     return {str(path.relative_to(root)): sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
 
-def launch(root, stage):
+def launch(root, stage, *, candidate_entry=None, candidate_options=(), verify_historical_source=None, combined_raw_sources=None):
     from aperture_trial import write
     from dense_geographic_trial import host
     from full_short_physical import environment
@@ -106,7 +113,7 @@ def launch(root, stage):
         return scopes[PAYLOAD] | {"index_cache": scopes[INDEX]}
 
     resident()
-    recipe, pack, pack_sha, previous = upstream()
+    recipe, pack, pack_sha, previous = upstream(verify_historical_source=verify_historical_source)
     source_sha = frozen_sources(BASE, ("continued_cfo.py", "anchored_cfo_raw.py", "short_cfo_raw.py",
                                        "held_cycle_refined.py", "anchor_cycle_route.py", "empty_family_calibration.py"))
     offer = previous["offer"]
@@ -115,11 +122,12 @@ def launch(root, stage):
             or job["evaluation_reference"] is not None or root.parent.stat().st_dev != Path("/dev/shm").stat().st_dev):
         raise ValueError("Original operator offer or local benchmark path changed")
     stock = pairs.verified_v3(pairs.NAMED_V3)
-    argv = commands(root, pack, pairs.NAMED_V3)
+    argv = commands(root, pack, pairs.NAMED_V3, candidate_entry=candidate_entry, candidate_options=candidate_options)
     root.mkdir()
     (root / "tmp").mkdir()
     env = environment(root)
     env.update(TMPDIR=str(root / "tmp"), XDG_CACHE_HOME=str(root / "tmp"))
+    additions = {} if combined_raw_sources is None else {"combined_raw_sources": combined_raw_sources}
     write(root / "admission.json", dict(case=CASE.id, base=BASE, order=ORDER, machine=machine, stock=stock,
           stage_sha256=sha256(receipt_bytes).hexdigest(), stage=staged, prior_source_sha256=PRIOR_ADMISSION,
           north_binding_sha256=NORTH_BINDING, north_seal_sha256=NORTH_SEAL, pack_sha256=pack_sha, receiver_recipe=recipe,
@@ -128,7 +136,7 @@ def launch(root, stage):
           offer=offer, offer_sha256=previous["offer_sha256"], issued=CASE.windows, admitted=ORIGINAL.admitted,
           archive=previous["archive"], recording=str(RECORDING), raw_authority=case["raw_authority"],
           session=case["session_id"], library_sha256=previous["library_sha256"],
-          driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
+          driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(), **additions))
     for mode in ORDER:
         measure_mode(root, mode, argv[mode], env, resident, require_success=False)
     write(root / "prediction-seal.json", seal(root))

@@ -14,7 +14,7 @@ sys.path.insert(0, str(HERE))
 
 
 @contextmanager
-def bind_active_publication(audit):
+def bind_active_publication(audit, *, index_factory=None):
     import joint_publication
     from historical_orbit_index import guarded_preparation
 
@@ -26,7 +26,8 @@ def bind_active_publication(audit):
             from tools import algo08_position
 
             with raw_context(scan):
-                prepare = guarded_preparation(algo08_position.prepare_native_scan, audit)
+                options = {} if index_factory is None else {"index_factory": index_factory}
+                prepare = guarded_preparation(algo08_position.prepare_native_scan, audit, **options)
                 with patch.object(algo08_position, "prepare_native_scan", prepare):
                     yield
 
@@ -37,14 +38,14 @@ def bind_active_publication(audit):
 
 
 @contextmanager
-def bind_runtime(audit):
+def bind_runtime(audit, *, index_factory=None):
     import empty_bootstrap
 
     original = empty_bootstrap.load_runtime
     with ExitStack() as scope:
         def load():
             installed = original()
-            scope.enter_context(bind_active_publication(audit))
+            scope.enter_context(bind_active_publication(audit, index_factory=index_factory))
             return installed
 
         scope.enter_context(patch.object(empty_bootstrap, "load_runtime", load))

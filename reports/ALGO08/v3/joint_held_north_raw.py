@@ -77,7 +77,7 @@ def validate_workload(request, assignment, machine, reference_machine):
         raise ValueError("Candidate and historical control require the same raw assignment and worker settings")
 
 
-def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra_sources=()):
+def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra_sources=(), experiment_flags=()):
     from anchored_cfo_raw import verified_pack
     from dense_geographic_trial import host
     from full_short_physical import CACHE_LIB, CACHE_SHA, environment
@@ -128,7 +128,7 @@ def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra
     if continued:
         sources.add(HERE / "continued_cfo_north_trial.py")
     sources.update(extra_sources)
-    cli = [python, "-IB", entry, "--anchored-cfo-pack", PACK]
+    cli = [python, "-IB", entry, "--anchored-cfo-pack", PACK, *experiment_flags]
     options = subprocess.run([*cli, "--help"], env=env, capture_output=True, timeout=15, check=True).stdout
     if any(flag.encode() not in options.split() for flag in (SELECTOR, "--named-survivor-finish")):
         raise ValueError("The guarded normal entry did not expose the frozen joint selector and finish")
