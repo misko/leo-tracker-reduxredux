@@ -139,7 +139,9 @@ def qualified_science(case, root, log, req, expected):
                 or result["full_sidecar_record_parity"] != expected["full_sidecar_record_parity"]):
             raise ValueError("Stock publication differs from original signed science")
         keys = ("digest", "opportunities", "excluded", "figures", "owners", "owner_counts", "factors", "sidecars")
-    if any(result[key] != expected[key] for key in keys):
+    # The image inspector returns tuple dimensions and DPI, while archived JSON
+    # stores the same ordered values in arrays.
+    if any(json.dumps(result[key], sort_keys=True) != json.dumps(expected[key], sort_keys=True) for key in keys):
         raise ValueError("Stock publication differs from the preregistered installed comparison")
     return result
 
@@ -188,9 +190,11 @@ def launch(case, root):
 
 
 def score(case, root, destination):
-    from portable_orbit_index_trial import local_launcher_tools
+    if case == ORDER[0]:
+        from portable_orbit_index_trial import local_launcher_tools
 
-    local_launcher_tools()
+        local_launcher_tools()
+
     from aperture_trial import write
     from history_risk_0016_raw import read, roster
 
@@ -205,6 +209,7 @@ def score(case, root, destination):
         raise ValueError("Measured stock launch changed before scoring")
     checked = qualified_science(case, root, log, admitted["request"], control["runs"]["stock"])
     write(destination, dict(case=case, qualified=True, admission=admitted, process_context=read(context),
+                            scorer_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
                             stock=checked, seal_sha256=sha256(seal.read_bytes()).hexdigest()))
 
 
