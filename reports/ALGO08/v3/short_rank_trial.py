@@ -23,6 +23,7 @@ HERE = Path(__file__).resolve().parent
 PUBLISH_BUILD = Path("/var/tmp/leo-v3-eight-ms-build-padded")
 BUILD_PIN = "3ee8b9ceb4ec5b8b910520a673309f1799e632618b525d8234058c63d22f86b1"
 RELINK_PIN = "b2324c7cfe3c60eecd59a98eda6b8d508c46e01df6ac81375db2f5f500493a30"
+PRIMARY_WRAPPER_OBJECT = "90e6b9af8a0c9de5160016e0eba606f4e0ead8678576c24523138b72c0a3b5a2"
 BUILD_CWD = Path("/tmp/leo-algo08v2-2x/native/algo08v2")
 ASSETS = Path("/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/assets")
 SOURCES = {
@@ -59,7 +60,8 @@ def build(root):
     link = json.loads(verified(PUBLISH_BUILD / "8ms/build-receipt.json", RELINK_PIN))
     command = link["relink"]
     objects = {Path(path).name: Path(path) for path in command if path.endswith(".o")}
-    for name, pin in link["short_object_sha256"].items():
+    object_pins = link["short_object_sha256"] | {"two_carrier_receiver.o": PRIMARY_WRAPPER_OBJECT}
+    for name, pin in object_pins.items():
         verified(objects[name], pin)
     name = "timing_first_receiver"
     text = verified(objects[name + ".o"].with_suffix(".c"), doc["source_sha256"][name]).decode()
