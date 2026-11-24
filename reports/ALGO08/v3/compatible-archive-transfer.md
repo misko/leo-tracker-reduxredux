@@ -31,3 +31,20 @@ DS30-0138 was selected by proximity to the median visit count and compressed siz
 Across all six saved fixes, including DS30-0138, cumulative time fell from **190.357 s to 103.104 s**. This is **1.54× at the paired median and 1.85× by total time**. These clocks start at saved detections and cannot establish raw end-to-end speed on those six recordings. The two original-waveform cases and this longer saved comparison all use the same roof reference. [Holdout selection](duration-heldout.md) · [Six-case receipt and comparison](history-risk-0138.md)
 
 ![Paired saved-input runtimes and change in horizontal error on six recordings](development/history-risk-six-case.png)
+
+### Where the six saved workers need to get faster
+
+The routed workers already save 87.253 seconds in total. DS30-0402 contributes 45.696 seconds of that gain. Even making the two longest installed jobs, 0402 and 0138, instantaneous would give a paired median of only 1.58×. The shorter jobs determine whether a change improves the typical recording. The last column measures the saving each job would need to reach half its own baseline. The two panel gates use the median paired ratio and the ratio of summed times.
+
+| Recording | Installed v3 | Routed with admission | Orbit preparation | Numerical inference | Seconds above half of v3 |
+|---|---:|---:|---:|---:|---:|
+| DS30-0160 | 15.999 s | 10.886 s | 1.677 s | 5.278 s | +2.89 |
+| DS30-0316 | 18.358 s | 12.811 s | 2.459 s | 6.193 s | +3.63 |
+| DS30-0374 | 28.324 s | 16.664 s | 2.433 s | 9.749 s | +2.50 |
+| DS30-0402 | 73.351 s | 27.655 s | 2.548 s | 20.102 s | −9.02 |
+| DS30-0169 | 17.893 s | 12.485 s | 1.991 s | 6.034 s | +3.54 |
+| DS30-0138 | 36.432 s | 22.604 s | 2.655 s | 15.318 s | +4.39 |
+
+Holding every other elapsed interval fixed, **6.78% less inference time on every case** would clear both 1.6× gates. **40.09% less** would clear both 2× gates. For a change limited to orbit preparation, 1.6× would require a 28.61% reduction. Even eliminating that stage entirely would leave the median at 1.80×. Eliminating every launcher admission would leave the median at 1.57×. The calculation recomputes the median after each hypothetical reduction so the middle recordings can change. It starts at saved detections and excludes acquisition. [Reproduce the sensitivity calculation](saved_stage_budget.py) · [Original elapsed times](measurements/history-risk-six-case.json.gz)
+
+A separate instrumented replay of 0138 reproduced both positions, all 4,718 owners per arm, the full grid and all eight PNGs. It spent 4.989 CPU seconds ranking satellite assignments and 5.259 CPU seconds evaluating the standard evidence. The measured ceiling on the proposed local rank reuses was 0.468 CPU seconds. On two other saved scenes, removing redundant image-buffer restores saved only 6–7 ms of drawing work while reproducing every orbit PNG. These experiments narrow the next comparison to changes that can avoid or accelerate whole search passes and the publication of the remaining figures. [Solver profile](inference-0138-profile.md) · [Same-image rendering comparison](ordinary-orbit-reuse.md)
