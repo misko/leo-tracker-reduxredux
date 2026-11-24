@@ -215,6 +215,7 @@ def run(args, *, publisher=None):
         raise ValueError("The research map requires --one-pass-web-png")
     lane_mask = getattr(args, "short_lane_mask", None)
     eight_ms = getattr(args, "eight_ms_native_history", False)
+    full_primary_nonanchors = getattr(args, "full_primary_nonanchors", False)
     full_anchor_primary = getattr(args, "full_anchor_primary_library", None)
     strict_packed_eight = getattr(args, "strict_packed_eight", False)
     whole_blocks = getattr(args, "whole_stereo_blocks", False)
@@ -256,14 +257,29 @@ def run(args, *, publisher=None):
                                      or getattr(args, "packed_ci16_map", None) is not None):
         raise ValueError("Guarded full anchors require sparse 8 ms and verified-once original input")
     short_pin = (SPARSE_EIGHT_MS_SHA if sparse8 else EIGHT_MS_SHA) if eight_ms else SHORT_SHA
-    inputs = ((args.short_binary, short_pin), (args.geographic_library, GEOGRAPHIC_SHA),
-              (args.regional_track_library, TRACK_SCORES_SHA), (args.frontier_block_library, BLOCK_SHA))
+    inputs = ((args.geographic_library, GEOGRAPHIC_SHA), (args.regional_track_library, TRACK_SCORES_SHA),
+              (args.frontier_block_library, BLOCK_SHA))
+    if full_primary_nonanchors:
+        if (sparse8 or full_anchor_primary is not None or lane_mask or whole_blocks or strict_packed_eight
+                or getattr(args, "select_before_cfo", False) or getattr(args, "packed_ci16_map", None) is not None):
+            raise ValueError("Full-aperture primaries require the original every-visit stereo path")
+    else:
+        if args.short_binary is None:
+            raise ValueError("Provide the authenticated short receiver binary")
+        inputs = ((args.short_binary, short_pin), *inputs)
     for path, pin in inputs:
         staged.checked(path, pin)
     if args.one_pass_web_png:
         staged.checked(HERE / "one_pass_web_png.py", LAYOUT_SHA256)
-    original_recipe = checked_recipe(eight_ms=True, short_pin=short_pin) if eight_ms else checked_recipe()
-    recipe, effective_detector = original_recipe, EIGHT_MS_RECIPES[short_pin] if eight_ms else RECIPE_SHA
+    if full_primary_nonanchors:
+        from full_primary_nonanchor_receiver import FullPrimaryNonanchor, recipe as full_primary_recipe
+
+        original_recipe = full_primary_recipe()
+        effective_detector = canonical_digest(original_recipe)[7:]
+    else:
+        original_recipe = checked_recipe(eight_ms=True, short_pin=short_pin) if eight_ms else checked_recipe()
+        effective_detector = EIGHT_MS_RECIPES[short_pin] if eight_ms else RECIPE_SHA
+    recipe = original_recipe
     anchor_helper = None
     if full_anchor_primary is not None:
         from primary_anchor_8ms import RECIPE_FIELD, AnchorPrimaryMixer, bound_library, definition
@@ -271,7 +287,9 @@ def run(args, *, publisher=None):
         anchor_helper = bound_library(full_anchor_primary)
         recipe = dict(original_recipe, **{RECIPE_FIELD: definition()})
         effective_detector = canonical_digest(recipe)[7:]
-    if lane_mask:
+    if full_primary_nonanchors:
+        mixer = FullPrimaryNonanchor(specification["detector"])
+    elif lane_mask:
         from stereo_lane_receiver import StereoLaneReceiver
         from stereo_lane_schedule import recipe as mask_recipe
 
@@ -365,7 +383,7 @@ def run(args, *, publisher=None):
             native, recipe, effective_detector, route_selection = select_refined(
                 native, recipe, frequency_changes, session, inventory_digest, decision_file)
             phases["held_anchor_route_selection"] = staged.clock(scope)
-        elif getattr(args, "held_anchor_route", False):
+        elif getattr(args, "held_anchor_route", False) and not full_primary_nonanchors:
             if recheck is not None:
                 from live_full_recheck import prepare
             elif eight_ms:
@@ -426,7 +444,9 @@ def run(args, *, publisher=None):
         dependencies += ("lazy_scanner_detector.py",)
     if route_selection is not None:
         dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
-    if eight_ms:
+    if full_primary_nonanchors:
+        dependencies += ("full_primary_nonanchor_receiver.py", "mixed_aperture_receiver.py")
+    elif eight_ms:
         dependencies += ("eight_ms_native_receiver.py", "eight_ms_held_fit.py")
     if recheck is not None:
         from live_full_recheck import SOURCES

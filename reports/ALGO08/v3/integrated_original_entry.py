@@ -62,7 +62,10 @@ def main():
 
     def options():
         cli = parser()
-        cli.add_argument("--sparse8-primary", action="store_true", required=True)
+        receiver_policy = cli.add_mutually_exclusive_group(required=True)
+        receiver_policy.add_argument("--sparse8-primary", action="store_true")
+        receiver_policy.add_argument("--full-primary-nonanchors", action="store_true",
+                                     help="Use full-aperture primaries between unchanged two-scan anchors")
         receiver_variant = cli.add_mutually_exclusive_group()
         receiver_variant.add_argument("--guarded-full-anchor-library", type=Path,
                                       help="Use guarded full anchors with the original sparse 8 ms primary")

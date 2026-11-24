@@ -173,7 +173,7 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
             or Path(algo08_position.__file__).resolve() != boot.PAYLOAD / "tools/algo08_position.py"
             or digest(SHARING) != SHARING_PIN
             or specification["detector_sha256"] == handoff.receiver):
-        raise ValueError("Expected named localization and an independently identified 20/8 ms packet")
+        raise ValueError("Expected named localization and an independently identified receiver packet")
     bound, request = request_from_handoff(args, handoff)
     audit = dict(rank=[], blocks=Counter(), graph={}, gates=Counter(), portable={}, png={}, verified_tle=Counter())
     routed = getattr(args, "history_risk_route", False)
@@ -232,6 +232,10 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
         detail["solver_recipe"]["history_risk"] = dict(requested=True, choice=decision.get("route"),
                                                        reason=decision.get("reason"), optional_prefit_exterior_probe=False)
         detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in RISK_SOURCES})
+    if getattr(args, "full_primary_nonanchors", False):
+        from full_primary_nonanchor_receiver import DESCRIPTION
+
+        detail["solver_recipe"]["recipe"] = DESCRIPTION
     if cairo or residual_layout:
         from history_cairo_render import RESIDUAL_SOURCES, SOURCES as CAIRO_SOURCES
 
@@ -327,7 +331,7 @@ def parser():
                         help="Keep the ordinary orbit sheets and use Cairo residuals and explicit position/track layout")
     for name in ("recording", "archive", "region", "output", "short-binary", "geographic-library",
                  "regional-track-library", "frontier-block-library", "portable-orbit-index"):
-        command.add_argument("--"+name, type=Path, required=name != "portable-orbit-index")
+        command.add_argument("--"+name, type=Path, required=name not in ("portable-orbit-index", "short-binary"))
     command.add_argument("--archive-sha256", required=True)
     command.add_argument("--portable-orbit-index-sha256")
     command.add_argument("--portable-orbit-producer-sha256")
