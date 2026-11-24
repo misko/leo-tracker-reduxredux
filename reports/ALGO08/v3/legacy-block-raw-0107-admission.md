@@ -1,0 +1,9 @@
+# Metadata admission for the DS30-0107 withholding control
+
+The exact complete DS30-0107 fixture is already resident in tmpfs. The original compressed member is **33,519,983 bytes**, accompanied by a signed 78,609-byte index and 3,542-byte manifest. Both signed sidecars matched their recorded digests, and the ordered per-window hashes reproduced the original raw authority. The index retains all **29 issued visits**, with 27 complete, one partial 136,857-sample visit and one empty visit. The original signed decoded extent is **44,294,856 bytes**. Payload residence and size were checked passively. No waveform bytes were opened and no raw children were launched. [Metadata receipt](measurements/legacy-block-raw-0107-metadata.json)
+
+The original 51-snapshot causal archive and offer were present and verified by metadata. The earlier portable artifact's cutoff precedes DS30-0107 and eleven of its signed body digests overlap the archive. The previous withholding entered neither preparation nor rendering. The same portable and conservative renderer options are required in the two prospective children to preserve the positive-case configuration.
+
+Source inspection at `a78562085` found a generic per-member direct original-file reader with an explicit absent-map row and complete ordinary replay for that row. Its index validator supports the signed partial and empty geometry. Encoded layout and actual activation remain unmeasured. The positive DS30-0016 verification will pin the exact runnable implementation and determine admission to map preparation and timing. [Frozen procedure](legacy-block-raw-0107-protocol.md) · [Previous ordinary-input withholding](history-risk-0107-cairo.md)
+
+Metadata receipt SHA-256 `26300d7ae47235e650c0b370c31a49b3e93a606637da34941aa423eb00d55968`. One metadata component test passed.
