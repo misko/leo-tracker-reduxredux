@@ -1,6 +1,9 @@
+import csv
+import json
+
 import pytest
 
-from full_successor_score import outcomes_summary, paired_rows, paired_timing, roster, score_arms
+from full_successor_score import outcomes_summary, paired_rows, paired_timing, roster, score_arms, write_report
 
 
 def arms(point):
@@ -62,3 +65,25 @@ def test_unpaired_and_unmeasured_rows_cannot_produce_full_distribution(field, va
     rows[1][field] = value
     with pytest.raises(ValueError):
         paired_rows(rows, assigned)
+
+
+def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
+    assigned = roster()
+    template, _ = matching_pair()
+    rows = []
+    for i, (case, item) in enumerate(assigned.items()):
+        for role in template:
+            fix = role["algorithm"] == "installed" or i > 0
+            rows.append({**role, "case": case, "case_id": item["case_id"],
+                         "first": "installed" if i % 2 else "successor",
+                         "outcome": "complete" if fix else "withheld",
+                         "arms": arms([48., 7.] if fix else None)})
+    pairs = paired_rows(rows, assigned)
+    write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64)
+    report = json.loads((tmp_path / "summary.json").read_bytes())
+    assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
+    assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
+    assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
+    for figure in ("runtime.png", "position-error.png"):
+        assert (tmp_path / figure).read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert figure in (tmp_path / "README.md").read_text()
