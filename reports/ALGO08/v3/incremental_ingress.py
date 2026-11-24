@@ -58,12 +58,12 @@ def measure_arrivals(path, size, pin):
 
 
 class Delivery:
-    """One elapsed-time schedule, covering each 1 MiB release boundary."""
+    """Observe actual demand or enforce elapsed-time release boundaries."""
 
     def __init__(self, size, deadlines, *, corrupt=False):
         self.size = size
         self.deadlines = deadlines
-        self.paced_chunks = deadlines[0] != deadlines[-1]
+        self.paced_chunks = deadlines is not None and deadlines[0] != deadlines[-1]
         self.corrupt = corrupt
         self.origin = self.last_byte = None
         self.offset = self.positive_reads = self.read_cpu_ns = self.read_wall_ns = self.sleep_ns = 0
@@ -74,6 +74,8 @@ class Delivery:
         end = self.offset+count
         if count <= 0 or end > self.size:
             raise ValueError("The compressed delivery exceeded its exact byte boundary")
+        if self.deadlines is None:
+            return
         remaining = self.deadlines[(end-1)//BLOCK] - (perf_counter_ns()-self.origin)
         if remaining > 0:
             start = perf_counter_ns()
@@ -290,7 +292,7 @@ def run_arm(mode, output, deadlines, path, member, expected, *, corrupt=False):
     end_usage = resource.getrusage(resource.RUSAGE_SELF)
     if (error is None) != output.is_file():
         raise ValueError("A corrupted member produced a seal")
-    native_clock = None
+    native_clock = acquisition = None
     if result is not None:
         if any(canonical_digest(result[key]) != canonical_digest(expected[key])
                for key in ("iq", "packet", "trace", "original_member_reads")) or any(
@@ -298,11 +300,14 @@ def run_arm(mode, output, deadlines, path, member, expected, *, corrupt=False):
                 for a, b in zip(result["trace"], expected["trace"], strict=True)):
             raise ValueError("Signed lane factors changed under compressed delivery")
         native_clock = result["native_cpu_ns"]
+        acquisition = {key: result[key] for key in ("acquire_cpu_ns", "acquire_wall_ns", "native_schedule",
+                                                    "native_wall_ns", "original_member_reads")}
     return dict(mode=mode, corrupt=corrupt, error=error, dropped_stereo=tally["completed_stereo"] if error else 0,
                 verified_windows=tally["verified_windows"], completed_stereo=tally["completed_stereo"],
                 elapsed_ns=finish[1]-begin[1], cpu_ns=finish[0]-begin[0], sealed=output.is_file(),
                 packet_sha256=sha256(output.read_bytes()).hexdigest() if output.is_file() else None,
-                stats=provisional, delivery=delivery.receipt(), native_cpu_ns=native_clock, paid_callback=paid_clock,
+                stats=provisional, delivery=delivery.receipt(), acquisition=acquisition,
+                native_cpu_ns=native_clock, paid_callback=paid_clock,
                 events_ns={k: v-begin[1] for k, v in dict(tally, demand=delivery.origin,
                            last_byte=delivery.last_byte).items() if k not in ("verified_windows", "completed_stereo") and v is not None},
                 peak_rss_kib=end_usage.ru_maxrss, minor_faults=end_usage.ru_minflt-usage.ru_minflt,

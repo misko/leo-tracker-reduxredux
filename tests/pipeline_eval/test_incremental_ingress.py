@@ -25,6 +25,15 @@ def test_delivery_uses_absolute_ready_times_and_counts_only_requested_bytes(monk
         stream.transfer(1, lambda: b"x")
 
 
+def test_actual_delivery_has_no_wait_schedule(monkeypatch):
+    monkeypatch.setattr(trial, "sleep", lambda *_: pytest.fail("unpaced read tried to sleep"))
+    stream = trial.Delivery(6, None)
+    assert stream.transfer(4, lambda: b"0123") == b"0123"
+    assert stream.transfer(2, lambda: b"45") == b"45"
+    assert stream.offset == 6 and stream.positive_reads == 2 and stream.sleep_ns == 0
+    assert not stream.paced_chunks
+
+
 def test_feed_requires_complete_length_and_matches_hash_before_commit(tmp_path, monkeypatch):
     monkeypatch.setattr(trial, "BLOCK", 4)
     contents = b"012345"
@@ -75,7 +84,7 @@ def test_original_decoded_checks_and_late_failure_precede_packet_return(tmp_path
     manifest_path.write_bytes(canonical_json_bytes(manifest))
     reader = ShortWindowReader(directory)
     size = member["compressed_bytes"]
-    delivery = trial.Delivery(size, [0]*((size+trial.BLOCK-1)//trial.BLOCK), corrupt=failure == "late_checksum")
+    delivery = trial.Delivery(size, None, corrupt=failure == "late_checksum")
     windows = []
     seal = tmp_path / "only-if-complete"
 
