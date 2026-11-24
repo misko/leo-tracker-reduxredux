@@ -48,7 +48,7 @@ class ResidualFigure:
         self.ready = False
 
 
-def render(installed, packet, *, explicit_layout=True, **options):
+def render(installed, packet, *, explicit_layout=True, explicit_orbits=True, **options):
     from matplotlib import image
     from leo.presentation import fast_standard_analysis as plots
     from tools.pipeline_eval.variants.experimental import lossless_png, raster_layout
@@ -76,7 +76,7 @@ def render(installed, packet, *, explicit_layout=True, **options):
                 raise UnsupportedResidualFigures("PNG encoder declined the native residual")
             produced += 1
 
-        with one_pass_layout(enabled=explicit_layout) as counts:
+        with one_pass_layout(enabled=explicit_layout, explicit_orbits=explicit_orbits) as counts:
             ordinary = raster_layout._LayoutFigure
 
             def figure(*args, **kwargs):
@@ -100,5 +100,5 @@ def render(installed, packet, *, explicit_layout=True, **options):
     try:
         return candidate()
     except (OSError, ValueError) as error:
-        images, counts = incumbent(installed, packet, enabled=explicit_layout, **options)
+        images, counts = incumbent(installed, packet, enabled=explicit_layout, explicit_orbits=explicit_orbits, **options)
         return images, dict(counts, native_residual_fallback=str(error))
