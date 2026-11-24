@@ -11,7 +11,6 @@ from time import perf_counter, process_time, process_time_ns
 from unittest.mock import patch
 
 
-HERE = Path(__file__).resolve().parent
 ROOT = Path("/dev/shm/leo-live-stereo-north.BYuWvuyj/pair")
 PINS = {
     "binding.json": "94dc2ebad1e6d1aecb98206f57ee1661a50cfdc054364a50504f30e358356f22",
@@ -251,10 +250,31 @@ def verified_inputs(staged):
     return request, offer, packet, native, raw, control
 
 
-def worker(output):
+def archived_sources(source):
+    # The archived source tree is the same one that produced the signed packet.
+    verified = {}
+    for filename, seal in PINS.items():
+        data = (ROOT / filename).read_bytes()
+        if sha256(data).hexdigest() != seal:
+            raise ValueError(f"The historical receipt changed: {filename}")
+        pins = json.loads(data).get("source_sha256", {})
+        if filename == "binding.json":
+            continue
+        for name, digest in pins.items():
+            if name.startswith("installed/"):
+                continue
+            if sha256((source / name).read_bytes()).hexdigest() != digest:
+                raise ValueError(f"The replay source differs from the signed control: {name}")
+            verified[name] = digest
+    return verified
+
+
+def worker(output, source):
+    started = process_time(), perf_counter()
+    verified_sources = archived_sources(source)
+    sys.path.insert(0, str(source))
     import empty_bootstrap as staged
 
-    started = process_time(), perf_counter()
     runtime = staged.load_runtime()
     from aperture_trial import write
     from raw_cfo_north_trial import publish_saved
@@ -272,7 +292,8 @@ def worker(output):
     parity["fallback"] = all(current["route_details"][key] == control["route_details"][key]
                              for key in ("decision", "reason"))
     parity["early_proof"] = current["early_regional"][0]["result"] == control["early_regional"][0]["result"]
-    write(output / "audit.json", dict(pins=PINS, authority=request["authority"], archive=request["archive"],
+    write(output / "audit.json", dict(pins=PINS, control_sources=verified_sources,
+          authority=request["authority"], archive=request["archive"],
           native_sha256=handoff["native_sha256"], verified_handoffs=handoff["handoffs"], waveform_calls=handoff["waveform_calls"],
           original_fallback=control["route_details"]["fallback_clocks"],
           trace_fallback=current["route_details"]["fallback_clocks"], parity=parity, operations=watch.report(),
@@ -283,5 +304,4 @@ def worker(output):
 
 
 if __name__ == "__main__":
-    sys.path.insert(0, str(HERE))
-    worker(Path(sys.argv[1]))
+    worker(Path(sys.argv[1]), Path(sys.argv[2]).resolve(strict=True) / "reports/ALGO08/v3")
