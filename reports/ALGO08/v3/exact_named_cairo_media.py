@@ -19,13 +19,21 @@ def act(work):
         raise ValueError(f"Expected all six native sheets with no fallback: {work}")
 
 
-def capture_sources():
-    """Resolve the exact pre-followup render, verifier and protocol sources."""
+def frozen_sources(commit):
+    """Resolve a completed invocation's source versions from its launch commit."""
     from exact_named_cairo import CONTROLLED_SOURCES, ROOT
 
     git = ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show"]
     return {path.name: sha256(subprocess.check_output([
-        *git, f"5204d8ca3:{path.relative_to(ROOT)}"])).hexdigest() for path in CONTROLLED_SOURCES}
+        *git, f"{commit}:{path.relative_to(ROOT)}"])).hexdigest() for path in CONTROLLED_SOURCES}
+
+
+def capture_sources():
+    return frozen_sources("5204d8ca3")
+
+
+def pair_sources():
+    return frozen_sources("315c9b128")
 
 
 def orbit_evidence(lanes, options, scenes):
@@ -166,14 +174,14 @@ def verify_publication(before, current, before_root, current_root):
 def verify(case, output):
     import sys
     from aperture_trial import read, write
-    from exact_named_cairo import CHANGED, ROOT, control
+    from exact_named_cairo import CHANGED, ROOT, control, pins
 
     sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
     from held_adaptive_0160_score import verified
 
     baseline, original = control(case)
     binding = read(output / "binding.json")
-    frozen = capture_sources()
+    frozen = capture_sources() if case == "0160" else pins()
     if binding["renderer_sources"] != frozen or binding["exact_control"] != str(baseline):
         raise ValueError("The published scene must bind the frozen case and renderer")
     req = read(Path(binding["input"]["request"]))
@@ -203,14 +211,16 @@ def verify_pair(case, output):
     import sys
     from aperture_trial import read, write
     from empty_bootstrap import checked
-    from exact_named_cairo import HERE, ROOT, SCENE, pins
+    from exact_named_cairo import HERE, ROOT, SCENE
 
     sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
     from held_adaptive_0160_score import verified
+    from leo.contracts.digests import canonical_digest
 
     binding = read(output / "pair-binding.json")
     checked(HERE / "exact-named-cairo-followup.md", binding["followup_sha256"])
-    if case != "0160" or binding["order"] != ["stock", "cairo"] or binding["source_pins"] != pins():
+    frozen = pair_sources()
+    if case != "0160" or binding["order"] != ["stock", "cairo"] or binding["source_pins"] != frozen:
         raise ValueError("The frozen follow-up pair changed")
     first = Path(binding["first"])
     checked(first / "result.json", binding["first_result_sha256"])
@@ -225,7 +235,7 @@ def verify_pair(case, output):
         publication = verified(directory / "candidate", clocks, "worker.json", authority)
         ports = read(directory / "candidate/ports.json")
         if (draw["renderer"] != mode or draw["scene_capture"] or (directory / SCENE).exists()
-                or publication["products"]["images"] != products
+                or canonical_digest(publication["products"]["images"]) != canonical_digest(products)
                 or ports["png"].get("verified") != 8 or ports["png"].get("reused") != 8):
             raise ValueError("Fresh publication did not reproduce the previously verified official products")
         if mode == "cairo":
@@ -239,7 +249,7 @@ def verify_pair(case, output):
     difference = {key: stock["clocks"][key] - cairo["clocks"][key] for key in ("cpu_s", "elapsed_s")}
     draw_diff = {key: stock["render"]["render"][key]-cairo["render"]["render"][key] for key in difference}
     named = prior["clocks"]["named"]
-    write(output / "result.json", dict(case="DS30-"+case, sources=pins(), binding=binding, clocks=rows, named=named,
+    write(output / "result.json", dict(case="DS30-"+case, sources=frozen, binding=binding, clocks=rows, named=named,
            exact_checks=checks, sidecars=sidecars, initial_full_gate_failed=not prior["transfer_ready"],
            process_saving=difference, render_saving=draw_diff, waveform_reads=0, backing_reads=0,
            speedup_vs_named={key: named[key]/cairo["clocks"][key] for key in difference},

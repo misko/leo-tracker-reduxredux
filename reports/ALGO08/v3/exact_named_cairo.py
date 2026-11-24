@@ -114,10 +114,12 @@ def launch(case, output, first, *, renderer="cairo", scene_capture=True):
 
     machine = host()
     if case == "0316":
+        from exact_named_cairo_media import pair_sources
+
         if first is None:
-            raise ValueError("Seal the DS30-0160 candidate before transfer")
+            raise ValueError("Seal the equal-scope DS30-0160 pair before transfer")
         result = exact.read(resident_path(first / "result.json"))
-        if result["case"] != "DS30-0160" or result["sources"] != pins() or not result["transfer_ready"]:
+        if result["case"] != "DS30-0160" or result["sources"] != pair_sources() or not result["transfer_ready"]:
             raise ValueError("The first positive publication did not pass the transfer gate")
     baseline, prior = control(case)
     enrollment = exact.bind(case)
