@@ -236,6 +236,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     markdown = (tmp_path / "README.md").read_text()
     assert "from 0.410 to 0.378 km. With the candidate solver, it changed from 0.457 to 0.382 km." in markdown
     assert "field-receiver-solver-cross-0086.md)" in markdown
+    assert "increased fitted error from 0.369 to 1.371 km" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown

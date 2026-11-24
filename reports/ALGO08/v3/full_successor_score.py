@@ -564,7 +564,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         rf = metadata["paired_rf_and_error"][arm]
         lines.append(f"| {label} | {rf['comparable']} | {rf['rf_lower_closer']} | {rf['rf_lower_farther']} | "
                      f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
-    lines += ["", "### Checking the receiver effect on another recording", "",
+    lines += ["", "### Does the receiver effect repeat?", "",
               "On DS30-0086, each solver also processed both saved detector packets. "
               "With the ALGO08v3 solver, switching to the mixed 20/8 ms receiver changed fitted position error "
               "from 0.410 to 0.378 km. With the candidate solver, it changed from 0.457 to 0.382 km. "
@@ -574,6 +574,12 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "The mixed receiver improved accuracy on this recording and degraded it on DS30-0049. "
               "[Paired solver inputs, position shifts and RF fits](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "021fc1bca199524db12f05f5da233ab0a5dda0e8/reports/ALGO08/v3/field-receiver-solver-cross-0086.md)"]
+    lines += ["", "On DS30-0220, holding the candidate solver fixed and switching to the mixed receiver "
+              "increased fitted error from 0.369 to 1.371 km. Fixed-zero error increased by 1.094 km. "
+              "The fitted position moved 1.174 km between the two detector packets. Both solvers gave the same "
+              "position on the original 20 ms packet. "
+              "[DS30-0220 matched inputs and controls](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "9a444b2bcdb1a78be72be713506ce4b154f91fa6/reports/ALGO08/v3/field-receiver-solver-cross-0220.md)"]
     lines += ["", "### Changing the offered search region", "",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
