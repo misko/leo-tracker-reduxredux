@@ -22,6 +22,10 @@ RECEIPTS = {
 }
 ENTRY = "legacy_first_map_entry.py"
 LIBRARIES = ("--short-binary", "--geographic-library", "--regional-track-library", "--frontier-block-library")
+MAP_BINARIES = {
+    "history": Path("/dev/shm/leo-v3-first-map-pytest/history0/history.so"),
+    "replay": Path("/dev/shm/leo-v3-first-map-pytest/test_first_use_map_reopens_fro0/replay.so"),
+}
 
 
 def archived(name):
@@ -67,6 +71,8 @@ def command_for(template, north, output):
         ("--region", request["inside_offer"]), ("--output", output),
     ):
         option(name, value)
+    for name, path in MAP_BINARIES.items():
+        option("--legacy-first-map-" + name, path)
     for flag in LIBRARIES:
         if command[command.index(flag) + 1] != north["command"][north["command"].index(flag) + 1]:
             raise ValueError("Receiver or solver library differs from the frozen North control")
@@ -130,7 +136,7 @@ def admit(root):
         raise ValueError("Portable orbit producer has no eligible causal bodies")
     physical = archived("legacy-first-use-original-panel")["admission"]["commands"]["DS30-0016"]
     command = command_for(physical, historical, root / "candidate")
-    for name in ("history", "replay"):
+    for name in MAP_BINARIES:
         flag = "--legacy-first-map-" + name
         path = staged_path(Path(command[command.index(flag) + 1]))
         checked(path, command[command.index(flag + "-sha256") + 1].removeprefix("sha256:"))
@@ -139,7 +145,7 @@ def admit(root):
         checked(Path(item["path"]), item["sha256"])
     bindings = dict(request=request, originals=original, machine=machine, references=RECEIPTS,
                     command=command, sources=source_pins(), producer=producer, prior_maps_read=0,
-                    archives=dict(catalogue=resident(bodies), cached=cache()))
+                    archives=dict(catalogue=resident(bodies), cached=cache(), recording_leaves=len(paths) + 1))
     return bindings, cache, previous / "fonts"
 
 
