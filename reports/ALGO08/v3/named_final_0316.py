@@ -192,10 +192,14 @@ def score(root, output):
     owners = owner_evidence(named, stock_archive, candidate)
     geographic = calibration_comparison({"candidate": candidate["science"], "named": named_science,
                                          "earlier_cumulative": earlier["runs"]["cumulative"]["science"]}, "DS30-0316")
-    comparisons = dict(owner_deltas=owners, same_grid_path=candidate["sidecars"] == stock_archive["sidecars"],
+    previous = earlier["runs"]["cumulative"]
+    comparisons = dict(owner_deltas=owners,
+                       same_earlier_cumulative_owner_order={arm: rows == previous["selected_rows"].get(arm, [])
+                                                           for arm, rows in candidate["selected_rows"].items()},
+                       same_named_scientific_sidecars={name: side["scientific_sha256"] == stock_archive["sidecars"][name]["scientific_sha256"]
+                                                       for name, side in candidate["sidecars"].items()},
                        pngs_exact={key: json.loads(json.dumps(shape)) == named["figures"].get(key)
                                    for key, shape in candidate["figures"].items()})
-    previous = earlier["runs"]["cumulative"]
     tiers = dict(candidate=dict(process=actual["timing"], solve=trace["solve"], layout=trace["layout"],
                                publication={key: independent[key] for key in ("publication_cpu_s", "publication_elapsed_s")}),
                  recent_named=dict(process=comparator_clock["timing"], trace=named["named"]),
