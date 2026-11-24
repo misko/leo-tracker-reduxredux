@@ -125,7 +125,7 @@ def launch(root):
         write(root/"prediction-seal.json", roster(root))
 
 
-def published(root, mode, log, req, expected):
+def published(root, mode, log, req, expected, *, strict_map_sha256=None):
     from empty_bootstrap import bind_native
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -165,10 +165,15 @@ def published(root, mode, log, req, expected):
         raise ValueError("The original scientific withholding terminal or its zero-product policy changed")
     if candidate:
         witness = read(output/"exact-named-raw-witness.json")
+        packed = bootstrap.get("packed_ci16_input")
+        storage_ok = (packed is None if strict_map_sha256 is None else
+                      type(packed) is dict and packed.get("strict_packed_eight") is True
+                      and packed.get("map_sha256") == strict_map_sha256 and packed.get("fallback") is None
+                      and packed.get("original_windows") == 0)
         if (bootstrap["native_sha256"] != digest or bootstrap["raw_acquisitions"] != 1 or bootstrap["verified_handoffs"] != 1
                 or bootstrap["requested_offer_sha256"] != req["offer_sha256"] or bootstrap["archive_root"] != req["archive"]["root"]
                 or bootstrap["frozen_specification"] != pairs.V3_IDENTITY["frozen_specification"]
-                or bootstrap.get("packed_ci16_input") is not None or bootstrap["one_pass_web_png"]["enabled"]
+                or not storage_ok or bootstrap["one_pass_web_png"]["enabled"]
                 or bootstrap["route"] != "authenticated_installed_graph_ineligible" or bootstrap["scientific_imports_after"]
                 or bootstrap["graph_proof"] != expected["bootstrap"]["graph_proof"]
                 or witness["ports"] is not None
