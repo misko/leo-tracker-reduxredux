@@ -79,6 +79,7 @@ def worker(root):
         runtime = staged.load_runtime()
         phases["runtime_validation"] = staged.clock(begin)
         begin = staged.now()
+        from leo.contracts.digests import canonical_digest
         from leo.storage.fast_scan import immutable_json
 
         request, archive, offer, libraries, _, control, identity = enrolled(CASE)
@@ -92,7 +93,7 @@ def worker(root):
         original, raw, _, original_pin = acquired()
         native, witness = select(original, raw["recipe"])
         bind(control, native)
-        if (witness["refinement_calls"] or witness["choice"] != old["selector"]["choice"]
+        if (witness["refinement_calls"] or canonical_digest(witness["choice"]) != canonical_digest(old["selector"]["choice"])
                 or witness["choice"]["route"] != "unfiltered" or witness["selected"] != 506
                 or witness["native_sha256"] != expected["native_sha256"]
                 or witness["detector_recipe_sha256"] != expected["detector"]
