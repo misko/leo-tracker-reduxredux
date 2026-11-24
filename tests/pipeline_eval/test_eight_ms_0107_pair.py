@@ -30,9 +30,10 @@ def test_both_original_cached_members_are_required(trial):
 def test_positive_withhold_is_distinguished_from_empty_or_fix(trial):
     ready = dict(native_sha256="signed", factors=1, figures={}, sidecars=None,
                  science=dict(receipt={"decision": "withheld"}, reason="no_active_curvature",
-                              arms={"c0": {"latlon": None, "rf_rms_hz": None}}),
+                              arms={"c0": {"latlon": None}, "fitted_c": {"latlon": None, "rf_rms_hz": None}}),
                  bootstrap=dict(route="authenticated_installed_graph_ineligible", graph_proof={"proven": True, "native_sha256": "signed"}))
-    assert trial.ordinary_nonempty_withhold(ready, candidate=True)
-    assert not trial.ordinary_nonempty_withhold(dict(ready, factors=0), candidate=True)
+    assert trial.ordinary_withhold(ready, candidate=True)
+    assert not trial.ordinary_withhold(dict(ready, factors=0), candidate=True)
+    assert trial.ordinary_withhold(dict(ready, factors=0))
     ready["science"]["receipt"]["decision"] = "complete"
-    assert not trial.ordinary_nonempty_withhold(ready, candidate=True)
+    assert not trial.ordinary_withhold(ready, candidate=True)

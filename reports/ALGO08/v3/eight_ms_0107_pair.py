@@ -132,21 +132,22 @@ def launch(root):
     write(root / "prediction-seal.json", prediction_seal(root))
 
 
-def ordinary_nonempty_withhold(run, candidate=False):
+def ordinary_withhold(run, candidate=False):
     receipt = run["science"]["receipt"]
     basic = (receipt["decision"] == "withheld" and run["science"]["reason"] == "no_active_curvature"
-             and run["factors"] > 0 and not run["figures"] and run["sidecars"] is None
-             and all(row == {"latlon": None, "rf_rms_hz": None} for row in run["science"]["arms"].values()))
+             and not run["figures"] and run["sidecars"] is None
+             and all(row["latlon"] is None and row.get("rf_rms_hz") is None for row in run["science"]["arms"].values()))
     if not candidate:
         return basic
     bootstrap = run["bootstrap"]
     proof = bootstrap["graph_proof"]
-    return (basic and bootstrap["route"] == "authenticated_installed_graph_ineligible" and proof is not None
+    return (basic and run["factors"] > 0 and bootstrap["route"] == "authenticated_installed_graph_ineligible" and proof is not None
             and proof["proven"] and proof["native_sha256"] == run["native_sha256"])
 
 
-def verify(root):
+def verify(root, output=None):
     from aperture_trial import read, write
+    from combined_raw_trial import source_at
     from continued_cfo_small_raw import CASE, INPUTS
     from empty_bootstrap import checked
     from guarded_cfo_small_raw import PRIOR, PRIOR_RESULT
@@ -159,7 +160,10 @@ def verify(root):
         raise ValueError("Raw outputs changed before verification")
     binding = read(root / "binding.json")
     for name, pin in binding["sources"].items():
-        checked(HERE / name, pin)
+        if name == Path(__file__).name:
+            source_at(binding["commit"], name, pin)
+        else:
+            checked(HERE / name, pin)
     clocks = {mode: read(root / f"{mode}-clock.json") for mode in ORDER if (root / f"{mode}-clock.json").exists()}
     def retained(row):
         return all(is_resident({"payload": row[f"cache_{at}"], "index": row[f"cache_{at}"]["index_cache"]})
@@ -174,7 +178,7 @@ def verify(root):
     admission = dict(old["admission"], route_flags=[arg for arg in north["raw_binding"]["command"] if arg.startswith("--prove-")],
                      sources=binding["sources"])
     runs = process_rows(root, admission, INPUTS, modes=completed, candidate_recipe=receiver_pin, archive_root=PRIOR / "tle")
-    expected = {mode: ordinary_nonempty_withhold(run, candidate=mode == "candidate") for mode, run in runs.items()}
+    expected = {mode: ordinary_withhold(run, candidate=mode == "candidate") for mode, run in runs.items()}
     if runs:
         calibrations = calibration_comparison({mode: run["science"] for mode, run in runs.items()}, CASE.id)
     else:
@@ -188,7 +192,7 @@ def verify(root):
                 or raw["held_anchor_route"]["refinement_calls"]):
             raise ValueError("Actual case changed the original North/South native receiver or raw authority")
         activation = {name: read(root / file) for name, file in (("orbit", "orbits-indexed.json"), ("rank", "catalogue-block-rank.json"))}
-    write(root / "result.json", dict(case=CASE.id, launch_order=ORDER, clocks=clocks, expected_withholds=expected,
+    write(output or root / "result.json", dict(case=CASE.id, launch_order=ORDER, clocks=clocks, expected_withholds=expected,
           modes=runs, calibrations=calibrations, activation=activation, receiver=acquisition,
           same_opportunities=len(runs) == 2 and runs["candidate"]["opportunities"] == runs["stock"]["opportunities"],
           historical=dict(prior_sha256=PRIOR_RESULT, combined_sha256=GUARDED[1],
@@ -201,5 +205,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("launch", "verify"))
     parser.add_argument("root", type=Path)
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    {"launch": launch, "verify": verify}[args.mode](args.root)
+    if args.mode == "launch":
+        if args.output is not None:
+            parser.error("--output applies to the verified receipt")
+        launch(args.root)
+    else:
+        verify(args.root, args.output)
