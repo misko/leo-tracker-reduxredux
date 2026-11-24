@@ -22,6 +22,7 @@ def elapsed_rows(ordinary, cairo, packed, frame_scores=None):
         frames_by_case = {score["case"]: score for score in frame_scores}
         rows["Standard frames · full read"] = []
         rows["Standard frames · indexed read"] = []
+        rows["Standard frames · audited first use"] = []
     for case, source in (("DS30-0107", "costs"), ("DS30-0016", "positive_costs")):
         costs = packed[source]
         original = ordinary["cases"][case]
@@ -42,6 +43,12 @@ def elapsed_rows(ordinary, cairo, packed, frame_scores=None):
                 if clock["exit_code"] != 0 or not 0 < clock["elapsed_s"] < float("inf"):
                     raise ValueError("Expected a successful compatible-archive process clock")
                 rows[label].append(clock["elapsed_s"])
+            charges = score["writer_costs"]
+            writer = sum(charges[k]["wall_s"] for k in (
+                "original_hydration", "encoded_writer", "seek_tables", "detached_custody",
+                "independent_full_readback", "independent_prefix_readback"))
+            indexed_time = score["measured_children"]["frames"]["clock"]["elapsed_s"]
+            rows["Standard frames · audited first use"].append(indexed_time + writer)
     return rows
 
 
@@ -53,7 +60,8 @@ def render(rows, output):
     ax.barh(y, withheld, color="#90abbe", label="DS30-0107 · withheld", height=0.65)
     ax.barh(y, fix, left=withheld, color="#234c63", label="DS30-0016 · fix", height=0.65)
     for i, times in enumerate(rows.values()):
-        ax.text(sum(times) + 0.10, i, f"{sum(times):.2f} s", va="center", fontsize=10)
+        ax.text(sum(times) + 0.10, i, f"{sum(times):.2f} s", va="center", fontsize=10, zorder=5,
+                bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=0.3))
     baseline = sum(rows["Installed ALGO08v3"])
     for speed, color in ((2, "#9a5235"), (1.6, "#53744d")):
         ax.axvline(baseline / speed, color=color, linestyle="--", lw=1.4, label=f"{speed}× total-time target")

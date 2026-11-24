@@ -18,11 +18,14 @@ def test_packed_first_use_is_charged_on_each_recording():
     assert rows["Split archive first use"] == [5, 6]
     frames = []
     for case, timing in (("DS30-0016", 4), ("DS30-0107", 1)):
-        frames.append({"case": case, "qualified": True, "historical_named": cairo["clocks"][case]["stock"],
+        charges = {key: {"wall_s": 0.5} for key in ("original_hydration", "encoded_writer", "seek_tables", "detached_custody",
+                                                     "independent_full_readback", "independent_prefix_readback")}
+        frames.append({"case": case, "qualified": True, "historical_named": cairo["clocks"][case]["stock"], "writer_costs": charges,
                        "measured_children": {mode: {"clock": {"exit_code": 0, "elapsed_s": timing + offset}}
                                              for mode, offset in (("ordinary", 0.2), ("frames", 0))}})
     new_rows = elapsed_rows(ordinary, cairo, packed, frames)
     assert new_rows["Standard frames · indexed read"] == [1, 4]
+    assert new_rows["Standard frames · audited first use"] == [4, 7]
     with pytest.raises(ValueError, match="Both enrolled"):
         elapsed_rows(ordinary, cairo, packed, frames[:1])
     frames[0]["qualified"] = False
