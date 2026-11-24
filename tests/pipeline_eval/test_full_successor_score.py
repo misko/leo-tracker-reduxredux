@@ -189,6 +189,14 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64,
                  renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior)
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    for arm in ("c0", "fitted_c"):
+        for radius in (1, 2):
+            label = f"within_{radius}km"
+            limit = report["paired_error_changes"][arm]["paired_distance_coverage"][label]
+            totals = report["cohorts"]["All DS30 recordings"]
+            assert sum(limit.values()) == 455
+            assert limit["both"] + limit["gained"] == totals["successor"][arm][label]
+            assert limit["both"] + limit["lost"] == totals["installed"][arm][label]
     assert report["search_center_comparison"]["fixes"]["fitted_c"]["installed"]["closer_than_center"] == 2
     assert report["report_renderer_revision"] == "d"*40
     for arm in ("c0", "fitted_c"):
@@ -217,6 +225,8 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
     assert "met **1 of 2** wall-time targets" in markdown
+    assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
+    assert "recovered 41 of the 44 missing installed assignments" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
     for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png",
                    "paired-speed-and-error.png"):

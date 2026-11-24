@@ -324,9 +324,16 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     for arm in ARMS:
         key = arm + "_error_km"
         delta = [(b[key] - a[key], a["case"]) for a, b in pairs if a[key] is not None and b[key] is not None]
+        coverage = {}
+        for radius in (1, 2):
+            states = Counter((a[key] is not None and a[key] <= radius, b[key] is not None and b[key] <= radius)
+                             for a, b in pairs)
+            coverage[f"within_{radius}km"] = dict(both=states[True, True], gained=states[False, True],
+                                                   lost=states[True, False], neither=states[False, False])
         changes[arm] = dict(shared=len(delta), candidate_minus_installed_km=distribution([d for d, _ in delta]),
                             gained=sum(not a[arm + "_fix"] and b[arm + "_fix"] for a, b in pairs),
                             lost=sum(a[arm + "_fix"] and not b[arm + "_fix"] for a, b in pairs),
+                            paired_distance_coverage=coverage,
                             largest_increases=sorted((item for item in delta if item[0] > 0), reverse=True)[:5])
     metadata["paired_error_changes"] = changes
     influences = {arm: squared_error_influence(pairs, arm) for arm in ARMS}
@@ -361,7 +368,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     def number(x, digits=2):
         return "—" if x is None else f"{x:.{digits}f}"
 
-    lines = ["# DS30 field report · ALGO08v3 and its single-core successor", "",
+    lines = ["# DS30 field report · ALGO08v3 and the single-core candidate", "",
              f"Both pipelines were timed on the same **{k} original recordings**. "
              f"The summed wall-time speedup was **{number(full['wall']['summed_speedup'])}×**. "
              f"Speedup at the median paired ratio was **{number(full['wall']['median_paired_speedup'])}×**. "
@@ -419,14 +426,19 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                          f"{o['fixes']}/{k} | {o['within_1km']}/{k} | {o['within_2km']}/{k} | "
                          f"{number(o['error_km']['p50'],3)} / {number(o['error_km']['p90'],3)} | "
                          f"{number(o['rf_rms_hz']['p50'])} |")
-    lines += ["", "| Paired change | Shared scored fixes | Fixes gained / lost | Median / P90 candidate minus ALGO08v3 error (m) |",
-              "|---|---:|---:|---:|"]
+    lines += ["", "| Calibration | Shared scored fixes | Fixes gained / lost | Within 1 km gained / lost | "
+              "Within 2 km gained / lost | Median / P90 change in error on shared fixes (m) |",
+              "|---|---:|---:|---:|---:|---:|"]
     for arm in ARMS:
         c = changes[arm]
         delta = c["candidate_minus_installed_km"]
+        one, two = (c["paired_distance_coverage"][f"within_{radius}km"] for radius in (1, 2))
         metres = [number(1000 * delta[p], 1) if delta[p] is not None else "—" for p in ("p50", "p90")]
         lines.append(f"| {dict(c0='Fixed zero', fitted_c='Fitted')[arm]} | {c['shared']} | {c['gained']} / {c['lost']} | "
-                     f"{metres[0]} / {metres[1]} |")
+                     f"{one['gained']} / {one['lost']} | {two['gained']} / {two['lost']} | {metres[0]} / {metres[1]} |")
+    lines += ["", "A gain at a distance threshold means only the candidate returned a scored position within "
+              "that distance on the recording. A loss means only ALGO08v3 did. Error changes subtract the "
+              "ALGO08v3 error from the candidate error."]
     if position_moments is not None:
         lines += ["", "### Position scatter at the Gauss roof", "",
                   "On shared fixes, each horizontal error gives a distance and bearing from the survey point. "
@@ -489,23 +501,35 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                   "between its fixed-zero and fitted solutions still exceeded ALGO08v3's fitted error by more "
                   "than 1 m. This retrospective bound applies to choosing or interpolating the published endpoints. "
                   "A fresh nonlinear fit can move beyond them."]
-    lines += ["", "A separate crossover on DS30-0049 tested both solvers on each saved receiver output. "
+    lines += ["", "### Which receiver changes affected DS30-0049?", "",
+              "A separate crossover on DS30-0049 tested both solvers on each saved receiver output. "
               "Both solvers returned 1.420 km fitted error on the installed detections and 4.040 km on the "
               "candidate detections. The receiver change accounted for the difference on this recording. "
               "[DS30-0049 crossover and verification](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "5dad70d7d0c273b2aa17fa546d622bcd8e490789/reports/ALGO08/v3/ds30-0049-saved-crossover.md)"]
-    lines += ["", "On the same recording, replacing the 284 closely matched short-window detections with their "
-              "full-window measurements reduced fitted error from 4.040 to 3.847 km. All 268 original candidate "
-              "assignments survived the refit. The RF residual improved by about 16 Hz, while 2.427 km of the "
-              "original fitted-error gap remained. "
-              "[Matched-detection experiment](https://github.com/misko/leo-tracker-reduxredux/blob/"
-              "2ab7167229369484196b4ae1ed32924c35585e86/reports/ALGO08/v3/ds30-0049-matched-donor.md)"]
-    lines += ["", "A separate replay removed 161 candidate-only detections whose installed search returned empty. "
-              "It removed 10 final assignments and reduced fitted error by 140 m. Each replay used the original "
-              "candidate packet as its control. "
-              "[Candidate-only detection experiment](https://github.com/misko/leo-tracker-reduxredux/blob/"
-              "e9536f1014191a14b83676ff88a2baf244f034cd/reports/ALGO08/v3/ds30-0049-sparse-only-drop.md)"]
-    lines += ["",
+    lines += ["", "Each intervention below starts from the same candidate detections and uses the installed "
+              "measurements as a diagnostic reference. Each row has its own complete saved-input solve. "
+              "The field runtime plots use the original, unmodified pair.", "",
+              "| DS30-0049 receiver input | Fixed-zero error (km) | Fitted error (km) |",
+              "|---|---:|---:|",
+              "| Original installed detections | 1.826 | 1.420 |",
+              "| Original candidate detections | 4.472 | 4.040 |",
+              "| Replace 284 closely matched short measurements | 4.196 | 3.847 |",
+              "| Replace 72 short measurements that chose a different carrier | 3.942 | 3.779 |",
+              "| Remove 161 candidate-only detections | 4.254 | 3.900 |",
+              "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |", "",
+              "Restoring all 104 detections recovered 41 of the 44 missing installed assignments with the "
+              "same satellite and role. Fitted error improved by 377 m and remained 2.243 km above ALGO08v3. "
+              "The four changes were tested independently. "
+              "[Matched measurements](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "2ab7167229369484196b4ae1ed32924c35585e86/reports/ALGO08/v3/ds30-0049-matched-donor.md) · "
+              "[Different carrier selections](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "8d92f39455a247a8f383de41438ffdd9d2766dc9/reports/ALGO08/v3/ds30-0049-shifted-winner-repair.md) · "
+              "[Candidate-only detections](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "e9536f1014191a14b83676ff88a2baf244f034cd/reports/ALGO08/v3/ds30-0049-sparse-only-drop.md) · "
+              "[Missing detections](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "abc05f858d5c05b99bc94ed36201f1826b611eec/reports/ALGO08/v3/ds30-0049-empty-recovery.md)"]
+    lines += ["", "### Changing the offered search region", "",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
               "authority. All recordings come from the Gauss roof. The results measure repeatability at this site.", "",

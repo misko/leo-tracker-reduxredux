@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROLES = ("installed", "successor")
-NAMES = {"installed": "Installed ALGO08v3", "successor": "Successor"}
+NAMES = {"installed": "ALGO08v3", "successor": "Candidate"}
 COLORS = {"installed": "#176084", "successor": "#af451d"}
 OUTCOMES = {"complete", "withheld", "solver_failed", "worker_failed", "invalid_publication"}
 COLUMNS = {
@@ -161,7 +161,7 @@ def _figure(pairs, *, runtime):
                 ax.set(title=f"{title} through exit", xlabel="Seconds (log scale)", ylabel="Share of timed pairs")
             for ax, metric, title in zip(axes[2:], ("elapsed_s", "cpu_s"), ("Wall speedup", "CPU speedup"), strict=True):
                 _plot_curves(ax, _order_series(subset, metric), mode="speedup")
-                ax.set(title=f"{title} by launch order", xlabel="Installed / successor (log scale)",
+                ax.set(title=f"{title} by launch order", xlabel="ALGO08v3 / candidate (log scale)",
                        ylabel="Share of timed pairs in order")
         else:
             for ax, arm, title in zip(axes, ("c0", "fitted_c"), ("Fixed c = 0", "Fitted c"), strict=True):
