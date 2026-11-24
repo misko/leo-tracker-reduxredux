@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import resource
+from runpy import run_path
 import subprocess
 import sys
 from time import perf_counter_ns, process_time_ns
@@ -32,6 +33,7 @@ HELD_SHA = "95a438f0904e4568b6f2a3618b7fbf691c29d0e2d352fd3727cc83d35b72aa9a"
 ORDERS = (("ordinary", "complete_encoded", "on_demand"), ("on_demand", "complete_encoded", "ordinary"))
 PREFIX, ORIGINAL_SAMPLES = 80_000, 200_000
 TRANSFER_CPU_MS = 25
+BUILD = ("cc", "-std=c11", "-O3", "-fPIC", "-shared", "-mssse3", "-Wall", "-Wextra", "-Werror")
 
 
 class CommittedSamples:
@@ -134,11 +136,10 @@ def source(case):
     return doc["entry"], doc["member"]
 
 
-def residency(entry, chunk):
+def residency(entry, chunk, observer):
     from empty_bootstrap import checked
     from full_short_physical import CACHE_LIB, CACHE_SHA
     from next_resident_8ms import fully_resident
-    from tools.pipeline_eval.qualification.cache_residency import cache_snapshot, load_query
 
     segment = Path(entry["path"])
     if segment.resolve(strict=True) != segment or segment.stat().st_dev != Path("/dev/shm").stat().st_dev:
@@ -147,7 +148,7 @@ def residency(entry, chunk):
     checks = [(segment, "manifest.json", (segment/"manifest.json").stat().st_size),
               (segment, chunk["index_relative_path"], chunk["index_bytes"]),
               (segment, chunk["payload_relative_path"], chunk["compressed_bytes"])]
-    census = cache_snapshot(checks, os.sysconf("SC_PAGE_SIZE"), load_query(CACHE_LIB))
+    census = observer["cache_snapshot"](checks, os.sysconf("SC_PAGE_SIZE"), observer["load_query"](CACHE_LIB))
     if not fully_resident(census) or census["members"] != 3:
         raise ValueError(f"Not all pinned source metadata and waveform bytes are resident: {census}")
     return census
@@ -290,7 +291,6 @@ def run(root, case):
     runtime_startup = elapsed(start)
 
     from aperture_trial import write
-    from reports.ALGO08.v3.ci16_packed_storage_trial import BUILD
     from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
     from dense_geographic_trial import host
     from eight_ms_native_receiver import prepare
@@ -309,7 +309,8 @@ def run(root, case):
     revision = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
     machine = host()
     entry, chunk = source(case)
-    before = residency(entry, chunk)
+    observer = run_path(str(checkout/"tools/pipeline_eval/qualification/cache_residency.py"))
+    before = residency(entry, chunk, observer)
     root.mkdir()
     start = clocks()
     binary = root / "packing.so"
@@ -351,7 +352,7 @@ def run(root, case):
     for i, order in enumerate(ORDERS):
         row = {}
         for mode in order:
-            census = residency(entry, chunk)
+            census = residency(entry, chunk, observer)
             native, record = receive(root, entry, chunk, mode, scope)
             if reference is None:
                 reference = native
@@ -371,7 +372,7 @@ def run(root, case):
     short = records[0]["on_demand"]["loads"]
     unused = next(visit for visit, role in short.items() if role == "short_primary")
     corrupt = exercise_corruption(root, entry, chunk, scope, reference, unused)
-    ending = residency(entry, chunk)
+    ending = residency(entry, chunk, observer)
     write(root/"original-native.json", reference)
     write(root/"result.json", dict(case=case, orders=ORDERS, records=records, startup=startup, compilation=compilation,
          runtime_startup=runtime_startup,
