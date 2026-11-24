@@ -72,7 +72,7 @@ def run(args):
                     "Detached custody and native decoder require their external SHA-256 pins"
                 )
             started = boot.now()
-            with patch.object(sys, "path", [*sys.path, str(ROOT)]):
+            with patch.object(sys, "path", [*sys.path, str(boot.RELEASE / "src"), str(ROOT)]):
                 from reports.ALGO08.v3 import legacy_block_input, legacy_block_seek
             custody, pin, library, lib_pin = fields
             plan = legacy_block_input.load_custody(custody, pin)

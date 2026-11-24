@@ -176,6 +176,8 @@ def prepare(root, session, inventory_pin, inventory, expected, census):
 
 def launch(root):
     import empty_bootstrap as boot
+
+    sys.path[:0] = [str(boot.PAYLOAD), str(boot.RELEASE / "src"), str(boot.RELEASE)]
     from aperture_trial import write
     from combined_raw_trial import PRODUCER, checked_producer
     from dense_geographic_trial import host
