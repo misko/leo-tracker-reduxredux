@@ -26,7 +26,7 @@ NUMBERS = (45678, 424242)
 
 class PortableIndexTests(unittest.TestCase):
     def export(self, root):
-        source = SimpleNamespace(bodies={BODY: SimpleNamespace(
+        source = SimpleNamespace(bodies={BODY.removeprefix("sha256:"): SimpleNamespace(
             names=("from", "original"), satellite_numbers=NUMBERS, epochs=EPOCHS)})
         path = Path(root)/"orbits.bin"
         return path, write_index(path, source, VERSIONS)
@@ -40,6 +40,7 @@ class PortableIndexTests(unittest.TestCase):
             count, rows = index.rows(BODY)
             self.assertEqual(count, 2)
             self.assertEqual(list(rows), list(zip(NUMBERS, EPOCHS, strict=True)))
+            self.assertEqual(index.rows(BODY.removeprefix("sha256:"))[0], 2)
             self.assertIsNone(index.rows(pin(b"another verified source")))
             self.assertLess(audit["artifact_peak_bytes"], 4096)
 
