@@ -342,6 +342,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |" in markdown
     assert "recovered 41 of the 44 missing installed assignments" in markdown
     assert "DS30-0397 solver and publication audit" in markdown
+    assert "DS30-0210 solver and publication audit" not in markdown
     for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png",
                    "paired-speed-and-error.png"):
         with Image.open(tmp_path / figure) as png:
