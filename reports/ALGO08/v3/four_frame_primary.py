@@ -199,6 +199,7 @@ def worker(output, case, arm, artifacts, build_pin):
 
 
 def launch(root, case, artifacts):
+    from leo.contracts.digests import canonical_digest
     from short_raw_diagnostic import measure
 
     machine = check_machine()
@@ -227,11 +228,12 @@ def launch(root, case, artifacts):
             runs[arm] = dict(process=process, packet=json.loads(sealed.read_bytes()),
                              signed_sha256=sha256(sealed.read_bytes()).hexdigest(), before=before, after=after)
         eight, four = (runs[arm]["packet"] for arm in ORDERS[0])
-        if eight["probes"] != archive or eight["acquisition"]["ordered_input_sha256"] != sample_pin:
+        if (canonical_digest(eight["probes"]) != canonical_digest(archive)
+                or eight["acquisition"]["ordered_input_sha256"] != sample_pin):
             raise ValueError("The ordinary eight-millisecond arm failed to reproduce its signed prior identity")
-        if list(first_member.anchor_lanes(four["probes"])) != anchors:
+        if canonical_digest(list(first_member.anchor_lanes(four["probes"]))) != canonical_digest(anchors):
             raise ValueError("The original two-scan anchors failed exact parity")
-        if candidate_probes is not None and candidate_probes != four["probes"]:
+        if candidate_probes is not None and canonical_digest(candidate_probes) != canonical_digest(four["probes"]):
             raise ValueError("Candidate factors changed between reversed measured orders")
         candidate_probes = four["probes"]
         a, b = eight["acquisition"], four["acquisition"]
