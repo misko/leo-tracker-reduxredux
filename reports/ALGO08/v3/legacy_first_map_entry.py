@@ -6,10 +6,12 @@ from pathlib import Path
 import sys
 from unittest.mock import patch
 
-import legacy_block_raw_entry as raw
-
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+sys.path.insert(0, str(HERE))
+
+import legacy_block_raw_entry as raw
+
 ordinary_parser = raw.parser
 RESOURCES = ("plan", "history", "replay")
 
