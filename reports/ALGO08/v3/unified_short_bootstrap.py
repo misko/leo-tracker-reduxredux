@@ -204,7 +204,7 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
     return result["receipt"], result
 
 
-def run(args):
+def run(args, *, publisher=None):
     import empty_bootstrap as staged
 
     started = staged.now()
@@ -363,11 +363,12 @@ def run(args):
         if reason is None:
             extent = (graph_proof or {}).get("curvature_extent", {})
             with (adaptive_map_layout(args.output) if adaptive_map else nullcontext()):
-                terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
+                publish = publish_active if publisher is None else publisher
+                terminal, research = publish(args, publication, specification, handoff, layout_audit,
                                                     graph_audit=graph_audit, png_read_audit=png_read_audit,
                                                     detector_import_audit=detector_import_audit,
                                                     no_active_curvature_sha256=extent.get("native_sha256"))
-            route = "optimized_installed_graph"
+            route = research.get("raw_route", "optimized_installed_graph")
         else:
             staged.check_inert_solver_assets(assets)
             terminal = withhold(scan, args, offer, assets, handoff, reason, graph_proof=graph_proof)
@@ -430,6 +431,8 @@ def run(args):
                   verified_handoffs=handoff.calls, receiver_audit=audit, phases=phases,
                   scientific_imports_before=before, scientific_imports_after=after,
                   total_before_receipt=staged.clock(started))
+    if publisher is not None:
+        result["solver_recipe"] = None if research is None else research["solver_recipe"]
     if research is not None and "grid_feature_projection" in research:
         result["grid_feature_projection"] = research["grid_feature_projection"]
     if getattr(args, "exact_phase_forecast", False):

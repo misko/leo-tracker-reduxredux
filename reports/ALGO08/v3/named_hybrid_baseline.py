@@ -103,7 +103,7 @@ def detector_handoff(scan, request, native, audit):
         yield
 
 
-def media_and_grid(output, receipt, native, selected, *, verified_read=None):
+def media_and_grid(output, receipt, native, selected, *, verified_read=None, expected_grid=179):
     from leo.contracts.digests import canonical_digest
     from leo.contracts.fast_standard_analysis import PLOTS
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -132,7 +132,9 @@ def media_and_grid(output, receipt, native, selected, *, verified_read=None):
             images[item["name"]] = dict(sha256=item["sha256"], size=picture.size,
                                        rgba_sha256=sha256(picture.convert("RGBA").tobytes()).hexdigest())
     grid, path = store.position_grid(run), store.position_path(run)
-    if (not grid["complete"] or not grid["matched_c_grid"] or grid["evaluated_points"] != 179 or len(grid["points"]) != 179
+    if (not grid["complete"] or not grid["matched_c_grid"]
+            or grid["evaluated_points"] != len(grid["points"]) or not grid["points"]
+            or expected_grid is not None and grid["evaluated_points"] != expected_grid
             or not path["stages"] or any(set(stage["arms"]) != set(ARMS) for stage in path["stages"])):
         raise ValueError("The named positive control needs its original grid and both calibration paths")
     for document in (grid, path):
