@@ -22,7 +22,23 @@ The full candidate reached **1.53× at the paired median and 1.52× by summed ti
 
 On the fix, the candidate's errors against the operator reference were **490 m with fixed calibration and 980 m with fitted calibration**, versus **1,644 m and 1,661 m** for the installed baseline. The reader change preserved its own solver's positions exactly. Earlier tests with the correct region removed produced false fixes in both pipelines. Compression fidelity and these two paired decisions leave open how well the solver will localize at another physical site. [Containing and missing-region controls](history-risk-0016-omitted.md)
 
-The short recording exposed an avoidable cost after withholding. Writing the final map-audit JSON imported the numerical localization engine and SciPy. In fresh writer-only processes, that step took **300–310 ms** on the real audits. A dedicated writer emitted the same bytes in **1.0–1.4 ms**. Both time and file contents were checked in opposite orders for the fixing and withholding cases. The paired pipeline clocks above predate this change. Its end-to-end effect still needs a direct measurement. [Writer comparison and exact-byte checks](legacy-map-receipt-writer.md)
+### Measuring the lighter audit writer end to end
+
+The earlier writer imported SciPy to serialize a JSON audit after withholding. A dedicated writer produced identical bytes on the two real audits in 1.0–1.4 ms, down from 300–310 ms in isolated processes. The complete pipeline benefitted most on the short case, where the solver had never loaded those modules. [Isolated writer comparison](legacy-map-receipt-writer.md)
+
+| Original recording | Installed v3 | Indexed, previous writer | Indexed, lighter writer | New speedup vs v3 |
+|---|---:|---:|---:|---:|
+| DS30-0016 · fix | 10.745 s | 7.093 s | 7.359 s | 1.46× |
+| DS30-0107 · withheld | 1.497 s | 0.967 s | 0.536 s | 2.79× |
+| **Total** | **12.242 s** | **8.059 s** | **7.895 s** | **1.55×** |
+
+The new children reached **1.92× on the paired median and 1.55× on total elapsed time**. The median gate uses the reciprocal of the median candidate-to-baseline time ratio. The revised pair saved 0.164 s over the earlier indexed pair. Charging external verification and readiness gives 8.940 s, or 1.37× by total time, before building maps. The child times need another **0.244 s for 1.6× and 1.774 s for 2×** by total time. Each cell is one process on one low-priority core with resident input. On the fixing run, acquisition took 0.166 s longer and decision and publication took 0.074 s longer than in the previous run. These differences fall outside the final audit write. [Fix and PNG checks](legacy-map-writer-0016.md) · [Withholding and audit checks](lightweight-audit-0107.md)
+
+![Elapsed runtime on the fixing and withholding recordings before and after changing the writer](development/legacy-writer-pair.png)
+
+Both arms reproduced the signed outputs of the earlier indexed candidate. The short recording still withheld. On the fix, the candidate retained both positions, all 115 ordered assignments per calibration arm, all 179 grid points, the path and eight byte-identical PNGs. The operator-reference errors remained 490 m and 980 m.
+
+These are two small recordings. DS30-0107 and DS30-0016 rank **8th and 16th shortest of 455** by recorded visit count. The DS30 median is **6,772 visits**, more than eight times the larger test. In the frozen historical 100-recording release panel, only two recordings had 808 visits or fewer, and neither is in this physical pair. That panel previously compared v2 with v3. It supplies a size reference here. [DS30 recording inventory](https://github.com/misko/leo-tracker-reduxredux/blob/b6bb204f58bd533f94317471b9634446d390b2ef/reports/2026_11_21_ds30_full/recordings.csv) · [Historical 100-recording membership](https://github.com/misko/leo-tracker-reduxredux/blob/b6bb204f58bd533f94317471b9634446d390b2ef/reports/ALGO08/v3/ds30-100/recordings.csv)
 
 ### Which original files need exceptions?
 
