@@ -30,6 +30,7 @@ OFFER = Path("/dev/shm/leo-v3-named-0016-translated-result01/offer.json")
 NAMED_OMITTED = "8cc6ecc9354225e24cb597eca039a3d65cf7e7aee842a9c2836f0736d287d76c"
 NAMED_OWNER_PIN = "f1ed977ecb8fe2830da578c01e019a84b41d9a2357b016d7c8f61e31f9a77c10"
 NAMED_SCORE_PIN = "3f7563a0666512686775a6eed4d2500a6b4b4a7a7513cf4476689b8720fcc62d"
+TIMED_DRIVER = "ce46ec619189cbc2dadcd6a7552c2a0b5258ff48c4234420b8da2e879d2a0dea"
 ARMS = ("c0", "fitted_c")
 
 
@@ -205,7 +206,7 @@ def summarise_owners(before, after):
 def score(root, output):
     from aperture_trial import write
     from eight_ms_held_score import geographic_reference
-    from history_risk_0016_cairo import active_renderer
+    from reports.ALGO08.v3.history_risk_0016_cairo import active_renderer
     from history_risk_0016_raw import roster
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
@@ -225,6 +226,9 @@ def score(root, output):
         write(output, dict(outcome="process_failure", clock=clock, binding=binding))
         return
     enrolled = input_binding()
+    if binding["driver_sha256"] == TIMED_DRIVER:
+        # Retain the exact original worker before this read-only scorer import fix.
+        enrolled["driver_sha256"] = TIMED_DRIVER
     if any(binding[key] != value for key, value in enrolled.items()):
         raise ValueError("The finished worker changed its admitted scope")
     raw = json.loads(checked(RAW_SCORE, RAW_SCORE_PIN))
