@@ -43,11 +43,19 @@ def load(path):
     for name, result, arguments in declarations:
         function = getattr(library, "fused_history_" + name)
         function.restype, function.argtypes = result, arguments
+    if hasattr(library, "fused_history_open_owned"):
+        library.fused_history_open_owned.restype = ptr
+        library.fused_history_open_owned.argtypes = library.fused_history_open.argtypes + (size,)
+        library.fused_history_owned_capacity.restype = size
+        library.fused_history_owned_capacity.argtypes = (ptr,)
+        library.fused_history_read_owned.restype = ct.c_int
+        library.fused_history_read_owned.argtypes = (ptr, ptr, size)
     return library
 
 
 class FusedMember:
-    def __init__(self, reader, chunk, library, hasher, *, allow_literal=False):
+    def __init__(self, reader, chunk, library, hasher, *, allow_literal=False,
+                 owned_windows=False, hash_prefix=False):
         began = clock()
         if (reader.manifest.schema_version != 2 or reader.manifest.receiver_ids != (0, 1)
                 or reader.manifest.sample_rate_hz != 10_000_000 or chunk not in reader.manifest.chunks):
@@ -67,36 +75,66 @@ class FusedMember:
         self.blocks = (core.Block * len(descriptions))()
         self.retained = np.empty(len(self.exceptions) * multi.MAX_BLOCK, dtype=np.uint8)
         self.digests = PairedSha256(hasher)
+        self.hash_prefix = hash_prefix
         self.prefixes = []
         self.eof = False
         self.metrics = dict(native_read_cpu_ns=0, native_read_wall_ns=0, hash_cpu_ns=0, hash_wall_ns=0)
-        self.context = library.fused_history_open(
-            self.frame.ctypes.data, len(self.frame), chunk.uncompressed_bytes, self.plan, len(self.plan), self.blocks,
-            self.retained.ctypes.data, len(self.exceptions))
+        arguments = (self.frame.ctypes.data, len(self.frame), chunk.uncompressed_bytes, self.plan, len(self.plan),
+                     self.blocks, self.retained.ctypes.data, len(self.exceptions))
+        sizes = {row.payload_bytes for row in self.rows} if owned_windows else set()
+        if len(sizes) == 1 and hasattr(library, "fused_history_open_owned"):
+            self.context = library.fused_history_open_owned(*arguments, sizes.pop())
+            self.owned_capacity = library.fused_history_owned_capacity(self.context) if self.context else 0
+        else:
+            self.context = library.fused_history_open(*arguments)
+            self.owned_capacity = 0
         if not self.context:
             raise multi.UnsupportedExceptionLayout("Frame requires unsupported native history or allocation")
         self.scratch = library.fused_history_scratch(self.context)
+        self._previous_owned = None
         self.setup = elapsed(began)
 
     def close(self):
         if self.context:
             self.library.fused_history_close(self.context)
             self.context = None
+        self._previous_owned = None
+
+    def read_window(self, row):
+        shape = row.sample_count, row.receiver_count, 2
+        if self.owned_capacity:
+            data = np.empty(self.owned_capacity, dtype=np.uint8)
+            status = self.library.fused_history_read_owned(self.context, data.ctypes.data, data.nbytes)
+            # The preceding allocation stays live until libzstd has installed
+            # the new prefix. Any already yielded ndarray keeps its own owner.
+            self._previous_owned = data
+            data.flags.writeable = False
+            raw = data[:row.payload_bytes].view("<i2").reshape(shape)
+        else:
+            raw = np.empty(shape, dtype="<i2")
+            status = self.library.fused_history_read(self.context, raw.ctypes.data, raw.nbytes)
+        if not status:
+            raise core.MapError("Original continuous frame decode rejected a block or extent")
+        return raw
 
     def windows(self):
         if self.prefixes or self.eof or not self.context:
             raise RuntimeError("The fused member is a single traversal")
         for row in self.rows:
-            raw = np.empty((row.sample_count, row.receiver_count, 2), dtype="<i2")
             began = clock()
-            if not self.library.fused_history_read(self.context, raw.ctypes.data, raw.nbytes):
-                raise core.MapError("Original continuous frame decode rejected a block or extent")
+            raw = self.read_window(row)
             self.charge("native_read", began)
             began = clock()
             payload = memoryview(raw.reshape(-1)).cast("B")
-            if "sha256:" + self.digests.window(payload).hex() != row.iq_sha256:
+            if self.hash_prefix:
+                signed_window, signed_prefix = self.digests.window_and_prefix(payload, min(len(payload), multi.PREFIX))
+                prefix = "sha256:" + signed_prefix.hex()
+            else:
+                signed_window = self.digests.window(payload)
+                prefix = sha256_digest(payload[:multi.PREFIX])
+            if "sha256:" + signed_window.hex() != row.iq_sha256:
                 raise core.MapError("Original decoded visit differs from its index digest")
-            self.prefixes.append(sha256_digest(payload[:multi.PREFIX]))
+            self.prefixes.append(prefix)
             self.charge("hash", began)
             raw.flags.writeable = False
             yield ShortWindowRead(row, raw)
@@ -134,6 +172,7 @@ class FusedMember:
                     plan_and_history=self.setup, history_and_context_bytes=self.scratch,
                     block_map_workspace_bytes=ct.sizeof(self.blocks) + ct.sizeof(self.plan),
                     retained_exception_buffer=self.retained.nbytes,
+                    owned_window_capacity=self.owned_capacity, hash_prefix=self.hash_prefix,
                     largest_sample_window_bytes=max(row.payload_bytes for row in self.rows),
                     exceptional_ordinals=list(self.exceptions))
 

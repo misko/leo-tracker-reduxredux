@@ -26,6 +26,11 @@ def _library(path):
         lib.leo_paired_sha256_init.restype = c_int
         lib.leo_paired_sha256_window.argtypes = [c_void_p, c_void_p, c_size_t, c_void_p]
         lib.leo_paired_sha256_window.restype = c_int
+        if hasattr(lib, "leo_paired_sha256_window_prefix"):
+            lib.leo_paired_sha256_window_prefix.argtypes = [
+                c_void_p, c_void_p, c_size_t, c_size_t, c_void_p, c_void_p,
+            ]
+            lib.leo_paired_sha256_window_prefix.restype = c_int
         lib.leo_paired_sha256_digest.argtypes = [c_void_p, c_void_p]
         lib.leo_paired_sha256_digest.restype = c_int
         return lib
@@ -70,6 +75,25 @@ class PairedSha256:
         if not self._lib.leo_paired_sha256_digest(self._state, self._output):
             raise RuntimeError("Could not finalize the chunk SHA-256 digest")
         return self._output.raw
+
+    def window_and_prefix(self, raw, prefix_bytes):
+        """Return both exact commitments while absorbing the unpadded window once."""
+        if not 0 <= prefix_bytes <= len(raw):
+            raise ValueError("Prefix lies outside the decoded window")
+        if not self.hardware:
+            prefix = sha256(raw[:prefix_bytes])
+            full = prefix.copy()
+            full.update(raw[prefix_bytes:])
+            self._fallback.update(raw)
+            return full.digest(), prefix.digest()
+        native = getattr(self._lib, "leo_paired_sha256_window_prefix", None)
+        if native is None:
+            return self.window(raw), sha256(raw[:prefix_bytes]).digest()
+        source = np.frombuffer(raw, dtype=np.uint8)
+        prefix = create_string_buffer(32)
+        if not native(self._state, source.ctypes.data, source.nbytes, prefix_bytes, self._output, prefix):
+            raise RuntimeError("Could not compute the paired window and prefix SHA-256 digests")
+        return self._output.raw, prefix.raw
 
 
 class _DecodedDigests:
