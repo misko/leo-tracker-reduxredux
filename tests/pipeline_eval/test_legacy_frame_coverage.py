@@ -24,3 +24,10 @@ def test_valid_raw_frame_requires_ordinary_decode():
     assert coverage.classify(frame, 3)["kind"] == "other"
     with pytest.raises(ValueError):
         coverage.classify(frame[:-1], 3)
+
+
+def test_match_block_reusing_an_older_table_does_not_reset_it():
+    rows = coverage.exception_dependencies([(True, 1), (False, 0), (False, 1),
+                                            (False, 0), (True, 0), (False, 0)])
+    assert rows == [dict(block=0, new_table=True, dependent_literal_blocks=2),
+                    dict(block=2, new_table=False, dependent_literal_blocks=0)]

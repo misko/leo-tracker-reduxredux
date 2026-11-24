@@ -10,11 +10,29 @@ import subprocess
 from .history_risk_0016_raw import RECORDING, STAGE
 from .owned_capture_0016 import MANIFESTS, checked
 from .visit_frame_recording_0016 import resident_path
-from .zstd_structure import MAX_BLOCK, inspect
+from .zstd_structure import MAX_BLOCK, inspect, literal_section
+
+
+def exception_dependencies(blocks):
+    """Count zero-sequence consumers of a table introduced in a match block."""
+    exceptions = []
+    owner = None
+    for index, (is_new, count) in enumerate(blocks):
+        if is_new:
+            owner = None
+        if count:
+            row = dict(block=index, new_table=is_new, dependent_literal_blocks=0)
+            exceptions.append(row)
+            if is_new:
+                owner = row
+        elif owner is not None:
+            owner["dependent_literal_blocks"] += 1
+    return exceptions
 
 
 def classify(frame, decoded_bytes):
-    info = inspect(frame, decoded_bytes)
+    spans = []
+    info = inspect(frame, decoded_bytes, block_spans=spans)
     compressed = info["block_counts"].get("compressed", 0)
     exceptional = compressed - info["zero_sequence_blocks"]
     profile = (info["checksum"] and frame[4] & 3 == 0 and compressed > 0
@@ -25,9 +43,16 @@ def classify(frame, decoded_bytes):
     kind = "other"
     if profile:
         kind = "match_blocks" if exceptional else "literal_only"
+    dependencies = []
+    if profile and exceptional:
+        view = memoryview(frame)
+        dependencies = exception_dependencies(
+            (literal_section(view[start:start + length])[0] == "huffman_new", count)
+            for start, length, _, count in spans)
     return dict(kind=kind, compressed_blocks=compressed, match_blocks=exceptional,
                 match_bytes=info["match_bytes"], sequence_count=info["sequences"],
-                exception_byte_ceiling=exceptional * MAX_BLOCK if profile else None)
+                exception_byte_ceiling=exceptional * MAX_BLOCK if profile else None,
+                exception_dependencies=dependencies)
 
 
 def census(recording, manifest_pins):
