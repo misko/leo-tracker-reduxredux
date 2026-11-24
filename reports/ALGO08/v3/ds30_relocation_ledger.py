@@ -85,6 +85,7 @@ def run_wait(proof, pin, max_wait):
                 status = 75
             if status == 0:
                 overlay(proof, pin)
+                combine()
                 return 0
         sleep(10)
     return 75
