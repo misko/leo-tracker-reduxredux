@@ -1,0 +1,50 @@
+# Where the time after acquisition went on the first 30 DS30 pairs
+
+The frozen successor spent **653.454 s wall / 627.572 s CPU** outside its authenticated acquisition. The solver accounts for **504.638 s**, 77% of that wall time. The largest independently run lossless change absent from the frozen build remains reuse of private lookahead destinations during acquisition. The same sparse receiver's held 0049 donor measured variable through-exit effects in the two orders. Combining either of those effects with the entire upper bound for the source-verified downstream repair veto still misses half the installed total. [Case-level receipt and projected combinations](measurements/first30-after-intake.json.gz)
+
+## Paid field attribution
+
+The signed paired total is **2,788.109 s** installed versus **1,696.681 s** successor, with **302.627 s** left to reach half. The successor includes **1,043.227 s** authenticated acquisition. The outside-acquisition partition below adds to the actual launcher-through-exit plus common independent verification boundary. The ledger retains all 30 pairs, including the released DS30-0397 failure, three matched withholds, and 27 successor fixes. The reducer matches live raw authority, native and terminal digests, result pins and the frozen build, including the relocated DS30-0452. [Frozen receiver ledger](first30-empty-call-roof.md) · [Timing boundaries](field-speed-reachability.md)
+
+| Disjoint scope outside acquisition | Wall s | CPU s |
+| --- | ---: | ---: |
+| Solve | 504.638 | 498.323 |
+| Render | 48.418 | 46.769 |
+| Other inside `analyze` | 9.814 | 7.399 |
+| Decision and publication outside `analyze` | 41.250 | 29.532 |
+| Held-anchor selection | 12.094 | 12.021 |
+| Receiver ready from entry | 10.857 | 9.203 |
+| Asset and inventory checks | 0.630 | 0.325 |
+| Other launcher and exit work | 11.364 | 9.748 |
+| Independent verification after child exit | 14.388 | 14.252 |
+| **Total** | **653.454** | **627.572** |
+
+The solve timer encloses **196.291 s** of accepted lean proposal, **84.904 s** of accepted lean standard evidence, **68.665 s** of preparation, **25.097 s** of signed finish, and **6.089 s** of other work. The other **123.592 s** comprises **26.347 s** in two rejected proposals and **97.245 s** in their accepted ordinary fallbacks. All ordinary fallback evidence is already inside the fallback time. Across all 27 proposals, cold discovery consumed 111.096 s, salvage 36.794 s, and initial compatibility checks 30.142 s. Those inner clocks are already in their parent envelopes. [Fallback source scopes](blind_joint_route.py) · [Renderer and solver clock placement](exact_named_raw.py)
+
+Across the three early withholds, outside-acquisition wall totals **1.677 s**. The 25 lean completions account for **511.483 s** and the two fallbacks for **140.294 s**. Saving all 302.627 s within solve alone would require a **60%** reduction. Removing all receiver readiness, drawing and common checking work, if their required outputs could be obtained instantly, would supply only **73.664 s**. No lower bound on their possible implementation costs follows from these observations.
+
+## Which exact optimizations are still available
+
+- **Input destination reuse is runnable and absent.** The ordinary build served **2,239** lookahead hits covering **174.510 GB**, with **286.242 worker CPU seconds** inside acquisition. Two private reusable destinations preserve signed bytes, normal archive checks, original apertures and output. The independent full 0016 receiver publication and the field-recipe 0049 prefix attest exact outputs. The held prefix saw only two actual destination reuses among five hits and is the best matched rate source for the field receiver. Its ordinary-first and reuse-first acquisition advantages were **0.459 and 0.046 s**. The corresponding whole prefix clocks saved **0.517 s** and **lost 0.032 s**. The larger 0016 donor used an earlier 20/8 detector and syscall tracing. These observed timing ranges constrain transfer. [Held field prefix](prefetch-prefix-0049.md) · [Both orders and prior first-24 projections](first24-slot-transfer.md) · [Whole qualified publication](prefetch-snapshot-publication.md)
+- **A full exact nomination handoff is already guarded in the original field build.** The large **10.545 s** saved effect on 0255 required identical ranked nominations and compatible checkpoints. On both actual field fallbacks the guard records exclusion of the speculative rank and prefix set. On 0147 the speculative and ordinary rank contain **6 and 7** nodes. On 0073 they contain **6 and 8**. The exact whole-rank handoff has no eligible consumer on either of these paid histories. The measured zero-centre alternative declined reuse on the installed sparse projection and spent more time. [Qualified 0255](nomination-handoff-0255.md) · [0147 numerical audit](ds30-0147-named-numerical-audit.md) · [Two-centre negative control](zero-centre-reuse-south.md)
+- **The missing exact first-arm repair veto has an observed trigger on both fallback inputs.** It preserves the required fallback after the first repaired `c = 0` arm fails a mandatory curved gate. The entire two-arm repaired-fit loops cost **0.529 s** on 0147 and **0.646 s** on 0073. These bound, from above, the work in the single skippable arm. The elapsed time for that arm plus the guard is unmeasured on both. Nomination reuse and the veto cannot exchange timed scope. Dropping both fallbacks would need an alternative that produces the accepted scientific result. [Original 0147 analysis](fallback-accounting-0147.md) · [Frozen rule on 0073](repair-veto-transfer-0073.md)
+- **The common paid field path already uses the largest exact grid and publication changes.** All 27 fixes emitted 179 grid points and eight independently verified PNGs. The witnesses record **108 Cairo orbit sheets, 54 Cairo residual sheets, and 216 native PNG verifications**. The exact predictive context records **356 calls at 26 fixes** and zero at DS30-0049, whose map has no supported predictive view. Earlier paired exact grid projection and layout savings belong to the already active port family. A later exact grid workspace saved 0.024 CPU s at the full-map boundary, before binding and without a qualified whole launch. Collapsing predictive biases changes some score bits. The guarded field includes exact science and figure-product requirements for these intervals. [Existing grid and rank](compact-rank-scope-audit.md) · [Remaining grid workspace](grid-score-workspace.md) · [Original field build](field-speed-reachability.md)
+
+## Disjoint combination and half-time gate
+
+The table transfers paid slot donor rates by actual field lookahead hit bytes, with the original case scope cap and signed negative credit. It reproduces every case's DS30-0049 reuse-first credit from the earlier audited first-24 result before extending to the same frozen 30. Each row selects one donor/order and one acquisition or prefix-exit boundary. It then credits the entire **1.175 s** two-refit bound separately as if the implemented guard were free. The prefix-exit scope already contains startup and receiver work. None of its subclocks receives another credit. Full solver, products and common verification are otherwise held at their original observed costs.
+
+| Independent input projection | Slot wall credit | Paired median ratio after gross veto credit | Remaining above summed half-time after gross veto credit |
+| --- | ---: | ---: | ---: |
+| 0049 ordinary first, acquisition | 205.261 s | 0.5080 | 96.191 s |
+| 0049 reuse first, acquisition | 20.554 s | 0.5746 | 280.899 s |
+| 0049 ordinary first, prefix exit | 231.113 s | 0.4986 | 70.339 s |
+| 0049 reuse first, prefix exit | −14.199 s | 0.5871 | 315.652 s |
+| 0016 ordinary first, prefix exit | 298.310 s | 0.4725 | 3.142 s |
+| 0016 reuse first, prefix exit | 131.113 s | 0.5347 | 170.340 s |
+
+Even giving away all work in the rejected and accepted named calls leaves **158.481 s** on the held reuse-first acquisition projection or **193.234 s** on its whole-prefix projection. The favorable 0016 order gets close only by transferring a much larger single-order resident donor effect, including timing beyond its producer. No held whole-prefix result corroborates it. The padded optimistic ceilings and donor transfer do not establish a lossless combination that clears both field gates. [Full modeled and oracle rows](measurements/first30-after-intake.json.gz)
+
+Instantiating the slot option behind the original 20 ms detector is already possible. The actual 0016 complete raw control used both together and reproduced the installed signed packet and terminal; it took **10.935 s through child exit** versus **10.824 s historical installed**, before its separate **0.409 s verifier**. Its acquisition alone cost 5.661 s. Saved charted publication on installed detector packets adds a separate issue: 0220 took **41.292 s** to solve and incurred **33.204 s** of fallback, compared with **10.521 s** for its actual mixed-packet solve. That rules out using the mixed solve as a measured all-full denominator on that case. The prior first-30 frontier has the prospective exact full-receiver budgets. For the unchanged installed solver, it finds that even the most generous measured full-anchor rate proxy, made free, leaves **209.513 s** beyond the summed target at the original outside-native clocks. [Raw full-detector control](installed-receiver-control.md) · [Same-packet held controls](hybrid-20ms-receiver-budget.md) · [Exact full-receiver frontier](all-full-receiver-frontier.md)
+
+The reducer uses retained metadata. No acquisition, solve, waveform access, ephemeris access or benchmark lease ran. Three focused tests cover stage nesting, preservation of rejected and accepted costs, and refusal on inconsistent paid boundaries. Use `python -B -m reports.ALGO08.v3.first30_after_intake FROZEN_EXPORT_DIR OFFICIAL_CAMPAIGN_DIR` to regenerate the receipt. [Reducer](first30_after_intake.py) · [Tests](../../../tests/pipeline_eval/test_first30_after_intake.py)
