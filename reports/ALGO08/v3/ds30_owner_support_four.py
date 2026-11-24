@@ -171,6 +171,9 @@ def raw_publication(ledger, case, method, pair, request, row, plan, reference):
                 or release["receipt"] != receipt):
             raise ValueError("Successor science runtime or signed input differs from the frozen experiment")
     if (source["session_id"] != authority["session_id"] or len(inventory["segments"]) != reference["segments"]
+            or source["radio_id"] not in reference["radio_serials"]
+            or source["sample_rate_hz"] not in reference["sample_rates_hz"]
+            or not authority["causal_cutoff_utc_ns"] <= reference["capture_start_utc_ns"] < reference["capture_end_utc_ns"]
             or source["input_manifest_sha256"] != authority["inventory_sha256"]
             or source["raw_recording_authority_digest"] != authority["raw_authority_sha256"]
             or row["raw_authority_sha256"] != authority["raw_authority_sha256"]
@@ -198,6 +201,11 @@ def compare_case(ledger, case, rows, plan, reference, prior):
     authority = document(folder / "authority.json", pair["authority_sha256"])
     if not pair["verified_pair"] or request["authority"] != authority or request["authority_sha256"] != pair["authority_sha256"]:
         raise ValueError("Case is outside the frozen four-pair authority")
+    enrolled, = (row for row in plan["cases"] if row["case"] == case)
+    accession_fields = ("case_id", "assigned_rank", "recording", "window_count", "raw_identity_sha256")
+    if (enrolled["recording"] != authority["recording"] or enrolled["window_count"] != authority["window_count"]
+            or any(rows[case, method][key] != enrolled[key] for method in METHODS for key in accession_fields)):
+        raise ValueError("Sealed endpoints must belong to the enrolled physical recording")
     inputs = {method: raw_publication(ledger, case, method, pair, request, rows[case, method], plan, reference)
               for method in METHODS}
     before, after = (peaks(inputs[method][0]) for method in METHODS)
