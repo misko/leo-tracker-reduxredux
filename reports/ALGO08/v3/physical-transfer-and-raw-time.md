@@ -1,0 +1,35 @@
+# All-visit 8 ms receiver across two simulated locations and two physical interventions
+
+The same research receiver completed the original North and South simulated recordings in **10.828 and 10.466 s**. Installed ALGO08v3 took **16.133 and 14.370 s** on those recordings. The median paired elapsed fraction is **0.700** and the fraction of total elapsed time is **0.698**, about **1.43×** by either measure. The release target is at most **0.500 on both** over a physical recording panel. The two complete containing runs used one Gauss core, returned both calibration arms, and produced eight verified images each. [North receiver](eight-ms-native-live.md) · [Fresh North baseline](all-visit-physical-budget.md) · [South receiver and omission](eight-ms-south-transfer.md)
+
+![Complete simulated timing and physical partial-aperture position comparisons](development/physical-transfer-and-raw-time.png)
+
+The left panel uses original I/Q through process exit. In the right panel only the first 192 of 6,772 visits on DS30-0008 and first 64 of 4,219 on DS30-0169 change between the orange and green markers. The rest of DS30-0008 uses mixed 20/12 ms. The remaining 4,155 visits of DS30-0169 use the released receiver measurements for both interventions. Navy shows the full ALGO08v3 solution. The physical error references are the operator's recorded site authority. None of these comparisons provides a distribution across independent real receiver locations. [Figure calculation](physical_transfer_figure.py) · [Dense intervention](dense-8ms-prefix.md) · [Independent physical recording](independent-8ms-0169.md)
+
+| Recording and workload | Comparison | Horizontal error in metres, zero / fitted calibration | Speed or transfer result |
+|---|---|---:|---|
+| South, original simulated I/Q | Named v3 → live 20/8 ms | 817 / 1,101 → **325 / 363** | **14.370 → 10.466 s** elapsed. RF RMS rose from 6.502 / 6.392 to 10.213 / 10.108 Hz. All 266 named assignments survived, with 38 additional assignments per arm. |
+| South, identical 8 ms detector packet, region misses truth by 100 m | Saved omitted offer | **325 / 363** | Both arms published a false fix. They placed the receiver 220 / 251 m inside the offered face. Both kept the same 304 assignments as the containing solution. |
+| DS30-0008, first 192 visits | Matched 12 ms → 8 ms ordinary measurements | 919 / 857 → **587 / 530** | Saved publication grew from 26.947 to 27.699 s. The independent single-member acquisition test saved 16–21 CPU ms in the two orders. |
+| DS30-0169, first 64 visits | Matched 12 ms → 8 ms ordinary measurements | 571 / 364 → **560 / 362** | Saved publication used **11.902 → 11.906 CPU s**. Elapsed fell 12.366 → 11.909 s under different page-fault loads. Full named v3 remains at **506 / 348 m**. |
+
+On DS30-0169 the 8 ms collector used 261.1 ms of CPU compared with 297.6 ms for the earlier 12 ms collector on the same member. Both found 56 factors across 102 antenna opportunities. Five assigned observations dropped within the changed member. The other 2,254 assignments kept their satellites and roles. The fixed and fitted RF residuals rose by 0.47 and 0.50 Hz. The original signed finish, regional decision, 179-point grid, bound path and eight images verified independently in each publication. These outcomes support another physical transfer test and keep the original full-length timing question open. [Physical clocks and evidence](independent-8ms-0169.md)
+
+## How far an early receiver change travels
+
+For DS30-0008 we joined every changed final assignment back to its signed receiver opportunity. Of **286** added, removed or reassigned observations, **276** were outside the first 192 visits. All **222** changes of satellite on shared observations went from NORAD **67511 to 63478**. The measurements on those rows were identical in the two runs. The switches were on one antenna at four tunings, beginning at visit **3,508** and ending at **5,571**. Revisiting even the first 4,288 visits while keeping later assignments fixed would leave **183** switches unreachable. Both calibrations gave the same census. The result describes the scope needed to reproduce this assignment update. It does not establish which satellite transmitted the signal or that the swap alone caused the better position. [Assignment audit](prefix_owner_reach.py) · [Counts by update horizon](measurements/prefix-owner-reach.json)
+
+Both fits picked their first-ranked cold branch. The early receiver intervention raised cold discovery from **5.555 to 6.394 CPU s**. Its first ordinary fit then failed a gate, and preparing and fitting the repair cost **0.738 CPU s**. Those costs are inside the pre-evidence stage, which grew from 10.985 to 12.285 CPU s. Signed finishing and numerical evidence became slightly faster. Candidate selection, repair and publication must be timed together when judging a cheaper receiver. [Matched solver and receiver clocks](dense-8ms-prefix.md)
+
+## Could pilot arrival break the tie cheaply?
+
+We tested this on the actual 222 shared signed rows at the region center and four corners. Both satellites received the same causal element catalogue, three orbit-time offsets and one clock-rate fit per tuning. The final third of elapsed time in each tuning was reserved for scoring. The candidate pairs and observations were provided by the two finished solutions. [Frozen test](prefix-owner-epoch-protocol.md) · [Implementation](prefix_owner_epoch.py)
+
+| Channel | Train / held intervals | Clock only | Positive delay, 67511 / 63478 | Reflected delay, 67511 / 63478 |
+|---|---:|---:|---:|---:|
+| 1 | 21 / 10 | 44.69 | 85.88 / 82.48 | 1.66 / 1.79 |
+| 4 | 54 / 24 | 103.92 | 203.75 / 209.71 | 10.99 / 10.40 |
+| 5 | 44 / 37 | 76.34 | 148.94 / 144.52 | 47.96 / 46.00 |
+| 6 | 10 / 6 | 19.61 | 44.81 / 43.44 | 6.24 / 4.77 |
+
+Values are held arrival residual RMS in samples at the supplied region center. **Zero of 20** channel-by-location comparisons passed the frozen positive-delay test against the clock and reflected controls. Even the winning positive-delay satellite differed across channels. The numerical score for both alternatives and all five locations took **0.044 CPU s** after input preparation and catalogue election. Cheap evaluation cannot justify removing either satellite here. The reflected sign also won on other physical recordings in the earlier code–carrier study. The present test has no independent satellite truth. [Full regional results](measurements/prefix-owner-epoch.json) · [Earlier physical and simulated sign controls](../single-core-2x/arrival-observability.md)
