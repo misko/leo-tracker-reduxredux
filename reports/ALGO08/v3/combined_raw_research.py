@@ -1,7 +1,7 @@
 """Run the guarded selective raw receiver with repaired source indexing and optional exact block rank."""
 
 import argparse
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -123,6 +123,8 @@ def main(argv=None):
     receiver = cli.add_mutually_exclusive_group(required=True)
     receiver.add_argument("--anchored-cfo-pack", type=Path)
     receiver.add_argument("--eight-ms-native-history", action="store_true")
+    cli.add_argument("--short-timing-scout", type=Path, help="Pinned alternate guarded short timing object")
+    cli.add_argument("--short-timing-scout-sha256", help="Expected short-scout.json digest")
     cli.add_argument("--output", type=Path)
     add_options(cli)
     argv = sys.argv[1:] if argv is None else argv
@@ -131,13 +133,20 @@ def main(argv=None):
         if not any(option.split("=", 1)[0] in ("--anchored-cfo-pack", "--eight-ms-native-history") for option in argv):
             return
     args, inherited = cli.parse_known_args(argv)
+    timing = nullcontext()
+    if args.short_timing_scout is not None or args.short_timing_scout_sha256 is not None:
+        if args.anchored_cfo_pack is None or args.short_timing_scout is None or args.short_timing_scout_sha256 is None:
+            cli.error("The alternate scout needs its pack, digest and the original guarded CFO pack")
+        from all_visit_timing import activate
+
+        timing = activate(args.short_timing_scout, args.short_timing_scout_sha256)
     if args.help:
         inherited.append("--help")
     portable = read_options(cli, args)
     if args.output is not None:
         inherited.extend(("--output", str(args.output)))
     orbit, rank = {"requested": "cold" if portable is None else "portable"}, {"requested": args.catalogue_block_rank}
-    with combined_runtime(orbit, rank, portable, use_blocks=args.catalogue_block_rank):
+    with timing, combined_runtime(orbit, rank, portable, use_blocks=args.catalogue_block_rank):
         if args.eight_ms_native_history:
             native_eight(inherited)
         else:
