@@ -1,5 +1,20 @@
 # Original-waveform timing on two DS30 recordings
 
+**A verified split archive gave the fastest replay.** On the same two recordings, installed ALGO08v3 took **12.242 s** and the 20/8 ms candidate with split storage and Cairo took **7.084 s**, including the candidate's archive checks. The summed speedup was **1.73×**. Preparing both archives from the original files and verifying them brought first use to **12.388 s**, slightly slower than installed v3. Both pipelines fixed one recording and withheld the other. A separate wrong-region test on the fix produced errors above 176 km in both pipelines. These results do not support a release.
+
+![Summed times with original storage, prepared split storage and first-use conversion](development/physical-archive-cost.png)
+
+| 20/8 ms receiver and Cairo publication | DS30-0107 | DS30-0016 | Sum | Median paired speedup | Summed speedup |
+|---|---:|---:|---:|---:|---:|
+| Installed v3 comparator | 1.497 s | 10.745 s | 12.242 s | 1.00× | 1.00× |
+| Original storage | 0.540 s | 7.677 s | 8.217 s | 1.86× | 1.49× |
+| Verified split archive ready | 0.542 s | 6.542 s | 7.084 s | 2.06× | 1.73× |
+| First use, including conversion and verification | 0.861 s | 11.527 s | 12.388 s | 1.21× | 0.99× |
+
+The prepared row includes candidate-specific setup. Charging the candidate for common custody checks as well gives **1.97× median and 1.70× summed**. Including those checks on first use gives **1.18× and 0.98×**. For the total-time 2× target, the two recordings must finish in **6.121 s** combined. The prepared archive still needs **0.963 s** of savings, or **1.072 s** with common checks charged. [Two-case storage comparison](strict-cairo-0107.md)
+
+### Original storage with the standard renderer
+
 The 20/8 ms receiver and routed solver completed the two enrolled replays in **9.443 s** versus **12.242 s** for installed ALGO08v3. That gives **1.30× by total time** and **1.62× by the reciprocal of the median candidate-to-v3 wall ratio**. The combined time misses the 1.6× release threshold. Both methods returned one position and withheld once. Only one position contributes to the accuracy comparison.
 
 ![Paired times for the two replays and horizontal errors for the single returned position](development/history-risk-physical-raw.png)
@@ -33,3 +48,6 @@ The renderer preserved both coordinates, frequency fits, all 115 assignments per
 ### Splitting the stored waveform
 
 The split format lets the short receiver read only the samples it consumes. On DS30-0016 it cut acquisition from **3.188 s to 2.156 s**. The complete run, including candidate-specific setup, took **6.542 s (1.64×)** with a verified split archive ready. Starting with the ordinary recording, conversion and independent readback took another **4.985 s**, bringing first use to **11.527 s (0.93×)**. All 506 detection factors, both positions, both frequency fits, the numerical grid and path, and all eight Cairo PNGs matched the original-format candidate. At this recording's measured 1.134 s saving per ready replay over original-format Cairo, conversion pays back on the fifth analysis. [Physical storage comparison and measured costs](strict-cairo-0016.md)
+### When the correct region is missing
+
+Holding the DS30-0016 detections fixed and shifting the supplied 25 km region two degrees east made the candidate return a false fix. Horizontal errors were **183.656 km** at fixed calibration and **176.717 km** with fitted calibration. The corresponding installed-v3 control also returned false fixes (**179.490 and 183.656 km**). The candidate kept all 115 observations and their roles, but changed every satellite assignment. Its 24 exterior checks allowed publication. The contained-region improvement on this one roof therefore gives little evidence about robustness at unfamiliar sites. This saved-detection control is separate from the two timed raw replays. [Controlled omission, assignments and frequencies](history-risk-0016-omitted.md)
