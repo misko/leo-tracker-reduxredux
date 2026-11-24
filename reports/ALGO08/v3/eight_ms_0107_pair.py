@@ -62,7 +62,7 @@ def prediction_seal(root):
     return {str(p.relative_to(root)): digest(p) for p in sorted(paths) if p.name not in ("prediction-seal.json", "result.json")}
 
 
-def launch(root):
+def launch(root, *, candidate_factory=candidate_command, extra_sources=()):
     from aperture_trial import write
     from combined_raw_trial import checked_producer
     from continued_cfo_small_raw import CASE, INPUTS, RECORDING, input_inventory, residency
@@ -103,11 +103,11 @@ def launch(root):
     machine = host()
     root.mkdir()
     (root / "tmp").mkdir()
-    args = {"candidate": candidate_command(north["command"], RECORDING, archive, offer, root / "candidate"),
+    args = {"candidate": candidate_factory(north["command"], RECORDING, archive, offer, root / "candidate"),
             "stock": [NAMED_V3, "--recording", RECORDING, "--region", offer, "--archive", archive, "--bulk-root", root / "stock"]}
     env = environment(root) | {"TMPDIR": str(root / "tmp"), "XDG_CACHE_HOME": str(root / "tmp")}
     write(root / "binding.json", dict(case=CASE.id, commit=subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip(),
-          named=named, sources={name: digest(HERE / name) for name in SOURCES}, north_sha256=NORTH[1],
+          named=named, sources={name: digest(HERE / name) for name in (*SOURCES, *extra_sources)}, north_sha256=NORTH[1],
           order=ORDER, archive=INPUTS.archive, recording=str(RECORDING), stage=str(PRIOR / RECORDING.name),
           offer=old["offer"], offer_sha256=old["offer_sha256"], machine=machine, libraries=libraries, input=old["members"],
           historical_sha256=PRIOR_RESULT, expected_causal_cutoff_utc_ns=INPUTS.cutoff_ns,
