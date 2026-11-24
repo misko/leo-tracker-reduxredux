@@ -1,7 +1,7 @@
 """Lay out the existing web figure artists before their single Agg draw."""
 
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from unittest.mock import patch
 
 
@@ -10,7 +10,7 @@ class UnsupportedWebLayout(ValueError):
 
 
 @contextmanager
-def one_pass_layout(*, enabled):
+def one_pass_layout(*, enabled, explicit_orbits=True):
     from tools.pipeline_eval.variants.experimental import raster_layout
 
     counts = Counter()
@@ -65,17 +65,17 @@ def one_pass_layout(*, enabled):
                                  top=rect[3] - .37 / height, hspace=.37)
             counts["orbit_figures"] += 1
 
-    with (
-        patch.object(raster_layout, "_LayoutFigure", Figure),
-        patch.object(raster_layout, "_OrbitFigure", OrbitFigure),
-    ):
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(raster_layout, "_LayoutFigure", Figure))
+        if explicit_orbits:
+            stack.enter_context(patch.object(raster_layout, "_OrbitFigure", OrbitFigure))
         yield counts
 
 
-def render(renderer, packet, *, enabled, **options):
+def render(renderer, packet, *, enabled, explicit_orbits=True, **options):
     """Use the installed layout for an unsupported figure without changing its content."""
     try:
-        with one_pass_layout(enabled=enabled) as stats:
+        with one_pass_layout(enabled=enabled, explicit_orbits=explicit_orbits) as stats:
             return renderer(packet, **options), dict(stats)
     except UnsupportedWebLayout as error:
         if not enabled:

@@ -178,6 +178,9 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
     audit = dict(rank=[], blocks=Counter(), graph={}, gates=Counter(), portable={}, png={}, verified_tle=Counter())
     routed = getattr(args, "history_risk_route", False)
     cairo = getattr(args, "cairo_six_sheets", False)
+    residual_layout = getattr(args, "cairo_residual_layout", False)
+    if cairo and residual_layout:
+        raise ValueError("Select one Cairo publication option")
     cache = VerifiedPngReads(args.output, figure_evidence, audit["png"])
     times, owners = {name: [] for name in ("analyze", "solve", "render")}, []
 
@@ -194,11 +197,11 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
             if routed:
                 audit["history_risk"] = risk = {}
                 ports.enter_context(risk_solve(algo08_scan, request["causal_cutoff_utc_ns"], original_rank, risk))
-            if cairo:
+            if cairo or residual_layout:
                 from history_cairo_render import binding
 
                 audit["cairo_layout"] = layout = {}
-                ports.enter_context(binding(algo08_scan, layout))
+                ports.enter_context(binding(algo08_scan, layout, orbit_sheets=cairo))
             yield
 
     args.output.mkdir()
@@ -229,11 +232,13 @@ def publish_active(args, publication, specification, handoff, _layout=None, **_o
         detail["solver_recipe"]["history_risk"] = dict(requested=True, choice=decision.get("route"),
                                                        reason=decision.get("reason"), optional_prefit_exterior_probe=False)
         detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in RISK_SOURCES})
-    if cairo:
-        from history_cairo_render import SOURCES as CAIRO_SOURCES
+    if cairo or residual_layout:
+        from history_cairo_render import RESIDUAL_SOURCES, SOURCES as CAIRO_SOURCES
 
-        detail["solver_recipe"]["web_renderer"] = "six Cairo sheets and explicit standard layout"
-        detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in CAIRO_SOURCES})
+        detail["solver_recipe"]["web_renderer"] = ("six Cairo sheets and explicit standard layout" if cairo else
+            "ordinary Matplotlib orbit sheets, Cairo residuals, explicit position and track layout")
+        sources = CAIRO_SOURCES if cairo else RESIDUAL_SOURCES
+        detail["source_sha256"].update({f"reports/ALGO08/v3/{name}": digest(HERE/name) for name in sources})
     write(args.output/"exact-named-raw-witness.json", detail, scientific=routed)
     return terminal, detail
 
@@ -287,8 +292,11 @@ def run(args):
 
 def parser():
     command = argparse.ArgumentParser(description=__doc__)
-    command.add_argument("--cairo-six-sheets", action="store_true",
+    layout = command.add_mutually_exclusive_group()
+    layout.add_argument("--cairo-six-sheets", action="store_true",
                          help="Use six reviewed Cairo sheets and explicit layout in the standard publication")
+    layout.add_argument("--cairo-residual-layout", action="store_true",
+                        help="Keep the ordinary orbit sheets and use Cairo residuals and explicit position/track layout")
     for name in ("recording", "archive", "region", "output", "short-binary", "geographic-library",
                  "regional-track-library", "frontier-block-library", "portable-orbit-index"):
         command.add_argument("--"+name, type=Path, required=name != "portable-orbit-index")

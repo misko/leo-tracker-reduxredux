@@ -39,6 +39,42 @@ def test_cairo_is_an_independent_prior_opt_in():
     assert not exact_named_raw.parser().parse_args(common).cairo_six_sheets
     parsed = exact_named_raw.parser().parse_args([*common, "--cairo-six-sheets", "--history-risk-route"])
     assert parsed.cairo_six_sheets and parsed.history_risk_route and parsed.prove_no_active_curvature
+    assert not parsed.cairo_residual_layout
+    partial = exact_named_raw.parser().parse_args([*common, "--cairo-residual-layout", "--history-risk-route"])
+    assert partial.cairo_residual_layout and partial.history_risk_route and not partial.cairo_six_sheets
+    with pytest.raises(SystemExit):
+        exact_named_raw.parser().parse_args([*common, "--cairo-residual-layout", "--cairo-six-sheets"])
+
+
+def test_residual_layout_keeps_the_original_orbit_factory():
+    from leo.contracts.fast_scan_orbits import PLOT_NAMES
+    from tools.pipeline_eval.variants.experimental import raster_layout
+    from reports.ALGO08.v3.one_pass_web_png import one_pass_layout
+
+    orbit_factory, standard_factory = raster_layout._OrbitFigure, raster_layout._LayoutFigure
+    original_orbits = dict.fromkeys(PLOT_NAMES, b"original-orbit")
+
+    def render_orbits(**options):
+        assert raster_layout._OrbitFigure is orbit_factory
+        assert raster_layout._LayoutFigure is not standard_factory
+        assert options == {"reuse_pixels": True}
+        return original_orbits
+
+    def ordinary(_packet, **_options):
+        return raster_layout.render_shared(reuse_pixels=True)
+
+    def residual(original, packet, *, explicit_layout, explicit_orbits, **options):
+        assert explicit_layout and not explicit_orbits
+        with one_pass_layout(enabled=explicit_layout, explicit_orbits=explicit_orbits):
+            return original(packet, **options), dict(native_residual_figures=2, position_figures=1, track_figures=1)
+
+    scan, audit = SimpleNamespace(render=ordinary), {}
+    with (patch.object(raster_layout, "render_shared", render_orbits),
+          patch("direct_residual_entry.render", residual), binding(scan, audit, orbit_sheets=False)):
+        assert scan.render("packet") == original_orbits
+    assert scan.render is ordinary and raster_layout._OrbitFigure is orbit_factory
+    assert audit["ordinary_orbit_draws"][0]["figures"] == 4
+    assert "native_orbit_figures" not in audit and "orbit_figures" not in audit
 
 
 def test_artist_limits_are_sealed_but_residual_ticks_may_change():
