@@ -149,6 +149,10 @@ def meets(groups, route):
     return all(actual >= installed for group in groups.values() for _, installed, actual in (counts(row, route) for row in group))
 
 
+def worst_deficit(groups, route):
+    return max(0, max(installed-actual for group in groups.values() for _, installed, actual in (counts(row, route) for row in group)))
+
+
 def clocks(pairs, route):
     metrics = {}
     for name, key in (("wall", "elapsed_s"), ("cpu", "cpu_s")):
@@ -195,16 +199,58 @@ def optimize(pairs):
         total = min(routes, key=lambda route: (*ratios(route), route))
         middle = min(routes, key=lambda route: (*ratios(route)[::-1], route))
         both = min(routes, key=lambda route: (max(ratios(route)), *ratios(route), route))
+        best_sum, best_median = ratios(total)[0], ratios(middle)[1]
+        ties = dict(sum=sum(ratios(route)[0] == best_sum for route in routes),
+                    median=sum(ratios(route)[1] == best_median for route in routes),
+                    both=sum(ratios(route) == (best_sum, best_median) for route in routes))
         return dict(eligible=len(routes), minimum_sum=describe(total), minimum_median=describe(middle), joint=describe(both),
-                    same_canonical_optima=total == middle, common_optimum=any(
-                        ratios(route) == (ratios(total)[0], ratios(middle)[1]) for route in routes))
+                    same_canonical_optima=total == middle, common_optimum=ties["both"] > 0, optimal_route_counts=ties)
 
     n = len(timing)
     return dict(records=len(pairs), routes=n, thresholds=calibration,
                 installed=describe(0), all_successor=describe(n-1),
                 strict=best([route for route in range(n) if meets(finite, route)]),
                 relaxed=best([route for route in range(n) if meets(relaxed, route)]),
-                unconstrained=best(list(range(n))))
+                unconstrained=best(list(range(n))),
+                routes_for_figure=[[worst_deficit(finite, route), time["wall"]["summed_speedup"]]
+                                   for route, time in enumerate(timing)])
+
+
+def render_figure(result, output):
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+    from matplotlib.ticker import MultipleLocator, StrMethodFormatter
+
+    points = result["routes_for_figure"]
+    deficits = range(1+max(count for count, _ in points))
+    figure = Figure(figsize=(8.4, 4.6), dpi=160, layout="constrained")
+    ax = figure.subplots()
+    jittered = [count + ((index*73 % 257)/256-.5)*.25 for index, (count, _) in enumerate(points)]
+    ax.scatter(jittered, [speed for _, speed in points], s=8, color="#6f7d87", alpha=.19, linewidths=0,
+               label=f"{len(points):,} hypothetical routes", zorder=2)
+    ax.step(deficits, [max(speed for count, speed in points if count <= allowed) for allowed in deficits],
+            where="post", linewidth=1.5, color="#176084", label="Fastest within each deficit budget", zorder=3)
+    ax.axhline(2, color="#746250", linewidth=1, linestyle="--", zorder=1)
+    ax.text(.99, 2.015, "2× summed target", transform=ax.get_yaxis_transform(), ha="right", fontsize=9, color="#614c37")
+    landmarks = ((result["installed"], "All installed", (14, -2), "left", "#30343a"),
+                 (result["strict"]["minimum_sum"], "Fastest strict route", (14, 12), "left", "#176084"),
+                 (result["all_successor"], "All candidate", (-14, 20), "right", "#af451d"))
+    for route, label, offset, alignment, color in landmarks:
+        count, speed = points[route["mask"]]
+        ax.scatter([count], [speed], color=color, edgecolor="white", linewidth=.8, s=58, zorder=4)
+        ax.annotate(f"{label} · {speed:.3f}×", (count, speed), xytext=offset, textcoords="offset points",
+                    ha=alignment, va="center", color=color, fontsize=9, fontweight="semibold", zorder=5)
+    ax.set(title=f"DS30 routing ceiling · {result['records']} sealed original pairs",
+           xlabel="Largest drop in cumulative fix count at any error threshold, either calibration arm",
+           ylabel="Summed elapsed speedup vs installed ALGO08v3", xticks=list(deficits),
+           xlim=(-.26, deficits[-1]+.29), ylim=(.91, 2.10))
+    ax.yaxis.set_major_locator(MultipleLocator(.2))
+    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.1f}×"))
+    ax.grid(color="#e1e5e8", linewidth=.7)
+    ax.set_axisbelow(True)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(loc="upper left", frameon=False, fontsize=9)
+    FigureCanvasAgg(figure).print_png(output)
 
 
 def main():

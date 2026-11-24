@@ -1,6 +1,8 @@
 import pytest
 
-from reports.ALGO08.v3.ds30_oracle_routing import coverage, frozen_order, meets, optimize
+from PIL import Image
+
+from reports.ALGO08.v3.ds30_oracle_routing import coverage, frozen_order, included_prefix, meets, optimize, render_figure
 
 
 def row(case, elapsed, c0, fitted, *, fix=None):
@@ -15,6 +17,19 @@ def test_execution_order_puts_frozen_smoke_first():
     assert [value["case"] for value in frozen_order(dict(cases=cases, smoke=["d", "b"]))] == ["d", "b", "a", "c"]
     with pytest.raises(ValueError, match="ambiguous"):
         frozen_order(dict(cases=cases, smoke=["a", "a"]))
+
+
+def test_unsealed_position_caps_the_contiguous_prefix():
+    order = ["installed", "successor"]
+    plan = dict(smoke=[], cases=[dict(case=case, assigned_rank=i, case_id=case, order=order,
+                                      raw_identity_sha256="raw", manifest_raw_authority_sha256="manifest")
+                               for i, case in enumerate(("a", "b", "c"), 1)])
+    rows = {entry["case"]: [entry | dict(algorithm=role, first=order[0], verified_pair=entry["case"] != "b",
+                                       outcome="withheld", admission_state="observed_pair") for role in order]
+            for entry in plan["cases"]}
+    included, pending = included_prefix(plan, rows)
+    assert [entry["case"] for entry, _ in included] == ["a"]
+    assert [entry["case"] for entry in pending] == ["b", "c"]
 
 
 def test_all_finite_thresholds_and_both_calibrations_are_binding():
@@ -56,3 +71,14 @@ def test_scored_gains_can_cover_a_regression_without_increasing_total_failures()
     assert strict["successor"] == ["a", "b"]
     assert all(arm["largest_deficit"] == 0 and arm["routed_fixes"] == 1
                for arm in strict["calibrated_coverage"].values())
+
+
+def test_route_figure_uses_all_feasible_and_infeasible_choices(tmp_path):
+    one = [(row("a", 10, 0, .13), row("a", 5, 0, .27))]
+    result = optimize(one)
+    assert result["routes_for_figure"] == [[0, 1], [1, 2]]
+    png = tmp_path/"ceiling.png"
+    render_figure(result, png)
+    with Image.open(png) as image:
+        assert image.format == "PNG"
+        image.verify()
