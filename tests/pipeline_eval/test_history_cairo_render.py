@@ -6,7 +6,7 @@ import pytest
 
 from reports.ALGO08.v3 import exact_named_raw
 from reports.ALGO08.v3.history_cairo_render import binding
-from reports.ALGO08.v3.history_risk_cairo_physical import compare_artists
+from reports.ALGO08.v3.history_risk_cairo_physical import clean, compare_artists
 
 
 def test_renderer_option_only_substitutes_the_ordinary_render_call():
@@ -84,3 +84,10 @@ def test_drawn_track_bar_witness_serializes_without_precision_loss():
     FigureCanvasAgg(figure).draw()
     restored = json.loads(json.dumps(stock_special(figure), allow_nan=False))
     assert restored["axes"][0]["bars"][0] == [-0.4, 0., 0.8, 10.25]
+
+
+def test_history_proof_preserves_masks_and_counts_when_filtering_clocks():
+    proof = dict(cpu_ns=10, lean_attempts=[dict(fine_exact_cpu_s=.01, conditional_mask=[True, False],
+                                                wall_ns=21, elapsed_probe_calls=3, exterior_checks=0)])
+    assert clean(proof) == dict(lean_attempts=[dict(conditional_mask=[True, False], elapsed_probe_calls=3,
+                                                  exterior_checks=0)])

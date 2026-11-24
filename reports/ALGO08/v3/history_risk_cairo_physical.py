@@ -141,7 +141,8 @@ def launch(root):
 
 def clean(value):
     if isinstance(value, dict):
-        return {k: clean(v) for k, v in value.items() if not k.startswith(("cpu_", "elapsed_", "wall_"))}
+        clocks = ("cpu_ns", "cpu_s", "elapsed_ns", "elapsed_s", "wall_ns", "wall_s")
+        return {k: clean(v) for k, v in value.items() if k not in clocks and not k.endswith(tuple("_"+name for name in clocks))}
     if isinstance(value, list):
         return [clean(x) for x in value]
     return value
@@ -179,6 +180,7 @@ def score(root):
     from empty_bootstrap import checked
     from direct_residual_figures_trial import pixels
     from history_risk_weak_physical import deny_original
+    from leo.contracts.digests import canonical_digest
     from leo.contracts.fast_standard_analysis import PLOTS
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from publication_media_checks import verify_position_sidecars
@@ -188,21 +190,31 @@ def score(root):
     runs = {}
     for mode in MODES:
         arm = root/mode
-        previous = arm/"verified-result.json"
-        if not previous.is_file():
-            subprocess.run([sys.executable, "-IB", HERE/"history_risk_weak_physical.py", "score", arm],
-                           check=True, timeout=30)
-        result = read(previous)
-        scientific = result["scientific"]
+        output = arm/"candidate"
+        clock, handoff, scientific = (read(path) for path in (arm/"clock.json", arm/"publication.json",
+                                                              output/"exact-named-raw-witness.json"))
+        receipt = handoff["receipt"]
+        run_id = receipt["run_id"]
+        terminal = read(output/"fast-scan-automatic-work"/run_id/"terminal.json")
+        native, = output.glob("fast-scan-automatic-work/*/detections.json")
+        checked(native, PINS["selected-detections.json"])
         evidence, ports = scientific["evidence"], scientific["ports"]
-        if (result["terminal"] != known["terminal"] or result["arms"] != known["arms"]
+        stock = FastStandardAnalysisStore(output)
+        grid = stock.position_grid(run_id)
+        if (clock["exit_code"] or receipt["decision"] != "complete" or terminal != known["terminal"]
+                or receipt["terminal_sha256"] != canonical_digest(terminal) or handoff["waveform_acquisitions"]
+                or handoff["verified_handoffs"] != 1 or len(grid["points"]) != 179 or not grid["complete"]
                 or any(evidence[key] != known["scientific"]["evidence"][key] for key in ("owner_rows", "owner_observations", "owner_maps"))
                 or any(clean(ports[k]) != clean(known["scientific"]["ports"][k]) for k in
                        ("graph", "gates", "grid", "history_risk"))
+                or len(ports["history"]["prepare"]) != 1 or ports["history"]["solves"] != 1
                 or ports["png"]["verified"] != 8 or ports["png"]["reused"] != 8 or ports["png"]["fallbacks"]
-                or scientific["solver_recipe"]["orbit_index"] != "cold" or not result["parity"]["all_ordered_grid_values"]):
+                or scientific["solver_recipe"]["orbit_index"] != "cold"):
             raise ValueError("The original numerical route, masks, late check, ordered output or image verification changed")
-        runs[mode] = result
+        original = known["scientific"]["evidence"]["images"]
+        originals = verify_position_sidecars(PRIOR/"candidate", output, run_id, original, evidence["images"])
+        runs[mode] = dict(clock=clock, receipt=receipt, terminal=terminal, arms=known["arms"],
+                          scientific=scientific, reference_sidecars=originals)
     a, b = (runs[mode]["scientific"]["evidence"]["images"] for mode in MODES)
     if a != known["scientific"]["evidence"]["images"] or set(a) != set(PLOTS) or set(b) != set(PLOTS):
         raise ValueError("The two workers must write all standard figures and the standard control must replay exactly")
