@@ -137,6 +137,12 @@ def test_corner_support_wraps_the_active_projection(monkeypatch, tmp_path, spars
         localization_v3_inputs.regional_bank(catalogue, origin)
         with projection as counts:
             shifted = scan.shifted
+            healthy_phases = np.array([15.0])
+            ordinary = project(scan, healthy_phases, corner, "receiver_smooth")
+            protected = discovery.explore(scan, healthy_phases, corner, "receiver_smooth")
+            for observed, expected in zip(protected, ordinary, strict=True):
+                np.testing.assert_array_equal(observed[:, columns], expected[:, columns])
+            assert work["sgp4_calls"] == 0
             for phase, extra_knot in [(-17.0, -18.0), (17.0, 318.0)]:
                 phases = np.array([phase])
                 with pytest.raises(ValueError, match=domain.OUTSIDE):
@@ -157,7 +163,7 @@ def test_corner_support_wraps_the_active_projection(monkeypatch, tmp_path, spars
                     np.testing.assert_array_equal(observed[:, columns], target[:, columns])
                 assert scan.shifted == shifted
             if sparse:
-                assert counts["column_requests"] == 6
+                assert counts["column_requests"] == 12
                 assert counts["materialized_bytes"] == 0
 
     assert work["corner_projections_extended"] == work["sgp4_calls"] == 2
