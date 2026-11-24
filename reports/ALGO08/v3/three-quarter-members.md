@@ -31,9 +31,11 @@ Original saved control versus sampled saved solver was 11.333 versus 8.030 s wal
 
 ## Raw timing and authentication
 
+These ratios divide candidate time by installed ALGO08v3 time. A ratio of 0.500 corresponds to 2×. The ten-case cost study includes DS30-0220. The separately sealed relocation pair DS30-0452 contributes to the eleven-pair field comparison and has no stage-cost estimate in this table.
+
 | Ten-pair elapsed ratio model | Median paired | Ratio of sums |
 |---|---:|---:|
-| Measured full deployed successor | 0.624 | 0.585 |
+| Measured field candidate processing all members | 0.624 | 0.585 |
 | Explicitly omit payload and scale acquisition, existing solver time | 0.513 | 0.490 |
 | Explicitly omit payload and scale acquisition and solver support | 0.484 | 0.455 |
 | Preserve all payload authentication, skip modeled native work alone | 0.580 | 0.545 |
