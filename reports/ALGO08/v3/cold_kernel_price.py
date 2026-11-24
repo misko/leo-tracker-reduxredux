@@ -162,16 +162,8 @@ def measure_cold(output, audit):
 
     original = race.refine
     partial = race.partial_fits
-    rank = v5_core.ranked_initial_nodes
     library, phases = load_profiler(output)
     records, probes = [], Probes()
-
-    def priced_rank(scan):
-        start = process_time_ns()
-        nodes = rank(scan)
-        audit["rank_cpu_ns"] = process_time_ns()-start
-        audit["shortlist"] = [signature(node) for node in nodes[:3]]
-        return nodes
 
     def finalists(*args, **kwargs):
         from leo.analysis.localization_v3 import position
@@ -189,6 +181,15 @@ def measure_cold(output, audit):
         return result
 
     def refine(*args, **kwargs):
+        rank = v5_core.ranked_initial_nodes
+
+        def priced_rank(scan):
+            start = process_time_ns()
+            nodes = rank(scan)
+            audit["rank_cpu_ns"] = process_time_ns()-start
+            audit["shortlist"] = [signature(node) for node in nodes[:3]]
+            return nodes
+
         start = process_time_ns()
         with patch.object(v5_core, "ranked_initial_nodes", priced_rank), patch.object(race, "partial_fits", finalists):
             node, point, phase, trace = original(*args, **kwargs)
@@ -218,7 +219,7 @@ def scientific(value):
 
 
 def worker(root, case):
-    from aperture_trial import read, write
+    from aperture_trial import archive_identity, read, write
     from empty_bootstrap import checked
     import unified_short_bootstrap as entry
     from prospective_0316_solver import worker as saved_worker
@@ -243,8 +244,6 @@ def worker(root, case):
     def active(args, *values, **options):
         from named_constrained_research import deny_waveform
         from leo.storage.short_window import ShortWindowReader
-        from tools.pipeline_eval.qualification.paired_publication import archive_identity
-
         identity = archive_identity(Path(request["local_archive"]["root"]))["snapshots_sha256"]
         if identity != request["local_archive"]["snapshots_sha256"]:
             raise ValueError("Causal snapshots no longer match the sealed request")
