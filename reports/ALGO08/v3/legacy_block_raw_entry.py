@@ -22,22 +22,29 @@ def parser():
     return cli
 
 
-def run(args):
+def orbit_renderer(args, *, allow_cairo_orbits=False):
+    if args.cairo_residual_layout and not args.cairo_six_sheets:
+        return False
+    if allow_cairo_orbits and args.cairo_six_sheets and not args.cairo_residual_layout:
+        return True
+    raise ValueError("Choose an admitted standard original-file renderer")
+
+
+def run(args, *, allow_cairo_orbits=False):
     import empty_bootstrap as boot
     import exact_named_raw as route
     import history_cairo_render
 
     if (
         not args.history_risk_route
-        or not args.cairo_residual_layout
         or not args.portable_orbit_index
-        or args.cairo_six_sheets
         or args.visit_frame_custody
         or args.strict_packed_eight
     ):
         raise ValueError(
-            "Expected portable history-risk and ordinary orbit sheets on the original recording"
+            "Expected portable history-risk on the original recording"
         )
+    native_orbits = orbit_renderer(args, allow_cairo_orbits=allow_cairo_orbits)
     fields = (
         args.legacy_map_custody,
         args.legacy_map_custody_sha256,
@@ -49,9 +56,9 @@ def run(args):
 
     @contextmanager
     def checked_renderer(scan, rendered, *, orbit_sheets):
-        if orbit_sheets:
-            raise ValueError("Use the standard four orbit sheets in both arms")
-        with original(scan, rendered, orbit_sheets=False):
+        if orbit_sheets != native_orbits:
+            raise ValueError("The requested orbit renderer differs from the publisher")
+        with original(scan, rendered, orbit_sheets=native_orbits):
             draw = scan.render
 
             def render(packet, **options):

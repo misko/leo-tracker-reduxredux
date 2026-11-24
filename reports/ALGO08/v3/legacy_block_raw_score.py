@@ -6,7 +6,7 @@ from legacy_block_raw_0016 import ORDER, digest, runtime_pins, seal
 from visit_frame_raw_0016 import read
 
 
-def snapshot(target, log, request, producer):
+def snapshot(target, log, request, producer, *, verify_renderer=None):
     from empty_bootstrap import bind_native
     from history_risk_residual_layout_0402 import media_identity, require_active
     from joint_publication import artifacts
@@ -92,7 +92,10 @@ def snapshot(target, log, request, producer):
         or transfer["counts"]["sidecar_hit_bodies"] != producer["overlapping_bodies"]
     ):
         raise ValueError("Portable history-risk did not use the earlier trusted index")
-    require_active(witness["ports"]["cairo_layout"])
+    if verify_renderer is None:
+        require_active(witness["ports"]["cairo_layout"])
+    else:
+        verify_renderer(witness["ports"])
     if (
         witness["ports"]["cairo_layout"]["original_recording_title"]
         != request["recording"].split("/")[-1]
