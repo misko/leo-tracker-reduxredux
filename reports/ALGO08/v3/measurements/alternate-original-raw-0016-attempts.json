@@ -1,0 +1,140 @@
+{
+  "first_local_recovery": {
+    "sha256": "4bf7af2d7cd0661d21ad3e033f22a666494ac7b1ffdad788e56d58c34a31f0fe",
+    "body": {
+      "member": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000/iq-000007.ci16.zst",
+      "missing_pages": 57,
+      "page_bytes": 4096,
+      "page_extent": 19206,
+      "setup_elapsed_s": 0.011987574398517609,
+      "setup_cpu_s": 0.004174933000000002,
+      "source": "already staged tmpfs file, local NVMe swap only"
+    }
+  },
+  "second_local_recovery": {
+    "sha256": "71847ad795bd619fc977803bdd4d110935ecca61a6b96e22cebd57a013ba9442",
+    "body": {
+      "member": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000/iq-000007.ci16.zst",
+      "missing_pages": 0,
+      "page_bytes": 4096,
+      "page_extent": 19206,
+      "setup_elapsed_s": 0.003306104801595211,
+      "setup_cpu_s": 0.003305413,
+      "source": "already staged tmpfs file, local NVMe swap only",
+      "pinned_through_both_exits": true
+    }
+  },
+  "startup_scope_pin": {
+    "sha256": "b74831b15def065ef24a605714acde89bb5cdd9e1f8a304c4a81dad1ab32f1f7",
+    "body": {
+      "member": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000/iq-000007.ci16.zst",
+      "missing_pages": 0,
+      "page_bytes": 4096,
+      "page_extent": 19206,
+      "setup_elapsed_s": 0.02008097991347313,
+      "setup_cpu_s": 0.020081270000000002,
+      "source": "already staged tmpfs file, local NVMe swap only",
+      "pinned_member_bytes": 78664842
+    }
+  },
+  "failed_startup_clock": {
+    "sha256": "614caff79eb8853c7f73666eb8878bbb416e848545c87c13388ec579b1da6fc7",
+    "body": {
+      "cache_after": {
+        "cached_pages": 242128,
+        "ended_unix_ns": 1795534555734348076,
+        "index_cache": {
+          "cached_pages": 543,
+          "ended_unix_ns": 1795534555734976041,
+          "members": 13,
+          "observed_file_pages": 543,
+          "observed_members": 13,
+          "started_unix_ns": 1795534555734369242,
+          "unavailable": {}
+        },
+        "members": 13,
+        "observed_file_pages": 242128,
+        "observed_members": 13,
+        "started_unix_ns": 1795534555730430089,
+        "unavailable": {}
+      },
+      "cache_before": {
+        "cached_pages": 242128,
+        "ended_unix_ns": 1795534554372762807,
+        "index_cache": {
+          "cached_pages": 543,
+          "ended_unix_ns": 1795534554373370070,
+          "members": 13,
+          "observed_file_pages": 543,
+          "observed_members": 13,
+          "started_unix_ns": 1795534554372779406,
+          "unavailable": {}
+        },
+        "members": 13,
+        "observed_file_pages": 242128,
+        "observed_members": 13,
+        "started_unix_ns": 1795534554370237025,
+        "unavailable": {}
+      },
+      "catalogue_after": {
+        "bytes": 82259111,
+        "snapshots": 46
+      },
+      "clock": {
+        "cpu_s": 1.19799,
+        "elapsed_s": 1.3561475295573473,
+        "exit_code": 1,
+        "input_blocks": 32560,
+        "major_faults": 62,
+        "started_unix_ns": 1795534554373791625,
+        "stderr_tail": "Traceback (most recent call last):\n  File \"/tmp/leo-v3-alternate-original-raw/reports/ALGO08/v3/alternate_original_raw_trial.py\", line 163, in <module>\n    worker(args.root)\n  File \"/tmp/leo-v3-alternate-original-raw/reports/ALGO08/v3/alternate_original_raw_trial.py\", line 96, in worker\n    receipt = publication.run(SimpleNamespace(recording=recording, archive=archive, region=offer, bulk_root=output), spec)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/qualification/experimental_publication.py\", line 272, in run\n    install()\n  File \"/opt/leo-algo08/algo08v3/payload/tools/pipeline_eval/variants/experimental/lean_startup.py\", line 79, in install\n    raise RuntimeError(\"lazy reexports must start in a fresh ALGO08 process\")\nRuntimeError: lazy reexports must start in a fresh ALGO08 process\n"
+      },
+      "command": [
+        "/usr/bin/timeout",
+        "--kill-after=2s",
+        "40s",
+        "/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c/venv/bin/python",
+        "-IB",
+        "/tmp/leo-v3-alternate-original-raw/reports/ALGO08/v3/alternate_original_raw_trial.py",
+        "worker",
+        "DS30-0016",
+        "/dev/shm/leo-v3-alternate-original-raw-0016-result04"
+      ]
+    }
+  },
+  "failed_startup_seal": {
+    "sha256": "8b9068da371d1d4dc48ec8627c997f34c12fddada424a467317b7f509b4731bb",
+    "body": {
+      "admission.json": "0e9678c5452085cdd6dadfff24b514654b2fb492d9ea78305e5940d4b3421328",
+      "candidate-clock.json": "614caff79eb8853c7f73666eb8878bbb416e848545c87c13388ec579b1da6fc7",
+      "candidate.stderr": "080ceee0213584749d3359c17b8deec310d14ac13d34121dc16519395c068787",
+      "candidate.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "raw_pair_candidate_pin": {
+    "sha256": "e05a6822d92bb747739a455531414cd847d8b1d4ed5875779271b0674118c742",
+    "body": {
+      "member": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000/iq-000007.ci16.zst",
+      "missing_pages": 0,
+      "page_bytes": 4096,
+      "page_extent": 19206,
+      "setup_elapsed_s": 0.022359189577400684,
+      "setup_cpu_s": 0.022360235,
+      "source": "already staged tmpfs file, local NVMe swap only",
+      "pinned_member_bytes": 78664842
+    }
+  },
+  "fresh_stock_pin": {
+    "sha256": "15d36add733c3310bec8e3af543aa3f02cbfe9cddab37e8c443c090fad08f611",
+    "body": {
+      "member": "/dev/shm/leo-v3-guarded-selective-0016-stage01/fast8-auto-20261113-112146-b04f5461-1-lower/fast8-auto-20261113-112146-b04f5461-1-lower-segment-00000000/iq-000007.ci16.zst",
+      "missing_pages": 0,
+      "page_bytes": 4096,
+      "page_extent": 19206,
+      "setup_elapsed_s": 0.02281416952610016,
+      "setup_cpu_s": 0.022814761000000003,
+      "source": "already staged tmpfs file, local NVMe swap only",
+      "pinned_member_bytes": 78664842
+    }
+  }
+}
