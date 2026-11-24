@@ -17,7 +17,13 @@ The treatment merged all seven affected arcs into the hybrid’s existing 67511 
 | Matched hybrid refit with 63478 | 575 | 519 | 141.277 | 141.293 | 47,330.919 | 47,329.602 |
 | Matched hybrid refit with 67511 | 912 | 860 | 141.274 | 141.260 | 47,282.659 | 47,280.926 |
 
-Within the held hybrid inputs, the family intervention returns position error close to the published control in both calibration arms. The fitted-`c` objective is lower by 1.32 for the identity and 1.73 for the swap. Fitted `c` decreases position error by 56 m and 53 m respectively, while conditional RF RMS changes by +0.016 Hz and −0.014 Hz. The cross-receiver objective comparison also includes changes in signed RF support. This conditional study establishes the endpoint sensitivity to the late family choice on one packet. It leaves the forward assignment policy and the separate cause of the hybrid’s repair invocation open.
+Within the held hybrid inputs, the family intervention returns position error close to the published control in both calibration arms. The fitted-`c` objective is lower by 1.32 for the identity and 1.73 for the swap. Fitted `c` decreases position error by 56 m and 53 m respectively, while conditional RF RMS changes by +0.016 Hz and −0.014 Hz. The published acquisition modes also differ in signed RF support. This conditional study establishes the endpoint sensitivity to the late family choice on one packet. It leaves the forward assignment policy and the separate cause of the hybrid’s repair invocation open.
+
+## Predictive test for the family choice
+
+Both endpoints, the seven arcs, and the family pair depend on the complete packet. Masking one RF and refitting nuisance terms at either existing endpoint would still condition on those full-data decisions. The receipts retain endpoints and radio calibration coefficients. A full likelihood reconstruction would additionally require the scan context, family phase and receiver smooth terms, aliases, and predictive covariance.
+
+A leave-one-RF-out falsifier can run at the original operator offer center with zero position fits. Predeclare the RF folds and aggregation, then remove both radios’ observations on the held RF before track construction. Build continuation, the family shortlist, aliases, noise, and calibration from the remaining RFs with the causal phase prior. A fold in which either candidate lacks an independent training nomination cannot resolve this pair. Score the full held RF timeline against the two frozen training fits, using the same candidate and clutter likelihood, empty opportunities, and alias policy. Integrate over the training nuisance covariance and a new per-track bias, and report paired predictive scores and coverage separately for fixed and fitted `c`. Apply that rule to a separate archived case for confirmation, since the DS30-0008 candidate pair is already known. The current measurements provide the full-data likelihood comparison above.
 
 ## Single-core cost
 
