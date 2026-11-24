@@ -1,6 +1,8 @@
 """Produce the existing exception map while verifying one ordinary Zstandard member."""
 
 import ctypes as ct
+from functools import cache
+from importlib.util import module_from_spec, spec_from_file_location
 import os
 from pathlib import Path
 import subprocess
@@ -18,6 +20,17 @@ from .legacy_block_seek import clock, elapsed
 
 class Description(ct.Structure):
     _fields_ = [(name, ct.c_uint32) for name in ("encoded", "length", "origin", "literals", "sequences")]
+
+
+@cache
+def prefix_hasher():
+    """Load the newer research binding without replacing installed tools."""
+    source = (Path(__file__).resolve().parents[3]
+              / "tools" / "pipeline_eval" / "variants" / "experimental" / "paired_sha256.py")
+    spec = spec_from_file_location("_leo_first_use_prefix_sha256", source)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.PairedSha256
 
 
 def build(path):
@@ -74,7 +87,7 @@ class FusedMember:
         self.plan = (Description * len(descriptions))(*(Description(*row[:5]) for row in descriptions))
         self.blocks = (core.Block * len(descriptions))()
         self.retained = np.empty(len(self.exceptions) * multi.MAX_BLOCK, dtype=np.uint8)
-        self.digests = PairedSha256(hasher)
+        self.digests = (prefix_hasher() if hash_prefix else PairedSha256)(hasher)
         self.hash_prefix = hash_prefix
         self.prefixes = []
         self.eof = False

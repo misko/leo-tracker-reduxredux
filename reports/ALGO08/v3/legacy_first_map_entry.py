@@ -98,6 +98,11 @@ def run(args):
             if fast is not None:
                 acceleration.update(checked_artifacts(fast, fast_pin))
                 hasher = Path(acceleration["hasher"]["path"])
+                from hashlib import sha256
+
+                probe = fused.prefix_hasher()(hasher)
+                if probe.window_and_prefix(b"exact", 2) != (sha256(b"exact").digest(), sha256(b"ex").digest()):
+                    raise ValueError("The pinned first-use prefix hasher failed its startup check")
                 audit["acceleration"] = dict(pin=fast_pin, artifacts=acceleration, solver=solver_audit)
                 options["accelerate"] = True
             history = fused.load(args.legacy_first_map_history)

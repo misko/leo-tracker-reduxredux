@@ -1,10 +1,12 @@
 import sys
+from hashlib import sha256
 from types import SimpleNamespace
 
 import pytest
 
 from reports.ALGO08.v3.legacy_first_map_acceleration import solver_ports
 from reports.ALGO08.v3.legacy_first_map_finalist import options
+from reports.ALGO08.v3.legacy_fused_map import prefix_hasher
 
 
 def test_first_use_options_bind_only_the_new_artifacts(tmp_path):
@@ -31,3 +33,12 @@ def test_receiver_side_withhold_never_enters_scientific_ports(monkeypatch):
         assert scope.publish_active is not publication
         assert audit == {}
     assert scope.publish_active is publication
+
+
+def test_prefix_mode_works_under_installed_module_precedence(monkeypatch):
+    name = "tools.pipeline_eval.variants.experimental.paired_sha256"
+    installed = SimpleNamespace(PairedSha256=object)
+    monkeypatch.setitem(sys.modules, name, installed)
+    actual = prefix_hasher()()
+    assert actual.window_and_prefix(b"private", 3) == (sha256(b"private").digest(), sha256(b"pri").digest())
+    assert sys.modules[name] is installed
