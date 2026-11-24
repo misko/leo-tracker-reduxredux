@@ -213,6 +213,8 @@ def compare(kernel, packed, width, points, control):
 
 def run(case, output):
     from aperture_trial import configuration, read, solve, write
+
+    publication, spec = configuration()
     from combined_frontier_run import BLOCK_SHA
     from dense_geographic_projection import checked_runtime
     from dense_geographic_trial import host
@@ -224,7 +226,6 @@ def run(case, output):
     from tools.pipeline_eval.variants.experimental import regional_bound_guard
 
     machine = host()
-    publication, spec = configuration()
     if any(file_sha(path) != pin for path, pin in ((SCORES, TRACK_SCORES_SHA), (BLOCK, BLOCK_SHA), (GEOGRAPHIC, GEOGRAPHIC_SHA))):
         raise ValueError("The pinned native regional libraries changed")
     job = assignment(case)
