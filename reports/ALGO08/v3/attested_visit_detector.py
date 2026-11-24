@@ -196,7 +196,7 @@ def check_clock(row, named, previous):
     return clock, acquisition["generation"]
 
 
-def replay(windows, named, spec, source_pins):
+def replay(windows, named, spec, source_pins, *, short_binary=CURRENT, short_pin=None, setup_timing=None):
     from empty_bootstrap import RELEASE, checked
     from full_short_run import EIGHT_MS_SHA, checked_recipe
     from leo.contracts.digests import canonical_digest
@@ -205,12 +205,13 @@ def replay(windows, named, spec, source_pins):
     import mixed_aperture_receiver as mixed
     from tools.pipeline_eval.qualification import blind_compact_run as stock
 
-    recipe = checked_recipe(eight_ms=True)
+    short_pin = EIGHT_MS_SHA if short_pin is None else short_pin
+    recipe = checked_recipe(eight_ms=True, short_pin=short_pin)
     if (spec["schedule"] != "all" or spec.get("fractional_score_selection", False)
             or spec["detector_sha256"] != mixed.INSTALLED_SHA):
         raise ValueError("The named baseline differs from ordinary all-visit cancellation")
-    short, full = CURRENT, Path(spec["detector"])
-    checked(short, EIGHT_MS_SHA)
+    short, full = short_binary, Path(spec["detector"])
+    checked(short, short_pin)
     checked(full, spec["detector_sha256"])
     edge = windows[0][1]["edge"]
     pilot = RELEASE / "assets" / (edge + ".f32")
@@ -223,7 +224,7 @@ def replay(windows, named, spec, source_pins):
     if len(archived) != sum(row["visit_index"] < len(windows) for row in probes):
         raise ValueError("Repeated original named visit/radio key")
     policy = FastScanPolicyV2()
-    mixer = mixed.MixedApertureDetector(short, EIGHT_MS_SHA, full_coverage=True)
+    mixer = mixed.MixedApertureDetector(short, short_pin, full_coverage=True)
     full_context, short_context = stock.Native, mixed.NativePath
     original_rule = stock.Continuation
     events = {"named": [], "mixed": [], "history": []}
@@ -268,9 +269,13 @@ def replay(windows, named, spec, source_pins):
     generation, session = None, named["source"]["session_id"]
     with ExitStack() as handles:
         with patch.object(stock, "Native", MeasuredFull), patch.object(stock, "Continuation", ObservedHistory):
-            named_receiver = handles.enter_context(stock.detector("cancellation", edge, binary=full, pilot=pilot))
+            named_receiver, named_setup = duration(handles.enter_context,
+                stock.detector("cancellation", edge, binary=full, pilot=pilot))
         with patch.object(mixed, "NativePath", MeasuredMixed):
-            mixed_receiver = handles.enter_context(mixer.detector("cancellation", edge, binary=full, pilot=pilot))
+            mixed_receiver, mixed_setup = duration(handles.enter_context,
+                mixer.detector("cancellation", edge, binary=full, pilot=pilot))
+        if setup_timing is not None:
+            setup_timing.update(named=named_setup, mixed=mixed_setup)
         receivers = {"named": named_receiver, "mixed": mixed_receiver}
         for row, target, samples in windows:
             visit, acquisition = row.sequence, row.acquisition
@@ -320,7 +325,7 @@ def replay(windows, named, spec, source_pins):
     return ledger, dict(named=dict(detector_sha256="sha256:" + spec["detector_sha256"],
                  bound_sources=source_pins, selector="installed chronological continuation"),
             mixed=dict(pre_selector_recipe=recipe, pre_selector_recipe_sha256=canonical_digest(recipe),
-                       detector_sha256="sha256:" + EIGHT_MS_SHA, native=mixer.receipt(),
+                       detector_sha256="sha256:" + short_pin, native=mixer.receipt(),
                        selector="complete mixed chronological schedule, before held selector"),
             pilot_sha256="sha256:" + mixed.PILOT_SHA[edge], roles=dict(roles), named_archive_exact=True)
 
