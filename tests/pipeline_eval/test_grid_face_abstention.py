@@ -51,7 +51,9 @@ def test_on_face_grid_minimum_has_zero_gap():
     assert row["arms"]["c0"]["gap"] == 0.
 
 
-@pytest.mark.parametrize("mutation", ("partial", "missing_face", "failed_score", "missing_endpoint"))
+@pytest.mark.parametrize(
+    "mutation", ("partial", "missing_face", "failed_score", "missing_endpoint")
+)
 def test_unavailable_grids_do_not_make_a_geographic_decision(mutation):
     doc = deepcopy(grid())
     if mutation == "partial":

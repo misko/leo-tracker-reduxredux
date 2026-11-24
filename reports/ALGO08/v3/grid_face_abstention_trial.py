@@ -8,8 +8,7 @@ from pathlib import Path
 from time import process_time_ns
 
 from leo.analysis.position_grid import ARMS
-from leo.contracts.digests import canonical_digest
-from leo.contracts.digests import sha256_digest
+from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.storage.fast_scan import FastScanStore
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
@@ -77,7 +76,8 @@ def load_publication(root, receipt, *, digests=None, scrub=False):
     terminal = json.loads(staged(path).read_bytes())
     if (
         canonical_digest(terminal) != receipt["terminal_sha256"]
-        or terminal["session_id"] != receipt["session_id"] or terminal["region"] != receipt["region"]
+        or terminal["session_id"] != receipt["session_id"]
+        or terminal["region"] != receipt["region"]
         or terminal["decision"] != "ok" or receipt["decision"] != "complete"
     ):
         raise ValueError("Published receipt and terminal do not match")
@@ -90,8 +90,8 @@ def load_publication(root, receipt, *, digests=None, scrub=False):
         if sidecar.exists():
             staged(sidecar)
     grid, path = store.position_grid(run_id), store.position_path(run_id)
-    identity = {key: terminal[key] for key in ("region", "session_id", "arms", "native_sha256",
-                                                "orbit_policy")}
+    fields = ("region", "session_id", "arms", "native_sha256", "orbit_policy")
+    identity = {key: terminal[key] for key in fields}
     identity["terminal_sha256"] = receipt["terminal_sha256"]
     if grid is None or path is None:
         return identity, {"state": "unassessable", "reason": "missing_grid_or_path"}
@@ -112,7 +112,9 @@ def load_publication(root, receipt, *, digests=None, scrub=False):
         raise ValueError("Final position path and grid endpoints differ from signed positions")
     began = process_time_ns()
     result = gate.face_contact(grid)
-    result.update(readout_cpu_ns=process_time_ns() - began, evaluated_points=grid["evaluated_points"])
+    result.update(
+        readout_cpu_ns=process_time_ns() - began, evaluated_points=grid["evaluated_points"],
+    )
     return identity, result
 
 
@@ -123,7 +125,7 @@ def verify_pairs(cases):
         left, right = (cases[name]["identity"] for name in (first, second))
         keys = ("native_sha256", "session_id", "orbit_policy")
         if any(left[key] != right[key] for key in keys):
-            raise ValueError(f"Expected matched detector inputs and sky policy for {first}/{second}")
+            raise ValueError(f"Expected matched detector and orbit policy for {first}/{second}")
 
 
 def named_south_authority():
@@ -156,7 +158,8 @@ def run(output):
         )
         inputs = south_inputs[name]
         if (
-            identity["native_sha256"] != inputs["native"] or identity["session_id"] != inputs["session"]
+            identity["native_sha256"] != inputs["native"]
+            or identity["session_id"] != inputs["session"]
             or inputs["archive"]["snapshots_sha256"] != COMMON_ORBIT_HIST
         ):
             raise ValueError("Named-survivor South seal has different detector or sky authority")
@@ -185,7 +188,9 @@ def score(input_path, output):
     key = pinned(REGIONAL / "scoring-key.json", PUBLIC_KEY_PIN)["answers"]
     truth = {}
     for site, recording in SITES.items():
-        truth[site], = {tuple(row["truth"]) for row in key.values() if row["recording"] == recording}
+        truth[site], = {
+            tuple(row["truth"]) for row in key.values() if row["recording"] == recording
+        }
     values = {arm: {} for arm in (*ARMS, "paired", "both")}
     for name, case in data["cases"].items():
         site = name.split("-")[0]
@@ -221,8 +226,10 @@ def score(input_path, output):
             "assessable_containing": len(containing), "assessable_omitted": len(omitted),
             "all_offer_interval": all_interval, "south_pair_interval": south_interval,
         }
-    write(output, dict(data, input_sha256=sha256_digest(staged(input_path).read_bytes()),
-                       truth_sha256=PUBLIC_KEY_PIN, decisions=trials))
+    write(output, {
+        **data, "input_sha256": sha256_digest(staged(input_path).read_bytes()),
+        "truth_sha256": PUBLIC_KEY_PIN, "decisions": trials,
+    })
 
 
 def main():

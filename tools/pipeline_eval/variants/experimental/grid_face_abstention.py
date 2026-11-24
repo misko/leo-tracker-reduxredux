@@ -19,8 +19,10 @@ def face_contact(grid):
     if (
         not isfinite(half) or half <= 0 or len(points) != len(grid["points"])
         or any(max(map(abs, xy)) > half or not all(map(isfinite, xy)) for xy in points)
-        or any(set(scores) != set(ARMS) or any(v is None or not isfinite(v) for v in scores.values())
-               for scores in points.values())
+        or any(
+            set(scores) != set(ARMS) or any(v is None or not isfinite(v) for v in scores.values())
+            for scores in points.values()
+        )
     ):
         return {"state": "unassessable", "reason": "invalid_paired_scores"}
 
