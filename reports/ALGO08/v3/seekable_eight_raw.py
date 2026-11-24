@@ -33,6 +33,10 @@ DENSE_TRIAL = Path("/dev/shm/leo-v3-seekable-eight-dense-result02")
 DENSE_TRIAL_SHA = "322714ed8300c535c027fb597e42766c6db9b73462998b3cc2a2fb6943a34503"
 HELD = Path("/dev/shm/leo-receiver-ceiling-0169-results01/scope.json")
 HELD_SHA = "95a438f0904e4568b6f2a3618b7fbf691c29d0e2d352fd3727cc83d35b72aa9a"
+HELD_TRIAL = Path("/dev/shm/leo-v3-seekable-eight-0169-result01")
+HELD_NATIVE = "63ad64d668ebe73d7dd63eb4e399127ed4a71f03c33b9823f3ed0144f3a6f165"
+HELD_NAMED = {"1-stock.json": "b1d8a32033373c5996217fe3a70e9e7fe5ae58ba3f75439052eacd2ff55cb453",
+              "2-stock.json": "483a94bc5dc4e7bf51422b364a77721075def3bb810cbe94c121336e759b8a74"}
 ORDERS = (("ordinary", "complete_encoded", "on_demand"), ("on_demand", "complete_encoded", "ordinary"))
 PREFIX, ORIGINAL_SAMPLES = 80_000, 200_000
 TRANSFER_CPU_MS = 25
@@ -179,9 +183,10 @@ def receive(entry, chunk, mode, scope):
     import empty_bootstrap as staged
     import seekable_member as seek
 
-    if mode not in ORDERS[0]:
+    if mode not in (*ORDERS[0], "named"):
         raise ValueError("Unrecognized verification boundary")
-    pin, loads, originals = scope.detector, {}, Counter()
+    named = mode == "named"
+    pin, loads, originals = scope.named_pin if named else scope.detector, {}, Counter()
     io_costs, descriptor_costs, index_costs = {}, {}, Counter()
     original_index = ShortWindowIndexV2.model_validate_json
 
@@ -197,10 +202,12 @@ def receive(entry, chunk, mode, scope):
     session = "fast-" + inventory_digest[7:39]
     start = clocks()
     with ExitStack() as stack:
-        mixer = MixedApertureDetector(SHORT, EIGHT_MS_SHA, full_coverage=True)
+        mixer = None if named else MixedApertureDetector(SHORT, EIGHT_MS_SHA, full_coverage=True)
+        detector = scope.named_detector if named else mixer.detector
         scan = scope.scan
         scanner_name = staged.RECEIVER.removesuffix(".py").replace("/", ".")
-        stack.enter_context(patch.object(scan, "detector", mixer.detector))
+        stack.enter_context(patch.object(scan, "detector", detector))
+        stack.enter_context(patch.dict(scan.PINS, {"cancellation-factors.so": pin[7:]}))
         stack.enter_context(receiver_import(scanner_name, scope.symbols))
         stack.enter_context(original_member_only(entry, chunk, originals, descriptor_costs))
         stack.enter_context(patch.object(ShortWindowIndexV2, "model_validate_json", staticmethod(parse_index)))
@@ -210,7 +217,7 @@ def receive(entry, chunk, mode, scope):
         before_reader = clocks()
         reader = None
         encoded = None
-        if mode != "ordinary":
+        if mode in ("complete_encoded", "on_demand"):
             reader = stack.enter_context(seek.open_member(scope.split, scope.root_pin,
                                                          codec=scope.codec, prefix_samples=PREFIX))
             if mode == "complete_encoded":
@@ -243,7 +250,7 @@ def receive(entry, chunk, mode, scope):
     return native, dict(timing=work, setup_and_member_authentication=ready, full_encoded_authentication=encoded,
                         acquire=acquire, post_acquire_native_bind=bind_cost, index_model_parse=dict(index_costs),
                         released_member_descriptors=descriptor_costs, source_timings=io_costs, prefetch=asdict(prefetch),
-                        reads=counts, loads=loads, native=mixer.receipt(), original_member_reads=dict(originals),
+                        reads=counts, loads=loads, native=None if named else mixer.receipt(), original_member_reads=dict(originals),
                         detector_sha256=pin, original_member_sha256=chunk["uncompressed_sha256"])
 
 
@@ -317,7 +324,42 @@ def exercise_corruption(root, entry, chunk, scope, reference, skipped):
                 unrequested_corruption_preserved_output=same, timing=elapsed(start))
 
 
-def run(root, case, *, clean_dense=False):
+def opportunities(native):
+    return dict(hardware_anchor=native["clock_anchor"], delivery_clocks=native["delivery_clocks"],
+                last_sample_counter=native["last_sample_counter"], exclusions=native["provenance"]["excluded_windows"],
+                issued=native["provenance"]["window_count"],
+                rows=[dict(row, candidates=[]) for row in native["source"]["probes"]])
+
+
+def archived_named_held():
+    from empty_bootstrap import checked
+    from leo.contracts.digests import canonical_digest
+    from mixed_aperture_receiver import INSTALLED_SHA
+
+    entry, chunk = source("DS30-0169")
+    current = json.loads(checked(HELD_TRIAL/"original-native.json", HELD_NATIVE))
+    native = current["source"]
+    rows = []
+    for name, pin in HELD_NAMED.items():
+        prior = json.loads(checked(HELD.parent/name, pin))
+        packet = prior["packet"]
+        original = packet["source"]
+        expected = [(chunk[f"{role}_relative_path"], chunk[size], chunk[sha]) for role, size, sha in (
+            ("index", "index_bytes", "index_sha256"), ("payload", "compressed_bytes", "compressed_sha256"))]
+        if (opportunities(packet) != opportunities(current) or list(map(tuple, prior["original_member_reads"])) != expected
+                or packet["provenance"]["detector_sha256"] != "sha256:"+INSTALLED_SHA
+                or canonical_digest([native["input_manifest_sha256"], prior["iq"]]) != native["raw_recording_authority_digest"]
+                or canonical_digest([original["input_manifest_sha256"], prior["iq"]]) != original["raw_recording_authority_digest"]
+                or prior["advice"]["attempts"] != 0 or len(prior["iq"]) != chunk["window_count"]):
+            raise ValueError("The archived named acquisition disagrees on original full verified input or opportunities")
+        rows.append(dict(receipt_sha256=pin, cpu_ns=prior["acquire_cpu_ns"], wall_ns=prior["acquire_wall_ns"],
+                         native_cpu_ns=prior["native_cpu_ns"], ordered_opportunities_sha256=canonical_digest(opportunities(packet)),
+                         complete_native_sha256=canonical_digest(packet),
+                         factors=sum(len(row["candidates"]) for row in original["probes"])))
+    return dict(case="DS30-0169", source=entry, original_member=chunk, arms=rows)
+
+
+def run(root, case, *, clean_dense=False, named_dense=False):
     import empty_bootstrap as staged
 
     start = clocks()
@@ -329,7 +371,7 @@ def run(root, case, *, clean_dense=False):
     from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
     from dense_geographic_trial import host
     from eight_ms_native_receiver import prepare
-    from empty_bootstrap import checked, receiver_symbols, staged_scanner
+    from empty_bootstrap import checked, receiver_namespace, receiver_symbols, staged_scanner
     from full_short_run import EIGHT_MS_SHA, checked_recipe
     from leo.contracts.digests import canonical_digest
     from reports.ALGO08.v3.sparse_cold_input import frozen_function
@@ -378,6 +420,9 @@ def run(root, case, *, clean_dense=False):
     scope = SimpleNamespace(scan=scan, detector=detector, symbols=receiver_symbols(source_files), prefetch=load_prefetch(),
                             assets=assets, codec=Packing(binary), hasher=hasher, paired=paired_decoded_hashes,
                             buffer=frozen_function(specification, "receiver_ingress.py", "compressed_input_buffer"))
+    if named_dense:
+        scope.named_detector = receiver_namespace(source_files)
+        scope.named_pin = "sha256:" + specification["detector_sha256"]
     startup = elapsed(start)
     write(root/"binding.json", dict(case=case, original=entry, member=chunk, machine=machine, recipe=recipe,
          detector=scope.detector, source_pins={name: sha256((HERE/name).read_bytes()).hexdigest()
@@ -385,6 +430,23 @@ def run(root, case, *, clean_dense=False):
          codec=scope.codec.programme(), checkout=revision, initial_residency=before, short_geometry=geometry,
          production_prefetch_sources=PREFETCH_FILES, sha256_hardware=True,
          original_short_build_sha256=SHORT_BUILD))
+    if named_dense:
+        if case != "DS30-0008":
+            raise ValueError("The held site has an independently authenticated paid named reference")
+        stock, record = receive(entry, chunk, "named", scope)
+        original = json.loads(checked(DENSE_TRIAL/"original-native.json",
+                                       "6d474f3471b3f3f9293ce2c3f80092739200d16ebf65370ed88c1803947a0b05"))
+        if (opportunities(stock) != opportunities(original) or stock["source"]["raw_recording_authority_digest"] !=
+                original["source"]["raw_recording_authority_digest"]):
+            raise ValueError("Named v3 differs on original complete physical input and opportunities")
+        write(root/"original-native.json", stock)
+        write(root/"result.json", dict(case=case, stock=record, exact_opportunity_parity=True,
+             ordered_opportunities_sha256=canonical_digest(opportunities(stock)),
+             complete_native_sha256=canonical_digest(stock),
+             factors=sum(len(row["candidates"]) for row in stock["source"]["probes"]),
+             runtime_startup=runtime_startup, setup=startup, final_residency=residency(entry, chunk, observer),
+             matched_paid_held_named=archived_named_held()))
+        return
     if clean_dense:
         if case != "DS30-0008":
             raise ValueError("The clean paired control reuses only the already sealed dense derivative")
@@ -444,6 +506,8 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("root", type=Path)
     cli.add_argument("--case", choices=("DS30-0008", "DS30-0169"), default="DS30-0008")
-    cli.add_argument("--clean-dense", action="store_true")
+    control = cli.add_mutually_exclusive_group()
+    control.add_argument("--clean-dense", action="store_true")
+    control.add_argument("--named-dense", action="store_true")
     args = cli.parse_args()
-    run(args.root, args.case, clean_dense=args.clean_dense)
+    run(args.root, args.case, clean_dense=args.clean_dense, named_dense=args.named_dense)
