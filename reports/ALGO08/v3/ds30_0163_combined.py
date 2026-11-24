@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import resource
 from shutil import copytree
 import subprocess
 import sys
@@ -46,33 +47,33 @@ def pinned_sources():
     return source_binding(combined.source_pins(), source["sources"])
 
 
-def ready(*, check_assignment=True):
-    path = READY / "admission.json"
-    if path.resolve(strict=True) != path:
+def ready(*, check_assignment=True, job_root=READY, admission_pin=READY_PIN, job_pin=JOB_SHA, assign=assigned):
+    path = job_root / "admission.json"
+    if job_root.parent != Path("/dev/shm") or path.resolve(strict=True) != path:
         raise ValueError("The prepared admission traversed a symlink")
     body = path.read_bytes()
-    if sha256(body).hexdigest() != READY_PIN:
+    if sha256(body).hexdigest() != admission_pin:
         raise ValueError("The prepared admission bytes changed")
     book = json.loads(body)
-    if (not book["prepared_only"] or book["job_sha256"] != JOB_SHA
-            or (check_assignment and book["assignment"] != assigned())):
+    if (not book["prepared_only"] or book["job_sha256"] != job_pin
+            or (check_assignment and book["assignment"] != assign())):
         raise ValueError("The original scope or frozen ready status changed")
     return book
 
 
-def worker(output):
+def worker(output, *, job_root=READY, admission_pin=READY_PIN, job_pin=JOB_SHA):
     import combined_successor_0289 as combined
 
-    ready(check_assignment=False)
-    with patch.multiple(combined, STAGED=READY, JOB_SHA=JOB_SHA):
+    ready(check_assignment=False, job_root=job_root, admission_pin=admission_pin, job_pin=job_pin)
+    with patch.multiple(combined, STAGED=job_root, JOB_SHA=job_pin):
         combined.worker(output)
 
 
-def probe():
+def probe(*, job_root=READY, admission_pin=READY_PIN, job_pin=JOB_SHA):
     import combined_successor_0289
     import solver_exception_live
 
-    ready(check_assignment=False)
+    ready(check_assignment=False, job_root=job_root, admission_pin=admission_pin, job_pin=job_pin)
     if "leo" in sys.modules:
         raise ValueError("The candidate adapter loaded a local scientific package before installed bootstrap")
     return dict(worker_available=callable(combined_successor_0289.worker),
@@ -145,7 +146,106 @@ def launch(output):
     write(output / "prediction-seal.json", output_seal(output))
 
 
-def score(output):
+def check_entries(probes, env):
+    import empty_bootstrap as boot
+
+    checks = {}
+    for mode, command in probes.items():
+        started = boot.now()
+        before = resource.getrusage(resource.RUSAGE_CHILDREN)
+        child = subprocess.run(command, env=env, capture_output=True, text=True, check=False)
+        after = resource.getrusage(resource.RUSAGE_CHILDREN)
+        clock = boot.clock(started)
+        checks[mode] = dict(argv=command, exit_code=child.returncode, stdout=child.stdout, stderr=child.stderr,
+                            elapsed_s=clock["elapsed_s"], cpu_s=after.ru_utime + after.ru_stime
+                            - before.ru_utime - before.ru_stime)
+    routed, installed = checks["routed"], checks["installed"]
+    passed = False
+    if routed["exit_code"] == installed["exit_code"] == 0:
+        try:
+            passed = (json.loads(routed["stdout"]) == {
+                "early_leo_import": False, "guarded_worker_available": True, "worker_available": True}
+                and "job_sha256" in installed["stdout"] and "installed" in installed["stdout"])
+        except json.JSONDecodeError:
+            pass
+    return checks, passed
+
+
+def launch_fresh(output, *, job_root, assign):
+    from aperture_trial import write
+    from clean_saved_0169_trial import output_seal
+    from clean_saved_publication import load_job
+    import combined_successor_0289 as combined
+    from dense_geographic_trial import host
+    import empty_bootstrap as boot
+    from exact_named_route import checked_catalogue, resident_path
+    from full_short_physical import environment
+    from leo.contracts.digests import canonical_digest
+    from leo.operations.tle_archive import TleArchiveReader
+    from short_raw_diagnostic import measure
+    from tools.pipeline_eval.qualification.paired_publication import NAMED_V3, verified_v3
+    from visit_frame_raw_0016 import resident
+
+    began = boot.now()
+    if output.exists() or resident_path(output.parent) != Path("/dev/shm"):
+        raise ValueError("Use a fresh private tmpfs output")
+    job_root = resident_path(job_root)
+    admission_pin = sha256((job_root / "admission.json").read_bytes()).hexdigest()
+    job_pin = sha256((job_root / "job.json").read_bytes()).hexdigest()
+    cold = ready(job_root=job_root, admission_pin=admission_pin, job_pin=job_pin, assign=assign)
+    machine, release = host(), verified_v3(NAMED_V3)
+    if machine != cold["machine"] or release != cold["installed_release"]:
+        raise ValueError("Host or installed release changed between admission and launch")
+    sources, libraries = pinned_sources(), combined.admitted_libraries()
+    bound, request = load_job(job_root / "job.json", job_pin)
+    _, refs = checked_catalogue(bound, request, TleArchiveReader, canonical_digest)
+    cache = resident([*(ref.path for ref in refs), *map(Path, bound["packets"]), *map(Path, libraries)])
+    output.mkdir(mode=0o700)
+    for name in ("fonts", "tmp", "routed", "installed"):
+        (output / name).mkdir()
+    for name in ("job.json", "request.json"):
+        os.link(resident_path(job_root / name), output / name)
+    for path in (job_root / "fonts").glob("fontlist-*.json"):
+        os.link(resident_path(path), output / "fonts" / path.name)
+    for mode in ("routed", "installed"):
+        write(output / mode / "binding.json", {"input": bound})
+    executable = [str(boot.RELEASE / "venv/bin/python"), "-IB"]
+    argv = {"routed": [*executable, str(Path(__file__).resolve())],
+            "installed": [*executable, str(HERE / "clean_saved_publication.py")]}
+    flags = ["--job-root", str(job_root), "--admission-sha256", admission_pin, "--job-sha256", job_pin]
+    prefix = ["/usr/bin/timeout", "--kill-after=2s"]
+    commands = {
+        "routed": [*prefix, "115s", *argv["routed"], "worker", str(output), *flags],
+        "installed": [*prefix, "115s", *argv["installed"], "installed", str(job_root / "job.json"),
+                      job_pin, str(output / "installed")],
+    }
+    env = environment(output) | {"TMPDIR": str(output / "tmp"), "XDG_CACHE_HOME": str(output / "tmp")}
+    probes = {"routed": [*prefix, "15s", *argv["routed"], "probe", *flags],
+              "installed": [*prefix, "15s", *argv["installed"], "--help"]}
+    audits, passed = check_entries(probes, env)
+    revision = subprocess.check_output(["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT),
+                                        "rev-parse", "HEAD"], text=True).strip()
+    assignment, warm = cold["assignment"], boot.clock(began)
+    warm["cpu_s"] += sum(audit["cpu_s"] for audit in audits.values())
+    order = assignment["order"]
+    write(output / "admission.json", dict(
+        case=assignment["case"], assignment=assignment, sources=sources, libraries=libraries, machine=machine,
+        job_sha256=job_pin, ready_admission_sha256=admission_pin, job_root=str(job_root), commands=commands,
+        science_commit=SCIENCE_COMMIT, telemetry_commit=LOGGER_COMMIT, controller_commit=revision,
+        cold_setup=cold["setup"], cold_archive=cold["archive"], warm_setup=warm,
+        original_inputs=cold["original_inputs"], resident=cache, installed_release=release,
+        import_smoke=audits, smoke_passed=passed, actual_worker_order=order if passed else [],
+        detector_waveform_reads=0, original_backing_archive_reads=0,
+    ))
+    if not passed:
+        raise ValueError("At least one isolated entry failed smoke; no measured child launched")
+    for mode in order:
+        stage = output / mode
+        write(stage / "clock.json", measure(commands[mode], env, stage / "candidate"))
+    write(output / "prediction-seal.json", output_seal(output))
+
+
+def score(output, *, assign=assigned, case=CASE, pair_pin=PAIR_PIN, reduce_pool=None):
     from aperture_trial import read, write
     import empty_bootstrap as boot
     from joint_publication import artifacts
@@ -155,7 +255,7 @@ def score(output):
     import unseen_saved_holdout_score as ordinary
 
     started = boot.now()
-    panel = PANEL.parent / CASE
+    panel = PANEL.parent / case
     book = read(output / "admission.json")
     inputs = book["original_inputs"]
     result = {}
@@ -167,7 +267,7 @@ def score(output):
         if digest(body) != ordinary.REFERENCE_PIN:
             raise ValueError("The sealed independent reference changed")
         row, = (row["reference"] for row in json.loads(body)["cases"]
-                if row["dataset_label"] == CASE and row["authority_eligible"]
+                if row["dataset_label"] == case and row["authority_eligible"]
                 and row["sealed_metadata_digests_verified"])
         return [row["latitude_deg"], row["longitude_deg"]]
 
@@ -177,13 +277,13 @@ def score(output):
         result.update(data)
 
     with (patch("aperture_trial.write", collect),
-          patch.multiple(ordinary, CASE=CASE, PANEL=panel, ADMITTED=inputs["admitted"], ISSUED=inputs["issued"],
+          patch.multiple(ordinary, CASE=case, PANEL=panel, ADMITTED=inputs["admitted"], ISSUED=inputs["issued"],
                          NATIVE_PIN=inputs["native_sha256"], runtime_sources=pinned_sources,
-                         enrollment=assigned, reference=reference)):
+                         enrollment=assign, reference=reference)):
         ordinary.score(output)
 
     installed = result["jobs"]["installed"]["publication"]
-    old = checked(tmpfs(panel / "pair.json"), PAIR_PIN)["runs"]["candidate"]["receipt"]
+    old = checked(tmpfs(panel / "pair.json"), pair_pin)["runs"]["candidate"]["receipt"]
     historical = tmpfs(panel / "candidate")
     baseline = artifacts(historical, old)
     media = {"equal_pngs": bool(installed) and baseline["images"] == installed["figures"]}
@@ -197,7 +297,8 @@ def score(output):
             fresh.pop("elapsed_seconds", None)
             media["equal_" + name] = earlier == fresh
     result["historical_installed_products"] = media
-    result["candidate_traces"]["combined-grid.json"] = read(output / "routed/combined-grid.json")
+    grid_audit = output / "routed/combined-grid.json"
+    result["candidate_traces"]["combined-grid.json"] = read(grid_audit) if grid_audit.exists() else None
     result["publication_clocks"] = {
         mode: {name: observed[name] for name in ("publication_elapsed_s", "publication_cpu_s", "solve")}
         for mode, job in result["jobs"].items() if job["publication"]
@@ -205,14 +306,16 @@ def score(output):
     }
     result["paid_setup_and_time"] = {}
     for metric, arms in result["time"].items():
-        ready = book["cold_setup"][metric] + book["first_setup"][metric] + book["warm_setup"][metric]
+        ready = book["cold_setup"][metric] + book["warm_setup"][metric] + book.get("first_setup", {}).get(metric, 0)
         result["paid_setup_and_time"][metric] = dict(
             combined_setup=ready, installed_with_setup=arms["installed"] + ready,
             candidate_with_setup=arms["routed"] + ready,
-            failed_start=book["failed_start"][metric],
+            failed_start=book.get("failed_start", {}).get(metric, 0),
             speedup_with_shared_setup=(arms["installed"] + ready) / (arms["routed"] + ready))
-    result["study"] = dict(independent_cases=[CASE], previous_combined_development=["DS30-0289"],
+    result["study"] = dict(independent_cases=[case], previous_combined_development=["DS30-0289"],
                            prediction_scoring=boot.clock(started), original_waveform_reads=0)
+    if reduce_pool is not None:
+        result["combined_independent_pool"] = reduce_pool(result)
     write(output / "result.json", result)
 
 
@@ -223,10 +326,16 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("mode", choices=("launch", "worker", "score", "probe"))
     cli.add_argument("output", nargs="?", type=Path)
+    cli.add_argument("--job-root", type=Path, default=READY)
+    cli.add_argument("--admission-sha256", default=READY_PIN)
+    cli.add_argument("--job-sha256", default=JOB_SHA)
     args = cli.parse_args()
+    job = dict(job_root=args.job_root, admission_pin=args.admission_sha256, job_pin=args.job_sha256)
     if args.mode == "probe" and args.output is None:
-        print(json.dumps(probe(), sort_keys=True))
+        print(json.dumps(probe(**job), sort_keys=True))
+    elif args.mode == "worker" and args.output is not None:
+        worker(args.output, **job)
     elif args.mode != "probe" and args.output is not None:
-        {"launch": launch, "worker": worker, "score": score}[args.mode](args.output)
+        {"launch": launch, "score": score}[args.mode](args.output)
     else:
         cli.error("A study output is required except for the isolated import probe")
