@@ -396,6 +396,12 @@ def write_report(pairs, output, enrollment, receipt_digest):
               "candidate detections. The receiver change accounted for the difference on this recording. "
               "[DS30-0049 crossover and verification](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "5dad70d7d0c273b2aa17fa546d622bcd8e490789/reports/ALGO08/v3/ds30-0049-saved-crossover.md)"]
+    lines += ["", "On the same recording, replacing the 284 closely matched short-window detections with their "
+              "full-window measurements reduced fitted error from 4.040 to 3.847 km. All 268 original candidate "
+              "assignments survived the refit. The RF residual improved by about 16 Hz, while 2.427 km of the "
+              "original fitted-error gap remained. "
+              "[Matched-detection experiment](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "2ab7167229369484196b4ae1ed32924c35585e86/reports/ALGO08/v3/ds30-0049-matched-donor.md)"]
     lines += ["",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
