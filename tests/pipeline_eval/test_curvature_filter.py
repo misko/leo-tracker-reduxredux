@@ -1,3 +1,6 @@
+import gzip
+from hashlib import sha256
+import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -8,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
 
 from curvature_filter import eligibility, independent_bound, stable_order, update_ordering
-from curvature_filter_trial import score_owners
+from curvature_filter_trial import score_owners, write_seal
 
 
 def test_unequal_times_annihilate_affine_modes_and_leave_smooth_witness():
@@ -58,3 +61,16 @@ def test_owner_join_separates_zero_eligibility_from_heuristic_low_rank():
     score = score_owners(selected, {oid: "track" for oid in "abcd"}, {"track": {100: 2, 200: 29}})
     assert (score["archived_rows"], score["joined_rows"], score["rows_no_bank"], score["rows_top8"], score["rows_top32"]) == (5, 4, 1, 2, 3)
     assert score["track_satellite_pairs"] == {"pairs": 2, "top8": 1, "top32": 2, "best": 2, "worst": 29}
+
+
+def test_seal_records_checked_release_bytes_by_digest(tmp_path):
+    seal = tmp_path/"seal.json.gz"
+    checked = {"installed.py": b"verified file\n"}
+    with pytest.raises(ValueError):
+        write_seal(seal, {"score": np.inf}, checked)
+    assert not seal.exists()
+    write_seal(seal, {"score": 0.}, checked)
+    actual = json.loads(gzip.decompress(seal.read_bytes()))
+    assert actual == {"score": 0., "release_sources": {"installed.py": sha256(checked["installed.py"]).hexdigest()}}
+    with pytest.raises(FileExistsError):
+        write_seal(seal, {}, checked)

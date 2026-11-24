@@ -41,6 +41,13 @@ def pins():
     return {p.name: sha256(p.read_bytes()).hexdigest() for p in SOURCES}
 
 
+def write_seal(output, document, checked_sources):
+    release_pins = {name: sha256(data).hexdigest() for name, data in checked_sources.items()}
+    serial = json.dumps(dict(document, release_sources=release_pins), sort_keys=True, allow_nan=False)
+    with output.open("xb") as file:
+        file.write(gzip.compress(serial.encode(), mtime=0))
+
+
 def inputs(case):
     from empty_bootstrap import bind_native, checked
     from held_spatial_start_trial import inputs as original_inputs, json_pin
@@ -123,15 +130,13 @@ def run(case, output):
         started = now()
         ordered = sampled_ordering(scan, region, evidence)
         scout_clock = clocks(started)
-    with output.open("xb") as file:
-        packed = dict(case=case, input=identity, sources=pins(), release_sources=release_sources,
-                      machine=machine, region=operator.document(), bank=scan.norads.tolist(),
-                      prepared=dict(observations=len(prepared["tracks"]["observations"]), tracks=len(scan.tracks),
-                                    active_tracks=len(scan.curved), parser=parsed),
-                      clocks=dict(release=release_clock, input_checks=source_checks, preparation=preparation,
-                                  context=context, filter=filter_clock, scout=scout_clock, local_total=clocks(start)),
-                      original_waveform_reads=0, complete_solves=0, lookahead=False, filter=decision, sampled=ordered)
-        file.write(gzip.compress(json.dumps(packed, sort_keys=True, allow_nan=False).encode(), mtime=0))
+    packed = dict(case=case, input=identity, sources=pins(), machine=machine, region=operator.document(),
+                  bank=scan.norads.tolist(), prepared=dict(observations=len(prepared["tracks"]["observations"]),
+                  tracks=len(scan.tracks), active_tracks=len(scan.curved), parser=parsed),
+                  clocks=dict(release=release_clock, input_checks=source_checks, preparation=preparation,
+                              context=context, filter=filter_clock, scout=scout_clock, local_total=clocks(start)),
+                  original_waveform_reads=0, complete_solves=0, lookahead=False, filter=decision, sampled=ordered)
+    write_seal(output, packed, release_sources)
 
 
 def histogram(ranks):
