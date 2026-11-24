@@ -33,7 +33,7 @@ def compared(case, times):
                      original_backing_bytes=0, commands={name: argv.copy() for name in MODES},
                      adapters={"cli": "sha"}, candidate_libraries={"native": "sha"}, machine={"cpu":2},
                      active_options=flags)
-    data = dict(case=case, admission=admission, same_opportunities=True, runs=runs, measured_exits=clocks,
+    data = dict(case=case, admission=admission, qualified=True, same_opportunities=True, runs=runs, measured_exits=clocks,
                 pre_score_sha256="f"*64, geographical_and_rf={"runs": {
                 mode: {"horizontal_error_km": {name: 1. if fixed else None for name in ARMS}} for mode in MODES}})
     reference = dict(installed="release", request=request, issued=5, admitted=3,
@@ -57,11 +57,24 @@ def test_median_and_summed_gates_differ_and_both_arms_are_reported():
     assert result["cases"]["DS30-0016"]["candidate"]["arms"]["fitted_c"]["horizontal_error_km"] == 1.
 
 
+def test_pre_cairo_receipts_require_the_renderer_to_be_off():
+    (a, ra), (b, rb) = compared("DS30-0107", (.5, 2)), compared("DS30-0016", (6, 10))
+    expected = {a["case"]: ra, b["case"]: rb}
+    current = reduce([a, b], expected, lambda argv: flags(argv) | {"cairo_six_sheets": False})
+    assert current == reduce([a, b], expected, flags)
+    with pytest.raises(ValueError, match="frozen original raw comparison"):
+        reduce([a, b], expected, lambda argv: flags(argv) | {"cairo_six_sheets": True})
+
+
 def test_reducer_rejects_missing_cases_saved_boundaries_and_source_drift():
     (a, ra), (b, rb) = compared("DS30-0107", (.5, 2)), compared("DS30-0016", (6, 10))
     expected = {a["case"]: ra, b["case"]: rb}
     with pytest.raises(ValueError, match="Exactly the two"):
         reduce([a], expected, flags)
+    changed = deepcopy(b)
+    changed["qualified"] = False
+    with pytest.raises(ValueError, match="requires a qualified"):
+        reduce([a, changed], expected, flags)
     changed = deepcopy(b)
     changed["runs"]["candidate"]["phases"] = None
     with pytest.raises(ValueError, match="paid raw boundary"):
