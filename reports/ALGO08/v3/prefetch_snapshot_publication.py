@@ -29,7 +29,7 @@ def sha(path):
     return batch.tagged_bytes(path.read_bytes())
 
 
-def experiment(root):
+def experiment(root, *, stock_native=None):
     from empty_bootstrap import RELEASE
     from short_raw_diagnostic import measure
     from visit_frame_raw_0016 import resident
@@ -50,20 +50,23 @@ def experiment(root):
     for name in ("tmp", "fonts"):
         (root / name).mkdir()
     build = root / "build.json"
-    source_names = (Path(batch.__file__).name, *batch.SNAPSHOT_SOURCES)
+    source_names = (Path(batch.__file__).name, *batch.SNAPSHOT_SOURCES, *batch.stock_control.SOURCES)
     pins = {str((HERE / name).relative_to(batch.ROOT)): sha(HERE / name) for name in source_names}
     batch.write(build, old | {"sources": old["sources"] | pins})
     checked = sha(build)
-    batch.load_build(build, checked, reuse_prefetched_snapshots=True)
+    batch.load_build(build, checked, reuse_prefetched_snapshots=True, installed_stock_receiver=stock_native is not None)
     output = root / "candidate"
     command = [str(RELEASE / "venv/bin/python"), "-IB", str(Path(batch.__file__)),
                "--recording", authority["recording"], "--archive", prior["archive_root"], "--region", str(REGION),
                "--bulk-root", str(output), "--build", str(build), "--build-sha256", checked,
                "--authority", str(REFERENCE / "authority.json"), "--authority-sha256", REFERENCE_AUTHORITY,
                "--reuse-prefetched-snapshots"]
+    if stock_native is not None:
+        command.extend(("--installed-stock-receiver", "--assert-stock-native-sha256", stock_native))
     batch.write(root / "admission.json", dict(case=detector.CASE, command=command, build_sha256=checked,
         prior_build=REFERENCE_BUILD, authority=authority, reference_marker=REFERENCE_MARKER, cache_before=cache,
-        signed_roster=request["roster"], native_reference=REFERENCE_NATIVE, scope="complete_original_batch"))
+        signed_roster=request["roster"], native_reference=stock_native or REFERENCE_NATIVE,
+        scope="original_installed_receiver_control" if stock_native is not None else "complete_original_batch"))
     before = resident(paths)
     resources = root / "peak-rss-kib.txt"
     clock = measure(["/usr/bin/time", "-f", "%M", "-o", str(resources), *command], environment_for(root), output)
@@ -73,14 +76,15 @@ def experiment(root):
         raise RuntimeError(clock["stderr_tail"])
 
 
-def snapshot(folder, authority, started, expected_build):
+def snapshot(folder, authority, started, expected_build, *, stock_receiver=False):
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from joint_publication import artifacts
     from raw_0016_best_score import position_sides
     from tools.pipeline_eval.qualification.paired_publication import evidence
 
-    marker = read(folder / batch.RELEASE_FILE)
+    marker_name = batch.stock_control.RELEASE_FILE if stock_receiver else batch.RELEASE_FILE
+    marker = read(folder / marker_name)
     receipt = marker["receipt"]
     bootstrap = read(folder / "unified-short-bootstrap.json")
     raw = read(folder / "legacy-original-acquisition.json")
@@ -115,7 +119,7 @@ def snapshot(folder, authority, started, expected_build):
                 prefetch=bootstrap["prefetch"], members=raw["members"], route=bootstrap["route"],
                 receiver_recipe=bootstrap["receiver_recipe"], portable_dispatch=marker["portable_dispatch"],
                 detector_file_s=(native_path.stat().st_mtime_ns - started) / 1e9,
-                terminal_file_s=product["terminal_file_s"], marker_s=((folder / batch.RELEASE_FILE).stat().st_mtime_ns - started) / 1e9)
+                terminal_file_s=product["terminal_file_s"], marker_s=((folder / marker_name).stat().st_mtime_ns - started) / 1e9)
 
 
 def score(root):

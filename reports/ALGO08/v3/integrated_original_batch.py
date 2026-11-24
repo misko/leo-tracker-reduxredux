@@ -14,6 +14,8 @@ from unittest.mock import patch
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path[:0] = [str(HERE), str(ROOT)]
+import installed_receiver_control as stock_control
+
 BUILD_SCHEMA = "algo08v3-integrated-original-build-v1"
 AUTHORITY_SCHEMA = "algo08v3-original-request-v1"
 RELEASE_SCHEMA = "algo08v3-integrated-original-release-v1"
@@ -90,11 +92,10 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
     for flag in SIGNED_OPTIONS[1:]:
         native[flag] = dict(path=option(flag), sha256=option(flag + "-sha256"))
     source_pins = dict(charted["sources"])
-    source_pins[str(Path(__file__).relative_to(ROOT))] = tagged_bytes(Path(__file__).read_bytes())
-    if reuse_prefetched_snapshots:
-        for name in SNAPSHOT_SOURCES:
-            source = HERE / name
-            source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
+    required_sources = (Path(__file__).name, *stock_control.SOURCES)
+    for name in (*required_sources, *(SNAPSHOT_SOURCES if reuse_prefetched_snapshots else ())):
+        source = HERE / name
+        source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     return dict(
         schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, charted_admission=CHARTED_ADMISSION,
         sources=source_pins, native=native, png=dict(path=str(PNG_LIBRARY), sha256=PNG_SHA),
@@ -103,7 +104,7 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
     )
 
 
-def load_build(path, pin, *, reuse_prefetched_snapshots=False):
+def load_build(path, pin, *, reuse_prefetched_snapshots=False, installed_stock_receiver=False):
     book = document(path, pin)
     if (book.get("schema") != BUILD_SCHEMA or book.get("charted_commit") != CHARTED_COMMIT
             or book.get("charted_admission") != CHARTED_ADMISSION
@@ -118,6 +119,9 @@ def load_build(path, pin, *, reuse_prefetched_snapshots=False):
     if reuse_prefetched_snapshots and any(str((HERE / name).relative_to(ROOT)) not in book["sources"]
                                           for name in SNAPSHOT_SOURCES):
         raise ValueError("The build must pin both private snapshot sources")
+    if installed_stock_receiver and any(str((HERE / name).relative_to(ROOT)) not in book["sources"]
+                                         for name in stock_control.SOURCES):
+        raise ValueError("The build must pin the installed-detector control sources")
     native = {flag: checked_artifact(entry) for flag, entry in book["native"].items()}
     png = checked_artifact(book["png"])
     producer = checked_artifact(book["portable_producer"])
@@ -266,6 +270,11 @@ def original_argv(args, book, authority):
         if flag in SIGNED_OPTIONS:
             argv.extend((flag + "-sha256", tagged(entry["sha256"])))
     argv.extend(("--portable-orbit-producer-sha256", tagged(book["portable_producer"]["sha256"])[7:]))
+    if stock_control.required(args):
+        argv.append("--installed-stock-receiver")
+        expected = getattr(args, "assert_stock_native_sha256", None)
+        if expected is not None:
+            argv.extend(("--assert-stock-native-sha256", expected))
     return argv
 
 
@@ -279,6 +288,7 @@ def run(args, authority, region_bytes, book, assets, producer_cutoff):
     allowed, guard = paths_for(args, assets)
     parsed_region = None
     snapshots = [] if getattr(args, "reuse_prefetched_snapshots", False) else None
+    stock = stock_control.required(args)
     sys.addaudithook(guard)
 
     def staged(*call, **options):
@@ -360,7 +370,10 @@ def run(args, authority, region_bytes, book, assets, producer_cutoff):
                   archive_sha256=authority["archive_sha256"], session_id=receipt["session_id"], run_id=run_id,
                   terminal_sha256=receipt["terminal_sha256"], decision=receipt["decision"],
                   portable_dispatch="eligible" if eligible else "ordinary_cold_preparation", receipt=receipt)
-    write(args.bulk_root / RELEASE_FILE, marker)
+    if stock:
+        marker.update(schema=stock_control.RELEASE_SCHEMA, detector_sha256=witness["detector_recipe_sha256"],
+                      native_sha256=witness["native_sha256"])
+    write(args.bulk_root / (stock_control.RELEASE_FILE if stock else RELEASE_FILE), marker)
     return receipt
 
 
@@ -372,12 +385,16 @@ def main(argv=None):
     parser.add_argument("--build-sha256")
     parser.add_argument("--reuse-prefetched-snapshots", action="store_true",
                         help="Research-only private lookahead buffers, requiring separately pinned source")
+    parser.add_argument("--installed-stock-receiver", action="store_true",
+                        help="Use the actual installed detector on all valid original lanes")
+    parser.add_argument("--assert-stock-native-sha256", help="Optional experiment-only installed detector parity assertion")
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--verify", action="store_true")
     actions.add_argument("--preflight", action="store_true")
     actions.add_argument("--prepare-authority", type=Path)
     actions.add_argument("--freeze-build-from-chart", type=Path)
     args = parser.parse_args(argv)
+    stock = stock_control.required(args)
 
     if args.freeze_build_from_chart:
         if args.build is None:
@@ -396,7 +413,8 @@ def main(argv=None):
     if not args.build or not args.build_sha256:
         parser.error("supply the frozen --build and --build-sha256")
     book, assets, cutoff = load_build(args.build, args.build_sha256,
-                                      reuse_prefetched_snapshots=args.reuse_prefetched_snapshots)
+                                      reuse_prefetched_snapshots=args.reuse_prefetched_snapshots,
+                                      installed_stock_receiver=stock)
     if args.verify:
         print(json.dumps(dict(schema=BUILD_SCHEMA, charted_commit=CHARTED_COMMIT, build_sha256=args.build_sha256)))
         return

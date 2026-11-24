@@ -1,10 +1,10 @@
 """Exercise the pinned full-coverage short-primary receiver via the raw publication."""
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import ctypes as ct
 from hashlib import sha256
 from pathlib import Path
-from time import perf_counter_ns, process_time_ns
+from time import perf_counter_ns, process_time_ns, thread_time_ns
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -32,7 +32,7 @@ def graph_config(config):
 
 
 @contextmanager
-def observe_acquisition(scan, runner, detector_pin, audit):
+def observe_acquisition(scan, runner, detector_pin, audit, *, stock_symbols=None):
     from leo.contracts.digests import canonical_digest
     from tools.pipeline_eval.qualification import blind_compact_run as blind
 
@@ -41,6 +41,7 @@ def observe_acquisition(scan, runner, detector_pin, audit):
     original_source = scan.FastSegmentSource
     window_hashes = []
     clocks = dict(calls=0, cpu_ns=0, wall_ns=0)
+    native_cpu = thread_time_ns if stock_symbols is not None else process_time_ns
 
     class ObservedSource(original_source):
         def windows(self):
@@ -57,9 +58,9 @@ def observe_acquisition(scan, runner, detector_pin, audit):
             operation.restype = ct.c_int
 
             def counted(*args):
-                cpu, wall = process_time_ns(), perf_counter_ns()
+                cpu, wall = native_cpu(), perf_counter_ns()
                 result = operation(*args)
-                clocks["cpu_ns"] += process_time_ns()-cpu
+                clocks["cpu_ns"] += native_cpu()-cpu
                 clocks["wall_ns"] += perf_counter_ns()-wall
                 clocks["calls"] += 1
                 return result
@@ -90,7 +91,8 @@ def observe_acquisition(scan, runner, detector_pin, audit):
                      native_cpu_ns={"full": clocks["cpu_ns"]}, native_wall_ns={"full": clocks["wall_ns"]}))
         return native
 
-    with (patch.dict(scan.PINS, {}), patch.object(scan, "acquire", acquire),
+    namespace = patch.dict(stock_symbols, Native=ObservedNative) if stock_symbols is not None else nullcontext()
+    with (namespace, patch.dict(scan.PINS, {}), patch.object(scan, "acquire", acquire),
           patch.object(scan, "FastSegmentSource", ObservedSource),
           patch.object(blind, "Native", ObservedNative if runner is None else stock_native)):
         yield

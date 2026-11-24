@@ -206,8 +206,10 @@ def publish_active(args, publication, specification, handoff, layout_audit, *, g
 
 def run(args, *, publisher=None):
     import empty_bootstrap as staged
+    import installed_receiver_control as stock_control
 
     started = staged.now()
+    stock = stock_control.required(args)
     if (getattr(args, "direct_residual_figures", False) or getattr(args, "direct_orbit_figures", False)) and not args.one_pass_web_png:
         raise ValueError("Direct figure rendering requires --one-pass-web-png")
     adaptive_map = getattr(args, "research_adaptive_position_map", False)
@@ -239,6 +241,8 @@ def run(args, *, publisher=None):
     if args.output.exists() or not args.output.parent.is_dir():
         raise ValueError("Choose a new local publication directory beneath an existing parent")
     launcher, specification, sources, publication, checks = staged.load_runtime()
+    if stock:
+        stock_control.verify_mode(args, specification)
     from combined_frontier_run import BLOCK_SHA, PREFETCH_FILES, load_prefetch
     from full_short_raw import observe_acquisition
     from full_short_run import (EIGHT_MS_RECIPES, EIGHT_MS_SHA, GEOGRAPHIC_SHA, RECIPE_SHA, SHORT_SHA,
@@ -287,7 +291,11 @@ def run(args, *, publisher=None):
         anchor_helper = bound_library(full_anchor_primary)
         recipe = dict(original_recipe, **{RECIPE_FIELD: definition()})
         effective_detector = canonical_digest(recipe)[7:]
-    if full_primary_nonanchors:
+    if stock:
+        mixer = None
+        effective_detector = specification["detector_sha256"]
+        recipe = stock_control.recipe(specification, sources, staged.RECEIVER, staged.CONTINUATION)
+    elif full_primary_nonanchors:
         mixer = FullPrimaryNonanchor(specification["detector"])
     elif lane_mask:
         from stereo_lane_receiver import StereoLaneReceiver
@@ -318,7 +326,7 @@ def run(args, *, publisher=None):
         frequency_changes = FrequencyChanges()
     symbols = staged.receiver_symbols(sources)
     recheck = None
-    detector = mixer.detector
+    detector = symbols["detector"] if stock else mixer.detector
     if live_recheck:
         from live_full_recheck import FIELD, LiveFullRecheck, definition
 
@@ -367,12 +375,22 @@ def run(args, *, publisher=None):
 
             packed_audit = {}
             packed = packed_source(scan, request(args), assets, packed_audit, strict_eight=strict_packed_eight)
+        observer = (observe_acquisition(scan, None, effective_detector, audit, stock_symbols=symbols) if stock
+                    else observe_acquisition(scan, mixer, effective_detector, audit))
         with (frequency_changes.capture(mixer.policy) if frequency_changes is not None else nullcontext(),
-              receiver_import(native_import, symbols), packed, observe_acquisition(scan, mixer, effective_detector, audit),
-              compressed_input_buffer(), paired_decoded_hashes(library), fetch() as prefetch):
+              receiver_import(native_import, symbols), packed, observer, compressed_input_buffer(),
+              paired_decoded_hashes(library), fetch() as prefetch):
             native = scan.acquire(session, inventory_digest, inventory, assets)
         staged.bind_native(native, session, inventory_digest, effective_detector)
         phases["authenticated_raw_acquisition"] = staged.clock(scope)
+        if stock:
+            scope = staged.now()
+            expected_native = getattr(args, "assert_stock_native_sha256", None)
+            if audit["native"]["native_calls"]["full"] != len(native["source"]["probes"]):
+                raise ValueError("The installed receiver did not measure every admitted lane")
+            if expected_native is not None and canonical_digest(native) != expected_native:
+                raise ValueError("The acquired native document differs from the sealed installed control")
+            phases["stock_receiver_parity_check"] = staged.clock(scope)
         if args.region.read_bytes() != offer_bytes:
             raise ValueError("The offered region changed during acquisition")
         if frequency_changes is not None:
@@ -383,7 +401,7 @@ def run(args, *, publisher=None):
             native, recipe, effective_detector, route_selection = select_refined(
                 native, recipe, frequency_changes, session, inventory_digest, decision_file)
             phases["held_anchor_route_selection"] = staged.clock(scope)
-        elif getattr(args, "held_anchor_route", False) and not full_primary_nonanchors:
+        elif getattr(args, "held_anchor_route", False) and not stock and not full_primary_nonanchors:
             if recheck is not None:
                 from live_full_recheck import prepare
             elif eight_ms:
@@ -435,6 +453,8 @@ def run(args, *, publisher=None):
         raise ValueError("Immutable publication differs from the acquired packet or offered region")
     dependencies = ("empty_bootstrap.py", "full_short_raw.py", "full_short_run.py", "combined_frontier_run.py",
                     "regional_probe_block_binding.py", "unified_short_bootstrap.py")
+    if stock:
+        dependencies += ("installed_receiver_control.py",)
     if getattr(args, "named_survivor_finish", False):
         dependencies += ("isolated_salvage.py", "endpoint_track_repair.py", "fragment_gate_cross.py",
                          "provisional_salvage.py", "named_survivor_fit.py")
@@ -446,7 +466,7 @@ def run(args, *, publisher=None):
         dependencies += ("held_anchor_route_publication.py", "anchor_cycle_route.py")
     if full_primary_nonanchors:
         dependencies += ("full_primary_nonanchor_receiver.py", "mixed_aperture_receiver.py")
-    elif eight_ms:
+    elif eight_ms and not stock:
         dependencies += ("eight_ms_native_receiver.py", "eight_ms_held_fit.py")
     if recheck is not None:
         from live_full_recheck import SOURCES
