@@ -15,6 +15,7 @@ import seekable_member as seek
 
 
 SCHEMA = "private-algo08-packed-input-map-v1"
+STRICT_EIGHT_SCHEMA = "private-algo08-strict-packed-eight-input-map-v1"
 INPUT_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError)
 
 
@@ -27,9 +28,9 @@ def pin(text):
     return "sha256:" + value
 
 
-def member_map(content):
+def member_map(content, *, strict_eight=False):
     doc = json.loads(content)
-    if doc["schema"] != SCHEMA:
+    if doc["schema"] != (STRICT_EIGHT_SCHEMA if strict_eight else SCHEMA):
         raise ValueError("Unknown packed input map schema")
     entries = {}
     for item in doc["members"]:
@@ -64,7 +65,7 @@ def request(args):
     return path, pin(digest), codec
 
 
-def load_input(config, temporary, audit):
+def load_input(config, temporary, audit, *, strict_eight=False):
     path, digest, binary = config
     root = path.parent.resolve(strict=True)
     directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -73,7 +74,7 @@ def load_input(config, temporary, audit):
     finally:
         os.close(directory)
     seek.check(content, digest)
-    binary_pin, mapping = member_map(content)
+    binary_pin, mapping = member_map(content, strict_eight=strict_eight)
     binary_root = os.open(binary.parent.resolve(strict=True), os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         native = seek.read_metadata(binary_root, binary.name)
@@ -117,16 +118,42 @@ def packed_windows(reader, source, record):
 
 
 @contextmanager
-def packed_source(scan, config, temporary, audit):
+def packed_source(scan, config, temporary, audit, *, strict_eight=False):
     started = now()
     audit.update(members=[], original_windows=0)
     try:
-        root, mapping, codec = load_input(config, temporary, audit)
+        root, mapping, codec = load_input(config, temporary, audit, strict_eight=strict_eight)
     except INPUT_ERRORS as error:
+        if strict_eight:
+            raise
         audit.update(fallback=str(error), setup=spent(started))
         yield
         return
     audit.update(fallback=None, setup=spent(started))
+    if strict_eight:
+        audit["strict_packed_eight"] = True
+        from seekable_eight_raw import CommittedSamples, PREFIX
+        from mixed_aperture_receiver import NativePath
+
+        ordinary_call = NativePath.run
+
+        def committed_call(engine, samples, lane, center):
+            if type(samples) is not CommittedSamples or engine.maximum not in (1, 2):
+                raise ValueError("Strict packed input requires the verified 20/8 ms detector")
+            return ordinary_call(engine, samples.realize(full=engine.maximum == 2), lane, center)
+
+        def strict_windows(reader, source, record):
+            from types import SimpleNamespace
+
+            loads = {}
+            for row in reader.rows:
+                yield SimpleNamespace(sequence=row.sequence, iq_sha256=row.iq_sha256, acquisition=row.acquisition,
+                                      target=source.targets[row.target_id], receiver_ids=source.receiver_ids,
+                                      samples=CommittedSamples(reader, row.sequence, loads),
+                                      sample_rate_hz=reader.manifest.sample_rate_hz)
+            record.update(state="strict-packed-eight", checks=reader.counts(), loads=loads,
+                          original_decoded_sha256=reader.chunk.uncompressed_sha256,
+                          encoded_blocks=reader.verified_encoded_frames)
 
     original = scan.FastSegmentSource
 
@@ -136,6 +163,8 @@ def packed_source(scan, config, temporary, audit):
             self.entry = entry
 
         def original_range(self, start, stop):
+            if strict_eight:
+                raise ValueError("Strict packed input must bind every acquired member")
             audit["original_windows"] += stop - start
             if (start, stop) == (self.start_sequence, self.stop_sequence):
                 yield from super().windows()
@@ -158,20 +187,27 @@ def packed_source(scan, config, temporary, audit):
                 audit["members"].append(record)
                 with ExitStack() as scope:
                     try:
-                        reader = scope.enter_context(seek.open_member(root / name, seek_pin, codec=codec))
+                        reader = scope.enter_context(seek.open_member(root / name, seek_pin, codec=codec,
+                            prefix_samples=PREFIX if strict_eight else seek.PREFIX_SAMPLES))
                         admit(reader, self, chunk)
                     except INPUT_ERRORS as error:
+                        if strict_eight:
+                            raise
                         record.update(state="fallback", reason=str(error), authenticate=spent(start))
                         continue
                     record["authenticate"] = spent(start)
                     if ordinary_start < first:
                         yield from self.original_range(ordinary_start, first)
                     # A decode or original digest failure after handoff aborts before publication.
-                    with closing(packed_windows(reader, self, record)) as windows:
+                    stream = strict_windows if strict_eight else packed_windows
+                    with closing(stream(reader, self, record)) as windows:
                         yield from windows
                     ordinary_start = end
             if ordinary_start < self.stop_sequence:
                 yield from self.original_range(ordinary_start, self.stop_sequence)
 
-    with patch.object(scan, "FastSegmentSource", PackedSource):
+    with ExitStack() as scope:
+        scope.enter_context(patch.object(scan, "FastSegmentSource", PackedSource))
+        if strict_eight:
+            scope.enter_context(patch.object(NativePath, "run", committed_call))
         yield

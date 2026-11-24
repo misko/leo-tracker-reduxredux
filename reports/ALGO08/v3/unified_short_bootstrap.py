@@ -216,7 +216,11 @@ def run(args, *, publisher=None):
     lane_mask = getattr(args, "short_lane_mask", None)
     eight_ms = getattr(args, "eight_ms_native_history", False)
     full_anchor_primary = getattr(args, "full_anchor_primary_library", None)
+    strict_packed_eight = getattr(args, "strict_packed_eight", False)
     whole_blocks = getattr(args, "whole_stereo_blocks", False)
+    if strict_packed_eight and (not eight_ms or full_anchor_primary is not None
+                                or getattr(args, "packed_ci16_map", None) is None):
+        raise ValueError("Strict packed input requires the complete 20/8 ms receiver and a trusted packed map")
     if full_anchor_primary is not None and not eight_ms:
         raise ValueError("Primary-only anchors require all-visit native 8 ms and its held selector")
     if eight_ms and (whole_blocks or lane_mask or getattr(args, "select_before_cfo", False) or not args.held_anchor_route):
@@ -318,7 +322,7 @@ def run(args, *, publisher=None):
             from packed_combined_input import packed_source, request
 
             packed_audit = {}
-            packed = packed_source(scan, request(args), assets, packed_audit)
+            packed = packed_source(scan, request(args), assets, packed_audit, strict_eight=strict_packed_eight)
         with (frequency_changes.capture(mixer.policy) if frequency_changes is not None else nullcontext(),
               receiver_import(native_import, symbols), packed, observe_acquisition(scan, mixer, effective_detector, audit),
               compressed_input_buffer(), paired_decoded_hashes(library), fetch() as prefetch):
@@ -406,6 +410,8 @@ def run(args, *, publisher=None):
         dependencies += ("live_stereo_blocks.py",)
     if packed_audit is not None:
         dependencies += ("packed_combined_input.py", "seekable_member.py", "ci16_packing.py", "ci16_packing.c")
+    if strict_packed_eight:
+        dependencies += ("seekable_eight_raw.py",)
     if adaptive_map:
         dependencies += ADAPTIVE_MAP_SOURCES
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
@@ -500,4 +506,6 @@ if __name__ == "__main__":
     parser.add_argument("--packed-ci16-map", type=Path, help="Private packed member map with sibling member directories")
     parser.add_argument("--packed-ci16-map-sha256", help="Trusted digest of the packed member map")
     parser.add_argument("--packed-ci16-codec", type=Path, help="Native codec library pinned by the map")
+    parser.add_argument("--strict-packed-eight", action="store_true",
+                        help="Authenticate every encoded block and decode the exact 8 ms/full native aperture")
     print(json.dumps(run(parser.parse_args()), allow_nan=False))
