@@ -14,6 +14,7 @@ from leo.contracts.multirate_window_recording import ShortWindowIndexV2, ShortWi
 SCHEMA = "private-algo08-stereo-12ms-prefix-8ms-tail-v1"
 SAMPLES = 200_000
 PREFIX_SAMPLES = 120_000
+EIGHT_MS_SAMPLES = 80_000
 SAMPLE_BYTES = 8
 WINDOW_BYTES = SAMPLES * SAMPLE_BYTES
 PART_BYTES = (PREFIX_SAMPLES * SAMPLE_BYTES, (SAMPLES - PREFIX_SAMPLES) * SAMPLE_BYTES)
@@ -62,8 +63,19 @@ def part_files(codec):
     return PART_FILES if codec is None else codec.part_files
 
 
-def create(reader, chunk_index, output, *, costs=None, codec=None):
+def layout(prefix_samples, codec):
+    schema = SCHEMA if codec is None else codec.schema
+    if prefix_samples == PREFIX_SAMPLES:
+        return schema, PART_BYTES
+    if prefix_samples == EIGHT_MS_SAMPLES and "12ms-prefix-8ms-tail" in schema:
+        return (schema.replace("12ms-prefix-8ms-tail", "8ms-prefix-12ms-tail"),
+                (prefix_samples * SAMPLE_BYTES, (SAMPLES - prefix_samples) * SAMPLE_BYTES))
+    raise ValueError("Unknown seekable aperture layout")
+
+
+def create(reader, chunk_index, output, *, costs=None, codec=None, prefix_samples=PREFIX_SAMPLES):
     """Convert only a whole member after its ordinary decoded validation finishes."""
+    schema, sizes = layout(prefix_samples, codec)
     manifest_bytes = (reader.path / "manifest.json").read_bytes()
     check(manifest_bytes, reader.manifest_sha256)
     original = reader.manifest.chunks[chunk_index]
@@ -85,7 +97,7 @@ def create(reader, chunk_index, output, *, costs=None, codec=None):
                 raise ValueError("Original window metadata differs from the sealed index")
             raw = memoryview(window.samples).cast("B").toreadonly()
             record = {"sequence": row.sequence, "parts": []}
-            parts = raw[:PART_BYTES[0]], raw[PART_BYTES[0]:]
+            parts = raw[:sizes[0]], raw[sizes[0]:]
             for file, data in zip((prefix, tail), parts, strict=True):
                 started = process_time_ns()
                 encoded = compressor.compress(data)
@@ -99,7 +111,7 @@ def create(reader, chunk_index, output, *, costs=None, codec=None):
             os.fsync(file.fileno())
     for name in names:
         (output / name).chmod(0o400)
-    root = dict(schema=SCHEMA if codec is None else codec.schema, original_manifest=reader.manifest_sha256,
+    root = dict(schema=schema, original_manifest=reader.manifest_sha256,
                 original_index=chunk.index_sha256, chunk_index=chunk_index, records=records)
     payload = json.dumps(root, sort_keys=True, separators=(",", ":")).encode()
     write(output / "seek.json", payload)
@@ -136,7 +148,8 @@ def read_metadata(root, name):
 
 
 class Reader:
-    def __init__(self, root, expected_pin, *, codec=None):
+    def __init__(self, root, expected_pin, *, codec=None, prefix_samples=PREFIX_SAMPLES):
+        schema, self.parts = layout(prefix_samples, codec)
         self.files = []
         self.payload_bytes = self.decoded_bytes = 0
         self.metadata_bytes = self.frames = self.full_checks = 0
@@ -151,7 +164,7 @@ class Reader:
             seal, manifest_bytes, index_bytes = inputs
             check(seal, expected_pin)
             document = json.loads(seal)
-            if document["schema"] != (SCHEMA if codec is None else codec.schema):
+            if document["schema"] != schema:
                 raise ValueError("Unknown seekable member schema")
             check(manifest_bytes, document["original_manifest"])
             check(index_bytes, document["original_index"])
@@ -222,7 +235,7 @@ class Reader:
                 self.payload_bytes += size
             else:
                 encoded = self.verified_payloads[i][offset:offset + size]
-            expected = PART_BYTES[i]
+            expected = self.parts[i]
             if self.codec is None:
                 if zstd.frame_content_size(encoded) != expected:
                     raise ValueError("Frame claims a different decoded extent")
@@ -253,8 +266,8 @@ class Reader:
 
 
 @contextmanager
-def open_member(root, pin, *, codec=None):
-    reader = Reader(root, pin, codec=codec)
+def open_member(root, pin, *, codec=None, prefix_samples=PREFIX_SAMPLES):
+    reader = Reader(root, pin, codec=codec, prefix_samples=prefix_samples)
     try:
         yield reader
     finally:
