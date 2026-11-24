@@ -5,6 +5,8 @@ import pytest
 
 from reports.ALGO08.v3 import integrated_packed_member as member
 from reports.ALGO08.v3 import legacy_block_raw_entry as legacy
+from reports.ALGO08.v3.integrated_packed_entry import require_prepared_payload
+from reports.ALGO08.v3.integrated_packed_full import command, reverse_required
 from reports.ALGO08.v3.integrated_packed_cost import replace_acquisition, score
 
 
@@ -49,3 +51,26 @@ def test_sealed_cost_ledger_keeps_prepare_retrofit_and_owned_writer_distinct():
     assert row["owned_write_to_exit_positive_projection"]["candidate_s"] == pytest.approx(
         ready["summed_s"] - row["observed_processes_s"][1] + writer["write_s"] + writer["independent_readback_s"])
     assert ready["remaining_to_half_s"] > 0
+
+
+def test_complete_prepared_launch_preserves_offer_and_uses_strict_custody():
+    original = ["--recording", "/signed-original", "--output", "/old", "--region", "/offer",
+                "--legacy-first-map-history", "/legacy-lib", "--legacy-first-map-history-sha256", "old-pin",
+                "--verify-original-once", "--sparse8-primary", "--cairo-six-sheets"]
+    packed = command(original, Path("/next"), {"map": "/new/map", "map_sha256": "new-pin", "codec": "/codec"},
+                     Path("/release"))
+    assert packed[:5] == ["/usr/bin/timeout", "--kill-after=2s", "75s", "/release/venv/bin/python", "-IB"]
+    assert not any(x in packed for x in ("--verify-original-once", "/legacy-lib", "old-pin"))
+    assert {"/signed-original", "/offer", "/next", "--sparse8-primary", "--cairo-six-sheets",
+            "--strict-packed-eight", "/new/map", "new-pin", "/codec"} <= set(packed)
+
+
+def test_prepared_waveform_guard_and_reversal_threshold():
+    for path in ("/original/0.ci16.zst", b"0.ci16.zst"):
+        with pytest.raises(PermissionError, match="original encoded"):
+            require_prepared_payload("open", (path, "r", 0))
+    for path in ("/derivative/prefix.ci16p", "/original/manifest.json", 23):
+        require_prepared_payload("open", (path, "r", 0))
+    assert reverse_required(dict(summed_speedup=1.9, paired_median_speedup=1.9))
+    assert not reverse_required(dict(summed_speedup=1.89, paired_median_speedup=2.))
+    assert not reverse_required(dict(summed_speedup=2., paired_median_speedup=1.89))

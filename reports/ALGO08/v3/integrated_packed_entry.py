@@ -1,5 +1,6 @@
 """Research-only strict prepared packed source for the integrated publication."""
 
+import os
 from pathlib import Path
 import sys
 from unittest.mock import patch
@@ -18,6 +19,11 @@ def parser():
     return cli
 
 
+def require_prepared_payload(event, arguments):
+    if event == "open" and isinstance(arguments[0], (str, bytes)) and os.fsdecode(arguments[0]).endswith(".ci16.zst"):
+        raise PermissionError("Strict prepared input cannot open original encoded I/Q")
+
+
 def run(args):
     import combined_successor_raw_entry as guarded
     import empty_bootstrap as boot
@@ -28,6 +34,7 @@ def run(args):
 
     if not (args.strict_packed_eight and args.sparse8_primary and args.cairo_six_sheets):
         raise ValueError("Strict prepared input, sparse 8 ms and standard six-Cairo publication are required")
+    sys.addaudithook(require_prepared_payload)
     original = boot.load_runtime
     spec, audit = {}, {}
 
