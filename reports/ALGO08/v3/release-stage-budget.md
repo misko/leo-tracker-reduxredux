@@ -88,6 +88,8 @@ On DS30-0289 the candidate spent longer in the solver and recovered a fix that i
 | DS30-0419 | 93.571 s | 16.940 s | 29.846 s | 280.5 MB/s |
 | DS30-0289 | 92.380 s | 27.639 s | 18.551 s | 441.7 MB/s |
 
+The later combined solver took **25.139 s** on the original saved DS30-0289 packet, including publication and exit. Even granting free admission, the half-time target of 46.190 s leaves only **21.051 s** for the full 8.194 GB input, equivalent to **at least 389.3 MB/s**. Charging admission raises the required rate. This is a budget for the development case. A shorter receiver can change the solver’s input and cost. [Combined result with both calibration errors](combined-successor-0289.md)
+
 If the receiver delivers a uniform effective rate and each recording keeps its measured downstream cost, these two blind cases need **342.8 MB/s** to pass both aggregate timing gates. The rate includes startup and detection publication. The paired median sets the threshold, with the summed-time threshold just below at **342.3 MB/s**. DS30-0289 originally had zero input pages resident. Throughput measured on warm DS30-0016 files does not account for that original storage condition. [Blind fix and withholding clocks](nomination-handoff-0289-local.md) · [Reproducible budget and original byte bounds](intake_scale_check.py)
 
 The numerical solve accounted for 12.718 s on DS30-0419 and 22.831 s on DS30-0289. How much faster would the receiver still need to be if we reduced just that time? The calculation below keeps admission, publication and process overhead at their measured costs. It charges the work to produce the additional fix on DS30-0289.
