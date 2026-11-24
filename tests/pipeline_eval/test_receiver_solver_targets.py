@@ -2,7 +2,7 @@ from statistics import median
 
 import pytest
 
-from reports.ALGO08.v3.receiver_solver_targets import design_point, targets
+from reports.ALGO08.v3.receiver_solver_targets import aperture_seconds, aperture_targets, design_point, targets
 
 
 def test_even_panel_uses_the_two_middle_ratios_and_keeps_withheld_costs():
@@ -36,3 +36,14 @@ def test_design_point_charges_each_measured_scope_once():
     assert result["excess_over_half_s"] == pytest.approx(-11)
     assert result["summed_speedup"] == pytest.approx(90 / 34)
     assert result["median_paired_speedup"] == pytest.approx(1 / median([30 / 80, 4 / 10]))
+
+
+def test_aperture_budget_prices_only_short_calls_after_known_savings():
+    result = aperture_targets([(60, 42, 14, 10, 8)])
+    # The solver saves 4 s. Without an anchor change, 8 of the 10 short seconds must go.
+    assert result["required_short_fraction_removed"][1.]["both"] == pytest.approx(.8)
+    assert result["required_short_fraction_removed"][1.25]["both"] == pytest.approx(.64)
+    assert aperture_seconds({"full": 1_000_000_000}, 1.) == {"short_s": 0, "full_s": 1.}
+    for modes in ({"other": 1}, {"full": 9}, {"short_primary": -2}):
+        with pytest.raises(ValueError, match="partition"):
+            aperture_seconds(modes, 1.)

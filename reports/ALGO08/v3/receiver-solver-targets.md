@@ -24,3 +24,15 @@ The next check applies the **fixed 1.5× callback and 1.4× whole-solver design 
 The next 16 gave the joint design more headroom. At the same assumed callback speed, they required a 16.17% cut in whole-solver wall time for both gates, versus 28.46% on the first 30. The first group had just 0.57 s to spare under this design, so small uncounted costs could erase its summed margin. The two groups are separate recordings from the same receiver site. No implementation achieved the projected speeds in this experiment. The existing accuracy deficit would still need a separate repair. [Frozen design](https://github.com/misko/leo-tracker-reduxredux/blob/a88bd3228/reports/ALGO08/v3/receiver-solver-targets.md) · [16 per-recording measurements and source digests](measurements/receiver-solver-targets-next16.json)
 
 Run `python -m reports.ALGO08.v3.receiver_solver_targets` to reproduce the development table. With authorized access to the campaign's timing metadata, add `--check-next-16 /srv/postgres-nvme/leo-ds30-evaluation-20261124` to reproduce the second group. The calculation reads saved receipts and requires no waveform or orbit replay.
+
+## If the improvement applies only to the 8 ms callback
+
+The first 46 recordings spent 523.775 s on short primary calls and 237.120 s on full anchors. With a 1.4× faster whole solver and the measured full-anchor times, the short primary must be **1.718× faster** across these recordings. This means removing 41.79% of its measured wall time. The more demanding first 30 need a 48.27% reduction. A transformation affecting only a small part of the short callback must be priced against this boundary.
+
+| Assumed speedup of the 20 ms anchors | Required 8 ms speedup, first 30 | Next 16 | All 46 |
+|---:|---:|---:|---:|
+| 1.00× | 1.933× | 1.447× | 1.718× |
+| 1.25× | 1.645× | 1.284× | 1.487× |
+| 1.50× | 1.496× | 1.195× | 1.364× |
+
+Each row holds the other stages and the candidate's observed outcomes fixed. The calculator checks each recording's two measured aperture clocks against its native total, credits the assumed solver and anchor savings, and finds the short-call reduction needed for both timing gates. Use `--price-apertures` with the same campaign path. [Per-cohort timing requirements](measurements/receiver-solver-aperture-targets.json)

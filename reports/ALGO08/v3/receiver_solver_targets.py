@@ -61,7 +61,7 @@ def design_point(clocks):
                 excess_over_half_s=fsum(predicted) - .5 * fsum(baseline))
 
 
-def held_clocks(campaign):
+def held_clocks(campaign, *, split_apertures=False):
     from .field_speed_reachability import BUILD, PLAN, STOCK, checked, reconcile
 
     plan = json.loads(checked(campaign / "plan.json", PLAN))
@@ -94,16 +94,64 @@ def held_clocks(campaign):
             if any(row[k] != actual[k] for k in ("elapsed_s", "cpu_s", "outcome", "algorithm")):
                 raise ValueError("Export differs from measured process result")
         d = reconcile(campaign, stock, candidate)
-        result.append(dict(case=case, installed_s=d["stock_wall_s"], candidate_s=d["actual_wall_s"],
-                           native_s=d["native_detector_s"], solver_s=d["work"]["solver"]["wall_s"],
-                           installed_result=stock["attempt_result_sha256"], candidate_pins=d["pins"]))
+        record = dict(case=case, installed_s=d["stock_wall_s"], candidate_s=d["actual_wall_s"],
+                      native_s=d["native_detector_s"], solver_s=d["work"]["solver"]["wall_s"],
+                      installed_result=stock["attempt_result_sha256"], candidate_pins=d["pins"])
+        if split_apertures:
+            source = (campaign / candidate["attempt"]).parent / "publication/unified-short-bootstrap.json"
+            modes = json.loads(checked(source, d["pins"]["raw"]))["receiver_audit"]["native"]["native_wall_ns"]
+            record.update(aperture_seconds(modes, record["native_s"]))
+        result.append(record)
     return result
+
+
+def aperture_seconds(modes_ns, expected):
+    if (not modes_ns.keys() <= {"short_primary", "full"}
+            or any(type(v) is not int or v < 0 for v in modes_ns.values())
+            or sum(modes_ns.values()) / 1e9 != expected):
+        raise ValueError("Aperture clocks must partition measured native time")
+    return dict(short_s=modes_ns.get("short_primary", 0) / 1e9, full_s=modes_ns.get("full", 0) / 1e9)
+
+
+def aperture_targets(rows):
+    # Apply a fixed solver and optional full-anchor saving, then solve only for the short callback.
+    required = {}
+    for full_rate in (1., 1.25, 1.5):
+        adjusted = [(a, b - full * (1 - 1 / full_rate), solver, short) for a, b, solver, short, full in rows]
+        required[full_rate] = targets(adjusted, 1.4)
+    return dict(pairs=len(rows), short_s=fsum(r[3] for r in rows), full_s=fsum(r[4] for r in rows),
+                required_short_fraction_removed=required)
+
+
+def price_apertures(campaign):
+    from .field_speed_reachability import checked
+    from .first30_after_intake import NATIVE
+
+    receipt = json.loads(decompress(checked(RECEIPT.with_name("first30-empty-call-roof.json.gz"), NATIVE)))
+    first = {r["case"]: r for r in first30()}
+    development = []
+    for r in receipt["cases"]:
+        case = first[r["case"]]
+        if r["candidate_join_sha256"] != case["pins"]["result"]:
+            raise ValueError("Different detector run in the first-30 budget")
+        times = aperture_seconds({k: v["elapsed_ns"] for k, v in r["modes"].items()}, case["native_detector_s"])
+        development.append((case["stock_wall_s"], case["actual_wall_s"], case["phases"]["outer"]["elapsed_s"]["solve"],
+                            times["short_s"], times["full_s"]))
+    later = [(r["installed_s"], r["candidate_s"], r["solver_s"], r["short_s"], r["full_s"])
+             for r in held_clocks(campaign, split_apertures=True)]
+    return {name: aperture_targets(rows) for name, rows in
+            (("first30", development), ("next16", later), ("first46", development + later))}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check-next-16", type=Path, metavar="CAMPAIGN")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check-next-16", type=Path, metavar="CAMPAIGN")
+    mode.add_argument("--price-apertures", type=Path, metavar="CAMPAIGN")
     args = parser.parse_args()
+    if args.price_apertures:
+        print(json.dumps(price_apertures(args.price_apertures.resolve(strict=True)), indent=2))
+        return
     if args.check_next_16:
         cases = held_clocks(args.check_next_16.resolve(strict=True))
         clocks = [(r["installed_s"], r["candidate_s"], r["native_s"], r["solver_s"]) for r in cases]
