@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from reports.ALGO08.v3.pre_finish_margin import UnsupportedStage, inspect_association, ranked
+from reports.ALGO08.v3.pre_finish_margin_score import census, compare
 
 
 def test_rank_keeps_original_first_index_for_exact_cost_tie():
@@ -30,3 +31,13 @@ def test_compact_winner_does_not_certify_the_second_candidate():
     assert row["sealed_gated_ranks"] == [(200, 1., 1.), (100, 2., -1.), (300, 4., 0.)]
     assert row["second_retained_by_original"] is False
     assert prices["profile_cpu_s"] >= 0.
+
+
+def test_later_owner_join_preserves_ranks_and_marks_membership_mismatch():
+    curve = dict(curve="A", observation_ids=["a", "b"], sealed_gated_ranks=[[23, 1., 0.], [99, 2.1, 1.]],
+                 gap=1.1, points=2, feasible=2, exact_ties=1, second_retained_by_original=True)
+    assert census([curve])["flagged_points"] == 2
+    kept = compare([curve], {"A": {"ids": ["a", "b"]}}, [dict(curve="A", old=99, new=23)])[0]
+    assert kept["pair_in_top_two"] and kept["id_match"] == "exact_order" and kept["old_rank"] == 2
+    reordered = compare([curve], {"A": {"ids": ["b", "a"]}}, [dict(curve="A", old=99, new=23)])[0]
+    assert reordered["id_match"] == "overlap_only"
