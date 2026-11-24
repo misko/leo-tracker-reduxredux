@@ -113,15 +113,16 @@ def test_guard_restores_the_original_ports_for_the_original_error(error, monkeyp
     from tools.pipeline_eval.variants import algo08_causal_reuse as installed
 
     monkeypatch.setattr(trial, "installed_guard", lambda: True)
-    archive = object()
+    archive = SimpleNamespace(read=lambda snapshot: snapshot)
     reads = []
     ordinary_parser = installed.CausalPreparationParser
 
     def application(document, reader, config, *, element_parser):
         reads.append(reader)
-        if isinstance(reader, VerifiedIndexReader):
+        assert reader is archive
+        if isinstance(element_parser, VerifiedIndexReader):
             raise error
-        assert reader is archive and type(element_parser) is ordinary_parser
+        assert type(element_parser) is ordinary_parser
         raise RuntimeError("unaltered original historical outcome")
 
     audit = {}
@@ -135,3 +136,24 @@ def test_guard_restores_the_original_ports_for_the_original_error(error, monkeyp
         with pytest.raises(ValueError, match="ordinary error"):
             prepare({}, archive, {})
         assert len(reads) == 1
+
+
+def test_latest_materializes_at_the_causal_return_port(monkeypatch):
+    from leo.operations import localization_v3_inputs as inputs
+    from leo.operations.causal_tle_catalogue import CausalCatalogue
+    from leo.sky.propagation import ElementSetCatalogue
+
+    class Satrec:
+        @staticmethod
+        def twoline2rv(*pair):
+            return SimpleNamespace(signed_lines=pair)
+
+    rows = ElementSetCatalogue(("STARLINK",), (3,), (("one", "two"),))
+    selected = CausalCatalogue(rows, ({"norad": 3},), 5)
+    monkeypatch.setattr(inputs, "Satrec", Satrec)
+    monkeypatch.setattr(inputs, "causal_catalogue", lambda: selected)
+    with trial.elected_elements() as audit:
+        caught_by_regional_wrapper = inputs.causal_catalogue()
+        assert caught_by_regional_wrapper.catalogue.satellites[0].signed_lines == ("one", "two")
+        assert caught_by_regional_wrapper.provenance == selected.provenance
+    assert audit == {"coarse_latest": 1, "distinct_scan_objects": 1}

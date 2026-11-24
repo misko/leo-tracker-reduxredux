@@ -2,8 +2,10 @@
 
 import argparse
 from contextlib import contextmanager
+from dataclasses import replace
 from functools import partial
 from hashlib import sha256
+from inspect import unwrap
 import json
 from math import pi
 from pathlib import Path
@@ -17,6 +19,8 @@ HOUR_NS = 3_600_000_000_000
 INPUTS_PIN = "d23c4b2470b9c81f9714633d430d63ee477980cfe4c96848acb7619693174e22"
 PARSER_PIN = "3146dcb19ec88ef5e03f0b29c04fa6773c3fd575aa2c22ccbbca6ddc6ca48143"
 EXPORTER_PIN = "43a57182525d1b04148981ba316046a6ffd36931d98132bdac24777eecbc998d"
+REGIONAL_PORT = "tools/pipeline_eval/variants/experimental/regional_bound_guard.py"
+REGIONAL_PIN = "d8a81c561bf8652d1e8521bcbf4b357198a483f5cb364613772e2e3ec1f77aad"
 
 
 class UnsupportedExport(ValueError):
@@ -84,6 +88,7 @@ class VerifiedIndexReader:
 
     def __init__(self, reader, index):
         self.reader, self.index = reader, index
+        self.original_read = reader.read
         self.active = None
         self.reads = self.bytes = self.hits = 0
         self.stats = {}
@@ -93,7 +98,7 @@ class VerifiedIndexReader:
 
     def read(self, snapshot):
         self.active = None
-        text = self.reader.read(snapshot)
+        text = self.original_read(snapshot)
         self.active = snapshot.sha256, text
         self.reads += 1
         self.bytes += snapshot.byte_size
@@ -142,7 +147,7 @@ def elected_elements():
     from leo.operations import localization_v3_inputs as inputs
     from leo.sky.propagation import ElementSetCatalogue
 
-    bank, original_export = inputs.regional_bank, inputs.export_tle
+    causal, original_export = inputs.causal_catalogue, inputs.export_tle
     satellites, counts = {}, {"coarse_latest": 0, "distinct_scan_objects": 0}
 
     def materialize(pair):
@@ -152,11 +157,13 @@ def elected_elements():
             satellites[pair] = satellite
         return satellite
 
-    def screened(catalogue, *args, **kwargs):
+    def latest(*args, **kwargs):
+        elected = causal(*args, **kwargs)
+        catalogue = elected.catalogue
         counts["coarse_latest"] = len(catalogue)
         actual = ElementSetCatalogue(catalogue.names, catalogue.satellite_numbers,
                                      tuple(map(materialize, catalogue.satellites)))
-        return bank(actual, *args, **kwargs)
+        return replace(elected, catalogue=actual)
 
     def export(value):
         return original_export(materialize(value) if type(value) is tuple else value)
@@ -165,7 +172,7 @@ def elected_elements():
         return phase_history(reader, elements, metadata, element_parser=element_parser,
                              export=export, distinct=inputs.distinct_epochs)
 
-    with (patch.object(inputs, "regional_bank", screened), patch.object(inputs, "export_tle", export),
+    with (patch.object(inputs, "causal_catalogue", latest), patch.object(inputs, "export_tle", export),
           patch.object(inputs, "prepare_phase_history", past)):
         yield counts
     counts["distinct_scan_objects"] = len(satellites)
@@ -184,28 +191,47 @@ def installed_guard():
                                          for path, expected, pin in paths)
 
 
-def guarded_preparation(ordinary, audit):
+def preparation_port(ordinary, original):
+    from empty_bootstrap import PAYLOAD
+
+    base = unwrap(ordinary)
+    if not isinstance(base, partial) or base.func is not original:
+        return None
+    if ordinary is base:
+        return "causal"
+    code = getattr(ordinary, "__code__", None)
+    if (code is not None and code.co_name == "prepare" and getattr(ordinary, "__wrapped__", None) is base
+            and (path := Path(code.co_filename).resolve()) == PAYLOAD/REGIONAL_PORT
+            and sha256(path.read_bytes()).hexdigest() == REGIONAL_PIN):
+        return "regional"
+    return None
+
+
+def guarded_preparation(ordinary, audit, *, index_factory=SourceIndex):
     """One guarded, scan-local build through the installed preparation caller."""
     from tools.pipeline_eval.variants import algo08_causal_reuse as installed
 
-    guarded = (isinstance(ordinary, partial) and ordinary.func is installed.prepare and installed_guard())
+    port = preparation_port(ordinary, installed.prepare) if installed_guard() else None
     attempts = audit.setdefault("attempts", [])
 
     def prepare(document, reader, config, **options):
         start = process_time(), perf_counter()
-        if not guarded:
+        if port is None:
             attempts.append(dict(guard=False, fallback="unrecognized installed preparation or exporter"))
             return ordinary(document, reader, config, **options)
-        index = SourceIndex()
+        index = index_factory()
         staged = VerifiedIndexReader(reader, index)
         try:
-            with elected_elements() as materialized, patch.object(installed, "CausalPreparationParser", return_value=staged):
-                prepared = ordinary(document, staged, config, **options)
+            # The installed regional veto recognizes the concrete archive reader
+            # and captures the elected causal catalogue for its own later use.
+            with (elected_elements() as materialized, patch.object(reader, "read", staged.read),
+                  patch.object(installed, "CausalPreparationParser", return_value=staged)):
+                prepared = ordinary(document, reader, config, **options)
         except UnsupportedExport as error:
-            attempts.append(dict(guard=True, fallback=str(error), abandoned_cpu_s=process_time()-start[0],
+            attempts.append(dict(guard=True, port=port, fallback=str(error), abandoned_cpu_s=process_time()-start[0],
                                  abandoned_elapsed_s=perf_counter()-start[1]))
             return ordinary(document, reader, config, **options)
-        attempts.append(dict(guard=True, fallback=None, cpu_s=process_time()-start[0], elapsed_s=perf_counter()-start[1],
+        attempts.append(dict(guard=True, port=port, fallback=None, cpu_s=process_time()-start[0], elapsed_s=perf_counter()-start[1],
                              source_pairs=len(index.pairs), bodies=len(index.bodies), verified_reads=staged.reads,
                              verified_bytes=staged.bytes, **materialized))
         return prepared
