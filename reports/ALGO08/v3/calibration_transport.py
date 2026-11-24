@@ -98,7 +98,8 @@ def signed_attempt(campaign, row):
     subpath = Path(row["attempt"])
     case, method = row["case"], row["algorithm"]
     parts = subpath.parts
-    if (len(parts) != 5 or parts[:3] != ("cases", case, method) or ".." in parts
+    directory = "relocation" if row.get("relocation_proof_sha256") else "cases"
+    if (len(parts) != 5 or parts[:3] != (directory, case, method) or ".." in parts
             or not parts[3].startswith("attempt-") or parts[4] not in ("result.json", "revalidation.json")):
         raise ValueError("Unexpected saved field attempt path")
     path = campaign / subpath
