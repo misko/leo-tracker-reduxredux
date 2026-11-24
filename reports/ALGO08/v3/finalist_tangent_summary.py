@@ -18,10 +18,11 @@ def forward(x, lower, upper, step):
     return result
 
 
-def classify(trace, half_width):
+def classify(trace, half_width, *, include_requests=False):
     found = Counter()
     charged = Counter()
     after_refresh = Counter()
+    classes = []
     fit, requested = trace["result"], trace["full_calls"]
     history = fit["history"]
     lower, upper = [-half_width]*2, [half_width]*2
@@ -32,6 +33,8 @@ def classify(trace, half_width):
     def charge(name, items):
         found[name] += len(items)
         charged[name] += sum(row["cpu_ns"] for row in items)
+        if include_requests:
+            classes.extend([name] * len(items))
 
     charge("initial", requested[:1])
     cursor = 1
@@ -61,7 +64,10 @@ def classify(trace, half_width):
     if (following != len(history) or found["derivative"] != 2*exact
             or found["rejected_trial"] != fit["rejected_trials"] or sum(found.values()) != fit["evaluations"]):
         raise ValueError("Coordinate replay does not reproduce the released request classes")
-    return dict(calls=found, cpu_ns=charged, immediately_after_each_exact_refresh=after_refresh)
+    result = dict(calls=found, cpu_ns=charged, immediately_after_each_exact_refresh=after_refresh)
+    if include_requests:
+        result["request_classes"] = classes
+    return result
 
 
 def run(path, binding):
