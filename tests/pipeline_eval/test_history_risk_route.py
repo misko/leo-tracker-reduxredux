@@ -1,4 +1,5 @@
 from hashlib import sha256
+import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -83,3 +84,27 @@ def test_four_case_extension_keeps_the_original_three_and_charges_admission():
     assert panel["totals"]["cpu_s"]["preflight_charged"]["summed_ratio"] == 2
     with pytest.raises(ValueError):
         aggregate(earlier, publication("0374"), admission, "pin", case="0402")
+
+
+def test_pair_reuses_original_installed_command_and_rejects_a_different_mode(monkeypatch, tmp_path):
+    import history_risk_0402_pair as pair
+
+    source = tmp_path/"source"
+    root = tmp_path/"request"
+    release = tmp_path/"release"
+    source.mkdir()
+    root.mkdir()
+    monkeypatch.setattr(pair, "SOURCE", source)
+    monkeypatch.setattr(pair, "SOURCES", {})
+    monkeypatch.setattr(pair.route, "pinned", lambda path, _: json.loads(path.read_bytes()))
+    (root/"admission.json").write_text('{"source_sha256": {}}')
+    cmd = [str(x) for x in (release/"venv/bin/python", "-IB", source/"prospective_0402_solver.py",
+                            "worker", root/"request.json", "stock", root/"stock")]
+    clock = root/"stock-clock.json"
+    clock.write_text(json.dumps(dict(command=cmd, timing={"exit_code": 0})))
+    actual, _ = pair.previous_stock_command(root, release)
+    assert actual == cmd[:-1]
+    cmd[-2] = "cumulative"
+    clock.write_text(json.dumps(dict(command=cmd, timing={"exit_code": 0})))
+    with pytest.raises(ValueError):
+        pair.previous_stock_command(root, release)

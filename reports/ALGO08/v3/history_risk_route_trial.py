@@ -123,7 +123,7 @@ def worker(case, output):
         write(output/"risk-route.json", audit)
 
 
-def launch(case, output):
+def launch(case, output, *, stock_command=None):
     from aperture_trial import RELEASE, write
     from dense_geographic_trial import host
     from full_short_physical import environment
@@ -157,8 +157,10 @@ def launch(case, output):
     for file in (Path(entry["stage"])/"fonts").glob("fontlist-*.json"):
         os.link(exact.resident_path(file), output/"fonts"/file.name)
     limit = "125s" if case == "0402" else "55s"
-    command = ["/usr/bin/timeout", "--kill-after=2s", limit, RELEASE/"venv/bin/python",
-               "-IB", HERE/Path(__file__).name, "worker", case, output]
+    worker_command = [RELEASE/"venv/bin/python", "-IB", HERE/Path(__file__).name, "worker", case, output]
+    if stock_command is not None:
+        worker_command = [*stock_command, output/"candidate"]
+    command = ["/usr/bin/timeout", "--kill-after=2s", limit, *worker_command]
     write(output/"binding.json", dict(input=entry, machine=machine, command=list(map(str, command)),
           resident_bytes=sum(row["size"] for row in residence), resident_snapshots=len(refs)))
     write(output/"route-binding.json", dict(sources=sources(case), cutoff_utc_ns=request["causal_cutoff_utc_ns"],
