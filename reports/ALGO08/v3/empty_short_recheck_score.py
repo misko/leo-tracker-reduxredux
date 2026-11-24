@@ -27,6 +27,7 @@ WEAK = Path("/dev/shm/leo-v3-integrated-original-02/DS30-0016")
 WEAK_STOCK = Path("/dev/shm/leo-v3-stock-raw-repeat-DS30-0016-01/stock")
 MEMBER = Path("/tmp/leo-v3-0163-resumed-member-pair02")
 DENSE = Path("/tmp/leo-v3-original-dense-intake-result01")
+SEALED_REDUCER = "sha256:655225c9037fdbdd0e6d7a522b1e7b25fc323a26bbe9e5942ba5dba7255e4fdd"
 PIN = {
     "ds30-paired-smoke.json.gz": "c5d64fe44587aaef4663dbfafe2b02ac8a89b52e9670d90f50a21e3e4249200f",
     "integrated-original.json.gz": "eb115ec1dd7a734693e21d8be49e2f7de87fe48936b8db8d51e1216cf37a0dff",
@@ -169,7 +170,8 @@ def named(case, candidate):
         packet = saved(SMOKE/"installed/attempt-000002/publication", installed["native_sha256"])
         exact = checked(Path("/tmp/leo-v3-0049-saved-cross-proof02/installed-installed/crossover-worker.json"),
                         "86d3b27db6e1bb85f69e180228ff6b7b977d4779f1b42c018ce054475c2c3141")
-        if exact["submitted_native_sha256"] != installed["native_sha256"]:
+        if (exact["submitted_native_sha256"] != installed["native_sha256"]
+                or exact["receipt"]["terminal_sha256"] != installed["evidence"]["receipt"]["terminal_sha256"]):
             raise ValueError("Installed crossover changed the owner input")
         return packet, packet["source"]["session_id"], owner_ids(exact["ordered_owners"], installed["evidence"]["owners"])
     if case == "DS30-0016":
@@ -189,6 +191,9 @@ def named(case, candidate):
             raise ValueError("The independent original first member changed")
         packet = archive["named/detections.json"]["document"]
         owner = historical("first-member-0163-owner-join.json")
+        if not (owner["qualified"] and owner["original_named_prefix_exact"]
+                and owner["pair_sha256"] == PIN["first-member-0163-resume-acquisition.json.gz"]):
+            raise ValueError("The archived owner join does not identify this first member")
         # The archived exact join supplies lane keys, using the full-recording session.
         owned_lanes = {arm: {(row["visit"], row["receiver"]) for row in owner["comparable_nonempty_lanes"]
                             if arm in row["owners"]} for arm in ARMS}
@@ -197,7 +202,7 @@ def named(case, candidate):
         pair = historical("original-dense-intake.json.gz")["pairs"][0]
         if canonical_digest(candidate) != pair["first_use"]["source"]["native"]:
             raise ValueError("The original first-member successor packet changed")
-        packet = checked(DENSE/"1-named/detections.json", pair["named"]["source"]["native"])
+        packet = saved(DENSE/"1-named", pair["named"]["source"]["native"])
         stock = historical("track-quadrature.json.gz")["runs"][case]["stock"]
         full = checked(Path("/tmp/ds30-v2-stage-all-6cdbac/DS30-0008/candidate/fast-scan-automatic-work/"
                             "algo08-v2-3dce9426edd1831eade2003d69a00297/detections.json"),
@@ -288,7 +293,9 @@ def detached(scored, installed, sparse):
 
 def score(seal_path, seal_pin):
     sealed = checked(seal_path, seal_pin)
-    if canonical_digest(sealed) != canonical_digest(prescription()):
+    current = prescription()
+    expected = dict(current, sources=current["sources"] | {Path(__file__).name: SEALED_REDUCER})
+    if canonical_digest(sealed) not in (canonical_digest(current), canonical_digest(expected)):
         raise ValueError("Candidate-only sealed plan changed")
     results = {}
     for case, spec in sealed["plans"].items():
@@ -305,17 +312,26 @@ def score(seal_path, seal_pin):
         marked = compare(spec["empties"], stock_rows, ids, session)
         counts = totals(marked)
         calls = Counter(spec["apertures"])
-        radios = {}
-        for radio in sorted({row[1] for row in stock_rows}):
-            radios[radio] = totals([r for r in marked if r["lane"][1] == radio])
-            radios[radio]["all_short_calls"] = sum(mode == "short" and row["receiver_id"] == radio for mode, row in
-                                                  zip(spec["apertures"], sparse["source"]["probes"], strict=True))
+        short_streams = Counter(stream(row) for mode, row in zip(spec["apertures"], sparse["source"]["probes"], strict=True)
+                                if mode == "short")
+        channels = [
+            dict(stream_sha256=canonical_digest(key), receiver_id=key[1], channel=key[2], all_short_calls=call_count,
+                 **totals([row for row in marked if tuple(row["stream"]) == key]))
+            for key, call_count in sorted(short_streams.items())
+        ]
+        radios = {
+            radio: dict(all_short_calls=sum(n for key, n in short_streams.items() if key[1] == radio),
+                        **totals([r for r in marked if r["lane"][1] == radio]))
+            for radio in sorted({row[1] for row in stock_rows})
+        }
         results[case] = dict(issued=spec["issued"], calls=calls, totals=counts, radios=radios,
+                             channels=channels,
                              shortlisted=[r for r in marked if r["triggered"]], installed_sha256=canonical_digest(stock),
+                             separately_verified_sparse_equivalence=spec["separately_verified_sparse_equivalence"],
                              preheld_sha256=spec["preheld_sha256"], charge=costs(case, clocks, calls, counts["checks"]))
         if case == "DS30-0163":
             results[case]["detached_full"] = detached(marked, stock_rows, sparse)
-    return dict(schema_version=1, plan_sha256=seal_pin, results=results)
+    return dict(schema_version=1, plan_sha256=seal_pin, scorer_sha256=current["sources"][Path(__file__).name], results=results)
 
 
 if __name__ == "__main__":
