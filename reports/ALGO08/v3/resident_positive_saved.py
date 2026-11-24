@@ -181,6 +181,7 @@ def prepare(root, raw_admission):
                 frontier_block_library=BLOCK_SHA, grid_feature_projection_library=LIBRARY_SHA)
     for name, path in combined["libraries"].items():
         checked(Path(path), pins[name])
+    (HERE / "grid_feature_projection.c").stat()
     git = ["git", "-C", str(HERE.parents[2])]
     if subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True).strip():
         raise ValueError("The enrolled source must be committed")
@@ -195,7 +196,7 @@ def prepare(root, raw_admission):
                    inventory_sha256=canonical_digest(derived), original_request_sha256=PARENT_SHA, portable=combined["portable"],
                    source_sha256={name: sha256((HERE/name).read_bytes()).hexdigest() for name in
                                   (Path(__file__).name, "resident-positive-pair-protocol.md", "unified_short_bootstrap.py",
-                                   "joint_publication.py", "combined_raw_research.py")},
+                                   "joint_publication.py", "combined_raw_research.py", "grid_feature_projection.c")},
                    archive=request["archive"], offer=request["offer"], offer_sha256=request["offer_sha256"],
                    flags=[f for f in combined["flags"] if f != "--catalogue-block-rank"],
                    commit=subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip(),
@@ -207,25 +208,48 @@ def prepare(root, raw_admission):
     write(root / "binding.json", binding)
 
 
-def launch(root):
-    from aperture_trial import RELEASE, read, write
-    from dense_geographic_trial import host
+def measure_child(root, mode, label):
+    from aperture_trial import RELEASE, write
     from eight_ms_south_transfer import environment_for
     from short_raw_diagnostic import measure
 
+    output = root / label
+    clock_path = root / (label+"-clock.json")
+    if output.exists() or clock_path.exists():
+        raise ValueError("Choose a fresh child scope")
+    command = ["/usr/bin/timeout", "--kill-after=2s", "45s", RELEASE / "venv/bin/python",
+               "-IB", Path(__file__).resolve(), "worker", root / "binding.json", mode, output]
+    clock = measure(command, environment_for(root), output)
+    write(clock_path, dict(**clock, command=list(map(str, command))))
+
+
+def launch(root):
+    from aperture_trial import read
+    from dense_geographic_trial import host
+
     job = root / "binding.json"
     binding = read(job)
-    if binding["machine"] != host() or any((root / mode).exists() or (root / (mode+"-clock.json")).exists() for mode in ORDER):
-        raise ValueError("Expected fresh child scopes on the enrolled host")
+    if binding["machine"] != host():
+        raise ValueError("Use the enrolled host and resource scope")
     for mode in ORDER:
-        output = root / mode
-        command = ["/usr/bin/timeout", "--kill-after=2s", "45s", RELEASE / "venv/bin/python",
-                   "-IB", Path(__file__).resolve(), "worker", job, mode, output]
-        clock = measure(command, environment_for(root), output)
-        write(root / (mode+"-clock.json"), dict(**clock, command=list(map(str, command))))
+        measure_child(root, mode, mode)
 
 
-def score(root):
+def recover_metadata(root):
+    from aperture_trial import read
+    from dense_geographic_trial import host
+
+    clock = read(root / "candidate-clock.json")
+    trace = read(root / "candidate" / "joint-research-receipt.json")
+    if (read(root / "binding.json")["machine"] != host() or clock["exit_code"] != 1
+            or trace["receipt"]["decision"] != "complete" or "FileNotFoundError" not in clock["stderr_tail"]
+            or "grid_feature_projection.c" not in clock["stderr_tail"]):
+        raise ValueError("This recovery requires the specific missing tracked source receipt failure")
+    (HERE / "grid_feature_projection.c").stat()
+    measure_child(root, "candidate", "candidate-recovery")
+
+
+def score(root, *, recovered=False):
     from aperture_trial import read, write
     from contiguous_third import calibration_owners
     from joint_publication import artifacts
@@ -238,11 +262,12 @@ def score(root):
     native = read_pinned(Path(binding["packet"]), binding["native_sha256"])
     results = {}
     for mode in ORDER:
-        clock = read(root / (mode + "-clock.json"))
+        label = "candidate-recovery" if recovered and mode == "candidate" else mode
+        clock = read(root / (label + "-clock.json"))
         results[mode] = dict(clock=clock)
         if clock["exit_code"]:
             continue
-        out = root / mode
+        out = root / label
         sealed = read(out / "saved-range-worker.json")
         trace = read(out / "joint-research-receipt.json")
         receipt = sealed["receipt"]
@@ -262,12 +287,23 @@ def score(root):
                                        if row.get("decision") == "complete"}, "DS30-0008")
     owners = {arm: owner_delta(*(row["selected_rows"][arm] for row in results.values()))
               for arm in ("c0", "fitted_c")} if complete else None
-    write(root / "result.json", dict(binding=binding, results=results, both_positive=complete, accuracy=accuracy, owners=owners))
+    failed = {}
+    if recovered:
+        prior = read(root / "candidate" / "joint-research-receipt.json")
+        failed = dict(clock=read(root / "candidate-clock.json"), figures=prior["evidence"],
+                      same_published_terminal=prior["receipt"]["terminal_sha256"] ==
+                      results["candidate"].get("worker", {}).get("receipt", {}).get("terminal_sha256"),
+                      same_published_figures=canonical_digest(prior["evidence"]) ==
+                      canonical_digest(results["candidate"].get("figures")),
+                      grid_projection_source_sha256=sha256((HERE/"grid_feature_projection.c").read_bytes()).hexdigest())
+    write(root / ("verified-result.json" if recovered else "result.json"),
+          dict(binding=binding, results=results, both_positive=complete, accuracy=accuracy, owners=owners,
+               first_candidate_metadata_failure=failed))
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("action", choices=("prepare", "launch", "worker", "score"))
+    cli.add_argument("action", choices=("prepare", "launch", "worker", "score", "recover-metadata", "score-recovered"))
     cli.add_argument("root", type=Path)
     cli.add_argument("inputs", nargs="*")
     args = cli.parse_args()
@@ -275,5 +311,9 @@ if __name__ == "__main__":
         worker(args.root, args.inputs[0], Path(args.inputs[1]))
     elif args.action == "prepare":
         prepare(args.root, Path(args.inputs[0]))
+    elif args.action == "recover-metadata":
+        recover_metadata(args.root)
+    elif args.action == "score-recovered":
+        score(args.root, recovered=True)
     else:
         (launch if args.action == "launch" else score)(args.root)
