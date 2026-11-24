@@ -71,8 +71,8 @@ def bind(case):
                 issued=issued, admitted=admitted, sources=source, portable=[str(ARTIFACT), ARTIFACT_SHA, PRODUCER_SHA])
 
 
-def checked_catalogue(binding, req, reader_class, canonical_digest):
-    archive = resident_path(Path(binding["archive"]))
+def checked_catalogue(binding, req, reader_class, canonical_digest, *, resident=resident_path):
+    archive = resident(Path(binding["archive"]))
     refs = reader_class(archive).list_snapshots("space-track")
     local = req["local_archive"]
     if (len(refs) != local["snapshots"] or sum(ref.byte_size for ref in refs) != local["bytes"]
@@ -80,7 +80,7 @@ def checked_catalogue(binding, req, reader_class, canonical_digest):
             or any(ref.collected_utc_ns >= req["causal_cutoff_utc_ns"] for ref in refs)):
         raise ValueError("Existing tmpfs catalogue differs from the signed causal view")
     for ref in refs:
-        resident_path(ref.path)
+        resident(ref.path)
     return archive, refs
 
 
@@ -113,12 +113,12 @@ def manifest_paths(request):
 
 
 @contextmanager
-def exact_ports(bound, req, audit):
+def exact_ports(bound, req, audit, *, resident=resident_path):
     from catalogue_block_rank import install
     from combined_raw_research import Portable, portable_factory
     from exact_graph_execution import graph_execution
     from grid_phase_state_reuse import cached_predictive_grid
-    from historical_orbit_index import guarded_preparation
+    from historical_orbit_index import SourceIndex, guarded_preparation
     from leo.analysis.localization_v3 import discovery, family_cavity, feasible
     from leo.analysis.research import polynomial_satellite_diagnostics, retained_track_likelihood
     from leo.contracts.digests import canonical_digest
@@ -129,10 +129,13 @@ def exact_ports(bound, req, audit):
 
     probe = runpy.run_path(str(SHARING))["shared_rank_preparation"]
     rank = rank_with_exact_inputs(v5_core.ranked_initial_nodes, probe, install, discovery, audit["rank"], audit["blocks"])
-    archive, refs = checked_catalogue(bound, req, TleArchiveReader, canonical_digest)
-    read_verified = catalogue_scope(archive, refs, req["causal_cutoff_utc_ns"], TleArchiveReader.read, audit["verified_tle"])
-    path, body, producer = bound["portable"]
-    factory = partial(portable_factory, Portable(Path(path), body, producer), audit["portable"])
+    archive, refs = checked_catalogue(bound, req, TleArchiveReader, canonical_digest, resident=resident)
+    read_verified = catalogue_scope(archive, refs, req["causal_cutoff_utc_ns"], TleArchiveReader.read,
+                                    audit["verified_tle"], resident=resident)
+    factory = SourceIndex
+    if bound["portable"] is not None:
+        path, body, producer = bound["portable"]
+        factory = partial(portable_factory, Portable(Path(path), body, producer), audit["portable"])
     prepare = guarded_preparation(algo08_position.prepare_native_scan, audit["portable"], index_factory=factory)
     validate_released_ports(feasible, family_cavity, retained_track_likelihood, polynomial_satellite_diagnostics)
     with ExitStack() as stack:

@@ -1,0 +1,224 @@
+"""Publish a raw 20/8 ms acquisition through the exact named ALGO08v3 route."""
+
+import argparse
+from collections import Counter
+from contextlib import ExitStack, contextmanager
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+from types import SimpleNamespace
+from unittest.mock import patch
+
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+MODIFIED_PORTS = "20/8 ms all visits, held history; original named solve and layout with exact reuse"
+ARM_NAMES = ("c0", "fitted_c")
+
+
+def staged_path(path, *, root=None):
+    """Require direct paths on the same tmpfs device as their enrolled root."""
+    if path.resolve(strict=True) != path:
+        raise ValueError(f"Expected a direct staged path: {path}")
+    if root is None:
+        filesystem = subprocess.check_output(["findmnt", "-n", "-o", "FSTYPE", "-T", path], text=True)
+        if filesystem.strip() != "tmpfs":
+            raise ValueError(f"Expected an already staged tmpfs input: {path}")
+    elif not path.is_relative_to(root) or path.stat().st_dev != root.stat().st_dev:
+        raise ValueError(f"Staged input escapes its pinned tmpfs root: {path}")
+    return path
+
+
+def deny_backing(recording):
+    """Disallow archive backing paths, except an enrolled private tmpfs bind."""
+    def guard(event, args):
+        if event != "open" or not isinstance(args[0], (str, bytes)):
+            return
+        path = Path(os.fsdecode(args[0]))
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if path.is_relative_to("/mnt/qnap01"):
+            raise ValueError("The paired research route cannot open QNAP")
+        if path.is_relative_to("/srv/bulk"):
+            staged_path(path, root=recording)
+
+    return guard
+
+
+def portable_binding(args, cutoff):
+    import empty_bootstrap as boot
+
+    file = args.portable_orbit_index
+    body = args.portable_orbit_index_sha256
+    manifest = args.portable_orbit_producer_sha256
+    if file is None:
+        if body is not None or manifest is not None:
+            raise ValueError("An index pin requires an index file")
+        return None
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", body or "") or not re.fullmatch(r"[0-9a-f]{64}", manifest or ""):
+        raise ValueError("Supply both trusted index and producer digests")
+    staged_path(file)
+    producer_path = staged_path(file.parent / "artifact-bind.json", root=file.parent)
+    producer = json.loads(boot.checked(producer_path, manifest))
+    if (producer["portable_sha256"] != body
+            or not 0 < producer["source"]["cutoff_utc_ns"] < cutoff):
+        raise ValueError("The portable producer must precede this recording's signed cutoff")
+    return [str(file), body, manifest]
+
+
+def request_from_handoff(args, handoff):
+    from leo.operations.tle_archive import TleArchiveReader
+
+    archive = args.archive
+    refs = TleArchiveReader(archive).list_snapshots("space-track")
+    cutoff = handoff.native["clock_anchor"]["before"]["realtime_ns"]
+    return (dict(archive=str(archive), portable=portable_binding(args, cutoff)),
+            dict(local_archive=dict(snapshots=len(refs), bytes=sum(ref.byte_size for ref in refs)),
+                 original_archive=dict(snapshots_sha256=args.archive_sha256), causal_cutoff_utc_ns=cutoff))
+
+
+def observe(scan, position, stack, timings, owners, *, active=None, timed_acquire=True):
+    """Observe one installed scan inside the actual release publication."""
+    from empty_bootstrap import clock, now
+
+    def timed(operation, name):
+        def wrapped(*args, **kwargs):
+            started = now()
+            try:
+                return operation(*args, **kwargs)
+            finally:
+                timings[name].append(clock(started))
+
+        return wrapped
+
+    selected, ordinary = position.selected_packet, scan.analyze
+
+    def packet(*args, **kwargs):
+        result = selected(*args, **kwargs)
+        owners.append({arm: [[row["observation_id"], row["norad"], row["role"]] for row in rows]
+                       for arm, rows in result["rows"].items()})
+        return result
+
+    def analyze(*args, **kwargs):
+        with ExitStack() as scope:
+            if active is not None:
+                scope.enter_context(active())
+            for name in (("acquire", "solve", "render") if timed_acquire else ("solve", "render")):
+                scope.enter_context(patch.object(scan, name, timed(getattr(scan, name), name)))
+            return timed(ordinary, "analyze")(*args, **kwargs)
+
+    stack.enter_context(patch.object(position, "selected_packet", packet))
+    stack.enter_context(patch.object(scan, "analyze", analyze))
+
+
+def evidence(output, receipt, packet, owners, *, verified_read=None):
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from named_hybrid_baseline import media_and_grid
+
+    result = media_and_grid(output, receipt, packet, owners, verified_read=verified_read, expected_grid=None)
+    details = FastStandardAnalysisStore(output).detail(receipt["run_id"])
+    if receipt["decision"] == "withheld":
+        if any(output.rglob("*.png")) or details["arms"] not in ({}, None):
+            raise ValueError("A withheld standard publication has unexpected arms or figures")
+    elif set(details["arms"]) != set(ARM_NAMES):
+        raise ValueError("Expected both original named calibration arms")
+    return dict(result, detail=details)
+
+
+def publish_active(args, publication, specification, handoff, _layout=None, **_options):
+    """Consume exactly one authenticated native handoff under the named specification."""
+    import empty_bootstrap as boot
+    from cold_track_row_reuse import SHARING_PIN
+    from exact_named_route import SHARING, SOURCES, digest, exact_ports
+    from joint_publication import figure_evidence
+    from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+    from named_history_once import named_solve
+    from tools import algo08_position, algo08_scan
+    from verified_png_reads import VerifiedPngReads
+
+    if (Path(algo08_scan.__file__).resolve() != boot.PAYLOAD / boot.SCANNER
+            or Path(algo08_position.__file__).resolve() != boot.PAYLOAD / "tools/algo08_position.py"
+            or digest(SHARING) != SHARING_PIN
+            or specification["detector_sha256"] == handoff.receiver):
+        raise ValueError("Expected named localization and an independently identified 20/8 ms packet")
+    bound, request = request_from_handoff(args, handoff)
+    audit = dict(rank=[], blocks=Counter(), graph={}, gates=Counter(), portable={}, png={}, verified_tle=Counter())
+    cache = VerifiedPngReads(args.output, figure_evidence, audit["png"])
+    times, owners = {name: [] for name in ("analyze", "solve", "render")}, []
+
+    @contextmanager
+    def active():
+        with (handoff.install(algo08_scan),
+              exact_ports(bound, request, audit, resident=lambda path: staged_path(path, root=args.archive)),
+              cache.capture(FastStandardAnalysisStore)):
+            yield
+
+    args.output.mkdir()
+    launch = SimpleNamespace(bulk_root=args.output, recording=args.recording, archive=args.archive, region=args.region)
+    started = boot.now()
+    with ExitStack() as stack:
+        audit["history"] = stack.enter_context(named_solve(True, boot.RELEASE, boot.PAYLOAD))
+        observe(algo08_scan, algo08_position, stack, times, owners, active=active, timed_acquire=False)
+        # The shared raw bootstrap already installed this exact lazy facade.
+        terminal = publication.run(launch, dict(specification, startup="stock"))
+    installed = boot.clock(started)
+    if handoff.calls != 1 or len(times["solve"]) != 1 or len(times["render"]) != int(terminal["decision"] == "complete"):
+        raise ValueError("The measured exact route did not perform one ordinary named solve")
+    started = boot.now()
+    sealed = evidence(args.output, terminal, canonical_digest(handoff.native), owners, verified_read=cache.read)
+    verification = boot.clock(started)
+    detail = dict(raw_route="exact_named_installed", solver_recipe=dict(recipe=MODIFIED_PORTS,
+        specification_solver=specification["solver"], rendering=specification["rendering"],
+        orbit_index="cold" if bound["portable"] is None else "verified-portable-or-cold",
+        archive_sha256=args.archive_sha256, standard_layout=True, exact_ports=True),
+        evidence=sealed, timing=times, installed=installed, verification=verification, ports=audit,
+        source_sha256={str(path.relative_to(HERE.parents[2])): digest(path)
+                       for path in {*SOURCES, Path(__file__), HERE/"named_hybrid_baseline.py"}})
+    write(args.output/"exact-named-raw-witness.json", detail)
+    return terminal, detail
+
+
+def write(path, document):
+    with path.open("x") as stream:
+        json.dump(document, stream, indent=2, allow_nan=False)
+        stream.write("\n")
+
+
+def run(args):
+    import unified_short_bootstrap as raw
+
+    for path in (args.recording, args.archive, args.output.parent):
+        staged_path(path)
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", args.archive_sha256):
+        raise ValueError("Supply the pinned causal archive digest")
+    sys.addaudithook(deny_backing(args.recording))
+    terminal = raw.run(args, publisher=publish_active)
+    if not (args.output/"exact-named-raw-witness.json").exists():
+        witness = json.loads((args.output/"unified-short-bootstrap.json").read_bytes())
+        if terminal["decision"] != "withheld" or witness["scientific_imports_after"]:
+            raise ValueError("Expected an authenticated receiver-side withhold")
+        checked = evidence(args.output, terminal, witness["native_sha256"], [])
+        write(args.output/"exact-named-raw-witness.json", dict(raw_route=witness["route"], ports=None, evidence=checked))
+    return terminal
+
+
+def parser():
+    command = argparse.ArgumentParser(description=__doc__)
+    for name in ("recording", "archive", "region", "output", "short-binary", "geographic-library",
+                 "regional-track-library", "frontier-block-library", "portable-orbit-index"):
+        command.add_argument("--"+name, type=Path, required=name != "portable-orbit-index")
+    command.add_argument("--archive-sha256", required=True)
+    command.add_argument("--portable-orbit-index-sha256")
+    command.add_argument("--portable-orbit-producer-sha256")
+    command.set_defaults(eight_ms_native_history=True, held_anchor_route=True, prove_empty_graph=True,
+                         prove_graph_time_support=True, prove_no_active_curvature=True, one_pass_web_png=False,
+                         exact_graph_reuse=False, reuse_verified_png_reads=False, lazy_scanner_detector=False)
+    return command
+
+
+if __name__ == "__main__":
+    run(parser().parse_args())
