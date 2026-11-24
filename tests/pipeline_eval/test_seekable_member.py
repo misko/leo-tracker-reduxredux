@@ -81,6 +81,27 @@ def test_unread_tail_corruption_is_outside_short_evidence(tmp_path):
             member.read(0, full=True)
 
 
+def test_eight_ms_member_keeps_full_authority_and_short_corruption_semantics(tmp_path):
+    reader, raw = original(tmp_path)
+    path = tmp_path / "eight"
+    pin = seek.create(reader, 0, path, prefix_samples=seek.EIGHT_MS_SAMPLES)
+    with pytest.raises(ValueError, match="Unknown seekable member schema"), seek.open_member(path, pin):
+        pytest.fail("8 ms input was accepted through the default layout")
+    with seek.open_member(path, pin, prefix_samples=seek.EIGHT_MS_SAMPLES) as member:
+        assert member.read(0, full=False) == raw[0][:640_000]
+        assert member.verify_all() == seek.digest(b"".join(raw))
+    tail = path / "tail.zst"
+    content = bytearray(tail.read_bytes())
+    content[0] ^= 1
+    set_contents(tail, content)
+    with seek.open_member(path, pin, prefix_samples=seek.EIGHT_MS_SAMPLES) as member:
+        with pytest.raises(ValueError, match="digest"):
+            member.verify_encoded()
+        assert member.read(0, full=False) == raw[0][:640_000]
+        with pytest.raises(ValueError, match="digest"):
+            member.read(0, full=True)
+
+
 def test_payload_omission_and_same_size_reordering_rejected(tmp_path):
     path, pin, _ = seal(tmp_path)
     prefix = path / "prefix.zst"
