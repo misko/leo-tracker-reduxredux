@@ -20,15 +20,17 @@ from sparse8_cfo_epoch_trial import LOCK, attrs, geography
 import signed_cfo_time_readout as signed
 
 
-CASE = "DS30-0086"
-BASE = PANEL/"cases"/CASE
-OFF_DIAGONAL = Path("/tmp/leo-v3-field-stock-saved-0086-01/candidate")
-PROTOCOL = HERE/"field-receiver-solver-cross-protocol.md"
 STOCK_KEY = "6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f"
-CHARTED_RECEIPTS = ("915ddc6e1c49e4725bef885ca418e7aff3e4a938464a4c2a9a1e58e14e3d06a9",
-                    "5d775bbb9ff01ca9943c8001ed316cd2d65925da8348368452ddd8c0855ae084")
-OLDER_WORKER = "36c964fe7e2cf12ed2d322bf85dc52f82f3f67877fbeb929ce35873f63b2bcf5"
-OLDER_SCORE = "b6f0afe62a52313dd8b5aaddcbdb1cfb6f1bd14349752ed9bf2929f2ed7bf6f9"
+CONTROLS = {
+    "DS30-0086": ("915ddc6e1c49e4725bef885ca418e7aff3e4a938464a4c2a9a1e58e14e3d06a9",
+                  "5d775bbb9ff01ca9943c8001ed316cd2d65925da8348368452ddd8c0855ae084",
+                  "36c964fe7e2cf12ed2d322bf85dc52f82f3f67877fbeb929ce35873f63b2bcf5",
+                  "b6f0afe62a52313dd8b5aaddcbdb1cfb6f1bd14349752ed9bf2929f2ed7bf6f9"),
+    "DS30-0220": ("982156b3591877e1f875d11dd7fc9e13618cb6fc5db013d37051a955ec83ff4b",
+                  "b8be7fef63a425d3fd15de1ca206f6ec40be65b96afa8d114fb0e8808c8a36eb",
+                  "4d73fca4e001f27faf92106bb0180f7f7bfc31d093f6a11e734061de4b8bee2a",
+                  "9d5baed1b5bac3791cda0340af30c9ea3123ab4ad719112e50ca4a9417e495ce"),
+}
 
 
 def exact_charted_policy(left, right):
@@ -50,9 +52,19 @@ def contrasts(values):
                 solver_on_full=c-a, solver_on_mixed=d-b, interaction=(d-c)-(b-a))
 
 
-def archived():
-    stage, pair, stock, authority, inventory, full = enroll(CASE)
-    pub_i, pub_m = (BASE/role/"attempt-000001"/"publication" for role in ("installed", "successor"))
+def displacements(values, distance_km):
+    pairs = dict(receiver_under_installed=("installed/full", "installed/mixed"),
+                 receiver_under_charted=("charted/full", "charted/mixed"),
+                 solver_on_full=("installed/full", "charted/full"), solver_on_mixed=("installed/mixed", "charted/mixed"))
+    return {name: distance_km(values[a], values[b]) for name,(a,b) in pairs.items()}
+
+
+def archived(case):
+    tail = case.removeprefix("DS30-")
+    chart_f_pin, chart_m_pin, worker_pin, score_pin = CONTROLS[case]
+    off_diagonal = Path(f"/tmp/leo-v3-field-stock-saved-{tail}-01/candidate")
+    stage, pair, stock, authority, inventory, full = enroll(case)
+    pub_i, pub_m = (PANEL/"cases"/case/role/"attempt-000001"/"publication" for role in ("installed", "successor"))
     mix = read(pub_m.parent/"result.json", pair["attempt_result_sha256"]["successor"])
     if (mix["raw_identity"] != authority or any(x["outcome"] != "complete" or x["process"]["exit_code"]
                                                for x in (stock,mix))):
@@ -70,11 +82,11 @@ def archived():
             or set(raw_launch[1::2]) != {"--recording", "--region", "--archive", "--bulk-root"}
             or read(pub_m/"algo08v3-successor-release.json")["build_sha256"] != "sha256:"+BUILD_PIN):
         raise ValueError("Actual original publication recipe changed")
-    chart_f = read(OFF_DIAGONAL/"exact-named-raw-witness.json", CHARTED_RECEIPTS[0])
-    check(pub_m/"exact-named-raw-witness.json", CHARTED_RECEIPTS[1])
+    chart_f = read(off_diagonal/"exact-named-raw-witness.json", chart_f_pin)
+    check(pub_m/"exact-named-raw-witness.json", chart_m_pin)
     exact_charted_policy(chart_f, chart_m)
-    charted = read(OFF_DIAGONAL/"crossover-worker.json", OLDER_WORKER)
-    previous = read(HERE/"measurements/field-installed-packet-saved-0086.json", OLDER_SCORE)
+    charted = read(off_diagonal/"crossover-worker.json", worker_pin)
+    previous = read(HERE/"measurements"/f"field-installed-packet-saved-{tail}.json", score_pin)
     if (charted["waveform_reads"] or charted["verified_handoffs"] != 1
             or chart_f["evidence"]["detail"]["input_sha256"] != stock["native_sha256"]
             or previous["native_sha256"] != stock["native_sha256"] or not previous["qualification"]["qualified"]
@@ -82,10 +94,10 @@ def archived():
         raise ValueError("Archived charted/full cell lost scientific provenance")
     return SimpleNamespace(stage=stage, pair=pair, stock=stock, mix=mix, authority=authority, inventory=inventory,
                            native=native, full=full, archived_full=charted, chart_f=chart_f, previous=previous,
-                           pubs=(pub_i,pub_m), chart_m=chart_m)
+                           pubs=(pub_i,pub_m), chart_m=chart_m, off_diagonal=off_diagonal)
 
 
-def preflight():
+def preflight(case):
     sys.path[:0] = [str(CHARTED/"reports/ALGO08/v3"), str(CHARTED)]
     import empty_bootstrap as boot
     import integrated_original_batch as batch
@@ -96,7 +108,7 @@ def preflight():
     from unified_short_bootstrap import Handoff
     from visit_frame_raw_0016 import resident
 
-    a = archived()
+    a = archived(case)
     if (launcher["FINGERPRINT"] != STOCK_KEY or spec["detector_sha256"] != signed.FULL
             or Path(algo08_scan.__file__).resolve() != boot.PAYLOAD/boot.SCANNER
             or Path(algo08_position.__file__).resolve() != boot.PAYLOAD/"tools/algo08_position.py"):
@@ -115,19 +127,21 @@ def preflight():
             or batch.archive_digest(archive, a.authority["causal_cutoff_utc_ns"]) != a.authority["archive_sha256"]):
         raise ValueError("Exact preexisting owner-private causal archive required")
     cache = resident([str(p) for p in paths])
-    plan = dict(case=CASE, original_pair=a.pair["attempt_result_sha256"], original_raw=a.authority["raw_authority_sha256"],
-                source_sha256=digest(Path(__file__).read_bytes()), protocol_sha256=digest(PROTOCOL.read_bytes()),
+    named = "field-receiver-solver-cross" if case == "DS30-0086" else "field-receiver-solver-cross-0220"
+    protocol = HERE/(named+"-protocol.md")
+    plan = dict(case=case, original_pair=a.pair["attempt_result_sha256"], original_raw=a.authority["raw_authority_sha256"],
+                source_sha256=digest(Path(__file__).read_bytes()), protocol_sha256=digest(protocol.read_bytes()),
                 native_sha256=a.mix["native_sha256"], installed_native_sha256=a.stock["native_sha256"], resident=cache,
-                solver=STOCK_KEY, released_launcher=boot.BASELINE_PIN, charted_witnesses=CHARTED_RECEIPTS,
+                solver=STOCK_KEY, released_launcher=boot.BASELINE_PIN, charted_witnesses=CONTROLS[case][:2],
                 handoff_source=digest(Path(sys.modules[Handoff.__module__].__file__).read_bytes()),
-                archived_offdiagonal=OLDER_WORKER, archive_sha256=a.authority["archive_sha256"],
+                archived_offdiagonal=CONTROLS[case][2], archive_sha256=a.authority["archive_sha256"],
                 offer_sha256=a.authority["region_sha256"], waveform_reads=0)
     return a, spec, publication, args, Handoff(session, input_sha, detector, a.native), plan, paths, resident
 
 
-def worker(root, pin):
+def worker(root, pin, case):
     entered = perf_counter()
-    a, spec, publication, args, handoff, observed, paths, resident = preflight()
+    a, spec, publication, args, handoff, observed, paths, resident = preflight(case)
     # Installed entry modules were resolved above before importing study helpers.
     from ds30_0049_saved_crossover import stock
     from leo.storage.fast_scan import FastSegmentSource
@@ -153,9 +167,10 @@ def worker(root, pin):
           verified_handoffs=handoff.calls, waveform_reads=0, archive=observed["resident"], preamble_s=before-entered))
 
 
-def launch(root, pin):
+def launch(root, pin, case):
     host = attrs(expected_priority="idle")
-    check(root/"admission.json", pin)
+    if read(root/"admission.json", pin)["case"] != case:
+        raise ValueError("Launch case differs from the frozen admission")
     with LOCK.open("rb") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -164,7 +179,7 @@ def launch(root, pin):
             return
         scratch = root/"scratch"
         scratch.mkdir()
-        command = [sys.executable, "-IB", str(Path(__file__)), "worker", str(root), "--pin", pin]
+        command = [sys.executable, "-IB", str(Path(__file__)), "worker", str(root), "--pin", pin, "--case", case]
         with (root/"stdout").open("x") as out, (root/"stderr").open("x") as err:
             start, began, before = time_ns(), perf_counter(), getrusage(RUSAGE_CHILDREN)
             try:
@@ -184,15 +199,17 @@ def launch(root, pin):
         print(digest(seal.read_bytes()))
 
 
-def score(root, pin):
-    a, *_ = preflight()
+def score(root, pin, case):
+    a, *_ = preflight(case)
     from ds30_0049_saved_crossover_score import owner_changes, publication
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from tools.pipeline_eval.scoring import distance_km
 
     seal = read(root/"prediction-seal.json", pin)
     clock = read(root/"clock.json", seal["clock"])
-    result = dict(case=CASE, clock=clock, scientific_cells=3, seal=pin)
+    if read(root/"admission.json", seal["admission"])["case"] != case:
+        raise ValueError("Score case differs from the frozen admission")
+    result = dict(case=case, clock=clock, scientific_cells=3, seal=pin)
     if clock["exit_code"]:
         write(root/"score.json", result | dict(disposition="failed fourth worker"))
         return
@@ -200,24 +217,25 @@ def score(root, pin):
     check(control/"crossover-worker.json", seal["worker"])
     missing = publication(control, a.mix)
     stock, mix = a.stock,a.mix
-    charts = [read(OFF_DIAGONAL/"fast-scan-automatic-work"/a.archived_full["receipt"]["run_id"]/"terminal.json",
+    charts = [read(a.off_diagonal/"fast-scan-automatic-work"/a.archived_full["receipt"]["run_id"]/"terminal.json",
                    a.archived_full["receipt"]["terminal_sha256"])["arms"], mix["evidence"]["arms"]]
     named = [stock["evidence"]["arms"], missing["terminal"]["arms"]]
     cells = dict(zip(("installed/full", "installed/mixed", "charted/full", "charted/mixed"), named+charts, strict=True))
-    georef = geography(CASE)
+    georef = geography(case)
     arms = {}
     for arm in ARMS:
         errors = {cell: distance_km(georef, values[arm]["latlon"]) for cell,values in cells.items()}
         rf = {cell: values[arm]["rf_rms_hz"] for cell,values in cells.items()}
         all_owned = {}
         for cell, (path, receipt) in zip(cells, ((a.pubs[0],stock["evidence"]["receipt"]), (control,missing["receipt"]),
-                                               (OFF_DIAGONAL,a.archived_full["receipt"]), (a.pubs[1],mix["evidence"]["receipt"])), strict=True):
+                                               (a.off_diagonal,a.archived_full["receipt"]), (a.pubs[1],mix["evidence"]["receipt"])), strict=True):
             detail = FastStandardAnalysisStore(path).detail(receipt["run_id"])
             if detail["terminal_sha256"] != receipt["terminal_sha256"]:
                 raise ValueError("Report is detached from its archived terminal")
             all_owned[cell] = (detail["arms"][arm]["residual_rms_hz"] if receipt["decision"] == "complete" else None)
         arms[arm] = dict(error_km=errors, conditional_rf_hz=rf, all_owned_rf_hz=all_owned,
-                         error_effects_km=contrasts(errors), rf_effects_hz=contrasts(rf))
+                         error_effects_km=contrasts(errors), rf_effects_hz=contrasts(rf),
+                         endpoint_displacement_km=displacements({k:v[arm]["latlon"] for k,v in cells.items()}, distance_km))
     if missing["terminal"]["region"] != stock["evidence"]["receipt"]["region"]:
         raise ValueError("Missing cell changed geographic offer")
     write(root/"score.json", result | dict(scientific_cells=4, arms=arms, grid=missing["grid"], path=missing["path"],
@@ -232,16 +250,17 @@ if __name__ == "__main__":
     parser.add_argument("action", choices=("prepare", "worker", "launch", "score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
+    parser.add_argument("--case", choices=CONTROLS, default="DS30-0086")
     args = parser.parse_args()
     sys.addaudithook(deny_backing)
     if args.action == "prepare":
         if args.root.parent.resolve() != Path("/dev/shm") or args.root.exists():
             parser.error("Use one fresh private tmpfs output root")
-        *_, plan, _, _ = preflight()
+        *_, plan, _, _ = preflight(args.case)
         args.root.mkdir(mode=0o700)
         write(args.root/"admission.json", plan)
         print(digest((args.root/"admission.json").read_bytes()))
     elif args.pin:
-        {"worker":worker, "launch":launch, "score":score}[args.action](args.root, args.pin)
+        {"worker":worker, "launch":launch, "score":score}[args.action](args.root, args.pin, args.case)
     else:
         parser.error("Pass the sealed preflight or prediction hash")

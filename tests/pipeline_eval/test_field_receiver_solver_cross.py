@@ -1,8 +1,9 @@
 from copy import deepcopy
+from math import dist
 
 import pytest
 
-from field_receiver_solver_cross import contrasts, exact_charted_policy
+from field_receiver_solver_cross import contrasts, displacements, exact_charted_policy
 
 
 def test_interaction_uses_matched_receiver_and_solver_contrasts():
@@ -25,3 +26,9 @@ def test_charted_policy_preserves_configuration_with_different_branch_outcomes()
     alternate['source_sha256']['path'] = 'other'
     with pytest.raises(ValueError, match='source bytes'):
         exact_charted_policy(witness, alternate)
+
+
+def test_displacements_use_between_endpoint_distances():
+    xy = {"installed/full": (0, 0), "installed/mixed": (3, 4), "charted/full": (0, 4), "charted/mixed": (3, 0)}
+    assert displacements(xy, dist) == dict(receiver_under_installed=5, receiver_under_charted=5,
+                                          solver_on_full=4, solver_on_mixed=4)
