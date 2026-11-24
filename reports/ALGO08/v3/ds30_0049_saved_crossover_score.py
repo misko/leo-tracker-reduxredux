@@ -1,10 +1,12 @@
 """Verify saved diagonal identity, then reduce the four published crossover cells."""
 
 import argparse
+from collections import Counter
 from io import BytesIO
 import json
 from math import isfinite
 from pathlib import Path
+from statistics import median
 import subprocess
 
 from ds30_0049_saved_crossover import ARMS, CASE, MODE, ROOT, ROLES, bind_input, one, read
@@ -104,6 +106,44 @@ def owner_changes(a, b):
     return result
 
 
+def retained_native_support(packets, original_owners, successor_owners):
+    """Join ordered observation identities to each receiver's actual accepted support."""
+    elected = {}
+    for role, native in packets.items():
+        session = native["source"]["session_id"]
+        winners = {}
+        for row in native["source"]["probes"]:
+            lane = batch.tagged_bytes(f"{session}:{row['receiver_id']}:{row['valid_start_counter']}".encode())
+            if lane in winners:
+                raise ValueError("A signed lane was repeated")
+            winners[lane] = max((r for r in row["candidates"] if r["passed_fractional_margin_gate"]),
+                                key=lambda r: (r["fractional_margin"], -r["candidate_rank"]), default=None)
+        elected[role] = winners
+    stock, alternate = (elected[role] for role in ROLES)
+    if stock.keys() != alternate.keys():
+        raise ValueError("The raw pair does not offer identical receiver lanes")
+    prior, recent = ({row[0] for row in roster} for roster in (original_owners, successor_owners))
+    support = {}
+    for name, keys in (("lost", prior-recent), ("shared", prior & recent), ("added", recent-prior)):
+        states, frequency, epoch = Counter(), [], []
+        identical = 0
+        for key in keys:
+            a, b = stock[key], alternate[key]
+            states[f"{'accepted' if a else 'empty'}_to_{'accepted' if b else 'empty'}"] += 1
+            if a is None or b is None:
+                continue
+            f = abs(a["fractional_tracking_cfo_hz"] - b["fractional_tracking_cfo_hz"])
+            e = abs((a["integer_epoch_sample"] - b["integer_epoch_sample"])
+                    + a["fractional_epoch_offset_samples"] - b["fractional_epoch_offset_samples"])
+            frequency.append(f)
+            epoch.append(e)
+            identical += f == e == 0
+        support[name] = dict(lanes=len(keys), states=dict(states), exact_pairs=identical,
+                             median_abs_cfo_delta_hz=median(frequency) if frequency else None,
+                             median_abs_epoch_delta_samples=median(epoch) if epoch else None)
+    return dict(matched_lanes=len(stock), support=support)
+
+
 def geography():
     raw = subprocess.check_output(["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show",
                                     "2d0ad2dfd:reports/2026_11_21_ds30_full/reference-audit.json"])
@@ -130,7 +170,7 @@ def effects(errors):
                 solver_with_successor_receiver=f-r, interaction=f-r-s+i)
 
 
-def score(root, full):
+def score(root, full, receipt):
     from tools.pipeline_eval.scoring import distance_km
 
     authority, _, packets, raw, _ = bind_input()
@@ -170,12 +210,19 @@ def score(root, full):
                   owner_changes=comparisons, raw_diagonal_equivalence=checks, raw_metadata=authority,
                   receiver_factor_counts=factors, waveform_reads=0,
                   raw_clocks={role: {k: raw[role][k] for k in ("elapsed_s", "cpu_s", "process")} for role in ROLES})
-    batch.write(root / "result.json", output)
+    output["native_support"] = {arm: retained_native_support(
+        packets, cells["installed-installed"]["owner_rows"][arm], cells["successor-successor"]["owner_rows"][arm])
+        for arm in ARMS}
+    output["ordered_owner_rows"] = {mode: result["owner_rows"] for mode, result in cells.items()}
+    output["owner_row_source_sha256"] = {mode: batch.tagged_bytes(
+        (root / mode / "crossover-worker.json").read_bytes()) for mode in cells}
+    batch.write(receipt or root / "result.json", output)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--full", action="store_true")
+    parser.add_argument("--receipt", type=Path)
     args = parser.parse_args()
-    score(args.root, args.full)
+    score(args.root, args.full, args.receipt)
