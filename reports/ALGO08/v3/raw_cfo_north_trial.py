@@ -121,12 +121,12 @@ def saved_worker(root):
                   started=started, runtime=runtime)
 
 
-def publish_saved(request, target, offer, packet, native, raw, *, started, runtime=None):
+def publish_saved(request, target, offer, packet, native, raw, *, started, runtime):
     import empty_bootstrap as staged
     import unified_short_bootstrap as entry
     from time import process_time
 
-    _, specification, sources, publication, pins = staged.load_runtime() if runtime is None else runtime
+    _, specification, sources, publication, pins = runtime
     from aperture_trial import read, write
     from cumulative_grid_projection import saved_inventory_port
     from leo.analysis.glrt_frequency_input import frequency_evidence

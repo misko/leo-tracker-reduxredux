@@ -155,3 +155,31 @@ def test_mirror_enrollment_rejects_substituting_the_containing_offer(monkeypatch
     source[mirror.MIRROR] = dict(offer, center=[0, 0])
     with pytest.raises(ValueError, match="originally assigned near-omitted"):
         mirror.enrollment()
+
+
+def test_mirror_worker_installs_the_lazy_runtime_before_signed_validation(monkeypatch, tmp_path):
+    import continued_cfo_north_mirror as mirror
+    import empty_bootstrap
+
+    phases = []
+    request, raw = {"session": "session"}, {"native_sha256": "sha256:packet"}
+
+    def load():
+        phases.append("runtime")
+        return "installed"
+
+    def enroll():
+        assert phases == ["runtime"]
+        phases.append("signed")
+        return request, "packet", {}, raw
+
+    def publish(*args, runtime, **kwargs):
+        assert runtime == "installed"
+        phases.append("published")
+
+    monkeypatch.setattr(empty_bootstrap, "load_runtime", load)
+    monkeypatch.setattr(mirror, "enrollment", enroll)
+    monkeypatch.setattr(mirror, "publish_saved", publish)
+    (tmp_path / "binding.json").write_text(json.dumps(dict(request=request, source_sha256={}, **raw)))
+    mirror.worker(tmp_path)
+    assert phases == ["runtime", "signed", "published"]

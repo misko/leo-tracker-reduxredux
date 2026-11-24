@@ -50,14 +50,17 @@ def checked_path(row):
 
 
 def worker(root):
+    from empty_bootstrap import load_runtime
+
     started = process_time(), perf_counter()
+    runtime = load_runtime()
     request, packet, native, raw = enrollment()
     binding = read(root / "binding.json")
     if binding["request"] != request or binding["native_sha256"] != raw["native_sha256"]:
         raise ValueError("The saved invocation differs from the frozen original data and offer")
     for name, pin in binding["source_sha256"].items():
         checked(HERE / name, pin)
-    publish_saved(request, root / ORDER[1], MIRROR, packet, native, raw, started=started)
+    publish_saved(request, root / ORDER[1], MIRROR, packet, native, raw, started=started, runtime=runtime)
 
 
 def launch(root):
