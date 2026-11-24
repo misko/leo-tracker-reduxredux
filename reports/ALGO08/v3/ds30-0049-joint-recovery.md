@@ -109,6 +109,10 @@ with its original publication. An existing charted installed-packet result
 supplies a fixed-fitter comparator. DS30-0086 and DS30-0049 are separate
 captures from the same roof. [Exact original pair and saved crossover](field-receiver-solver-cross-0086.md) · [Original mixed saved parity](sparse8-cfo-epoch.md)
 
+The completed transfer improved both arms relative to original sparse by
+152.088 m fixed-zero and 82.864 m fitted, below the 250 m DS30-0049
+development yardstick. [Joint DS30-0086 result](ds30-0086-joint-recovery.md)
+
 ## Admission record
 
 The first 15-second watch found no qualifying storage deferral. A separate
