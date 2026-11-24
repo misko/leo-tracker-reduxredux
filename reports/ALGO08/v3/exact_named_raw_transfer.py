@@ -7,13 +7,12 @@ import json
 from pathlib import Path
 import shutil
 import sys
-from types import SimpleNamespace
 from unittest.mock import patch
-
-import exact_named_raw as entry
 
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import exact_named_raw as entry
 ORDER = ("named", "candidate", "north-far-saved")
 RAW_PACKET = "sha256:77d3552cc660e3492b74bb853e3e88d697e7b7d48751de6085dac3e0320cf47b"
 SOURCES = ("exact-named-raw-protocol.md", "exact_named_raw.py", "exact_named_raw_transfer.py",
