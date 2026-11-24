@@ -105,8 +105,9 @@ def verified_rows(root):
                 raise ValueError(f"Different selected attempt for {case}/{role}")
             attempt = json.loads(checked(attempt_path, pin))
             evidence = attempt["evidence"]
+            arms = {name: dict(latlon=None, rf_rms_hz=None) | evidence["arms"][name] for name in ARMS}
             if (any(attempt[key] != row[key] for key in ("algorithm", "authority_sha256", "cpu_s", "elapsed_s", "generation", "outcome", "timing_scope"))
-                    or evidence["raw_authority"] != row["raw_authority_sha256"] or evidence["arms"] != row["arms"]
+                    or evidence["raw_authority"] != row["raw_authority_sha256"] or arms != row["arms"]
                     or evidence["receipt"].get("terminal_sha256") != row["terminal_sha256"]
                     or any(attempt["process"][key] != row["child_"+key] for key in ("started_unix_ns", "finished_unix_ns", "cpu_s", "elapsed_s"))):
                 raise ValueError(f"Export differs from the paid original attempt for {case}/{role}")
