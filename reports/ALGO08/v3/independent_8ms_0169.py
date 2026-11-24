@@ -217,11 +217,59 @@ def launch(root):
         write(root / f"{mode}-clock.json", dict(timing=clock, command=list(map(str, cmd))))
 
 
+def score(root):
+    from aperture_trial import write
+    from empty_bootstrap import checked
+    from family_endpoint_transfer import settings
+    from leo.contracts.digests import canonical_digest
+    from prospective_0316_solver import inspect, owner_delta
+    from tools.pipeline_eval.scoring import distance_km
+    from triage_bounds import REFERENCE, REFERENCE_SHA256
+
+    plan = json.loads((root / "plan.json").read_bytes())
+    historical = read(Path("/dev/shm/leo-v3-family-endpoint-0169-final.json"))
+    refs = json.loads(checked(REFERENCE, REFERENCE_SHA256))["cases"]
+    (ref,) = [r["reference"] for r in refs if r["dataset_label"] == "DS30-0169"
+              and r["authority_eligible"] and r["sealed_metadata_digests_verified"]]
+    truth = [ref[key] for key in ("latitude_deg", "longitude_deg")]
+    captures, rows = {}, {}
+    for mode in ORDER:
+        path = root / mode
+        clock = json.loads((root / f"{mode}-clock.json").read_bytes())["timing"]
+        if clock["exit_code"]:
+            captures[mode] = dict(process=clock, decision="worker_failed")
+            continue
+        req = json.loads((root / f"{mode}-request.json").read_bytes())
+        audit = json.loads((path / settings(req)["audit_name"]).read_bytes())
+        description = f"DS30-0169 {mode} first-member only with unchanged released 20 ms suffix"
+        found = inspect(path, mode, audit["receipt"], clock, req, **settings(req), detector=req["detector"],
+                        input_description=description)
+        if found["terminal"]["region"] != req["offer"]:
+            raise ValueError("The original matched containing offer changed")
+        rows[mode] = found.pop("selected_rows")
+        scores = {arm: dict(horizontal_error_km=distance_km(truth, row["latlon"]) if row["latlon"] else None,
+                             rf_rms_hz=row["rf_rms_hz"]) for arm, row in found["terminal"]["arms"].items()}
+        witness = json.loads((path / "bound-package.json").read_bytes())
+        captures[mode] = dict(found, scores=scores, entered_original_final_fit=witness["entered_fixed_final_fit"],
+                              owners_sha256=canonical_digest(rows[mode]))
+    differences = {} if len(rows) != 2 else {arm: owner_delta(*(rows[m].get(arm, []) for m in ORDER))
+                                            for arm in ("c0", "fitted_c")}
+    fig_a, fig_b = (captures[m].get("figures", {}) for m in ORDER)
+    figure_parity = {name: canonical_digest(left) == canonical_digest(fig_b[name]) for name, left in fig_a.items()
+                     if name in fig_b}
+    write(root / "result.json", dict(case="DS30-0169", plan=plan, runs=captures, owner_change=differences,
+                                    figures_equal=figure_parity, named_20ms_context=historical["scores"]["stock"],
+                                    reference_sha256=REFERENCE_SHA256, waveform_member_traversals=1, saved_waveform_reads=0))
+
+
 if __name__ == "__main__":
     mode, path, *extra = sys.argv[1:]
-    if mode == "worker":
+    if mode in ("worker", "score"):
         sys.path[:0] = [str(SOLVER), str(HERE)]
-        worker(Path(path), extra[0])
+        if mode == "worker":
+            worker(Path(path), extra[0])
+        else:
+            score(Path(path))
     else:
         sys.path.insert(0, str(HERE))
         {"launch": launch, "prepare": prepare}[mode](Path(path))
