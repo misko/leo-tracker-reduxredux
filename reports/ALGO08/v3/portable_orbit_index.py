@@ -22,8 +22,8 @@ BODY = struct.Struct("<32sI")
 RECORD = struct.Struct("<Iq")
 
 
-def digest_bytes(digest):
-    if not isinstance(digest, str) or not digest.startswith("sha256:"):
+def digest_bytes(digest, *, labelled=True):
+    if not isinstance(digest, str) or (labelled and not digest.startswith("sha256:")):
         raise ValueError("Expected an explicit SHA-256")
     encoded = digest.removeprefix("sha256:")
     raw = bytes.fromhex(encoded)
@@ -64,7 +64,7 @@ class Artifact:
     bodies: dict
 
     def rows(self, digest):
-        match = self.bodies.get(digest)
+        match = self.bodies.get(digest.removeprefix("sha256:"))
         if match is None:
             return None
         offset, count = match
@@ -98,7 +98,7 @@ def decode(payload, pin, compatibility):
         cursor += BODY.size
         if (digest <= previous or not 0 < count <= MAX_RECORDS or len(payload)-cursor < count*RECORD.size):
             raise ValueError("Invalid ordered orbit index source or row count")
-        offsets["sha256:"+digest.hex()] = cursor, count
+        offsets[digest.hex()] = cursor, count
         cursor += count*RECORD.size
         previous = digest
     if cursor != len(payload):
@@ -111,11 +111,12 @@ def write_index(file, source, compatibility):
     if not 0 < len(header) <= MAX_HEADING:
         raise ValueError("Orbit index heading exceeds the byte bound")
     payload = bytearray(MAGIC + HEADER.pack(len(header), len(source.bodies)) + header)
-    for digest, cat in sorted(source.bodies.items()):
+    bodies = sorted((digest_bytes(digest, labelled=False), cat) for digest, cat in source.bodies.items())
+    for digest, cat in bodies:
         count = len(cat.names)
         if not 0 < count <= MAX_RECORDS or len(payload)+BODY.size+count*RECORD.size > MAX_BYTES:
             raise ValueError("Orbit index source exceeds the record or byte bound")
-        payload.extend(BODY.pack(digest_bytes(digest), count))
+        payload.extend(BODY.pack(digest, count))
         for _, number, epoch in zip(cat.names, cat.satellite_numbers, cat.epochs, strict=True):
             if number <= 0:
                 raise ValueError("Invalid native catalogue object number")
