@@ -20,19 +20,21 @@ and the comparison adds no blind speed or accuracy observation.
 | Candidate local catalogue union | 43 snapshot files, 76,890,556 represented bytes |
 | Latest snapshot in that union | 2026-11-19 23:01:44.776213741 UTC |
 
-The bounded metadata census listed 23 catalogue-shaped roots under
-`/dev/shm` and `/tmp` as the worker account. A complementary workspace
-account check found one additional empty root and the same candidate
-union. Its filename digest was
+The worker account could inspect 23 catalogue roots under `/dev/shm`
+and `/tmp`. A final read-only privileged metadata check covered **84**
+catalogue roots across the same two mounts and encountered no permission
+errors in the screened paths. It pruned test and source trees, stayed
+on each tmpfs device, and refused symlinks. The larger check found
+the same 43-snapshot union. Its filename digest was
 `sha256:ec1efa4d632f952a27b457b26d98c8d0244ad55a46c743fc17d0b752f721e798`,
 compared with the release's required
 `sha256:d522aeef3c5da9b482cf58465bf7f8e06d752efc78131605ffc7e883c59a78b6`.
 The union used the original 72-hour admission window with the recording
 name as the nominal start and the exact signed upper cutoff. That inventory
-cannot establish the exact missing-file count. The census covers the
-accessible named stage paths recorded in the receipt. The original backing
-archive was left unopened, and the preflight read no catalogue body
-or waveform bytes.
+cannot establish the exact missing-file count. Both censuses record
+their scoped inventory. The preflight inspected only local filename
+and size metadata for catalogues. It opened no backing archive and
+read no catalogue body or waveform bytes.
 
 The candidate runtime was pinned to the unchanged DS30-0255 remediation
 source `3a49c5f1241f935d30f3348eed77c8d3c7e4a919`. The only measured
@@ -53,4 +55,4 @@ Eighteen admission and adjacent handoff tests passed.
 [Tests](../../../tests/pipeline_eval/test_nomination_handoff_0419_admission.py) ·
 [Machine receipt](measurements/nomination-handoff-0419-admission.json.gz),
 uncompressed SHA-256
-`fb39f0fc6055cdff31f02fa0b146d11800a48eeb697ade3b51da31faf097310d`.
+`f73374c1223eb6819e62b841cbe8a2a64a9781787afd0624b56c0711d7c2a9b9`.
