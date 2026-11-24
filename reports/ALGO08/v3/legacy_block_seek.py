@@ -9,7 +9,9 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+from resource import RUSAGE_SELF, getrusage
 import subprocess
+from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
 
 import numpy as np
@@ -20,7 +22,6 @@ from leo.storage import short_window
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader
 
-from .seekable_member_trial import clock, elapsed
 from .zstd_structure import inspect, literal_section
 
 SCHEMA = "private-legacy-zstd-block-map-v1"
@@ -28,6 +29,15 @@ PREFIX_BYTES = 80_000 * 8
 WINDOW_BYTES = 200_000 * 8
 MAX_MAP = 262_144
 ORDERS = (("stock", "selective"), ("selective", "stock"))
+
+
+def clock():
+    return perf_counter_ns(), process_time_ns(), getrusage(RUSAGE_SELF).ru_inblock
+
+
+def elapsed(start):
+    durations = (end - begin for begin, end in zip(start, clock(), strict=True))
+    return dict(zip(("wall_ns", "cpu_ns", "input_blocks"), durations, strict=True))
 
 
 class UnsupportedLayout(ValueError):
