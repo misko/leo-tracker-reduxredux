@@ -20,6 +20,11 @@ from visit_frame_raw_0016 import REFERENCE, checked, digest, references, residen
 ORDER = ("ordinary", "indexed")
 CENSUS = Path("/dev/shm/leo-original-frame-coverage-0016-01.json")
 CENSUS_PIN = "6f9fc7a4469b34c744fea8fedc1ee3b04a6b9e61f9e1401c8a6fda9ff52c567b"
+RECOVERY_PINS = {
+    "admission.json": "152a5fafc1d14b6c6e676b8a9a0c97a82a53122fcb46707d0a7e01b92555b4b5",
+    "ordinary-clock.json": "761b34993eadddedd125c2e085146b09ea862f26c345b7973df3fa8c2ca791dd",
+    "indexed-clock.json": "5a71f45ae6f753c185af289e5291cff938f768cdc019c71168b7e8423e11934d",
+}
 SOURCES = (
     "legacy_block_raw_0016.py",
     "legacy_block_raw_entry.py",
@@ -319,13 +324,102 @@ def launch(root):
         write(root / "prediction-seal.json", seal(root))
 
 
+def recover_indexed(root):
+    import empty_bootstrap as boot
+
+    sys.path.extend((str(boot.RELEASE / "src"), str(boot.RELEASE)))
+    from aperture_trial import write
+    from combined_raw_trial import PRODUCER
+    from dense_geographic_trial import host
+    from eight_ms_0107_pair import verified_scope
+    from eight_ms_south_transfer import environment_for
+    from guarded_stage_checkpoint import staging_lock
+    from history_risk_0016_raw import RECORDING, STAGE, STAGING_LOCK, enrolled, require_custody
+    from leo.operations.tle_archive import TleArchiveReader
+    from raw_0016_best_trial import measure_mode
+
+    prior, ordinary, failed = (checked(root / name, pin) for name, pin in RECOVERY_PINS.items())
+    changed = {name for name, pin in runtime_pins().items() if prior["sources"][name] != pin}
+    allowed = {
+        f"reports/ALGO08/v3/{name}"
+        for name in (
+            "legacy_block_raw_entry.py",
+            "legacy_block_raw_score.py",
+            "legacy_block_raw_0016.py",
+            "legacy_block_seek.py",
+            "legacy_block_input.py",
+        )
+    }
+    if (
+        (root / "indexed").exists()
+        or (root / "prediction-seal.json").exists()
+        or not changed <= allowed
+    ):
+        raise ValueError("Only the previously unstarted indexed scope may resume")
+    if (
+        ordinary["clock"]["exit_code"]
+        or failed["clock"]["exit_code"] != 1
+        or "lazy reexports must start in a fresh ALGO08 process"
+        not in failed["clock"]["stderr_tail"]
+        or ordinary["command"] != prior["commands"]["ordinary"]
+        or host() != prior["machine"]
+    ):
+        raise ValueError("The sealed ordinary child or pre-acquisition failure changed")
+    if (
+        digest(root / "maps/custody.json") != prior["map_custody_sha256"]
+        or digest(root / "maps/legacy-block.so") != prior["preparation"]["build"]["binary_sha256"]
+        or any(
+            digest(root / "maps" / row["map"]) != row["map_sha256"]
+            for row in prior["plan"]["members"]
+            if row["map"]
+        )
+    ):
+        raise ValueError("The previously paid verified maps changed")
+    archive = Path(prior["request"]["archive"]["root"])
+    tlepaths = [ref.path for ref in TleArchiveReader(archive).list_snapshots("space-track")]
+    indexpaths = [PRODUCER.file, PRODUCER.file.parent / "artifact-bind.json"]
+    with staging_lock(STAGING_LOCK):
+        verified_scope(STAGE / RECORDING.name, RECORDING)
+        if require_custody(STAGE, enrolled()) != prior["source_custody_sha256"]:
+            raise ValueError("The original stage changed while preparing the indexed recovery")
+        resident(prior["wavepaths"])
+        resident(tlepaths)
+        resident(indexpaths)
+        previous_seal = seal(root)
+        unwritten = root / "indexed-bootstrap"
+        unwritten.mkdir()
+        for name in ("indexed-clock.json", "indexed.stdout", "indexed.stderr"):
+            (root / name).rename(unwritten / name)
+        write(
+            root / "recovery.json",
+            dict(
+                original_pins=RECOVERY_PINS,
+                previous_seal=previous_seal,
+                sources=runtime_pins(),
+                updated_sources=sorted(changed),
+                scope="indexed before raw acquisition",
+            ),
+        )
+        measure_mode(
+            root,
+            "indexed",
+            prior["commands"]["indexed"],
+            environment_for(root),
+            lambda: resident(prior["wavepaths"]),
+        )
+        write(root / "causal-after.json", dict(tle=resident(tlepaths), index=resident(indexpaths)))
+        write(root / "prediction-seal.json", seal(root))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("action", choices=("launch", "score"))
+    cli.add_argument("action", choices=("launch", "recover-indexed", "score"))
     cli.add_argument("root", type=Path)
     options = cli.parse_args()
     if options.action == "launch":
         launch(options.root)
+    elif options.action == "recover-indexed":
+        recover_indexed(options.root)
     else:
         from legacy_block_raw_score import score
 

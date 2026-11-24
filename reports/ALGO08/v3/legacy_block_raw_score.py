@@ -162,8 +162,18 @@ def score(root):
     from publication_media_checks import verify_position_sidecars
 
     book = read(root / "admission.json")
-    if read(root / "prediction-seal.json") != seal(root) or book["sources"] != runtime_pins():
+    sealed = read(root / "prediction-seal.json")
+    recovery_path = root / "recovery.json"
+    recovery = read(recovery_path) if recovery_path.exists() else None
+    if sealed != seal(root) or (recovery or book)["sources"] != runtime_pins():
         raise ValueError("One or more paid outputs or frozen sources changed")
+    if recovery is not None:
+        moved = {"indexed-clock.json", "indexed.stdout", "indexed.stderr"}
+        if any(
+            sealed["indexed-bootstrap/" + name if name in moved else name] != pin
+            for name, pin in recovery["previous_seal"].items()
+        ):
+            raise ValueError("One or more artifacts from the previous launch changed")
     logs = {mode: read(root / f"{mode}-clock.json") for mode in ORDER}
     if any(logs[mode]["command"] != book["commands"][mode] for mode in ORDER):
         raise ValueError("Measured argv differs from the frozen matched pair")
@@ -241,6 +251,7 @@ def score(root):
         root / "result.json",
         dict(
             qualified=True,
+            recovery=recovery,
             case=book["case"],
             admission=book,
             products=products,
