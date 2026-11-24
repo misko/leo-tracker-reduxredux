@@ -157,3 +157,15 @@ def test_latest_materializes_at_the_causal_return_port(monkeypatch):
         assert caught_by_regional_wrapper.catalogue.satellites[0].signed_lines == ("one", "two")
         assert caught_by_regional_wrapper.provenance == selected.provenance
     assert audit == {"coarse_latest": 1, "distinct_scan_objects": 1}
+
+
+def test_publication_comparison_ignores_only_explicit_timing_fields():
+    from historical_orbit_publication import TIMING_FIELDS, compared_receipt
+
+    measured = {scope: {name: 10 for name in names} | {"calibration_cutoff_ns": 2}
+                for scope, names in TIMING_FIELDS.items()}
+    measured["sparse_rank_projection"] = [{"shifted_cpu_s": .1, "replacement_cells": 2}]
+    result = compared_receipt(measured)
+    assert all(result[scope] == {"calibration_cutoff_ns": 2} for scope in TIMING_FIELDS)
+    assert result["sparse_rank_projection"] == [{"replacement_cells": 2}]
+    assert "direct_assembly_ns" in measured["curved_design"]

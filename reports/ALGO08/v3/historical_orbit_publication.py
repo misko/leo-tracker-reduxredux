@@ -13,6 +13,21 @@ REFERENCE = Path("/dev/shm/leo-v3-continued-refine-results-03")
 BINDING_PIN = "d3a1c17592f6f4f626cb4fa994633be171d5d32ab8da7eb7126095b8b9e6aaef"
 REFERENCE_PIN = "116ffb08ed230a21d6209a050a42a0293ea2e3ed94cdd72a807f8a49adb1b7e7"
 CLOCK_PIN = "d2285d8e9c2acc2da3d3e433cbe155d730e11758ef33b7c3a221d01f7d02e7eb"
+TIMING_FIELDS = {
+    "curved_design": {"direct_assembly_ns", "history_selection_ns", "normal_selection_ns"},
+    "endpoint_reuse": {"endpoint_cpu_s"},
+    "graph_path": {"pack_ns", "search_ns"},
+    "posterior_grid_handoff": {"curved_cpu_ns", "gram_or_check_cpu_ns", "predictive_kernel_cpu_ns"},
+}
+
+
+def compared_receipt(receipt):
+    result = dict(receipt)
+    for scope, names in TIMING_FIELDS.items():
+        result[scope] = {key: value for key, value in receipt[scope].items() if key not in names}
+    result["sparse_rank_projection"] = [{key: value for key, value in row.items() if key != "shifted_cpu_s"}
+                                        for row in receipt["sparse_rank_projection"]]
+    return result
 
 
 def worker(root):
@@ -98,7 +113,8 @@ def score(root):
     products = scientific(target)
     if (actual["handoffs"] != 1 or actual["waveform_calls"] or receipt["decision"] != "complete"
             or products != scientific(REFERENCE/"selective") or products["grid_points"] != 179
-            or receipt != prior["science"]["receipt"] or terminal["arms"] != prior["science"]["arms"]
+            or compared_receipt(receipt) != compared_receipt(prior["science"]["receipt"])
+            or terminal["arms"] != prior["science"]["arms"]
             or detail["raw_authority"] != prior["science"]["raw_authority"]
             or {arm: value["owner_sha256"] for arm, value in detail["arms"].items()} != prior["science"]["owners"]
             or canonical_digest(media["images"]) != canonical_digest(prior["images"]["images"])
@@ -110,7 +126,8 @@ def score(root):
         reference=prior["process"], candidate=clock), audit=audit, publication=publication,
         solves=dict(reference=prior_trace["solve"], candidate=candidate_trace["solve"]), science=products,
         arms=terminal["arms"], geography=prior["geography"], media=media, candidate_waveform_reads=0,
-        candidate_handoffs=1, scoring_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
+        candidate_handoffs=1, candidate_terminal_receipt=receipt,
+        scoring_source_sha256=sha256(Path(__file__).read_bytes()).hexdigest()))
 
 
 def preflight():
