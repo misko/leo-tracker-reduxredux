@@ -249,11 +249,16 @@ def recover_metadata(root):
     measure_child(root, "candidate", "candidate-recovery")
 
 
+def grid_identity(grid):
+    return {key: value for key, value in grid.items() if key != "elapsed_seconds"}
+
+
 def score(root, *, recovered=False):
     from aperture_trial import read, write
     from contiguous_third import calibration_owners
     from joint_publication import artifacts
     from leo.contracts.digests import canonical_digest
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from raw_cfo_north_trial import native_file
     from prospective_0316_solver import owner_delta
     from triage_bounds import calibration_comparison
@@ -289,12 +294,22 @@ def score(root, *, recovered=False):
               for arm in ("c0", "fitted_c")} if complete else None
     failed = {}
     if recovered:
+        prior_store, current_store = (FastStandardAnalysisStore(root / name) for name in ("candidate", "candidate-recovery"))
         prior = read(root / "candidate" / "joint-research-receipt.json")
+        run = prior["receipt"]["run_id"]
+        prior_figures = artifacts(root / "candidate", prior["receipt"])
+        current_figures = results["candidate"]["figures"]
+        if canonical_digest(prior_figures) != canonical_digest(prior["evidence"]):
+            raise ValueError("The first candidate's scientific products changed")
         failed = dict(clock=read(root / "candidate-clock.json"), figures=prior["evidence"],
                       same_published_terminal=prior["receipt"]["terminal_sha256"] ==
                       results["candidate"].get("worker", {}).get("receipt", {}).get("terminal_sha256"),
-                      same_published_figures=canonical_digest(prior["evidence"]) ==
-                      canonical_digest(results["candidate"].get("figures")),
+                      same_published_figures=prior_figures["images"] == current_figures["images"],
+                      same_position_path=prior_figures["path"] == current_figures["path"],
+                      same_position_grid=grid_identity(prior_store.position_grid(run)) ==
+                      grid_identity(current_store.position_grid(run)),
+                      same_ordered_owners=prior["selected_rows"] == results["candidate"]["selected_rows"],
+                      first_solve_cpu_s=prior["solve"]["cpu_s"],
                       grid_projection_source_sha256=sha256((HERE/"grid_feature_projection.c").read_bytes()).hexdigest())
     write(root / ("verified-result.json" if recovered else "result.json"),
           dict(binding=binding, results=results, both_positive=complete, accuracy=accuracy, owners=owners,

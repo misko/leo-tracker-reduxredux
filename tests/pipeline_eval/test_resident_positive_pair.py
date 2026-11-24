@@ -74,3 +74,8 @@ class PhysicalRangeTests(unittest.TestCase):
                       provenance=dict(window_count=1, excluded_windows=[]))
         with patch.object(saved, "RANGE", (0, 1)), self.assertRaisesRegex(ValueError, "chronology"):
             saved.clip(parent, dict(segments=[dict(windows=1)], window_count=1), "original")
+
+    def test_recovery_grid_keeps_all_values_separate_from_clock(self):
+        grid = dict(points=[dict(scores={"c0": 1, "fitted_c": 2})], elapsed_seconds=0.5)
+        self.assertEqual(saved.grid_identity(grid), saved.grid_identity(dict(grid, elapsed_seconds=0.8)))
+        self.assertNotEqual(saved.grid_identity(grid), saved.grid_identity(dict(grid, points=[])))
