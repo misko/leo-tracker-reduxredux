@@ -229,7 +229,7 @@ def partial_fits(scan, nodes, half_width, details):
             pause.close()
 
 
-def refine(mode, prepared, region, bound):
+def refine(mode, prepared, region, bound, *, checkpoint=None):
     from blind_joint_finish import digest
     from tools.pipeline_eval.variants import v5_core
 
@@ -240,6 +240,8 @@ def refine(mode, prepared, region, bound):
         outcomes, completed = original_fits(scan, candidates)
     else:
         outcomes, completed = partial_fits(scan, candidates, region.half_width_km, details)
+    if checkpoint is not None:
+        checkpoint(scan, candidates, outcomes)
     valid = [i for i, row in outcomes.items() if row[-1] is not None]
     if not valid:
         raise ValueError("No finite cold ranked assignment")
