@@ -8,6 +8,7 @@ from pathlib import Path
 import resource
 import subprocess
 import sys
+from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve().parent
@@ -20,17 +21,18 @@ ACCEPTING_SHA = "6922f4bb992a339fae2bc532c69618d41243dbc24e6e3ddf8952410805421b3
 def run(output):
     from clean_saved_publication import installed, load_job
     from dense_geographic_trial import host
-    from empty_bootstrap import checked, clock, load_runtime, now
+    import empty_bootstrap as boot
     from exact_named_route import checked_catalogue, resident_path
     from history_risk_weak_physical import deny_original
     from nomination_handoff_0255 import BASE, BASE_PIN, saved
 
     sys.addaudithook(deny_original)
-    begin = now()
+    begin = boot.now()
     if resident_path(output.parent) != Path("/dev/shm") or output.exists():
         raise ValueError("Use a fresh private witness in tmpfs")
     output.mkdir(mode=0o700)
-    _, _, _, _, source_check = load_runtime()
+    runtime = boot.load_runtime()
+    source_check = runtime[-1]
     from aperture_trial import write
     from empty_predictive_refit import HistoryComplete, measured_history
     from leo.contracts.digests import canonical_digest
@@ -54,7 +56,7 @@ def run(output):
         stock = original["jobs"]["installed"]
         families = {arm: dict(Counter(row[2] for row in values))
                     for arm, values in stock["publication"]["selected_rows"].items()}
-        accepting = json.loads(checked(resident_path(ACCEPTING), ACCEPTING_SHA))
+        accepting = json.loads(boot.checked(resident_path(ACCEPTING), ACCEPTING_SHA))
         useful = accepting["solves"][0]["lean_final_fit"]["arms"]
         audit["binding"] = dict(original=BASE_PIN, job=JOB_SHA, native=req["native_sha256"],
                                 offer=req["offer_sha256"], archive=req["local_archive"],
@@ -66,16 +68,16 @@ def run(output):
                                          predictive_by_arm={arm: dict(tracks=len(record["predictive"]), rows=sum(
                                              len(row["ids"]) for row in record["predictive"].values()))
                                              for arm, record in useful.items()})
-        audit["preflight"] = clock(begin)
-        start = now()
-        with measured_history(audit):
+        audit["preflight"] = boot.clock(begin)
+        start = boot.now()
+        with patch.object(boot, "load_runtime", return_value=runtime), measured_history(audit):
             try:
                 installed(bound, req, output/"candidate")
             except HistoryComplete as done:
                 policy = done.result
             else:
                 raise ValueError("Did not reach the installed readout after history policy")
-        audit["slice"] = clock(start)
+        audit["slice"] = boot.clock(start)
         audit["policy_status"] = policy["status"]
         audit["qualified"] = len(audit["calls"]) == 1 and audit["calls"][0]["compatible"]
         if not audit["qualified"]:
@@ -85,7 +87,7 @@ def run(output):
         raise
     finally:
         use = resource.getrusage(resource.RUSAGE_SELF)
-        audit["through_witness"] = clock(begin)
+        audit["through_witness"] = boot.clock(begin)
         audit["rusage"] = dict(input_blocks=use.ru_inblock, major_faults=use.ru_majflt,
                                output_blocks=use.ru_oublock, max_rss_kib=use.ru_maxrss)
         write(output/"scope.json", audit)
