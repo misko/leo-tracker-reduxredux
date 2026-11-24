@@ -9,7 +9,7 @@ The **CFO changes alone** reproduced the drop from 442 to 438 assigned Graph poi
 | Combined South | Earlier South | 438 | 30 |
 | Combined South | Combined South | 438 | 30 |
 
-Every cell used the same 456 winning observations, the original signed times and lanes, the installed track configuration, and the reviewed exact Graph options. The two 442-point cells matched ordered support digests, and the two 438-point cells matched each other. Across the four cells, all 160 native path calls agreed bitwise with the installed Python recurrence. The edge topology and discrete path choices matched. RNX1 CH1 had 38 observations and the first discrete fork was the support passed to final polynomial compression. No satellite or TLE fitting was needed to localize the fork. [Graph attribution driver](south_graph_sensitivity.py)
+Every cell used the same 456 winning observations, the original signed times and lanes, the installed track configuration, and the reviewed exact Graph options. The two 442-point cells matched ordered support digests, and the two 438-point cells matched each other. Across the four cells, all 160 native path calls agreed bitwise with the installed Python recurrence. The edge topology and discrete path choices matched. RX1 CH1 had 38 observations and the first discrete fork was the support passed to final polynomial compression. No satellite or TLE fitting was needed to localize the fork. [Graph attribution driver](south_graph_sensitivity.py)
 
 ## Why a sub-nanohertz change matters
 
