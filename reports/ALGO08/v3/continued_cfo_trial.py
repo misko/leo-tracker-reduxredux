@@ -24,6 +24,7 @@ INPUTS = {
               REFINED_NORTH, "83e68ceebbcc803a0d2a811da9d3f3d997c7a4e42378fcb702d0ce85afd9c4d2"),
 }
 EARLIER = "115a6593161c752f09ceee99c29612c0ba353384b8e4796d0e5adfff05cdf90e"
+SEALED_PRICE = "25c515e90936e4e03fe858dd0070356bafb3fea84ef492d9bcc8bc629f13b232"
 INSTALL = ("geographic", "regional", "block", "projection")
 LIBRARY_ARGUMENTS = dict(zip(INSTALL, ("geographic_library", "regional_track_library",
                                        "frontier_block_library", "grid_feature_projection_library"), strict=True))
@@ -132,6 +133,9 @@ def price(name, output):
 def work(root):
     import empty_bootstrap as staged
     import unified_short_bootstrap as entry
+
+    started = staged.now()
+    _, spec, _sources, publication, checks = staged.load_runtime()
     from aperture_trial import read, write
     from cumulative_grid_projection import saved_inventory_port
     from leo.analysis.glrt_frequency_input import frequency_evidence
@@ -140,8 +144,6 @@ def work(root):
     from raw_0016_best_trial import FLAGS
     from short_graph_guard import prove
 
-    started = staged.now()
-    _, spec, _sources, publication, checks = staged.load_runtime()
     job = read(root/"binding.json")
     source, target = job["saved"], root/"selective"
     detector = canonical_digest(source["recipe"])
@@ -168,7 +170,7 @@ def work(root):
           waveform_calls=0, handoffs=handoff.calls, pins=checks, complete_saved=staged.clock(started)))
 
 
-def run(root):
+def run(root, price_from=None):
     from aperture_trial import RELEASE, read, write
     from dense_geographic_trial import host
     from empty_bootstrap import checked
@@ -185,7 +187,8 @@ def run(root):
     if root.resolve().parent != Path("/dev/shm"):
         raise ValueError("Use fresh tmpfs scientific outputs")
     root.mkdir()
-    prices = {name: price(name, root) for name in INPUTS}
+    prices = ({name: price(name, root) for name in INPUTS} if price_from is None
+              else json.loads(checked(price_from, SEALED_PRICE)))
     weak, north = prices["weak"], prices["north"]
     if weak["route"] != "unfiltered" or north["route"] != "history" or not north["identical_all_paid_payload"]:
         raise ValueError("Unexpected held-cycle route. Stop at the sealed saved policy price.")
@@ -235,7 +238,8 @@ def run(root):
                      for arm, rows in detail["selected_rows"].items()} for name,value in references.items()}
     write(root/"result.json", dict(machine=machine, prices=prices, process=clock, worker=worker, science=actual,
           images=media, owners=owners, owner_roles_sha256=canonical_digest(detail["selected_rows"]),
-          geography=geography, original_control_receipt=EARLIER, newly_paid_raw_refinement_calls=0))
+          geography=geography, original_control_receipt=EARLIER, newly_paid_raw_refinement_calls=0,
+          resumed_price_sha256=SEALED_PRICE if price_from else None))
 
 
 if __name__ == "__main__":
@@ -243,5 +247,9 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("mode", choices=("run", "worker"))
     cli.add_argument("root", type=Path)
+    cli.add_argument("--price-from", type=Path)
     args = cli.parse_args()
-    (work if args.mode == "worker" else run)(args.root)
+    if args.mode == "worker":
+        work(args.root)
+    else:
+        run(args.root, args.price_from)
