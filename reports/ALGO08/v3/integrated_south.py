@@ -104,6 +104,8 @@ def launch(root, mode, controls, preflight):
             or (before["recording"], before["inventory"]) != (request["recording"], request["inventory"])
             or not admissible(before["residence"]["wave"])):
         raise ValueError("Expected passive residency witnessed by the original input owner")
+    revision = subprocess.check_output(["git", "-c", f"safe.directory={ROOT}", "rev-parse", "HEAD"],
+                                       cwd=ROOT, text=True).strip()
     root.mkdir(mode=0o700)
     (root / "tmp").mkdir()
     copytree(staged_path(controls / "fonts", root=controls), root / "fonts")
@@ -111,7 +113,7 @@ def launch(root, mode, controls, preflight):
           baseline_sources=physical["sources"], physical_admission_sha256=PHYSICAL_PIN, controls_sha256=CONTROL_PIN,
           portable=portable, original_conditioning_bytes=0, prior_map_files_used=0, installed_children=0,
           candidate_children=1, owner_preflight_sha256=sha256(preflight_data).hexdigest(),
-          git_revision=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+          git_revision=revision,
           protocol_sha256=sha256((HERE / "integrated-south-protocol.md").read_bytes()).hexdigest(), setup=clock(start)))
     env = environment_for(root)
     start, usage = now(), getrusage(RUSAGE_CHILDREN)
