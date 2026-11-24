@@ -1,9 +1,10 @@
-"""Write one conventional DS30-0016 archive with independently pinned seek tables."""
+"""Write one conventional resident archive with independently pinned seek tables."""
 
 import argparse
 import json
 import os
 from collections import Counter
+from dataclasses import dataclass
 from hashlib import sha256
 from inspect import getfile, unwrap
 from pathlib import Path
@@ -14,7 +15,6 @@ from uuid import uuid4
 from .owned_capture_0016 import (
     LOGICAL,
     MANIFESTS,
-    MEMBER_COUNT,
     STAGE,
     STAGE_PIN,
     WINDOWS,
@@ -28,6 +28,43 @@ QUALIFIED_RUNNER = "65caa9376722f34ca6216bbba260e9893f607c513bbdecb80a4b6c9e33f8
 READER_PIN = "0884ab7ca630d59dd041e50e0ef89cd847ca842c11097f8bde06b869645eafa2"
 SCHEMA = "private-algo08-visit-frame-custody-v1"
 LIMIT = 1_600_000_000
+
+
+@dataclass(frozen=True)
+class RecordingInput:
+    case: str
+    custody: Path
+    custody_sha256: str
+    recording: Path | None
+    manifests: tuple
+    windows: int
+    limit: int
+    repeat_qualified_member: bool = False
+    extents: tuple = ()
+
+
+def recording_input(path=None, pin=None):
+    if path is None and pin is None:
+        return RecordingInput("DS30-0016", STAGE / "staging.json", STAGE_PIN, None,
+                              MANIFESTS, WINDOWS, LIMIT, repeat_qualified_member=True)
+    if path is None or pin is None:
+        raise ValueError("Supply both the recording configuration and its frozen digest")
+    doc = json.loads(checked(path, pin))
+    return RecordingInput(
+        case=doc["case"], custody=Path(doc["custody"]), custody_sha256=doc["custody_sha256"],
+        recording=Path(doc["recording"]), manifests=tuple(map(tuple, doc["manifests"])),
+        windows=doc["windows"], limit=doc["limit"],
+        repeat_qualified_member=doc["repeat_qualified_member"],
+        extents=tuple(map(tuple, doc["extents"])),
+    )
+
+
+def resident_path(path, device=None):
+    if path != path.resolve(strict=True) or not path.is_relative_to("/dev/shm"):
+        raise ValueError(f"Only literal tmpfs staging paths are authorized: {path}")
+    if device is not None and path.stat().st_dev != device:
+        raise ValueError(f"Staged member crosses the tmpfs boundary: {path}")
+    return path
 
 
 def verify_qualification():
@@ -116,12 +153,13 @@ def lifecycle(manifest):
 
 def preserve_clock(actual, original):
     stable = ("configuration", "radio", "sample_rate_hz", "receiver_ids", "status", "stop_reason",
-              "failure", "window_count", "schema_version")
+              "failure", "window_count", "schema_version", "window_ms", "sample_format",
+              "sample_layout")
     if any(getattr(actual, key) != getattr(original, key) for key in stable):
         raise ValueError("New segment changed original capture metadata or lifecycle")
 
 
-def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
+def writer_scope(source, path, ingress, paired, hasher, output_root, shared, *, limit=LIMIT):
     from leo.storage import short_window
 
     from .frame_visit_0016 import SCHEMA as TABLE_SCHEMA
@@ -139,7 +177,7 @@ def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
     )
     writer_costs = Counter(elapsed(start))
     input_costs, records = [], []
-    hashes = []
+    hashes, extents = [], Counter()
 
     def emit(filename, *, level):
         table = []
@@ -152,12 +190,12 @@ def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
                 start = clocks()
                 owned = original_windows(source, chunk, ingress, paired, hasher)
                 hydrate = elapsed(start)
-                if hydrate["input_blocks"]:
+                if hydrate["input_blocks"] or hydrate["major_faults"]:
                     raise ValueError("Resident waveform hydration charged external reads")
                 # Allow the new payload to grow to the member's decoded size plus codec headroom.
                 projected = (current_tree_bytes(output_root) + 2 * chunk.uncompressed_bytes
                              + 2_000_000)
-                if projected > LIMIT:
+                if projected > limit:
                     raise ValueError("Owned and encoded extents exceed the retained byte budget")
                 shared["max_accounted_bytes"] = max(shared["max_accounted_bytes"], projected)
                 start = clocks()
@@ -169,6 +207,7 @@ def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
                 writer_costs.update(elapsed(start))
                 hashes.extend((row.index.iq_sha256, row.index.acquisition["global_visit"])
                               for row in owned)
+                extents.update(row.index.payload_bytes for row in owned)
                 input_costs.append(dict(chunk=chunk.chunk_index, clock=hydrate))
                 del owned, window
             start = clocks()
@@ -199,7 +238,8 @@ def writer_scope(source, path, ingress, paired, hasher, output_root, shared):
                   original_manifest_sha256=source.manifest_sha256, window_count=len(hashes),
                   lifecycle=lifecycle(written.manifest), original_lifecycle=lifecycle(header),
                   members=members)
-    return report, dict(hydrate=input_costs, writer=dict(writer_costs), seek=seek_clock), hashes
+    return report, dict(hydrate=input_costs, writer=dict(writer_costs), seek=seek_clock,
+                        payload_extent_counts=sorted(extents.items())), hashes
 
 
 def readback(recording, reports, expected, data_authority):
@@ -213,17 +253,21 @@ def readback(recording, reports, expected, data_authority):
     start = clocks()
     store = FastScanStore(recording)
     session, inventory_pin, inventory = store.inventory(recording, verify_windows=False)
-    hashes, prefixes = [], {}
+    hashes, prefixes, verified_segments = [], {}, []
     for entry, segment in zip(inventory["segments"], reports, strict=True):
         if (Path(entry["path"]).name, entry["manifest_digest"]) != (
             segment["directory"], segment["manifest_sha256"],
         ):
             raise ValueError("Released inventory did not bind the fresh conventional segment")
-        stream = FastSegmentSource(entry)
+        stream, segment_hashes = FastSegmentSource(entry), []
         for window in stream.windows():
-            hashes.append((window.iq_sha256, window.acquisition["global_visit"]))
+            segment_hashes.append((window.iq_sha256, window.acquisition["global_visit"]))
             raw = memoryview(window.samples.reshape(-1)).cast("B")
             prefixes[segment["directory"], window.sequence] = sha256_digest(raw[:PREFIX_BYTES])
+        hashes.extend(segment_hashes)
+        verified_segments.append(dict(directory=segment["directory"],
+                                      window_count=len(segment_hashes),
+                                      window_hashes_sha256=canonical_digest(segment_hashes)))
     if hashes != expected:
         raise ValueError("Released readback changed the authenticated order or window bytes")
     whole = elapsed(start)
@@ -248,13 +292,13 @@ def readback(recording, reports, expected, data_authority):
             del scoped, prefix
     return dict(session_id=session, inventory_sha256=inventory_pin, raw_authority=raw,
                 window_count=len(hashes), window_hashes_sha256=canonical_digest(hashes),
-                stock_clock=whole, seek_checks=selective_times,
+                stock_clock=whole, seek_checks=selective_times, verified_segments=verified_segments,
                 verified_index_sha256=sha256_digest(json.dumps([
                     member["index_sha256"] for report in reports for member in report["members"]
                 ]).encode()))
 
 
-def run(output):
+def run(output, source_config=None, source_config_pin=None):
     from leo.contracts.digests import canonical_digest
     from leo.storage.short_window import ShortWindowReader
     from leo.storage.writer import _fsync_directory
@@ -267,6 +311,8 @@ def run(output):
     from .seekable_eight_raw import clocks, elapsed
     from .sparse_cold_input import CACHE_LIBRARY, CACHE_SHA, frozen_function
 
+    source_input = recording_input(source_config, source_config_pin)
+    worker_started = clocks()
     checked_lease()
     checked(BASELINE, BASELINE_PIN)
     spec = run_path(str(BASELINE))["checked_spec"](PAYLOAD)
@@ -284,16 +330,44 @@ def run(output):
     if not installed_reader.is_relative_to(RELEASE / "src"):
         raise ValueError("Readback must use the unmodified installed ShortWindowReader")
     checked(installed_reader, READER_PIN)
-    authority = json.loads(checked(STAGE / "staging.json", STAGE_PIN))
-    source = STAGE / Path(authority["recording"]).name
+    residency_clock = clocks()
+    custody_path = resident_path(source_input.custody)
+    require_tmpfs(custody_path)
+    authority = json.loads(checked(custody_path, source_input.custody_sha256))
+    source = resident_path(
+        source_input.recording or custody_path.parent / Path(authority["recording"]).name,
+    )
     require_tmpfs(source)
-    source_manifests = list(source.glob("*/manifest.json"))
-    if authority["case"] != "DS30-0016" or len(source_manifests) != len(MANIFESTS):
+    if authority["case"] != source_input.case:
         raise ValueError("Expected the complete staged weak physical source")
     checked(CACHE_LIBRARY, CACHE_SHA)
     repo = Path(__file__).resolve().parents[3]
     cache = run_path(str(repo / "tools/pipeline_eval/qualification/cache_residency.py"))
     query = cache["load_query"](CACHE_LIBRARY)
+    expected_names = [source / f"{source.name}-segment-{i:08d}" / "manifest.json"
+                      for i in range(len(source_input.manifests))]
+    if sorted(source.glob("*/manifest.json")) != expected_names:
+        raise ValueError("Unexpected staged segment coverage")
+    admitted = []
+    device = source.stat().st_dev
+    for path, (pin, count, members) in zip(expected_names, source_input.manifests, strict=True):
+        resident_path(path, device)
+        reader = ShortWindowReader(path.parent)
+        if (reader.manifest_sha256, reader.manifest.window_count, len(reader.manifest.chunks)) != (
+            "sha256:" + pin, count, members,
+        ):
+            raise ValueError("Staged manifest differs from the exact qualified case")
+        names = stage_names(reader)
+        for folder, name, _ in names:
+            resident_path(folder / name, device)
+        state = cache["cache_snapshot"](names, os.sysconf("SC_PAGE_SIZE"), query)
+        if (state["observed_members"] != len(names) or state["unavailable"]
+                or state["cached_pages"] != state["observed_file_pages"]):
+            raise ValueError("Only fully resident staged input members are authorized")
+        admitted.append((reader, state))
+    source_check = elapsed(residency_clock)
+    if source_check["input_blocks"] or source_check["major_faults"]:
+        raise ValueError("Staged source admission charged external reads")
     output.mkdir(mode=0o700)
     uid = uuid4().hex
     recording = output / f"recording-{uid}"
@@ -301,33 +375,30 @@ def run(output):
     hasher = Path(spec["paired_sha256"]["library"])
     shared = dict(max_accounted_bytes=0)
     segments, clocks_by_segment, ordered = [], [], []
-    for i, (pin, count, members) in enumerate(MANIFESTS):
-        reader = ShortWindowReader(source / f"{source.name}-segment-{i:08d}")
-        if (reader.manifest_sha256, reader.manifest.window_count, len(reader.manifest.chunks)) != (
-            "sha256:" + pin, count, members,
-        ):
-            raise ValueError("Staged manifest differs from the exact qualified case")
-        names = stage_names(reader)
-        state = cache["cache_snapshot"](names, os.sysconf("SC_PAGE_SIZE"), query)
-        if (state["observed_members"] != len(names) or state["unavailable"]
-                or state["cached_pages"] != state["observed_file_pages"]):
-            raise ValueError("Only fully resident staged input members are authorized")
+    extents = Counter()
+    for i, (reader, state) in enumerate(admitted):
         path = recording / f"segment-{i:08d}-{uid}"
         row, times, hashes = writer_scope(reader, path, ingress,
-                                          paired_decoded_hashes, hasher, output, shared)
+                                          paired_decoded_hashes, hasher, output, shared,
+                                          limit=source_input.limit)
         segments.append(row)
         clocks_by_segment.append(dict(segment=i, cache=state, **times))
+        extents.update(dict(times["payload_extent_counts"]))
         ordered.extend(hashes)
-    if ([visit for _, visit in ordered] != list(range(WINDOWS))
+    if ([visit for _, visit in ordered] != list(range(source_input.windows))
             or canonical_digest([authority["inventory"], [digest for digest, _ in ordered]])
             != authority["raw_authority"]):
-        raise ValueError("The ordered samples differ from the original DS30-0016 authority")
+        raise ValueError("The ordered samples differ from the original recording authority")
+    if source_input.extents and extents != dict(source_input.extents):
+        raise ValueError("The authenticated visit extents differ from the frozen recording")
     first = segments[0]["members"][0]
     fields = ("compressed_sha256", "compressed_bytes", *LOGICAL)
-    if any(first[key] != first_member[key] for key in fields):
+    if (source_input.repeat_qualified_member
+            and any(first[key] != first_member[key] for key in fields)):
         raise ValueError("First emitted member differs from the signed physical corruption witness")
     verified = readback(recording, segments, ordered, authority)
-    if sum(len(row["members"]) for row in segments) != MEMBER_COUNT:
+    expected_members = sum(row[2] for row in source_input.manifests)
+    if sum(len(row["members"]) for row in segments) != expected_members:
         raise ValueError("The complete output missed an original member")
     start = clocks()
     custody = dict(schema=SCHEMA, recording=str(recording), session_id=verified["session_id"],
@@ -339,19 +410,25 @@ def run(output):
     _fsync_directory(output)
     seal_cost = elapsed(start)
     archive_bytes = current_tree_bytes(recording)
-    if archive_bytes > LIMIT:
+    if archive_bytes > source_input.limit:
         raise ValueError("Archive exceeded its agreed retained byte limit")
-    receipt = dict(case="DS30-0016", source_custody_sha256=STAGE_PIN, new_recording=str(recording),
+    receipt = dict(case=source_input.case, source_custody_sha256=source_input.custody_sha256,
+                   source_config_sha256=source_config_pin, source_check_clock=source_check,
+                   new_recording=str(recording), payload_extent_counts=sorted(extents.items()),
                    qualification_sha256=QUALIFICATION_PIN, machine=host,
                    capture_authority_sha256=custody_pin, clocks=clocks_by_segment,
                    captured_bytes=archive_bytes, custody_write_clock=seal_cost, readback=verified,
                    original_inventory_sha256=authority["inventory"],
                    original_raw_authority=authority["raw_authority"], **shared,
-                   worker_sha256=sha256(Path(__file__).read_bytes()).hexdigest())
+                   worker_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
+                   worker_clock_through_archive=elapsed(worker_started))
     close_file(output / "receipt.json", receipt)
 
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("output", type=Path)
-    run(cli.parse_args().output)
+    cli.add_argument("--input", type=Path)
+    cli.add_argument("--input-sha256")
+    params = cli.parse_args()
+    run(params.output, params.input, params.input_sha256)
