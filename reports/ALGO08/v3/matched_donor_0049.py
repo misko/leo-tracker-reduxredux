@@ -1,4 +1,4 @@
-"""Change complete measurements only on already matching nonanchor lanes."""
+"""Substitute complete installed measurements on the declared short lane class."""
 
 from collections import Counter, defaultdict
 from math import remainder, sqrt
@@ -29,7 +29,7 @@ def bind_derived(sparse, probes, recipe):
                         raw_authority=source["raw_recording_authority_digest"], same_signed_clocks=True)
 
 
-def derive(stock, sparse):
+def derive(stock, sparse, *, same_carrier_only=True):
     left, right = (signed.opportunities(n) for n in (stock, sparse))
     signed.bind_pair(stock, sparse, left, right)
     counts = defaultdict(Counter)
@@ -45,34 +45,41 @@ def derive(stock, sparse):
         if current is None or donor is None:
             bucket = "sparse_only" if current else "installed_only" if donor else "both_empty"
             count[bucket] += 1
-        elif same_carrier(donor, current):
-            count["matches"] += 1
-            if row["short"] and current != donor:
+        else:
+            matches = same_carrier(donor, current)
+            count["matches" if matches else "carrier_disagreement"] += 1
+            if row["short"] and matches == same_carrier_only and current != donor:
                 count["substitutions"] += 1
                 donations.append(dict(observation_id=oid, visit=original["visit_index"],
                     receiver=row["radio"], channel=original["channel"], rf_hz=original["actual_rf_hz"],
                     counter=row["counter"], original=current, donor=donor))
                 original = dict(original, candidates=[donor])
-        else:
-            count["carrier_disagreement"] += 1
         if bool(original["candidates"]) != (current is not None):
             raise ValueError("Donation changed sparse packet membership")
         probes.append(original)
     if not donations:
-        raise ValueError("The planned mechanism has no changed matched short tuples")
+        raise ValueError("The declared short class has no changed native tuples")
 
     recipe = dict(schema="private-0049-matched-native-donor-v1",
         installed_native_sha256=signed.canonical(stock), sparse_native_sha256=signed.canonical(sparse),
         signed_cfo_hz=MAX_CFO_HZ, no_cfo_alias_rolling=True, wrapped_epoch_samples=MAX_EPOCH_SAMPLES,
         period_samples=[40_000,3], nonanchor_only=True, row_schedule="original stereo stream every eighth admitted visit",
         unchanged_opportunities=True, donation_sha256=signed.canonical(donations))
+    if not same_carrier_only:
+        recipe.update(schema="private-0049-shifted-native-donor-v1", scope="saved research counterfactual",
+                      eligibility="both winners passed and signed CFO or wrapped epoch exceeds the match window")
     packet, custody = bind_derived(sparse, probes, recipe)
     residual = [row["original"]["fractional_tracking_cfo_hz"]-row["donor"]["fractional_tracking_cfo_hz"] for row in donations]
-    changes = dict(Counter(field for row in donations for field in row["original"]
-                          if row["original"][field] != row["donor"][field]))
+    missing = object()
+    changes = dict(Counter(field for row in donations for field in row["original"].keys() | row["donor"].keys()
+                          if row["original"].get(field, missing) != row["donor"].get(field, missing)))
+    label = "input_matched_rms_from_installed_hz" if same_carrier_only else "input_shifted_rms_from_installed_hz"
     return packet, dict(custody, coverage=counts, donations=donations, feature_changes=changes,
-        same_membership=True, substituted=len(donations),
-        input_matched_rms_from_installed_hz=sqrt(fmean(x*x for x in residual)))
+                        same_membership=True, substituted=len(donations), **{label: sqrt(fmean(x*x for x in residual))})
+
+
+def replace_disagreement(stock, sparse):
+    return derive(stock, sparse, same_carrier_only=False)
 
 
 def owner_counts(ordered, changes, *, label="donated"):

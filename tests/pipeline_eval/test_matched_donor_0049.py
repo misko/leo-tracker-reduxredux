@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 
 from empty_recovery_0049 import restore_empty_lanes
-from matched_donor_0049 import derive, owner_counts, same_carrier
+from matched_donor_0049 import derive, owner_counts, replace_disagreement, same_carrier
 from signed_cfo_time_readout import canonical, opportunities
 from sparse_only_drop_0049 import exclude_sparse_only
 
@@ -156,3 +156,21 @@ def test_restore_does_not_overwrite_a_nonempty_sparse_row_without_a_passed_winne
     sparse['source']['probes'][8]['candidates'] = [dict(factor(-1800), passed_fractional_margin_gate=False)]
     with pytest.raises(ValueError, match='single selected winner or be empty'):
         restore_empty_lanes(stock, sparse)
+
+
+def test_disagreement_substitution_includes_epoch_only_and_keeps_anchors_and_empties():
+    stock, sparse = native_pair()
+    sparse['source']['probes'][0]['candidates'] = [factor(60000)]  # Anchor disagreement.
+    sparse['source']['probes'][3]['candidates'] = [factor(-1900, 40_000/3+5.0)]  # Epoch-only disagreement.
+    original = deepcopy((stock, sparse))
+
+    restored, audit = replace_disagreement(stock, sparse)
+    assert (stock, sparse) == original
+    changed = {3, 4, 5}
+    assert audit['substituted'] == len(changed) and audit['same_membership']
+    assert audit['recipe']['schema'] == 'private-0049-shifted-native-donor-v1'
+    assert audit['recipe']['donation_sha256'] == canonical(audit['donations'])
+    assert audit['recipe_sha256'] != derive(stock, sparse)[1]['recipe_sha256']
+    before, after, installed = (p['source']['probes'] for p in (sparse, restored, stock))
+    for i, (a, b, donor) in enumerate(zip(before, after, installed, strict=True)):
+        assert b == (dict(a, candidates=donor['candidates']) if i in changed else a)
