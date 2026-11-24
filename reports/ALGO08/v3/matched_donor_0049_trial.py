@@ -25,6 +25,7 @@ from matched_donor_0049 import derive, owner_counts, replace_disagreement
 from sparse_only_drop_0049 import exclude_sparse_only
 from empty_recovery_0049 import restore_empty_lanes
 from anchor_only_0049 import derive_anchor_only
+from joint_recovery_0049 import interaction, restore_coverage_and_winner
 import signed_cfo_time_readout as authority
 
 
@@ -44,11 +45,15 @@ DISAGREEMENT = SimpleNamespace(stem="ds30-0049-shifted-winner-repair", derive=re
 ANCHORS = SimpleNamespace(stem="ds30-0049-anchor-only", derive=derive_anchor_only,
                           ledger="anchors", ledger_digest="anchor_sha256", label="added_anchors",
                           option="--anchor-only-control", source="anchor_only_0049.py", priority="idle")
+JOINT = SimpleNamespace(stem="ds30-0049-joint-recovery", derive=restore_coverage_and_winner,
+                        ledger="edits", ledger_digest="ordered_edit_sha256", label="edited",
+                        option="--restore-empty-and-shifted", source="joint_recovery_0049.py", priority="idle")
 
 PREVIOUS = {
     DONOR.stem: "9e129a016bdd533d7c82706b402665bea6cd2d34c0628c0bda62fe414cae1a6a",
     EXCLUSION.stem: "dcbc89c91c03b302343057f982207a90684c956e8d2d12e3d198119ebf1836bb",
     RESTORATION.stem: "3e2a420f155cecc3193a13834122294230ec2de7aecd46fa75d06ec9881c4f38",
+    DISAGREEMENT.stem: "d5d07b8134c3a2e4c3f06745e6899f8ad02207b0997f5bab39332083887f3b87",
 }
 
 
@@ -62,6 +67,9 @@ def source_pins(experiment):
         names.append(experiment.source)
     if experiment is ANCHORS:
         names.extend(("sparse_only_drop_0049.py", "empty_recovery_0049.py"))
+    if experiment is JOINT:
+        names.extend(("empty_recovery_0049.py", "joint_recovery_0049_admission.py",
+                      "field_crossover_admission_watch.py"))
     return {name: identifier(HERE/name) for name in names}
 
 
@@ -107,6 +115,15 @@ def prepare(root, experiment):
                 or (proof["installed_rows"], proof["both_derivations_rows"]) != (531,543)
                 or any(v["additional_passed"] or v["failed"] for v in change["additional_candidates"].values())):
             raise ValueError("Full-anchor eligibility differs from the frozen exact inputs")
+    if experiment is JOINT:
+        measured = {key: tuple(value[field] for field in (
+            "opportunities", "original_winners", "inserted", "replaced",
+        )) for key, value in change["coverage"].items()}
+        if (measured != {"rx0/short": (811,374,30,59), "rx1/short": (811,143,74,13),
+                         "rx0/anchor": (121,56,0,0), "rx1/anchor": (121,27,0,0)}
+                or (change["original_winners"], change["derived_winners"],
+                    change["unchanged_lanes"]) != (600,704,1688)):
+            raise ValueError("Joint edit scope differs from the freeze")
     root.mkdir(mode=0o700)
     payload = root/"derived-native.json"
     payload.write_bytes(json.dumps(derived, sort_keys=True, ensure_ascii=False, allow_nan=False,
@@ -131,10 +148,31 @@ def start_runtime():
     return boot
 
 
-def worker(root, plan_pin, experiment, *, smoke=False):
+def require_resident(paths):
+    cache = json.loads(subprocess.check_output([
+        "fincore", "--json", "--bytes", "-o", "RES,SIZE", *map(str, paths),
+    ]))["fincore"]
+    if len(cache) != len(paths) or any(row["size"] <= 0 or row["res"] < row["size"] for row in cache):
+        raise ValueError("Require the complete already resident local causal operands")
+
+
+def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None):
+    if experiment is JOINT and not smoke:
+        if lease_fd is None or not os.path.samestat(os.fstat(lease_fd), LOCK.stat()):
+            raise ValueError("Require the inherited shared Gauss lease")
+        fcntl.flock(lease_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     boot = start_runtime()
     import integrated_original_batch as chart
 
+    if experiment is JOINT:
+        build = document(BUILD, BUILD_PIN)
+        directory = (STAGE/"tle").resolve(strict=True)
+        body = Path(build["native"]["--portable-orbit-index"]["path"]).resolve(strict=True)
+        if not directory.is_relative_to(STAGE) or not any(
+            body.is_relative_to(parent) for parent in ("/tmp", "/dev/shm")
+        ):
+            raise ValueError("Require the original staged tmpfs archive and local portable operand")
+        require_resident([body])
     book, _, earlier = chart.load_build(BUILD, BUILD_PIN)
     _, spec, _, publication, _ = boot.load_runtime()
     from tools import algo08_position, algo08_scan
@@ -175,13 +213,13 @@ def worker(root, plan_pin, experiment, *, smoke=False):
     recording, archive, offer = Path(signed["recording"]), STAGE/"tle", STAGE/"offer.json"
     chart.validate_case(signed, SimpleNamespace(recording=recording, region=offer))
     cutoff = signed["causal_cutoff_utc_ns"]
+    refs = TleArchiveReader(archive).list_snapshots("space-track")
+    paths = [ref.path.resolve(strict=True) for ref in refs]
+    if len(refs) != 48 or any(not path.is_relative_to(archive) for path in paths):
+        raise ValueError("Use only the existing fully resident saved causal catalogue")
+    require_resident(paths)
     if chart.archive_digest(archive, cutoff) != signed["archive_sha256"] or plan["original_archive"] != signed["archive_sha256"] or earlier >= cutoff:
         raise ValueError("Exact original causal catalogue and earlier portable producer required")
-    refs = TleArchiveReader(archive).list_snapshots("space-track")
-    paths = [str(ref.path) for ref in refs]
-    cache = json.loads(subprocess.check_output(["fincore", "--json", "--bytes", "-o", "RES,SIZE", *paths]))["fincore"]
-    if len(refs) != 48 or len(cache) != len(refs) or any(r["res"]<r["size"] for r in cache):
-        raise ValueError("Use only the existing fully resident saved causal catalogue")
     pinned = book["native"]["--legacy-first-map-fast"]
     acceleration = checked_artifacts(Path(pinned["path"]), pinned["sha256"])
     portable = book["native"]["--portable-orbit-index"]
@@ -217,7 +255,9 @@ def worker(root, plan_pin, experiment, *, smoke=False):
         waveform_reads=0, graph_replayed=True, receiver_rerun=False, selector_rerun=False)))
 
 
-def launch(root, plan_pin, experiment):
+def launch(root, plan_pin, experiment, *, admission=None):
+    if experiment is JOINT and admission is None:
+        raise ValueError("Use the bounded official-idle admission watcher for the joint experiment")
     config = attrs(expected_priority=experiment.priority)
     if document(root/"plan.json", plan_pin)["protocol"] != protocol(experiment):
         raise ValueError("Launch flag differs from frozen protocol")
@@ -232,17 +272,23 @@ def launch(root, plan_pin, experiment):
         command = [sys.executable, "-IB", str(Path(__file__)), "worker", str(root), "--pin", plan_pin]
         if experiment.option:
             command.append(experiment.option)
+        if experiment is JOINT:
+            command.extend(("--lease-fd", str(lock.fileno())))
+        idle = admission() if admission is not None else None
         with (root/"worker.stdout").open("x") as out, (root/"worker.stderr").open("x") as err:
             cpu, began, unix = getrusage(RUSAGE_CHILDREN), perf_counter_ns(), time_ns()
             try:
-                status = subprocess.run(command, env=environment, stdout=out, stderr=err, timeout=28, check=False).returncode
+                budget = 18 if experiment is JOINT else 28
+                status = subprocess.run(command, env=environment, stdout=out, stderr=err,
+                                        timeout=budget, check=False, pass_fds=(lock.fileno(),)).returncode
             except subprocess.TimeoutExpired:
                 status = 124
             final, ended = getrusage(RUSAGE_CHILDREN), perf_counter_ns()
         clock = write(root/"clock.json", dict(
             command=command, cpu_s=(final.ru_stime+final.ru_utime)-(cpu.ru_stime+cpu.ru_utime), elapsed_s=(ended-began)/1e9,
             started_unix_ns=unix, finished_unix_ns=time_ns(), io_blocks=final.ru_inblock-cpu.ru_inblock,
-            major_faults=final.ru_majflt-cpu.ru_majflt, exit_code=status))
+            major_faults=final.ru_majflt-cpu.ru_majflt, exit_code=status,
+            **({"official_idle_admission": idle} if idle is not None else {})))
         print(write(root/"prediction-seal.json", dict(
             clock=clock, receipt=identifier(root/"receipt.json") if status==0 else None,
             machine=config, plan_sha256=plan_pin, protocol=protocol(experiment), source=identifier(Path(__file__)),
@@ -353,12 +399,26 @@ def score(root, seal_pin, experiment):
         gap = arms["fitted_c"]["sparse_m"]-arms["fitted_c"]["installed_m"]
         useful = fitted <= -250 and fixed <= 250
         advance = -fitted >= gap/2 and fixed <= 250
-        if experiment in (RESTORATION, DISAGREEMENT):
+        if experiment in (RESTORATION, DISAGREEMENT, JOINT):
             useful = advance = fitted <= -250 and fixed <= -250
             stock_detail = FastStandardAnalysisStore(CROSSOVER/"installed-installed").detail(named_receipt["run_id"])
             result.update(prior_separate_interventions=compare_previous(plan, arms, experiment),
                           installed_all_owned_rf_hz={a:stock_detail["arms"][a]["residual_rms_hz"] for a in ARMS},
                           installed_saved_clock=crossover["cells"]["installed-installed"]["clocks"])
+        if experiment is JOINT:
+            _, charted_clock, charted_pin = charted_installed(crossover, stock, plan)
+            controls = result["prior_separate_interventions"]
+            result.update(interaction={
+                arm: interaction(row["sparse_m"], row["installed_m"],
+                    controls[RESTORATION.stem]["arms"][arm]["counterfactual_m"],
+                    controls[DISAGREEMENT.stem]["arms"][arm]["counterfactual_m"],
+                    row["counterfactual_m"]) for arm,row in arms.items()},
+                ownership_by_edit={
+                    label: {kind: owner_counts(roster, [item for item in plan["change"]["edits"]
+                        if item["edit"]==kind], label=kind) for kind in ("inserted","replaced")}
+                    for label,roster in (("installed",stock_worker["ordered_owners"]),
+                                         ("sparse",old_owners),("joint",new_owners))},
+                charted_installed_clock=charted_clock, charted_installed_pin=charted_pin)
         if experiment is ANCHORS:
             charted, charted_clock, charted_pin = charted_installed(crossover, stock, plan)
             result.update(charted_installed_clock=charted_clock, charted_installed_pin=charted_pin,
@@ -376,11 +436,12 @@ def score(root, seal_pin, experiment):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare","smoke","launch","worker","score"))
+    parser.add_argument("action", choices=("prepare","smoke","launch","watch","worker","score"))
     parser.add_argument("root", type=Path)
     parser.add_argument("--pin")
+    parser.add_argument("--lease-fd", type=int)
     options = parser.add_mutually_exclusive_group()
-    for choice in (EXCLUSION, RESTORATION, DISAGREEMENT, ANCHORS):
+    for choice in (EXCLUSION, RESTORATION, DISAGREEMENT, ANCHORS, JOINT):
         options.add_argument(choice.option, dest="experiment", action="store_const", const=choice)
     parser.set_defaults(experiment=DONOR)
     args = parser.parse_args()
@@ -390,6 +451,13 @@ if __name__ == "__main__":
     elif not args.pin:
         parser.error("Supply the frozen input or prediction SHA-256")
     elif args.action in ("smoke","worker"):
-        worker(args.root, args.pin, experiment, smoke=args.action=="smoke")
+        worker(args.root, args.pin, experiment, smoke=args.action=="smoke", lease_fd=args.lease_fd)
+    elif args.action == "watch":
+        if experiment is not JOINT:
+            parser.error("The bounded official-idle watch applies to the joint experiment")
+        from joint_recovery_0049_admission import watch
+
+        print(watch(args.root, args.pin, campaign=CAMPAIGN, record=write,
+                    launch=lambda gate: launch(args.root, args.pin, experiment, admission=gate)))
     else:
         {"launch":launch, "score":score}[args.action](args.root, args.pin, experiment)
