@@ -5,6 +5,7 @@ from functools import partial
 from hashlib import sha256
 import pickle
 from pathlib import Path
+import subprocess
 from unittest.mock import patch
 
 
@@ -16,6 +17,15 @@ def act(work):
     if (work.get("native_orbit_figures") != 4 or work.get("native_residual_figures") != 2
             or any("fallback" in key for key in work)):
         raise ValueError(f"Expected all six native sheets with no fallback: {work}")
+
+
+def capture_sources():
+    """Resolve the exact pre-followup render, verifier and protocol sources."""
+    from exact_named_cairo import CONTROLLED_SOURCES, ROOT
+
+    git = ["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show"]
+    return {path.name: sha256(subprocess.check_output([
+        *git, f"5204d8ca3:{path.relative_to(ROOT)}"])).hexdigest() for path in CONTROLLED_SOURCES}
 
 
 def orbit_evidence(lanes, options, scenes):
@@ -128,21 +138,43 @@ def replay(case, output):
            live_scene_sha256=worker["live_scene_sha256"]))
 
 
-def verify(case, output):
+def verify_publication(before, current, before_root, current_root):
     import sys
-    from aperture_trial import read, write
-    from exact_named_cairo import CHANGED, ROOT, control, pins
+    from exact_named_cairo import ROOT
 
     # Use the current read-only storage verifier after the installed process exits.
     sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
     from exact_named_route_score import parity
-    from held_adaptive_0160_score import verified
     from leo.contracts.fast_standard_analysis import PLOTS
     from publication_media_checks import verify_position_sidecars
 
+    checks = parity(before, current)
+    checks.pop("eight_pngs")
+    left, right = before["trace"], current["trace"]
+    if (not all(checks.values()) or not all(run["sample"]["complete"] and run["sample"]["evaluated_points"] == 179
+                                           for run in (before, current))
+            or not left["stock_control"] or not right["stock_control"]
+            or left.get("early_regional") != right.get("early_regional")):
+        raise ValueError(f"The named publication changed a scientific field: {checks}")
+    old, new = (report["products"]["images"] for report in (before, current))
+    if set(old) != set(PLOTS) or set(new) != set(PLOTS):
+        raise ValueError("Expected eight official web products in both modes")
+    return checks, verify_position_sidecars(before_root, current_root,
+        current["worker"]["receipt"]["run_id"], old, new)
+
+
+def verify(case, output):
+    import sys
+    from aperture_trial import read, write
+    from exact_named_cairo import CHANGED, ROOT, control
+
+    sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
+    from held_adaptive_0160_score import verified
+
     baseline, original = control(case)
     binding = read(output / "binding.json")
-    if binding["renderer_sources"] != pins() or binding["exact_control"] != str(baseline):
+    frozen = capture_sources()
+    if binding["renderer_sources"] != frozen or binding["exact_control"] != str(baseline):
         raise ValueError("The published scene must bind the frozen case and renderer")
     req = read(Path(binding["input"]["request"]))
     clock = read(output / "clock.json")
@@ -150,26 +182,65 @@ def verify(case, output):
     act(draw["work"])
     before = verified(baseline / "candidate", original["clocks"]["candidate"], "worker.json", req)
     current = verified(output / "candidate", clock, "worker.json", req)
-    checks = parity(before, current)
-    checks.pop("eight_pngs")
-    current_ports, baseline_ports = current["trace"], before["trace"]
-    if (not all(checks.values()) or not all(run["sample"]["complete"] and run["sample"]["evaluated_points"] == 179
-                                           for run in (before, current))
-            or not current_ports["stock_control"] or current_ports["early_regional"] != baseline_ports["early_regional"]):
-        raise ValueError(f"The named publication changed a scientific field: {checks}")
+    checks, sidecars = verify_publication(before, current, baseline/"candidate", output/"candidate")
     old, new = (report["products"]["images"] for report in (before, current))
     unchanged = {name for name in old if old[name] == new[name]}
-    if (set(old) != set(new) or set(new) != set(PLOTS) or set(new)-unchanged != CHANGED
+    if (set(new)-unchanged != CHANGED
             or any(replayed["candidate_images"][name] != item["sha256"] for name, item in new.items())
             or replayed["live_scene_sha256"] != draw["live_scene_sha256"]):
         raise ValueError("The original eight media bindings and scoped Cairo substitutions differ")
-    run_id = current["worker"]["receipt"]["run_id"]
-    sidecars = verify_position_sidecars(baseline/"candidate", output/"candidate", run_id, old, new)
     elapsed_saving = original["clocks"]["candidate"]["elapsed_s"]-clock["elapsed_s"]
     render_saving = replayed["render_stock"]["cpu_s"]-draw["render"]["cpu_s"]
     speed = {metric: original["clocks"]["named"][metric]/clock[metric] for metric in ("cpu_s", "elapsed_s")}
-    write(output / "result.json", dict(case="DS30-" + case, sources=pins(), exact_checks=checks, sidecars=sidecars,
+    write(output / "result.json", dict(case="DS30-" + case, sources=frozen, exact_checks=checks, sidecars=sidecars,
            clocks=original["clocks"] | {"cairo": clock}, elapsed_saving_s=elapsed_saving, render_saving_cpu_s=render_saving,
            speedup_vs_named=speed, transfer_ready=(elapsed_saving > 0 and render_saving > 0), render=draw, replay=replayed,
            science=current["science"], geography=original["geography"], outputs=new, stock_outputs=old,
            unchanged_figures=sorted(unchanged), grid_points=179, backing_reads=0, waveform_reads=0))
+
+
+def verify_pair(case, output):
+    import sys
+    from aperture_trial import read, write
+    from empty_bootstrap import checked
+    from exact_named_cairo import HERE, ROOT, SCENE, pins
+
+    sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
+    from held_adaptive_0160_score import verified
+
+    binding = read(output / "pair-binding.json")
+    checked(HERE / "exact-named-cairo-followup.md", binding["followup_sha256"])
+    if case != "0160" or binding["order"] != ["stock", "cairo"] or binding["source_pins"] != pins():
+        raise ValueError("The frozen follow-up pair changed")
+    first = Path(binding["first"])
+    checked(first / "result.json", binding["first_result_sha256"])
+    prior = read(first / "result.json")
+    verified_runs, rows = {}, {}
+    for mode, products in (("stock", prior["stock_outputs"]), ("cairo", prior["outputs"])):
+        directory = output / mode
+        inputs = read(directory / "binding.json")
+        clocks = read(directory / "clock.json")
+        draw = read(directory / "render.json")
+        authority = read(Path(inputs["input"]["request"]))
+        publication = verified(directory / "candidate", clocks, "worker.json", authority)
+        ports = read(directory / "candidate/ports.json")
+        if (draw["renderer"] != mode or draw["scene_capture"] or (directory / SCENE).exists()
+                or publication["products"]["images"] != products
+                or ports["png"].get("verified") != 8 or ports["png"].get("reused") != 8):
+            raise ValueError("Fresh publication did not reproduce the previously verified official products")
+        if mode == "cairo":
+            act(draw["work"])
+        verified_runs[mode] = publication
+        rows[mode] = dict(clocks=clocks, render=draw, solve=publication["worker"]["solve"],
+                          preparation=ports["history"]["prepare"], verification=ports["png"])
+    checks, sidecars = verify_publication(verified_runs["stock"], verified_runs["cairo"],
+                                         output/"stock/candidate", output/"cairo/candidate")
+    stock, cairo = (rows[name] for name in binding["order"])
+    difference = {key: stock["clocks"][key] - cairo["clocks"][key] for key in ("cpu_s", "elapsed_s")}
+    draw_diff = {key: stock["render"]["render"][key]-cairo["render"]["render"][key] for key in difference}
+    named = prior["clocks"]["named"]
+    write(output / "result.json", dict(case="DS30-"+case, sources=pins(), binding=binding, clocks=rows, named=named,
+           exact_checks=checks, sidecars=sidecars, initial_full_gate_failed=not prior["transfer_ready"],
+           process_saving=difference, render_saving=draw_diff, waveform_reads=0, backing_reads=0,
+           speedup_vs_named={key: named[key]/cairo["clocks"][key] for key in difference},
+           transfer_ready=difference["elapsed_s"] > 0 and draw_diff["cpu_s"] > 0))
