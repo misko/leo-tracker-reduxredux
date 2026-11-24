@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import pytest
 
+from anchor_only_0049 import prove_graph_rows, source_views
 from empty_recovery_0049 import restore_empty_lanes
 from matched_donor_0049 import derive, owner_counts, replace_disagreement, same_carrier
 from signed_cfo_time_readout import canonical, opportunities
@@ -174,3 +175,31 @@ def test_disagreement_substitution_includes_epoch_only_and_keeps_anchors_and_emp
     before, after, installed = (p['source']['probes'] for p in (sparse, restored, stock))
     for i, (a, b, donor) in enumerate(zip(before, after, installed, strict=True)):
         assert b == (dict(a, candidates=donor['candidates']) if i in changed else a)
+
+
+def test_anchor_only_derivations_prove_exact_arrays_and_original_graph_rows():
+    stock, sparse = native_pair()
+    stock['source']['probes'][0]['candidates'] = []
+    sparse['source']['probes'][1]['candidates'] = stock['source']['probes'][1]['candidates']
+    stock_plus, edited_sparse, audit = source_views(stock, sparse)
+    assert audit['short_edit_counts'] == dict(matched=2, shifted=2, empty=2, sparse_only=2)
+    assert stock_plus['source']['probes'] == edited_sparse['source']['probes']
+    anchor, = audit['anchors']
+    assert anchor['receiver'] == 0 and anchor['visit'] == 0
+
+    def convert(packet):
+        return [dict(observation_id=i, cfo=r['factor']['fractional_tracking_cfo_hz'], counter=r['counter'])
+                for i,r in opportunities(packet).items() if r['factor'] is not None], {}
+
+    proof = prove_graph_rows(stock, stock_plus, edited_sparse, audit['anchors'], convert)
+    assert proof['two_derivations_exact'] and proof['added_full_anchor_rows'] == 1
+    assert not proof['equals_installed'] and not proof['graph_called']
+    with pytest.raises(ValueError, match='pre-Graph proof failed'):
+        prove_graph_rows(stock, stock_plus, sparse, audit['anchors'], convert)
+
+
+def test_anchor_only_refuses_a_second_unexplained_anchor_difference():
+    stock, sparse = native_pair()
+    stock['source']['probes'][0]['candidates'] = []
+    with pytest.raises(ValueError, match='identical native tuple arrays'):
+        source_views(stock, sparse)
