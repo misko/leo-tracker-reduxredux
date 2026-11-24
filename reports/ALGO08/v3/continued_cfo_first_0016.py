@@ -78,7 +78,7 @@ def resident(files):
     return scope
 
 
-def worker(mode, output):
+def worker(mode, output, *, launch_alternative=None):
     from continued_cfo import ContinuedChanges, raw_entry
     import continued_cfo as continued
 
@@ -186,7 +186,7 @@ def worker(mode, output):
         def runtime():
             result = base_runtime()
             runtime_spec.update(result[1])
-            if mode == "guarded":
+            if mode != "named":
                 import full_short_raw
 
                 underlying = full_short_raw.observe_acquisition
@@ -213,7 +213,11 @@ def worker(mode, output):
                         "--region", SOURCE/"offer.json", "--short-binary", SOURCE/"short.so",
                         "--geographic-library", SOURCE/"geographic.so", "--regional-track-library", SOURCE/"regional.so",
                         "--frontier-block-library", SOURCE/"block.so"]
-                raw_entry(None, list(map(str, args)), guarded_pack=PACK)
+                args = list(map(str, args))
+                if launch_alternative is None:
+                    raw_entry(None, args, guarded_pack=PACK)
+                else:
+                    launch_alternative(args, seal)
         except ReceiverSealed:
             pass
         else:

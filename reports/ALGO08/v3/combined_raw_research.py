@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 from pathlib import Path
+import runpy
 import sys
 from time import perf_counter_ns, process_time_ns
 from unittest.mock import patch
@@ -119,13 +120,15 @@ def main(argv=None):
 
     cli = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     cli.add_argument("-h", "--help", action="store_true")
-    cli.add_argument("--anchored-cfo-pack", type=Path, required=True)
+    receiver = cli.add_mutually_exclusive_group(required=True)
+    receiver.add_argument("--anchored-cfo-pack", type=Path)
+    receiver.add_argument("--eight-ms-native-history", action="store_true")
     cli.add_argument("--output", type=Path)
     add_options(cli)
     argv = sys.argv[1:] if argv is None else argv
     if any(flag in argv for flag in ("-h", "--help")):
         cli.print_help()
-        if not any(option.split("=", 1)[0] == "--anchored-cfo-pack" for option in argv):
+        if not any(option.split("=", 1)[0] in ("--anchored-cfo-pack", "--eight-ms-native-history") for option in argv):
             return
     args, inherited = cli.parse_known_args(argv)
     if args.help:
@@ -135,13 +138,22 @@ def main(argv=None):
         inherited.extend(("--output", str(args.output)))
     orbit, rank = {"requested": "cold" if portable is None else "portable"}, {"requested": args.catalogue_block_rank}
     with combined_runtime(orbit, rank, portable, use_blocks=args.catalogue_block_rank):
-        raw_entry(None, inherited, guarded_pack=args.anchored_cfo_pack)
+        if args.eight_ms_native_history:
+            native_eight(inherited)
+        else:
+            raw_entry(None, inherited, guarded_pack=args.anchored_cfo_pack)
     orbit["adapter_sha256"] = sha256((HERE/"historical_orbit_index.py").read_bytes()).hexdigest()
     rank["status"] = rank_status(args.catalogue_block_rank, rank)
     for name, doc in (("orbits-indexed.json", orbit), ("catalogue-block-rank.json", rank)):
         with (args.output.parent/name).open("x") as stream:
             json.dump(doc, stream, sort_keys=True, allow_nan=False)
             stream.write("\n")
+
+
+def native_eight(argv):
+    entry = HERE/"unified_short_bootstrap.py"
+    with patch.object(sys, "argv", [str(entry), *argv, "--held-anchor-route", "--eight-ms-native-history"]):
+        runpy.run_path(str(entry), run_name="__main__")
 
 
 if __name__ == "__main__":

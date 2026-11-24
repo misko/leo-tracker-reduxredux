@@ -77,7 +77,8 @@ def validate_workload(request, assignment, machine, reference_machine):
         raise ValueError("Candidate and historical control require the same raw assignment and worker settings")
 
 
-def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra_sources=(), experiment_flags=()):
+def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra_sources=(), experiment_flags=(),
+           native_eight_binary=None):
     from anchored_cfo_raw import verified_pack
     from dense_geographic_trial import host
     from full_short_physical import CACHE_LIB, CACHE_SHA, environment
@@ -96,19 +97,31 @@ def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra
     machine = host()
     validate_workload(request, assignment, machine, reference["machine"])
     verified_v3(NAMED_V3)
-    checked(PACK / "pack.json", PACK_SHA)
-    verified_pack(PACK)
+    if native_eight_binary is None:
+        checked(PACK / "pack.json", PACK_SHA)
+        verified_pack(PACK)
+        receiver_args = ("--anchored-cfo-pack", PACK)
+        selector = SELECTOR
+    else:
+        from full_short_run import EIGHT_MS_SHA
+
+        if entrypoint is None or not continued:
+            raise ValueError("Native 8 ms requires the dedicated complete-history entry")
+        receiver_args = ("--eight-ms-native-history",)
+        selector = "--held-anchor-route"
     checked(CACHE_LIB, CACHE_SHA)
     library_root = Path("/dev/shm/leo-v3-saved-0402-pair-01")
     pins = {flag: dict(path=str(library_root / f"{flag[2:].replace('-', '_')}.so"), sha256=row["sha256"])
             if flag != "--short-binary" else row for flag, row in reference["binaries"].items()}
     pins["--grid-feature-projection-library"] = dict(path=str(PROJECTION), sha256=PROJECTION_SHA)
+    if native_eight_binary is not None:
+        pins["--short-binary"] = dict(path=str(native_eight_binary), sha256=EIGHT_MS_SHA)
     library_flags = []
     for flag, row in pins.items():
         checked(Path(row["path"]), row["sha256"])
         library_flags.extend((flag, row["path"]))
     checkout = HERE.parents[2]
-    git = ["git", "-C", str(checkout)]
+    git = ["git", "-c", f"safe.directory={checkout}", "-C", str(checkout)]
     if subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True).strip():
         raise ValueError("The candidate and benchmark sources must be committed before launch")
     commit = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
@@ -128,16 +141,17 @@ def launch(root, *, continued=False, entrypoint=None, trial_protocol=None, extra
     if continued:
         sources.add(HERE / "continued_cfo_north_trial.py")
     sources.update(extra_sources)
-    cli = [python, "-IB", entry, "--anchored-cfo-pack", PACK, *experiment_flags]
+    cli = [python, "-IB", entry, *receiver_args, *experiment_flags]
     options = subprocess.run([*cli, "--help"], env=env, capture_output=True, timeout=15, check=True).stdout
-    if any(flag.encode() not in options.split() for flag in (SELECTOR, "--named-survivor-finish")):
+    if any(flag.encode() not in options.split() for flag in (selector, "--named-survivor-finish")):
         raise ValueError("The guarded normal entry did not expose the frozen joint selector and finish")
     output = root / "containing"
     command = ["/usr/bin/timeout", "--kill-after=2s", "90s", *cli, "--recording", request["recording"],
                "--archive", request["archive"]["root"], "--region", request["inside_offer"], "--output", output,
                *library_flags, *CURVATURE_FLAGS, *PUBLICATION_FLAGS, *(() if continued else (SELECTOR,))]
     binding = dict(request=request, assignment=assignment, historical=REFERENCE_PINS, command=list(map(str, command)),
-                   machine=machine, selector=SELECTOR, commit=commit, libraries=pins, pack_sha256=PACK_SHA,
+                   machine=machine, selector=selector, commit=commit, libraries=pins,
+                   pack_sha256=PACK_SHA if native_eight_binary is None else None,
                    source_sha256={path.name: sha256(path.read_bytes()).hexdigest() for path in sorted(sources)})
     write(root / "binding.json", binding)
     query, store = load_query(CACHE_LIB), FastScanStore(root)
