@@ -53,3 +53,12 @@ def test_gross_pricing_credits_only_original_measured_short_cpu(replay):
     assert result["modeled_acquisition_cpu_s"] == 35.
     assert result["non_native_cpu_s"] == 7.
     assert result["eligible"]
+
+
+@pytest.mark.parametrize(("clearance", "decision", "expected"), [
+    (.1, "complete", "valid_fix"), (.1, "withheld", "false_withhold"),
+    (-.1, "complete", "false_fix"), (-.1, "withheld", "valid_withhold"),
+])
+def test_south_geographic_score_keeps_false_fixes_as_failures(replay, clearance, decision, expected):
+    south = import_module("whole_stereo_blocks_south")
+    assert south.geographic_result(clearance, decision) == expected
