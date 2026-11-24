@@ -9,7 +9,7 @@ import pytest
 from PIL import Image
 
 from full_successor_score import (PINS, calibration_segment_error_km, capture_day_sensitivity, compare_centers, empirical_accuracy_gap,
-                                  outcomes_summary, paired_rf_and_error, paired_rows,
+                                  field_stage_history, frozen_stage_order, outcomes_summary, paired_rf_and_error, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
 
@@ -184,6 +184,24 @@ def test_relocation_requires_matched_proofs_and_enrolled_content_in_both_arms():
         paired_rows(rows, assigned)
 
 
+def test_field_stages_follow_original_membership_and_defer_pairs_beyond_a_hole():
+    assigned = roster()
+    order = frozen_stage_order({k: (r["case_id"], r["physical_content"]) for k, r in assigned.items()})
+    assert order[:8] == ["DS30-0107", "DS30-0049", "DS30-0178", "DS30-0019",
+                         "DS30-0274", "DS30-0330", "DS30-0397", "DS30-0452"]
+    def pair(case):
+        base = dict(case=case, elapsed_s=2., cpu_s=2., c0_fix=True, fitted_c_fix=True,
+                    c0_error_km=.2, fitted_c_error_km=1.)
+        return base, dict(base, elapsed_s=1., cpu_s=1., c0_error_km=2.)
+    actual = field_stage_history([pair(case) for case in reversed(order[:4] + order[5:8])], order)
+    assert actual["completed_prefix"] == 4 and actual["measured_beyond_prefix"] == 3
+    last = actual["stages"][-1]
+    assert last["newly_added"]["pairs"] == 2 and last["cumulative"]["pairs"] == 4
+    assert last["cumulative"]["at_or_under_half_wall"] == 4
+    assert last["newly_added"]["successor"]["c0"]["within_1km"] == 0
+    assert last["newly_added"]["successor"]["fitted_c"]["within_1km"] == 2
+
+
 def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assigned = roster()
     template, _ = matching_pair()
@@ -216,6 +234,10 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
                  renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior,
                  capture_days=capture_day_sensitivity(pairs, assigned))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    stages = report["field_stages"]["stages"]
+    assert [r["last_position"] for r in stages] == [2, 8, 30, 100, 455]
+    assert [r["newly_added"]["pairs"] for r in stages] == [2, 6, 22, 70, 355]
+    assert stages[-1]["cumulative"]["wall"] == report["cohorts"]["All DS30 recordings"]["wall"]
     budgets = report["accuracy_repair_budget"]
     assert len(budgets) == 10 and all(item["pairs"] == 455 for item in budgets)
     assert {item["tolerance_km"] for item in budgets} == {0., .25}

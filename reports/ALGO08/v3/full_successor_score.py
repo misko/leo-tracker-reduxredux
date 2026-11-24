@@ -62,6 +62,45 @@ def roster(root=ROOT):
     return assigned
 
 
+def frozen_stage_order(identities):
+    from reports.ALGO08.v3.ds30_paired_inputs import SEED, SMOKE, digest, encode
+
+    ranked = sorted(identities, key=lambda case: digest(encode([SEED, *identities[case]])))
+    ordered = [*SMOKE, *(case for case in ranked if case not in SMOKE)]
+    # Ordered case IDs from the signed field plan, including the initial two operational checks.
+    checked(("\n".join(ordered) + "\n").encode(), "143590d0a3afbbac6c9bdc448ce94661ac6df0004816514da7098527f51bd85a")
+    return ordered
+
+
+def field_stage_history(pairs, order):
+    """Score the completed prefix of the frozen experiment, keeping later observed pairs separate."""
+    by_case = {a["case"]: (a, b) for a, b in pairs}
+    if len(by_case) != len(pairs) or not by_case.keys() <= set(order):
+        raise ValueError("Duplicate or unenrolled field pair")
+    end = next((i for i, case in enumerate(order) if case not in by_case), len(order))
+    ordered = [by_case[case] for case in order[:end]]
+    cuts = sorted({n for n in (2, 8, 30, 100, 455, end) if 0 < n <= end})
+
+    def score(group):
+        counts = {}
+        for name, column in (("installed", 0), ("successor", 1)):
+            rows = [pair[column] for pair in group]
+            counts[name] = {
+                arm: dict(fixes=sum(bool(r[arm + "_fix"]) for r in rows),
+                          within_1km=sum(r[arm + "_error_km"] is not None and r[arm + "_error_km"] <= 1 for r in rows))
+                for arm in ("c0", "fitted_c")}
+        return dict(pairs=len(group), wall=paired_timing(group, "elapsed_s"), cpu=paired_timing(group, "cpu_s"),
+                    at_or_under_half_wall=sum(2 * b["elapsed_s"] <= a["elapsed_s"] for a, b in group), **counts)
+
+    stages = []
+    start = 0
+    for stop in cuts:
+        stages.append(dict(first_new_position=start + 1, last_position=stop, cumulative=score(ordered[:stop]),
+                           newly_added=score(ordered[start:stop])))
+        start = stop
+    return dict(completed_prefix=end, measured_beyond_prefix=len(pairs) - end, stages=stages)
+
+
 def outcomes_summary(rows, assigned):
     """Rows represent independently checked terminal results, one per build and recording."""
     if len(rows) != len(assigned) or {r["case"] for r in rows} != set(assigned):
@@ -378,6 +417,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     metadata = dict(source_manifest_sha256=MANIFEST, reference_audit_sha256=REFERENCE, attempt_export_sha256=receipt_digest,
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
     metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
+    trial_order = frozen_stage_order({a["case"]: (a["case_id"], a["physical_content_sha256"]) for a, _ in pairs})
+    metadata["field_stages"] = field_stage_history(pairs, trial_order)
     metadata["accuracy_repair_budget"] = [
         repair_budget(pairs, tolerance, fraction) for tolerance in (0., .25) for fraction in (1., .8, .75, .5, 0.)]
     metadata["empirical_accuracy_gap"] = {arm: empirical_accuracy_gap(pairs, arm) for arm in ARMS}
@@ -479,6 +520,22 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         t = summaries[name]["time_accounting"]
         lines.append(f"| {name} | {number(t['wall_saved_s'], 1)} | {number(t['cpu_saved_s'], 1)} | "
                      f"{number(t['residual_saved_s'], 1)} |")
+    lines += ["", "### From the first pair of recordings to the full field trial", "",
+              "The first two recordings checked operation. Later stages followed the frozen hash order. "
+              "The new recordings in each row appear in that row only. The cumulative column includes every "
+              "earlier stage. The first 100 field pairs and the historical 100-recording release panel have "
+              "different membership.", "",
+              "| New recording positions | New pairs | New pairs at half wall time | New pairs, summed / median wall speedup | "
+              "Cumulative summed / median wall speedup | New within 1 km, fixed zero (v3 / candidate) | "
+              "New within 1 km, fitted (v3 / candidate) |", "|---|---:|---:|---:|---:|---:|---:|"]
+    for stage in metadata["field_stages"]["stages"]:
+        new, total = stage["newly_added"], stage["cumulative"]
+        nw, tw = new["wall"], total["wall"]
+        lines.append(f"| {stage['first_new_position']}–{stage['last_position']} | {new['pairs']} | "
+                     f"{new['at_or_under_half_wall']} | {nw['summed_speedup']:.2f}× / {nw['median_paired_speedup']:.2f}× | "
+                     f"{tw['summed_speedup']:.2f}× / {tw['median_paired_speedup']:.2f}× | "
+                     f"{new['installed']['c0']['within_1km']} / {new['successor']['c0']['within_1km']} | "
+                     f"{new['installed']['fitted_c']['within_1km']} / {new['successor']['fitted_c']['within_1km']} |")
     sensitivity = full["time_accounting"]["removing_positive_candidate_wall_minus_cpu"]
     lines += ["", "Savings subtract candidate seconds from ALGO08v3 seconds. Wall time minus CPU time can include "
               "storage waits, scheduling delays and clock-accounting differences. As a sensitivity check, removing "
