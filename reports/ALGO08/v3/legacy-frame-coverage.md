@@ -8,6 +8,22 @@ The full reader authenticated all 991.7 MB of the original encoded recording and
 
 The 13-map build reused the five previously verified maps. The incremental preparation took **3.182 s**. Charging those five maps' original verification and creation as well brings the observed preparation plus first analysis to **11.993 s**. All three candidate runs used the same earlier orbit index. Building that index would add a further 4.320 s. [All-member first-use accounting](legacy-block-all-0016.md) · [Reproduce the figure](legacy_frame_figure.py)
 
+### Paired result including the short withholding case
+
+The same full reader and publication entry also ran on the original DS30-0107 file. All 29 visits remained in the inventory, including the partial visit and the empty visit. The normal receiver selected 19 factors and withheld both positions for insufficient curvature. The original terminal and empty product list matched. Below, the installed baseline uses the previously measured original-file clocks. The two candidate columns use fresh processes on the same recordings.
+
+| Process through exit | Original ALGO08v3 | Candidate, ordinary reads | Candidate, full index |
+|---|---:|---:|---:|
+| DS30-0016 · fix | 10.745 s | 8.630 s | 7.093 s |
+| DS30-0107 · withheld | 1.497 s | 0.549 s | 0.967 s |
+| **Sum** | **12.242 s** | **9.178 s** | **8.059 s** |
+
+The full candidate reached **1.53× at the paired median and 1.52× by summed time** against v3. Including map-readiness checks gives 8.068 s total. Charging the measured full map preparations as well gives **13.032 s for first use**, before any shared orbit-index construction. On the short case, selective acquisition saved too little to offset the rest of the indexed process. The indexed pair needs another 1.94 s in total for 2×, or 0.41 s for 1.6×, using through-exit clocks. The two cases come from one roof and were selected to exercise a fix and a withhold. [Matched tiny result and paired gates](legacy-block-all-0107.md)
+
+On the fix, the candidate's errors against the operator reference were **490 m with fixed calibration and 980 m with fitted calibration**, versus **1,644 m and 1,661 m** for the installed baseline. The reader change preserved its own solver's positions exactly. Earlier tests with the correct region removed produced false fixes in both pipelines. Compression fidelity and these two paired decisions leave open how well the solver will localize at another physical site. [Containing and missing-region controls](history-risk-0016-omitted.md)
+
+The short recording exposed an avoidable cost after withholding. Writing the final map-audit JSON imported the numerical localization engine and SciPy. In fresh writer-only processes, that step took **300–310 ms** on the real audits. A dedicated writer emitted the same bytes in **1.0–1.4 ms**. Both time and file contents were checked in opposite orders for the fixing and withholding cases. The paired pipeline clocks above predate this change. Its end-to-end effect still needs a direct measurement. [Writer comparison and exact-byte checks](legacy-map-receipt-writer.md)
+
 ### Which original files need exceptions?
 
 Only **5 of the 13 original files** consist entirely of Huffman-coded literals. Those files account for **320 of 808 visits** and **393.1 of 991.7 MB** of compressed input. A decoder that falls back on the first Zstandard match can use the shortcut on 39.6% of this recording's compressed bytes. The previously studied first file qualified. Timing it alone would overstate coverage. [Complete per-file census](measurements/legacy-frame-coverage-0016.json) · [Frozen selection](legacy-frame-coverage-protocol.md)
