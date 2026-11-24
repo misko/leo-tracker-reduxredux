@@ -4,10 +4,6 @@ import argparse
 from pathlib import Path
 import sys
 
-from reports.ALGO08.v3 import nomination_handoff_0419_local as shared
-from reports.ALGO08.v3.nomination_handoff_0419_admission import enrollment
-
-
 CASE = "DS30-0163"
 RANK_HASH = "0f748653d7f68d810e1ac6f1136a41386ef5e92195f9a225f0e91955c0ec9222"
 PAIR_PIN = "d9d80afa50d537d34500288972114312af7137c93cc173f147bef800ea8d7442"
@@ -24,11 +20,15 @@ INPUTS = dict(
 
 
 def assigned():
+    from reports.ALGO08.v3.nomination_handoff_0419_admission import enrollment
+
     assignment = enrollment(ranked=4, case=CASE, ranking_hash=RANK_HASH, pair_pin=PAIR_PIN)
     return assignment | {"order": assignment["planned_order"], "archived_pair_sha256": PAIR_PIN}
 
 
 def prepare(root):
+    from reports.ALGO08.v3 import nomination_handoff_0419_local as shared
+
     shared.launch(root, assign=assigned, execute=False, expected_inputs=INPUTS)
 
 

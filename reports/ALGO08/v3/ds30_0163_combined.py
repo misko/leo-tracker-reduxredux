@@ -1,9 +1,11 @@
 """Run the pinned combined scientific worker on the already staged blind input."""
 
 import argparse
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
+from shutil import copytree
 import subprocess
 import sys
 from unittest.mock import patch
@@ -13,9 +15,6 @@ ROOT = HERE.parents[2]
 sys.path[:0] = [str(HERE), str(ROOT)]
 
 from reports.ALGO08.v3.ds30_0163_blind import CASE, PAIR_PIN, assigned
-from reports.ALGO08.v3.nomination_handoff_0419_admission import checked, digest, tmpfs
-
-
 READY = Path("/dev/shm/leo-v3-ds30-0163-ready01")
 READY_PIN = "dfbcde4feb942fc95c2ec8ff9d26fe30fe238bb570413dd03b19b97de11a7cd7"
 JOB_SHA = "3b79aefb7f540ec55193a5e54b3ee57cb60f0a27a3371b64c2e5504be15be7d3"
@@ -25,6 +24,11 @@ LOGGER_SOURCE = "reports/ALGO08/v3/combined_successor_0289.py"
 LOGGER_SHA = "8cfcb991ad883f820154834c0c658de903207ba56fda7c3de4e617a36bb481d0"
 SCIENCE_COMMIT = "ad319307d"
 LOGGER_COMMIT = "d0f399eb1fd673f0fff4c19fb944724d906c805e"
+FIRST = Path("/dev/shm/leo-v3-combined-0163-blind01")
+FIRST_ADMISSION = "60893a0fa73b7439a741f9f5ee4e46c2d3c80b6d8dac87d790e8f813b7f2b7b2"
+FIRST_SEAL = "12b00b10289013a825d5a9c2eb35e2adc81931d7d16b047c15cb22ea335673ab"
+FAILED_CLOCK = "9c157d201e72790e9bd81753685c47d938c9d7c700eea76128e678ea35bcd7c0"
+INSTALLED_CLOCK = "30f99fb8fe9630246db9721aa350576506dd1fef69e03dbabd0e1f2eb98e7e6d"
 
 
 def source_binding(current, previous):
@@ -36,14 +40,22 @@ def source_binding(current, previous):
 
 def pinned_sources():
     import combined_successor_0289 as combined
+    from reports.ALGO08.v3.nomination_handoff_0419_admission import checked, tmpfs
 
     source = checked(tmpfs(DEVELOPMENT), DEVELOPMENT_PIN)
     return source_binding(combined.source_pins(), source["sources"])
 
 
-def ready():
-    book = checked(tmpfs(READY / "admission.json"), READY_PIN)
-    if not book["prepared_only"] or book["job_sha256"] != JOB_SHA or book["assignment"] != assigned():
+def ready(*, check_assignment=True):
+    path = READY / "admission.json"
+    if path.resolve(strict=True) != path:
+        raise ValueError("The prepared admission traversed a symlink")
+    body = path.read_bytes()
+    if sha256(body).hexdigest() != READY_PIN:
+        raise ValueError("The prepared admission bytes changed")
+    book = json.loads(body)
+    if (not book["prepared_only"] or book["job_sha256"] != JOB_SHA
+            or (check_assignment and book["assignment"] != assigned())):
         raise ValueError("The original scope or frozen ready status changed")
     return book
 
@@ -51,9 +63,20 @@ def ready():
 def worker(output):
     import combined_successor_0289 as combined
 
-    ready()
+    ready(check_assignment=False)
     with patch.multiple(combined, STAGED=READY, JOB_SHA=JOB_SHA):
         combined.worker(output)
+
+
+def probe():
+    import combined_successor_0289
+    import solver_exception_live
+
+    ready(check_assignment=False)
+    if "leo" in sys.modules:
+        raise ValueError("The candidate adapter loaded a local scientific package before installed bootstrap")
+    return dict(worker_available=callable(combined_successor_0289.worker),
+                guarded_worker_available=callable(solver_exception_live.worker), early_leo_import=False)
 
 
 def launch(output):
@@ -68,6 +91,7 @@ def launch(output):
     from leo.contracts.digests import canonical_digest
     from leo.operations.tle_archive import TleArchiveReader
     from short_raw_diagnostic import measure
+    from reports.ALGO08.v3.nomination_handoff_0419_admission import checked, tmpfs
     from tools.pipeline_eval.qualification.paired_publication import NAMED_V3, verified_v3
     from visit_frame_raw_0016 import resident
 
@@ -75,6 +99,13 @@ def launch(output):
     if output.exists() or resident_path(output.parent) != Path("/dev/shm"):
         raise ValueError("Use a fresh private tmpfs output")
     cold = ready()
+    first = checked(tmpfs(FIRST / "admission.json"), FIRST_ADMISSION)
+    seal = checked(tmpfs(FIRST / "prediction-seal.json"), FIRST_SEAL)
+    failed = checked(tmpfs(FIRST / "routed/clock.json"), FAILED_CLOCK)
+    installed = checked(tmpfs(FIRST / "installed/clock.json"), INSTALLED_CLOCK)
+    if (seal != output_seal(FIRST) or first["job_sha256"] != JOB_SHA or failed["exit_code"] != 1
+            or (FIRST / "routed/candidate").exists() or installed["exit_code"]):
+        raise ValueError("Expected the sealed import-only failure and the one original installed exit")
     machine, release = host(), verified_v3(NAMED_V3)
     if machine != cold["machine"] or release != cold["installed_release"]:
         raise ValueError("Host or installed release changed between admission and launch")
@@ -83,35 +114,34 @@ def launch(output):
     _, refs = checked_catalogue(bound, request, TleArchiveReader, canonical_digest)
     cache = resident([*(ref.path for ref in refs), *map(Path, bound["packets"]), *map(Path, libraries)])
     output.mkdir(mode=0o700)
-    for name in ("fonts", "tmp", "routed", "installed"):
+    for name in ("fonts", "tmp", "routed"):
         (output / name).mkdir()
+    copytree(FIRST / "installed", output / "installed", copy_function=os.link)
     for name in ("job.json", "request.json"):
         os.link(resident_path(READY / name), output / name)
     for path in (READY / "fonts").glob("fontlist-*.json"):
         os.link(resident_path(path), output / "fonts" / path.name)
-    for mode in ("routed", "installed"):
-        write(output / mode / "binding.json", {"input": bound})
+    write(output / "routed/binding.json", {"input": bound})
     command = ["/usr/bin/timeout", "--kill-after=2s", "115s", str(boot.RELEASE / "venv/bin/python"), "-IB"]
     commands = {
         "routed": [*command, str(Path(__file__).resolve()), "worker", str(output)],
-        "installed": [*command, str(HERE / "clean_saved_publication.py"),
-                      "installed", str(READY / "job.json"), JOB_SHA, str(output / "installed")],
+        "installed": first["commands"]["installed"],
     }
     revision = subprocess.check_output(["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT),
                                         "rev-parse", "HEAD"], text=True).strip()
-    order = cold["assignment"]["order"]
     write(output / "admission.json", dict(
         case=CASE, assignment=cold["assignment"], sources=sources, libraries=libraries, machine=machine,
         job_sha256=JOB_SHA, ready_admission_sha256=READY_PIN, job_root=str(READY), commands=commands,
         science_commit=SCIENCE_COMMIT, telemetry_commit=LOGGER_COMMIT, controller_commit=revision,
         cold_setup=cold["setup"], cold_archive=cold["archive"], warm_setup=boot.clock(began),
+        first_setup=first["warm_setup"], failed_start=failed, first_seal_sha256=FIRST_SEAL,
+        installed_clock_sha256=INSTALLED_CLOCK, actual_worker_order=["installed", "routed"],
         original_inputs=cold["original_inputs"], resident=cache, installed_release=release,
         detector_waveform_reads=0, original_backing_archive_reads=0,
     ))
     env = environment(output) | {"TMPDIR": str(output / "tmp"), "XDG_CACHE_HOME": str(output / "tmp")}
-    for mode in order:
-        stage = output / mode
-        write(stage / "clock.json", measure(commands[mode], env, stage / "candidate"))
+    stage = output / "routed"
+    write(stage / "clock.json", measure(commands["routed"], env, stage / "candidate"))
     write(output / "prediction-seal.json", output_seal(output))
 
 
@@ -121,6 +151,7 @@ def score(output):
     from joint_publication import artifacts
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from nomination_handoff_0419_admission import PANEL
+    from reports.ALGO08.v3.nomination_handoff_0419_admission import checked, digest, tmpfs
     import unseen_saved_holdout_score as ordinary
 
     started = boot.now()
@@ -174,10 +205,11 @@ def score(output):
     }
     result["paid_setup_and_time"] = {}
     for metric, arms in result["time"].items():
-        ready = book["cold_setup"][metric] + book["warm_setup"][metric]
+        ready = book["cold_setup"][metric] + book["first_setup"][metric] + book["warm_setup"][metric]
         result["paid_setup_and_time"][metric] = dict(
             combined_setup=ready, installed_with_setup=arms["installed"] + ready,
             candidate_with_setup=arms["routed"] + ready,
+            failed_start=book["failed_start"][metric],
             speedup_with_shared_setup=(arms["installed"] + ready) / (arms["routed"] + ready))
     result["study"] = dict(independent_cases=[CASE], previous_combined_development=["DS30-0289"],
                            prediction_scoring=boot.clock(started), original_waveform_reads=0)
@@ -189,7 +221,12 @@ if __name__ == "__main__":
 
     sys.addaudithook(deny_original)
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode", choices=("launch", "worker", "score"))
-    cli.add_argument("output", type=Path)
+    cli.add_argument("mode", choices=("launch", "worker", "score", "probe"))
+    cli.add_argument("output", nargs="?", type=Path)
     args = cli.parse_args()
-    {"launch": launch, "worker": worker, "score": score}[args.mode](args.output)
+    if args.mode == "probe" and args.output is None:
+        print(json.dumps(probe(), sort_keys=True))
+    elif args.mode != "probe" and args.output is not None:
+        {"launch": launch, "worker": worker, "score": score}[args.mode](args.output)
+    else:
+        cli.error("A study output is required except for the isolated import probe")
