@@ -13,14 +13,17 @@ sys.path.insert(0, str(HERE))
 import legacy_block_raw_entry as raw
 
 ordinary_parser = raw.parser
-RESOURCES = ("plan", "history", "replay")
+LIBRARIES = ("history", "replay")
 
 
 def parser():
     cli = ordinary_parser()
-    for label in RESOURCES:
+    for label in LIBRARIES:
         cli.add_argument(f"--legacy-first-map-{label}", type=Path, required=True)
         cli.add_argument(f"--legacy-first-map-{label}-sha256", required=True)
+    cli.add_argument("--legacy-first-map-plan", type=Path,
+                     help="Optional independent replay plan for byte-parity qualification")
+    cli.add_argument("--legacy-first-map-plan-sha256")
     cli.add_argument("--first-map-setup-only", action="store_true")
     return cli
 
@@ -44,6 +47,8 @@ def run(args):
     if (not args.eight_ms_native_history or not args.held_anchor_route or not args.history_risk_route
             or args.legacy_map_custody or args.legacy_map_library):
         raise ValueError("Expected the ordinary 20/8 history-risk path with first-use map production")
+    if bool(args.legacy_first_map_plan) != bool(args.legacy_first_map_plan_sha256):
+        raise ValueError("Provide the optional qualification plan and external pin together")
     old = boot.load_runtime
     audit, pending = {}, {}
     state = {}
@@ -60,22 +65,22 @@ def run(args):
             with patch.object(sys, "path", [*sys.path, str(ROOT)]):
                 from reports.ALGO08.v3 import legacy_block_input as port, legacy_block_seek as core
                 from reports.ALGO08.v3 import legacy_first_map_input as producing, legacy_fused_map as fused
-            from legacy_block_all_entry import mapped_codec
-
-            resources = {}
-            for label in RESOURCES:
+            for label in LIBRARIES:
                 path = getattr(args, f"legacy_first_map_{label}")
                 pin = getattr(args, f"legacy_first_map_{label}_sha256")
-                resources[label] = port.checked_file(path, pin, port.MAX_CUSTODY if label == "plan" else 2_000_000)
+                port.checked_file(path, pin, 2_000_000)
                 audit[label + "_sha256"] = pin
-            state["plan"] = plan = json.loads(resources["plan"])
+            plan = None
+            expected_pin = args.legacy_first_map_plan_sha256
+            if args.legacy_first_map_plan is not None:
+                plan = port.load_custody(args.legacy_first_map_plan, expected_pin)
+            audit["authority_mode"] = "qualified-parity" if plan is not None else "verified-first-use"
             spec = runtime[1]
             paired = spec["paired_sha256"]
             hasher = Path(paired["library"])
             boot.checked(hasher, paired["sha256"])
             history = fused.load(args.legacy_first_map_history)
             replay = core.load(args.legacy_first_map_replay)
-            codec = mapped_codec(plan)
             if args.first_map_setup_only:
                 ordinary = boot.staged_scanner
 
@@ -86,7 +91,7 @@ def run(args):
                     raise ReachedScanner
 
                 stack.enter_context(patch.object(boot, "staged_scanner", stop))
-            stack.enter_context(producing.binding(boot, plan, history, hasher, codec, replay, pending, audit))
+            stack.enter_context(producing.binding(boot, plan, history, hasher, replay, pending, audit))
             state["publish"] = producing.publish_bundle
             audit["setup"] = boot.clock(began)
             return runtime
@@ -99,13 +104,15 @@ def run(args):
                 raise
             print(json.dumps(dict(reached_scanner=True, waveform_opens=0, audit=audit)))
             return
-    if args.first_map_setup_only:
+    if args.first_map_setup_only or "verified_plan" not in audit:
         raise ValueError("No complete first-use receiver and publication")
-    require_verified_terminal(terminal, state["plan"], audit)
+    plan = audit.pop("verified_plan")
+    require_verified_terminal(terminal, plan, audit)
     began = boot.now()
-    pin = state["publish"](args.output / "legacy-first-maps", state["plan"], pending)
-    if pin != audit["plan_sha256"]:
+    pin = state["publish"](args.output / "legacy-first-maps", plan, pending)
+    if args.legacy_first_map_plan_sha256 is not None and pin != args.legacy_first_map_plan_sha256:
         raise ValueError("Published complete replay custody changed")
+    audit["plan_sha256"] = pin
     audit["map_publication"] = boot.clock(began)
     write(args.output / "legacy-first-map-acquisition.json", audit)
     return terminal

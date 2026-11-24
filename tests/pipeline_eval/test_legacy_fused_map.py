@@ -1,15 +1,20 @@
 import json
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 import zstandard as zstd
 
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 from reports.ALGO08.v3 import legacy_block_multi as multi
 from reports.ALGO08.v3 import legacy_block_seek as core
 from reports.ALGO08.v3 import legacy_fused_map as fused
+from reports.ALGO08.v3 import legacy_block_input as port
+from reports.ALGO08.v3 import legacy_first_map_input as first
 
 
 @pytest.fixture(scope="module")
@@ -127,8 +132,6 @@ def test_authentic_literal_layout_falls_back_to_complete_stock(tmp_path, native)
 
 @pytest.mark.parametrize("literal", [False, True])
 def test_first_use_map_reopens_from_the_same_verified_encoded_snapshot(tmp_path, native, literal):
-    from reports.ALGO08.v3 import legacy_first_map_input as first
-
     reader, chunk, _, _ = capture(tmp_path, literal_only=literal)
     library = tmp_path / "replay.so"
     core.build(library)
@@ -189,3 +192,124 @@ def test_verified_terminal_issuance_accepts_both_normal_outcomes(decision):
         require_verified_terminal(terminal, plan, {})
     with pytest.raises(ValueError, match="No complete first-use"):
         require_verified_terminal(terminal | {"window_count": 28}, plan, audit)
+
+
+def unsupported_capture(path, *, bad_checksum=False):
+    writer = ShortWindowWriter(
+        path, "unsupported", configuration={"sample_rate_hz": 10_000_000, "window_ms": 20},
+        radio={}, receiver_ids=(0, 1), schema_version=2, chunk_windows=2, compression_level=1,
+    )
+    for seq, count in enumerate((0, 17_777)):
+        writer.append(sequence=seq, target_id="test", samples=np.zeros((count, 2, 2), dtype="<i2"),
+                      acquisition={"chronology": seq}, powers=({}, {}))
+    folder = writer.finish(stop_reason="test")
+    if bad_checksum:
+        manifest = folder / "manifest.json"
+        record = json.loads(manifest.read_bytes())
+        chunk, = record["chunks"]
+        payload = folder / chunk["payload_relative_path"]
+        frame = bytearray(payload.read_bytes())
+        frame[-1] ^= 1
+        payload.write_bytes(frame)
+        chunk["compressed_sha256"] = sha256_digest(frame)
+        manifest.write_bytes(canonical_json_bytes(record))
+    return ShortWindowReader(folder)
+
+
+def acquire_without_preparing_maps(readers, history, replay, pending, audit, *, expected=None):
+    class Source:
+        def __init__(self, entry):
+            self.reader = ShortWindowReader(Path(entry["path"]))
+            self.start_sequence = 0
+            self.stop_sequence = self.reader.manifest.window_count
+            self.targets = {"test": {"target_id": "test"}}
+
+        def windows(self):
+            raise AssertionError("Expected the real first-use source binding")
+
+    inventory = dict(
+        segments=[dict(path=str(reader.path), windows=reader.manifest.window_count,
+                       manifest_digest=reader.manifest_sha256) for reader in readers],
+        window_count=sum(reader.manifest.window_count for reader in readers))
+    pin = canonical_digest(inventory)
+
+    def staged(_sources, detector=None):
+        def acquire(_session, digest, actual, _assets):
+            hashes = []
+            for entry in actual["segments"]:
+                for visit in Source(entry).windows():
+                    assert sha256_digest(memoryview(visit.samples.reshape(-1)).cast("B")) == visit.iq_sha256
+                    hashes.append(visit.iq_sha256)
+            return dict(source=dict(raw_recording_authority_digest=port.raw_authority(digest, hashes)))
+
+        return SimpleNamespace(FastSegmentSource=Source, acquire=acquire)
+
+    boot = SimpleNamespace(staged_scanner=staged)
+    with first.binding(boot, expected, history, None, replay, pending, audit):
+        scan = boot.staged_scanner({}, detector=True)
+        scan.acquire("fresh", pin, inventory, None)
+    return inventory, pin
+
+
+def test_discover_literal_exception_and_ordinary_custody_without_a_prior_map(tmp_path, native):
+    literal, _, _, _ = capture(tmp_path / "literal", literal_only=True)
+    stock = unsupported_capture(tmp_path / "stock")
+    exception, _, _, _ = capture(tmp_path / "exception")
+    binary = tmp_path / "selective.so"
+    core.build(binary)
+    replay = core.load(binary)
+    pending, audit, encoded_reads = {}, {}, []
+    storage_read = ShortWindowReader._member
+
+    def count(reader, name, size, pin):
+        if name.endswith(".zst"):
+            encoded_reads.append(reader.path)
+        return storage_read(reader, name, size, pin)
+
+    readers = (literal, stock, exception)
+    with patch.object(ShortWindowReader, "_member", count):
+        inventory, pin = acquire_without_preparing_maps(readers, native, replay, pending, audit)
+    assert encoded_reads == [reader.path for reader in readers]
+    plan = audit["verified_plan"]
+    assert [row["map_kind"] for row in plan["members"]] == ["literal", "ordinary", "exception"]
+    assert list(pending) == ["member-000000.json", "member-000002.json"]
+    assert audit["members"][1]["fallback"]
+    output = tmp_path / "maps"
+    assert first.publish_bundle(output, plan, pending) == sha256_digest((output / "custody.json").read_bytes())
+    parts = port.all_parts(json.loads((output / "custody.json").read_bytes()), "fresh", pin, inventory)
+    for reader in readers:
+        chunk, = reader.manifest.chunks
+        member = parts[(reader.manifest_sha256, chunk.chunk_index)]
+        if member["map"] is None:
+            assert [window.samples.shape[0] for window in reader.windows()] == [0, 17_777]
+            continue
+        codec = core if member["map_kind"] == "literal" else multi
+        selected = codec.Selective(reader, chunk, (output / member["map"]).read_bytes(),
+                                   member["map_sha256"], replay)
+        try:
+            for row, original in zip(selected.rows, reader.windows(), strict=True):
+                np.testing.assert_array_equal(selected.read(row, full=False), original.samples[:80_000])
+        finally:
+            selected.close()
+    again, compared = {}, {}
+    acquire_without_preparing_maps(readers, native, replay, again, compared, expected=plan)
+    assert compared["verified_plan"] == plan and pending == again
+
+
+@pytest.mark.parametrize("fault", ["encoded", "unsupported-checksum"])
+def test_later_corruption_clears_provisional_maps_and_cannot_publish(tmp_path, native, fault):
+    valid, _, _, _ = capture(tmp_path / "valid", literal_only=True)
+    if fault == "encoded":
+        broken, chunk, frame, _ = capture(tmp_path / "broken")
+        modified = bytearray(frame)
+        modified[-1] ^= 1
+        (broken.path / chunk.payload_relative_path).write_bytes(modified)
+    else:
+        broken = unsupported_capture(tmp_path / "broken", bad_checksum=True)
+    binary = tmp_path / "selective.so"
+    core.build(binary)
+    pending, audit = {}, {}
+    with pytest.raises(BundleCorruptionError):
+        acquire_without_preparing_maps((valid, broken), native, core.load(binary), pending, audit)
+    assert not pending and not audit["members"] and "verified_plan" not in audit
+    assert not (tmp_path / "maps").exists()

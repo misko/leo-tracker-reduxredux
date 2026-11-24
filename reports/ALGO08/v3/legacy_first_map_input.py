@@ -1,6 +1,6 @@
 """Bind first-use maps to the normal, complete original receiver traversal."""
 
-from contextlib import ExitStack, closing, contextmanager
+from contextlib import ExitStack, closing, contextmanager, nullcontext
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,29 +11,37 @@ from leo.storage.errors import BundleCorruptionError
 from leo.storage.short_window import ShortWindowReader
 from leo.storage.writer import _fsync_directory
 
-from . import legacy_block_input as port, legacy_fused_map as fused
+from . import legacy_block_input as port, legacy_block_multi as multi, legacy_fused_map as fused
+from . import legacy_block_seek as legacy
 from .legacy_block_seek import clock, elapsed
 
 
-def reopen(member, expected, raw, codec, replay):
-    """Reopen with the same authenticated snapshot, without a second payload read."""
+@contextmanager
+def borrow_snapshot(reader, chunk, encoded):
     original = ShortWindowReader._member
-    reader, chunk = member.reader, member.chunk
-    supplied = 0
+    supplied = False
 
     def borrowed(source, name, size, pin):
         nonlocal supplied
         if source is reader and name == chunk.payload_relative_path:
-            if (size, pin) != (len(member.compressed), chunk.compressed_sha256) or supplied:
+            if (size, pin) != (len(encoded), chunk.compressed_sha256) or supplied:
                 raise BundleCorruptionError("Replay requested a different original compressed member")
-            supplied += 1
-            return member.compressed
+            supplied = True
+            return encoded
         return original(source, name, size, pin)
 
-    with patch.object(ShortWindowReader, "_member", borrowed), closing(
-        codec.Selective(reader, chunk, raw, expected["map_sha256"], replay)
+    with patch.object(ShortWindowReader, "_member", borrowed):
+        yield
+    if not supplied:
+        raise BundleCorruptionError("The same authenticated compressed member was not consumed")
+
+
+def reopen(member, expected, raw, codec, replay):
+    """Reopen with the same authenticated snapshot, without a second payload read."""
+    with borrow_snapshot(member.reader, member.chunk, member.compressed), closing(
+        codec.Selective(member.reader, member.chunk, raw, expected["map_sha256"], replay)
     ) as reopened:
-        if supplied != 1 or tuple(reopened.rows) != member.rows:
+        if tuple(reopened.rows) != member.rows:
             raise BundleCorruptionError("Replay map did not reopen the original member and signed rows")
         proof = reopened.read(reopened.rows[0], full=False)
         pin = sha256_digest(memoryview(proof.reshape(-1)).cast("B"))
@@ -43,37 +51,77 @@ def reopen(member, expected, raw, codec, replay):
                     original_encoded_reused=len(member.compressed))
 
 
-def first_windows(source, parts, history, hasher, codec, replay, pending, audit):
+def first_windows(source, parts, history, hasher, replay, pending, audit, hashes):
     from leo.scanner.fast_scan_analysis import VerifiedFastWindow
 
     if source.start_sequence or source.stop_sequence != source.reader.manifest.window_count:
         raise ValueError("First-use maps require the complete original segment")
     for chunk in source.reader.manifest.chunks:
-        identity = source.reader.manifest_sha256, chunk.chunk_index
-        expected = parts[identity]
-        if expected["map"] in pending:
+        reader = source.reader
+        identity = reader.manifest_sha256, chunk.chunk_index
+        declared = parts[identity]
+        name = port.map_name(len(audit))
+        if name in pending:
             raise BundleCorruptionError("Original first-use acquisition repeated a member")
-        with closing(fused.FusedMember(source.reader, chunk, history, hasher, allow_literal=True)) as member:
-            for window in member.windows():
-                index = window.index
-                yield VerifiedFastWindow(index.sequence, index.iq_sha256, index.acquisition,
-                                         source.targets[index.target_id], window.samples,
-                                         sample_rate_hz=source.reader.manifest.sample_rate_hz)
+        member, reason, snapshots = None, None, []
+        try:
+            with legacy.one_member(reader.path, chunk, snapshots=snapshots):
+                member = fused.FusedMember(reader, chunk, history, hasher, allow_literal=True)
+        except multi.UnsupportedExceptionLayout as error:
+            reason = str(error)
+        if len(snapshots) > 1:
+            raise BundleCorruptionError("First-use reader authenticated the same compressed member repeatedly")
+        replay_snapshot = borrow_snapshot(reader, chunk, snapshots[0]) if member is None and snapshots else nullcontext()
+        check = closing(member) if member is not None else nullcontext()
+        with check, replay_snapshot:
+            count = 0
+            with closing(member.windows() if member is not None else port.stock_scope(reader, chunk)) as windows:
+                for window in windows:
+                    index = window.index
+                    if index.sequence != chunk.first_sequence + count:
+                        raise BundleCorruptionError("First-use reader changed signed window order")
+                    count += 1
+                    hashes.append(index.iq_sha256)
+                    yield VerifiedFastWindow(index.sequence, index.iq_sha256, index.acquisition,
+                                             source.targets[index.target_id], window.samples,
+                                             sample_rate_hz=reader.manifest.sample_rate_hz)
+            if count != chunk.window_count:
+                raise BundleCorruptionError("First-use reader did not exhaust the original member")
+            if member is None:
+                observed = dict(port.member_identity(reader, chunk), map=None, map_kind="ordinary", map_sha256=None)
+                check_expected(declared, observed)
+                audit.append(dict(observed, fallback=reason, map_bytes=0))
+                continue
             began = clock()
-            raw, pin = member.sidecar()
+            try:
+                raw, pin = member.sidecar()
+            except legacy.UnsupportedLayout as error:
+                observed = dict(port.member_identity(reader, chunk), map=None, map_kind="ordinary", map_sha256=None)
+                check_expected(declared, observed)
+                audit.append(dict(observed, verified_without_map=str(error), map_bytes=0, **member.audit()))
+                continue
             kind = "exception" if member.exceptions else "literal"
-            if (pin, kind) != (expected["map_sha256"], expected["map_kind"]):
-                raise BundleCorruptionError("Fused map disagrees with the independently sealed replay map")
+            observed = dict(port.member_identity(reader, chunk), map=name, map_kind=kind, map_sha256=pin)
+            check_expected(declared, observed)
             serialization = elapsed(began)
             began = clock()
-            proof = reopen(member, expected, raw, codec, replay)
-            pending[expected["map"]] = raw
-            audit.append(dict(expected, map_bytes=len(raw), proof=proof, map_serialize=serialization,
+            proof = reopen(member, observed, raw, multi if member.exceptions else legacy, replay)
+            pending[name] = raw
+            audit.append(dict(observed, map_bytes=len(raw), proof=proof, map_serialize=serialization,
                               map_reopen=elapsed(began), **member.audit()))
 
 
+def check_expected(declared, observed):
+    if any(observed[key] != value for key, value in declared.items()):
+        raise BundleCorruptionError("First-use member differs from declared original or independently sealed replay")
+
+
+def map_names(plan):
+    return [row["map"] for row in plan["members"] if row["map"] is not None]
+
+
 @contextmanager
-def binding(boot, plan, history, hasher, codec, replay, pending, audit):
+def binding(boot, expected, history, hasher, replay, pending, audit):
     staged = boot.staged_scanner
     with ExitStack() as stack:
         def prepare(sources, detector=None):
@@ -81,23 +129,42 @@ def binding(boot, plan, history, hasher, codec, replay, pending, audit):
             if detector is None:
                 return scan
             source, acquire = scan.FastSegmentSource, scan.acquire
-            stock, parts = source.windows, None
+            stock, parts, hashes = source.windows, None, []
 
             def windows(item):
                 return stock(item) if parts is None else first_windows(
-                    item, parts, history, hasher, codec, replay, pending, audit["members"])
+                    item, parts, history, hasher, replay, pending, audit["members"], hashes)
 
             def checked(session, digest, inventory, assets):
                 nonlocal parts
-                parts = port.all_parts(plan, session, digest, inventory)
+                if audit["members"] or pending or hashes:
+                    raise ValueError("First-use authority requires one complete acquisition")
+                if expected is None:
+                    parts = {(reader.manifest_sha256, chunk.chunk_index): port.member_identity(reader, chunk)
+                             for reader, chunk in port.ordered_members(inventory)}
+                else:
+                    parts = port.all_parts(expected, session, digest, inventory)
                 try:
                     result = acquire(session, digest, inventory, assets)
                     observed = [(row["manifest_sha256"], row["chunk_index"]) for row in audit["members"]]
-                    if (observed != list(parts) or list(pending) != [row["map"] for row in plan["members"]]
-                            or result["source"]["raw_recording_authority_digest"] != plan["raw_authority"]):
+                    raw = port.raw_authority(digest, hashes)
+                    plan = dict(schema=port.SCHEMA, session=session, inventory=digest, windows=len(hashes),
+                                raw_authority=raw, members=[
+                                    {key: row[key] for key in (*parts[identity], "map", "map_kind", "map_sha256")}
+                                    for identity, row in zip(observed, audit["members"], strict=True)])
+                    if (observed != list(parts) or list(pending) != map_names(plan)
+                            or len(hashes) != inventory["window_count"]
+                            or result["source"]["raw_recording_authority_digest"] != raw
+                            or expected is not None and expected != plan):
                         raise BundleCorruptionError("The fused path did not finish the original signed receiver")
-                    audit["finished_raw_authority"] = plan["raw_authority"]
+                    audit["verified_plan"] = plan
+                    audit["finished_raw_authority"] = raw
                     return result
+                except BaseException:
+                    pending.clear()
+                    audit["members"].clear()
+                    hashes.clear()
+                    raise
                 finally:
                     parts = None
 
@@ -111,13 +178,15 @@ def binding(boot, plan, history, hasher, codec, replay, pending, audit):
 
 
 def publish_bundle(path, plan, pending):
-    if list(pending) != [row["map"] for row in plan["members"]]:
+    if list(pending) != map_names(plan):
         raise BundleCorruptionError("Cannot publish an incomplete ordered map bundle")
     if path.exists():
         raise FileExistsError(path)
     with TemporaryDirectory(prefix=".legacy-first-maps-", dir=path.parent) as temp:
         private = Path(temp)
         for row in plan["members"]:
+            if row["map"] is None:
+                continue
             raw = pending[row["map"]]
             if sha256_digest(raw) != row["map_sha256"]:
                 raise BundleCorruptionError("Map changed between successful receiver and publication")
