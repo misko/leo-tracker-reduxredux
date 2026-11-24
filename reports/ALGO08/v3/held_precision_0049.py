@@ -175,7 +175,7 @@ def launch(root):
 
 
 def score(root, pin):
-    from sparse8_cfo_epoch_challenge import ordinary
+    from sparse8_cfo_epoch_challenge import CROSSOVER, ordinary
     from sparse8_cfo_epoch_saved import CHARTED, deny_backing
     from sparse8_cfo_epoch_trial import document, geography, identifier, write
 
@@ -201,6 +201,7 @@ def score(root, pin):
     from joint_publication import artifacts
     from publication_media_checks import image_comparison_fields
     from raw_0016_best_score import position_sides
+    from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from tools.pipeline_eval.scoring import distance_km
 
@@ -208,17 +209,37 @@ def score(root, pin):
     repair = [arm.get("local_future_repair") for arm in route["lean_attempts"]]
     output = dict(case=CASE, clocks=dict(weighted=clock, archived_ordinary=sealed["ordinary_clock"]),
                   precision=run["precision"], evidence=witness["evidence"], route=route, prediction_sha256=pin,
-                  decision=terminal["decision"], qualification=False)
-    if terminal["decision"] == "complete":
+                  decision=receipt["decision"], qualification=False)
+    if receipt["decision"] == "complete":
+        if terminal["decision"] != "ok":
+            raise ValueError("The standard complete receipt must bind an actual position terminal")
         media = artifacts(out, receipt)
-        sides = position_sides(FastStandardAnalysisStore(out), receipt, media)
+        store = FastStandardAnalysisStore(out)
+        sides = position_sides(store, receipt, media)
         before, after = old["witness"]["evidence"], witness["evidence"]
         same = before["owner_rows"] == after["owner_rows"]
+        for arm, roster in after["owner_rows"].items():
+            if canonical_digest({oid: norad for oid, norad, _role in roster}) != after["detail"]["arms"][arm]["owner_sha256"]:
+                raise ValueError("The owner rows do not bind the authoritative owner map")
         if (len(sides["figures"]) != 8 or sides["grid_points"] != 179
                 or before["detail"]["session_id"] != after["detail"]["session_id"]
                 or json.dumps(image_comparison_fields(media["images"]), sort_keys=True)
                 != json.dumps(image_comparison_fields(after["images"]), sort_keys=True)):
             raise ValueError("Missing or unbound standard products")
+        old_grid = FastStandardAnalysisStore(CROSSOVER/"successor-successor").position_grid(receipt["run_id"])
+        grid = store.position_grid(receipt["run_id"])
+        path = store.position_path(receipt["run_id"])
+        keys = ("region_center", "box_width_km", "matched_c_grid", "coarse_size", "local_size", "local_half_width_km")
+        if (any(old_grid[k] != grid[k] for k in keys) or set(grid["endpoint_objective_replay"]) != set(ARMS)
+                or any(abs(v) > 1e-5 for v in grid["endpoint_objective_replay"].values())
+                or any(path["stages"][-1]["arms"][arm]["endpoint"] != grid["endpoints"][arm] for arm in ARMS)):
+            raise ValueError("The original numerical evidence coverage or endpoint replay changed")
+        points = [{(p["east_km"], p["north_km"]) for p in product["points"]} for product in (old_grid, grid)]
+        numerical = dict(common_locations=len(points[0] & points[1]), planned=grid["planned_points"],
+                         replay=grid["endpoint_objective_replay"],
+                         path_rounds={arm: len(path["stages"][-1]["arms"][arm]["rounds"]) for arm in ARMS},
+                         png_changes=sum(item["sha256"] != before["images"][name]["sha256"]
+                                         for name,item in after["images"].items()))
         reference = geography(CASE)
         results = {}
         for arm in ARMS:
@@ -234,6 +255,7 @@ def score(root, pin):
         deltas = [r["change_m"] for r in results.values()]
         actual = any(item and item["decision"] == "accepted" for item in repair) and run["precision"].get("weighted_evidence")
         output.update(arms=results, same_ordered_owners=same, actual_weighted=bool(actual), products=sides,
+                      numerical=numerical,
                       qualification=bool(actual and same and max(deltas) <= 250 and min(deltas) <= -250))
     print(write(root/"score.json", output))
 
