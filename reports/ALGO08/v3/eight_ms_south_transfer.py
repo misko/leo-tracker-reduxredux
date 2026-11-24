@@ -21,6 +21,8 @@ PACKS = {
     "mirror": ("south-raw-omitted.json.gz", "5384df7b313f0d8f8300d6743e517f85ead5dd79cf82564364e05d31b0c4051c"),
 }
 KEY_SHA = "0bda865a20e62852220a9ab8df63895a449bf203a2deb5370920dc3ce215d37d"
+NAMED_RECEIPT = Path("/dev/shm/leo-v3-named-south-transfer-01")
+NAMED_RECEIPT_SHA = "7653b038a30e723e46bf3a5cb690ce8a52d841378f5d60964e1708e2d51cdcca"
 SOURCES = ("combined_raw_research.py", "unified_short_bootstrap.py", "eight_ms_native_receiver.py", "eight_ms_held_fit.py",
            "mixed_aperture_receiver.py", "raw_cfo_north_trial.py", "south_cfo_route.py", "catalogue_block_port.py",
            "historical_orbit_index.py", "eight_ms_south_transfer.py", PROTOCOL.name)
@@ -332,10 +334,46 @@ def score(root, mode):
           eligible_omitted=eligible))
 
 
+def audit(root):
+    from anchor_exposure import bind
+    from aperture_trial import read, write
+    from combined_raw_south import probe_delta
+    from empty_bootstrap import checked
+    from leo.contracts.digests import canonical_digest
+    from prospective_0316_solver import owner_delta
+    from raw_cfo_north_trial import native_file
+    from tools.pipeline_eval.scoring import distance_km
+
+    inside, outside = (read(root / name) for name in ("seal.json", "omitted-seal.json"))
+    named = json.loads(checked(NAMED_RECEIPT / "result.json", NAMED_RECEIPT_SHA))
+    audits = {}
+    for mode, seal in zip(MODES, (inside, outside), strict=True):
+        reference = named["cases"][mode]
+        earlier = read(NAMED_RECEIPT / mode / "joint-research-receipt.json")
+        prior = earlier["selected_rows"]
+        if (earlier["receipt"]["region"] != seal["observation"]["evidence"]["receipt"]["region"]
+                or any(canonical_digest({uid: norad for uid, norad, _ in prior[a]}) != reference["named_owner_digests"][a]
+                       for a in ARM_NAMES)):
+            raise ValueError("The earlier named scientific owner roster does not match the original named control")
+        audits[mode] = {a: owner_delta(prior[a], seal["observation"]["owner_rows"][a]) for a in ARM_NAMES}
+    control = archived("guarded")
+    prior_cmd = control["binding"]["command"]
+    prior_path = Path(prior_cmd[prior_cmd.index("--output") + 1])
+    previous = json.loads(checked(native_file(prior_path), control["new_native_sha256"][7:]))
+    candidate = json.loads(checked(Path(inside["packet"]), inside["raw"]["native_sha256"][7:]))
+    bind(previous, candidate)
+    factor_changes = probe_delta(previous, candidate)
+    left, right = (p["observation"]["evidence"]["arms"] for p in (inside, outside))
+    write(root / "support-audit.json", dict(named_owner_comparison=audits, named_binding_sha256=NAMED_RECEIPT_SHA,
+          guarded_12ms_probe_changes=factor_changes,
+          owners_identical_across_offers=inside["observation"]["owner_rows"] == outside["observation"]["owner_rows"],
+          endpoint_movement_km={a: distance_km(left[a]["latlon"], right[a]["latlon"]) for a in ARM_NAMES}))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     sub = cli.add_subparsers(dest="action", required=True)
-    for action in ("raw", "seal", "score", "omitted", "omitted-worker"):
+    for action in ("raw", "seal", "score", "omitted", "omitted-worker", "audit"):
         command = sub.add_parser(action)
         command.add_argument("root", type=Path)
         if action == "score":
@@ -343,4 +381,5 @@ if __name__ == "__main__":
         if action == "omitted-worker":
             command.add_argument("--job-path", type=Path)
     args = vars(cli.parse_args())
-    {"raw": raw, "seal": seal_raw, "score": score, "omitted": omitted, "omitted-worker": omitted_worker}[args.pop("action")](**args)
+    {"raw": raw, "seal": seal_raw, "score": score, "omitted": omitted, "omitted-worker": omitted_worker,
+     "audit": audit}[args.pop("action")](**args)
