@@ -108,7 +108,10 @@ def measured_scans(scope, readout):
             bins = [seed_index(seed["hz"], other["center_hz"]) for seed in scan["seeds"]]
             if len(bins) != REQUESTS:
                 raise ValueError("The signed 20 ms trace no longer retains the full four-request order")
-            scans.append((rank, bins))
+            winner = scan["winner"]
+            if (winner is not None) != any(factor[0] == rank for factor in row["factors"]):
+                raise ValueError("The archived scout confirmation and issued factor ranks disagree")
+            scans.append((rank, bins, None if winner is None else bins[winner]))
     if keys != centers.keys():
         raise ValueError("The seed and signed readout do not bind all original lanes")
     return scans
@@ -117,19 +120,22 @@ def measured_scans(scope, readout):
 def oracle_bound(scans):
     bank = full_bank()
     size = len(bank)
-    mask = {bin_ for _, bins in scans for bin_ in bins}
+    mask = {bin_ for _, bins, _ in scans for bin_ in bins}
     hull = min(map(signed_index, mask)), max(map(signed_index, mask))
+    winners = [signed_index(winner) for _, _, winner in scans if winner is not None]
+    signed_winner_hull = None if not winners else [min(winners)*STEP, max(winners)*STEP]
     rank_visits = lambda outputs: 2 * TIMINGS * outputs
     n = len(scans)
-    return dict(scouts=n, refinement_requests=REQUESTS*n, hypothetical_region_confirmed_omissions=0,
+    return dict(scouts=n, refinement_requests=REQUESTS*n, certified_regional_rank_indices_omitted=0,
                 carrier_fft_invocations=TIMINGS*MODES*n, installed_all_bin_power_terms=SIZE*TIMINGS*MODES*n,
                 native_rank_indices=rank_visits(size*n),
                 retained_requests_at_full_fallback=REQUESTS*n,
                 hindsight_fixed_bin_count=len(mask), hindsight_fixed_touched_inner_dit_residues=len({i % 128 for i in mask}),
                 hindsight_fixed_signed_hull_bins=hull[1]-hull[0]+1, signed_hull_hz=[edge*STEP for edge in hull],
                 hindsight_fixed_rank_indices=rank_visits(len(mask)*n),
-                hindsight_per_scout_unique_bins=dict(sorted(Counter(len(set(bins)) for _, bins in scans).items())),
-                hindsight_per_scout_rank_indices=rank_visits(sum(len(set(bins)) for _, bins in scans)),
+                hindsight_confirmed_winner_hull_hz=signed_winner_hull, confirmed_scout_winners=len(winners),
+                hindsight_per_scout_unique_bins=dict(sorted(Counter(len(set(bins)) for _, bins, _ in scans).items())),
+                hindsight_per_scout_rank_indices=rank_visits(sum(len(set(bins)) for _, bins, _ in scans)),
                 hindsight_retained_top_four_requests=REQUESTS*n,
                 installed_fft_calls_omitted_even_with_hindsight_mask=0)
 
