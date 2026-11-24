@@ -200,12 +200,12 @@ def first_use(binding, root, audit):
         def load():
             runtime = installed_load()
             from leo.storage.fast_scan import immutable_json
+            from leo.storage.short_window import ShortWindowReader
 
             with patch.object(sys, "path", [*sys.path, str(ROOT)]):
                 from reports.ALGO08.v3 import legacy_block_input as port, legacy_first_map_input as producing
 
             member_writer = producing.binding
-            original_members = port.ordered_members
             state = {}
 
             @contextmanager
@@ -215,9 +215,12 @@ def first_use(binding, root, audit):
                     yield
 
             def members(inventory):
-                with closing(original_members(inventory)) as rows:
-                    reader, first = next(rows)
-                if reader.manifest_sha256 != MANIFEST or first.first_sequence or first.window_count != binding["stop"]:
+                if inventory != binding["inventory"]:
+                    raise ValueError("Unexpected first-use scoped inventory")
+                reader = ShortWindowReader(INPUT)
+                first = reader.manifest.chunks[0]
+                if (reader.manifest_sha256 != MANIFEST or first.first_sequence or first.window_count != binding["stop"]
+                        or first.model_dump(mode="json") != inventory["prefix_members"][0]):
                     raise ValueError("Unexpected first-use input member")
                 yield reader, first
 
@@ -283,30 +286,57 @@ def pages():
     return rows
 
 
-def launch(root):
+def recover(root, binding):
+    first = root / "1-named"
+    failed = root / "1-first_use.clock.json"
+    witness = read(failed)["process"]
+    if (read(first.with_suffix(".clock.json"))["process"]["exit_code"] or not (first / "worker.json").is_file()
+            or witness["exit_code"] != 1 or "in ordered_members" not in witness["stderr_tail"]
+            or "Ordinary recording inventory changed" not in witness["stderr_tail"]
+            or (root / "1-first_use").exists() or (root / "resume.json").exists()
+            or any((root / f"2-{mode}").exists() for mode in ORDERS[0])):
+        raise ValueError("Only the exact pre-waveform first-use inventory admission error is recoverable")
+    if read(root / "binding.json")["inventory"] != binding["inventory"]:
+        raise ValueError("Recovery changed the original source scope")
+    audit = {}
+    for suffix in ("clock.json", "stderr", "stdout"):
+        source = root / f"1-first_use.{suffix}"
+        dest = root / f"rejected-1-first_use.{suffix}"
+        audit[dest.name] = sha(source)
+        source.rename(dest)
+    write(root / "resume.json", dict(rejected=audit, source_sha256=sha(Path(__file__)), preserved_first_named=True,
+                                     failure_before_original_member_or_detector=True))
+
+
+def launch(root, *, resume=False):
     from empty_bootstrap import RELEASE, clock, now
     from short_raw_diagnostic import measure
 
     started = now()
-    if (root.parent.resolve(strict=True) != Path("/tmp") or root.exists() or os.sched_getaffinity(0) != {2}
+    if (root.parent.resolve(strict=True) != Path("/tmp") or root.exists() != resume or os.sched_getaffinity(0) != {2}
             or os.getpriority(os.PRIO_PROCESS, 0) != 15
             or subprocess.check_output(["ionice", "-p", str(os.getpid())], text=True).strip() != "best-effort: prio 7"):
         raise ValueError("Require fresh /tmp output and the shared low-priority CPU2 appointment")
     binding = source_binding()
     first_resident = pages()
-    root.mkdir(mode=0o700)
-    (root / "tmp").mkdir()
     request = root / "binding.json"
-    write(request, binding | {"initial_residency": first_resident, "orders": ORDERS,
-                              "source_sha256": {name: sha(HERE / name) for name in (
-                                  Path(__file__).name, "original-dense-intake-protocol.md", "legacy_first_map_entry.py",
-                                  "legacy_first_map_input.py", "legacy_fused_map.py", "unified_short_bootstrap.py")},
-                              "admission": clock(started)})
+    if resume:
+        recover(root, binding)
+    else:
+        root.mkdir(mode=0o700)
+        (root / "tmp").mkdir()
+        write(request, binding | {"initial_residency": first_resident, "orders": ORDERS,
+                                  "source_sha256": {name: sha(HERE / name) for name in (
+                                      Path(__file__).name, "original-dense-intake-protocol.md", "legacy_first_map_entry.py",
+                                      "legacy_first_map_input.py", "legacy_fused_map.py", "unified_short_bootstrap.py")},
+                                  "admission": clock(started)})
     env = dict(os.environ, TMPDIR=str(root / "tmp"), MPLCONFIGDIR=str(root / "tmp"), XDG_CACHE_HOME=str(root / "tmp"))
     for key in ("ALGO08_EVALUATION_LATITUDE", "ALGO08_EVALUATION_LONGITUDE", "ALGO08_REGION_FILE", "ALGO08_EXPERIMENT_CONFIG"):
         env.pop(key, None)
     for pair, order in enumerate(ORDERS, 1):
         for mode in order:
+            if resume and pair == 1 and mode == "named":
+                continue
             destination = root / f"{pair}-{mode}"
             before = pages()
             command = ["/usr/bin/timeout", "--kill-after=2s", "20s", str(RELEASE / "venv/bin/python"), "-IB",
@@ -323,11 +353,12 @@ if __name__ == "__main__":
     cli.add_argument("root", type=Path)
     cli.add_argument("--mode", choices=ORDERS[0])
     cli.add_argument("--binding", type=Path)
+    cli.add_argument("--resume", action="store_true")
     args = cli.parse_args()
     if args.action == "worker":
         worker(args.mode, args.root, args.binding)
     elif args.action == "launch":
-        launch(args.root)
+        launch(args.root, resume=args.resume)
     else:
         from original_dense_intake_score import score
 
