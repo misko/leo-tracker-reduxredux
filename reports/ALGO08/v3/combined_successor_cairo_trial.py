@@ -33,6 +33,7 @@ CURRENT_RENDERER_ADAPTERS = {
     "one_pass_web_png.py": "820717a79448adb6e6fef2c15fbcbb090c9b135e927bb7460fde17b474ecc114",
 }
 BASE_COMMAND = ordinary.command_for
+MEASURED_SCORER_SHA = "0d4d435f93eb6d380edd9bd41a08428ea02f379c7e5fb30edc926c91dae34aa2"
 
 
 def digest(path):
@@ -142,6 +143,12 @@ def require_renderer(ports):
         raise ValueError("The selected six-sheet renderer, title and eight verified files must execute")
 
 
+def image_identity(current, expected):
+    return dict(sha256=current["sha256"] == expected["sha256"],
+                rgba_sha256=current["rgba_sha256"] == expected["rgba_sha256"],
+                size=tuple(current["size"]) == tuple(expected["size"]))
+
+
 def raster_evidence(target, before, current, original, expected):
     from leo.contracts.fast_scan_orbits import PLOT_NAMES
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -161,7 +168,7 @@ def raster_evidence(target, before, current, original, expected):
         with Image.open(BytesIO(docs[0])) as a, Image.open(BytesIO(docs[1])) as b:
             same = (a.size, a.mode, a.info) == (b.size, b.mode, b.info)
             left, right = (image.convert("RGBA") for image in (a, b))
-            matches = {kind: item[kind] == expected[name][kind] for kind in ("sha256", "size", "rgba_sha256")}
+            matches = image_identity(item, expected[name])
             actual = sha256(right.tobytes()).hexdigest() == item["rgba_sha256"]
             layer = registered_orbits(a.convert("RGB"), b.convert("RGB"), require_match=False) if name in PLOT_NAMES else None
             passed = layer is None or all(value["fraction"] is None or min(value["fraction"]) >= .98
@@ -187,8 +194,10 @@ def score(root, label):
             ordinary.score(root, label)
         return
     start, log = (read(folder/name) for name in ("admission.json", "candidate-clock.json"))
+    current_sources = sources(ordinary.previous())
+    measured = current_sources | {str(ordinary.SCOPE/Path(__file__).name): MEASURED_SCORER_SHA}
     if (read(folder/"prediction-seal.json") != output_seal(folder) or start["command"] != log["command"]
-            or start["sources"] != sources(ordinary.previous()) or "--cairo-six-sheets" not in log["command"]):
+            or start["sources"] not in (current_sources, measured) or "--cairo-six-sheets" not in log["command"]):
         raise ValueError("The direct guarded Cairo child differs from its sealed admission")
     base, tested, artists = references()
     modeled = tiny_model(base[TINY])

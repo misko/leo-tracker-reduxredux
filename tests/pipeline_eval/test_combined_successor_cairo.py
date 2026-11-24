@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from reports.ALGO08.v3.combined_successor_cairo_trial import ENTRY, allowed_tiny, cairo_command, modeled_gates
+from reports.ALGO08.v3.combined_successor_cairo_trial import ENTRY, allowed_tiny, cairo_command, image_identity, modeled_gates
 from reports.ALGO08.v3.legacy_block_raw_entry import orbit_renderer
 
 
@@ -38,3 +38,10 @@ def test_withhold_requires_qualified_positive_and_modeled_cohort_gate(wall, qual
     process = runtime(wall) | {"exit_code": 0}
     positive = {"qualified": qualified, "modeled_cohort_gates": modeled_gates(process, prior)}
     assert allowed_tiny(positive, process) is allowed
+
+
+def test_png_size_equality_compares_live_and_sealed_integer_dimensions():
+    archive = {"sha256": "content", "rgba_sha256": "pixels", "size": [2400, 3022]}
+    current = archive | {"size": (2400, 3022)}
+    assert all(image_identity(current, archive).values())
+    assert not image_identity(current | {"size": (2400, 3021)}, archive)["size"]
