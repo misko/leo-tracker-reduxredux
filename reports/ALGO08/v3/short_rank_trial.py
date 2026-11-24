@@ -88,7 +88,7 @@ def build(root):
 
 
 def read_member(case):
-    from leo.contracts.fast_scan import FastScanPolicyV2
+    from leo.contracts.fast_scan_native import FastScanPolicyV2
 
     path, pin, length = SOURCES[case]
     if path.resolve(strict=True) != path or path.stat().st_dev != Path("/dev/shm").stat().st_dev:
