@@ -20,7 +20,7 @@ from tools.pipeline_eval.variants.experimental.paired_sha256 import paired_decod
 from . import sparse_cold_input as original
 from .ci16_packed_storage_trial import DENSE_RECEIPT, DENSE_STAGE, DENSE_STAGING
 from .full_short_cold import SHORT_SHA, check_machine, freeze
-from .seekable_member_trial import SOURCE_FILES, clock, elapsed
+from .seekable_member_trial import SOURCE_FILES, clock, elapsed, window_from
 
 
 HERE = Path(__file__).resolve().parent
@@ -72,11 +72,11 @@ def receive(arm, short, manifest_pin, ingress):
                 raise ValueError("Expected the original ordered global visits 0 through 63")
             windows.append([visit, window.iq_sha256])
             if not valid_window_support(window.acquisition, window.sample_rate_hz, window.samples.shape,
-                                        window.receiver_ids, policy):
+                                        raw.receiver_ids, policy):
                 exclusions.append(visit)
                 continue
             before = clock()
-            probes.extend(identify(window))
+            probes.extend(identify(window_from(window, window.target, window.samples)))
             callbacks.update(elapsed(before))
         if (chunk.chunk_index, chunk.first_sequence, chunk.window_count, len(windows)) != (0, 0, 64, 64):
             raise ValueError("Expected a complete independently authenticated first member")
