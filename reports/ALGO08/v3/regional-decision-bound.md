@@ -44,4 +44,17 @@ Each exterior counts the union of every receiver-1 track endpoint needed for the
 
 The current fused kernel is orbit-first. It projects all times and immediately updates every track before moving to the next orbit. It cannot consume the completed-track cap without changing that work order. A lazy projection port would have to keep selected columns across successive track batches. The table grants no fallback, propagation, input or time credit. [Fused loop](regional_probe_block.c)
 
+## Native dense lazy follow-up
+
+The compact native projector produced exactly **52,869,618 cells**, 34.3% fewer than the previous scalar bounded route. It reused each computed time across overlapping tracks and reproduced all used frequency, horizon and derivative bits from the full original scalar projection. It preserved the same 25-point no-veto and 1,490 track calls. The native lazy port ran **1.10–1.12 CPU s slower** than the fused scorer. It missed the frozen advance gate in both orders. [Native protocol](regional-lazy-projection-protocol.md) · [Balanced timing and parity](measurements/regional-lazy-dense.json.gz)
+
+| Order | Guarded fused CPU / elapsed | Native lazy CPU / elapsed | Lazy projection CPU | Lazy track CPU |
+|---|---:|---:|---:|---:|
+| Guarded first | 691.190 / 691.261 ms | 1,809.197 / 1,810.095 ms | 1,621.978 ms | 174.816 ms |
+| Lazy first | 678.126 / 678.174 ms | 1,780.855 / 1,781.054 ms | 1,594.255 ms | 175.439 ms |
+
+Shared causal setup took 1.883 CPU s once before these stage comparisons. Each probe first fills the cap endpoints, then appends the first new time columns needed by the next track batch. The port keeps the released arithmetic and checks every computed cell against the original outside the timed path. Projection cost alone exceeded the entire guarded scorer in both orders. The candidate's cap counter includes the endpoint projection call, which also contributes to the projection timer. The table gives the disjoint projection and track clocks. The dense gate stopped the lazy path before any medium, Southern or through-exit run. The earlier bounded scalar tests remain the measured evidence on those offers. [Native kernel](regional_lazy_projection.c) · [Checked compact projection](regional_lazy_projection.py)
+
+Eight focused tests passed after the native follow-up. The sealed dense receipt SHA-256 is `76df8cdb07ba77eddc37d694691cced3ed60cbef80c9024d9944faabee63378b`. The original fixture, both paired clocks and full geometry audit are I/Q-independent. [Native tests](../../../tests/pipeline_eval/test_regional_decision_bound.py)
+
 Each fixture ran one fixed-order stage comparison on the same prepared geometry under the shared Gauss CPU 2 lock, nice 15, I/O priority 7 and one numerical thread. Small deltas remain subject to order and timing variation. An initial import-order error stopped before the proof ran. The corrected invocation ran all four staged cases, with no waveform reads or position fits. Six focused tests passed. The uncompressed receipt SHA-256 is `2a9da8107bf494e6c6d3155ff8c790fb8f236b9cb1d3970b822361ba2b33e1c7`. [Driver](regional_decision_bound_trial.py) · [Tests](../../../tests/pipeline_eval/test_regional_decision_bound.py)
