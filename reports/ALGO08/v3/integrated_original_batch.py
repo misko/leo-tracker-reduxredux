@@ -29,6 +29,7 @@ PATH_OPTIONS = ("--short-binary", "--geographic-library", "--regional-track-libr
 SIGNED_OPTIONS = ("--legacy-first-map-history", "--legacy-first-map-fast", "--portable-orbit-index")
 FLAGS = ("--history-risk-route", "--cairo-six-sheets", "--verify-original-once", "--sparse8-primary")
 SNAPSHOT_SOURCES = ("prefetch_snapshots.py", "legacy_snapshot_reuse.py")
+EFFECTIVE_TIME_SOURCES = ("sparse8_effective_time.py", "sparse8_cfo_epoch.py", "sparse8_cfo_epoch_saved.py")
 
 
 def tagged_bytes(body):
@@ -76,7 +77,7 @@ def checked_artifact(entry):
     return path
 
 
-def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
+def make_build(charted_admission, *, reuse_prefetched_snapshots=False, sparse8_effective_time=False):
     """Freeze one externally reviewed build once, using the existing chart receipt."""
     from integrated_original_entry import PNG_LIBRARY, PNG_SHA
 
@@ -93,6 +94,10 @@ def make_build(charted_admission, *, reuse_prefetched_snapshots=False):
     source_pins[str(Path(__file__).relative_to(ROOT))] = tagged_bytes(Path(__file__).read_bytes())
     if reuse_prefetched_snapshots:
         for name in SNAPSHOT_SOURCES:
+            source = HERE / name
+            source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
+    if sparse8_effective_time:
+        for name in (*EFFECTIVE_TIME_SOURCES, "integrated_original_entry.py", "unified_short_bootstrap.py"):
             source = HERE / name
             source_pins[str(source.relative_to(ROOT))] = tagged_bytes(source.read_bytes())
     return dict(
@@ -266,6 +271,10 @@ def original_argv(args, book, authority):
         if flag in SIGNED_OPTIONS:
             argv.extend((flag + "-sha256", tagged(entry["sha256"])))
     argv.extend(("--portable-orbit-producer-sha256", tagged(book["portable_producer"]["sha256"])[7:]))
+    if getattr(args, "sparse8_effective_time", False):
+        if any(str((HERE / name).relative_to(ROOT)) not in book["sources"] for name in EFFECTIVE_TIME_SOURCES):
+            raise ValueError("The opt-in source and its arithmetic must be pinned in this build")
+        argv.append("--sparse8-effective-time")
     return argv
 
 
@@ -370,6 +379,8 @@ def main(argv=None):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--authority-sha256")
     parser.add_argument("--build-sha256")
+    parser.add_argument("--sparse8-effective-time", action="store_true",
+                        help="Use the separately pinned effective Graph time opt-in")
     parser.add_argument("--reuse-prefetched-snapshots", action="store_true",
                         help="Research-only private lookahead buffers, requiring separately pinned source")
     actions = parser.add_mutually_exclusive_group()
@@ -383,7 +394,8 @@ def main(argv=None):
         if args.build is None:
             parser.error("supply --build for the new build manifest")
         write(args.build, make_build(args.freeze_build_from_chart,
-                                    reuse_prefetched_snapshots=args.reuse_prefetched_snapshots))
+                                    reuse_prefetched_snapshots=args.reuse_prefetched_snapshots,
+                                    sparse8_effective_time=args.sparse8_effective_time))
         print(tagged_bytes(args.build.read_bytes()))
         return
     if not args.verify and not all((args.recording, args.archive, args.region, args.bulk_root)):
