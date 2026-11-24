@@ -45,3 +45,17 @@ These are sensitivity calculations using the enrolled v3 recordings and elapsed 
 Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py` from the repository root. The output gives each timing gate separately. The calculation verifies the hashes of both saved comparisons, the enrolled subsets and the historical stage data. [Calculation](adaptive_receiver_budget.py)
 
 The receiver experiment reduced the number of pilot samples converted and preserved every ordered detection on two physical members. Complete acquisition CPU showed mixed results across repeated runs, so this change does not advance. A paired launch from identical original samples through verified publication and exit is still needed for a physical fix. The latest opportunity to copy the rest of DS30-0016 expired under storage load after zero new archive reads. [Receiver measurements](verifier-pilot-support.md) · [Staging receipt](guarded-cfo-0016-idle-a16.md)
+
+## The receiver budget on the three matched exact fixes
+
+These recordings also have independent v3 clocks from original waveforms. For each row, subtract that recording's observed saved-solver improvement from its historical time between sealed detections and exit. The difference between half its original end-to-end clock and this estimated downstream time is the receiver's budget. This calculation transfers the time saved on the same input. It avoids charging the saved worker's separate launch twice. Raw and saved launches took place at different times, so the result is an experiment target.
+
+| Recording | Original raw v3 time | Original acquisition | Saved solver improvement | Acquisition budget for 2× | Required compressed MB/s |
+|---|---:|---:|---:|---:|---:|
+| DS30-0160 | 33.93 s | 19.28 s | 5.67 s | 7.99 s | 575 |
+| DS30-0316 | 40.37 s | 23.10 s | 1.47 s | 4.39 s | 853 |
+| DS30-0374 | 84.85 s | 56.16 s | 4.69 s | 18.43 s | 456 |
+
+The original stage-clock cohort supplies all three denominators. DS30-0160 and DS30-0316 were fully resident at launch. DS30-0374 was 10.6% resident. A separate 164.40 s historical v3 run also exists for DS30-0374. Using that slower wall clock as the denominator would make the acquisition budget look much larger. [Stage-clock inventory](measurements/acquisition-throughput.json) · [Separate dense run](exact-named-dense.md)
+
+On two original DS30-0008 members, the faster of two acquisition passes that **only decoded and verified** bytes processed 567 MB per CPU-second. As a sensitivity calculation, give all three recordings that rate, zero I/O waits and zero time for signal detection. The resulting candidate/v3 elapsed ratios are **0.503 median and 0.492 summed** against a 0.500 target on both gates. Throughput can vary by recording and implementation. The measured cost makes a change to how data are read and verified worth testing alongside faster signal processing. Run `PYTHONPATH=.:src python reports/ALGO08/v3/adaptive_receiver_budget.py --exact-cases` to reproduce the table and both ratios. [Original two-member measurements](physical-stage-envelope.md)

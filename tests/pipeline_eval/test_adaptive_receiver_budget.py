@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "reports/ALGO08/v3"))
 
-from adaptive_receiver_budget import receiver_budget
+from adaptive_receiver_budget import matched_budget, receiver_budget
 
 
 def test_publication_includes_the_tail_and_charges_unsplit_runs():
@@ -21,3 +21,19 @@ def test_publication_includes_the_tail_and_charges_unsplit_runs():
 def test_infeasible_post_detector_clock_has_no_finite_acquisition_rate():
     fix = dict(stages=[4, 4, 2], compressed_MB=40)
     assert receiver_budget([fix], 1) == dict(median_MB_s=None, summed_MB_s=None, both_MB_s=None)
+
+
+def test_matched_saving_transfers_only_the_difference_of_saved_clocks():
+    raw = dict(stages=[20, 9, 1], compressed_MB=120)
+    # Both saved processes carry 2 s of launch work outside the raw downstream stage.
+    clocks = dict(named=dict(elapsed_s=12), candidate=dict(elapsed_s=9))
+    result = matched_budget(raw, clocks)
+    assert result["modeled_downstream_s"] == 7
+    assert result["acquisition_budget_s"] == 8
+    assert result["required_MB_s"] == 15
+
+
+def test_saved_slowdown_is_charged_and_can_make_half_time_unreachable():
+    raw = dict(stages=[5, 4, 1], compressed_MB=120)
+    clocks = dict(named=dict(elapsed_s=7), candidate=dict(elapsed_s=8))
+    assert matched_budget(raw, clocks)["required_MB_s"] is None
