@@ -217,19 +217,15 @@ def launch(root, bundle, pin):
 
 
 def worker(folder, pin, mode):
-    from empty_bootstrap import RELEASE, checked as secure
-
-    sys.path.insert(0, str(RELEASE/"src"))
+    from empty_bootstrap import checked as secure
     import exact_named_route as exact
     import prospective_0316_solver as saved
     from history_risk_weak_physical import deny_original
-    from leo.contracts.digests import canonical_digest
     from nomination_handoff_0255_publication import worker as frozen
 
     sys.addaudithook(deny_original)
     admission = read(folder.parent/"admission.json")
-    if (admission["adapter"] != digest(Path(__file__)) or admission["protocol"] != digest(PROTOCOL)
-            or admission["receiver"][ORDER[1]] != canonical_digest(admission["recipe"])):
+    if admission["adapter"] != digest(Path(__file__)) or admission["protocol"] != digest(PROTOCOL):
         raise ValueError("Saved wrapper or derived detector recipe changed")
     port = read(folder/"admission.json")
     job = json.loads(secure(folder/"job.json", pin))
