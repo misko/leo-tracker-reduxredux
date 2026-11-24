@@ -111,11 +111,15 @@ def write_index(file, source, compatibility):
     if not 0 < len(header) <= MAX_HEADING:
         raise ValueError("Orbit index heading exceeds the byte bound")
     payload = bytearray(MAGIC + HEADER.pack(len(header), len(source.bodies)) + header)
-    bodies = sorted((digest_bytes(digest, labelled=False), cat) for digest, cat in source.bodies.items())
+    bodies = sorted(((digest_bytes(digest, labelled=False), cat) for digest, cat in source.bodies.items()),
+                    key=lambda entry: entry[0])
+    previous = b""
     for digest, cat in bodies:
         count = len(cat.names)
-        if not 0 < count <= MAX_RECORDS or len(payload)+BODY.size+count*RECORD.size > MAX_BYTES:
-            raise ValueError("Orbit index source exceeds the record or byte bound")
+        if (digest <= previous or not 0 < count <= MAX_RECORDS
+                or len(payload)+BODY.size+count*RECORD.size > MAX_BYTES):
+            raise ValueError("Orbit index source is duplicated or exceeds the record or byte bound")
+        previous = digest
         payload.extend(BODY.pack(digest, count))
         for _, number, epoch in zip(cat.names, cat.satellite_numbers, cat.epochs, strict=True):
             if number <= 0:
