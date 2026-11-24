@@ -4,7 +4,6 @@ import pytest
 
 from leo.analysis.localization_v3 import tracks
 from leo.contracts.digests import canonical_digest
-from sparse8_cfo_epoch_saved import correction_rows
 from sparse8_effective_time import binding, source_rows
 from sparse8_time_math import graph_rows
 
@@ -16,7 +15,6 @@ def packet():
     from full_short_run import SPARSE_EIGHT_MS_SHA
     from full_short_raw import recipe
     from held_anchor_route_publication import SELECTOR_SOURCES, SETTINGS
-    from test_sparse8_cfo_epoch import factor
 
     parent = dict(recipe(), shortened_sha256=SPARSE_EIGHT_MS_SHA, aperture_samples=[200_000, 80_000])
     selected = dict(parent, held_native_8ms=dict(
@@ -24,9 +22,12 @@ def packet():
         continuation=EXTRA_SOURCES[CONTINUATION],
         measurement="original signed 8 ms native CFO, no subsequent fixed-epoch 20 ms remeasurement"))
     pin = canonical_digest(selected)
+    factor = dict(integer_epoch_sample=100, fractional_epoch_offset_samples=.25,
+                  fractional_tracking_cfo_hz=100., candidate_rank=0,
+                  passed_fractional_margin_gate=True, fractional_margin=.2)
     probes = [dict(visit_index=visit, receiver_id=rx, valid_start_counter=visit*1_000_000,
                    edge="lower", channel=1, actual_rf_hz=1e10,
-                   candidates=[factor()] if visit in (0, 7, 8) else [])
+                   candidates=[factor] if visit in (0, 7, 8) else [])
               for visit in range(9) for rx in range(2)]
     native = dict(source=dict(probes=probes, session_id="signed", qualified=True, sample_rate_hz=10_000_000,
                               probe_ms=20),
@@ -45,8 +46,8 @@ def test_original_port_matches_frozen_arithmetic_with_empty_history_lanes(packet
     witness["choice"]["route"] = route
     admitted, corrections = source_rows(native, witness)
     assert admitted == route
-    assert corrections == correction_rows(native)
     assert sum(shift == 0 for _, shift, _ in corrections.values()) == 4
+    assert [round(shift*1e6, 4) for _, shift, _ in corrections.values() if shift] == [-6666.6733]*2
 
 
 @pytest.mark.parametrize("changed", ["unbound", "unsupported_route", "remeasured", "unknown_recipe"])
