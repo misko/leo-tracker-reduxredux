@@ -23,7 +23,7 @@ def binary(tmp_path_factory):
     return path
 
 
-def setup_recording(tmp, binary, *, chunk_windows=1, mapped_chunk=0):
+def setup_recording(tmp, binary, *, chunk_windows=1, mapped_chunk=0, strict=False):
     from leo.storage.fast_scan import FastSegmentSource
     from leo.storage.short_window import ShortWindowReader, ShortWindowWriter
 
@@ -38,9 +38,11 @@ def setup_recording(tmp, binary, *, chunk_windows=1, mapped_chunk=0):
     source = writer.finish(stop_reason="component fixture")
     original = ShortWindowReader(source)
     container = tmp / "packed-member"
-    member_pin = seek.create(original, mapped_chunk, container, codec=ci16_packing.Packing(binary))
+    member_pin = seek.create(original, mapped_chunk, container, codec=ci16_packing.Packing(binary),
+                             prefix_samples=seek.EIGHT_MS_SAMPLES if strict else seek.PREFIX_SAMPLES)
     entry = dict(path=str(source), manifest_digest=original.manifest_sha256)
-    map_doc = dict(schema=packed.SCHEMA, codec_sha256=seek.digest(binary.read_bytes()), members=[dict(
+    map_doc = dict(schema=packed.STRICT_EIGHT_SCHEMA if strict else packed.SCHEMA,
+                   codec_sha256=seek.digest(binary.read_bytes()), members=[dict(
         directory=container.name, manifest_sha256=original.manifest_sha256, chunk_index=mapped_chunk, seek_sha256=member_pin)])
     return SimpleNamespace(FastSegmentSource=FastSegmentSource), entry, container, map_doc
 
@@ -131,3 +133,28 @@ def test_invalid_map_pin_leaves_stock_source_installed(tmp_path, binary):
         assert scan.FastSegmentSource is original
         assert len(seen(scan, entry)) == 2
     assert "digest" in audit["fallback"]
+
+
+def test_strict_packed_eight_checks_an_unused_tail_before_delivery(tmp_path, binary):
+    scan, entry, container, mapping = setup_recording(tmp_path, binary, chunk_windows=2, strict=True)
+    tail = container / "tail.ci16p"
+    content = bytearray(tail.read_bytes())
+    content[-1] ^= 128
+    tail.chmod(0o600)
+    tail.write_bytes(content)
+    request, temp = config(tmp_path, binary, mapping)
+    audit = {}
+    with packed.packed_source(scan, request, temp, audit, strict_eight=True):
+        with pytest.raises(ValueError, match="digest"):
+            next(scan.FastSegmentSource(entry).windows())
+    assert audit["original_windows"] == 0
+
+
+def test_strict_packed_eight_refuses_a_gap_in_the_map(tmp_path, binary):
+    scan, entry, _, mapping = setup_recording(tmp_path, binary, mapped_chunk=1, strict=True)
+    request, temp = config(tmp_path, binary, mapping)
+    audit = {}
+    with packed.packed_source(scan, request, temp, audit, strict_eight=True):
+        with pytest.raises(ValueError, match="every acquired member"):
+            next(scan.FastSegmentSource(entry).windows())
+    assert audit["original_windows"] == 0

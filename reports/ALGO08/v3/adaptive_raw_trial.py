@@ -52,7 +52,7 @@ def control(case):
     return root, binding, sealed, research
 
 
-def adaptive_command(original, output):
+def adaptive_command(original, output, *, strict=None):
     command = list(original)
     required = ("--eight-ms-native-history", "--catalogue-block-rank", "--portable-orbit-index",
                 "--grid-feature-projection-library", "--one-pass-web-png", "--named-survivor-finish",
@@ -65,6 +65,10 @@ def adaptive_command(original, output):
     command[5] = str(HERE / "combined_raw_research.py")
     command[command.index("--output") + 1] = str(output)
     command.append(FLAG)
+    if strict is not None:
+        command.extend(("--strict-packed-eight", "--packed-ci16-map", strict["map"],
+                        "--packed-ci16-map-sha256", strict["map_sha256"],
+                        "--packed-ci16-codec", strict["codec"]))
     return command
 
 
@@ -100,7 +104,7 @@ def work(case, root):
     return request, snapshot
 
 
-def prepare(case, root):
+def prepare(case, root, *, strict=None):
     from combined_raw_trial import checked_producer
     from dense_geographic_trial import host
     from eight_ms_south_transfer import environment_for
@@ -122,7 +126,7 @@ def prepare(case, root):
     if request != binding["request"]:
         raise ValueError("The enrolled signed case or offered square changed")
     producer = checked_producer(request["cutoff_utc_ns"])
-    command = adaptive_command(binding["command"], root / "containing")
+    command = adaptive_command(binding["command"], root / "containing", strict=strict)
     root.mkdir()
     (root / "tmp").mkdir()
     shutil.copytree(old_root / "fonts", root / "fonts")
@@ -132,10 +136,14 @@ def prepare(case, root):
         raise ValueError("The normal raw entry failed the isolated parser preflight")
     names = (Path(__file__).name, "adaptive-raw-protocol.md", "combined_raw_research.py",
              "unified_short_bootstrap.py", *ADAPTER)
+    if strict is not None:
+        names += ("packed_combined_input.py", "seekable_member.py", "seekable_eight_raw.py", "ci16_packing.c")
     enrollment = dict(case=case, original=binding["command"], command=command, clip=request, machine=machine,
                       libraries=binding["libraries"], producer=producer, commit=commit, control_pins=CONTROLS[case][1],
                       sources={name: sha256((HERE / name).read_bytes()).hexdigest() for name in names},
                       south_wall_gate_s=SOUTH_WALL_GATE_S)
+    if strict is not None:
+        enrollment["strict_packed_source"] = strict
     write(root / "binding.json", enrollment)
     write(root / "prepared-cache.json", snapshot())
 
@@ -152,7 +160,8 @@ def launch(root, *, north=None):
     _, binding, _, _ = control(case)
     out = root / "containing"
     if (out.exists() or (root / "clock.json").exists() or enrollment["machine"] != host()
-            or enrollment["command"] != adaptive_command(binding["command"], out)):
+            or enrollment["command"] != adaptive_command(binding["command"], out,
+                                                          strict=enrollment.get("strict_packed_source"))):
         raise ValueError("The frozen request is already spent or no longer applies")
     for name, pin in enrollment["sources"].items():
         checked(HERE / name, pin)
