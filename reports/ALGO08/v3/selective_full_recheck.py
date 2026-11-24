@@ -160,7 +160,7 @@ def full_lookup(original, entry, member, scheduled, full_binary, tab):
     try:
         source = FastSegmentSource(entry, stop_sequence=64)
         if (source.reader.manifest_sha256 != entry["manifest_digest"] or
-                source.reader.manifest.chunks[0].model_dump(mode="json") != member):
+                source.reader.manifest.chunks[0].model_dump(mode="json") != member or tuple(source.receiver_ids) != (0, 1)):
             raise ValueError("The full native receiver must use the exact signed local first member")
         with closing(source.windows()) as sequence:
             for visit in range(64):
@@ -168,7 +168,7 @@ def full_lookup(original, entry, member, scheduled, full_binary, tab):
                 a, target = window.acquisition, window.target
                 telemetry = json.loads(a["retune_receipt"])
                 valid = valid_window_support(a, window.sample_rate_hz, window.samples.shape, (0, 1), policy)
-                if (a["global_visit"] != visit or target["edge"] != edge or tuple(window.receiver_ids) != (0, 1)
+                if (a["global_visit"] != visit or target["edge"] != edge
                         or telemetry["host_delivery_clock"] != original["delivery_clocks"][visit]
                         or (visit == 0 and telemetry["utc_clock_bracket"] != original["clock_anchor"])
                         or valid != (visit not in excluded)
