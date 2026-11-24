@@ -130,12 +130,16 @@ def seal(reader, chunk, frame, stock_windows, *, history=None):
         if row != stock.index or word != expected:
             raise core.MapError("The complete independent native decode disagrees with the released stock window")
         prefixes.append(sha256_digest(word[:PREFIX]))
-    pieces, declarations = [], []
+    pieces = []
     for index in exceptions:
         _, _, offset, count, _ = blocks[index]
-        piece = view[offset:offset+count]
-        pieces.append(piece)
-        declarations.append([index, sha256_digest(piece)])
+        pieces.append(view[offset:offset+count])
+    return encode_verified(reader, chunk, blocks, prefixes, exceptions, pieces)
+
+
+def encode_verified(reader, chunk, blocks, prefixes, exceptions, pieces):
+    """Serialize the established map format from fully verified decoded evidence."""
+    declarations = [[index, sha256_digest(piece)] for index, piece in zip(exceptions, pieces, strict=True)]
     document = dict(schema=SCHEMA, **core.identity(reader, chunk), blocks=blocks, prefixes=prefixes,
                     exceptions=declarations)
     header = canonical_json_bytes(document)
@@ -205,7 +209,7 @@ class Selective:
         self.metadata = elapsed(stage)
         stage = clock()
         self.frame = reader._member(chunk.payload_relative_path, chunk.compressed_bytes, chunk.compressed_sha256)
-        self.pointer = ct.c_char_p(self.frame)
+        self.pointer = ct.cast(np.frombuffer(self.frame, dtype=np.uint8).ctypes.data, ct.c_char_p)
         self.authentication = elapsed(stage)
         stage = clock()
         descriptions, ordinals, owner = describe(self.frame, chunk.uncompressed_bytes)
