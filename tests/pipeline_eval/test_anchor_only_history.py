@@ -1,8 +1,10 @@
+import gzip
 import json
 
 import pytest
 
 from reports.ALGO08.v3 import anchor_only_history as replay
+from reports.ALGO08.v3.anchor_delayed_history import delayed_plan
 
 
 def factor(hz, rank=0, margin=0.5):
@@ -73,3 +75,37 @@ def test_independent_complete_archive_reproduces_sealed_native_diagonals():
     sealed = json.loads((replay.MEASUREMENTS / "anchor-only-history.json").read_text())
     assert json.loads(json.dumps(scores)) == sealed["scopes"]["DS30-0016"]["paid_alternatives"]
     assert scores["counts"]["lost_stock_positive"] == 9
+
+
+def test_delayed_anchor_can_use_future_short_measurements_but_never_changes_shorts():
+    good = [packet(i, factor(10_000 + 125 * i), radio=radio) for i in range(4)
+            for radio in (0, 1)]
+    outcomes = delayed_plan(good)
+    assert outcomes[0]["direction_votes"] == [[], [3]]
+    assert outcomes[0]["selected"] == good[0]["candidates"][0]
+    bad = [dict(good[0], candidates=[factor(-10_000)]), *good[1:]]
+    rejected = delayed_plan(bad)
+    assert rejected[0]["direction_votes"] == [[], [0]]
+    assert rejected[0]["reason"] == "rejected"
+    assert rejected[0]["selected"] is None
+    assert rejected[2:] == outcomes[2:]
+
+
+def test_delayed_history_counts_full_slots_as_empty_donors():
+    selector = replay.AnchorHistory(short_donors_only=True)
+    for visit in (1, 2, 3):
+        selector.choose(packet(visit, factor(10_000 + 125 * visit)), True)
+    current = factor(-10_500)
+    assert selector.choose(packet(4, current), True) == (current, "insufficient_history", 0, [])
+
+
+def test_sealed_delayed_transfer_has_false_deletions_in_every_record():
+    path = replay.MEASUREMENTS / "anchor-delayed-history.json.gz"
+    reports = json.loads(gzip.decompress(path.read_bytes()))["reports"]
+    for case, loss in (("DS30-0049", 3), ("DS30-0016", 8), ("DS30-0407", 70)):
+        preferred = reports[case]["arms"]["complete_strongest"]
+        assert preferred["counts"]["lost_stock_positive"] == loss
+    original = reports["DS30-0049"]["arms"]["complete_strongest"]
+    owned = [row for row in original["rows"] if row["installed"] is None and row["mixed_owner_arms"]]
+    assert [row["direction_votes"][1] for row in owned] == [[3], [5], [6], []]
+    assert all(row["selected"] == row["original"] for row in owned)

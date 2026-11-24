@@ -77,8 +77,9 @@ def decisions(rows):
 class AnchorHistory:
     """Independent same-lane history of paid strongest values and empty visits."""
 
-    def __init__(self):
+    def __init__(self, *, short_donors_only=False):
         self.history = defaultdict(lambda: deque(maxlen=12))
+        self.short_donors_only = short_donors_only
 
     def choose(self, row, anchor, alternatives=None):
         options = row["candidates"]
@@ -109,7 +110,8 @@ class AnchorHistory:
                     support.append(second)
                     if second >= 3 and second >= score + 2:
                         choice, reason = other, "paid_alternative"
-        history.append((now, () if current is None else (cfo(current),)))
+        donor = current is not None and not (anchor and self.short_donors_only)
+        history.append((now, (cfo(current),) if donor else ()))
         return choice, reason, len(recent), support
 
 
@@ -206,7 +208,7 @@ def seal(rows):
     return sha256(json.dumps(rows, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
-def audit(installed_0049, mixed_0049):
+def load_cases(installed_0049, mixed_0049):
     vote_path = HERE.parents[2] / "tools/pipeline_eval/variants/carrier_continuation.py"
     if sha256(vote_path.read_bytes()).hexdigest() != VOTE_SOURCE:
         raise ValueError("Released continuation source changed")
@@ -215,15 +217,18 @@ def audit(installed_0049, mixed_0049):
     positions = archive["ds30-0049-saved-crossover.json.gz"]["ordered_owner_rows"]
     trial_0016 = archive["ds30-0016-full-primary-transfer.json.gz"]
     packets = trial_0016["detector_packets"]
-    inputs = {
+    return {
         "DS30-0049": (stock, mix, owner_sets(positions["installed-installed"]), owner_sets(positions["successor-successor"]),
                       archive["ds30-0049-receiver-factorial.json.gz"]["native-rows.json"]["document"], 384),
         "DS30-0016": (packets["installed"]["document"], packets["charted"]["document"],
                       owner_sets(trial_0016["installed_owners"]), owner_sets(trial_0016["charted_owners"]),
                       archive["late-pilot-rescue.json.gz"]["DS30-0016"]["long-receiver.json"]["document"], 808),
     }
+
+
+def audit(installed_0049, mixed_0049):
     scopes = {}
-    for case, (stock, mix, stock_owners, mixed_owners, raw, frontier) in inputs.items():
+    for case, (stock, mix, stock_owners, mixed_owners, raw, frontier) in load_cases(installed_0049, mixed_0049).items():
         # The runtime decisions use only the mixed packet and independently measured alternatives.
         mixed = mix["source"]["probes"]
         scoped_mixed = [r for r in mixed if r["visit_index"] < frontier]
