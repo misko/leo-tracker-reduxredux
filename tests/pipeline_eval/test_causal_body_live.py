@@ -7,6 +7,7 @@ import sys
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 from sgp4.api import Satrec
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"reports/ALGO08/v3"))
@@ -16,6 +17,9 @@ from leo.analysis.localization_v3.orbits import ecef_states
 from leo.operations import localization_v3_inputs as installed
 from leo.sky.propagation import ElementSetCatalogue
 from solver_exception_0022 import GUARD, GUARD_PIN
+
+
+pytestmark = pytest.mark.frozen_v5_numerics
 
 
 FIRST = "1 25544U 98067A   19343.69339541  .00001764  00000-0  38792-4 0  9991"
@@ -154,4 +158,15 @@ def test_unreviewed_same_named_regional_port_is_left_to_the_ordinary_preparation
         observed = bind_one(prepare, audit, reviewed)()
         assert_same_preparation(observed, prepare())
     assert len(calls) == 2
+    assert audit["attempts"][0]["fallback"] == "unverified active regional or initial port"
+
+
+def test_missing_observer_source_keeps_the_installed_archive_path(tmp_path):
+    reviewed = LiveRegional(tmp_path/"missing.py", GUARD_PIN)
+    prepare, calls, _ = real_preparation()
+    audit = {}
+    with runpy.run_path(str(GUARD))["corner_support"]():
+        observed = bind_one(prepare, audit, reviewed)()
+    assert observed["status"] == "inputs_prepared"
+    assert len(calls) == 1
     assert audit["attempts"][0]["fallback"] == "unverified active regional or initial port"

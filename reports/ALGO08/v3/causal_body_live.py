@@ -22,7 +22,10 @@ def named_code(scope, name):
 
 
 def approved_code(path, pin, *parts):
-    raw = path.read_bytes()
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return None
     if sha256(raw).hexdigest() != pin:
         return None
     code = compile(raw, str(path), "exec", dont_inherit=True)
