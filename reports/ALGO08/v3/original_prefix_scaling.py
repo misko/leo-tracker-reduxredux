@@ -144,7 +144,7 @@ def detection_hook(root, live, windows, scientific_imports, immutable_json):
     return publish
 
 
-def worker(root, binding, size):
+def worker(root, binding, size, *, entrypoint=None):
     import empty_bootstrap as boot
     from exact_named_raw import staged_path
     import legacy_first_map_entry as entry
@@ -155,13 +155,12 @@ def worker(root, binding, size):
     options = list(binding["candidate_options"])
     for flag, value in (("--recording", source), ("--output", root)):
         options[options.index(flag) + 1] = str(value)
-    args = entry.parser().parse_args(options)
     live = {}
     load, staged = boot.load_runtime, boot.staged_scanner
     with ExitStack() as patches:
         def scoped(*values, **options):
             scan = staged(*values, **options)
-            original = scan.FastSegmentSource
+            original, acquire = scan.FastSegmentSource, scan.acquire
 
             class Prefix(original):
                 def __init__(self, item):
@@ -176,6 +175,16 @@ def worker(root, binding, size):
 
             patches.enter_context(patch.object(scan, "FastSegmentSource", Prefix))
             patches.enter_context(patch.object(scan.FastScanStore, "inventory", inventory))
+
+            def observed(*args):
+                started = boot.now()
+                try:
+                    return acquire(*args)
+                finally:
+                    live["receiver_acquire"] = boot.clock(started)
+
+            if entrypoint is not None:
+                patches.enter_context(patch.object(scan, "acquire", observed))
             return scan
 
         def loaded():
@@ -244,7 +253,11 @@ def worker(root, binding, size):
         patches.enter_context(patch.object(boot, "staged_scanner", scoped))
         patches.enter_context(patch.object(boot, "load_runtime", loaded))
         try:
-            entry.run(args)
+            if entrypoint is None:
+                entry.run(entry.parser().parse_args(options))
+            else:
+                with patch.object(sys, "argv", [__file__, *options]):
+                    entrypoint()
         except DetectionPublished:
             pass
     if "detector_published_unix_ns" not in live or any(root.rglob("terminal.json")) or list(root.rglob("*.png")):
