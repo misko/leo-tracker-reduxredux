@@ -37,7 +37,7 @@ def retained_entries(entries, failed, groups, tracks):
     return kept
 
 
-def repair_once(signed, region, measured):
+def repair_once(signed, region, measured, *, conditional_fallback=None):
     cpu, wall = process_time(), perf_counter()
     scan, node, keep, entries, first, model = (signed[k] for k in ("scan", "node", "keep", "entries", "arms", "model"))
     details = dict(attempted_refits=0)
@@ -104,6 +104,9 @@ def repair_once(signed, region, measured):
     details.update(attempted_refits=1, status="complete" if accepted else "rejected",
                    reason=None if accepted else "repair_original_joint_pair_gate",
                    finish={arm: readout(record) for arm, record in repaired.items()})
+    candidate = dict(signed, keep=retained, entries=remain_entries, powers=powers, means=means, arms=repaired)
     if not accepted:
+        if conditional_fallback is not None:
+            return conditional_fallback(candidate, region, measured)
         return None, details["reason"]
-    return dict(signed, keep=retained, entries=remain_entries, powers=powers, means=means, arms=repaired), None
+    return candidate, None
