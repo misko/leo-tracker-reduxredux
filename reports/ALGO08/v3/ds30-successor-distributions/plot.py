@@ -15,9 +15,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 STOCK, CANDIDATE, REVERSE = "#333961", "#007f70", "#b25b22"
 SCOPES = [
-    ("release_100", "100-recording release panel", "Original waveforms · ALGO08v3 only"),
-    ("matched_original", "2 complete recordings", "Original waveforms · 0016 and 0107"),
-    ("matched_saved", "3 longer recordings", "Saved detections · 0163, 0173 and 0359"),
+    ("release_100", "Historical baseline", "Original waveforms · 100-recording release panel"),
+    ("matched_original", "End-to-end comparison", "Original waveforms · 0016 and 0107"),
+    ("matched_saved", "Solver and publication", "Saved detections · 0163, 0173 and 0359"),
 ]
 
 
@@ -57,23 +57,31 @@ def draw(rows, metric):
     subtitle = ("Fraction of all recordings with a fix at or below each horizontal error."
                 if error else "Fraction of all timed recordings finishing at or before each threshold.")
     fig, axes = plt.subplots(2, 3, figsize=(13.5, 7.5), sharey=True)
-    fig.subplots_adjust(left=0.078, right=0.98, top=0.73, bottom=0.14, hspace=0.60, wspace=0.19)
+    fig.subplots_adjust(left=0.078, right=0.98, top=0.68, bottom=0.14, hspace=0.60, wspace=0.19)
     fig.text(0.04, 0.95, title, fontsize=21, weight="bold", color="#1d2b36")
     fig.text(0.04, 0.902, subtitle, fontsize=11, color="#526574")
-    legend = [Line2D([], [], color=STOCK, lw=2.6, label="ALGO08v3"),
-              Line2D([], [], color=CANDIDATE, lw=2.6, label="Candidate")]
-    if not error:
-        legend.append(Line2D([], [], color=REVERSE, ls="--", lw=2.4,
-                             label="Candidate, reversed run order (2 originals)"))
-    fig.legend(handles=legend, ncol=len(legend), loc="upper left", bbox_to_anchor=(0.034, 0.89),
-               frameon=False, handlelength=3)
     for col, (scope, heading, subheading) in enumerate(SCOPES):
         series_data = list(series(rows, scope, error))
         limit = ([4.1, 1.95, 1.57] if error else [195, 12.25, 33])[col]
-        axes[0, col].text(0, 1.26, heading, transform=axes[0, col].transAxes,
-                          weight="bold", fontsize=13, color="#1d2b36")
-        axes[0, col].text(0, 1.14, subheading, transform=axes[0, col].transAxes,
-                          fontsize=10, color="#526574")
+        left = axes[0, col].get_position().x0
+        fig.text(left, .844, heading, weight="bold", fontsize=14, color="#1d2b36")
+        fig.text(left, .807, subheading, fontsize=10, color="#526574")
+        handles = []
+        for runs, color, style, marker, label in series_data:
+            if label == "Withhold first":
+                continue
+            name = "Candidate" if label == "Fix first" else label
+            handles.append(Line2D([], [], color=color, ls=style, lw=2.5,
+                                  label=f"{name} ({len(runs)})"))
+        fig.legend(handles=handles, ncol=len(handles), loc="center left",
+                   bbox_to_anchor=(left, .77), frameon=False, handlelength=2,
+                   borderaxespad=0, borderpad=0, columnspacing=1, fontsize=9)
+        if len(series_data) == 1:
+            fig.text(left, .735, "Candidate: 0 recordings measured", fontsize=10, weight="bold", color="#44515b")
+        elif scope == "matched_original" and not error:
+            reverse = Line2D([], [], color=REVERSE, ls="--", lw=2.4, label="Candidate, reversed run order (2)")
+            fig.legend(handles=[reverse], loc="center left", bbox_to_anchor=(left, .742), frameon=False,
+                       handlelength=2, borderaxespad=0, borderpad=0, fontsize=9)
         for row, (field, label) in enumerate(zip(fields, labels)):
             ax = axes[row, col]
             for runs, color, style, marker, _ in series_data:
