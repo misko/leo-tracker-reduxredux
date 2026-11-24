@@ -84,8 +84,11 @@ def wait_for_slot(*, deadline, sleep_until, sample, driver_idle, use_lease, cach
     return None, counts, latest
 
 
-def run_child(root, fd, admission, machine):
+def run_child(root, fd, admission, machine, *, binding=None):
     worker = HERE/"matched_donor_0049_trial.py"
+    if binding is None:
+        binding = dict(driver=worker, plan_pin=PLAN_PIN, protocol=trial.protocol(trial.JOINT),
+                       budget=CHILD_LIMIT_S, flags=[trial.JOINT.option])
     scratch = root/"scratch"
     scratch.mkdir()
     font = trial.STAGE/"centroid-scratch/fontlist-v3.11.0.json"
@@ -93,8 +96,8 @@ def run_child(root, fd, admission, machine):
         copyfile(font, scratch/font.name)
     env = os.environ | dict(TMPDIR=str(scratch), MPLCONFIGDIR=str(scratch),
                             XDG_CACHE_HOME=str(scratch))
-    command = [sys.executable, "-IB", str(worker), "worker", str(root), "--pin", PLAN_PIN,
-               trial.JOINT.option, "--lease-fd", str(fd)]
+    command = [sys.executable, "-IB", str(binding["driver"]), "worker", str(root),
+               "--pin", binding["plan_pin"], *binding["flags"], "--lease-fd", str(fd)]
     trial.write(root/"child-intent.json", dict(
         command=command, decision_unix_ns=time_ns(), admission=admission, source=trial.identifier(worker),
     ))
@@ -104,7 +107,7 @@ def run_child(root, fd, admission, machine):
                               start_new_session=True, stdin=subprocess.DEVNULL) as child:
             print(f"Started the sole joint worker {child.pid}", flush=True)
             try:
-                status = child.wait(CHILD_LIMIT_S)
+                status = child.wait(binding["budget"])
             except subprocess.TimeoutExpired:
                 os.killpg(child.pid, signal.SIGKILL)
                 child.wait()
@@ -119,7 +122,7 @@ def run_child(root, fd, admission, machine):
     ))
     seal = trial.write(root/"prediction-seal.json", dict(
         clock=clock, receipt=trial.identifier(root/"receipt.json") if status==0 else None,
-        machine=machine, plan_sha256=PLAN_PIN, protocol=trial.protocol(trial.JOINT),
+        machine=machine, plan_sha256=binding["plan_pin"], protocol=binding["protocol"],
         source=trial.identifier(worker), survey_reads=0, waveform_reads=0,
     ))
     return dict(exit_code=status, clock_sha256=clock, prediction_sha256=seal)
@@ -148,11 +151,9 @@ def prepare(root):
         trial.document(dest, pin)
 
 
-def entry(root, pid, duration):
-    machine = trial.attrs(expected_priority="idle")
-    if root != ROOT or not 0 < duration <= DURATION_S or trial.identifier(QUIET) != QUIET_PIN:
+def slot_inputs(pid, duration):
+    if not 0 < duration <= DURATION_S or trial.identifier(QUIET) != QUIET_PIN:
         raise ValueError("Require the registered root, guard and bounded wait")
-    prepare(root)
     scope = runpy.run_path(str(QUIET))
     devices = device_stats(Path("/proc/self/mountinfo").read_text().splitlines())
     guards = {name: scope["QuietInterval"]() for name in devices}
@@ -167,15 +168,25 @@ def entry(root, pid, duration):
             raise ValueError("The enrolled driver changed while waiting for its lease")
         return not children.read_text().split()
 
+    return dict(
+        sleep_until=lambda until: sleep(max(0, min(scope["POLL_S"], until-monotonic()))),
+        sample=lambda: observe_quiet(scope, devices, guards), driver_idle=official_idle,
+        use_lease=lease,
+    )
+
+
+def entry(root, pid, duration):
+    machine = trial.attrs(expected_priority="idle")
+    if root != ROOT:
+        raise ValueError("Require the registered saved worker output")
+    inputs = slot_inputs(pid, duration)
+    prepare(root)
     begin, deadline = time_ns(), monotonic()+duration
     print(f"Waiting at most {duration:g}s for idle CPU2 and quiet storage", flush=True)
     def launch(fd, summary):
         return run_child(root, fd, dict(summary, driver_pid=pid), machine)
     done, counts, latest = wait_for_slot(
-        deadline=deadline,
-        sleep_until=lambda until: sleep(max(0, min(scope["POLL_S"], until-monotonic()))),
-        sample=lambda: observe_quiet(scope, devices, guards),
-        driver_idle=official_idle, use_lease=lease, cached=require_cached, launch=launch,
+        deadline=deadline, cached=require_cached, launch=launch, **inputs,
     )
     pin = trial.write(root/"wait-receipt.json", dict(
         disposition="worker_finished" if done is not None else "timeout_no_worker",

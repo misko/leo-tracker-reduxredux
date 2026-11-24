@@ -47,7 +47,8 @@ ANCHORS = SimpleNamespace(stem="ds30-0049-anchor-only", derive=derive_anchor_onl
                           option="--anchor-only-control", source="anchor_only_0049.py", priority="idle")
 JOINT = SimpleNamespace(stem="ds30-0049-joint-recovery", derive=restore_coverage_and_winner,
                         ledger="edits", ledger_digest="ordered_edit_sha256", label="edited",
-                        option="--restore-empty-and-shifted", source="joint_recovery_0049.py", priority="idle")
+                        option="--restore-empty-and-shifted", source="joint_recovery_0049.py", priority="idle",
+                        joint=True)
 
 PREVIOUS = {
     DONOR.stem: "9e129a016bdd533d7c82706b402665bea6cd2d34c0628c0bda62fe414cae1a6a",
@@ -67,9 +68,10 @@ def source_pins(experiment):
         names.append(experiment.source)
     if experiment is ANCHORS:
         names.extend(("sparse_only_drop_0049.py", "empty_recovery_0049.py"))
-    if experiment is JOINT:
+    if getattr(experiment, "joint", False):
         names.extend(("empty_recovery_0049.py", "joint_recovery_0049_admission.py",
                       "field_crossover_admission_watch.py"))
+        names.extend(getattr(experiment, "transfer_sources", ()))
     return {name: identifier(HERE/name) for name in names}
 
 
@@ -156,19 +158,23 @@ def require_resident(paths):
         raise ValueError("Require the complete already resident local causal operands")
 
 
-def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None):
-    if experiment is JOINT and not smoke:
+def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment=None):
+    case, stage, admission_pin, ref_count = (
+        (CASE, STAGE, ADMISSION, 48) if enrollment is None else enrollment
+    )
+    joint = getattr(experiment, "joint", False)
+    if joint and not smoke:
         if lease_fd is None or not os.path.samestat(os.fstat(lease_fd), LOCK.stat()):
             raise ValueError("Require the inherited shared Gauss lease")
         fcntl.flock(lease_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     boot = start_runtime()
     import integrated_original_batch as chart
 
-    if experiment is JOINT:
+    if joint:
         build = document(BUILD, BUILD_PIN)
-        directory = (STAGE/"tle").resolve(strict=True)
+        directory = (stage/"tle").resolve(strict=True)
         body = Path(build["native"]["--portable-orbit-index"]["path"]).resolve(strict=True)
-        if not directory.is_relative_to(STAGE) or not any(
+        if not directory.is_relative_to(stage) or not any(
             body.is_relative_to(parent) for parent in ("/tmp", "/dev/shm")
         ):
             raise ValueError("Require the original staged tmpfs archive and local portable operand")
@@ -190,11 +196,11 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None):
            for label,module in (("position", algo08_position),("scan",algo08_scan))):
         raise ValueError("Saved solver must bind genuine installed scanner and position modules")
     plan = document(root/"plan.json", plan_pin)
-    if (plan["case"] != CASE or plan["protocol"] != protocol(experiment) or plan["worker"] != identifier(Path(__file__))
+    if (plan["case"] != case or plan["protocol"] != protocol(experiment) or plan["worker"] != identifier(Path(__file__))
             or plan["sources"] != source_pins(experiment)):
         raise ValueError("Changed frozen worker, plan or source recipe")
-    admission = chart.document(STAGE/"admission.json", ADMISSION)
-    signed = chart.document(STAGE/"authority.json", admission["authority_pin"])
+    admission = chart.document(stage/"admission.json", admission_pin)
+    signed = chart.document(stage/"authority.json", admission["authority_pin"])
     session, input_pin = signed["session_id"], signed["inventory_sha256"]
     change = plan["change"]
     native = document(root/"derived-native.json", change["derived_native_sha256"])
@@ -207,15 +213,15 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None):
     boot.bind_native(native, session, input_pin, detector[7:], expected=change["derived_native_sha256"])
     if detector in ("sha256:"+spec["detector_sha256"], "sha256:"+authority.SPARSE):
         raise ValueError("Counterfactual must carry its own detector identity")
-    inventory = chart.document(STAGE/"inventory.json", input_pin)
+    inventory = chart.document(stage/"inventory.json", input_pin)
     chart.match_native(signed, native)
     chart.match_inventory(signed, session, input_pin, inventory)
-    recording, archive, offer = Path(signed["recording"]), STAGE/"tle", STAGE/"offer.json"
+    recording, archive, offer = Path(signed["recording"]), stage/"tle", stage/"offer.json"
     chart.validate_case(signed, SimpleNamespace(recording=recording, region=offer))
     cutoff = signed["causal_cutoff_utc_ns"]
     refs = TleArchiveReader(archive).list_snapshots("space-track")
     paths = [ref.path.resolve(strict=True) for ref in refs]
-    if len(refs) != 48 or any(not path.is_relative_to(archive) for path in paths):
+    if len(refs) != ref_count or any(not path.is_relative_to(archive) for path in paths):
         raise ValueError("Use only the existing fully resident saved causal catalogue")
     require_resident(paths)
     if chart.archive_digest(archive, cutoff) != signed["archive_sha256"] or plan["original_archive"] != signed["archive_sha256"] or earlier >= cutoff:
@@ -241,7 +247,7 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None):
           patch.object(FastSegmentSource, "windows", denied), patch.object(ShortWindowReader, "windows", denied),
           positive_ports(solver_ports, acceleration, ports)):
         if smoke:
-            print(json.dumps(dict(case=CASE, changed=len(change[experiment.ledger]), refs=len(refs),
+            print(json.dumps(dict(case=case, changed=len(change[experiment.ledger]), refs=len(refs),
                                   acquired=handoff.calls, waveform_reads=0, solver_runs=0)))
             return
         receipt, _ = raw.publish_active(args, publication, spec, handoff)
@@ -250,7 +256,7 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None):
     document(args.output/"fast-scan-inputs"/(session+".json"), input_pin)
     if handoff.calls != 1:
         raise ValueError("Expected one non-waveform handoff through the original signed solver")
-    print(write(root/"receipt.json", dict(case=CASE, input=change["derived_native_sha256"], receipt=receipt,
+    print(write(root/"receipt.json", dict(case=case, input=change["derived_native_sha256"], receipt=receipt,
         witness=identifier(args.output/"exact-named-raw-witness.json"), plan_sha256=plan_pin, handoffs=handoff.calls,
         waveform_reads=0, graph_replayed=True, receiver_rerun=False, selector_rerun=False)))
 
