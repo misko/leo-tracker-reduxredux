@@ -125,7 +125,7 @@ def worker(output):
         write(output/"inference-attribution.json", measurements)
 
 
-def launch(output):
+def launch(output, *, driver=Path(__file__), protocol=HERE/"named-inference-budget-protocol.md", extra_sources=()):
     from aperture_trial import RELEASE, write
     from dense_geographic_trial import host
     from full_short_physical import environment
@@ -151,12 +151,13 @@ def launch(output):
     (output/"tmp").mkdir()
     for file in (Path(case["stage"])/"fonts").glob("fontlist-*.json"):
         os.link(route.resident_path(file), output/"fonts"/file.name)
-    command = ["/usr/bin/timeout", "--kill-after=2s", "55s", RELEASE/"venv/bin/python", "-IB", __file__, "worker", output]
+    command = ["/usr/bin/timeout", "--kill-after=2s", "55s", RELEASE/"venv/bin/python", "-IB", driver, "worker", output]
     write(output/"binding.json", dict(input=case, machine=machine, command=list(map(str, command)),
           resident_bytes=sum(row["size"] for row in residence), resident_snapshots=len(refs)))
+    sources = {str(path): route.digest(path) for path in extra_sources}
     write(output/"study-binding.json", dict(control=[str(reference), CONTROL_SHA],
-          driver_sha256=route.digest(HERE/Path(__file__).name),
-          protocol_sha256=route.digest(HERE/"named-inference-budget-protocol.md")))
+          driver_sha256=route.digest(driver), protocol_sha256=route.digest(protocol))
+          | ({"sources": sources} if sources else {}))
     env = environment(output) | {"TMPDIR": str(output/"tmp"), "XDG_CACHE_HOME": str(output/"tmp")}
     write(output/"clock.json", measure(command, env, output/"candidate"))
 
