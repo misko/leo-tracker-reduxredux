@@ -39,10 +39,11 @@ def compare(pair, prior):
                 cold_cpu_saving_ns=ordinary["clock"]["cpu_ns"]-candidate["clock"]["cpu_ns"])
 
 
-def inputs():
+def inputs(preflight=None):
     from empty_bootstrap import bind_native
     from exact_named_raw import staged_path
     from leo.operations.tle_archive import TleArchiveReader
+    from south_strict_transfer import selected_causal
 
     scored = checked(STAGE/"result.json", RESULT)
     seal = checked(STAGE/"prediction-seal.json", SEAL)
@@ -62,17 +63,24 @@ def inputs():
     paths = [packet, inventory, portable, portable.parent/"artifact-bind.json", *(ref.path for ref in refs)]
     for path in paths:
         staged_path(path)
-    pages = json.loads(subprocess.check_output(["fincore", "--json", "--bytes", "-o", "RES,SIZE,FILE", *paths]))["fincore"]
-    if (len(pages) != len(paths) or any(row["res"] < row["size"] for row in pages)
-            or not scored["qualified"] or book["mode"] != "containing" or len(refs) != 29
+    identities = {str(p): list(p.stat()[1:3]) + [p.stat().st_size] for p in paths}
+    if preflight is None:
+        pages = json.loads(subprocess.check_output(
+            ["fincore", "--json", "--bytes", "-o", "RES,SIZE,FILE", *paths]))["fincore"]
+        preflight = dict(identities=identities, pages=pages)
+    if (preflight["identities"] != identities
+            or {row["file"]: row["size"] for row in preflight["pages"]} != {str(p): p.stat().st_size for p in paths}
+            or any(row["res"] < row["size"] for row in preflight["pages"])
+            or not scored["qualified"] or book["mode"] != "containing"
+            or len(selected_causal(refs, request["cutoff_utc_ns"])) != 29
             or len(native["source"]["probes"]) != 2400 or native["provenance"]["window_count"] != 1200
             or native["source"]["raw_recording_authority_digest"] != request["authority"]
             or native["clock_anchor"]["before"]["realtime_ns"] != request["cutoff_utc_ns"]):
         raise ValueError("Expected the sealed South signed detections, offered region and resident causal inputs")
-    return book, native, receiver, inventory, offer, scored, pages
+    return book, native, receiver, inventory, offer, scored, preflight
 
 
-def run(root):
+def run(root, preflight, preflight_sha256):
     from empty_bootstrap import PAYLOAD, load_runtime
 
     _, specification, _, publication, _ = load_runtime()
@@ -95,7 +103,7 @@ def run(root):
            for name, module in (("position", algo08_position), ("scan", algo08_scan))):
         raise ValueError("The released scanner and solver must bind first")
     sys.addaudithook(forbid_raw)
-    book, native, receiver, inventory, offer, scored, pages = inputs()
+    book, native, receiver, inventory, offer, scored, pages = inputs(checked(preflight, preflight_sha256))
     request = book["request"]
     argv = book["command"]
     if Path(argv[5]).name != "integrated_original_entry.py" or argv[6] != "--recording":
@@ -155,10 +163,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--admission-only", action="store_true")
+    parser.add_argument("--preflight", type=Path)
+    parser.add_argument("--preflight-sha256")
     args = parser.parse_args()
     if args.admission_only:
+        from empty_bootstrap import load_runtime
+
         sys.addaudithook(forbid_raw)
-        book, native, _, _, _, _, pages = inputs()
-        print(json.dumps(dict(issued=native["provenance"]["window_count"], checked=len(pages), offer=book["mode"])))
+        load_runtime()
+        _, _, _, _, _, _, pages = inputs()
+        write(args.root, pages)
     else:
-        run(args.root)
+        if args.preflight is None or args.preflight_sha256 is None:
+            parser.error("Supply the pinned passive saved-input attestation")
+        run(args.root, args.preflight, args.preflight_sha256)
