@@ -58,8 +58,8 @@ pixels and dimensions. No waveform call ran.
 
 ## Reproduction
 
-The [protocol](weak-publisher-attribution-protocol.md) is at `72eeb2de5`;
-the measured [observer](weak_publisher_attribution.py) is at `538d5599b`.
+The [protocol](weak-publisher-attribution-protocol.md) is at `72eeb2de5`
+and the measured [observer](weak_publisher_attribution.py) is at `538d5599b`.
 Launch under the usual low-priority Gauss CPU2 lock using a fresh tmpfs
 root. The out-of-process `seal` command runs as its owner. Two component
 tests passed. The [receipt](measurements/weak-publisher-attribution.json.gz)
