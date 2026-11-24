@@ -1,5 +1,6 @@
 """Check two-point intake extrapolation against an already timed full recording."""
 
+import argparse
 import gzip
 import json
 from math import isfinite
@@ -96,7 +97,56 @@ def load():
     return result
 
 
+def render(output):
+    import matplotlib.pyplot as plt
+
+    prefix = receipt("original-prefix-scaling-0016.json.gz",
+                     "eeb29fff0ac4b3608dc0023e1f2684a5e14f1451ada9b782d74de85a9c27bdbe")
+    full = receipt("original-full-detector-boundary-0016.json.gz",
+                   "1824686722e7c3e3d6bb074a65262b5ec8a60ae201348ba7216c44edd1a372a8")
+    if not full["complete_bytes_equal"]:
+        raise ValueError("Require matching detector publications")
+    size = full["bytes"] / 1e6
+    fig, ax = plt.subplots(figsize=(7.9, 4.6))
+    fig.subplots_adjust(top=.79, left=.10, right=.95, bottom=.16)
+    fig.suptitle("Four files underpredicted intake time for the whole recording",
+                 x=.025, y=.97, ha="left", weight="bold", fontsize=14)
+    fig.text(.025, .87, "DS30-0016  ·  Fresh processes on one core  ·  Original waveform files in memory",
+             fontsize=9, color="#435064")
+    predictions = []
+    for trial, order in zip(prefix["times"], load(), strict=True):
+        measured = [trial["scopes"][key] for key in ("1", "4")]
+        x = [s["bytes"] / 1e6 for s in measured]
+        y = [s["detection"] for s in measured]
+        ax.plot(x, y, "o-", color="#00796d", lw=1.4, markersize=5)
+        predicted = order["scopes"]["through_detections"]["predicted_full_s"]
+        predictions.append(predicted)
+        ax.plot([x[-1], size], [y[-1], predicted], "--", lw=1.2, color="#778693")
+    labels = [(full["timing"]["detection_s"], "Detection-only worker", "#00796d", 9),
+              (full["normal"]["detection_s"], "Integrated worker", "#394f77", -11)]
+    for y, label, color, dy in labels:
+        ax.scatter(size, y, s=43, color=color)
+        ax.annotate(f"{y:.2f} s   {label}", (size, y), xytext=(-10, dy), textcoords="offset points",
+                    ha="right", fontsize=9, color=color)
+    ax.annotate(f"{min(predictions):.2f}–{max(predictions):.2f} s   Extrapolated",
+                (size, min(predictions)), xytext=(-8,-32),
+                textcoords="offset points", ha="right", fontsize=9, color="#596675")
+    ax.set(xlim=(0, 1040), ylim=(0,5.65), xlabel="Original compressed data (MB)",
+           ylabel="Seconds to publish detections")
+    ax.set_axisbelow(True)
+    ax.grid(color="#e0e6ea", lw=.7)
+    ax.spines[:].set_visible(False)
+    ax.tick_params(length=0)
+    fig.savefig(output, dpi=150, facecolor="white")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--figure", type=Path)
+    args = parser.parse_args()
+    if args.figure:
+        render(args.figure)
     rows = blind_rows()
     gates = {bound: required_rate(rows, bound, post_speedup=1, startup_s=0)
              for bound in ("byte_low", "byte_high")}
