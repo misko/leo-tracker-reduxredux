@@ -72,7 +72,7 @@ def resident(paths):
     if len(report) != len(paths) or any(row["res"] < row["size"] for row in report):
         raise ValueError("All encoded files, index metadata and orbit bodies must be resident")
     extent = sum((row["size"]+sysconf("SC_PAGE_SIZE")-1)//sysconf("SC_PAGE_SIZE") for row in report)
-    return dict(cached_pages=extent, observed_file_pages=extent, observed_members=len(paths),
+    return dict(cached_pages=extent, observed_file_pages=extent, members=len(paths), observed_members=len(paths),
                 bytes=sum(row["size"] for row in report), unavailable={})
 
 
