@@ -248,6 +248,12 @@ def compare_factors(original, refined, candidate, selection):
                 max_abs_delta_from_exact_refinement=max_delta, mismatches=dict(mismatches))
 
 
+def compare_figure(found, reference):
+    return dict(file_equal=found["sha256"] == reference["sha256"],
+                pixels_equal=found["rgba_sha256"] == reference["rgba_sha256"],
+                dimensions_equal=tuple(found["size"]) == tuple(reference["size"]))
+
+
 def seal(root):
     from leo.contracts.digests import canonical_digest
     from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
@@ -258,7 +264,15 @@ def seal(root):
     if clock["exit_code"]:
         raise ValueError("The waveform process failed before the required scientific publication")
     for name, pin in binding["source_sha256"].items():
-        checked(HERE / name, pin)
+        path = HERE / name
+        if path == Path(__file__).resolve():
+            checkout = HERE.parents[2]
+            original = subprocess.check_output(["git", "-C", str(checkout), "show",
+                                                f"{binding['commit']}:{path.relative_to(checkout)}"])
+            if sha256(original).hexdigest() != pin:
+                raise ValueError("The recorded launch verifier source changed")
+        else:
+            checked(path, pin)
     reference, controls = references()
     if binding["historical"] != REFERENCE_PINS or binding["assignment"] != reference["assignment"]:
         raise ValueError("The frozen comparison denominator changed after launch")
@@ -298,13 +312,12 @@ def seal(root):
         owners = {identifier: satellite for identifier, satellite, _ in rows}
         if not owners or len(owners) != len(rows) or canonical_digest(owners) != candidate["verified"]["owners"][arm]:
             raise ValueError("Ordered final observation rows must bind the verified arm owners")
-    plots = {name: dict(file_equal=image["sha256"] == stock["figures"][name]["sha256"],
-                        pixels_equal=image["rgba_sha256"] == stock["figures"][name]["rgba_sha256"],
-                        dimensions_equal=image["size"] == stock["figures"][name]["size"])
+    plots = {name: compare_figure(image, stock["figures"][name])
              for name, image in candidate["figures"].items()}
     write(root / "sealed.json", dict(binding_sha256=sha256((root / "binding.json").read_bytes()).hexdigest(),
         clock=clock, cache=cache, candidate=candidate, raw=bootstrap, packet=str(packet), owners=roles, plots=plots,
         selector_sha256=sha256(route_path.read_bytes()).hexdigest(), factors=features,
+        verifier_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
         stock_clock=stock["clock"], held_anchor_clock=controls["candidate"]["clock"],
         launch_to_detector_mb_s=COMPRESSED_BYTES / (1e6 * candidate["detector_ready_s"]),
         solver={name: research.get(name) for name in ("route", "route_details", "solve", "recovered_inference")}))

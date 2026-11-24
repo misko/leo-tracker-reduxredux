@@ -51,3 +51,10 @@ def test_factor_audit_counts_edits_and_distinguishes_roundoff_from_changed_epoch
     assert not evidence["mismatches"]
     evidence = trial.compare_factors(packet(original), packet(refined), packet(dict(guarded, integer_epoch_sample=41)), route)
     assert evidence["mismatches"] == {"position_rank_gate": 1}
+
+
+def test_figure_size_matches_old_json_even_when_file_and_pixels_change(trial):
+    decoded = dict(size=(100, 50), sha256="file-a", rgba_sha256="pixels-a")
+    archived = dict(size=[100, 50], sha256="file-b", rgba_sha256="pixels-b")
+    assert trial.compare_figure(decoded, archived) == dict(file_equal=False, pixels_equal=False, dimensions_equal=True)
+    assert trial.compare_figure(dict(decoded, size=(90, 50)), archived)["dimensions_equal"] is False
