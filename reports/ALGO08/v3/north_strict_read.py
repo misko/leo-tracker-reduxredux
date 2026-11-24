@@ -67,11 +67,11 @@ def resident_packed(root, members, codec):
     return observed
 
 
-def transform(root, clip, observed, *, member_count=19):
+def transform(root, clip, observed, *, member_count=19, variable_extents=False):
     from aperture_trial import write
     from empty_bootstrap import BASELINE, BASELINE_PIN, PAYLOAD, checked
     from leo.storage.short_window import ShortWindowReader
-    from packed_combined_input import STRICT_EIGHT_SCHEMA
+    from packed_combined_input import STRICT_EIGHT_SCHEMA, VARIABLE_EIGHT_SCHEMA
     from reports.ALGO08.v3.ci16_packing import Packing, SOURCE
     from reports.ALGO08.v3.sparse_cold_input import frozen_function
     from runpy import run_path
@@ -107,10 +107,11 @@ def transform(root, clip, observed, *, member_count=19):
             source = dict(path=str(original.parent), manifest_digest=reader.manifest_sha256)
             opened = Counter()
             with original_member_only(source, chunk.model_dump(mode="json"), opened), ingress(), paired_decoded_hashes(hasher):
-                root_pin = seek.create(reader, chunk.chunk_index, folder, codec=codec, prefix_samples=PREFIX)
+                root_pin = seek.create(reader, chunk.chunk_index, folder, codec=codec, prefix_samples=PREFIX,
+                                       variable_extents=variable_extents)
             encode = elapsed(start)
             start = clocks()
-            with seek.open_member(folder, root_pin, codec=codec, prefix_samples=PREFIX) as record:
+            with seek.open_member(folder, root_pin, codec=codec, prefix_samples=PREFIX, variable_extents=variable_extents) as record:
                 independent = record.verify_all()
                 counts = record.counts()
             verify = elapsed(start)
@@ -127,7 +128,8 @@ def transform(root, clip, observed, *, member_count=19):
             or sum(d["original"]["window_count"] for d in documents) != clip["issued"]):
         raise ValueError("The derivative must bind every original member and visit")
     mapping = sidecars/"map.json"
-    payload = json.dumps(dict(schema=STRICT_EIGHT_SCHEMA, codec_sha256=seek.digest(binary.read_bytes()), members=members),
+    schema = VARIABLE_EIGHT_SCHEMA if variable_extents else STRICT_EIGHT_SCHEMA
+    payload = json.dumps(dict(schema=schema, codec_sha256=seek.digest(binary.read_bytes()), members=members),
                          sort_keys=True, separators=(",", ":")).encode()
     seek.write(mapping, payload)
     request = dict(map=str(mapping), map_sha256=seek.digest(payload), codec=str(binary))

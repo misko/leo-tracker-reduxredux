@@ -41,9 +41,11 @@ def run(root):
     git = ["git", "-c", f"safe.directory={tree}", "-C", str(tree)]
     revision = subprocess.check_output([*git, "rev-parse", "HEAD"], text=True).strip()
     changed = subprocess.check_output([*git, "diff", "--name-only", MERGED, revision], text=True).splitlines()
-    harness = {f"reports/ALGO08/v3/{name}" for name in (SOURCE, "north_strict_read.py", "strict-packed-0107-protocol.md")}
-    harness.add("tests/pipeline_eval/test_strict_packed_0107.py")
-    if (not set(changed) <= harness or root.parent.resolve(strict=True) != Path("/dev/shm") or
+    components = (SOURCE, "north_strict_read.py", "strict-packed-0107-protocol.md", "packed_combined_input.py",
+                  "seekable_member.py", "measurements/strict-packed-0107-initial-admission.json")
+    allowed = {f"reports/ALGO08/v3/{name}" for name in components}
+    allowed.update(f"tests/pipeline_eval/{name}" for name in ("test_strict_packed_0107.py", "test_packed_combined_input.py"))
+    if (not set(changed) <= allowed or root.parent.resolve(strict=True) != Path("/dev/shm") or
             subprocess.check_output([*git, "status", "--porcelain", "--untracked-files=no"], text=True)):
         raise ValueError("Expected the frozen merged entry and a fresh tmpfs output")
     paired.verified_scope(PRIOR/RECORDING.name, RECORDING)
@@ -58,9 +60,9 @@ def run(root):
                 manifests=[dict(path=str(members["manifest"][0]), digest=members["manifest"][2])])
     root.mkdir()
     setup = elapsed(begin)
-    packed, dirs, codec = strict.transform(root, clip, observed, member_count=1)
+    packed, dirs, codec = strict.transform(root, clip, observed, member_count=1, variable_extents=True)
     candidate = partial(candidate_command, packed=packed, reference=archived["binding"]["commands"]["candidate"])
-    write(root/"plan.json", dict(revision=revision, runtime_revision=MERGED, checkout=tree, source_sha256=paired.digest(paired.HERE/SOURCE),
+    write(root/"plan.json", dict(revision=revision, runtime_base_revision=MERGED, checkout=tree, source_sha256=paired.digest(paired.HERE/SOURCE),
          original=clip, named_and_ordinary_reference_sha256=EARLIER[1], admission_cost=setup,
          source_residency=observed, derivative_request=packed, machine=machine, launch_order=paired.ORDER))
     before = strict.resident_packed(Path(packed["map"]).parent, dirs, codec)
@@ -111,6 +113,9 @@ def complete_reader(audit, build, expected):
 
 
 def score(root, output):
+    from packed_combined_input import VARIABLE_EIGHT_SCHEMA
+    from seekable_member import EIGHT_MS_SAMPLES, SAMPLE_BYTES
+
     with TemporaryDirectory(dir="/dev/shm") as stage:
         tmp = Path(stage)/"score.json"
         withhold.score(root/"pair", tmp)
@@ -122,12 +127,19 @@ def score(root, output):
     expected = signed_schedule(proof["native"]["candidate"]["source"]["probes"], rows)
     raw = proof["pair"]["modes"]["candidate"]["bootstrap"]
     audit = raw["packed_ci16_input"]
+    empty_parts = sum((row["payload_bytes"] == 0) + (row["payload_bytes"] <= EIGHT_MS_SAMPLES*SAMPLE_BYTES) for row in rows)
+    exclusions = {mode: document["provenance"]["excluded_windows"] for mode, document in proof["native"].items()}
+    excluded = [row for row in rows if str(row["sequence"]) not in expected]
     checks = dict(full_original_and_packed_readback=(conversion["independent_check"] and len(rows) == CASE.windows and
                   build["checked_derivative"]["full_checks"] == CASE.windows and
                   build["checked_derivative"]["decoded_bytes"] == build["original"]["uncompressed_bytes"]),
                   strict_verified_before_withhold=(complete_reader(audit, build, expected) and len(expected) == INPUTS.admitted
                   and raw["raw_acquisitions"] == raw["verified_handoffs"] == 1
+                  and audit["schema"] == VARIABLE_EIGHT_SCHEMA and audit["members"][0]["empty_parts"] == empty_parts
                   and audit["map_sha256"] == conversion["request"]["map_sha256"]),
+                  original_exclusions=(exclusions["candidate"] == exclusions["stock"] and
+                      [(row["sequence"], row["iq_sha256"]) for row in excluded] ==
+                      [(row["visit"], row["iq_sha256"]) for row in exclusions["candidate"]]),
                   exact_expected_null_arms=all(set(mode["science"]["arms"]) == {"c0", "fitted_c"}
                   and all(arm["latlon"] is None and arm.get("rf_rms_hz") is None for arm in mode["science"]["arms"].values())
                   for mode in proof["pair"]["modes"].values()))
@@ -137,7 +149,8 @@ def score(root, output):
     archived = paired.archived(EARLIER)
     write(output, dict(pass_through=proof["passed"] and all(checks.values()), strict_checks=checks, plan=plan,
          timed=clocks, measured=proof, conversion=conversion, paid=paid, expected_apertures=expected,
-         excluded_original_sequences=sorted({str(row["sequence"]) for row in rows} - set(expected), key=int),
+         excluded_original=[dict(sequence=row["sequence"], sample_count=row["sample_count"],
+                                 quality_flags=row["acquisition"]["quality_flags"]) for row in excluded],
          time=dict(conversion_wall_s=conversion_wall, first_use_wall_s=conversion_wall+count,
                    prebuilt_speedup=clocks["stock"]["elapsed_s"]/count,
                    legacy_speedup=clocks["stock"]["elapsed_s"]/(conversion_wall+count),
