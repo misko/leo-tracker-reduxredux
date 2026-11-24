@@ -23,6 +23,7 @@ STAGED = {
 }
 SAVED_SOURCE_UPDATES = {
     "unified_short_bootstrap.py": "d2c4d213008ce2f1ca3ce29d2d755eeb9fb1b5c0fcef603bbc0f87cf688c3c27",
+    "joint_publication.py": "3431764b4c6f888c4addb6b788f6e9f1715a76e1500fc047cb875959d0c24e01",
 }
 
 
