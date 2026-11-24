@@ -17,6 +17,7 @@ REFERENCE = Path("/tmp/leo-v3-integrated-original-batch-proof01")
 REFERENCE_BUILD = "sha256:30cc3b044040f2519677d67abfde731f83693612744d2236d1ba71bb5a31e4ab"
 REFERENCE_AUTHORITY = "sha256:c661ddb3b776e436de107c83ce1e8c1112d167f28d3418b7456476bcc3f1852f"
 REFERENCE_MARKER = "sha256:700525392747bb4ad3aafb3b3d97216f03b143330e6405a10cf1b473c6f0b8dc"
+REFERENCE_NATIVE = "sha256:5eea8c0db979ec729e83f56f2cb806823d785fbc65455730ee321cfc9de9a245"
 REGION = Path("/dev/shm/leo-v3-raw-0016-best-results-01/offer.json")
 
 
@@ -42,7 +43,7 @@ def experiment(root):
     prior = read(REFERENCE / "candidate/unified-short-bootstrap.json")
     if (authority["recording"] != request["request"]["recording"] or marker["decision"] != "complete"
             or marker["authority_sha256"] != REFERENCE_AUTHORITY or marker["build_sha256"] != REFERENCE_BUILD
-            or sha(REGION) != authority["region_sha256"] or prior["native_sha256"] != request["request"]["native"]):
+            or sha(REGION) != authority["region_sha256"] or prior["native_sha256"] != REFERENCE_NATIVE):
         raise ValueError("Expected the exact original charted 0016 batch proof")
     cache = resident(paths)
     root.mkdir(mode=0o700)
@@ -62,7 +63,7 @@ def experiment(root):
                "--reuse-prefetched-snapshots"]
     batch.write(root / "admission.json", dict(case=detector.CASE, command=command, build_sha256=checked,
         prior_build=REFERENCE_BUILD, authority=authority, reference_marker=REFERENCE_MARKER, cache_before=cache,
-        signed_roster=request["roster"], native_reference=request["request"]["native"], scope="complete_original_batch"))
+        signed_roster=request["roster"], native_reference=REFERENCE_NATIVE, scope="complete_original_batch"))
     before = resident(paths)
     resources = root / "peak-rss-kib.txt"
     clock = measure(["/usr/bin/time", "-f", "%M", "-o", str(resources), *command], environment_for(root), output)
@@ -135,6 +136,7 @@ def score(root):
     checks.update(scope=dict((key, current["prefetch"][key]) for key in
         ("hits", "fallback", "hit_bytes", "submitted", "submitted_bytes")) == {
             "hits": 11, "fallback": 0, "hit_bytes": 834805982, "submitted": 11, "submitted_bytes": 834805982},
+        native_reference=reference["native_sha256"] == admission["native_reference"],
         original_roster=[tuple(row[k] for k in roster) for row in current["members"]] ==
                          [tuple(row[k] for k in roster) for row in admission["signed_roster"]],
         actual_buffers=overlay["statistics"] == current["prefetch"] and overlay["native_sha256"] == current["native_sha256"]
