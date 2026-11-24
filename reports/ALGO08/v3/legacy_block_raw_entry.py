@@ -30,7 +30,7 @@ def orbit_renderer(args, *, allow_cairo_orbits=False):
     raise ValueError("Choose an admitted standard original-file renderer")
 
 
-def run(args, *, allow_cairo_orbits=False):
+def run(args, *, allow_cairo_orbits=False, allow_strict_packed=False):
     import empty_bootstrap as boot
     import exact_named_raw as route
     import history_cairo_render
@@ -39,7 +39,7 @@ def run(args, *, allow_cairo_orbits=False):
         not args.history_risk_route
         or not args.portable_orbit_index
         or args.visit_frame_custody
-        or args.strict_packed_eight
+        or (args.strict_packed_eight and not allow_strict_packed)
     ):
         raise ValueError(
             "Expected portable history-risk on the original recording"
@@ -51,6 +51,8 @@ def run(args, *, allow_cairo_orbits=False):
         args.legacy_map_library,
         args.legacy_map_library_sha256,
     )
+    if args.strict_packed_eight and any(fields):
+        raise ValueError("Strict packed input cannot use original block replay")
     audit = None
     original = history_cairo_render.binding
 
