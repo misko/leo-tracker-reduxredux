@@ -63,3 +63,37 @@ def topology(tracks, alternatives):
                                 shared_phase=joined_sizes(active, with_phase),
                                 receiver_calibration=joined_sizes(active, with_calibration),
                                 common_position=joined_sizes(active, with_calibration | spanning_edges([active]))))
+
+
+def branch_support(tracks, associations, changes):
+    """Locate actual switched observations in the already captured proposal graph."""
+    passing, nominated, paired_passes = defaultdict(set), defaultdict(set), Counter()
+    for association in associations:
+        for row in association["curves"]:
+            i = row["track"]
+            passed = {tuple(choice) for choice in row["gated"]}
+            nominee = row["nominee"]
+            labels = {satellite for satellite, _ in passed}
+            passing[i].update(passed)
+            if nominee is not None:
+                nominated[i].add(tuple(nominee))
+                labels.add(nominee[0])
+            for pair in combinations(sorted(labels), 2):
+                paired_passes[i, pair] += 1
+    coverage = []
+    for i, track in enumerate(tracks):
+        observations = set(track["observation_ids"]) & changes.keys()
+        if observations:
+            switches = {tuple(changes[o][:2]) for o in observations}
+            if len(switches) != 1:
+                raise ValueError("Expected a single owner transition on each changed track")
+            switch, = switches
+            coverage.append(dict(track=i, changed_observations=len(observations), switch=switch,
+                                 roles=dict(Counter(changes[o][2] for o in observations)),
+                                 gated=sorted(a for a in passing[i] if a[0] in switch),
+                                 nominated=sorted(a for a in nominated[i] if a[0] in switch),
+                                 both_in_same_pass=paired_passes[i, tuple(sorted(switch))],
+                                 time_interval_s=[track["start_s"], track["end_s"]]))
+    if sum(row["changed_observations"] for row in coverage) != len(changes):
+        raise ValueError("The prepared tracks did not disjointly cover the changed terminal support")
+    return coverage

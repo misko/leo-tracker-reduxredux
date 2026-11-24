@@ -1,6 +1,6 @@
 import numpy as np
 
-from reports.ALGO08.v3.conflict_components import exclusive_edges, joined_sizes, topology
+from reports.ALGO08.v3.conflict_components import branch_support, exclusive_edges, joined_sizes, topology
 from reports.ALGO08.v3.conflict_component_trial import ExactStates
 
 
@@ -35,3 +35,15 @@ def test_repeated_label_is_not_exact_repeated_work_when_state_or_base_changes():
     state["beta"][0] = 1.0
     assert not clock.repeated(state, base, (0, 0), "receiver_smooth", False)
     assert not clock.repeated(state, (base[0].copy(),), (0, 0), "receiver_smooth", False)
+
+
+def test_later_owner_can_be_retained_only_by_gate_independent_nomination():
+    tracks = [track(1, 0, 2, ["a"]), track(2, 1, 4, ["b"])]
+    stages = [{"curves": [dict(track=0, gated=[(20, -1)], nominee=(21, 2)),
+                          dict(track=1, gated=[], nominee=None)]}]
+    switches = {"a": (20, 21, "conditional"), "b": (20, 21, "predictive")}
+    first, second = branch_support(tracks, stages, switches)
+    assert first["gated"] == [(20, -1)]
+    assert first["nominated"] == [(21, 2)]
+    assert first["both_in_same_pass"] == 1
+    assert second["changed_observations"] == 1 and not second["gated"] and not second["nominated"]
