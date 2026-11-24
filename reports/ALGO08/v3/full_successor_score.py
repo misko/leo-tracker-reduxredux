@@ -164,6 +164,8 @@ def write_report(pairs, output, enrollment, receipt_digest):
         "All DS30 recordings": pairs,
         "Original 100-recording release panel": [pair for pair in pairs if pair[0]["release_100"]],
         "Remaining recordings": [pair for pair in pairs if not pair[0]["release_100"]],
+        "Complete captures": [pair for pair in pairs if pair[0]["recording_state"] == "complete"],
+        "Interrupted captures": [pair for pair in pairs if pair[0]["recording_state"] == "incomplete"],
         "ALGO08v3 ran first": [pair for pair in pairs if pair[0]["first"] == "installed"],
         "Candidate ran first": [pair for pair in pairs if pair[0]["first"] == "successor"],
         "Both builds returned a fix": [pair for pair in pairs if all(r["outcome"] == "complete" for r in pair)],
@@ -230,6 +232,17 @@ def write_report(pairs, output, enrollment, receipt_digest):
         metres = [number(1000 * delta[p], 1) if delta[p] is not None else "—" for p in ("p50", "p90")]
         lines.append(f"| {dict(c0='Fixed zero', fitted_c='Fitted')[arm]} | {c['shared']} | {c['gained']} / {c['lost']} | "
                      f"{metres[0]} / {metres[1]} |")
+    lines += ["", "| Capture state | Paired recordings | ALGO08v3 fitted fixes | Candidate fitted fixes | "
+              "ALGO08v3 / candidate fitted P90 error among fixes (km) |", "|---|---:|---:|---:|---:|"]
+    for name in ("Complete captures", "Interrupted captures"):
+        group = summaries[name]
+        a, b = (group[role]["fitted_c"] for role in BUILDS)
+        lines.append(f"| {name} | {group['assigned']} | {a['fixes']} | {b['fixes']} | "
+                     f"{number(a['error_km']['p90'],3)} / {number(b['error_km']['p90'],3)} |")
+    worst = changes["fitted_c"]["largest_increases"]
+    if worst:
+        lines += ["", "The largest fitted-error increases on shared fixes were " +
+                  ", ".join(f"{case} (+{delta:.3f} km)" for delta, case in worst) + "."]
     lines += ["",
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "

@@ -25,6 +25,21 @@ def elapsed_budget(installed, successor, acquisition, publication, detector):
                 fraction_needed_from_acquisition_and_publication=max(0, gap)/(acquisition+publication))
 
 
+def detector_publication(root, row):
+    result = root / row["attempt"]
+    body = result.read_bytes()
+    if "sha256:" + sha256(body).hexdigest() != row["attempt_result_sha256"]:
+        raise ValueError("Selected process receipt differs")
+    document = json.loads(body)
+    path, = (result.parent / "publication/fast-scan-automatic-work").glob("*/detections.json")
+    if "sha256:" + sha256(path.read_bytes()).hexdigest() != document["native_sha256"]:
+        raise ValueError("Native publication differs from verified receipt")
+    native_at = path.stat().st_mtime_ns
+    if not row["child_started_unix_ns"] <= native_at <= row["child_finished_unix_ns"]:
+        raise ValueError("Native file timestamp is outside the measured child")
+    return (native_at-row["child_started_unix_ns"])/1e9
+
+
 def study(root, cases):
     assigned = roster()
     if not cases or not set(cases) <= assigned.keys() or len(set(cases)) != len(cases):
@@ -56,6 +71,8 @@ def study(root, cases):
                               phases["decision_and_publication"]["elapsed_s"], sum(callbacks.values())/1e9)
         records.append(dict(case=case, decision=source["outcome"], attempt_sha256=source["attempt_result_sha256"],
                             witness_sha256=sha256(witness).hexdigest(), **cost))
+        records[-1]["wall_to_detector_file_s"] = {
+            r["algorithm"]: detector_publication(root, r) for r in selected if r["case"] == case}
     fields = ("installed_s", "successor_s", "acquisition_s", "decision_and_publication_s", "native_detector_s")
     return dict(cases=records, summed=elapsed_budget(*(sum(c[key] for c in records) for key in fields)))
 
