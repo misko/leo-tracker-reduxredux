@@ -52,3 +52,27 @@ def test_splice_rejects_missing_or_different_measurements(planner, prefix, defec
         saved[2] = dict(saved[2], candidates=[factor])
     with pytest.raises(ValueError, match=message):
         planner.splice(native, original, saved, limit=2)
+
+
+@pytest.fixture
+def launch(planner):
+    return import_module("dense_8ms_prefix_trial")
+
+
+def test_saved_receiver_pin_requires_exact_admitted_binding(launch):
+    request = {"receiver": launch.RECEIVER, "detector": "sha256:abc", "native": "sha256:012"}
+    assert launch.saved_receiver_pin(dict(request), request) == "abc"
+    with pytest.raises(ValueError, match="admitted saved packet"):
+        launch.saved_receiver_pin(dict(request, native="sha256:other"), request)
+
+
+def test_member_requires_a_win_in_each_reversed_order(launch):
+    orders = [["mixed12", "mixed8", "primary8"], ["primary8", "mixed8", "mixed12"]]
+    results = {f"{repeat}-{mode}": {"scope": {"timing": {"cpu_ns": span, "wall_ns": span}}}
+               for repeat in (1, 2) for mode, span in (("mixed12", 10), ("mixed8", 9))}
+    member = dict(binding=dict(orders=orders), results=results, waveform_visits_per_arm=64,
+                  exact_original_iq_and_earlier_primary_controls=True)
+    assert len(launch.member_gains(member)) == 2
+    results["2-mixed8"]["scope"]["timing"]["wall_ns"] = 11
+    with pytest.raises(ValueError, match="reversed original member timings"):
+        launch.member_gains(member)
