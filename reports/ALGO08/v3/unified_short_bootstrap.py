@@ -15,6 +15,18 @@ from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 LAYOUT_SHA256 = "0be5c8a2f90d36691d1bb20a1e3dee0fe17eae7a70b66b732a560cf0257c88aa"
+ADAPTIVE_MAP_SOURCES = ("live_adaptive_grid_entry.py", "live_adaptive_grid.py", "adaptive_grid_screen.py")
+
+
+@contextmanager
+def adaptive_map_layout(output):
+    # The isolated raw entry only exposes the report directory. The adapter
+    # imports the review modules by repository-qualified names.
+    with patch.object(sys, "path", [*sys.path, str(HERE.parents[2])]):
+        from reports.ALGO08.v3.live_adaptive_grid_entry import research_layout
+
+        with research_layout(output):
+            yield
 
 
 @contextmanager
@@ -198,6 +210,9 @@ def run(args):
     started = staged.now()
     if (getattr(args, "direct_residual_figures", False) or getattr(args, "direct_orbit_figures", False)) and not args.one_pass_web_png:
         raise ValueError("Direct figure rendering requires --one-pass-web-png")
+    adaptive_map = getattr(args, "research_adaptive_position_map", False)
+    if adaptive_map and not args.one_pass_web_png:
+        raise ValueError("The research map requires --one-pass-web-png")
     lane_mask = getattr(args, "short_lane_mask", None)
     eight_ms = getattr(args, "eight_ms_native_history", False)
     full_anchor_primary = getattr(args, "full_anchor_primary_library", None)
@@ -347,10 +362,11 @@ def run(args):
         handoff = Handoff(session, inventory_digest, effective_detector, native)
         if reason is None:
             extent = (graph_proof or {}).get("curvature_extent", {})
-            terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
-                                                graph_audit=graph_audit, png_read_audit=png_read_audit,
-                                                detector_import_audit=detector_import_audit,
-                                                no_active_curvature_sha256=extent.get("native_sha256"))
+            with (adaptive_map_layout(args.output) if adaptive_map else nullcontext()):
+                terminal, research = publish_active(args, publication, specification, handoff, layout_audit,
+                                                    graph_audit=graph_audit, png_read_audit=png_read_audit,
+                                                    detector_import_audit=detector_import_audit,
+                                                    no_active_curvature_sha256=extent.get("native_sha256"))
             route = "optimized_installed_graph"
         else:
             staged.check_inert_solver_assets(assets)
@@ -389,6 +405,8 @@ def run(args):
         dependencies += ("live_stereo_blocks.py",)
     if packed_audit is not None:
         dependencies += ("packed_combined_input.py", "seekable_member.py", "ci16_packing.py", "ci16_packing.c")
+    if adaptive_map:
+        dependencies += ADAPTIVE_MAP_SOURCES
     result = dict(schema_version=1, implementation="unified signed raw research receiver and solver",
                   route=route, requested_offer_sha256=sha256(offer_bytes).hexdigest(), archive_root=str(archive),
                   frozen_specification="sha256:"+launcher["FINGERPRINT"], receiver_recipe=recipe,
@@ -421,6 +439,9 @@ def run(args):
         result["held_anchor_route"] = route_selection
     if packed_audit is not None:
         result["packed_ci16_input"] = packed_audit
+    if adaptive_map:
+        result["research_adaptive_position_map"] = dict(
+            namespace="research-adaptive-position-v1", published=research is not None and terminal["decision"] == "complete")
     with (args.output / "unified-short-bootstrap.json").open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False)
         stream.write("\n")
@@ -447,6 +468,8 @@ if __name__ == "__main__":
                         help="Use the pinned minimum support proof before loading the numerical solver")
     parser.add_argument("--one-pass-web-png", action="store_true",
                         help="Use the reviewed explicit layout on the installed renderer when supported")
+    parser.add_argument("--research-adaptive-position-map", action="store_true",
+                        help="Publish measured adaptive map points and figures in the separate research namespace")
     parser.add_argument("--direct-residual-figures", action="store_true",
                         help="Draw the two residual plots directly with Cairo when the explicit layout is enabled")
     parser.add_argument("--direct-orbit-figures", action="store_true",
