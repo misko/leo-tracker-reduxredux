@@ -93,7 +93,17 @@ def exact_rank(receipt):
     return counters
 
 
-def compare(root):
+def standard_native(trace, finish):
+    posterior = trace["receipt"]["posterior_grid_handoff"]
+    pngs = finish["png_readback"]
+    if (posterior["arithmetic"] != "permuted native posterior factor"
+            or posterior["factor_calls"] != 356 or posterior["prediction_calls"] != 356
+            or pngs["fallbacks"] or pngs["verified"] != 8 or pngs["reused"] != 8):
+        raise ValueError("The original native grid handoff or verified PNG reuse was bypassed")
+    return dict(posterior_grid=posterior, png_readback=pngs)
+
+
+def compare(root, output=None):
     from aperture_trial import read, write
     from empty_bootstrap import checked
     from portable_orbit_0316_repair import without_timers
@@ -103,6 +113,9 @@ def compare(root):
     solo = json.loads(checked(REPAIRED, REPAIRED_SHA))
     rank = read(root/"rank.json")
     checked_rank = exact_rank(rank)
+    research = read(root/"portable/joint-research-receipt.json")
+    finish = read(root/"portable/final-fit-options.json")
+    native = standard_native(research, finish)
     actual, prior = (item["portable"] for item in (combined, solo))
     if (combined["scientific"] != solo["scientific"] or combined["artifact_sha256"] != solo["artifact_sha256"]
             or actual["preparation"]["fingerprint"] != prior["preparation"]["fingerprint"]
@@ -112,9 +125,10 @@ def compare(root):
             or actual["solve"]["cold_track_rows"]["ordinary_ranks"] != 0
             or actual["solve"]["cold_track_rows"]["shared_ranks"] != 1):
         raise ValueError("The grouped rank changed the repaired portable publication or its native work")
-    write(root/"combined.json", dict(ordinary=combined["ordinary"], portable_only=prior, combined=actual,
+    write(output or root/"combined.json", dict(ordinary=combined["ordinary"], portable_only=prior, combined=actual,
           rank=rank, rank_validated=checked_rank, scientific=combined["scientific"], geography=combined["geography"],
           historical=combined["historical"], native_validations=combined["native_validations"],
+          native_standard_output=native, combined_cold_clocks=research["route_details"]["cold_clocks"],
           artifact_sha256=combined["artifact_sha256"], prior_repaired_sha256=REPAIRED_SHA,
           repaired_control_repeated=False, source_sha256=digest, waveform_reads=0))
 
@@ -134,9 +148,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("launch", "worker", "compare"))
     parser.add_argument("root", type=Path)
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     if args.action == "compare":
         from empty_bootstrap import load_runtime
 
         load_runtime()
-    {"launch": launch, "worker": worker, "compare": compare}[args.action](args.root)
+        compare(args.root, output=args.output)
+    else:
+        {"launch": launch, "worker": worker}[args.action](args.root)
