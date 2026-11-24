@@ -55,6 +55,7 @@ def score_omitted(root, output=None):
     from raw_cfo_north_trial import native_file
     from south_cfo_route import admissible
     from tools.pipeline_eval.qualification.paired_publication import evidence
+    from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
     from tools.pipeline_eval.scoring import distance_km
 
     binding, clock = read(root / "binding.json"), read(root / "clock.json")
@@ -91,9 +92,12 @@ def score_omitted(root, output=None):
         raise ValueError("Withheld product has unexpected position sidecars")
     historical = json.loads(checked(SOUTH / "result.json", SOUTH_RESULT))
     previous = historical["cases"][MODE]
-    if previous["receipt"]["region"] != offer or previous["truth_face_km"] >= 0:
+    clearance = face_clearance_km(offer, historical["truth"])
+    if previous["receipt"]["region"] != offer or clearance != previous["truth_face_km"] or clearance >= 0:
         raise ValueError("Historical truth must be outside the authenticated operator offer")
-    arms = {name: dict(row, error_km=distance_km(historical["truth"], row["latlon"]) if row["latlon"] else None)
+    arms = {name: dict(row, error_km=distance_km(historical["truth"], row["latlon"]) if row["latlon"] else None,
+                       shift_km=distance_km(base["current"]["arms"][name]["latlon"], row["latlon"]) if row["latlon"] else None,
+                       face_km=face_clearance_km(offer, row["latlon"]) if row["latlon"] else None)
             for name, row in one["arms"].items()}
     write(output or root / "result.json", dict(binding=binding, clock=clock, caches=caches, decision=receipt["decision"],
           reason=one.get("reason"), receipt=receipt, authority=request["authority"], detector=raw["detector_recipe_sha256"],
@@ -104,6 +108,6 @@ def score_omitted(root, output=None):
           truth_face_km=previous["truth_face_km"], historical_named=previous["named"], historical_all_paid=previous["arms"],
           historical_status=previous["status"], historical_named_status=previous["named_status"],
           phases=raw["phases"], early=research["early_regional"], route=research["route_details"], media=media,
-          graph_points=grid["evaluated_points"] if grid else None, verified_png_reads=raw.get("verified_png_reads"),
+          grid_points=grid["evaluated_points"] if grid else None, verified_png_reads=raw.get("verified_png_reads"),
           orbit=read(root / "orbits-indexed.json") if (root / "orbits-indexed.json").exists() else None,
           rank=read(root / "catalogue-block-rank.json") if (root / "catalogue-block-rank.json").exists() else None))
