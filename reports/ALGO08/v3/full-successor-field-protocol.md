@@ -12,6 +12,10 @@ Run the scorer from the research checkout with the final driver export. It check
 
 Gauss retains the paired ledger at `/srv/postgres-nvme/leo-ds30-evaluation-20261124`. The immutable plan SHA-256 is `9deecea6ce5237d01d277370f57b2666f3b84ab96bba72fe0b668c7701d0fc99`. It assigns ALGO08v3 first on 228 recordings and the successor first on 227. The campaign unit is `leo-ds30-paired-evaluation-20261124.service`. The result export includes failures, the actual launch order, child and independent verification clocks, and the digest of each selected attempt. [Driver and restart instructions](ds30-paired-evaluation.md) · [Frozen candidate, checked inputs and restore procedure](integrated-original-batch.md)
 
+For reproduction, use the final combined export, which includes the authenticated original-file pairs for the nine recordings that moved after accession. The published `summary.json` identifies its exact bytes in `attempt_export_sha256`. The command below runs from the research checkout, with `$published_report` pointing to the downloaded report directory and `$campaign_root` pointing to the Gauss ledger. It uses the sealed predictions and performs zero waveform reads. The five figures include wall-time and position-error distributions, their histograms, and the joint speed/error comparison for each recording. [Original-file relocation and combined export](ds30-original-relocation.md)
+
 ```sh
-python -m reports.ALGO08.v3.full_successor_score "$campaign_root/rows.jsonl" "$report_dir"
+expected=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["attempt_export_sha256"])' "$published_report/summary.json")
+python -m reports.ALGO08.v3.full_successor_score \
+  "$campaign_root/rows-with-relocations.jsonl" "$report_dir" --expected-sha256 "$expected"
 ```

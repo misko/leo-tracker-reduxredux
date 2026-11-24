@@ -1,5 +1,8 @@
 import csv
 import json
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 from PIL import Image
@@ -19,6 +22,17 @@ def test_all_ds30_and_historical_subset_are_identified_independently():
     assert sum(r["release_100"] for r in assigned.values()) == 100
     assert sum(r["recording_state"] == "incomplete" for r in assigned.values()) == 44
     assert all(r["reference"] is not None for r in assigned.values())
+
+
+def test_cli_checks_expected_export_before_scoring(tmp_path):
+    receipts = tmp_path / "unverified.jsonl"
+    receipts.write_text("unverified export")
+    script = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/full_successor_score.py"
+    report = tmp_path / "report"
+    result = subprocess.run([sys.executable, str(script), str(receipts), str(report), "--expected-sha256", "0"*64],
+                            capture_output=True, text=True)
+    assert result.returncode == 2 and "differs from the expected SHA-256" in result.stderr
+    assert not report.exists()
 
 
 def test_timing_gates_use_identical_recordings_and_inverse_median_ratios():

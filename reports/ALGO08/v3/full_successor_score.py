@@ -445,9 +445,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("receipts", type=Path, help="Final checked per-recording worker export, JSON lines")
     parser.add_argument("output", type=Path)
+    parser.add_argument("--expected-sha256", help="Pin the complete JSON-lines export to the published SHA-256")
     args = parser.parse_args()
     path_bytes = args.receipts.read_bytes()
+    export_sha256 = sha256(path_bytes).hexdigest()
+    if args.expected_sha256 is not None and args.expected_sha256.removeprefix("sha256:") != export_sha256:
+        parser.error("The worker export differs from the expected SHA-256")
     assigned = roster()
     actual_pairs = paired_rows([json.loads(line) for line in path_bytes.splitlines() if line.strip()], assigned)
     write_report(actual_pairs, args.output, {case: r["release_100"] for case, r in assigned.items()},
-                 sha256(path_bytes).hexdigest())
+                 export_sha256)
