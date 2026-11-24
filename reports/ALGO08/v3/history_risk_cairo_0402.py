@@ -24,6 +24,7 @@ ORBIT_SHEETS = ("ch1-4-all", "ch1-4-unassociated", "ch5-8-all", "ch5-8-unassocia
 DISPATCHER = "history_risk_route_trial.py"
 ORIGINAL_DISPATCHER = "0e47a870b083e2eea23d86a0412c59d399d5224967cd4b5fd246ea00e18c4f92"
 CURRENT_DISPATCHER = "df0f8043c00387a2933bd2d8bf7fad812b9020c58507cc76863c05f8d74e02b2"
+TIMED_DRIVER = "f326626e00fe8dea7c8bdb50c0ab00734838279f3e7663275a31b76f61676bc2"
 
 
 def read(path):
@@ -37,8 +38,8 @@ def source_pins():
     return {name: sha256((HERE/name).read_bytes()).hexdigest() for name in names}
 
 
-def renderer_pin():
-    return sha256(json.dumps(source_pins(), sort_keys=True).encode()).hexdigest()
+def source_digest(pins):
+    return sha256(json.dumps(pins, sort_keys=True).encode()).hexdigest()
 
 
 def controls():
@@ -70,7 +71,7 @@ def launch(root):
     from aperture_trial import write
 
     controls()
-    renderer = renderer_pin()
+    renderer = source_digest(source_pins())
     original_launch("0402", root, stock_command=[RELEASE/"venv/bin/python", "-IB", __file__, "worker", renderer])
     write(root/"renderer-binding.json", dict(sources=source_pins(), sha256=renderer, control=CONTROL, scope="saved 0402"))
 
@@ -83,7 +84,7 @@ def worker(output, expected):
     from history_risk_route_trial import exact, worker as original_worker
 
     sys.addaudithook(deny_original)
-    if renderer_pin() != expected:
+    if source_digest(source_pins()) != expected:
         raise ValueError("The renderer or scoring recipe differs from the frozen launch")
     root = output.parent
     ordinary_ports = exact.exact_ports
@@ -119,7 +120,13 @@ def failed_layers(registration, threshold=.98):
             for kind, layer in row.items() if layer["fraction"] and min(layer["fraction"]) < threshold]
 
 
-def score(root):
+def renderer_witness(binding, observed, current):
+    sources = binding["sources"]
+    return (sources == observed and source_digest(sources) == binding["sha256"]
+            and sources in (current, current | {Path(__file__).name: TIMED_DRIVER}))
+
+
+def score(root, output=None):
     from history_risk_weak_physical import deny_original
 
     sys.addaudithook(deny_original)
@@ -138,8 +145,9 @@ def score(root):
     clock = read(root/"clock.json")
     before = verified(PRIOR/"candidate", prior["clock.json"], "worker.json", request)
     after = verified(root/"candidate", clock, "worker.json", request)
-    old, new = (read(folder/"risk-route.json") for folder in (PRIOR, root))
-    if (read(root/"binding.json")["input"] != prior["binding.json"]["input"] or clean(old) != clean(new)
+    enrollment = read(root/"binding.json")
+    prior_route, candidate_route = (read(folder/"risk-route.json") for folder in (PRIOR, root))
+    if (enrollment["input"] != prior["binding.json"]["input"] or clean(prior_route) != clean(candidate_route)
             or before["terminal"] != after["terminal"] or before["rows"] != after["rows"]
             or before["science"]["arms"] != after["science"]["arms"]
             or before["trace"]["selected_roles"] != after["trace"]["selected_roles"]
@@ -148,7 +156,7 @@ def score(root):
         raise ValueError("Only renderer work may change the original signed study")
     media = read(root/"render.json")
     act(media["work"])
-    if (read(root/"renderer-binding.json")["sha256"] != renderer_pin() or media["sources"] != source_pins()
+    if (not renderer_witness(read(root/"renderer-binding.json"), media["sources"], source_pins())
             or tuple(media["work"].get(x) for x in ("position_figures", "track_figures")) != (1, 1)):
         raise ValueError("All six Cairo sheets and both explicit-layout products must execute")
     ports = read(root/"candidate/ports.json")
@@ -168,11 +176,16 @@ def score(root):
                 orbit[name] = registered_orbits(a.convert("RGB"), b.convert("RGB"), require_match=False)
     failed = failed_layers(orbit)
     ordinary_clock = before["clock"]
-    ceiling = {key: before["trace"][f"publication_{key}"]-before["trace"]["solve"][key] for key in ("elapsed_s", "cpu_s")}
-    write(root/"result.json", dict(case="DS30-0402", clocks={"ordinary":ordinary_clock,"cairo":clock},
-        saved_saving={key: ordinary_clock[key]-clock[key] for key in ("elapsed_s", "cpu_s")}, ordinary_render_ceiling=ceiling,
-        cairo=media, named_route=new, ordinary_admission=prior["route-binding.json"]["preflight"],
-        cairo_admission=read(root/"route-binding.json")["preflight"], solve={"ordinary":before["trace"]["solve"],"cairo":after["trace"]["solve"]},
+    non_solve = {mode: {key: item["trace"][f"publication_{key}"]-item["trace"]["solve"][key]
+                        for key in ("elapsed_s", "cpu_s")}
+                 for mode, item in (("ordinary", before), ("cairo", after))}
+    candidate_binding = read(root/"route-binding.json")
+    write(output or root/"result.json", dict(case="DS30-0402", clocks={"ordinary":ordinary_clock,"cairo":clock},
+        saved_saving={key: ordinary_clock[key]-clock[key] for key in ("elapsed_s", "cpu_s")},
+        publication_minus_solve=non_solve, cairo=media, named_route=candidate_route,
+        ordinary_admission=prior["route-binding.json"]["preflight"], cairo_admission=candidate_binding["preflight"],
+        solve={"ordinary":before["trace"]["solve"],"cairo":after["trace"]["solve"]},
+        enrollment=enrollment, route_binding=candidate_binding, verification=ports["png"], archive_index=ports["portable"],
         position_reference=prior["result.json"]["scientific"], owner_counts={arm: len(rows) for arm, rows in after["rows"].items()},
         terminal=after["terminal"], sidecars=sidecars, media=images, registration=orbit, failed_layers=failed,
         visual_pass=not failed, waveform_opens=0))
@@ -181,13 +194,17 @@ def score(root):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="action", required=True)
-    for name in ("launch", "score"):
-        commands.add_parser(name).add_argument("root", type=Path)
+    commands.add_parser("launch").add_argument("root", type=Path)
+    scoring = commands.add_parser("score")
+    scoring.add_argument("root", type=Path)
+    scoring.add_argument("--output", type=Path)
     child = commands.add_parser("worker")
     child.add_argument("expected")
     child.add_argument("root", type=Path)
     args = parser.parse_args()
     if args.action == "worker":
         worker(args.root, args.expected)
+    elif args.action == "score":
+        score(args.root, args.output)
     else:
-        {"launch": launch, "score": score}[args.action](args.root)
+        launch(args.root)
