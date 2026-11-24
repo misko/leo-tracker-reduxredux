@@ -6,23 +6,7 @@ from pathlib import Path
 
 from .ds30_centered_error import EXPORT, INITIAL, study
 from .ds30_oracle_routing import CAMPAIGN, PLAN, checked
-from .full_successor_score import ARMS, BUILDS, distance_km, paired_rows, roster, squared_error_influence
-
-
-def compare_centers(pairs, assigned, offer):
-    references = {tuple(assigned[a["case"]]["reference"]) for a, _ in pairs}
-    if len(references) != 1:
-        raise ValueError("Expected one independently surveyed DS30 site")
-    reference = references.pop()
-    prior_error = distance_km(offer["center"], reference)
-    data = {}
-    for arm in ARMS:
-        data[arm] = {}
-        for i, role in enumerate(BUILDS):
-            errors = [pair[i][arm + "_error_km"] for pair in pairs if pair[i][arm + "_error_km"] is not None]
-            data[arm][role] = dict(assigned=len(pairs), scored=len(errors), closer_than_center=sum(e < prior_error for e in errors))
-    return dict(width_km=offer["width_km"], center_error_km=prior_error,
-                screen_center_distance_km=distance_km(offer["screen_center"], reference), fixes=data)
+from .full_successor_score import ARMS, compare_centers, paired_rows, roster, squared_error_influence
 
 
 def evaluate(campaign, snapshot):

@@ -7,7 +7,7 @@ import sys
 import pytest
 from PIL import Image
 
-from full_successor_score import (PINS, calibration_segment_error_km, outcomes_summary, paired_rows,
+from full_successor_score import (PINS, calibration_segment_error_km, compare_centers, outcomes_summary, paired_rows,
                                   paired_timing, roster, score_arms, shared_position_moments, squared_error_influence,
                                   time_accounting, write_report)
 
@@ -184,9 +184,12 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     failed = next(row for row in rows if row["case"] == "DS30-0397" and row["algorithm"] == "installed")
     failed.update(outcome="solver_failed", arms=arms(None), timing_scope="raw_launch_to_exit")
     pairs = paired_rows(rows, assigned)
+    offer = dict(center=[48., 7.], screen_center=[48., 6.], width_km=25)
+    prior = compare_centers(pairs, assigned, offer)
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64,
-                 renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned))
+                 renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior)
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    assert report["search_center_comparison"]["fixes"]["fitted_c"]["installed"]["closer_than_center"] == 2
     assert report["report_renderer_revision"] == "d"*40
     for arm in ("c0", "fitted_c"):
         for role in ("installed", "successor"):

@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = "a4ce879975be0593f1adeb7c106f31660c6c423f17e2c7858985244530dc0eb8"
 REFERENCE = "c055e43a03d22379c0bde7e136cb786efae1fe6a31919cc1e3ecea32637840b5"
 RELEASE_100 = "8535781f2ed67016fe42c6ff820f503e9876c1b0f356f3cf2d9c1b6e8d216aa2"
+OFFER = "2698d6858da0a2d989d8c2185c9e3bbbba20d539988204c1f93a591eb9471236"
 BUILDS = ("installed", "successor")
 PINS = {"installed": "sha256:6cdbac1e8496bfeaf8f3eefb90c936c65829629cc42d04b4a9bab7c6e97cf50f",
         "successor": "sha256:30cc3b044040f2519677d67abfde731f83693612744d2236d1ba71bb5a31e4ab"}
@@ -256,7 +257,23 @@ def shared_position_moments(rows, assigned):
     return result
 
 
-def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None):
+def compare_centers(pairs, assigned, offer):
+    references = {tuple(assigned[a["case"]]["reference"]) for a, _ in pairs}
+    if len(references) != 1:
+        raise ValueError("Expected one independently surveyed DS30 site")
+    reference = references.pop()
+    prior_error = distance_km(offer["center"], reference)
+    data = {}
+    for arm in ARMS:
+        data[arm] = {}
+        for i, role in enumerate(BUILDS):
+            errors = [pair[i][arm + "_error_km"] for pair in pairs if pair[i][arm + "_error_km"] is not None]
+            data[arm][role] = dict(assigned=len(pairs), scored=len(errors), closer_than_center=sum(e < prior_error for e in errors))
+    return dict(width_km=offer["width_km"], center_error_km=prior_error,
+                screen_center_distance_km=distance_km(offer["screen_center"], reference), fixes=data)
+
+
+def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None, prior=None):
     from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
@@ -298,6 +315,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         metadata["report_renderer_revision"] = renderer_revision
     if position_moments is not None:
         metadata["position_error_moments_on_shared_fixes"] = position_moments
+    if prior is not None:
+        metadata["search_center_comparison"] = prior
     full = summaries["All DS30 recordings"]
     gates = {metric: full["wall"][metric] >= 2.0 for metric in ("summed_speedup", "median_paired_speedup")}
     metadata["twofold_wall_time_target"] = {"required_speedup": 2.0, **gates, "both_met": all(gates.values())}
@@ -425,6 +444,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                 lines.append(f"| {labels[0]} | {labels[1]} | {n} | " + " | ".join(values) + " |")
         lines += ["", "This diagnostic uses the survey only after scoring. It measures repeatability at one "
                   "physical location and supplies no location correction to either build."]
+    if prior is not None:
+        a, b = (prior["fixes"]["fitted_c"][role] for role in BUILDS)
+        lines += ["", f"The supplied search square was {prior['width_km']:g} km wide. Returning its center on "
+                  f"every recording would give **{prior['center_error_km']:.3f} km** horizontal error. "
+                  f"ALGO08v3 beat that distance on {a['closer_than_center']}/{k} recordings and the candidate on "
+                  f"{b['closer_than_center']}/{k}, using fitted calibration. The separate satellite screening "
+                  f"center was {prior['screen_center_distance_km']:.3f} km from the surveyed receiver."]
     lines += ["", "### When speed and accuracy coincide", "",
               "![Wall speedup and change in horizontal position error on each recording](paired-speed-and-error.png)", "",
               f"On **{fast}/{k}** recordings the candidate took half the ALGO08v3 wall time or less. "
@@ -529,6 +555,7 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("--expected-sha256", help="Pin the complete JSON-lines export to the published SHA-256")
     parser.add_argument("--renderer-revision", help="Full Git revision of the checked-out renderer")
+    parser.add_argument("--offered-region", type=Path, help="The frozen campaign offer.json for scoring the search center")
     args = parser.parse_args()
     path_bytes = args.receipts.read_bytes()
     export_sha256 = sha256(path_bytes).hexdigest()
@@ -537,5 +564,10 @@ if __name__ == "__main__":
     assigned = roster()
     raw_rows = [json.loads(line) for line in path_bytes.splitlines() if line.strip()]
     actual_pairs = paired_rows(raw_rows, assigned)
+    prior = None
+    if args.offered_region is not None:
+        prior = compare_centers(actual_pairs, assigned, json.loads(checked(args.offered_region.read_bytes(), OFFER)))
+        prior["offered_region_sha256"] = OFFER
     write_report(actual_pairs, args.output, {case: r["release_100"] for case, r in assigned.items()},
-                 export_sha256, renderer_revision=args.renderer_revision, position_moments=shared_position_moments(raw_rows, assigned))
+                 export_sha256, renderer_revision=args.renderer_revision,
+                 position_moments=shared_position_moments(raw_rows, assigned), prior=prior)

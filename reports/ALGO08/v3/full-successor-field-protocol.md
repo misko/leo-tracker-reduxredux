@@ -19,5 +19,6 @@ expected=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["attem
 revision=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["report_renderer_revision"])' "$published_report/summary.json")
 test "$(git rev-parse HEAD)" = "$revision" || exit 1
 python -m reports.ALGO08.v3.full_successor_score \
-  "$campaign_root/rows-with-relocations.jsonl" "$report_dir" --expected-sha256 "$expected" --renderer-revision "$revision"
+  "$campaign_root/rows-with-relocations.jsonl" "$report_dir" --expected-sha256 "$expected" \
+  --renderer-revision "$revision" --offered-region "$campaign_root/offer.json"
 ```
