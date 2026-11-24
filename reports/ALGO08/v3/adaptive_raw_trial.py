@@ -221,7 +221,9 @@ def score(root):
     sample, path = (read_sidecar(candidate, run, name) for name in ("sample", "path"))
     old_plot = old_research["evidence"]["images"]
     folder = research_folder(candidate, run)
-    images, reference_detail = {}, store.detail(run)
+    old_manifest = next(folder / "manifest.json" for folder in store.publication_folders(run)
+                        if (folder / "manifest.json").is_file())
+    images, reference_detail = {}, read(old_manifest)
     for entry in manifest["publication"]["artifacts"]:
         name = entry["name"]
         data = (folder / (entry["sha256"][7:] + ".png")).read_bytes()
@@ -249,7 +251,7 @@ def score(root):
         signed=raw_match and raw["raw_acquisitions"] == raw["verified_handoffs"] == 1 and not raw["scientific_imports_before"],
         terminal=canonical_digest(terminal) == old["raw"]["receipt"]["terminal_sha256"] and all(
             raw["receipt"][name] == old["raw"]["receipt"][name] for name in SCIENCE),
-        fit=canonical_digest(manifest["publication"]["arms"]) == canonical_digest(reference_detail["arms"]) and
+        fit=manifest["publication"]["arms"] == reference_detail["arms"] and
         new["selected_rows"] == old_research["selected_rows"] and
         new["solve"]["objective_replay"] == old_research["solve"]["objective_replay"] and
         raw["named_survivor_finish"] == old["raw"]["named_survivor_finish"],
@@ -263,6 +265,7 @@ def score(root):
         not (candidate/"fast-scan-standard-v2").exists(),
     )
     result.update(passed=all(tests.values()), checks=tests, ordinary_elapsed_saved_s=delta,
+                  scorer_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
                   admit_south=case == "north" and all(tests.values()) and delta >= SOUTH_WALL_GATE_S,
                   geographic=new["route_details"]["decision"], route=raw["held_anchor_route"]["choice"],
                   arms=manifest["publication"]["arms"], owners_sha256=canonical_digest(new["selected_rows"]),
