@@ -203,7 +203,9 @@ def launch(root):
     env = environment(root) | {"TMPDIR": str(root / "tmp"), "XDG_CACHE_HOME": str(root / "tmp")}
     runtime = RELEASE / "venv/bin/python"
     checkout = HERE.parents[2]
-    env["PYTHONPATH"] = f"{HERE}:/opt/leo-algo08/algo08v3/payload:{RELEASE}/src:{RELEASE}:{checkout}"
+    # Matches the prefix acquisition's checked origins. The solver uses -I
+    # and reinstalls its own pinned publication package before reading science.
+    env["PYTHONPATH"] = f"{HERE}:{RELEASE}/src:{checkout}:{checkout}/src:{RELEASE}"
     native = ["/usr/bin/timeout", "--kill-after=2s", "20s", runtime, "-BPs", __file__, "prepare", root]
     prep = measure(native, env, root / "member")
     write(root / "member-clock.json", dict(timing=prep, command=list(map(str, native)), machine=machine))
