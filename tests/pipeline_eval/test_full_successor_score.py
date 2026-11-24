@@ -101,11 +101,18 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
                          "child_finished_unix_ns": 2 if (role["algorithm"] == "installed") == bool(i % 2) else 4,
                          "outcome": "complete" if fix else "withheld",
                          "arms": arms([48., 7.] if fix else None)})
+    rows[2].update(outcome="solver_failed", arms=arms(None), timing_scope="raw_launch_to_exit")
     pairs = paired_rows(rows, assigned)
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64)
     report = json.loads((tmp_path / "summary.json").read_bytes())
     assert report["cohorts"]["All DS30 recordings"]["wall"]["pairs"] == 455
     assert report["paired_error_changes"]["fitted_c"]["lost"] == 1
+    assert report["paired_error_changes"]["fitted_c"]["gained"] == 1
+    assert report["paired_outcomes"] == [{"installed": "complete", "successor": "complete", "recordings": 453},
+                                         {"installed": "complete", "successor": "withheld", "recordings": 1},
+                                         {"installed": "solver_failed", "successor": "complete", "recordings": 1}]
+    assert report["cohorts"]["Both builds reached publication verification"]["assigned"] == 454
+    assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
     for figure in ("runtime.png", "position-error.png", "runtime-histogram.png", "position-error-histogram.png"):

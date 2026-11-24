@@ -174,6 +174,9 @@ def write_report(pairs, output, enrollment, receipt_digest):
         "Candidate ran first": [pair for pair in pairs if pair[0]["first"] == "successor"],
         "Both arms in one benchmark slot": [pair for pair in pairs if pair[0]["same_lease"]],
         "Benchmark slot reacquired between arms": [pair for pair in pairs if not pair[0]["same_lease"]],
+        "Both builds reached publication verification": [
+            pair for pair in pairs if all(r["timing_scope"] == "raw_launcher_through_exit_plus_common_publication_verification"
+                                         for r in pair)],
         "Both builds returned a fix": [pair for pair in pairs if all(r["outcome"] == "complete" for r in pair)],
     }
     summaries = {}
@@ -196,6 +199,9 @@ def write_report(pairs, output, enrollment, receipt_digest):
                             lost=sum(a[arm + "_fix"] and not b[arm + "_fix"] for a, b in pairs),
                             largest_increases=sorted((item for item in delta if item[0] > 0), reverse=True)[:5])
     metadata["paired_error_changes"] = changes
+    joint = Counter((a["outcome"], b["outcome"]) for a, b in pairs)
+    metadata["paired_outcomes"] = [
+        {"installed": a, "successor": b, "recordings": n} for (a, b), n in sorted(joint.items())]
     (output / "summary.json").write_text(json.dumps(metadata, indent=2, allow_nan=False) + "\n")
     render_distribution_figures(output / "recordings.csv", output, enrollment=enrollment)
     full = summaries["All DS30 recordings"]
@@ -270,9 +276,16 @@ def write_report(pairs, output, enrollment, receipt_digest):
               "Each recording keeps its original region and causal orbit inputs in both workers. "
               "Errors use the independently recorded site "
               "authority. All recordings come from the Gauss roof. The results measure repeatability at this site.", "",
-              "| Terminal outcome | ALGO08v3 | Candidate |", "|---|---:|---:|"]
-    for status in sorted(full["installed"]["outcomes"].keys() | full["successor"]["outcomes"].keys()):
-        lines.append(f"| {status.replace('_',' ')} | {full['installed']['outcomes'][status]} | {full['successor']['outcomes'][status]} |")
+              "### Outcomes on the same recording", ""]
+    labels = {"complete": "Fix", "withheld": "Withheld", "solver_failed": "Solver failure",
+              "worker_failed": "Worker failure", "invalid_publication": "Invalid publication"}
+    states = [s for s in labels if full["installed"]["outcomes"][s] or full["successor"]["outcomes"][s]]
+    lines += ["| ALGO08v3 ↓ / Candidate → | " + " | ".join(labels[s] for s in states) + " | Total |",
+              "|---|" + "---:|" * (len(states) + 1)]
+    for a in states:
+        lines.append("| " + labels[a] + " | " + " | ".join(str(joint[a, b]) for b in states) +
+                     f" | {full['installed']['outcomes'][a]} |")
+    lines.append("| Total | " + " | ".join(str(full["successor"]["outcomes"][b]) for b in states) + f" | {k} |")
     lines += ["", "[Per-recording results](recordings.csv) · [Machine-readable summary and provenance](summary.json)", ""]
     (output / "README.md").write_text("\n".join(lines))
 
