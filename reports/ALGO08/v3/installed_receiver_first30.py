@@ -168,6 +168,7 @@ def population(cases):
     fixed = [w-a for w,a in zip(wall,prefix,strict=True)]
     out = dict(cases=len(cases), wall=fsum(wall), cpu=fsum(cpu),
                prefix_speedup=scale_threshold(wall,fixed,prefix),
+               twice_as_fast_prefix=ratios(wall, [r+a/2 for r,a in zip(fixed,prefix,strict=True)]),
                effective_MB_s=scale_threshold(wall, fixed,[x["compressed_bytes"]/1e6 for x in cases]),
                wall_half_budget_remaining_after_native=fsum(wall)/2-fsum(fixed),
                actual_prefix_MB_s=fsum(x["compressed_bytes"]/1e6 for x in cases)/fsum(prefix),
@@ -193,7 +194,7 @@ def outside_panel_donor(cases):
     work = donor["native_work"]
     calls = work["native_calls"]["full"]
     native_cpu = work["native_cpu_ns"]["full"]/1e9
-    if (not donor["science_exact"] or "DS30-0016" in {x["case"] for x in cases}
+    if (not donor["qualified"] or not donor["science_exact"] or "DS30-0016" in {x["case"] for x in cases}
             or donor["candidate"]["native_sha256"] != donor["stock_archival"]["native_sha256"]):
         raise ValueError("The outside-panel clock does not bind a same-detector control")
     rate = native_cpu/calls
