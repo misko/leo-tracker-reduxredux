@@ -232,14 +232,14 @@ def render_figure(result, output):
             where="post", linewidth=1.5, color="#176084", label="Fastest within each deficit budget", zorder=3)
     ax.axhline(2, color="#746250", linewidth=1, linestyle="--", zorder=1)
     ax.text(.99, 2.015, "2× summed target", transform=ax.get_yaxis_transform(), ha="right", fontsize=9, color="#614c37")
-    landmarks = ((result["installed"], "All installed", (14, -2), "left", "#30343a"),
-                 (result["strict"]["minimum_sum"], "Fastest strict route", (14, 12), "left", "#176084"),
-                 (result["all_successor"], "All candidate", (-14, 20), "right", "#af451d"))
+    landmarks = ((result["installed"], "All installed · ", (14, -2), "left", "#30343a"),
+                 (result["strict"]["minimum_sum"], "Fastest strict route\n", (14, 19), "left", "#176084"),
+                 (result["all_successor"], "All candidate · ", (-14, 20), "right", "#af451d"))
     for route, label, offset, alignment, color in landmarks:
         count, speed = points[route["mask"]]
         ax.scatter([count], [speed], color=color, edgecolor="white", linewidth=.8, s=58, zorder=4)
-        ax.annotate(f"{label} · {speed:.3f}×", (count, speed), xytext=offset, textcoords="offset points",
-                    ha=alignment, va="center", color=color, fontsize=9, fontweight="semibold", zorder=5)
+        ax.annotate(f"{label}{speed:.3f}×", (count, speed), xytext=offset, textcoords="offset points",
+                    ha=alignment, va="center", color=color, fontsize=9, fontweight="bold", zorder=5)
     ax.set(title=f"DS30 routing ceiling · {result['records']} sealed original pairs",
            xlabel="Largest drop in cumulative fix count at any error threshold, either calibration arm",
            ylabel="Summed elapsed speedup vs installed ALGO08v3", xticks=list(deficits),
@@ -249,7 +249,7 @@ def render_figure(result, output):
     ax.grid(color="#e1e5e8", linewidth=.7)
     ax.set_axisbelow(True)
     ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(loc="upper left", frameon=False, fontsize=9)
+    ax.legend(loc="upper left", bbox_to_anchor=(0, .89), frameon=False, fontsize=9)
     FigureCanvasAgg(figure).print_png(output)
 
 
