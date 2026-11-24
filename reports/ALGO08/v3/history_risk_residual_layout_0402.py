@@ -43,11 +43,12 @@ def require_active(audit):
 
 def render_pair(path, digest):
     from empty_bootstrap import checked, clock, load_runtime, now
+
+    _, spec, _, _, _ = load_runtime()
     from exact_named_cairo_media import image_hashes
     from history_cairo_render import binding
     from tools.pipeline_eval.variants.experimental.lossless_png import LosslessPng, render_lossless_png
 
-    _, spec, _, _, _ = load_runtime()
     packet, options = pickle.loads(checked(path, digest))
     libraries = {}
     for name in ("png_filter", "png_deflate"):
