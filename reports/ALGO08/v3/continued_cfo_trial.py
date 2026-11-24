@@ -24,6 +24,7 @@ INPUTS = {
               REFINED_NORTH, "83e68ceebbcc803a0d2a811da9d3f3d997c7a4e42378fcb702d0ce85afd9c4d2"),
 }
 EARLIER = "115a6593161c752f09ceee99c29612c0ba353384b8e4796d0e5adfff05cdf90e"
+ADMISSION_PIN = "bfd940c22e7cfac17040dbc95e4908ed3224370b5d19d27298d8412afc08e774"
 SEALED_PRICE = "25c515e90936e4e03fe858dd0070356bafb3fea84ef492d9bcc8bc629f13b232"
 INSTALL = ("geographic", "regional", "block", "projection")
 LIBRARY_ARGUMENTS = dict(zip(INSTALL, ("geographic_library", "regional_track_library",
@@ -194,7 +195,7 @@ def run(root, price_from=None):
     if weak["route"] != "unfiltered" or north["route"] != "history" or not north["identical_all_paid_payload"]:
         raise ValueError("Unexpected held-cycle route. Stop at the sealed saved policy price.")
     write(root/"price-seal.json", prices)
-    admission = read(WEAK/"admission.json")
+    admission = json.loads(checked(WEAK/"admission.json", ADMISSION_PIN))
     if weak["input_inventory"] != INVENTORY or pairs.archive_identity(WEAK/"tle")["snapshots_sha256"] != ARCHIVE:
         raise ValueError("The saved scientific inputs do not bind the existing weak authority")
     session = weak["input_session"]
