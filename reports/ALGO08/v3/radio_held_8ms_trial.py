@@ -18,7 +18,8 @@ from preloaded_saved_worker import read, write
 MASKED = Path("/dev/shm/leo-v3-whole-stereo-8ms-result01")
 LIVE = Path("/dev/shm/leo-v3-eight-ms-native-north02")
 PLAN = "e3a01bf26754d440b4f6d87a4aae67d09ef6e6571d4c6b08372b88b8e259696e"
-MASKED_SEAL = "fa7d80832b84dae48038f544f01136cc966a30f94b478f417eb4db918bffb18b"
+MASKED_SEAL = "b6d034cb69424e5aa316f422e84da2ae3a32fca718584e854f601018d7d29619"
+MASKED_ORIGINAL_SEAL = "fa7d80832b84dae48038f544f01136cc966a30f94b478f417eb4db918bffb18b"
 MASKED_SCORE = "b15c39283b2e25e011111f1fcb4360b71cdc562070401a0641bc9bfa2a729cbd"
 LIVE_SEAL = "74f85ba14d14e085ea0832933acd3ad1fed001d6b0d698d2c05b52a39a77a849"
 RECEIPT = "per-antenna-publication.json"
@@ -184,10 +185,16 @@ def score(root):
     from eight_ms_held_score import geographic_reference, owner_differences
     from eight_ms_native_score import outcome
     from empty_bootstrap import checked
+    from joint_held_north_raw import REFERENCE, references
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
     from tools.pipeline_eval.qualification.score_paired_holdout import face_clearance_km
 
     sealed = read(root/"seal.json")
     masked = json.loads(checked(MASKED/"north-seal.json", MASKED_SEAL))
+    before = json.loads(checked(MASKED/"pre-normalization/north-seal.json", MASKED_ORIGINAL_SEAL))
+    fields = ("terminal", "arms", "roles", "grid_and_path", "grid_points", "images")
+    if any(masked["science"][field] != before["science"][field] for field in fields):
+        raise ValueError("Normalized control seal changed archived scientific outputs")
     live = json.loads(checked(LIVE/"science-seal.json", LIVE_SEAL))
     old_score = json.loads(checked(MASKED/"north-score.json", MASKED_SCORE))
     truth, pin = geographic_reference("north")
@@ -198,6 +205,14 @@ def score(root):
     for control in (masked["science"], live["science"]):
         if any(identity[key] != control["identity"][key] for key in shared):
             raise ValueError("Geographic comparator is outside the frozen original request")
+    stock = references()[1]["stock"]["verified"]
+    stock_receipt = stock["receipt"]
+    stock_detail = FastStandardAnalysisStore(REFERENCE/"stock").detail(stock_receipt["run_id"])
+    if (stock["raw_authority"] != identity["authority"] or stock_receipt["region"] != region
+            or stock_receipt["session_id"] != identity["session"] or stock_receipt["window_count"] != identity["issued"]
+            or stock_detail["terminal_sha256"] != stock_receipt["terminal_sha256"]
+            or outcome(stock["arms"], region, truth) != old_score["controls"]["named"]):
+        raise ValueError("Named reference is outside the original request or disagrees with its score")
     candidate = outcome(sealed["verified"]["arms"], region, truth)
     controls = dict(masked=old_score["candidate"], all8=old_score["controls"]["all8"], named=old_score["controls"]["named"])
     owner_changes = {}
@@ -209,6 +224,10 @@ def score(root):
                      for arm in ARMS if candidate[arm] is not None}
               for mode, control in controls.items()}
     write(root/"score.json", dict(candidate=candidate, controls=controls, owner_changes=owner_changes, delta_error_m=errors,
+                                 named_owners={arm: dict(sha256=stock["owners"][arm],
+                                                   associated_points=stock_detail["arms"][arm]["associated_points"],
+                                                   same_map=stock["owners"][arm] == sealed["verified"]["owners"].get(arm))
+                                               for arm in ARMS},
                                  decision=receipt["decision"], truth_source_sha256=pin,
                                  truth_face_km=face_clearance_km(region, truth), clock=sealed["clock"],
                                  comparator_clocks=dict(masked_saved=masked["clock"], all8_raw=live["clock"],
