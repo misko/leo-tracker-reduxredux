@@ -17,6 +17,15 @@ def read(path):
     return json.loads(path.read_bytes())
 
 
+def published_rows(job, arm):
+    rows = job["publication"]["selected_rows"]
+    if job["decision"] == "withheld":
+        if any(rows.values()):
+            raise ValueError("A withheld publication unexpectedly assigned observations")
+        return []
+    return rows[arm]
+
+
 def reference():
     body = subprocess.check_output(["git", "-c", f"safe.directory={ROOT}", "-C", str(ROOT), "show",
                                     "2d0ad2dfd:reports/2026_11_21_ds30_full/reference-audit.json"])
@@ -69,7 +78,7 @@ def score(root):
                                              for k in ("native_sha256", "region", "session_id"))
         check["equal_decision"] = named["decision"] == routed["decision"]
         check["equal_terminal"] = before["terminal"] == after["terminal"]
-        owners = {arm: owner_delta(before["selected_rows"][arm], after["selected_rows"][arm]) for arm in ARMS}
+        owners = {arm: owner_delta(published_rows(named, arm), published_rows(routed, arm)) for arm in ARMS}
         if named["decision"] == routed["decision"] == "complete":
             base_media, new_media = (media_identity(pub["figures"]) for pub in (before, after))
             media = {name: base_media[name] == new_media[name] for name in base_media}

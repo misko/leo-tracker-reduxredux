@@ -37,22 +37,24 @@ def checked(path, pin):
     return json.loads(body)
 
 
-def enrollment():
+def enrollment(*, ranked=2, case=CASE, ranking_hash=RANK_HASH, pair_pin=PAIR_PIN):
     original = run_path(str(HERE / "unseen-saved-assignment.py"))
     roster = checked(original["ROSTER"], original["ROSTER_PIN"])
     pairs = {row["case"]: row["pair_sha256"] for row in roster["rows"]}
     if len(pairs) != len(roster["rows"]) or len(pairs) != 100 or roster["decision_sha256"] != original["DECISION_PIN"]:
         raise ValueError("Expected the original 100-case release roster")
     remaining = pairs.keys() - original["EXCLUDED"]
-    ranking = sorted((digest((original["PREFIX"] + case).encode()), case) for case in remaining)
-    if len(ranking) != 87 or ranking[0][1] != original["assignment"]()["selected"] or ranking[1] != (RANK_HASH, CASE):
-        raise ValueError("The unchanged second rank did not match the preregistration")
-    if pairs[CASE] != PAIR_PIN or int(CASE[-4:]) % 2 != 1:
-        raise ValueError("The release pair or original worker order changed")
-    (row,) = (row for row in roster["rows"] if row["case"] == CASE)
-    return dict(case=CASE, rank=2, roster_size=len(ranking), ranking_sha256=RANK_HASH,
-                roster_sha256=original["ROSTER_PIN"], release_pair_sha256=PAIR_PIN,
-                planned_order=["routed", "installed"], historical_post_detection_s=row["post_s"],
+    ranking = sorted((digest((original["PREFIX"] + label).encode()), label) for label in remaining)
+    if (len(ranking) != 87 or ranking[0][1] != original["assignment"]()["selected"]
+            or not 1 < ranked <= len(ranking) or ranking[ranked - 1] != (ranking_hash, case)):
+        raise ValueError("The unchanged rank did not match the preregistration")
+    if pairs[case] != pair_pin:
+        raise ValueError("The original release pair changed")
+    (row,) = (row for row in roster["rows"] if row["case"] == case)
+    order = ["routed", "installed"] if int(case[-4:]) % 2 else ["installed", "routed"]
+    return dict(case=case, rank=ranked, roster_size=len(ranking), ranking_sha256=ranking_hash,
+                roster_sha256=original["ROSTER_PIN"], release_pair_sha256=pair_pin,
+                planned_order=order, historical_post_detection_s=row["post_s"],
                 estimated_worker_ceiling_s=estimated_child_ceiling(row["post_s"]))
 
 
@@ -62,17 +64,17 @@ def tmpfs(path):
     return path
 
 
-def input_binding(pair):
+def input_binding(pair, panel=PANEL):
     release = pair["runs"]["candidate"]
     record = release["receipt"]
-    work = tmpfs(PANEL / "candidate/fast-scan-automatic-work")
+    work = tmpfs(panel / "candidate/fast-scan-automatic-work")
     (native_path,) = work.glob("*/detections.json")
     native_body = tmpfs(native_path).read_bytes()
     native = json.loads(native_body)
     source = native["source"]
     session = source["session_id"]
     inventory_pin = source["input_manifest_sha256"].removeprefix("sha256:")
-    inventory_path = tmpfs(PANEL / "candidate/fast-scan-inputs" / f"{session}.json")
+    inventory_path = tmpfs(panel / "candidate/fast-scan-inputs" / f"{session}.json")
     inventory = checked(inventory_path, inventory_pin)
     offer = checked(tmpfs(OFFER), OFFER_PIN)
     terminal = json.loads(tmpfs(work / record["run_id"] / "terminal.json").read_bytes())
