@@ -18,15 +18,22 @@ PREFIX = 80_000 * 8
 MAX_HEADER = 96_000
 
 
+class UnsupportedExceptionLayout(ValueError):
+    """Authentic layout not supported by this selective reader."""
+
+
 def layout(frame, expected):
     """Accept one four-byte match, with no following use of its table."""
     spans = []
-    info = inspect(frame, expected, block_spans=spans)
+    try:
+        info = inspect(frame, expected, block_spans=spans)
+    except ValueError as error:
+        raise UnsupportedExceptionLayout(str(error)) from error
     if (not info["checksum"] or frame[4] & 3 or not 0 < expected < 2**32 or len(frame) >= 2**32
             or info["sequences"] != 1 or info["match_bytes"] != 4
             or info["block_counts"] != {"compressed": len(spans)}
             or set(info["literal_counts"]) - {"huffman_new", "huffman_reused"}):
-        raise ValueError("Expected one checksummed Huffman frame with one match of four bytes")
+        raise UnsupportedExceptionLayout("Expected one checksummed Huffman frame with one match of four bytes")
     view, blocks = memoryview(frame), []
     origin, decoded, exception = None, 0, None
     for ordinal, (encoded, length, count, sequences) in enumerate(spans):
@@ -38,11 +45,11 @@ def layout(frame, expected):
             count += 4
         if (streams != 4 or not 0 < count <= MAX_BLOCK or origin is None
                 or origin == exception and not sequences):
-            raise ValueError("An ordinary decode depends on an exceptional table owner or invalid block")
+            raise UnsupportedExceptionLayout("An ordinary decode depends on an exceptional table owner or invalid block")
         blocks.append([encoded, length, decoded, count, origin])
         decoded += count
     if decoded != expected or exception is None:
-        raise ValueError("The block map does not cover the signed member exactly")
+        raise UnsupportedExceptionLayout("The block map does not cover the signed member exactly")
     return blocks, exception
 
 
@@ -97,6 +104,16 @@ def open_sidecar(core, reader, chunk, sidecar, pin):
                    for value in document["prefixes"])):
         raise core.MapError("The exception sidecar does not bind the original member and all prefix commitments")
     return document, material
+
+
+def open_optional(core, reader, chunk, sidecar, pin, binary):
+    """Decline unsupported inputs only before any selective samples have issued."""
+    if sidecar is None:
+        return None
+    try:
+        return SelectiveException(core, reader, chunk, sidecar, pin, binary)
+    except (core.UnsupportedLayout, UnsupportedExceptionLayout):
+        return None
 
 
 class SelectiveException:
