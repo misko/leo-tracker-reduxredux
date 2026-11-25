@@ -1,20 +1,23 @@
 """Freeze and perform the one zero-backing-read DS30-0208 capture."""
 
 import argparse
+import ctypes
+import errno
 import gzip
 import json
 import os
+import platform
 import pwd
 import resource
 import subprocess
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from time import monotonic
 from unittest.mock import patch
 
 import guarded_cfo_0016_stage as copier
 from combined_second_original import CAMPAIGN, NVME, PLAN_PIN, checked_doc, extent, recording_roster
-from combined_second_stage import SOURCE, LiveGap, guarded_sample, read_nowait
+from combined_second_stage import SOURCE, LiveGap, guarded_sample
 from combined_small_panel import DRIVER, DRIVER_PIN, LOCK, check, digest, write
 from ds30_paired_inputs import AUDIT, MANIFEST
 from guarded_stage_idle import IdleAdmission, IdleWindowExpired, sample
@@ -25,6 +28,9 @@ CASE = "DS30-0208"
 ROOT = Path("/srv/postgres-nvme/leo-ds30-0208-cache-only")
 MAX_BYTES = 4_154_415_556
 RATE = 16 * 1024**2
+BLOCK = 1024**2
+RWF_NOWAIT = 0x8
+CACHESTAT_X86_64 = 451
 SOURCES = (
     "combined_cache_0208.py",
     "combined_second_original.py",
@@ -108,11 +114,120 @@ def enrollment():
     )
 
 
-def zero_io_read(stream, amount):
-    before = resource.getrusage(resource.RUSAGE_SELF).ru_inblock
-    data = read_nowait(stream, amount)
-    if not data or resource.getrusage(resource.RUSAGE_SELF).ru_inblock != before:
-        raise OSError("The cache-only source interval was not a zero-input read")
+class CacheRange(ctypes.Structure):
+    _fields_ = [("off", ctypes.c_uint64), ("length", ctypes.c_uint64)]
+
+
+class IOVec(ctypes.Structure):
+    _fields_ = [("base", ctypes.c_void_p), ("length", ctypes.c_size_t)]
+
+
+LIBC = ctypes.CDLL(None, use_errno=True)
+LIBC.syscall.restype = ctypes.c_long
+LIBC.preadv2.argtypes = (ctypes.c_int, ctypes.POINTER(IOVec), ctypes.c_int, ctypes.c_int64, ctypes.c_int)
+LIBC.preadv2.restype = ctypes.c_ssize_t
+
+
+def read_nowait(stream, amount):
+    """Use the libc binding when the frozen interpreter has no flags-enabled syscall wrapper."""
+    data = bytearray(amount)
+    exported = (ctypes.c_char * amount).from_buffer(data)
+    iov = IOVec(ctypes.addressof(exported), amount)
+    count = LIBC.preadv2(stream.fileno(), ctypes.byref(iov), 1, stream.tell(), RWF_NOWAIT)
+    if count < 0:
+        failure = ctypes.get_errno()
+        raise OSError(failure, os.strerror(failure))
+    stream.seek(count, os.SEEK_CUR)
+    return data if count == amount else data[:count]
+
+
+def range_pages(stream, amount):
+    """Linux x86-64 cachestat on the actual source descriptor, without mapping or faulting pages."""
+    if platform.machine() != "x86_64":
+        raise OSError(errno.ENOSYS, "The enrolled Linux cachestat syscall is unavailable")
+    counters = (ctypes.c_uint64 * 5)()
+    interval = CacheRange(stream.tell(), amount)
+    if LIBC.syscall(CACHESTAT_X86_64, stream.fileno(), ctypes.byref(interval), ctypes.byref(counters), 0) != 0:
+        failure = ctypes.get_errno()
+        raise OSError(failure, os.strerror(failure))
+    return counters[0]
+
+
+def read_counters():
+    return resource.getrusage(resource.RUSAGE_THREAD).ru_inblock
+
+
+@dataclass
+class SourceReads:
+    range_checks: int = 0
+    range_checked_bytes: int = 0
+    privileged_census_only_ranges: int = 0
+    privileged_census_only_bytes: int = 0
+    source_reads_attempted: int = 0
+    source_reads_metered: int = 0
+    source_bytes_returned: int = 0
+    source_read_input_blocks: int = 0
+    source_read_bytes_charged: int = 0
+    refused_interval: dict | None = None
+
+    def read(self, item, stream, amount):
+        interval = dict(target=item["target"], offset=stream.tell(), requested_bytes=amount)
+        page = os.sysconf("SC_PAGE_SIZE")
+        try:
+            if not 0 < amount <= BLOCK or interval["offset"] % page:
+                raise ValueError("The cache capture requires a bounded page-aligned source interval")
+            try:
+                cached = range_pages(stream, amount)
+            except OSError as failure:
+                if (failure.errno != errno.EPERM or item["kind"] != "causal"
+                        or os.fstat(stream.fileno()).st_uid != 0):
+                    raise
+                interval["cache_preflight"] = "privileged_roster_only"
+                self.privileged_census_only_ranges += 1
+                self.privileged_census_only_bytes += amount
+            else:
+                required = (amount + page - 1) // page
+                interval.update(cache_preflight="descriptor_cachestat", cached_pages=cached, required_pages=required)
+                self.range_checks += 1
+                if cached != required:
+                    raise OSError(errno.EAGAIN, "The immediate cache range has missing pages")
+                self.range_checked_bytes += amount
+            return zero_io_read(stream, amount, self, interval)
+        except (OSError, ValueError) as failure:
+            self.refused_interval = interval | dict(reason=str(failure))
+            raise
+
+    def summary(self, state, expected):
+        return vars(self) | dict(zero_input_blocks_per_admitted_source_read=(
+            state == "complete" and self.source_reads_attempted == self.source_reads_metered > 0
+            and self.range_checked_bytes + self.privileged_census_only_bytes == self.source_bytes_returned == expected
+            and self.source_read_input_blocks == 0 and self.refused_interval is None
+            and self.source_read_bytes_charged == 0
+        ))
+
+
+def zero_io_read(stream, amount, reads, interval):
+    before = read_counters()
+    data = b""
+    reads.source_reads_attempted += 1
+    try:
+        data = read_nowait(stream, amount)
+    except OSError as failure:
+        interval["nowait_errno"] = failure.errno
+        raise
+    finally:
+        interval["returned_bytes"] = len(data)
+        reads.source_bytes_returned += len(data)
+        blocks = read_counters() - before
+        if blocks < 0:
+            raise OSError("Source thread accounting counters regressed")
+        charged = 512 * blocks
+        reads.source_reads_metered += 1
+        reads.source_read_input_blocks += blocks
+        reads.source_read_bytes_charged += charged
+        interval.update(input_blocks=blocks, read_bytes_charged=charged)
+    if len(data) != amount or blocks or charged:
+        raise OSError("The cache-only source interval was not a complete zero-input read")
     return data
 
 
@@ -157,10 +272,11 @@ def capture(book, gate, pid):
     )
     start = monotonic()
     shared = LiveGap()
+    reads = SourceReads()
     with (
         LOCK.open("rb") as lock,
         patch.object(copier, "RATE", RATE),
-        patch.object(copier, "BLOCK", 1024**2),
+        patch.object(copier, "BLOCK", BLOCK),
     ):
         pace = copier.Pacing(ROOT, MAX_BYTES, 0, idle=True, device=SOURCE, deadline=start + 1200)
         admission = IdleAdmission(
@@ -188,10 +304,10 @@ def capture(book, gate, pid):
                     pace,
                     admission=admission,
                     required_device=os.makedev(252, 5),
-                    read_bytes=zero_io_read,
+                    read_bytes=lambda stream, amount: reads.read(item, stream, amount),
                 )
                 completed.append(item["target"])
-        except (IdleWindowExpired, OSError, ValueError) as problem:
+        except (IdleWindowExpired, OSError, RuntimeError, ValueError) as problem:
             state, reason = "refused", str(problem)
     result = dict(
         case=CASE,
@@ -202,10 +318,9 @@ def capture(book, gate, pid):
         completed=completed,
         leases=admission.reads,
         origin="strict_RWF_NOWAIT",
-        zero_input_blocks_per_admitted_source_read=True,
         pair_sha256=gate["pair_sha256"],
         authority=gate["authority"],
-    )
+    ) | reads.summary(state, MAX_BYTES)
     print(write(ROOT / "cache-capture-result.json", result))
 
 
