@@ -83,11 +83,15 @@ def score(pin):
                   evidence_input=native, prediction_sha256=pin)
     if run["receipt"]["decision"] == "complete":
         reference = geography(CASE)
+        edited = {row["observation_id"] for row in plan["change"]["edits"]}
         arms = {}
         for arm in trial.ARMS:
             baseline, proposed = (terminal["arms"][arm] for terminal in (original, derived))
             a, b = (1e3*distance_km(reference, row["latlon"]) for row in (baseline, proposed))
             arms[arm] = dict(ordinary_error_m=a, half_blend_error_m=b, change_m=b-a,
+                             endpoint_shift_m=1e3*distance_km(baseline["latlon"], proposed["latlon"]),
+                             edited_owner_counts=[sum(row[0] in edited for row in e["owner_rows"][arm])
+                                                  for e in (orig_evidence, evidence)],
                              conditional_rf_hz=[baseline["rf_rms_hz"], proposed["rf_rms_hz"]],
                              all_owned_rf_hz=[e["detail"]["arms"][arm]["residual_rms_hz"]
                                               for e in (orig_evidence, evidence)],
