@@ -5,20 +5,24 @@ import gzip
 from hashlib import sha256
 import json
 from math import isfinite
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
 
-from . import empty_lane_directed_replay as replay
-from matched_donor_0049 import bind_derived
-import matched_donor_0049_trial as trial
-
-
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0,str(HERE))
+from matched_donor_0049 import bind_derived  # noqa: E402
+import matched_donor_0049_trial as trial  # noqa: E402
+from directed_donor import NATIVE_WINDOW_PERIOD  # noqa: E402
+
+
 ARTIFACT = HERE/"measurements/directed-replay-0049-ram-waveforms.json.gz"
 WAVEFORM_PIN = "567e033f2b0a6a44bc9fcf472d5870920a7123733478decf25e1c44109bcd599"
 QUERY_PIN = "0075e0f970a4e5debd2d9398603bd600cd5df38573898324ce4019ae2c3c09e9"
 QUERY = Path("/dev/shm/leo-v3-directed-replay-0049-ram06/plan.json")
+ORDINARY_WITNESS = (trial.CAMPAIGN/"cases/DS30-0049/successor/attempt-000002/publication"
+                    /"exact-named-raw-witness.json")
 VERIFY_FLAG_MARGIN = .025
 ABI = ("candidate_rank","integer_epoch_sample","fractional_epoch_offset_samples","fractional_tracking_cfo_hz",
        "fractional_exact_score","fractional_control_score")
@@ -26,12 +30,12 @@ FACTOR_FIELDS = {*ABI,"fractional_margin","passed_fractional_margin_gate"}
 EXPERIMENT = SimpleNamespace(stem="ds30-0049-directed-insertion",ledger="inserted",ledger_digest="insertion_sha256",
                              label="inserted",source=Path(__file__).name,priority="idle",joint=True,
                              transfer_sources=("empty_lane_directed_replay.py",))
-signed = replay.arrival.signed
+signed = trial.authority
 
 
 def full_native_factor(values):
     rank, integer, offset, hz, exact, control = values
-    if (type(rank) is not int or rank != 0 or type(integer) is not int or not 0 <= integer < replay.NATIVE_WINDOW_PERIOD
+    if (type(rank) is not int or rank != 0 or type(integer) is not int or not 0 <= integer < NATIVE_WINDOW_PERIOD
             or not all(type(item) in (int,float) and isfinite(item) for item in (offset,hz,exact,control))
             or exact < 0 or control < 0 or exact-control < VERIFY_FLAG_MARGIN):
         raise ValueError("A saved directed acceptance does not carry a complete gated native factor")
@@ -39,6 +43,8 @@ def full_native_factor(values):
 
 
 def insert(original, plan, wave):
+    from . import empty_lane_directed_replay as replay
+
     if (not wave["admitted"] or not wave["qualification"]["resident_source"] or wave["plan_sha256"] != QUERY_PIN
             or wave["verified_windows"] != replay.prefix.WINDOWS or plan["directed_library_sha256"] != replay.LIBRARY_PIN
             or wave["ordered_iq_sha256"] != signed.canonical(plan["original_source"]["window_hashes"])):
@@ -92,7 +98,7 @@ def insert(original, plan, wave):
 def winning_input(before,after,records):
     from leo.analysis.localization_v3 import tracks
 
-    if Path(tracks.__file__).resolve() != replay.RELEASE/"src/leo/analysis/localization_v3/tracks.py":
+    if Path(tracks.__file__).resolve() != signed.RELEASE/"src/leo/analysis/localization_v3/tracks.py":
         raise ValueError("The winning-observation check must use the installed released Graph module")
     ordinary,_ = tracks.winning_observations(before)
     updated,metadata = tracks.winning_observations(after)
@@ -118,18 +124,19 @@ def winning_input(before,after,records):
 
 
 def prepare(root):
+    from . import empty_lane_directed_replay as replay
+
     if root.exists() or root.parent != Path("/dev/shm"):
         raise ValueError("Expect one new private tmpfs preparation")
-    sys.addaudithook(replay.forbid_source)
-    original = trial.ordinary(trial.STAGE)
+    def needs_candidate_only(event,params):
+        is_ordinary_successor = (event == "open" and isinstance(params[0],(str,bytes))
+                                 and Path(os.fsdecode(params[0])).resolve() == ORDINARY_WITNESS)
+        replay.forbid_source(event,params,prediction=not is_ordinary_successor)
+
+    sys.addaudithook(needs_candidate_only)
     capture,result,_ = replay.candidate_inputs()
-    if (capture["native_sha256"] != original["terminal"]["native_sha256"]
-            or capture["native_sha256"] != signed.canonical(result)):
-        raise ValueError("Need the exact archived ordinary successor used by the historical publication")
-    admission = original["admission"]
-    stage = trial.document(trial.STAGE/"native.json",admission["native_pin"])
-    if stage != result:
-        raise ValueError("Resident original packet differs from the authenticated full v3 successor source")
+    if capture["native_sha256"] != signed.canonical(result):
+        raise ValueError("Require the signed whole candidate native packet")
     plan = replay.prefix.read(QUERY,QUERY_PIN)
     if (capture["raw_identity"] != plan["original_source"]["authority"]
             or plan["arrival_proof"]["candidate_sha256"] != capture["native_sha256"]):
@@ -141,6 +148,10 @@ def prepare(root):
     graph = winning_input(result,derived,change["inserted"])
     if graph["archive_cutoff_ns"] != capture["raw_identity"]["causal_cutoff_utc_ns"]:
         raise ValueError("The Graph boundary changed the enrolled causal cutoff")
+    original = trial.ordinary(trial.STAGE)
+    stage = trial.document(trial.STAGE/"native.json",original["admission"]["native_pin"])
+    if capture["native_sha256"] != original["terminal"]["native_sha256"] or stage != result:
+        raise ValueError("The comparator must be the exact archived ordinary whole-packet publication")
     root.mkdir(mode=0o700)
     detector = root/"derived-native.json"
     detector.write_text(json.dumps(derived,sort_keys=True,ensure_ascii=False,allow_nan=False,separators=(",",":")))
