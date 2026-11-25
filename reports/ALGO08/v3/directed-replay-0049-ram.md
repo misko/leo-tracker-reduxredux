@@ -1,0 +1,15 @@
+# A resident-source capsule for the frozen DS30-0049 verifier replay
+
+The original 117 directed proposals and their two controls are ready for the authorized resident-source replay. Earlier admission attempts spent zero waveform or native calls. They recorded a held shared lease, a weighted bulk queue of 3.396 against the two-request limit, and another 300-second watch that expired. The new capsule preflight also spent zero waveform windows and native calls. It mounted only the exact signed manifest, six compressed original members and six indexes from the private tmpfs stage. [Original replay history](empty-lane-directed-replay.md) · [RAM admission protocol](directed-replay-0049-ram-protocol.md) · [Preflight receipt](measurements/directed-replay-0049-ram-ready.json)
+
+All 13 files were resident, with **469,531,245 logical bytes** and **469,565,440 resident page bytes**. The ordinary installed source verified the exact manifest in the no-waveform proof. The proof denied payload and index opens, loaded the byte-pinned directed DSO and pilot, and checked that a private inherited flock excluded independent opens and remained operative in the isolated child. The later timed admission uses the actual shared Gauss lock. The namespace denied all three socket families, backing, campaign and the physically staged but unenrolled seventh member. The sole writable mount is private tmpfs scratch for ordinary runtime initialization.
+
+| CPU3 preflight | Wrapper elapsed | Python CPU | Wrapper input blocks | Python input blocks | Original waveform or index opens |
+|---|---:|---:|---:|---:|---:|
+| Instrumented first proof | 1.699 s | 1.058 s | 160 | 35,440 | 0 |
+| Identical second proof | 1.309 s | 1.028 s | 24 | 5,776 | 0 |
+| Final preflight | 1.493 s | 1.014 s | 168 | 39,776 | 0 |
+
+An additional no-waveform trace observed 730 regular file opens in the allowed OS and release trees, covering 109.6 MB of distinct named files after deduplication. A privileged passive page census at a later instant found 661 files with at least one missing page and 78.2 MB of nonresident logical bytes. The census describes code-page exposure and does not assign individual process input blocks. Root-runtime reads remain charged and separately visible. The predeclared zero-process-input qualification stays distinct from the authorized resident-source scope, which requires unchanged fully resident scientific files immediately before and after launch and all original authenticating reads. Active swap prevents inferring uninterrupted residency from two checks alone.
+
+The final CPU3 proof is in `/dev/shm/leo-v3-directed-replay-0049-ram05/ready.json`, SHA-256 `104afc3200d432be79c258e85cad07c1f6d85090cd6f7bcd0b4515e2b7b7c004`. The runner is frozen at `dfc4b27b5`. Thirteen focused tests passed. A timed child requires a fresh official deferral, actual nonblocking Gauss flock and release of the higher-priority DS30-0218 jobs. No waveform recovery, matching score or marginal verifier timing has been observed at preflight.
