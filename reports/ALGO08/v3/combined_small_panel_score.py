@@ -89,11 +89,11 @@ def products(output, verified, owners):
     return dict(grid=grid, path=path, ordered_owners=owners, publication_arms=arms)
 
 
-def checked_publication(work, role, case, inputs, clock):
+def checked_publication(work, role, case, inputs, clock, *, build_pin=None, allow_snapshot_witness=False):
     t = monotonic(), process_time()
     verifier_paths()
     output = work / "publication"
-    pin = CONTROL if role == "charted" else TRIAL
+    pin = build_pin or (CONTROL if role == "charted" else TRIAL)
     verified = paired.publication(
         output, work, "successor", operands(inputs, case), clock, {"sha256": pin}
     )
@@ -144,9 +144,8 @@ def checked_publication(work, role, case, inputs, clock):
             or scope["slots"]["statistics"] != native["prefetch"]
         ):
             raise ValueError("The paid features or slots did not bind this publication")
-    elif any(
-        (output / name).exists()
-        for name in ("combined-small-panel-witness.json", "prefetch-snapshots.json")
+    elif (output / "combined-small-panel-witness.json").exists() or (
+        not allow_snapshot_witness and (output / "prefetch-snapshots.json").exists()
     ):
         raise ValueError("An opt-in artifact appeared in the ordinary control")
     numeric_cpu = native["total_before_receipt"]["cpu_s"]
