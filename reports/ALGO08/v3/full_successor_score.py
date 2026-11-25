@@ -434,7 +434,7 @@ def compare_centers(pairs, assigned, offer):
 def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None,
                  prior=None, capture_days=None, pace=None, nearby=None):
     from reports.ALGO08.v3.accuracy_repair_budget import repair_budget
-    from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
+    from reports.ALGO08.v3.full_successor_figures import accurate_fix_times, paired_speed_errors, render_distribution_figures
 
     output.mkdir(parents=True, exist_ok=True)
     all_rows = [r for pair in pairs for r in pair]
@@ -523,6 +523,14 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                                         larger_error=sum(delta > 0 for delta in fast_errors),
                                         twice_as_fast_without_shared_error=fast - len(fast_errors))
     metadata["position_error_on_twice_as_fast_recordings"] = dict(twice_as_fast=fast, calibrations=joint_performance)
+    deadlines = []
+    for arm in ARMS:
+        for radius in (1, 2):
+            times = accurate_fix_times(pairs, arm, radius)
+            for seconds in (30, 60, 120):
+                deadlines.append(dict(calibration=arm, radius_km=radius, deadline_s=seconds, assigned=len(pairs),
+                                      **{role: bisect_right(values, seconds) for role, values in times.items()}))
+    metadata["accurate_fixes_by_deadline"] = deadlines
     blendable = [(a, b) for a, b in pairs if a["fitted_c_error_km"] is not None
                  and b["calibration_segment_min_error_km"] is not None]
     regressions = [(a, b) for a, b in blendable if b["fitted_c_error_km"] - a["fitted_c_error_km"] > .001]
@@ -743,7 +751,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                   f"{b['closer_than_center']}/{k}, using fitted calibration. The separate satellite screening "
                   f"center was {prior['screen_center_distance_km']:.3f} km from the surveyed receiver."]
     lines += ["", "### When speed and accuracy coincide", "",
-              "![Wall speedup and change in horizontal position error on each recording](paired-speed-and-error.png)", "",
+              "![Paired speed and error changes, and accurate fixes by wall-time deadline](paired-speed-and-error.png)", "",
               f"On **{fast}/{k}** recordings the candidate took half the ALGO08v3 wall time or less. "
               "Each dot compares two scored fixes on one recording. Lower dots indicate smaller candidate error. "
               "The table accounts for every recording that reached this speed, including cases without two scored fixes.", "",
@@ -755,6 +763,16 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                      f"{data['twice_as_fast_without_shared_error']} |")
     lines += ["", "The last row requires equal or smaller error in both calibrations. The two timing targets at "
               "the start of the report apply to the whole panel."]
+    lines += ["", "The lower panels count a fix when the build has finished and the position is within the "
+              "stated radius. Withheld positions, unscored fixes and late finishes all remain in the denominator. "
+              "For example, allowing 60 seconds gives the following counts.", "",
+              "| Calibration | Radius | ALGO08v3 by 60 s | Candidate by 60 s | Assigned recordings |",
+              "|---|---:|---:|---:|---:|"]
+    for result in deadlines:
+        if result["deadline_s"] == 60:
+            label = "Fixed zero" if result["calibration"] == "c0" else "Fitted"
+            lines.append(f"| {label} | {result['radius_km']} km | {result['installed']} | "
+                         f"{result['successor']} | {result['assigned']} |")
     lines += ["", "| Capture state | Paired recordings | ALGO08v3 fitted fixes | Candidate fitted fixes | "
               "ALGO08v3 / candidate fitted P90 error among fixes (km) |", "|---|---:|---:|---:|---:|"]
     for name in ("Complete captures", "Interrupted captures"):

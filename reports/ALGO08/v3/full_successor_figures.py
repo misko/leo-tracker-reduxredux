@@ -270,18 +270,26 @@ def paired_speed_errors(pairs, arms):
             for base, candidate in pairs if all(base[k] is not None and candidate[k] is not None for k in keys)]
 
 
+def accurate_fix_times(pairs, arm, radius):
+    """Elapsed wall times for scored positions inside the inclusive radius, by build."""
+    key = arm + "_error_km"
+    return {role: sorted(pair[i]["elapsed_s"] for pair in pairs
+                         if pair[i][key] is not None and pair[i][key] <= radius)
+            for i, role in enumerate(ROLES)}
+
+
 def paired_change_figure(pairs, title):
     from matplotlib.figure import Figure
-    from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
+    from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter, PercentFormatter
 
     panels = [(name, paired_speed_errors(pairs, (arm,))) for name, arm in
               (("Fixed c = 0", "c0"), ("Fitted c", "fitted_c"))]
     speeds = [1., 2.] + [x for _, points in panels for x, _ in points]
     limit = max([.1] + [abs(y) for _, points in panels for _, y in points]) * 1.15
     xmin, xmax = min(speeds) / 1.09, max(speeds) * 1.09
-    figure = Figure(figsize=(10.5, 5.5), dpi=145, layout="constrained")
+    figure = Figure(figsize=(10.5, 8.0), dpi=145, layout="constrained")
     figure.suptitle(title, fontsize=16, fontweight="bold")
-    axes = figure.subplots(1, 2, sharex=True, sharey=True)
+    axes, deadlines = figure.subplots(2, 2, sharex="row", sharey="row")
     for ax, (name, points) in zip(axes, panels, strict=True):
         ax.set_xscale("log", base=2)
         ax.set_yscale("symlog", linthresh=.1)
@@ -301,7 +309,22 @@ def paired_change_figure(pairs, title):
         if not points:
             ax.text(.5, .6, "No pairs with two scored fixes", ha="center", transform=ax.transAxes)
     axes[0].set_ylabel("Candidate minus ALGO08v3 horizontal error (km)")
-    figure.supxlabel("Shading marks recordings at least 2× faster with equal or smaller error.", fontsize=10)
+    last_time = max((r["elapsed_s"] for pair in pairs for r in pair), default=1.) * 1.04
+    for ax, (arm, name) in zip(deadlines, (("c0", "fixed c = 0"), ("fitted_c", "fitted c")), strict=True):
+        for radius, style in ((1, "-"), (2, "--")):
+            for role, times in accurate_fix_times(pairs, arm, radius).items():
+                x, y = _percent_ecdf(times, len(pairs), 0., last_time)
+                ax.step(x, y, where="post", color=COLORS[role], ls=style, linewidth=1.9,
+                        label=f"{NAMES[role]} ≤ {radius} km")
+        ax.set(xlim=(0, last_time), ylim=(-2, 103), yticks=(0, 25, 50, 75, 100),
+               xlabel="Wall time allowed (seconds)", title=f"Accurate fixes by deadline · {name}")
+        ax.yaxis.set_major_formatter(PercentFormatter(100))
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", alpha=.18)
+    deadlines[0].set_ylabel("Share of all assigned recordings")
+    deadlines[1].legend(fontsize=8, loc="lower right", framealpha=.9)
+    figure.supxlabel("Upper panels shade ≥2× speed with equal or smaller error. Lower panels count every recording.",
+                     fontsize=10)
     return figure
 
 

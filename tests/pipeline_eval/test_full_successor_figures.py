@@ -153,6 +153,9 @@ def test_speed_and_error_keep_pairs_and_both_calibration_signs():
     assert figures.paired_speed_errors(pairs, ("c0",)) == [(2, -.5), (.4, 0), (3, -1)]
     assert figures.paired_speed_errors(pairs, ("c0", "fitted_c")) == [(2, .5), (.4, 0)]
     plot = figures.paired_change_figure(pairs, "Paired fixes")
-    assert [len(ax.collections[-1].get_offsets()) for ax in plot.axes] == [3, 2]
+    assert [len(ax.collections[-1].get_offsets()) for ax in plot.axes[:2]] == [3, 2]
+    assert figures.accurate_fix_times(pairs, "fitted_c", 1.) == {"installed": [2, 10], "successor": [5]}
+    assert [line.get_ydata()[-1] for line in plot.axes[3].lines] == pytest.approx([200/3, 100/3, 200/3, 200/3])
     empty = figures.paired_change_figure([], "No observations")
-    assert all(any("No pairs" in t.get_text() for t in ax.texts) for ax in empty.axes)
+    assert all(any("No pairs" in t.get_text() for t in ax.texts) for ax in empty.axes[:2])
+    assert all(line.get_ydata()[-1] == 0 for ax in empty.axes[2:] for line in ax.lines)

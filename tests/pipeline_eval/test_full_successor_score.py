@@ -280,6 +280,13 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         assert len({r[k] for r in nearby["recordings"] for k in ("first_enrolled", "second_enrolled")}) == 408
         assert 0 < nearby["shared"] <= min(nearby["paired_fixes"].values()) <= 204
     assert "Position repeatability on nearby recordings" in (tmp_path / "README.md").read_text()
+    deadlines = report["accurate_fixes_by_deadline"]
+    assert len(deadlines) == 12 and all(r["assigned"] == 455 for r in deadlines)
+    for r in deadlines:
+        for role in ("installed", "successor"):
+            assert r[role] == report["cohorts"]["All DS30 recordings"][role][r["calibration"]][
+                f"within_{r['radius_km']}km"]
+    assert "Candidate by 60 s" in (tmp_path / "README.md").read_text()
     for role in ("installed", "successor"):
         for arm in ("c0", "fitted_c"):
             for metric in ("within_1km", "within_2km", "fixes"):
