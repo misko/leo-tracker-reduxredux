@@ -1,0 +1,9 @@
+# Fixed-state audit of the two sealed half-blend edits
+
+Use only saved DS30-0019 and DS30-0274 ordinary and half-blend packets, prediction seals, witness owner ledgers and numerical publication metadata. Authenticate files through their existing seals. Traverse neither raw I/Q nor TLEs. Do not run graph, inference, or an optimizer. Do not use CPU 2 or read site references or prospective 0218 evidence.
+
+Confirm the native observation ID and CFO winner rule in the installed source. Require a one-to-one join between the presealed edit ledger and the exact capture, radio, counter and original factor. Verify every other signed probe field and all unedited opportunities by comparing with the derived packet. Authenticate both owner sets and roles separately for fixed and fitted `c`.
+
+The numerical publication constructs signed residual as the lifted measured CFO minus its fixed prediction. For a verified native CFO difference `d`, retaining the original graph and model alias lifts, prediction, fitted nuisance and support gives `r_cf = r_original + d`. If exact signed original rows or equivalent fixed predictions are available for each original owner, report original and fixed-case RMS, matched counts, and difference in sum of squares across all original owned observations and the edited-owned subset. Confirm the unedited controls have zero shift. If residual samples are missing, report the missing fields and the exact edit/owner joins. Use the published all-owner RMS and the edit-vector norm for a Cauchy–Schwarz interval only. The unobserved signed inner product must remain unknown.
+
+Separately compare the observed rebuilt publication rosters, owner roles, fit-state fingerprints, conditional RF RMS and all-owner RF RMS. Count common, added and dropped owners, and split edits by those populations. Treat global differences after rebuilding and refitting as that run's outcome. No attribution comes from publication RMS alone.
