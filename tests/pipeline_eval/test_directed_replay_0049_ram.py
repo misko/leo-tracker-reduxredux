@@ -77,3 +77,15 @@ def test_priority_case_deferral_or_attempt_prevents_lower_priority_dispatch(monk
     pair.touch()
     with pytest.raises(ValueError, match="priority DS30-0218"):
         check.priority_clear()
+
+
+def test_resident_source_and_zero_input_are_separate_predeclared_outcomes():
+    clock = dict(exit_code=0,elapsed_s=4.,wrapper_input_blocks=24)
+    result = dict(isolation=dict(operative_inherited_lock=True,private_probe_lock=False),
+                  post_staged_source_mode="verified-tmpfs-only",python_usage=dict(input_blocks=6000),input_blocks=80)
+    assert check.qualifications(clock,result,True,allow_code_io=True) == {
+        "resident_source":True,"strict_zero_process_input":False,"qualified":True,
+    }
+    assert not check.qualifications(clock,result,True,allow_code_io=False)["qualified"]
+    assert not check.qualifications(clock,result,False,allow_code_io=True)["qualified"]
+    assert not check.qualifications(dict(clock,elapsed_s=12.01),result,True,allow_code_io=True)["qualified"]

@@ -275,7 +275,7 @@ def priority_clear():
         raise ValueError("The priority DS30-0218 pair is underway or no longer pending")
 
 
-def watch(root,pid,ready_pin):
+def watch(root,pid,ready_pin,*,allow_code_io=False,priority_released=False):
     from .field_crossover_admission_watch import MOVED_TO,recent_deferral,replaced_export
 
     if root.parent != Path("/dev/shm") or os.sched_getaffinity(0) != {3} or (root/"watch.json").exists():
@@ -283,7 +283,8 @@ def watch(root,pid,ready_pin):
     state = replay.prefix.read(root/"ready.json",ready_pin)
     plan = replay.prefix.read(root/"plan.json",PLAN_PIN)
     try:
-        priority_clear()
+        if not priority_released:
+            priority_clear()
         if (state["plan_pin"] != PLAN_PIN or state["runtime"] != pins() or replay.tag(DRIVER) != DRIVER_PIN
                 or state["filter_pin"] != replay.tag(root/"sockets.bpf")
                 or any(replay.tag(ROOT/name) != pin or replay.tag(root/"program"/name) != pin
@@ -310,14 +311,25 @@ def watch(root,pid,ready_pin):
             event = recent_deferral(CAMPAIGN,since,time_ns())
             if event is None or time_ns()-event["unix_ns"] > FRESH_NS:
                 continue
-            result = admitted(root,plan,state,pid,event)
+            result = admitted(root,plan,state,pid,event,allow_code_io=allow_code_io,
+                              priority_released=priority_released)
             break
     finally:
         os.close(handle)
     replay.prefix.write(root/"watch.json",result)
 
 
-def admitted(root,plan,state,pid,event):
+def qualifications(clock,result,unchanged,*,allow_code_io):
+    resident_source = (unchanged and clock["exit_code"] == 0 and clock["elapsed_s"] <= TIMEOUT
+                       and result["isolation"]["operative_inherited_lock"] and not result["isolation"]["private_probe_lock"]
+                       and result["post_staged_source_mode"] == "verified-tmpfs-only")
+    zero_blocks = (not clock["wrapper_input_blocks"] and not result["python_usage"]["input_blocks"]
+                   and not result["input_blocks"])
+    return dict(resident_source=resident_source,strict_zero_process_input=resident_source and zero_blocks,
+                qualified=resident_source and (allow_code_io or zero_blocks))
+
+
+def admitted(root,plan,state,pid,event,*,allow_code_io=False,priority_released=False):
     with replay.LOCK.open("rb") as fd:
         try:
             fcntl.flock(fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -326,12 +338,14 @@ def admitted(root,plan,state,pid,event):
         try:
             if resident(plan["original_source"]["files"]) != state["residency"]:
                 raise ValueError("The original files changed after the RAM-only proof")
-            priority_clear()
+            if not priority_released:
+                priority_clear()
             age = allowed_event(event,pid)
         except (OSError,ValueError) as error:
             return dict(admitted=False,reason=str(error),field_event=event)
         replay.prefix.write(root/"intent.json",dict(field_event=event,initial_age_ns=age,time_limit_s=TIMEOUT,
-                            plan_pin=PLAN_PIN,source_sha256=plan["source_sha256"]))
+                            plan_pin=PLAN_PIN,source_sha256=plan["source_sha256"],
+                            allow_root_runtime_io=allow_code_io,priority_release_received=priority_released))
         clock,result,error = invoke(root,plan,fd,proof=False)
         outcome = dict(admitted=True,clock=clock,field_event=event,stderr=error)
         if result is None:
@@ -340,12 +354,13 @@ def admitted(root,plan,state,pid,event):
             unchanged = resident(plan["original_source"]["files"]) == state["residency"]
         except ValueError:
             unchanged = False
-        qualify = (unchanged and clock["elapsed_s"] <= TIMEOUT and not clock["wrapper_input_blocks"]
-                   and not result["python_usage"]["input_blocks"] and not result["input_blocks"])
-        result = result | dict(admitted=qualify,post_residency_unchanged=unchanged,capsule_clock=clock)
+        result = result | dict(post_staged_source_mode="verified-tmpfs-only" if unchanged else "changed",
+                               post_residency_unchanged=unchanged,capsule_clock=clock)
+        gates = qualifications(clock,result,unchanged,allow_code_io=allow_code_io)
+        result = result | dict(admitted=gates["qualified"],qualification=gates)
         replay.prefix.write(root/"waveforms.json",result)
         pin = replay.tag(root/"waveforms.json")
-        return outcome | dict(qualified=qualify,waveform_sha256=pin)
+        return outcome | gates | dict(waveform_sha256=pin)
 
 
 if __name__ == "__main__":
@@ -354,6 +369,8 @@ if __name__ == "__main__":
     parser.add_argument("--root",type=Path)
     parser.add_argument("--pid",type=int)
     parser.add_argument("--ready-pin")
+    parser.add_argument("--allow-root-runtime-io",action="store_true")
+    parser.add_argument("--priority-release-received",action="store_true")
     args = parser.parse_args()
     if args.action in ("proof","sweep"):
         print(json.dumps(inner(args.action=="proof"),allow_nan=False))
@@ -364,4 +381,5 @@ if __name__ == "__main__":
     elif args.pid is None or args.ready_pin is None:
         parser.error("A watch requires the exact official PID and ready receipt pin")
     else:
-        watch(args.root,args.pid,args.ready_pin)
+        watch(args.root,args.pid,args.ready_pin,allow_code_io=args.allow_root_runtime_io,
+              priority_released=args.priority_release_received)
