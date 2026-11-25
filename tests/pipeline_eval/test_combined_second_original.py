@@ -100,3 +100,26 @@ def test_ordinary_exporter_is_not_replaced(modules, monkeypatch):
     assert wrap(None, None, spec, SimpleNamespace(native={})) == "completed"
     assert audit["ordinary_grid"]["binary_sha256"] == entry.STOCK_GRID_BINARY
     assert audit["grid"] == {}
+
+
+def test_future_cache_gate_refuses_one_missing_or_redirection(modules):
+    from combined_cache_0208_gate import missing_pages
+
+    roster = [dict(path="/a", size=8192), dict(path="/b", size=4096)]
+    observed = [dict(file="/a", size=8192, res=8192), dict(file="/b", size=4096, res=0)]
+    assert missing_pages(roster, observed) == [observed[1]]
+    observed[1]["file"] = "/redirected"
+    with pytest.raises(ValueError, match="signed source roster"):
+        missing_pages(roster, observed)
+
+
+def test_future_cache_read_refuses_any_source_blocks(modules, monkeypatch):
+    import combined_cache_0208 as cached
+
+    counters = iter([0, 1])
+    monkeypatch.setattr(
+        cached.resource, "getrusage", lambda _: SimpleNamespace(ru_inblock=next(counters))
+    )
+    monkeypatch.setattr(cached, "read_nowait", lambda *_: b"cached")
+    with pytest.raises(OSError, match="zero-input read"):
+        cached.zero_io_read(None, 6)
