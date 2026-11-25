@@ -74,12 +74,38 @@ def percent_bracket(evaluate):
     return dict(previous_percent=low, previous=previous, passing_percent=high, passing=passing)
 
 
+def fallback_bound(pairs, candidate_credit, rows, percent):
+    """Reduce only the chosen fallback's cost. The comparator stays the measured ALGO08v3."""
+    baseline = [stock["wall_units"] for stock, _ in pairs]
+    fallback = [time - time*percent//100 for time in baseline]
+    candidate = [new["wall_units"] - credit for (_, new), credit in zip(pairs, candidate_credit, strict=True)]
+    if any(t < 0 for t in candidate) or not 0 <= percent <= 100:
+        raise ValueError("A stage transfer cannot give negative paid time")
+    mask, proof = certified_route([a-b for a,b in zip(fallback, candidate, strict=True)], rows)
+    chosen = [b if mask & (1 << i) else a for i, (a,b) in enumerate(zip(fallback, candidate, strict=True))]
+    median_ratio = median(Fraction(t, ref) for t, ref in zip(chosen, baseline, strict=True))
+    return dict(lower_time_units=sum(fallback)-proof["upper_gain"],
+                feasible=dict(total_units=sum(chosen), installed_total_units=sum(baseline),
+                              paired_ratio_exact=str(median_ratio), candidate_mask=mask),
+                both_gates_met_by_witness=2*sum(chosen) <= sum(baseline) and 2*median_ratio <= 1, proof=proof)
+
+
+def fast_count(pairs, savings, rows):
+    """Maximum number of half-time candidates that can be used while retaining the required coverage."""
+    weights = [int(2*(candidate["wall_units"] - save) <= stock["wall_units"])
+               for (stock,candidate), save in zip(pairs, savings, strict=True)]
+    mask, proof = certified_route(weights, rows)
+    return dict(available=sum(weights), candidate_mask=mask, attained=proof["gain"],
+                maximum=proof["upper_gain"], proof=proof)
+
+
 def run():
     def read(name):
         return json.loads(gzip.decompress(checked(DATA/name, "sha256:"+SOURCES[name])))
 
     field = read("ds30-routing-first64.json.gz")
-    costs = {r["case"]:r for r in read("first64-producer-transfer.json.gz")["rows"]}
+    producer = read("first64-producer-transfer.json.gz")
+    costs = {r["case"]:r for r in producer["rows"]}
     calls = {r["case"]:r for r in read("short-phase-first64.json.gz")["rows"]}
     donor = read("short-shared-phase-0016.json.gz")["result"]
     old, new = (donor[k]["receiver_audit"]["native"]["native_cpu_ns"]["short_primary"]
@@ -110,8 +136,22 @@ def run():
         brackets[name] = {}
         for scope in ("free_acquisition", "free_native_and_solver"):
             brackets[name][scope] = percent_bracket(lambda percent: evaluate(scope, percent))
+    inputs = producer["alternatives"]["0049_slots_first_bytes"]["individual"]
+    buffer_credit = {row["case"]:round(Fraction(str(item["producer_cpu_if_wall"]))*scale)
+                     for row,item in zip(producer["rows"], inputs, strict=True)}
+    profiles = {"measured_mixed": [0]*len(pairs), "kernel_and_buffer": [], "native_solver_and_buffer": []}
+    for case, parts in zip(cases, credits, strict=True):
+        profiles["kernel_and_buffer"].append(parts["transferred_kernel"] + buffer_credit[case])
+        # 1.5x all native, 1.4x solver; price only buffers outside the native callback.
+        profiles["native_solver_and_buffer"].append(parts["free_native"]//3 + 2*parts["free_solver"]//7 + buffer_credit[case])
+    rows = constraints(coverage(pairs, None))
+    fallback = {name: percent_bracket(lambda p: fallback_bound(pairs, savings, rows, p))
+                for name,savings in profiles.items()}
+    for name, interval in fallback.items():
+        interval["fast_candidates"] = fast_count(pairs, profiles[name], rows)
+        interval["half_time_fallback"] = fallback_bound(pairs, profiles[name], rows, 50)
     return dict(sources=SOURCES, wall_units_per_second=scale, short_cpu_reduction=str(reduction),
-                cases=cases, result=result, required_stage_cuts=brackets)
+                cases=cases, result=result, required_stage_cuts=brackets, required_installed_cuts=fallback)
 
 
 if __name__ == "__main__":

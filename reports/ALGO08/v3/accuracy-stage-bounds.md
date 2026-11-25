@@ -19,3 +19,15 @@ Each row starts with the actual per-recording wall times, including publication 
 To satisfy **both** timing gates and preserve both full distributions by cutting only the candidate’s acquisition, a uniform **77% cut is insufficient** and a **78% cut is sufficient** in this model. Cutting the native callbacks and solver together requires between **86% and 87%** on the same integer-percentage grid. At only the 1 and 2 km thresholds, the corresponding crossings are 53–54% and 59–60%. For each lower endpoint the certificate rules out even the summed gate. At each upper endpoint a single admissible choice of builds also passes the median gate.
 
 The useful next targets are changes that recover accurate fixes at low cost, or changes that also reduce the cost of the installed-quality path. Optimizing just the mixed receiver’s 8 ms verifier leaves most of the measured accuracy-constrained deficit. All 64 observations came from one roof. [Reproducer](accuracy_stage_bounds.py)
+
+## How much faster would the accurate fallback have to be?
+
+Keep the same two sets of positions and allow the chooser to use an accelerated version of ALGO08v3 wherever needed. All speedups still use the original measured ALGO08v3 time on each recording as the denominator. The table grants the mixed path the stated savings and gives the fallback a uniform reduction in its entire wall time. The buffer estimate comes from the DS30-0049 reuse-first donor, scaled by authenticated input bytes and capped at the non-native acquisition budget on each recording.
+
+| Mixed-path assumption | Recordings finishing within half time on mixed alone | Maximum of those compatible with both full error curves | First whole-percent cut in fallback time sufficient for the summed gate |
+|---|---:|---:|---:|
+| Measured candidate | 10 | 9 | 50% |
+| Measured DS30-0016 short-kernel percentage and projected input-buffer savings | 12 | 11 | 50% |
+| Hypothetical 1.5× native callbacks, 1.4× solver and projected input-buffer savings | 43 | 31 | 43% |
+
+In the most favorable row, the summed gate can pass after a 43% fallback reduction. The **median still requires the fallback itself to be twice as fast**. At any smaller uniform reduction, every fallback choice takes longer than half of its original time. The count certificate proves at most 31 of 64 recordings can finish within half time while retaining the observed accuracy distribution. Consequently, both middle observations take longer than half time. At exactly 50% the certificate includes a feasible assignment that clears both timing gates. The same argument holds for the other two rows. This requirement applies to the specified outputs and uniform fallback acceleration. Improving the mixed path’s positions, usefully changing which individual recordings receive the largest savings, or directly producing v3-quality fixes with a different method changes the calculation. [Input donor](first64-producer-transfer.md) · [Installed detector cost on the same 64 cases](installed-science-first64.md)

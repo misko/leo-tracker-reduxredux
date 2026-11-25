@@ -1,6 +1,6 @@
 import pytest
 
-from reports.ALGO08.v3.accuracy_stage_bounds import bound, percent_bracket, stages
+from reports.ALGO08.v3.accuracy_stage_bounds import bound, fallback_bound, fast_count, percent_bracket, stages
 from reports.ALGO08.v3.ds30_oracle_routing import coverage
 
 
@@ -35,3 +35,16 @@ def test_clock_bracket_keeps_sum_and_median_distinct():
     result = percent_bracket(evaluate)
     assert (result["previous_percent"], result["passing_percent"]) == (26, 27)
     assert not result["passing"]["both_gates_met_by_witness"]
+
+
+def test_faster_fallback_keeps_original_baseline_and_one_build_per_recording():
+    pairs = [({"wall_units": 100}, {"wall_units": 65}), ({"wall_units": 100}, {"wall_units": 80})]
+    # The second case must remain on the accurate fallback.
+    result = fallback_bound(pairs, [25, 0], [(0, 2, 0)], 30)
+    assert result["feasible"] == dict(total_units=110, installed_total_units=200,
+                                      paired_ratio_exact="11/20", candidate_mask=1)
+    assert result["lower_time_units"] == 110
+    assert not result["both_gates_met_by_witness"]
+
+    count = fast_count(pairs, [25, 40], [(0, 2, 0)])
+    assert (count["available"], count["attained"], count["maximum"]) == (2, 1, 1)
