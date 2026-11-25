@@ -21,7 +21,7 @@ FRESH_NS = 2_000_000_000
 CAP_SECONDS = 15
 
 
-def launch(event, binary, pin, *, proof):
+def launch(event, binary, pin, *, proof, physical):
     with LOCK.open("rb") as lease:
         fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if time_ns()-event["unix_ns"] > FRESH_NS:
@@ -32,6 +32,8 @@ def launch(event, binary, pin, *, proof):
                    "--admission-ns", str(event["unix_ns"])]
         if proof:
             command.append("--proof-prefix")
+        if physical:
+            command.extend(("--physical-0008", *physical))
         started = monotonic()
         before = resource.getrusage(resource.RUSAGE_CHILDREN)
         try:
@@ -48,7 +50,7 @@ def launch(event, binary, pin, *, proof):
                     major_faults=after.ru_majflt-before.ru_majflt, admitted=event)
 
 
-def watch(binary, pin, *, proof):
+def watch(binary, pin, *, proof, physical):
     if not binary.is_file():
         raise ValueError("Prebuild the audited native binary before the watch")
     libc = ctypes.CDLL(None, use_errno=True)
@@ -68,7 +70,7 @@ def watch(binary, pin, *, proof):
             event = recent_deferral(CAMPAIGN, started, time_ns())
             if event is not None and time_ns()-event["unix_ns"] <= FRESH_NS:
                 try:
-                    return dict(launch(event, binary, pin, proof=proof), attempts=1, exports=exports,
+                    return dict(launch(event, binary, pin, proof=proof, physical=physical), attempts=1, exports=exports,
                                 watching_from=started)
                 except (OSError, ValueError) as failure:
                     return dict(status="single_attempt_declined", reason=str(failure), candidate=event,
@@ -83,5 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("binary", type=Path)
     parser.add_argument("sha256")
     parser.add_argument("--proof-prefix", action="store_true")
+    parser.add_argument("--physical-0008", nargs=2, metavar=("CORRECTNESS_JSON", "SHA256"))
     args = parser.parse_args()
-    print(json.dumps(watch(args.binary, args.sha256, proof=args.proof_prefix), sort_keys=True))
+    print(json.dumps(watch(args.binary, args.sha256, proof=args.proof_prefix, physical=args.physical_0008),
+                     sort_keys=True))

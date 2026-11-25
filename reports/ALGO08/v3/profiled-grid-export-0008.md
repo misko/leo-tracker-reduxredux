@@ -1,0 +1,17 @@
+# Checked posterior export on one physical DS30-0008 likelihood
+
+The profiled export passed every frozen numerical gate on the only enrolled physical operand. It took **13 precision updates instead of 39** and returned a checked factor with **0.010952 Hz** maximum conditional residual difference. The operand is from the fitted-`c` arm. It supplies a native kernel transfer for one physical likelihood. The current field path and its standard map were outside the comparison. [Frozen protocol](profiled-grid-export-0008-protocol.md) · [Numerical and timing receipt](measurements/profiled-grid-export-0008.json)
+
+The original all-full archived DS30-0008 `history_position` capture holds **3,574 × 243** normalized design values. The signed RF coefficient is inserted as hardware column 8 in the pinned fitted-arm source. In the fixed-zero source, column 8 is the first smooth feature for radio 1 and structurally zero on radio 2. In the immutable sample, column 8 is nonzero on **all 1,594 radio-2 rows**. The remaining **1,980 rows** belong to radio 1. Column width alone was not used for the arm classification. The capture preserved one such history likelihood, with no enrolled fixed-zero counterpart. [Input and runtime pins](profiled_grid_export_0008.py) · [Original capture and unexported comparison](profiled-gamma.md)
+
+| Frozen check | Observed absolute change | Gate |
+| --- | ---: | ---: |
+| Curved negative twice ELBO | 1.965e−9 | 1e−5 |
+| Maximum conditional residual | 0.010952 Hz | 0.02 Hz |
+| Constructed predictive slice loss | 0.000297313 | 0.01 |
+
+Both factors independently reproduced their permuted precision matrices at the frozen elementwise tolerances. Their respective maximum absolute reconstruction errors were 1.431e−6 and 4.768e−7 on the matrix's scale. All **68** rows of the deterministic every-53rd-row slice came from the authentic input. The slice uses the fixed validation construction from the simulation study, including its latent member-count proxy. It tests the factor used in a predictive integration. It has no associated map location, native predictive owner roster or geographic interpretation. [Checker](profiled_grid_export_check.py) · [Earlier simulation result](profiled-grid-export.md)
+
+The successful factor counter advanced for each kernel. The candidate made no native replay and no Python fallback for this operand. The **55 s** passive watch saw no official export updates and made zero shared-lock attempts or timing launches. No relative export time was measured on this physical input. The previously reported **13.247 → 5.558 ms** belongs to the different unexported likelihood comparison, with no factor validation or predictive-integration clock. No waveform, orbit archive, separate sample, map or solver ran. [Physical admission receipt](measurements/profiled-grid-export-0008.json) · [Earlier unexported witness](measurements/profiled-gamma-witnesses.json)
+
+To verify the same operand, use the pinned one-thread release Python and repository import path, then run `-B -m reports.ALGO08.v3.profiled_grid_export_0008`. The one-shot timing entry can accept the resulting JSON and its digest via `--physical-0008` only during an eligible shared-slot deferral. Six focused tests passed, including a control for a radio-2 column that cannot establish the fitted arm. [Admission entry](profiled_grid_export_admission.py) · [Tests](../../../tests/pipeline_eval/test_exact_shared_solver.py)
