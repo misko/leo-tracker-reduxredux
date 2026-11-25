@@ -386,6 +386,12 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert f"{grid['seconds']['grid']:.2f} seconds of the {grid['measured']['seconds_above_half']:.2f} seconds" in markdown
     bound = grid["native_1p5_free_grid"]
     assert f"{bound['summed_speedup']:.3f}× summed and {bound['paired_median_speedup']:.3f}× at the paired median" in markdown
+    pair = json.loads((receipts / "profiled-grid-export-0138-pair.json").read_bytes())["new_cells"]
+    cells = [pair[k] for k in ("ordinary", "profiled")]
+    old, new = [c["receipt"]["grid_audit"]["exact"]["cpu_ns"] / 1e9 for c in cells]
+    assert f"Grid CPU time fell from {old:.3f} to {new:.3f} seconds" in markdown
+    old, new = [c["internal_solve"]["cpu_s"] for c in cells]
+    assert f"Whole-solve CPU time went from {old:.3f} to {new:.3f} seconds" in markdown
     complement = json.loads((receipts / "held-cfo-complement-score.json").read_bytes())
     for case, study in complement["cases"].items():
         scored = study["even_eligible"]

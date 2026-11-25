@@ -982,6 +982,13 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "2.029× at the paired median. [Per-recording grid clocks and calculation](https://github.com/"
               "misko/leo-tracker-reduxredux/blob/2c156a5aea0b1688774ec05f5dea07df18eebfb9/reports/ALGO08/v3/"
               "grid-time-ceiling-first62.md)", "",
+              "A separate saved replay on DS30-0138 kept the original 20 ms detector packet and changed "
+              "one calculation in the position grid. Grid CPU time fell from 4.477 to 3.659 seconds. "
+              "Whole-solve CPU time went from 18.511 to 18.544 seconds. Both calibrations returned the same "
+              "positions and satellite assignments, and all eight PNGs matched byte for byte. The ordinary "
+              "worker incurred 242 major page faults and the modified worker incurred zero. "
+              "[Complete map and matched timing](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "83c3f5a941c0630ae91f35f25f818bd11242adcf/reports/ALGO08/v3/profiled-grid-export-0138-pair.md)", "",
               "The two receivers agreed on 83,058 short-aperture peaks under the prespecified matching rule. "
               "A correction for when each receiver measured the carrier changed held disagreement from "
               "97.480 to 97.460 Hz RMS after subtracting the mean for each recording and radio. The same "
