@@ -98,7 +98,27 @@ def enrolled(ledger, pin):
     return next(row for row in seal["ranks"] if row["case"] == selected)
 
 
-def prepare(run, ledger, ledger_pin):
+def local_inputs(preload, pin, case, enrollment, official_pair, expected):
+    root = transfer.output_path(preload)
+    if root.parent != Path("/tmp"):
+        raise ValueError("Saved JSON preload must use the private local tmpfs")
+    proof = saved.document(root/"preload.json", pin)
+    if (proof["case"] != case or proof["enrollment_sha256"] != enrollment.removeprefix("sha256:")
+            or proof["pair_sha256"] != official_pair.removeprefix("sha256:")
+            or proof["backing_archive_reads"] or proof["original_waveform_reads"]
+            or set(proof["files"]) != set(expected)):
+        raise ValueError("Local preload does not bind the exact original pair and approved file scope")
+    for name,(source,digest) in expected.items():
+        row = proof["files"][name]
+        dest = root/name
+        if (row["source"] != str(source) or row["sha256"] != digest.removeprefix("sha256:")
+                or dest.resolve(strict=True) != dest or dest.stat().st_dev != root.stat().st_dev
+                or dest.stat().st_size != row["bytes"] or row["logical_reads"] != 1):
+            raise ValueError("The approved local preload differs from the official saved input")
+    return root/"detections.json", root/"inventory.json", dict(proof, receipt_sha256=pin)
+
+
+def prepare(run, ledger, ledger_pin, *, preload=None):
     registration()
     row = enrolled(ledger, ledger_pin)
     state = replay.status(row)
@@ -120,6 +140,10 @@ def prepare(run, ledger, ledger_pin):
     publication = result_path.parent/"publication"
     native, = (publication/"fast-scan-automatic-work").glob("*/detections.json")
     inventory = publication/"fast-scan-inputs"/(authority["session_id"]+".json")
+    preload_proof = None
+    if preload is not None:
+        native, inventory, preload_proof = local_inputs(*preload, row["case"],ledger_pin,state["pair_sha256"],
+            {"detections.json": (native,result["native_sha256"]), "inventory.json": (inventory,authority["inventory_sha256"])})
     roster = row["resident_roster"]
     view = {name:item["sha256"] for name,item in roster.items()}
     if (signed.canonical(view) != authority["archive_sha256"] or
@@ -141,6 +165,8 @@ def prepare(run, ledger, ledger_pin):
         raw_attempt_sha256=pair["attempt_result_sha256"]["successor"],
         verified_field_pair_sha256=state["pair_sha256"].removeprefix("sha256:"),
         raw_outcome=result["outcome"], original_witness=witness_pin)
+    if preload_proof is not None:
+        original["local_saved_json_preload_sha256"] = preload_proof["receipt_sha256"]
     root, stage = run/"field", run/"field/stage"
     size = sum(item["bytes"] for item in roster.values())
     fs = os.statvfs("/tmp")
@@ -171,7 +197,8 @@ def prepare(run, ledger, ledger_pin):
                 authority, len(view), enabled=mode=="corrected", probe=False, original=original)
             readiness[mode] = capsule.preflight(cell, plans[mode], mode, replay.OBSERVER_PIN)
             preload[mode] = elapsed(start)
-    return saved.write(run/"next-moment-ready.json", dict(provenance, plans=plans, readiness=readiness,
+    return saved.write(run/"next-moment-ready.json", dict(provenance, local_saved_json_preload=preload_proof,
+        plans=plans, readiness=readiness,
         preflight_by_role=preload))
 
 
@@ -218,6 +245,8 @@ def main():
     cli.add_argument("--pin", required=True)
     cli.add_argument("--ready-pin")
     cli.add_argument("--enrollment", type=Path)
+    cli.add_argument("--local-preload", type=Path)
+    cli.add_argument("--local-preload-pin")
     cli.add_argument("--cell", choices=capsule.CELLS)
     cli.add_argument("--driver-pid", type=int)
     cli.add_argument("--ordinary-gate-pin")
@@ -231,7 +260,10 @@ def main():
         return 0
     sys.addaudithook(saved.deny_backing)
     if args.mode == "prepare" and args.enrollment:
-        out = prepare(args.root, args.enrollment, args.pin)
+        if bool(args.local_preload) != bool(args.local_preload_pin):
+            cli.error("Pass both the private preload root and its receipt pin")
+        preload = None if args.local_preload is None else (args.local_preload,args.local_preload_pin)
+        out = prepare(args.root, args.enrollment, args.pin, preload=preload)
     elif args.mode == "watch" and args.cell and args.driver_pid:
         ready = saved.document(args.root/"next-moment-ready.json", args.pin)
         out = watch(args.root, ready, args.cell, args.driver_pid, args.ordinary_gate_pin)
