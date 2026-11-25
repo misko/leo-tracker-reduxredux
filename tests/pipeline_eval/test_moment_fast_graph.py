@@ -1,5 +1,7 @@
 from importlib import import_module
+from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -51,3 +53,33 @@ def test_exact_edit_comparison_counts_ids_records_and_values_separately(study):
     assert result["full_graph_equal"] == dict(masked=True, ordinary=False)
     assert result["proposal_id_diff"] == result["projected_id_diff"] == 2
     assert result["proposed_record_diff"] == result["applied_value_diff"] == 1
+
+
+def test_complete_graph_ports_apply_in_publication_order_and_require_native_calls(study):
+    full = import_module("moment_fast_graph_full")
+    events = []
+
+    @contextmanager
+    def graph(*, enabled, audit):
+        events.append(("graph", enabled))
+        yield
+        audit["graph"] = {"calls": 1}
+
+    @contextmanager
+    def native(library, *, required):
+        assert library == full.LIBRARY and required
+        events.append("native")
+        yield dict(native_paths=9, packed_lanes=1, pack_ns=2, search_ns=3)
+
+    port = SimpleNamespace(graph_execution=graph)
+    audit_stock, audit_fast = {}, {}
+    with full.complete(port, native):
+        with port.graph_execution(enabled=False, audit=audit_stock):
+            pass
+        with port.graph_execution(enabled=True, audit=audit_fast):
+            pass
+    assert events == [("graph", False), "native", ("graph", True)]
+    assert audit_stock == {"graph": {"calls": 1}}
+    assert full.used_native(dict(graph_ports={"ordinary": audit_fast, "masked": audit_fast}))
+    audit_fast["native_paths"]["reference_paths"] = 1
+    assert not full.used_native(dict(graph_ports={"ordinary": audit_fast, "masked": audit_fast}))

@@ -234,7 +234,7 @@ def compare(stock, fast):
                 fast_sealed_exact=right["sealed_projection_and_rows_exact"])
 
 
-def child(fd, expected):
+def require_child(fd):
     import fcntl
 
     if os.sched_getaffinity(0) != {2} or os.getpriority(os.PRIO_PROCESS, 0) != 15:
@@ -242,6 +242,10 @@ def child(fd, expected):
     if any(os.environ.get(key) != "1" for key in THREADS) or not os.path.samestat(os.fstat(fd), LOCK.stat()):
         raise ValueError("Use one numerical thread and the inherited shared lease")
     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def child(fd, expected):
+    require_child(fd)
     sys.addaudithook(no_science_files)
     prepared = preparation()
     if prepared != document(expected[0], expected[1]):
@@ -272,7 +276,7 @@ def child(fd, expected):
                 graph_preparations=8, receiver_runs=0, solver_runs=0, waveform_reads=0, archive_reads=0, survey_reads=0)
 
 
-def watch(prepared, pin, pid, output):
+def watch(prepared, pin, pid, output, *, worker=Path(__file__)):
     from field_crossover_admission_watch import recent_deferral
     from masked_cfo_0218_capsule import DRIVER, DRIVER_PIN, lease, live_window
 
@@ -297,7 +301,7 @@ def watch(prepared, pin, pid, output):
                 started_wall = perf_counter_ns()
                 before = getrusage(RUSAGE_CHILDREN)
                 argv = ["/usr/bin/taskset", "-c", "2", "/usr/bin/ionice", "-c2", "-n7", sys.executable,
-                        "-BPs", str(Path(__file__)), "child", "--preflight", str(prepared), "--pin", pin,
+                        "-BPs", str(worker), "child", "--preflight", str(prepared), "--pin", pin,
                         "--lease-fd", str(fd)]
                 try:
                     run = subprocess.run(argv, pass_fds=(fd,), capture_output=True, timeout=CAP_S)
