@@ -1,0 +1,7 @@
+# DS30-0218 frozen edits against the full-aperture receiver
+
+Evaluate all 530 nonzero CFO edits from the closed prospective DS30-0218 pair. Match the independently acquired installed 20 ms winner on the same raw recording authority, native clock, radio, RF, channel and visit. Verify the exact corrective edit digest by the frozen masked Graph readback and original/consumed winning row hashes. Keep the installed empty outcomes and never substitute another peak. Partition by ordinary selected owner membership separately for fixed and fitted `c`.
+
+Reuse the original held-shrink score with inclusive signed 250 Hz and 2-sample and 2,250 Hz and 6-sample joint windows. Use measured-minus-installed signed CFO differences on their published native representations. Use hardware-referenced arrival phase modulo the physical `40,000/3` sample period. CFO edits keep arrival fixed. Count alias-only near matches separately at the same arrival windows. Never roll signed CFOs to count a match or pick a rival peak. Report paired coverage, installed empties, signed bias, MAE, RMS, p95 absolute error, and match transitions on the complete matched support.
+
+Relate the paired full-aperture comparison to the prior frozen ordinary-owner residual test. The full receiver is an independent same-input measurement reference. Run only passive saved-metadata analysis on CPU 3. The only Graph work allowed is the already specified masked edit readback. No new receiver run, position fit, orbit read, site reference, or later case enters.
