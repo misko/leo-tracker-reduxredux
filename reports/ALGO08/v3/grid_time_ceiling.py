@@ -12,6 +12,8 @@ from .receiver_solver_targets import targets
 
 DONOR = Path(__file__).with_name("measurements") / "profiled-grid-export-0008.json"
 DONOR_PIN = "20bcf8679a1c68e9eebd55c31fcc3c81b95e7250fc4c153a4de80e2449d2b017"
+MAP_TRIAL = DONOR.with_name("profiled-grid-export-0138-pair.json")
+MAP_PIN = "a2b407940a8f1bdf1f38f6b628497a82057baa2bf1d93a68b74b163c8a4ee93d"
 
 
 def grid_seconds(grid, outcome, measured_cpu_s):
@@ -25,7 +27,7 @@ def grid_seconds(grid, outcome, measured_cpu_s):
     return clock["elapsed_ns"] / 1e9
 
 
-def field_records(campaign, count):
+def field_records(campaign, count, *, include_decode=False):
     plan = json.loads(checked(campaign / "plan.json", PLAN))
     cases = {c["case"]: c for c in plan["cases"]}
     order = list(dict.fromkeys([*plan["smoke"], *cases]))
@@ -62,6 +64,10 @@ def field_records(campaign, count):
                            native=d["native_detector_s"], solver=solver["wall_s"], grid=seconds,
                            stock_result=a["attempt_result_sha256"], candidate_result=b["attempt_result_sha256"],
                            stage_ledger=d["pins"]["legacy"]))
+        if include_decode:
+            work = d["work"]
+            result[-1].update(decode=work["original_decode_wall_s"], decode_cpu=work["original_decode_process_cpu_s"],
+                              members=work["original_members"])
     return result
 
 
@@ -92,17 +98,50 @@ def summarize(rows, donor_fraction):
                 native_1p5_donor_rate_entire_grid=price(rows, 1.5, donor_fraction))
 
 
+def decoder_targets(rows, map_fraction):
+    if not 0 < map_fraction <= 1 or not rows:
+        raise ValueError("Expected a map runtime ratio in (0, 1] and paired records")
+    stages = []
+    for r in rows:
+        if not 0 <= r["decode"] <= r["candidate"] - r["native"] - r["solver"]:
+            raise ValueError("Decoder clock must be outside the receiver callbacks and solver")
+        after_map = r["candidate"] - r["grid"] * (1 - map_fraction)
+        stages.append((r["baseline"], after_map, r["native"], r["decode"]))
+    need = targets(stages, 1.5)
+    receiver_rates = []
+    for decode_rate in (1., 1.25, 1.5, 2.):
+        adjusted = [(a, t - d*(1-1/decode_rate), 0., n) for a, t, n, d in stages]
+        fraction = targets(adjusted, 1.)["both"]
+        receiver_rates.append(dict(decode_rate=decode_rate, required_native_fraction_removed=fraction))
+    return dict(pairs=len(rows), members=sum(r["members"] for r in rows),
+                decode_wall_s=fsum(r["decode"] for r in rows), decode_cpu_s=fsum(r["decode_cpu"] for r in rows),
+                map_change_alone=price(rows, 1., map_fraction), map_and_native_1p5=price(rows, 1.5, map_fraction),
+                required_decode_fraction_with_native_1p5=need, native_targets=receiver_rates)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("campaign", type=Path)
+    parser.add_argument("--decoder-targets", action="store_true")
     args = parser.parse_args()
+    records = field_records(args.campaign.resolve(strict=True), 62, include_decode=args.decoder_targets)
+    groups = {"first_30": records[:30], "next_24": records[30:54], "next_8": records[54:], "all_62": records}
+    if args.decoder_targets:
+        cells = json.loads(checked(MAP_TRIAL, MAP_PIN))["new_cells"]
+        if not all(cell["receipt"]["accept"] for cell in cells.values()):
+            raise ValueError("Expected both verified DS30-0138 publications")
+        ordinary, profiled = (cells[k]["receipt"]["grid_audit"]["exact"]["elapsed_ns"]
+                              for k in ("ordinary", "profiled"))
+        rate = profiled / ordinary
+        print(json.dumps(dict(plan=PLAN, map_receipt=MAP_PIN, map_wall_fraction=rate,
+                              groups={k: decoder_targets(v, rate) for k, v in groups.items()}, records=records),
+                         indent=2, allow_nan=False))
+        raise SystemExit(0)
     times = json.loads(checked(DONOR, DONOR_PIN))["verified_timing"]["times"]["fitted_c"]
     if [v["mode"] for v in times] != ["stock", "proof", "proof", "stock"]:
         raise ValueError("Expected the matched physical DS30-0008 timing")
     rate = median(v["call_wall_ns"] for v in times if v["mode"] == "proof") / median(
         v["call_wall_ns"] for v in times if v["mode"] == "stock")
-    records = field_records(args.campaign.resolve(strict=True), 62)
-    groups = {"first_30": records[:30], "next_24": records[30:54], "next_8": records[54:], "all_62": records}
     print(json.dumps(dict(plan=PLAN, callback_receipt=DONOR_PIN, callback_wall_fraction=rate,
                           groups={k: summarize(v, rate) for k, v in groups.items()}, records=records),
                      indent=2, allow_nan=False))

@@ -1,6 +1,6 @@
 import pytest
 
-from reports.ALGO08.v3.grid_time_ceiling import grid_seconds, price
+from reports.ALGO08.v3.grid_time_ceiling import decoder_targets, grid_seconds, price
 
 
 def test_removing_the_grid_preserves_the_rest_of_the_solver_and_all_attempts():
@@ -28,3 +28,19 @@ def test_rejects_overlapping_or_out_of_scope_clocks():
     for changed in (dict(grid=29), dict(native=23), dict(grid=-1)):
         with pytest.raises(ValueError):
             price([row | changed], 1.5, 0.)
+
+
+def test_decoder_savings_apply_only_to_measured_decode_work():
+    fix = dict(baseline=100, candidate=65, native=30, solver=20, grid=5,
+               decode=10, decode_cpu=9, members=3)
+    withheld = dict(baseline=40, candidate=20, native=0, solver=0, grid=0,
+                    decode=0, decode_cpu=0, members=1)
+    result = decoder_targets([fix, withheld], .8)
+    assert result["members"] == 4
+    assert result["pairs"] == 2
+    assert result["map_and_native_1p5"]["seconds_above_half"] == pytest.approx(4)
+    assert result["required_decode_fraction_with_native_1p5"]["both"] == pytest.approx(.4)
+    assert result["native_targets"][0]["required_native_fraction_removed"] == pytest.approx(14/30)
+    for value in (16, -1, float("nan")):
+        with pytest.raises(ValueError):
+            decoder_targets([fix | dict(decode=value)], .8)
