@@ -39,7 +39,7 @@ EXPERIMENT = SimpleNamespace(
 )
 
 
-def splice(native, eligible):
+def splice(native, eligible, *, schema="private-0019-held-cfo-shrink-v1"):
     original = signed.opportunities(native)
     if not eligible or not eligible.keys() <= original.keys():
         raise ValueError("The sealed CFO updates must use existing observations")
@@ -56,7 +56,7 @@ def splice(native, eligible):
             edits.append(dict(observation_id=oid, visit=row["visit_index"], counter=lane["counter"],
                               radio=lane["radio"], **expected))
         probes.append(row)
-    recipe = dict(schema="private-0019-held-cfo-shrink-v1", scope="saved CFO-only sensitivity",
+    recipe = dict(schema=schema, scope="saved CFO-only sensitivity",
                   sparse_native_sha256=signed.canonical(native), edit_sha256=signed.canonical(edits),
                   forecast_sha256=FORECAST, frozen_predictor_sha256=SOURCE,
                   retained_arrival=True, retained_native_support=True, ordinary_graph_rebuilt_on_execution=True)
