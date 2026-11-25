@@ -13,7 +13,10 @@ import re
 PLAN = "sha256:9deecea6ce5237d01d277370f57b2666f3b84ab96bba72fe0b668c7701d0fc99"
 EXPORT = "sha256:3fb2f2999401ce551d8c5fa0b2cebc14caec7246ffcbfd14f387a8f1422cb182"
 SEAL = "sha256:5e16c85c52144c55c6f1a88dffc3a1fe70724df891bd3ae6f7e1b6e3187bdee7"
+INPUT_AUDIT = "sha256:87e6c389cc4dccafb204ada3def360343514d283d65418ee3211817d9a57b5c5"
+ROOT = Path(__file__).resolve().parents[3]
 CAMPAIGN = Path("/srv/postgres-nvme/leo-ds30-evaluation-20261124")
+ORIGINAL = Path("/srv/bulk/leo-dev/ds30-full-20261121")
 RAM = Path("/dev/shm")
 BUILDS = ("installed", "successor")
 ANCHOR = "DS30-0218"
@@ -119,6 +122,10 @@ def catalogue_names(document):
     return names
 
 
+def roster_digest(names):
+    return digest(json.dumps(names, sort_keys=True, separators=(",", ":")).encode())
+
+
 def donor_inventory():
     receipts, pooled = {}, {}
     for case, (relative, fields, pin) in DONORS.items():
@@ -133,9 +140,57 @@ def donor_inventory():
         times = sorted(int(name.split("-", 1)[0]) for name in names)
         receipts[case] = dict(manifest=str(path), manifest_sha256="sha256:"+pin, names=len(times),
                               oldest_ns=times[0], newest_ns=times[-1],
-                              manifest_roster_sha256=digest(json.dumps(names, sort_keys=True,
-                                                    separators=(",", ":")).encode()))
-    return receipts, sorted(int(name.split("-", 1)[0]) for name in pooled)
+                              manifest_roster_sha256=roster_digest(names))
+    return receipts, pooled
+
+
+def signed_suffixes(pooled, cutoff, expected):
+    """Use the same exact ordered suffix and strict cutoff as the 0218 custody port."""
+    prior = sorted(name for name in pooled if int(name.split("-", 1)[0]) < cutoff)
+    return [prior[i:] for i in range(len(prior)) if
+            roster_digest({name: pooled[name] for name in prior[i:]}) == expected]
+
+
+def catalogue_authority(entry, pooled, historical):
+    directory = CAMPAIGN/"cases"/entry["case"]
+    path, request_path = directory/"authority.json", directory/"input.json"
+    if not path.is_file() or not request_path.is_file():
+        return dict(state="original_input_authority_pending")
+    if any(p.resolve(strict=True) != p or p.stat().st_dev != CAMPAIGN.stat().st_dev
+           for p in (path, request_path)):
+        raise ValueError("Original request authority is outside the admitted metadata filesystem")
+    body, request_body = path.read_bytes(), request_path.read_bytes()
+    authority = json.loads(body)
+    request = json.loads(request_body)
+    archive_path = ORIGINAL/"snapshot/inputs"/entry["case"]/"tle"
+    if (authority["recording"] != entry["recording"] or authority["window_count"] != entry["window_count"]
+            or request["historical_binding_sha256"] != historical["binding_sha256"]
+            or request["expected_admitted"] != historical["usable_visits"]
+            or request["archive"] != str(archive_path)
+            or request["authority"] != authority or request["authority_sha256"] != digest(body)
+            or any(authority[key] != value for key, value in request["expected"].items())):
+        raise ValueError("Original input authority changed frozen recorded identity")
+    cutoff, archive = authority["causal_cutoff_utc_ns"], authority["archive_sha256"]
+    matches = signed_suffixes(pooled, cutoff, archive)
+    return dict(state="metadata_match_only" if len(matches) == 1 else "no_unique_exact_donor_view",
+                authority_sha256=digest(body), request_sha256=digest(request_body),
+                original_input_metadata_bytes=len(body)+len(request_body), signed_cutoff_ns=cutoff,
+                historical_binding_sha256=request["historical_binding_sha256"],
+                historical_request_raw_authority_sha256=authority["raw_authority_sha256"],
+                matches_accession_digest=authority["raw_authority_sha256"] == entry["manifest_raw_authority_sha256"],
+                original_archive_path=str(archive_path), signed_archive_sha256=archive, exact_suffix_matches=len(matches),
+                matched_names=len(matches[0]) if len(matches) == 1 else None)
+
+
+def bulk_mount():
+    """Read the mount table only. Do not stat the original archive path."""
+    for line in Path("/proc/self/mountinfo").read_text().splitlines():
+        options, filesystem = line.split(" - ", 1)
+        fields = options.split()
+        if fields[4] == "/srv/bulk":
+            kind, source, *_ = filesystem.split()
+            return dict(target=fields[4], device=fields[2], source=source, filesystem=kind)
+    return None
 
 
 def main():
@@ -148,19 +203,25 @@ def main():
         raise ValueError("The combined export seal changed")
     export = checked(args.snapshot/"rows-with-relocations.jsonl", EXPORT)
     selected = select(plan, export)
-    donors, times = donor_inventory()
+    donors, pooled = donor_inventory()
+    times = sorted(int(name.split("-", 1)[0]) for name in pooled)
+    planned = {entry["case"]: entry for entry in plan["cases"]}
+    audit = json.loads(checked(ROOT/"reports/2026_11_21_ds30_full/input-audit.json", INPUT_AUDIT))["bindings"]
     for case in selected:
         nominal = int(datetime.fromisoformat(case["nominal_capture_start_utc"]).timestamp())*10**9
         case["temporal_donor_screen_only"] = dict(before_capture_label=sum(t < nominal for t in times),
                                                   at_or_after_capture_label=sum(t >= nominal for t in times),
                                                   newest_prior_donor_ns=max((t for t in times if t < nominal), default=None))
-        case["official_authority_present_at_check"] = (CAMPAIGN/"cases"/case["case"]/"authority.json").is_file()
+        case["catalogue_custody"] = catalogue_authority(planned[case["case"]], pooled, audit[case["case"]])
     space = os.statvfs(RAM)
     print(json.dumps(dict(plan_sha256=PLAN, export_sha256=EXPORT, export_seal_sha256=SEAL,
                           ordinary_ledger_sha256=seal["ledger_snapshot_sha256"],
+                          historical_input_audit_sha256=INPUT_AUDIT,
                           last_pre_enrollment_case=ANCHOR, previously_tested_originals=sorted(PRIOR),
                           cases=selected, catalogue_manifests=donors, union_catalogue_names=len(times),
+                          original_backing_mount=bulk_mount(),
                           tmpfs_available_bytes=space.f_bavail*space.f_frsize,
+                          custody_checked_at_utc=datetime.now(timezone.utc).isoformat(),
                           catalogue_body_reads=0, packet_reads=0, survey_reads=0, slot_started=False),
                      indent=2, allow_nan=False))
 

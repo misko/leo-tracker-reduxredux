@@ -1,6 +1,9 @@
+import json
+
 import pytest
 
-from reports.ALGO08.v3.held_cfo_next_two import catalogue_names, select
+from reports.ALGO08.v3 import held_cfo_next_two as transfer
+from reports.ALGO08.v3.held_cfo_next_two import catalogue_names, roster_digest, select, signed_suffixes
 
 
 def case(n):
@@ -48,3 +51,33 @@ def test_manifest_metadata_normalizes_exact_names_without_reading_bodies():
         catalogue_names({name: "2"*64})
     with pytest.raises(ValueError, match="conflicting"):
         catalogue_names([name, "/same/name/"+name])
+
+
+def test_archive_identity_uses_strict_cutoff_and_complete_exact_suffix():
+    a, b, c = [f"{i}-"+str(i)*64+".tle" for i in (1, 2, 3)]
+    pooled = catalogue_names([a, b, c])
+    assert signed_suffixes(pooled, 3, roster_digest({b: pooled[b]})) == [[b]]
+    assert signed_suffixes(pooled, 3, roster_digest({c: pooled[c]})) == []
+    assert signed_suffixes(pooled, 4, roster_digest({a: pooled[a], c: pooled[c]})) == []
+
+
+def test_distinct_historical_raw_digest_requires_exact_request_binding(tmp_path, monkeypatch):
+    entry = case(1)
+    directory = tmp_path/"cases"/entry["case"]
+    directory.mkdir(parents=True)
+    monkeypatch.setattr(transfer, "CAMPAIGN", tmp_path)
+    historic = dict(binding_sha256="binding", usable_visits=17)
+    authority = dict(recording=entry["recording"], window_count=20, raw_authority_sha256="historical-raw",
+                     causal_cutoff_utc_ns=3, archive_sha256="absent")
+    body = json.dumps(authority).encode()
+    (directory/"authority.json").write_bytes(body)
+    assert transfer.catalogue_authority(entry, {}, historic)["state"] == "original_input_authority_pending"
+    request = dict(historical_binding_sha256=historic["binding_sha256"], authority=authority,
+                   authority_sha256=transfer.digest(body), expected=authority, expected_admitted=17,
+                   archive=str(transfer.ORIGINAL/"snapshot/inputs"/entry["case"]/"tle"))
+    (directory/"input.json").write_text(json.dumps(request))
+    result = transfer.catalogue_authority(entry, {}, historic)
+    assert result["historical_request_raw_authority_sha256"] == "historical-raw"
+    assert not result["matches_accession_digest"]
+    with pytest.raises(ValueError, match="changed frozen recorded identity"):
+        transfer.catalogue_authority(entry, {}, historic | {"binding_sha256": "other"})
