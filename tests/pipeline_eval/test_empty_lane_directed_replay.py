@@ -1,3 +1,4 @@
+import json
 from math import remainder
 from os import O_RDONLY, O_RDWR, major, minor
 from types import SimpleNamespace
@@ -85,15 +86,58 @@ def test_original_match_no_carrier_alias_and_stage_is_readonly():
 
 def test_passive_admission_requires_fresh_sleep_quiet_and_free_lock(tmp_path):
     quiet = {'original': dict(full_avg10=4., in_flight=0), 'output': dict(full_avg10=4., in_flight=2)}
-    assert watch.eligible(dict(age_s=0.5), True, quiet, False) is None
-    assert watch.eligible(dict(age_s=4.), True, quiet, False) == 'no-fresh-field-sleep'
-    assert watch.eligible(dict(age_s=0.5), False, quiet, False) == 'no-fresh-field-sleep'
-    assert watch.eligible(dict(age_s=0.5), True, quiet, True) == 'shared-lease-present'
+    rolling = dict.fromkeys(quiet, dict(queue_mean=1.5, full_pct=2.))
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False, rolling) is None
+    assert watch.eligible(dict(age_s=4.), True, quiet, False, rolling) == 'no-fresh-field-sleep'
+    assert watch.eligible(dict(age_s=0.5), False, quiet, False, rolling) == 'no-fresh-field-sleep'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, True, rolling) == 'shared-lease-present'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False, None) == 'rolling-window-unavailable'
     quiet['output']['in_flight'] += 1
-    assert watch.eligible(dict(age_s=0.5), True, quiet, False) == 'storage-pressure'
+    assert watch.eligible(dict(age_s=0.5), True, quiet, False, rolling) == 'storage-pressure'
     lease = tmp_path / 'lease'
     lease.touch()
     stat = lease.stat()
     key = f'{major(stat.st_dev):x}:{minor(stat.st_dev):x}:{stat.st_ino}'
     assert watch.lock_present(lease, f'17: FLOCK ADVISORY WRITE 1290 {key} 0 EOF\n')
     assert not watch.lock_present(lease, f'18: POSIX ADVISORY WRITE 1291 00:00:{stat.st_ino} 0 EOF\n')
+
+
+def test_passive_rolling_metrics_reject_busy_interval_with_quiet_endpoints():
+    a = dict(original=dict(at=12., weighted_ms=1000, full_total_us=500_000))
+    b = dict(original=dict(at=14.1, weighted_ms=8138, full_total_us=510_000, full_avg10=1., in_flight=0))
+    rolling = watch.rolling_window(a, b)
+    assert rolling['original']['queue_mean'] == pytest.approx(7138 / 2100.)
+    assert rolling['original']['full_pct'] == pytest.approx(10000 / 21000.)
+    assert watch.eligible(dict(age_s=0.5), True, b, False, rolling) == 'rolling-storage-pressure'
+    b['original']['weighted_ms'] = 5200
+    b['original']['at'] = 14.25
+    assert watch.eligible(dict(age_s=0.5), True, b, False, watch.rolling_window(a, b)) is None
+    b['original']['at'] = 13.99
+    assert watch.rolling_window(a, b) is None
+    b['original']['at'] = 18.
+    assert watch.rolling_window(a, b) is None
+
+
+def test_passive_watch_caps_final_poll_sleep_without_launch(monkeypatch, tmp_path):
+    import ds30_paired_evaluation
+
+    clock = [0.]
+    naps = []
+
+    def sleep(seconds):
+        naps.append(seconds)
+        clock[0] += seconds
+
+    monkeypatch.setattr(watch, 'monotonic', lambda: clock[0])
+    monkeypatch.setattr(watch, 'sleep', sleep)
+    monkeypatch.setattr(watch, 'WATCH_S', 2.5)
+    monkeypatch.setattr(watch.os, 'sched_getaffinity', lambda _: {2})
+    monkeypatch.setattr(watch.os, 'getpriority', lambda *_: 15)
+    monkeypatch.setattr(replay.prefix, 'read', lambda *_: dict(source_sha256='as-run'))
+    monkeypatch.setattr(replay, 'tag', lambda _: 'as-run')
+    monkeypatch.setattr(replay.prefix, 'occupied', lambda: ({'age_s': 12}, False))
+    monkeypatch.setattr(ds30_paired_evaluation, 'storage_sample', lambda: {})
+    monkeypatch.setattr(watch.subprocess, 'run', lambda *_a, **_k: pytest.fail('no child expected'))
+    assert watch.wait(tmp_path, tmp_path / 'plan.json', 'sha') == 75
+    assert naps == [1., 1., .5]
+    assert json.loads((tmp_path / 'watch.json').read_text())['elapsed_s'] == 2.5
