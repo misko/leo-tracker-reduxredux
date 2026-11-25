@@ -1,3 +1,4 @@
+import json
 from math import remainder
 from os import O_RDONLY, O_RDWR, major, minor
 from types import SimpleNamespace
@@ -115,3 +116,28 @@ def test_passive_rolling_metrics_reject_busy_interval_with_quiet_endpoints():
     assert watch.rolling_window(a, b) is None
     b['original']['at'] = 18.
     assert watch.rolling_window(a, b) is None
+
+
+def test_passive_watch_caps_final_poll_sleep_without_launch(monkeypatch, tmp_path):
+    import ds30_paired_evaluation
+
+    clock = [0.]
+    naps = []
+
+    def sleep(seconds):
+        naps.append(seconds)
+        clock[0] += seconds
+
+    monkeypatch.setattr(watch, 'monotonic', lambda: clock[0])
+    monkeypatch.setattr(watch, 'sleep', sleep)
+    monkeypatch.setattr(watch, 'WATCH_S', 2.5)
+    monkeypatch.setattr(watch.os, 'sched_getaffinity', lambda _: {2})
+    monkeypatch.setattr(watch.os, 'getpriority', lambda *_: 15)
+    monkeypatch.setattr(replay.prefix, 'read', lambda *_: dict(source_sha256='as-run'))
+    monkeypatch.setattr(replay, 'tag', lambda _: 'as-run')
+    monkeypatch.setattr(replay.prefix, 'occupied', lambda: ({'age_s': 12}, False))
+    monkeypatch.setattr(ds30_paired_evaluation, 'storage_sample', lambda: {})
+    monkeypatch.setattr(watch.subprocess, 'run', lambda *_a, **_k: pytest.fail('no child expected'))
+    assert watch.wait(tmp_path, tmp_path / 'plan.json', 'sha') == 75
+    assert naps == [1., 1., .5]
+    assert json.loads((tmp_path / 'watch.json').read_text())['elapsed_s'] == 2.5

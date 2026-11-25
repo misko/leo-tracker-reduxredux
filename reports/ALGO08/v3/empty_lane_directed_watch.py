@@ -73,7 +73,8 @@ def wait(output, plan, pin):
     samples = deque(maxlen=4)
     counts, last_refusals = Counter(), {}
     start = monotonic()
-    while monotonic() - start < WATCH_S:
+    deadline = start + WATCH_S
+    while monotonic() < deadline:
         event, deferred = replay.prefix.occupied()
         storage = storage_sample()
         previous, rolling = None, None
@@ -92,6 +93,8 @@ def wait(output, plan, pin):
             except ValueError:
                 counts["private-input-not-resident"] += 1
             else:
+                if monotonic() >= deadline:
+                    break
                 command = ["/usr/bin/time", "-f", "elapsed=%e user=%U system=%S rss_kib=%M input_blocks=%I exit=%x",
                            "-o", str(output / "process.txt"), "/usr/bin/timeout", "-k", "1s", f"{TIMEOUT_S}s",
                            sys.executable, "-B", "-m", "reports.ALGO08.v3.empty_lane_directed_replay", "run",
@@ -104,7 +107,7 @@ def wait(output, plan, pin):
         else:
             counts[reason] += 1
             last_refusals[reason] = observation
-        sleep(SAMPLE_S)
+        sleep(max(0., min(SAMPLE_S, deadline - monotonic())))
     replay.prefix.write(output / "watch.json", dict(launched=False, reason="readiness-window-expired",
                         **observation, polls=dict(counts), last_refusals=last_refusals, elapsed_s=monotonic()-start))
     return replay.ABSTAIN_EXIT

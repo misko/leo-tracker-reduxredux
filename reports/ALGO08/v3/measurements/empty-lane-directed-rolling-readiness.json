@@ -1,0 +1,45 @@
+{
+  "schema": "empty-lane-directed-rolling-readiness-v1",
+  "case": "DS30-0049",
+  "execution_commit": "3ecc3731af85e43453c065b6868ee67271a48b66",
+  "plan_sha256": "0075e0f970a4e5debd2d9398603bd600cd5df38573898324ce4019ae2c3c09e9",
+  "waveform_worker_sha256": "91e670c5646af1984204a24ca1205cf2d23c64838a5d80dd545489017af81028",
+  "observations": 300,
+  "intended_readiness_bound_s": 300,
+  "elapsed_s_including_final_sleep": 300.8034097328782,
+  "outcome": "readiness-window-expired",
+  "exit": 75,
+  "guarded_children": 0,
+  "waveform_files_opened": 0,
+  "native_calls": 0,
+  "polls_by_first_refusal": {
+    "no-fresh-field-sleep": 264,
+    "rolling-storage-pressure": 28,
+    "storage-pressure": 8
+  },
+  "last_fresh_rolling_refusal": {
+    "field_case": "DS30-0232",
+    "field_event": "deferred_storage_busy",
+    "field_event_age_s": 3.530441215,
+    "field_event_sha256": "6b95809fe9f003c9fbb7393c21a06f344cecfa2ee99379dde224204a85629f2c",
+    "gauss_lease_busy": false,
+    "bulk_device": {
+      "instant_in_flight": 0,
+      "instant_full_avg10_pct": 1.92,
+      "rolling_span_s": 2.0159802734851837,
+      "rolling_weighted_queue_mean": 7.212372160201527,
+      "rolling_full_pct": 3.8556924897693583
+    },
+    "output_device": {
+      "instant_in_flight": 0,
+      "instant_full_avg10_pct": 1.92,
+      "rolling_span_s": 2.0159791130572557,
+      "rolling_weighted_queue_mean": 0.15129125000579197,
+      "rolling_full_pct": 3.855694709164003
+    }
+  },
+  "watch_receipt": {
+    "path": "/tmp/leo-v3-empty-lane-directed-0049-watch02/watch.json",
+    "sha256": "fe14ff454adaaedac84c6fe7f5b871a6cba441fea692f61004db120c55be7cf4"
+  }
+}
