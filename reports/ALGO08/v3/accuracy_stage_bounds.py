@@ -150,8 +150,18 @@ def run():
     for name, interval in fallback.items():
         interval["fast_candidates"] = fast_count(pairs, profiles[name], rows)
         interval["half_time_fallback"] = fallback_bound(pairs, profiles[name], rows, 50)
+    partitions = {}
+    for name, subset in (("first30", slice(0, 30)), ("next34", slice(30, 64))):
+        part = pairs[subset]
+        groups = coverage(part, None)
+        clocks = [(a["wall_units"], b["wall_units"]-c["free_short_and_solver"])
+                  for (a,b),c in zip(part, credits[subset], strict=True)]
+        partitions[name] = dict(cases=cases[subset], free_short_and_solver=bound(part, clocks, groups, scale),
+                                fast_candidates=fast_count(part, profiles["native_solver_and_buffer"][subset],
+                                                           constraints(groups)))
     return dict(sources=SOURCES, wall_units_per_second=scale, short_cpu_reduction=str(reduction),
-                cases=cases, result=result, required_stage_cuts=brackets, required_installed_cuts=fallback)
+                cases=cases, result=result, required_stage_cuts=brackets, required_installed_cuts=fallback,
+                chronological_partitions=partitions)
 
 
 if __name__ == "__main__":
