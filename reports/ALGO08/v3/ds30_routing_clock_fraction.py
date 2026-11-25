@@ -72,7 +72,7 @@ def verify_endpoints(wall, rows, previous):
 def solve_receipt(path):
     doc = json.loads(gzip.decompress(checked(path, RECEIPT)))
     rows = doc["measurements"]
-    pairs = [(row["installed"], row["successor"]) for row in rows]
+    pairs = [(row["installed"] | {"case": row["case"]}, row["successor"] | {"case": row["case"]}) for row in rows]
     if len(rows) != 64 or [r["position"] for r in rows] != list(range(1, 65)):
         raise ValueError("The frozen prefix changed")
     wall = [(a["wall_units"], b["wall_units"]) for a, b in pairs]

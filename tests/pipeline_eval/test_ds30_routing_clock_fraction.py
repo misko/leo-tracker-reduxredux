@@ -2,8 +2,9 @@ from fractions import Fraction
 from statistics import median
 
 from reports.ALGO08.v3.ds30_oracle_routing import coverage, meets
-from reports.ALGO08.v3.ds30_routing_clock_fraction import largest_fraction, verify_endpoints
+from reports.ALGO08.v3.ds30_routing_clock_fraction import largest_fraction, solve_receipt, verify_endpoints
 from reports.ALGO08.v3.ds30_routing_first64 import constraints, primary
+from reports.ALGO08.v3.full_successor_score import ROOT
 
 
 def signal(case, a, b):
@@ -44,3 +45,13 @@ def test_largest_summed_fraction_does_not_imply_paired_median_pass():
     ratios = [fraction*Fraction(b, a) if mask & (1 << i) else Fraction(1)
               for i, (a, b) in enumerate(clocks)]
     assert median(ratios) == 1
+
+
+def test_frozen_receipt_carries_case_labels_and_exact_boundary():
+    result = solve_receipt(ROOT/"reports/ALGO08/v3/measurements/ds30-routing-first64.json.gz")
+    route = result["route"]
+    assert result["installed_choices"]+result["candidate_choices"] == 64
+    assert all(case.startswith("DS30-") for case in route["candidate_cases"])
+    assert len(route["candidate_cases"]) == result["candidate_choices"]
+    assert 2*route["total_units"] == route["installed_total_units"]
+    assert result["largest_fraction_is_sharp_for_both"] == (Fraction(*result["median_ratio_exact"]) <= Fraction(1, 2))
