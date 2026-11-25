@@ -158,7 +158,7 @@ def require_resident(paths):
         raise ValueError("Require the complete already resident local causal operands")
 
 
-def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment=None):
+def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment=None, admission_path=None):
     case, stage, admission_pin, ref_count = (
         (CASE, STAGE, ADMISSION, 48) if enrollment is None else enrollment
     )
@@ -199,7 +199,7 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment
     if (plan["case"] != case or plan["protocol"] != protocol(experiment) or plan["worker"] != identifier(Path(__file__))
             or plan["sources"] != source_pins(experiment)):
         raise ValueError("Changed frozen worker, plan or source recipe")
-    admission = chart.document(stage/"admission.json", admission_pin)
+    admission = chart.document(admission_path if admission_path is not None else stage/"admission.json", admission_pin)
     signed = chart.document(stage/"authority.json", admission["authority_pin"])
     session, input_pin = signed["session_id"], signed["inventory_sha256"]
     change = plan["change"]
@@ -207,7 +207,7 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment
     detector, recipe = change["recipe_sha256"], change["recipe"]
     if (authority.canonical(recipe) != detector or plan["original_native_sha256"] != "sha256:"+admission["native_pin"]
             or recipe["sparse_native_sha256"] != plan["original_native_sha256"]
-            or recipe["installed_native_sha256"] != plan["installed_native_sha256"]
+            or recipe.get("installed_native_sha256") != plan["installed_native_sha256"]
             or authority.canonical(change[experiment.ledger]) != recipe[experiment.ledger_digest]):
         raise ValueError("The derived packet's original measurements or recipe are no longer bound")
     boot.bind_native(native, session, input_pin, detector[7:], expected=change["derived_native_sha256"])
