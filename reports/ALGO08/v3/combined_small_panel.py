@@ -465,7 +465,33 @@ def authorized_order(root, ready, case, role):
     )
 
 
-def driver_window(event, pid, last_finish, case):
+def official_0218_is_pending(rows):
+    matched = [row for row in rows if row["case"] == "DS30-0218"]
+    if len(matched) != 2 or {row["algorithm"] for row in matched} != {"installed", "successor"}:
+        return False
+    if any(
+        row["verified_pair"]
+        or row["admission_state"] != "deferred_storage_busy"
+        or row["raw_identity_sha256"]
+        != "sha256:9b08c27dfd179fcfa112d19bc6c4b1f10b3efd3f948005a8a298dc9b927866c9"
+        for row in matched
+    ):
+        return False
+    roles = {row["algorithm"]: row for row in matched}
+    incumbent, successor = roles["installed"], roles["successor"]
+    return (
+        incumbent["outcome"] == "complete"
+        and incumbent["acquisition_verified"]
+        and successor["outcome"] == "pending"
+        and not successor["acquisition_verified"]
+        and all(
+            successor[key] is None
+            for key in ("attempt", "child_started_unix_ns", "attempt_result_sha256")
+        )
+    )
+
+
+def driver_window(event, pid, last_finish, case, *, pending_0218):
     campaign = FROZEN.parent
     path = campaign / event["event"]
     if (
@@ -484,6 +510,14 @@ def driver_window(event, pid, last_finish, case):
         or (proc / "task" / str(pid) / "children").read_text().strip()
     ):
         raise ValueError("The official paired controller already has an active child or changed")
+    if pending_0218:
+        exported = check(campaign / "rows.jsonl", event["export_sha256"])
+        if (
+            case != "DS30-0107"
+            or event["case"] != "DS30-0218"
+            or not official_0218_is_pending(map(json.loads, exported.splitlines()))
+        ):
+            raise ValueError("The exact official 0218 successor is no longer pending and unstarted")
     age = time_ns() - event["unix_ns"]
     if (
         not 0 <= age <= FRESH_NS
@@ -503,7 +537,9 @@ def conditioning_pin(root, inputs, case, ready_pin):
     return digest(body)
 
 
-def launch_cell(root, pin, ready, case, role, pid, event, last_finish, conditioning):
+def launch_cell(
+    root, pin, ready, case, role, pid, event, last_finish, conditioning, *, pending_0218
+):
     from combined_small_panel_score import checked_publication
 
     inputs = ready["cases"][case]
@@ -520,7 +556,7 @@ def launch_cell(root, pin, ready, case, role, pid, event, last_finish, condition
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         before = require_resident(inputs["files"])
-        driver_window(event, pid, last_finish, case)
+        driver_window(event, pid, last_finish, case, pending_0218=pending_0218)
         work.parent.mkdir(exist_ok=True)
         new_work(work)
         write(
@@ -531,6 +567,7 @@ def launch_cell(root, pin, ready, case, role, pid, event, last_finish, condition
                 driver_pid=pid,
                 event=event,
                 cap_s=CAP_SECONDS[case],
+                pending_0218=pending_0218,
                 source_before=before,
                 previous_exit_unix_ns=last_finish,
             ),
@@ -582,12 +619,14 @@ def launch_cell(root, pin, ready, case, role, pid, event, last_finish, condition
     )
 
 
-def watch(root, pin, case, role, pid):
+def watch(root, pin, case, role, pid, *, pending_0218):
     if os.sched_getaffinity(0) != {3} or os.getpriority(os.PRIO_PROCESS, 0) < 15:
         raise ValueError("Run the admission and verifier on low-priority CPU 3")
     sys.path.insert(0, str(REPO))
     from reports.ALGO08.v3.profiled_grid_export_admission import observe
 
+    if pending_0218 and case != "DS30-0107":
+        raise ValueError("Only the registered short pair can fill the pending 0218 gap")
     ready = verify_ready(root, pin)
     last_finish = authorized_order(root, ready, case, role)
     conditioning = conditioning_pin(root, ready["cases"][case], case, pin)
@@ -595,9 +634,18 @@ def watch(root, pin, case, role, pid):
     check(DRIVER, DRIVER_PIN)
     result = observe(
         lambda event: launch_cell(
-            root, pin, ready, case, role, pid, event, last_finish, conditioning
+            root,
+            pin,
+            ready,
+            case,
+            role,
+            pid,
+            event,
+            last_finish,
+            conditioning,
+            pending_0218=pending_0218,
         ),
-        None,
+        "DS30-0218" if pending_0218 else None,
     )
     write(root / f"watch-{case}-{role}-{result['watching_from']}.json", result)
     print(json.dumps(result))
@@ -611,6 +659,7 @@ def main():
     cli.add_argument("--case", choices=CASES)
     cli.add_argument("--role", choices=("charted", "trial"))
     cli.add_argument("--driver-pid", type=int)
+    cli.add_argument("--pending-0218", action="store_true")
     args = cli.parse_args()
     if (
         args.root != args.root.resolve()
@@ -624,7 +673,14 @@ def main():
     elif args.action == "condition" and args.case is None and args.ready_pin:
         condition(args.root, args.ready_pin)
     elif args.action == "watch" and all((args.case, args.role, args.ready_pin, args.driver_pid)):
-        watch(args.root, args.ready_pin, args.case, args.role, args.driver_pid)
+        watch(
+            args.root,
+            args.ready_pin,
+            args.case,
+            args.role,
+            args.driver_pid,
+            pending_0218=args.pending_0218,
+        )
     elif args.action == "score" and args.case is None and args.ready_pin:
         from combined_small_panel_score import score
 
