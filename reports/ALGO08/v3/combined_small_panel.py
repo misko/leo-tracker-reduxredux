@@ -99,11 +99,12 @@ def checked_source_delta(unchanged, slot_build):
     return changed
 
 
-def restore(root):
+def restore(root, roles=("charted", "trial")):
     body = check(FROZEN / "source-archive.tar.gz", ARCHIVE_PIN)
     builds = {"charted": check(FROZEN / "build.json", CONTROL), "trial": check(SLOTS, TRIAL)}
     delta = checked_source_delta(*(json.loads(data) for data in builds.values()))
-    for role, data in builds.items():
+    for role in roles:
+        data = builds[role]
         tree, manifest = runtime_paths(root, role)
         tree.mkdir()
         with tarfile.open(fileobj=BytesIO(body)) as archive:

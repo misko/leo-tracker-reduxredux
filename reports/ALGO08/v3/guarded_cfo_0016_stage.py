@@ -170,7 +170,7 @@ class Pacing:
 
 
 def copy_member(source, target, size, digest, lock, pacing, *, partial=None, journal=None, admission=None,
-                required_device=None):
+                required_device=None, read_bytes=None):
     completed = partial.offset if partial else 0
     checksum = partial.checksum.copy() if partial else sha256()
     digest = "sha256:" + digest.removeprefix("sha256:")
@@ -200,7 +200,8 @@ def copy_member(source, target, size, digest, lock, pacing, *, partial=None, jou
                         raise ValueError("Original source identity changed since the sealed checkpoint")
                     entry.seek(completed)
                     os.posix_fadvise(entry.fileno(), completed, size - completed, os.POSIX_FADV_RANDOM)
-                data = entry.read(min(BLOCK, size - completed))
+                amount = min(BLOCK, size - completed)
+                data = entry.read(amount) if read_bytes is None else read_bytes(entry, amount)
                 read_s = perf_counter() - beginning
             if not data:
                 raise ValueError("Original member ended before its signed extent")
