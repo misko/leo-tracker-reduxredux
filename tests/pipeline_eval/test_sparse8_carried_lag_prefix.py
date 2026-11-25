@@ -8,6 +8,7 @@ import pytest
 
 from reports.ALGO08.v3.sparse8_lag_prefix import ordered_prefix, overlay
 from reports.ALGO08.v3.sparse8_lag_prefix_measure import allowed_inputs, summary
+from reports.ALGO08.v3 import sparse8_lag_prefix_ram as ram
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -142,3 +143,17 @@ def test_short_timing_job_admits_only_enrolled_local_waveforms_read_only(tmp_pat
             allowed_inputs("open", (path, "rb", flag), {local})
     with pytest.raises(ValueError):
         allowed_inputs("socket.connect", (), {local})
+
+
+def test_ram_namespace_uses_positive_binds_and_a_read_only_root(tmp_path, monkeypatch):
+    available = [tmp_path / "signed.ci16", tmp_path / "receiver.so"]
+    monkeypatch.setattr(ram, "paths", lambda *_: (None, None, None, None, available))
+    cli = ram.command(tmp_path, "probe", tmp_path, "pin")
+    assert "--unshare-all" in cli and "--disable-userns" in cli and "--clearenv" in cli
+    assert cli[cli.index("--cap-drop") + 1] == "ALL"
+    assert "/srv/bulk" not in cli and "/mnt/qnap01" not in cli and "/srv/postgres-nvme" not in cli
+    for file in available:
+        start = cli.index(str(file))
+        assert cli[start - 1:start + 2] == ["--ro-bind", str(file), str(file)]
+    readonly = [cli[i+1] for i, key in enumerate(cli) if key == "--remount-ro"]
+    assert readonly == ["/tmp", "/"]

@@ -14,8 +14,6 @@ import subprocess
 import sys
 from time import monotonic, process_time_ns, sleep
 
-from . import empty_lane_directed_replay as admission
-from . import empty_lane_directed_watch as watch
 from . import sparse8_native_profile as sparse
 
 
@@ -57,13 +55,15 @@ def allowed_inputs(event, params, bodies):
 
 
 def runtime_footprint(bodies, libraries, assets):
-    from visit_frame_raw_0016 import resident
-
     paths = [*bodies.values(), *libraries.values(), *assets.values()]
     device = Path("/tmp").stat().st_dev
     if any(p.resolve(strict=True) != p or p.stat().st_dev != device for p in paths):
         raise ValueError("Detached input, immutable DSOs and pilot assets must be in tmpfs")
-    return resident(paths)
+    rows = json.loads(subprocess.check_output(["fincore", "--json", "--bytes", "-o", "RES,PAGES,SIZE,FILE",
+                                               *paths]))["fincore"]
+    if len(rows) != len(paths) or any(row["res"] < row["size"] for row in rows):
+        raise ValueError("The detached fixture and its native setup must be fully resident")
+    return rows
 
 
 def summary(records):
@@ -123,6 +123,8 @@ def measure(arms, libraries, assets, began):
 
 def take(output, build, pin):
     from ds30_paired_evaluation import quiet_window, storage_sample
+    from . import empty_lane_directed_replay as admission
+    from . import empty_lane_directed_watch as watch
 
     if os.sched_getaffinity(0) != {2} or os.getpriority(os.PRIO_PROCESS, 0) < 15:
         raise ValueError("Only the low-priority CPU2 worker may execute a comparison")
@@ -159,6 +161,8 @@ def take(output, build, pin):
 
 def wait(output, build, pin):
     from ds30_paired_evaluation import storage_sample
+    from . import empty_lane_directed_replay as admission
+    from . import empty_lane_directed_watch as watch
 
     _, bodies, libraries, assets = book(build, pin)
     samples, counts, last = deque(maxlen=4), Counter(), {}
