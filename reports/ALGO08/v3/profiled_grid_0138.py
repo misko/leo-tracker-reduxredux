@@ -21,7 +21,9 @@ from unittest.mock import patch
 
 
 CODE = Path(__file__).resolve().parent
-ROOT = Path("/dev/shm/leo-v3-profiled-grid-0138-03")
+ROOT = Path("/dev/shm/leo-v3-profiled-grid-0138-45s-01")
+PRIOR_TIMEOUT = Path("/dev/shm/leo-v3-profiled-grid-0138-03/ordinary/clock.json")
+PRIOR_TIMEOUT_PIN = "a01d3f552c2fd57deb442073f513565ff4b8db4808c56ad10c3fa8fba1774208"
 STAGE = Path("/dev/shm/leo-v3-causal-0138-stage01")
 HISTORICAL = Path("/dev/shm/leo-v3-exact-grid-0138-active01")
 ARCHIVED = Path("/var/tmp/leo-v3-exact-grid-0138")
@@ -45,7 +47,7 @@ BINDINGS = {
 }
 HISTORICAL_SCORE_PIN = "6aff05ab7cf624995dcd4e9351d4c407976ec3d7d9a1232bcb1380d32bdaab48"
 REQUEST_PIN = "16826e2aa70e6baf377ef3d3efc847bdfdff1f569ed4b64289b6861a580b4797"
-CAP_SECONDS = 24
+CAP_SECONDS = 45
 FRESH_NS = 2_000_000_000
 THREADS = ("BLIS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS", "OMP_NUM_THREADS",
            "OMP_THREAD_LIMIT", "OPENBLAS_NUM_THREADS")
@@ -246,12 +248,15 @@ def worker(cell, *, smoke):
         core.worker(area, False)
     write(area/"callback-clocks.json", dict(clocks=dict(counts), activity=dict(activity),
                                            candidate_binary_sha256=LIBRARY_PIN if cell == "profiled" else None))
+    paid = resource.getrusage(resource.RUSAGE_SELF)
+    write(area/"worker-usage.json", dict(cpu_s=paid.ru_utime+paid.ru_stime, major_faults=paid.ru_majflt,
+                                       input_blocks=paid.ru_inblock, max_rss_kib=paid.ru_maxrss))
 
 
 def sources():
     return {str(path): digest(path) for path in (Path(__file__).resolve(), CORE, CODE/"profiled_grid_export.py",
         CODE/"profiled_grid_export_admission.py", CODE/"profiled_grid_0138_score.py",
-        CODE/"profiled-grid-export-0138-protocol.md")}
+        CODE/"profiled-grid-export-0138-protocol.md", CODE/"profiled-grid-export-0138-45s-protocol.md")}
 
 
 def headroom():
@@ -314,11 +319,35 @@ def driver_idle(pid):
         raise ValueError("An official child is active")
 
 
-def admit(event, cell, pid, files, ready_pin):
+def campaign_events(case, start, end):
+    from reports.ALGO08.v3.field_crossover_admission_watch import CAMPAIGN
+
+    paths = (CAMPAIGN/"cases"/case/"events").glob("*.json")
+    events = []
+    for path in sorted(paths):
+        stamp = int(path.name.split("-", 1)[0])
+        if start < stamp <= end:
+            events.append(dict(name=path.name, unix_ns=stamp, state=read(path)["state"], sha256=digest(path)))
+    return events
+
+
+def primary_pending():
+    from reports.ALGO08.v3.field_crossover_admission_watch import CAMPAIGN
+
+    with (CAMPAIGN/"rows.jsonl").open() as export:
+        for row in map(json.loads, export):
+            if row["case"] == "DS30-0218" and row["admission_state"] != "pending":
+                raise ValueError("Yield to the active or recorded primary DS30-0218 case")
+
+
+def admit(event, cell, pid, files, ready_pin, previous_end):
     area = ROOT/cell
+    if event["unix_ns"] <= previous_end:
+        raise ValueError("Require a new official attempt after the preceding saved child")
     with LOCK.open("rb") as lease:
         fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
         driver_idle(pid)
+        primary_pending()
         resident = require_resident(files)
         headroom()
         age = time_ns()-event["unix_ns"]
@@ -340,12 +369,18 @@ def admit(event, cell, pid, files, ready_pin):
                     child.wait()
                     status = 124
             elapsed, after = monotonic()-started, resource.getrusage(resource.RUSAGE_CHILDREN)
-        measured = dict(exit_code=status, wall_s=elapsed, resident_bytes=resident, ready_sha256=ready_pin,
-                        cpu_s=after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
-                        input_blocks=after.ru_inblock-before.ru_inblock, major_faults=after.ru_majflt-before.ru_majflt,
-                        started_unix_ns=initial, gate=event, child_limit_s=CAP_SECONDS)
-        write(area/"clock.json", measured)
-        return measured
+        finished = time_ns()
+    measured = dict(exit_code=status, wall_s=elapsed, resident_bytes=resident, ready_sha256=ready_pin,
+                    cpu_s=after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
+                    input_blocks=after.ru_inblock-before.ru_inblock, major_faults=after.ru_majflt-before.ru_majflt,
+                    started_unix_ns=initial, finished_unix_ns=finished, gate=event, child_limit_s=CAP_SECONDS)
+    write(area/"clock.json", measured)
+    impacts = campaign_events(event["case"], initial, finished)
+    official_retries = sum(e["state"] == "deferred_shared_lease" for e in impacts)
+    write(area/"scheduling.json", dict(official_events=impacts, deferred_shared_lease=official_retries,
+                                      previous_child_finished_unix_ns=previous_end,
+                                      new_official_attempt=event, within_retry_cap=official_retries <= 1))
+    return measured
 
 
 def watch(cell, pid, ready_pin, official_case):
@@ -365,8 +400,16 @@ def watch(cell, pid, ready_pin, official_case):
         verified = read(ROOT/"ordinary/verified.json")
         if not verified["accept"] or verified["clock_sha256"] != digest(ROOT/"ordinary/clock.json"):
             raise ValueError("Expected the verified fresh ordinary comparison first")
+        schedule = read(ROOT/"ordinary/scheduling.json")
+        if not schedule["within_retry_cap"]:
+            raise ValueError("The ordinary worker displaced more than the admitted official retry")
+        previous = read(ROOT/"ordinary/clock.json")["finished_unix_ns"]
+    else:
+        timeout = read(checked(PRIOR_TIMEOUT, PRIOR_TIMEOUT_PIN))
+        previous = timeout["started_unix_ns"]+round(timeout["wall_s"]*1e9)
     driver_idle(pid)
-    result = observe(lambda event: admit(event, cell, pid, files, ready_pin), official_case)
+    primary_pending()
+    result = observe(lambda event: admit(event, cell, pid, files, ready_pin, previous), official_case)
     path = area/f"admission-{result['watching_from']}.json"
     write(path, result)
     return result
