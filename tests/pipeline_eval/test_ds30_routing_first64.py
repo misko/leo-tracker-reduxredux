@@ -6,7 +6,7 @@ import pytest
 
 from reports.ALGO08.v3.ds30_oracle_routing import coverage, meets
 from reports.ALGO08.v3.ds30_routing_first64 import (
-    CASE_KEY, admissible, maximize_integer, primary, restricted_json,
+    CASE_KEY, admissible, certified_route, check_certificate, primary, restricted_json,
 )
 
 
@@ -28,6 +28,7 @@ def test_exact_sum_matches_exhaustive_curves_with_missing_fixes_and_ties(seed):
                    for route in range(1 << len(pairs)) if meets(thresholds, route))
     result = primary(pairs, clocks)
     observed = result["strict"]
+    assert observed["lower_total_units"] <= expected*result["clock_unit_denominator"] <= observed["total_units"]
     assert observed["total_units"] == expected*result["clock_unit_denominator"]
     assert meets(thresholds, observed["mask"])
 
@@ -48,10 +49,15 @@ def test_nonzero_count_constraints_and_exact_infeasibility():
     rows = [(0b0100, 0, 1), (0b0010, 0b0001, 0)]
     feasible = [(sum(w for i, w in enumerate(weights) if route & (1 << i)), route)
                 for route in range(16) if admissible(rows, route)]
-    selected, optimum, _ = maximize_integer(weights, rows)
-    assert optimum == max(gain for gain, _ in feasible)
+    selected, proof = certified_route(weights, rows)
+    explicit = check_certificate(weights, rows, selected, {0: Fraction(3)})
+    optimum = max(gain for gain, _ in feasible)
+    assert proof["gain"] == proof["upper_gain"] == explicit["gain"] == explicit["upper_gain"] == optimum
     assert (optimum, selected) in feasible
-    assert maximize_integer(weights, rows + [(0, 0b0100, 0)])[:2] == (None, None)
+    with pytest.raises(ValueError, match="count inequalities"):
+        check_certificate(weights, rows + [(0, 0b0100, 0)], selected, {})
+    with pytest.raises(ValueError, match="Invalid dual multiplier"):
+        check_certificate(weights, rows, selected, {0: Fraction(-1)})
 
 
 def test_label_gate_does_not_decode_excluded_payload():

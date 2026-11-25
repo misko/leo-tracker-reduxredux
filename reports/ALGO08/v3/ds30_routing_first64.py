@@ -108,70 +108,84 @@ def admissible(rows, route):
                for plus, minus, minimum in rows)
 
 
-def maximize_integer(weights, rows):
-    """Find an exact maximizing route using capacity propagation and integer bounds."""
-    universe = (1 << len(weights))-1
-    beneficial = sum(1 << i for i, weight in enumerate(weights) if weight > 0)
-    priority = [1 << i for i in sorted(range(len(weights)), key=lambda i: -abs(weights[i]))]
-    nodes = dict(visited=0, infeasible=0, objective_pruned=0, attained_relaxation=0)
+def rational_solution(equations, columns):
+    """Reconstruct the reported active dual constraints from their exact coefficients."""
+    work = [[Fraction(value) for value in row] for row in equations]
+    for i in range(columns):
+        pivot = next((j for j in range(i, len(work)) if work[j][i]), None)
+        if pivot is None:
+            return None
+        work[i], work[pivot] = work[pivot], work[i]
+        work[i] = [value/work[i][i] for value in work[i]]
+        for j, row in enumerate(work):
+            if i != j and row[i]:
+                work[j] = [left-row[i]*right for left, right in zip(row, work[i], strict=True)]
+    if any(row[-1] for row in work[columns:]):
+        return None
+    return [row[-1] for row in work[:columns]]
 
-    def value(mask):
-        score = 0
-        while mask:
-            bit = mask & -mask
-            score += weights[bit.bit_length()-1]
-            mask ^= bit
-        return score
 
-    best, winner = (0, 0) if admissible(rows, 0) else (None, None)
+def check_certificate(weights, rows, route, multipliers):
+    """Verify a feasible route and upper bound in exact arithmetic."""
+    if not admissible(rows, route) or route < 0 or route >> len(weights):
+        raise ValueError("The proposed route fails the original count inequalities")
+    adjusted = list(weights)
+    shift = 0
+    for index, multiplier in multipliers.items():
+        if multiplier < 0 or not 0 <= index < len(rows):
+            raise ValueError("Invalid dual multiplier")
+        plus, minus, minimum = rows[index]
+        shift += minimum*multiplier
+        for i in range(len(weights)):
+            adjusted[i] += (((plus >> i) & 1) - ((minus >> i) & 1))*multiplier
+    gain = sum(weight for i, weight in enumerate(weights) if route & (1 << i))
+    upper = Fraction(sum(max(0, value) for value in adjusted)-shift)
+    if gain > upper:
+        raise ValueError("Primal score exceeds its certified upper bound")
+    return dict(gain=gain, upper_gain=upper.numerator//upper.denominator,
+                upper_gain_rational=(upper.numerator, upper.denominator),
+                multipliers=[(i, value.numerator, value.denominator) for i, value in multipliers.items()])
 
-    def visit(selected, skipped):
-        nonlocal best, winner
-        nodes["visited"] += 1
-        while True:
-            more_selected, more_skipped = selected, skipped
-            for plus, minus, minimum in rows:
-                capacity = (plus & ~skipped).bit_count() - (minus & selected).bit_count()
-                if capacity < minimum:
-                    nodes["infeasible"] += 1
-                    return
-                if capacity == minimum:
-                    more_selected |= plus & ~skipped
-                    more_skipped |= minus & ~selected
-            if more_selected & more_skipped:
-                nodes["infeasible"] += 1
-                return
-            if (more_selected, more_skipped) == (selected, skipped):
-                break
-            selected, skipped = more_selected, more_skipped
-        free = universe & ~(selected | skipped)
-        greedy = selected | (free & beneficial)
-        gain = value(greedy)
-        if best is not None and gain <= best:
-            nodes["objective_pruned"] += 1
-            return
-        blocked = []
-        for plus, minus, minimum in rows:
-            if (plus & greedy).bit_count() - (minus & greedy).bit_count() < minimum:
-                flips = free & ((plus & ~greedy) | (minus & greedy))
-                blocked.append(flips)
-        if not blocked:
-            best, winner = gain, greedy
-            nodes["attained_relaxation"] += 1
-            return
-        flips = min(blocked, key=int.bit_count)
-        bit = next(bit for bit in priority if flips & bit)
-        if greedy & bit:
-            visit(selected, skipped | bit)
-            visit(selected | bit, skipped)
-        else:
-            visit(selected | bit, skipped)
-            visit(selected, skipped | bit)
 
-    visit(0, 0)
-    if winner is not None and (not admissible(rows, winner) or value(winner) != best):
-        raise ValueError("The maximizing integer witness failed its original inequalities")
-    return winner, best, nodes
+def certified_route(weights, rows):
+    """Use an LP to propose a witness and multipliers, then certify without its float objectives."""
+    if not rows:
+        route = sum(1 << i for i, weight in enumerate(weights) if weight > 0)
+        return route, check_certificate(weights, rows, route, {})
+
+    import numpy as np
+    from scipy.optimize import Bounds, LinearConstraint, linprog, milp
+
+    coefficients = [[((plus >> i) & 1)-((minus >> i) & 1) for i in range(len(weights))]
+                    for plus, minus, _ in rows]
+    minima = np.array([minimum for _, _, minimum in rows])
+    matrix = np.array(coefficients)
+    scale = max(1, max(abs(weight) for weight in weights))
+    objective = -np.array([weight/scale for weight in weights])
+    lp = linprog(objective, A_ub=-matrix, b_ub=-minima, bounds=(0, 1), method="highs")
+    if not lp.success:
+        raise ValueError("The proposal relaxation did not finish")
+    if any(not isclose(value, round(value), abs_tol=1e-8) for value in lp.x):
+        proposed = milp(objective, integrality=np.ones(len(weights)), bounds=Bounds(0., 1.),
+                        constraints=LinearConstraint(matrix, minima, np.inf))
+        if not proposed.success:
+            raise ValueError("The integer witness proposal did not finish")
+    else:
+        proposed = lp
+    route = sum(1 << i for i, value in enumerate(proposed.x) if round(value))
+    approximate = {j: Fraction(round(-dual*scale)) for j, dual in enumerate(lp.ineqlin.marginals) if dual < 0}
+    support = list(approximate)
+    residuals = [weight+sum(coefficients[j][i]*approximate[j] for j in support)
+                 for i, weight in enumerate(weights)]
+    equations = [[*(coefficients[j][i] for j in support), -weight]
+                 for i, weight in enumerate(weights) if abs(residuals[i]) <= scale/10**10]
+    reconstructed = rational_solution(equations, len(support))
+    certificate = check_certificate(weights, rows, route, approximate)
+    if reconstructed is not None and all(value >= 0 for value in reconstructed):
+        exact = check_certificate(weights, rows, route, dict(zip(support, reconstructed, strict=True)))
+        if Fraction(*exact["upper_gain_rational"]) <= Fraction(*certificate["upper_gain_rational"]):
+            certificate = exact
+    return route, certificate
 
 
 def integer_clocks(clocks):
@@ -181,23 +195,26 @@ def integer_clocks(clocks):
 
 def summary(pairs, clocks, groups, route, scale):
     baseline = sum(a for a, _ in clocks)
-    total = sum(pair[bool(route & (1 << i))] for i, pair in enumerate(clocks))
+    times = [pair[bool(route & (1 << i))] for i, pair in enumerate(clocks)]
+    total = sum(times)
     selected = [i for i, _ in enumerate(pairs) if route & (1 << i)]
     cumulative = {}
     for arm, comparisons in groups.items():
         _, fixes, routed_fixes = counts(comparisons[0], route)
+        shortfalls = [(threshold, named-actual) for threshold, named, actual in
+                      (counts(row, route) for row in comparisons[1:]) if actual < named]
+        deficit = max((missing for _, missing in shortfalls), default=0)
         cumulative[arm] = dict(
             installed_fixes=fixes, routed_fixes=routed_fixes, finite_thresholds=len(comparisons)-1,
-            thresholds_below_installed=sum(actual < named for _, named, actual in
-                                           (counts(row, route) for row in comparisons[1:])),
-            max_deficit=max(0, max(named-actual for _, named, actual in
-                                  (counts(row, route) for row in comparisons))))
-    mid = median(Fraction(pair[bool(route & (1 << i))], pair[0]) for i, pair in enumerate(clocks))
+            thresholds_below_installed=len(shortfalls), max_finite_deficit=deficit,
+            first_worst_cutoff_km=next((cutoff for cutoff, missing in shortfalls if missing == deficit), None))
+    mid = median(Fraction(time, baseline) for time, (baseline, _) in zip(times, clocks, strict=True))
+    half = sum(2*time <= baseline for time, (baseline, _) in zip(times, clocks, strict=True))
     return dict(mask=route, candidate_cases=[pairs[i][0]["case"] for i in selected],
                 installed_total_units=baseline, total_units=total, total_s=total/scale,
                 summed_speedup=baseline/total if total else None,
                 seconds_above_half_time=(2*total-baseline)/(2*scale),
-                median_paired_wall_ratio=float(mid), cumulative=cumulative)
+                at_or_below_half_time=half, median_paired_wall_ratio=float(mid), cumulative=cumulative)
 
 
 def primary(pairs, clocks):
@@ -205,20 +222,22 @@ def primary(pairs, clocks):
     groups = coverage(pairs, None)
     rows = constraints(groups)
     weights = [a-b for a, b in units]
-    route, gain, nodes = maximize_integer(weights, rows)
-    if route is None or not meets(groups, route):
+    route, certificate = certified_route(weights, rows)
+    if not meets(groups, route):
         raise ValueError("The installed route always certifies feasibility")
     strict = summary(pairs, units, groups, route, scale)
-    if strict["installed_total_units"]-gain != strict["total_units"]:
+    if strict["installed_total_units"]-certificate["gain"] != strict["total_units"]:
         raise ValueError("Witness elapsed total disagrees with the certified integer objective")
+    strict["lower_total_units"] = strict["installed_total_units"]-certificate["upper_gain"]
     all_candidates = (1 << len(units))-1
-    free_route, _, free_nodes = maximize_integer([a for a, _ in units], rows)
-    return dict(clock_unit_denominator=scale, strict=strict, count_inequalities=len(rows), search=nodes,
+    free_route, free_certificate = certified_route([a for a, _ in units], rows)
+    free = summary(pairs, [(a, 0) for a, _ in units], groups, free_route, scale)
+    free["lower_total_units"] = free["installed_total_units"]-free_certificate["upper_gain"]
+    return dict(clock_unit_denominator=scale, strict=strict, count_inequalities=len(rows), certificate=certificate,
                 installed=summary(pairs, units, groups, 0, scale),
                 candidate=summary(pairs, units, groups, all_candidates, scale),
                 unconstrained=summary(pairs, units, groups, sum(1 << i for i, w in enumerate(weights) if w > 0), scale),
-                free_candidate=summary(pairs, [(a, 0) for a, _ in units], groups, free_route, scale),
-                free_candidate_search=free_nodes)
+                free_candidate=free, free_candidate_certificate=free_certificate)
 
 
 def regression(pairs, clocks, path):
@@ -232,7 +251,11 @@ def regression(pairs, clocks, path):
             raise ValueError("The frozen first-11 input scores or clocks differ from the original receipt")
     fresh = optimize(pairs)["strict"]["minimum_sum"]
     archived = historical["result"]["strict"]["minimum_sum"]
-    got = primary(pairs, clocks)["strict"]
+    scale, units = integer_clocks(clocks)
+    groups = coverage(pairs, None)
+    route = min((mask for mask in range(1 << len(pairs)) if meets(groups, mask)),
+                key=lambda mask: sum(pair[bool(mask & 1 << i)] for i, pair in enumerate(units)))
+    got = summary(pairs, units, groups, route, scale)
     if (fresh["mask"] != archived["mask"] or got["mask"] != archived["mask"]
             or not isclose(got["total_s"], archived["wall"]["total_s"], rel_tol=0., abs_tol=1e-10)):
         raise ValueError("The exact solver did not reproduce the archived exhaustive optimum")
@@ -250,7 +273,9 @@ def main():
     result = primary(pairs, clocks)
     _, units = integer_clocks(clocks)
     fields = ("algorithm", "outcome", "elapsed_s", "cpu_s", "attempt_result_sha256", "terminal_sha256",
-              "authority_sha256", "timing_scope", "c0_fix", "fitted_c_fix", "c0_error_km", "fitted_c_error_km")
+              "authority_sha256", "raw_authority_sha256", "physical_content_sha256", "relocation_proof_sha256",
+              "build_sha256", "first", "same_lease", "generation", "timing_scope",
+              "c0_fix", "fitted_c_fix", "c0_error_km", "fitted_c_error_km")
     measurements = [
         dict(position=i+1, case=pair[0]["case"],
              **{name: {k: row[k] for k in fields} | dict(wall_units=units[i][role],
