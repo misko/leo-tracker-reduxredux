@@ -94,6 +94,7 @@ def capsule_fixture(monkeypatch):
     fixture.app, fixture.tracks, fixture.moment, fixture.overlay = app, tracks, moment, overlay
     fixture.stock, fixture.original_formation, fixture.original_attach = original_ports, moment.formed_features, attach
     fixture.original_prepare, fixture.winners, fixture.values = prepare, rows, revised
+    fixture.native, fixture.config = native, config
     fixture.projected = projected
     return fixture
 
