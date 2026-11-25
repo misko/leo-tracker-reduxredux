@@ -2,11 +2,11 @@ from copy import deepcopy
 
 import arrival_primary_0049 as primary
 import pytest
+from reports.ALGO08.v3 import empty_lane_arrival as arrival
 from test_matched_donor_0049 import factor, native_pair
 
 
 def test_requires_frequency_and_timing_on_the_same_original_winner():
-    arrival = primary.arrival
     actual = factor(-10_000.)
     samples = 13_332
     phase = arrival.arrival_phase(samples, actual)
@@ -26,7 +26,7 @@ def test_only_enrolled_empties_get_the_complete_winner_in_original_order():
     original = primary.signed.opportunities(sparse)
     oid = list(original)[8]
     proof = {oid: {"installed_minus_query_cfo_hz": 12.}}
-    packet, audit = primary.splice(stock, sparse, proof, "sealed-projection")
+    packet, audit = primary.splice(stock, sparse, proof, "sealed-projection", arrival.WINDOWS["primary"])
     result = primary.signed.opportunities(packet)
     assert list(result) == list(original)
     assert (stock, sparse) == before
@@ -42,4 +42,4 @@ def test_fails_closed_if_a_hit_would_replace_an_existing_winner():
     stock, sparse = native_pair()
     existing = list(primary.signed.opportunities(sparse))[4]
     with pytest.raises(ValueError, match="sparse-empty short"):
-        primary.splice(stock, sparse, {existing: {}}, "sealed-projection")
+        primary.splice(stock, sparse, {existing: {}}, "sealed-projection", arrival.WINDOWS["primary"])

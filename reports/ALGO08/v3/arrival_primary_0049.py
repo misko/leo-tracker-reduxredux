@@ -14,7 +14,6 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE / "measurements"
 sys.path[:0] = [str(HERE), str(HERE.parents[2])]
 
-from reports.ALGO08.v3 import empty_lane_arrival as arrival  # noqa: E402
 from empty_recovery_0049 import restore_empty_lanes  # noqa: E402
 from matched_donor_0049 import bind_derived  # noqa: E402
 import matched_donor_0049_trial as trial  # noqa: E402
@@ -28,6 +27,8 @@ RUNNER = "2aadda247333edc0b0e3b34bcd0d630e48e9ac5802337fae89c0f2efe8a42a02"
 
 def primary_hits(predictions, installed):
     """Find complete original installed winners within the already frozen window."""
+    from reports.ALGO08.v3 import empty_lane_arrival as arrival
+
     found = {}
     limits = arrival.WINDOWS["primary"]
     for oid, query in predictions.items():
@@ -45,7 +46,7 @@ def primary_hits(predictions, installed):
     return found
 
 
-def splice(stock, sparse, found, projection_sha256):
+def splice(stock, sparse, found, projection_sha256, limits):
     """Apply the narrowed set using the complete tuples from the original repair."""
     _, all_empty = restore_empty_lanes(stock, sparse)
     inserted = [dict(row, **found[row["observation_id"]])
@@ -56,7 +57,7 @@ def splice(stock, sparse, found, projection_sha256):
     original = signed.opportunities(sparse)
     probes = [dict(lane["row"], candidates=[by_oid[oid]]) if oid in by_oid else lane["row"]
               for oid, lane in original.items()]
-    frequency, samples = arrival.WINDOWS["primary"]
+    frequency, samples = limits
     recipe = dict(
         schema="private-0049-primary-arrival-restoration-v1",
         scope="saved hindsight receiver simulation",
@@ -85,6 +86,8 @@ def splice(stock, sparse, found, projection_sha256):
 
 
 def derive(stock, sparse):
+    from reports.ALGO08.v3 import empty_lane_arrival as arrival
+
     plan = signed.document(DATA / "empty-graph-rescue-development-plan.json.gz", PLAN)
     seal = signed.document(DATA / "empty-lane-arrival-seal.json", SEAL)
     if (plan["cohort"] != "development" or plan["ledger_sha256"] != seal["ledger_sha256"]
@@ -104,7 +107,7 @@ def derive(stock, sparse):
             coverage["installed_positive_queries"], counts["carrier_only"], counts["interpolated"],
             len(found)) != (1105, 300, 104, 22, 14, 11, 11):
         raise ValueError("The primary receiver audit differs from the frozen measured scope")
-    packet, audit = splice(stock, sparse, found, proof["projection_sha256"])
+    packet, audit = splice(stock, sparse, found, proof["projection_sha256"], arrival.WINDOWS["primary"])
     if (audit["original_winners"], audit["derived_winners"], audit["unchanged_lanes"]) != (600, 611, 1853):
         raise ValueError("The intervention must retain every original winner in the full ordered stream")
     return packet, dict(audit, projection=proof, installed_positive_queries=coverage["installed_positive_queries"],
