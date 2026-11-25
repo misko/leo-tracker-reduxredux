@@ -327,8 +327,18 @@ def source_pins():
     }
 
 
+def controller_preflight():
+    from combined_small_panel_score import verifier_paths
+
+    verifier_paths()
+    from tools.pipeline_eval.qualification.paired_publication import child_usage
+
+    return sorted(child_usage())
+
+
 def prepare(root):
     start = monotonic()
+    controller_counters = controller_preflight()
     root.mkdir(mode=0o700)
     restore(root)
     cases = {}
@@ -379,6 +389,7 @@ def prepare(root):
                 cases=cases,
                 controls=CASES,
                 installed=installed,
+                controller_counters=controller_counters,
                 preflight_elapsed_s=monotonic() - start,
             ),
         )
@@ -628,6 +639,8 @@ def watch(root, pin, case, role, pid, *, pending_0218):
     if pending_0218 and case != "DS30-0107":
         raise ValueError("Only the registered short pair can fill the pending 0218 gap")
     ready = verify_ready(root, pin)
+    if ready["controller_counters"] != controller_preflight():
+        raise ValueError("The independent controller's timing interface changed")
     last_finish = authorized_order(root, ready, case, role)
     conditioning = conditioning_pin(root, ready["cases"][case], case, pin)
     require_resident(ready["cases"][case]["files"])
