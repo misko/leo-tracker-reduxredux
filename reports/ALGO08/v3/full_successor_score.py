@@ -897,19 +897,28 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         rf = metadata["paired_rf_and_error"][arm]
         lines.append(f"| {label} | {rf['comparable']} | {rf['rf_lower_closer']} | {rf['rf_lower_farther']} | "
                      f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
-    lines += ["", "### Frequency correction on three held recordings", "",
+    lines += ["", "### Frequency correction on saved receiver outputs", "",
               "The correction moves a measured carrier frequency halfway toward a prediction from neighboring visits "
               "when the two estimates agree within one frequency bin. The replay predicted odd visits "
               "after removing both receivers' measurements at those visits from the track fit. "
-              "The replay adjusted 366 frequencies on DS30-0019, 499 on DS30-0274 and 530 on DS30-0218, kept every detection and "
+              "The replay adjusted 366 frequencies on DS30-0019, 499 on DS30-0274, 530 on DS30-0218 and 153 on DS30-0212, kept every detection and "
               "arrival time, rebuilt the tracks and refitted the position. All distances below are survey errors.",
               "", "| Recording | Calibration | ALGO08v3 | Original candidate | With correction |",
               "|---|---|---:|---:|---:|", "| DS30-0019 | Fixed zero | 744 m | 435 m | 121 m |",
               "| DS30-0019 | Fitted | 842 m | 375 m | 54 m |", "| DS30-0274 | Fixed zero | 172 m | 889 m | 719 m |",
               "| DS30-0274 | Fitted | 206 m | 934 m | 752 m |",
               "| DS30-0218 | Fixed zero | 883 m | 1,057 m | 819 m |",
-              "| DS30-0218 | Fitted | 953 m | 1,125 m | 873 m |", "",
-              "The correction improved both calibration arms on all three recordings. DS30-0274 still had 546 m more "
+              "| DS30-0218 | Fitted | 953 m | 1,125 m | 873 m |",
+              "| DS30-0212 | Fixed zero | 1,327 m | 1,068 m | 1,086 m |",
+              "| DS30-0212 | Fitted | 1,224 m | 977 m | 1,011 m |", "",
+              "The correction reduced position error on three recordings and increased it on DS30-0212 in both calibration arms. "
+              "The fitted result crossed inside 1 km on DS30-0218 and outside 1 km on DS30-0212. "
+              "Across all four saved comparisons, three fitted positions fell within 1 km with either method. "
+              "DS30-0442 was also enrolled for a correction replay. Its required orbit data were unavailable from cache. "
+              "It remains in the full comparison of the two original pipelines. "
+              "[Preregistered DS30-0212 and DS30-0442 outcomes](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "2fb6feae6059a0c81ce160ef2a38669abcbe9c9b/reports/ALGO08/v3/masked-cfo-next-two-results.md)", "",
+              "DS30-0274 still had 546 m more "
               "fitted error than ALGO08v3. Conditional RF RMS on the fitted solver's selected observations fell "
               "from 174.73 to 171.91 Hz on DS30-0019 and from 130.24 to 127.08 Hz on DS30-0274. Across all "
               "assigned observations on DS30-0274, fitted RF RMS rose from 152.65 to 153.20 Hz.", "",

@@ -385,10 +385,13 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert f"{before:.2f} to {after:.2f} Hz" in markdown
     other = json.loads((receipts / "held-shrink-0274.json").read_bytes())
     third = json.loads((receipts / "masked-cfo-0218-prospective-score.json").read_bytes())
+    fourth = json.loads((receipts / "masked-cfo-0212-score.json").read_bytes())
     assert third["exact_ordinary_scientific_parity"] and third["correction"]["eligible"] == 530
     for arm, name in (("c0", "Fixed zero"), ("fitted_c", "Fitted")):
         values = [third["arms"][cell][arm]["error_m"] for cell in ("installed", "ordinary", "corrected")]
         assert f"| DS30-0218 | {name} | " + " | ".join(f"{v:,.0f} m" for v in values) + " |" in markdown
+        values = [fourth["arms"][cell][arm]["error_m"] for cell in ("installed", "ordinary", "corrected")]
+        assert f"| DS30-0212 | {name} | " + " | ".join(f"{v:,.0f} m" for v in values) + " |" in markdown
     for arm in ("c0", "fitted_c"):
         values = [other[r]["error_m"][arm] for r in ("installed_raw", "ordinary_saved", "half_blend_saved")]
         assert " | ".join(f"{v:.0f} m" for v in values) in markdown
