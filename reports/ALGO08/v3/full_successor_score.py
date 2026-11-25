@@ -557,8 +557,9 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
     def number(x, digits=2):
         return "—" if x is None else f"{x:.{digits}f}"
 
+    one_km = changes["fitted_c"]["paired_distance_coverage"]["within_1km"]
     lines = ["# DS30 field report · ALGO08v3 and the single-core candidate", "",
-             f"Both pipelines were timed on the same **{k} original recordings**. "
+             f"Both pipelines were timed on the same **{k} original recordings** from the Gauss rooftop. "
              f"The summed wall-time speedup was **{number(full['wall']['summed_speedup'])}×**. "
              f"Speedup at the median paired ratio was **{number(full['wall']['median_paired_speedup'])}×**. "
              f"ALGO08v3 returned **{full['installed']['fitted_c']['fixes']}/{k}** fitted positions "
@@ -568,7 +569,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
              f"The median paired speedup {'reached' if gates['median_paired_speedup'] else 'fell below'} 2×. "
              f"Across all {k} attempts, ALGO08v3 returned a fitted position within 1 km on "
              f"**{full['installed']['fitted_c']['within_1km']}** and the candidate did so on "
-             f"**{full['successor']['fitted_c']['within_1km']}**.", "",
+             f"**{full['successor']['fitted_c']['within_1km']}**. On **{one_km['gained']}** recordings only "
+             f"the candidate landed within 1 km. On **{one_km['lost']}** only ALGO08v3 did.", "",
              "Gauss ran one pipeline at a time on a single CPU core. The candidate uses 8 ms primary "
              "signal searches between 20 ms two-scan anchors. Both builds read the original waveforms "
              "and use the same search region and causal orbit data for each recording. "
