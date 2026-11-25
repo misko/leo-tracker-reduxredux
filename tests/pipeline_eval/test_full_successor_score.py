@@ -355,6 +355,7 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
     crossing = report["paired_error_changes"]["fitted_c"]["paired_distance_coverage"]["within_1km"]
+    assert "named ALGO08v3 research launcher" in markdown.split("## ", 1)[0]
     assert (f"On **{crossing['gained']}** recordings only the candidate landed within 1 km. "
             f"On **{crossing['lost']}** only ALGO08v3 did.") in markdown.split("## ", 1)[0]
     histogram_section = markdown.split("## Runtime and position error histograms\n", 1)[1].split("\n## ", 1)[0]

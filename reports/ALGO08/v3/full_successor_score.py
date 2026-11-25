@@ -571,7 +571,9 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
              f"**{full['installed']['fitted_c']['within_1km']}** and the candidate did so on "
              f"**{full['successor']['fitted_c']['within_1km']}**. On **{one_km['gained']}** recordings only "
              f"the candidate landed within 1 km. On **{one_km['lost']}** only ALGO08v3 did.", "",
-             "Gauss ran one pipeline at a time on a single CPU core. The candidate uses 8 ms primary "
+             "The benchmark uses the named ALGO08v3 research launcher. At enrollment, Gauss used ALGO08v2 "
+             "for automatic analysis of new fast scans. Gauss timed one pipeline at a time on a single CPU core. "
+             "The candidate uses 8 ms primary "
              "signal searches between 20 ms two-scan anchors. Both builds read the original waveforms "
              "and use the same search region and causal orbit data for each recording. "
              "The 100-recording panels below use fresh paired measurements on the original release subset. "
