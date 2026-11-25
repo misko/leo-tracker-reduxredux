@@ -877,7 +877,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                      f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
     lines += ["", "### Frequency correction on two held recordings", "",
               "The correction moves a measured carrier frequency halfway toward a prediction from neighboring visits "
-              "when the two estimates agree within one frequency bin. The prediction excludes the target visit. "
+              "when the two estimates agree within one frequency bin. The replay predicted odd visits "
+              "after removing both receivers' measurements at those visits from the track fit. "
               "The replay adjusted 366 frequencies on DS30-0019 and 499 on DS30-0274, kept every detection and "
               "arrival time, rebuilt the tracks and refitted the position. All distances below are survey errors.",
               "", "| Recording | Calibration | ALGO08v3 | Original candidate | With correction |",
@@ -899,7 +900,14 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "[DS30-0274 control and replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "d13e838d214bda451da743941d94b96b07e30874/reports/ALGO08/v3/held-shrink-0274.md) · "
               "[Forecast cost and exact input comparison](https://github.com/misko/leo-tracker-reduxredux/blob/"
-              "7f7371cafbfdb59aa5e1d625dd56b3a610e8ec26/reports/ALGO08/v3/held-cfo-features.md)"]
+              "7f7371cafbfdb59aa5e1d625dd56b3a610e8ec26/reports/ALGO08/v3/held-cfo-features.md)", "",
+              "Applying the same rule to the even short visits gave mixed receiver results. Among edited "
+              "measurements with an ALGO08v3 counterpart, agreement within 250 Hz and two arrival samples "
+              "went from 237 to 235 of 249 on DS30-0019 and from 360 to 371 of 384 on DS30-0274. "
+              "The wider 2,250 Hz and six-sample counts held steady on both. The even-visit test measured "
+              "receiver agreement only. [Complementary visits and full counts](https://github.com/misko/"
+              "leo-tracker-reduxredux/blob/3002b00e870b68ccc3b6d8c7332368800f810cee/reports/ALGO08/v3/"
+              "held-cfo-complement.md)"]
     lines += ["", "### Does the receiver effect repeat?", "",
               "Both solvers processed the same two saved detector packets on each of three recordings. "
               "The table gives horizontal position error in km with fitted calibration. "

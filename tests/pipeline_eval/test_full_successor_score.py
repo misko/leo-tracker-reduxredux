@@ -382,6 +382,13 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         assert " | ".join(f"{v:.0f} m" for v in values) in markdown
     assert f"{masked['timing']['through_exit_wall_s']:.2f} and {other['half_blend_saved']['wall_s']:.2f} seconds" in markdown
     assert "held-shrink-0019-ram.md)" in markdown and "held-shrink-0274.md)" in markdown
+    complement = json.loads((receipts / "held-cfo-complement-score.json").read_bytes())
+    for case, study in complement["cases"].items():
+        scored = study["even_eligible"]
+        tight = scored["windows"]["250Hz_2samples"]
+        assert f"from {tight['joint_before']} to {tight['joint_after']} of {scored['scored']} on {case}" in markdown
+        loose = scored["windows"]["2250Hz_6samples"]
+        assert loose["joint_before"] == loose["joint_after"]
     feature = json.loads(gzip.decompress((receipts / "held-cfo-features-timing.json.gz").read_bytes()))
     for row in feature["results"]:
         result = row["result"]
