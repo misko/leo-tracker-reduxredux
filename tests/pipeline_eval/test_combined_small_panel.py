@@ -158,3 +158,14 @@ def test_short_gap_requires_exact_unstarted_successor(experiment):
     assert panel.official_0218_is_pending([stock, successor])
     assert not panel.official_0218_is_pending([stock, dict(successor, child_started_unix_ns=42)])
     assert not panel.official_0218_is_pending([stock, dict(successor, raw_identity_sha256="wrong")])
+
+
+def test_native_meter_accounts_for_the_command_it_reaps(experiment):
+    import sys
+
+    from combined_small_panel_meter import measure
+
+    receipt = measure([sys.executable, "-IB", "-c", "sum(range(60000))"])
+    assert receipt["exit_code"] == 0 and receipt["minor_faults"] > 0
+    assert receipt["cpu_s"] == receipt["user_cpu_s"] + receipt["system_cpu_s"]
+    assert receipt["wall_s"] > 0 and receipt["cpu_s"] > 0

@@ -149,6 +149,15 @@ def checked_publication(work, role, case, inputs, clock):
         for name in ("combined-small-panel-witness.json", "prefetch-snapshots.json")
     ):
         raise ValueError("An opt-in artifact appeared in the ordinary control")
+    numeric_cpu = native["total_before_receipt"]["cpu_s"]
+    bound = "authenticated_bootstrap_only"
+    if case == "DS30-0016":
+        inner = read(work / "numeric-process.json")
+        if inner["exit_code"] or not numeric_cpu <= inner["cpu_s"] <= clock["elapsed_s"]:
+            raise ValueError("The inside-namespace meter did not observe the complete worker")
+        scope["numeric_process"] = inner
+        numeric_cpu = inner["cpu_s"]
+        bound = "numeric_worker_through_exit"
     wall, cpu = monotonic() - t[0], process_time() - t[1]
     return (
         verified
@@ -156,7 +165,11 @@ def checked_publication(work, role, case, inputs, clock):
         | scope
         | dict(
             verification=dict(wall_s=wall, cpu_s=cpu),
-            verified_boundary=dict(wall_s=clock["elapsed_s"] + wall, cpu_s=clock["cpu_s"] + cpu),
+            verified_boundary=dict(
+                wall_s=clock["elapsed_s"] + wall,
+                cpu_s=numeric_cpu + cpu,
+                cpu_scope=bound + "_plus_independent_verifier",
+            ),
         )
     )
 
@@ -289,13 +302,15 @@ def compare(old, new, site):
     )
 
 
-def score(root, ready_pin):
+def score(root, ready_pin, *, selection=None):
     verifier_paths()
     ready = verify_ready(root, ready_pin)
     results = {}
     deferred = {}
     conditioning = {}
     for case, inputs in ready["cases"].items():
+        if selection is not None and case != selection:
+            continue
         area = root / case
         if (
             not (area / "case.json").is_file()

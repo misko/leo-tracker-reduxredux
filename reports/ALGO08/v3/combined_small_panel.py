@@ -28,7 +28,7 @@ CONTROL = "30cc3b044040f2519677d67abfde731f83693612744d2236d1ba71bb5a31e4ab"
 TRIAL = "bb4d1466c6b3dbc3333ad3be71ce2dade103356fa5a8c6f5bb56bf599b66c282"
 ARCHIVE_PIN = "4e9bc6d3d62cda6e915db62d28e4c114c82693b70768ba90bb258071fef015f5"
 SLOT_COMMIT = "d9a477b9a3a494632d043e27eade0ad75ff84427"
-CAP_SECONDS = {"DS30-0016": 22, "DS30-0107": 7}
+CAP_SECONDS = {"DS30-0016": 17, "DS30-0107": 7}
 DRIVER = Path("/tmp/leo-v3-ds30-paired-evaluation/reports/ALGO08/v3/ds30_paired_evaluation.py")
 DRIVER_PIN = "26b996e90e7ad4c467c551426a69e048d6078cf3c8087c741f9eef3c10f7df31"
 FRESH_NS = 2_000_000_000
@@ -266,7 +266,7 @@ def capsule(command, work, inputs):
     return [*args, "--", *map(str, command)]
 
 
-def command(root, case, work, inputs, role, extra=()):
+def command(root, case, work, inputs, role, extra=(), *, meter=False):
     tree, manifest = runtime_paths(root, role)
     role_args = (
         *paired.original_options(
@@ -290,7 +290,16 @@ def command(root, case, work, inputs, role, extra=()):
         if role == "charted"
         else [HERE / "combined_small_panel_entry.py", tree, "--"]
     )
-    return capsule([paired.PYTHON, "-IB", *entry, *role_args], work, inputs)
+    worker = [paired.PYTHON, "-IB", *entry, *role_args]
+    if meter:
+        worker = [
+            paired.PYTHON,
+            "-IB",
+            HERE / "combined_small_panel_meter.py",
+            work / "numeric-process.json",
+            *worker,
+        ]
+    return capsule(worker, work, inputs)
 
 
 def new_work(path):
@@ -319,6 +328,7 @@ def source_pins():
             "combined_small_panel_entry.py",
             "combined_small_panel_score.py",
             "combined_small_panel_residency.py",
+            "combined_small_panel_meter.py",
             "ds30_paired_worker.py",
             "ds30_paired_inputs.py",
             "profiled_grid_export_admission.py",
@@ -362,6 +372,15 @@ def prepare(root):
                 )
         inputs["preflight"] = preflight
         if case == "DS30-0016":
+            meter_check = check_command(
+                command(root, case, work, inputs, "charted", ["--preflight"], meter=True)
+            )
+            meter_receipt = json.loads((work / "numeric-process.json").read_bytes())
+            if meter_check != preflight["charted"] or not meter_receipt["cpu_s"] > 0:
+                raise ValueError(
+                    "The inner worker meter did not observe the original metadata preflight"
+                )
+            inputs["meter_preflight"] = meter_receipt
             probe = capsule(
                 [
                     paired.PYTHON,
@@ -562,7 +581,7 @@ def launch_cell(
         "/usr/bin/ionice",
         "-c2",
         "-n7",
-        *command(root, case, work, inputs, role),
+        *command(root, case, work, inputs, role, meter=(case == "DS30-0016")),
     ]
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -694,10 +713,10 @@ def main():
             args.driver_pid,
             pending_0218=args.pending_0218,
         )
-    elif args.action == "score" and args.case is None and args.ready_pin:
+    elif args.action == "score" and args.ready_pin:
         from combined_small_panel_score import score
 
-        score(args.root, args.ready_pin)
+        score(args.root, args.ready_pin, selection=args.case)
     else:
         cli.error("Choose prepare, condition, a single sealed watch, or score")
 
