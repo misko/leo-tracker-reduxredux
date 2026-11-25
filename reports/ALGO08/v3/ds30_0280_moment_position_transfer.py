@@ -5,7 +5,7 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, copytree
 import sys
 from unittest.mock import patch
 
@@ -75,7 +75,11 @@ def command(run, *args, **kwargs):
     # Writable publication goes to /tmp; pinned installed native operands
     # still see the true /dev/shm device in this isolated mount namespace.
     argv[destination-1] = str(mount_root(run))
-    return argv
+    archive = str(run/"field/stage/tle")
+    index = argv.index("--remount-ro")
+    # Individual body binds alone leave the archive root on the namespace's
+    # synthetic device. The reviewed exact reader checks root and body st_dev.
+    return [*argv[:index],"--ro-bind",archive,archive,*argv[index:]]
 
 
 def output_path(path, *, cell=False):
@@ -176,6 +180,55 @@ def prepare(run, report_path, report_pin, candidate_path, candidate_pin):
         bytes_free=space.f_bavail*space.f_frsize,inodes_free=space.f_favail))
 
 
+def rebind(run, previous, pin):
+    """Use only hardlinks for a separately approved pre-inference setup recovery."""
+    if run.parent != Path("/tmp") or run.resolve() != run or run.exists():
+        raise ValueError("Use a fresh direct /tmp tmpfs directory")
+    source = saved.document(previous/"rank68-readiness.json",pin)
+    old = previous/"field/ordinary"
+    failed = saved.document(old/"clock.json")
+    state = replay.status(enrollment())
+    if (source["state"] != state["pair_sha256"] or not state["verified_pair"] or source["custody"] != CUSTODY_PIN
+            or failed["exit_code"] != 1 or "Staged input escapes its pinned tmpfs root" not in (old/"worker.stderr").read_text()
+            or (old/"receipt.json").exists() or any((old/"substituted").rglob("terminal.json"))):
+        raise ValueError("Only the recorded pre-inference mount setup failure is eligible for rebind")
+    root = run/"field"
+    run.mkdir(mode=0o700)
+    root.mkdir(mode=0o700)
+    mount_root(run).mkdir(mode=0o700)
+    stage = root/"stage"
+    copytree(previous/"field/stage",stage,copy_function=os.link,symlinks=False)
+    row = enrollment()
+    plans, readiness = {}, {}
+    spec = experiment(probe=False)
+    for mode,expected in source["plans"].items():
+        before = previous/"field"/mode
+        cell = root/mode
+        cell.mkdir(mode=0o700)
+        for name in ("admission.json","derived-native.json"):
+            os.link(before/name,cell/name)
+        plan = saved.document(before/"plan.json",expected)
+        candidate = plan["moment_candidate"]
+        plans[mode] = new = saved.write(cell/"plan.json",dict(plan,stage=str(stage),sources=saved.source_pins(spec)))
+        with ports(run,row,candidate):
+            readiness[mode] = capsule.preflight(cell,new,mode,replay.OBSERVER_PIN)
+    return saved.write(run/"rank68-readiness.json",dict(source,plans=plans,readiness=readiness,
+        prior_failed_clock=saved.identifier(old/"clock.json"),prior_failed_stderr=saved.identifier(old/"worker.stderr"),
+        prior_ready_sha256=pin,additional_archive_copy_bytes=0))
+
+
+def verify_archive_mount(cell, plan):
+    archive = Path(plan["stage"])/"tle"
+    pool = archive/"archive/space-track"
+    device = archive.stat().st_dev
+    names = saved.document(Path(plan["stage"])/"catalogue.json")
+    if (len(names) != 47 or set(names) != {path.name for path in pool.iterdir()}
+            or any((path:=pool/name).resolve(strict=True)!=path or path.stat().st_dev!=device for name in names)):
+        raise ValueError("The actual capsule archive root and exact 47 staged body devices do not match")
+    saved.write(cell/"archive-device-proof.json",dict(body_count=len(names),device=device,
+        archive_sha256=signed.canonical(names),actual_capsule_paths_match=True))
+
+
 @contextmanager
 def optional_projection(mode):
     original = graph_overlay.attach
@@ -189,7 +242,7 @@ def optional_projection(mode):
 
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("mode",choices=("status","prepare","watch","child","score"))
+    cli.add_argument("mode",choices=("status","prepare","rebind","watch","child","score"))
     cli.add_argument("root",type=Path,nargs="?")
     cli.add_argument("--pin")
     cli.add_argument("--cell",choices=capsule.CELLS)
@@ -199,6 +252,7 @@ def main():
     cli.add_argument("--rf-report",type=Path)
     cli.add_argument("--candidate",type=Path)
     cli.add_argument("--candidate-pin")
+    cli.add_argument("--previous",type=Path)
     args = cli.parse_args()
     row = enrollment()
     if args.mode == "status":
@@ -208,6 +262,8 @@ def main():
         cli.error("Require the private alternate tmpfs root")
     if args.mode == "child" and args.pin and args.cell:
         plan = saved.document(args.root/"plan.json",args.pin)
+        if args.probe_only:
+            verify_archive_mount(args.root,plan)
         with ports(args.root.parents[1],row,plan["moment_candidate"]), optional_projection(args.cell):
             capsule.child(args.root,args.pin,args.cell,probe_only=args.probe_only)
         return 0
@@ -215,6 +271,8 @@ def main():
     root = args.root/"field"
     if args.mode == "prepare" and args.pin and args.rf_report and args.candidate and args.candidate_pin:
         out = prepare(args.root,args.rf_report,args.pin,args.candidate,args.candidate_pin)
+    elif args.mode == "rebind" and args.pin and args.previous:
+        out = rebind(args.root,args.previous,args.pin)
     elif args.mode == "watch" and args.pin and args.cell and args.driver_pid:
         ready = saved.document(args.root/"rank68-readiness.json",args.pin)
         plan = saved.document(root/args.cell/"plan.json",ready["plans"][args.cell])

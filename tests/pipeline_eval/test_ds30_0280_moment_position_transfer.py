@@ -45,4 +45,23 @@ def test_alternate_mount_reuses_only_native_mount_on_dev_shm():
     i = argv.index("/dev/shm")
     assert argv[i-2:i+1] == ["--bind",str(transfer.mount_root(run)),"/dev/shm"]
     assert ["--bind",str(cell),str(cell)] == argv[argv.index(str(cell))-1:argv.index(str(cell))+2]
+    archive = str(run/"field/stage/tle")
+    assert argv[argv.index("--remount-ro")-3:argv.index("--remount-ro")] == ["--ro-bind",archive,archive]
     assert str(transfer.WORKER.parent) in str(transfer.capsule.WORKER)
+
+
+def test_archive_device_check_requires_complete_same_device_directory(tmp_path,monkeypatch):
+    stage = tmp_path/"stage"
+    archive = stage/"tle/archive/space-track"
+    cell = tmp_path/"ordinary"
+    archive.mkdir(parents=True)
+    cell.mkdir()
+    names = {f"{i}.tle":f"signed-{i}" for i in range(47)}
+    for name in names:
+        (archive/name).write_text("data")
+    transfer.saved.write(stage/"catalogue.json",names)
+    transfer.verify_archive_mount(cell,{"stage":str(stage)})
+    assert transfer.saved.document(cell/"archive-device-proof.json")["body_count"] == 47
+    (archive/"1.tle").unlink()
+    with pytest.raises(ValueError,match="47 staged"):
+        transfer.verify_archive_mount(cell,{"stage":str(stage)})
