@@ -12,6 +12,26 @@ CAPTURES = {"containing": 314, "omitted": 272}
 SCORER_PIN = "f6ac0259f3f4b1cd75275803cdad43e2eeb50a06ab97b2941007c64e53bd88d7"
 
 
+def worst_nodes(before, after):
+    """Report the largest score difference after the matched-grid check."""
+    report = {}
+    for arm in rules.ARMS:
+        points = []
+        for index, (base, proof) in enumerate(zip(before["points"], after["points"], strict=True)):
+            a, b = base["scores"][arm], proof["scores"][arm]
+            if a is not None and b is not None:
+                points.append((abs(b-a), index, a, b))
+        delta, index, old, new = max(points, key=lambda point: point[0])
+        location = before["points"][index]
+        report[arm] = {
+            "node_index": index, "east_km": location["east_km"], "north_km": location["north_km"],
+            "ordinary": old, "checked": new, "absolute_delta": delta,
+            "ordinary_relative_loss": old - min(p[2] for p in points),
+            "over_0_005": sum(p[0] > .005 for p in points), "finite_pairs": len(points),
+        }
+    return report
+
+
 def readback(offer, area, archive_seal, clock):
     prior = south.prior
     freeze = prior.read(prior.checked(south.PLAN, south.PLAN_PIN))
@@ -95,6 +115,7 @@ def score(offer):
     result.update(accept=all(v for k, v in evidence.items() if k != "points")
                    and image["changed_fraction"] <= .01 and image["mean_absolute_channel"] <= .5,
                   verified=evidence, grid=grid, position_image=image, guard=rules.without_clocks(guard),
+                  worst_nodes=worst_nodes(before["grid"], after["grid"]),
                   stock_terminal_sha256=before["receipt"]["terminal_sha256"],
                   proof_terminal_sha256=after["receipt"]["terminal_sha256"],
                   decision=after["receipt"]["decision"], arms=after["terminal"]["arms"],
