@@ -22,4 +22,26 @@ The earlier disjoint profile assigns 160.37 µs per short lane to this entire ti
 
 The one authorized readiness watch expired without a timing child. It observed 180 polls. There were 164 without a fresh deferral, 13 with excessive rolling queue, two before a two-second window was available, and one that failed the instantaneous storage check. At the last fresh rolling refusal, the field had deferred DS30-0445 for 3.171 seconds. The Gauss lease was free and both instantaneous device queues were zero. The bulk rolling queue still averaged 4.835 over 2.018 seconds against a limit of two. With no admitted child, no I/Q payloads were read and there are no paired callback clocks. [Readiness and build receipt](measurements/sparse8-carried-lag-prefix.json)
 
-The detached DS30-0163 and DS30-0419 inputs remain the frozen scope. Passive metadata preflight observed all 11,329 and 5,860 pages resident in tmpfs. The two custody digests bind 36 and six short lanes, of which ten and four were positive in the archived control. A future single admitted child would reauthenticate their complete detached bytes and window hashes and check all 42 signed short outcomes over six alternating paired repeats. Its per-recording, positive/empty and order-split native clocks would measure the whole callback. No full anchors or original backing files are needed for that comparison. [Comparison driver](sparse8_lag_prefix_measure.py)
+The separately authorized RAM-only comparison completed during an actual DS30-0445 field deferral. The capsule mounted only the two signed detached waveform files and manifests, two matched libraries, pilot files, and read-only runtime and source dependencies. Preflight and the child both showed six denied backing or alias paths and kernel denial of all three socket families. All 11,329 DS30-0163 and 5,860 DS30-0419 waveform pages were resident before and after. The exclusive lease was taken with 29.725 seconds until the field retry. The controller reserved a 12-second maximum child, leaving 17.725 seconds of margin. The visible research NVMe queue averaged 0.029. [RAM capsule](sparse8_lag_prefix_ram.py) · [Signed admission and timing receipt](measurements/sparse8-carried-lag-prefix.json)
+
+All **252 paired outputs** matched byte for byte, including 84 positive and 168 empty pairs. An independent join reproduced the ordered output and original window digest for every pair against the archived original profile. Across both recordings the balanced median paired saving was **10.160 µs per complete callback (1.29%)**. Each DS30-0163 round averaged the per-lane savings across 18 control-first and 18 candidate-first pairs. These six balanced round means were +15.679, +9.613, +9.689, +9.684, +15.025 and +9.496 µs per lane. The six-lane DS30-0419 sample had four faster rounds and two slower. Each table entry takes the median of the six round means for its specified lane and order group. The candidate-first column considers that half of each round separately, so it can have the opposite sign from the complete balanced round. [Archived exact control](sparse8-native-profile.md) · [Signed timing receipt](measurements/sparse8-carried-lag-prefix.json)
+
+| Scope | Pairs | Balanced saving, µs/lane | Control first | Candidate first |
+|---|---:|---:|---:|---:|
+| Both prefixes | 252 | 10.160 | 36.500 | −15.882 |
+| Both, positive | 84 | 12.319 | 83.268 | −55.572 |
+| Both, empty | 168 | 10.422 | 16.390 | 3.880 |
+| DS30-0163 | 216 | 9.687 | 35.466 | −13.307 |
+| DS30-0163, positive | 60 | 14.182 | 84.594 | −57.675 |
+| DS30-0163, empty | 156 | 9.907 | 16.798 | 3.219 |
+| DS30-0419 | 36 | 12.462 | 48.975 | −28.404 |
+| DS30-0419, positive | 24 | 11.264 | 68.813 | −54.911 |
+| DS30-0419, empty | 12 | 15.951 | 9.920 | 23.973 |
+
+| Scope | Control callback CPU summed over six repeats, ms | Candidate callback CPU summed, ms | Control / candidate |
+|---|---:|---:|---:|
+| DS30-0163 | 168.859621 | 166.368912 | 1.014971× |
+| DS30-0419 | 30.609161 | 30.160372 | 1.014880× |
+| Both prefixes | 199.468782 | 196.529284 | 1.014957× |
+
+The positive callback strongly favored the arm that ran second. Empty callbacks were faster in both orders. The order effect and small sample limit transfer of the balanced gain beyond these fixtures. Complete capsule wall time was **1.59 s**. The worker measured **1.231 CPU s** across authenticated input, native setup, callbacks, and its own accounting. The outer process timer measured elapsed through exit but missed the nested child's CPU. The timed worker saw 30,488 input blocks and one major fault. The kernel mount proof excludes backing data from this process, and the available counters have no per-file attribution. Ten component tests passed in total. [Comparison driver](sparse8_lag_prefix_measure.py) · [Signed timing receipt](measurements/sparse8-carried-lag-prefix.json)

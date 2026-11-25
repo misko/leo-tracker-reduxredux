@@ -62,5 +62,52 @@
     },
     "watch_path": "/tmp/leo-v3-sparse8-lag-prefix-native01/watch.json",
     "watch_sha256": "0f69bf512d863585c8d6fa72c5555b12b2d61a8aaeb54fec9f285db72bb7e0b5"
+  },
+  "ram_only_native_timing": {
+    "frozen_execution_commit": "ed80652d38fdb8b8b98d0e2ee4aa7d45c34a9579",
+    "output_root": "/tmp/leo-v3-sparse8-lag-prefix-ram01",
+    "artifacts_sha256": {
+      "proof.json": "a60d1f43d165a9dd9b30e219cf16464795ff631efd54154c90097e937d0b3383",
+      "watch.json": "e7710fbc78b229fbb6a6b0f63c97fab7b8857d7177b9166a2db7c155060a6540",
+      "native.json": "d880286a933d264ce1ba2d2800b863ac00066404146ec768c5c280026293e851",
+      "process.txt": "a8644401c3a677a45e9d514313c882824daa5758555c17ce92690d42700b1d29"
+    },
+    "isolation": {"backing_and_unstaged_path_denials": 6, "denied_socket_families": 3,
+                  "before_after_residency_identical": true, "readonly_inputs": true},
+    "admission": {"case": "DS30-0445", "deferral_sha256": "7a4506253638f808df8cf6e39250eeb53a68ed66fa4d6bc3f739f0d55c514481",
+                  "deferral_final_age_s": 0.275323823, "child_limit_s": 12, "next_retry_margin_s": 17.724676177,
+                  "research_nvme_rolling_queue_mean": 0.028967636476115725, "exit": 0},
+    "through_exit_wall_s_rounded": 1.59,
+    "measured_child_wall_s": 1.3815142484381795,
+    "measured_child_cpu_s": 1.230989838,
+    "measured_child_input_blocks": 30488,
+    "measured_child_major_faults": 1,
+    "outer_process_cpu_includes_nested_capsule": false,
+    "same_factor_and_original_window_digest_as_profile_sha256": "c050491c6628b3f76a364917d388878580269a4cc70e07fd0f6b9a5ee3cb157b",
+    "unique_lanes": 42,
+    "repeats": 6,
+    "exact_pairs": 252,
+    "positive_pairs": 84,
+    "empty_pairs": 168,
+    "combined_control_median_cpu_us": 786.5208928571428,
+    "balanced_and_order_split_median_savings_cpu_us": {
+      "combined": {"all": [10.159845, 36.500452, -15.881571],
+                   "positive": [12.319179, 83.267833, -55.572479], "empty": [10.421768, 16.390049, 3.880441]},
+      "DS30-0163": {"all": [9.686514, 35.465889, -13.306944],
+                   "positive": [14.181600, 84.594400, -57.674600], "empty": [9.907346, 16.797885, 3.219115]},
+      "DS30-0419": {"all": [12.461583, 48.975000, -28.404167],
+                   "positive": [11.264000, 68.813000, -54.911167], "empty": [15.951000, 9.920000, 23.973000]}
+    },
+    "savings_order": ["balanced", "control_first", "candidate_first"],
+    "whole_prefix_callback_cpu_ns_summed_across_six_balanced_repeats": {
+      "DS30-0163": {"control": 168859621, "candidate": 166368912},
+      "DS30-0419": {"control": 30609161, "candidate": 30160372},
+      "combined": {"control": 199468782, "candidate": 196529284}
+    },
+    "per_round_order_balanced_paired_savings_cpu_us": {
+      "DS30-0163": [15.679, 9.613, 9.689, 9.684, 15.025, 9.496],
+      "DS30-0419": [30.653, 0.555, 25.870, -1.609, 24.368, -5.039]
+    },
+    "component_tests_passed": 10
   }
 }
