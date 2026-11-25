@@ -6,13 +6,14 @@ import fcntl
 import json
 import os
 from pathlib import Path
+from resource import RUSAGE_CHILDREN, getrusage
 import socket
 import subprocess
 from time import time_ns
 
 from .zstd_literal_pair import HERE, digest
-from .zstd_literal_pair_check import CASES, FILES, load_owned, resident
-from .zstd_literal_pair_clock import LEASE
+from .zstd_literal_pair_check import CASES, FILES, resident
+from .zstd_literal_pair_clock import LEASE, prepare
 
 
 RUN = Path("/srv/postgres-nvme/leo-ds30-evaluation-20261124/cases/DS30-0218")
@@ -113,7 +114,8 @@ def launch(state, ram_mount, library, history, hasher, pin, case, *, preflight=F
         command = namespace(ram_mount, state, libraries, case, ["-c",
             "from reports.ALGO08.v3.zstd_literal_pair_clock_capsule import probe; import sys; probe(*sys.argv[1:])",
             *map(str, libraries), pin, case])
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=8)
+        with LEASE.open("rb") as inherited:
+            completed = subprocess.run(command, stdin=inherited, capture_output=True, text=True, timeout=8)
         if completed.returncode:
             raise ValueError(f"The detached mount preflight could not run: {completed.stderr.strip()}")
         proof = json.loads(completed.stdout) | dict(case=case, host_residency=resident(input_paths(case)))
@@ -143,36 +145,42 @@ def launch(state, ram_mount, library, history, hasher, pin, case, *, preflight=F
         command = namespace(ram_mount, state, libraries, case,
                             ["-m", "reports.ALGO08.v3.zstd_literal_pair_clock",
                              str(library), pin, str(history), str(hasher), case])
+        started = time_ns()
         with (state / "launch.json").open("x") as stream:
-            json.dump(gate | dict(started_unix_ns=time_ns(), isolation_sha256=digest((state / "isolation.json").read_bytes())), stream)
+            json.dump(gate | dict(started_unix_ns=started, isolation_sha256=digest((state / "isolation.json").read_bytes())), stream)
+        cost = getrusage(RUSAGE_CHILDREN)
         run = subprocess.run(["/usr/bin/taskset", "-c", "2", "/usr/bin/nice", "-n", "15", "/usr/bin/ionice", "-c", "3",
                               "/usr/bin/timeout", "--kill-after=1s", "11s", *command], stdin=fd, capture_output=True,
                              timeout=12)
         ended = time_ns()
+        after = getrusage(RUSAGE_CHILDREN)
     finally:
         os.close(fd)
+    process = dict(exit_code=run.returncode, started_unix_ns=started, ended_unix_ns=ended,
+                   elapsed_ns=ended-started, cpu_s=after.ru_utime+after.ru_stime - cost.ru_utime-cost.ru_stime,
+                   input_blocks=after.ru_inblock-cost.ru_inblock)
+    with (state / "process.json").open("x") as stream:
+        json.dump(process, stream, sort_keys=True)
     (state / "stderr.log").write_bytes(run.stderr)
     if run.returncode:
         raise ValueError(f"The single timed child exited {run.returncode}; see its saved stderr")
     result = json.loads(run.stdout) | dict(host_residency_before=before, host_residency_after=resident(input_paths(case)),
-                                          finished_unix_ns=ended, official_admission=gate)
+                                          external_process=process, official_admission=gate)
     with (state / "clock.json").open("x") as stream:
         json.dump(result, stream, indent=2, sort_keys=True)
         stream.write("\n")
 
 
 def probe(library, history, hasher, pin, case):
-    from .zstd_literal_pair import Decoder
-
-    proof = isolation(case)
+    proof, _ = prepare(Path(library), pin, Path(history), Path(hasher), case, cpu=6)
     if proof["mount"] == os.environ.get("HOST_MOUNT"):
         raise ValueError("Isolation did not change mount namespace")
-    load_owned(Decoder(Path(library), pin), Path(history), Path(hasher))
     paths = input_paths(case)
     for path in paths:
         fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
         os.close(fd)
-    print(json.dumps(proof | dict(allowlisted_descriptors_opened=len(paths)), sort_keys=True))
+    print(json.dumps(proof | dict(allowlisted_descriptors_opened=len(paths), waveform_bytes_read=0,
+                                  same_startup_as_clock=True, inherited_gauss_identity=True), sort_keys=True))
 
 
 if __name__ == "__main__":

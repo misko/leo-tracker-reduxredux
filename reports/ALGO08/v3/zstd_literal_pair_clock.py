@@ -76,17 +76,23 @@ def compare(case, runtime):
                 summary=by_order, source_cold=False, source_storage="existing full-resident detached tmpfs")
 
 
-def run(paired_lib, pin, history, hasher, case):
-    if (case not in CASES or os.sched_getaffinity(0) != {2} or os.getpriority(os.PRIO_PROCESS, 0) < 15 or
+def prepare(paired_lib, pin, history, hasher, case, *, cpu):
+    if (case not in CASES or os.sched_getaffinity(0) != {cpu} or os.getpriority(os.PRIO_PROCESS, 0) < 15 or
         subprocess.check_output(("ionice", "-p", str(os.getpid())), text=True).strip() != "idle"):
-        raise ValueError("Use one fresh CPU2 nice-15 idle-I/O slot for the fixed detached original")
-    restrict_payloads(tuple(CASES[case][0] / name for name in FILES))
+        raise ValueError("Use one prescribed nice-15 idle-I/O core for the fixed detached original")
     from .zstd_literal_pair_clock_capsule import isolation
 
     proof = isolation(case)
+    restrict_payloads(tuple(CASES[case][0] / name for name in FILES))
     runtime = load_owned(Decoder(paired_lib, pin), history, hasher)
-    if not os.path.samestat(os.fstat(sys.stdin.fileno()), LEASE.stat()):
+    if (not os.path.samestat(os.fstat(sys.stdin.fileno()), LEASE.stat()) or
+            fcntl.fcntl(sys.stdin.fileno(), fcntl.F_GETFL) & os.O_ACCMODE != os.O_RDONLY):
         raise ValueError("Inherit the nonblocking shared Gauss lease as stdin")
+    return proof, runtime
+
+
+def run(paired_lib, pin, history, hasher, case):
+    proof, runtime = prepare(paired_lib, pin, history, hasher, case, cpu=2)
     fcntl.flock(sys.stdin.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     result = compare(case, runtime)
     print(json.dumps(dict(cases=[result], candidate_pin=pin, filesystem_isolation=proof,
