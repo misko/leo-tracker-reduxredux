@@ -19,13 +19,13 @@ def without_image(document):
     return dict(document, binding={k: v for k, v in document["binding"].items() if k != "position_png_sha256"})
 
 
-def compare_maps(stock, candidate):
+def compare_maps(stock, candidate, *, expected_points=179):
     def layout(document):
         return {k: v for k, v in without_image(document).items() if k not in {"elapsed_seconds", "points"}}
 
     old, new = stock["points"], candidate["points"]
     if (layout(stock) != layout(candidate) or not stock["complete"] or not stock["matched_c_grid"]
-            or len(old) != 179 or len(new) != 179):
+            or len(old) != expected_points or len(new) != expected_points):
         raise ValueError("Changed complete standard grid layout")
     for a, b in zip(old, new, strict=True):
         points = lambda row: {k: v for k, v in row.items() if k != "scores"}
