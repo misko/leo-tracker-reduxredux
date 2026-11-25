@@ -8,8 +8,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from held_shrink_0019_score import verify_publication  # noqa: E402
-from held_shrink_0274 import BLOCK, EXPERIMENT, NATIVE, WITNESS, archived, trial  # noqa: E402
-from sparse8_cfo_epoch_trial import scientific_grid  # noqa: E402
+from held_shrink_0274 import BASE, BLOCK, CASE, EXPERIMENT, NATIVE, WITNESS, archived, trial  # noqa: E402
+from held_shrink_0274_control import PARITY  # noqa: E402
+from sparse8_cfo_epoch_trial import geography, scientific_grid  # noqa: E402
 
 
 def reference():
@@ -67,8 +68,69 @@ def score(pin):
           saved_prediction_sha256=pin, exact_ordinary_reproduction=True, verified=verified)))
 
 
+def score_shrunk(pin):
+    root = BLOCK/"half-blend-capsule/output"
+    parity = trial.document(BLOCK/"ordinary-capsule/output/ordinary-parity.json", PARITY)
+    seal = trial.document(root/"prediction-seal.json", pin)
+    clock = trial.document(root/"clock.json", seal["clock"])
+    plan = trial.document(root/"plan.json", seal["plan_sha256"])
+    if (clock["exit_code"] or not seal["receipt"] or not parity["exact_ordinary_reproduction"]
+            or plan["cell"] != "half-blend" or seal["protocol"] != trial.protocol(EXPERIMENT)):
+        raise ValueError("Only a completed, pre-enrolled saved worker can be compared")
+    run = trial.document(root/"receipt.json", seal["receipt"])
+    native = plan["change"]["derived_native_sha256"]
+    if run["input"] != native or run["handoffs"] != 1 or run["waveform_reads"] or not run["graph_replayed"]:
+        raise ValueError("The original capture or omitted raw boundary changed")
+    trial.start_runtime().load_runtime()
+    from prospective_0316_solver import owner_delta
+    from tools.pipeline_eval.scoring import distance_km
+
+    _, ordinary, old_evidence, _, raw_witness = reference()
+    pub = root/"substituted"
+    witness = trial.document(pub/"exact-named-raw-witness.json", run["witness"])
+    result, evidence, check = verify_publication(pub, run["receipt"], run["witness"], native, ordinary["region"])
+    if (witness["source_sha256"] != raw_witness["source_sha256"]
+            or witness["solver_recipe"]["archive_sha256"] != raw_witness["solver_recipe"]["archive_sha256"]):
+        raise ValueError("Changed scientific source or causal catalogue")
+    report = dict(case=CASE, native_sha256=native, candidate_exit=clock["exit_code"], decision=run["receipt"]["decision"],
+                  prediction_sha256=pin, graph=graph_identity(witness), verified=check,
+                  archived_ordinary_parity_sha256=PARITY)
+    if report["decision"] == "complete":
+        pair, authority, _, _, _ = archived()
+        stock_path = BASE/"installed"/f"attempt-{pair['generation']:06d}"/"result.json"
+        installed = trial.document(stock_path, pair["attempt_result_sha256"]["installed"])
+        if installed["raw_identity"] != authority or installed["outcome"] != "complete":
+            raise ValueError("The named full detector comparison does not bind the same offer")
+        site = geography(CASE)
+        edited = {row["observation_id"] for row in plan["change"]["edits"]}
+        arms = {}
+        for arm in trial.ARMS:
+            full, old, after = installed["evidence"]["arms"][arm], ordinary["arms"][arm], result["arms"][arm]
+            reference_errors = {key:1000*distance_km(site, row["latlon"]) for key,row in
+                                (("installed_v3",full), ("ordinary",old),("half_blend",after))}
+            previous_owners, owners = (e["owner_rows"][arm] for e in (old_evidence, evidence))
+            arms[arm] = dict(
+                error_m=reference_errors,
+                shift_from_ordinary_m=1000*distance_km(old["latlon"], after["latlon"]),
+                conditional_rf_hz=[row["rf_rms_hz"] for row in (full, old, after)],
+                all_owned_rf_hz=[e["detail"]["arms"][arm]["residual_rms_hz"] for e in (old_evidence,evidence)],
+                edited_owners_before_after=[sum(row[0] in edited for row in values)
+                                            for values in (previous_owners,owners)],
+                owners=owner_delta(previous_owners, owners),
+            )
+        report["arms"] = arms
+    print(trial.write(root/"score.json", report))
+
+
 if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("--score")
+    modes = cli.add_mutually_exclusive_group()
+    modes.add_argument("--score")
+    modes.add_argument("--score-shrunk")
     args = cli.parse_args()
-    score(args.score) if args.score else check_control()
+    if args.score_shrunk:
+        score_shrunk(args.score_shrunk)
+    elif args.score:
+        score(args.score)
+    else:
+        check_control()
