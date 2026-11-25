@@ -1,0 +1,123 @@
+{
+  "cancel": {
+    "donor_scope": {
+      "calls": 180,
+      "cpu_s": 0.05920998
+    },
+    "original_lanes": 102,
+    "original_shipped_cpu_ns": 291501188.5,
+    "projected_if_free_cpu_ns": 19736660.0,
+    "projected_if_free_fraction": 0.06770696236801106,
+    "reached_cancellations": 60
+  },
+  "exact_oracle": {
+    "dense": {
+      "counts": {
+        "cancellations": 84,
+        "gates": 240,
+        "verifies": 240
+      },
+      "exact_oracle_cpu_ms_mean": 0.8457546701388888,
+      "exact_oracle_stages_ms": {
+        "cancel": 0.15568963888888887,
+        "gate": 0.05634539583333333,
+        "load": 0.025879607638888892,
+        "refine": 0.0,
+        "verify": 0.60529159375
+      },
+      "lanes": 96,
+      "original_native_cpu_ms_mean": 2.736565875
+    },
+    "weak": {
+      "counts": {
+        "cancellations": 66,
+        "gates": 174,
+        "verifies": 174
+      },
+      "exact_oracle_cpu_ms_mean": 1.6701617037037035,
+      "exact_oracle_stages_ms": {
+        "cancel": 0.3503476759259259,
+        "gate": 0.08946351851851853,
+        "load": 0.07183214814814814,
+        "refine": 0.0,
+        "verify": 1.1526630277777778
+      },
+      "lanes": 36,
+      "original_native_cpu_ms_mean": 4.137806277777778
+    }
+  },
+  "field_price": {
+    "all_empty_and_primary_free_cpu_ns_per_lane": 523077.8908839779,
+    "all_empty_free_preserve_positives_cpu_ns_per_lane": 1266320.66160221,
+    "conditional_all_native_cpu_ns_per_lane": 580377.8650326643,
+    "issued_lanes_modeled": 300522,
+    "paid_increment_at_free_primary_cpu_ns_per_lane": 538124.4917127072,
+    "remaining_at_both_grants_ns_per_positive": 173578.16436673183,
+    "remaining_if_entire_primary_helper_free_ns_per_lane": 42253.373319957056
+  },
+  "measured_native_delta_0049": {
+    "all": {
+      "20-primary_cpu_ns": 1209592786,
+      "20-primary_elapsed_ns": 1213326797,
+      "20-two_cpu_ns": 1599194918,
+      "20-two_elapsed_ns": 1603361994
+    },
+    "by_returned_outcome": {
+      "empty": {
+        "20-primary_cpu_ns": 671485020,
+        "20-primary_elapsed_ns": 672431857,
+        "20-two_cpu_ns": 682378759,
+        "20-two_elapsed_ns": 684831875
+      },
+      "primary_only": {
+        "20-primary_cpu_ns": 416264782,
+        "20-primary_elapsed_ns": 419004557,
+        "20-two_cpu_ns": 686093648,
+        "20-two_elapsed_ns": 687751786
+      },
+      "with_residual": {
+        "20-primary_cpu_ns": 121842984,
+        "20-primary_elapsed_ns": 121890383,
+        "20-two_cpu_ns": 230722511,
+        "20-two_elapsed_ns": 230778333
+      }
+    },
+    "lane_counts": {
+      "empty": 485,
+      "primary_only": 186,
+      "with_residual": 53
+    }
+  },
+  "native_calls": 0,
+  "new_waveform_reads": 0,
+  "receipts": {
+    "single-core-2x/measurements/receiver-packed-cancellation.json": "27856b712905a8b51c7dfdae7893b59e183b21852914fa22ebedf5646c68eb78",
+    "single-core-2x/receiver-cancel-support-results.json": "61b865634bebcad7e80705c7ee5e7701563c8f2fef21d921da13a9bc825f1e56",
+    "v3/measurements/all-full-receiver-frontier.json.gz": "0170159fb9835bf7f5ca8501275f8aa0d93195e8eac67cdf71c6b60be18e1aec",
+    "v3/measurements/directed-verifier.json.gz": "dc132cbaac6cb3eddb21ec4c7df950b03eb1713461dac2d50ff0a92ac3e9a13b",
+    "v3/measurements/ds30-0049-receiver-factorial.json.gz": "4af8b73101dce9b71a06b38a10e2484ef04b74f42b5221cfec1e818d21ea3b58",
+    "v3/measurements/receiver-jacobi-columns-0169.json": "5a047e9230905a906723e594eef5477e2d89dde5e69eecf20e2baede3dc62b12"
+  },
+  "support": {
+    "covariance_rows": 1288,
+    "exported_rank1": 38,
+    "fir_unchanged_counts": {
+      "200": 91,
+      "228": 1
+    },
+    "max_fir_reuse_fraction": 0.00456,
+    "min_native_changed_fraction": 0.961605,
+    "receiver_sha256": "950c2b9412020317654fd7c79d30063e9258b70152ed9c91b4129d379ac75a13",
+    "scans": 92,
+    "unchanged_covariance_rows": 0
+  },
+  "verified_sources": {
+    "/opt/leo-algo08/algo08v3/payload/receiver.so": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+    "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.c": "34e186b48005ec68ad9a16024a691b12c9ad71d06e40985104ce086cf077d3f0",
+    "/tmp/leo-algo08v2-2x-bench/c803-packed-cancel-trial-v2/candidate/pilot_cancel.o": "c7d370eef755ba71c225bf91992d94d79c6b2a886eea434ae6555179f2c9e316",
+    "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/build.json": "5566ddd22345982e1b7673c7d65a8ce5799ce8229275365e1e6e237ab3f0e86d",
+    "/tmp/leo-algo08v2-2x-bench/receiver-fractional-exact-v1/exact.so": "2258f592b18b78529e5acd408deb7ad28d55aae736011519a37dd49abf38afa5",
+    "/tmp/leo-algo08v2-2x-bench/site-free-mode-pair-pgo/candidate/objects/two_carrier_receiver.c": "4f3326eee5522f02ee05a236f22a41fc1af5bb0f21b6e3fe337711a66226f5f7",
+    "/tmp/leo-algo08v2-2x-bench/spectral-vectors-combined-v1/packed/timing_first_receiver.c": "936b67cbb9af0201a7e65281756cc9c16f042ac2ad5e84201b1577131c67044a"
+  }
+}
