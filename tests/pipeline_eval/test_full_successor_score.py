@@ -372,12 +372,16 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         assert f"| DS30-{case} | " + " | ".join(f"{value:.3f}" for value in values) + " |" in markdown
     assert "field-receiver-solver-cross-0086.md)" in markdown
     masked = json.loads((receipts / "held-shrink-0019-ram.json").read_bytes())
-    for arm, (before, after) in masked["scientific"]["position_error_m"].items():
-        assert f"**{before:.0f} to {after:.0f} m**" in markdown
+    for before, after in masked["scientific"]["position_error_m"].values():
+        assert f"{before:.0f} m | {after:.0f} m |" in markdown
     before, after = masked["scientific"]["conditional_rf_rms_hz"]["fitted_c"]
     assert f"{before:.2f} to {after:.2f} Hz" in markdown
-    assert f"{masked['timing']['through_exit_wall_s']:.2f} s saved replay" in markdown
-    assert "held-shrink-0019-ram.md)" in markdown
+    other = json.loads((receipts / "held-shrink-0274.json").read_bytes())
+    for arm in ("c0", "fitted_c"):
+        values = [other[r]["error_m"][arm] for r in ("installed_raw", "ordinary_saved", "half_blend_saved")]
+        assert " | ".join(f"{v:.0f} m" for v in values) in markdown
+    assert f"{masked['timing']['through_exit_wall_s']:.2f} and {other['half_blend_saved']['wall_s']:.2f} seconds" in markdown
+    assert "held-shrink-0019-ram.md)" in markdown and "held-shrink-0274.md)" in markdown
     assert "3258963eb3aa9c134c0081ae4ab40287a9c16668" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown

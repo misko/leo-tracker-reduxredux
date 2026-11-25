@@ -875,15 +875,27 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         rf = metadata["paired_rf_and_error"][arm]
         lines.append(f"| {label} | {rf['comparable']} | {rf['rf_lower_closer']} | {rf['rf_lower_farther']} | "
                      f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
-    lines += ["", "A separate research replay on DS30-0019 used other visits to adjust 366 measured carrier "
-              "frequencies. It kept every arrival time and detection, then rebuilt the tracks and refitted the position. "
-              "Fixed-zero error fell from **435 to 121 m** and fitted error from **375 to 54 m**. Conditional "
-              "RF RMS on the solver's selected observations fell from 174.73 to 171.91 Hz with fitted calibration. "
-              "The number of assigned observations fell from 2,842 to 2,674. The original candidate already "
-              "outperformed ALGO08v3 on this recording. The 18.13 s saved replay excludes waveform acquisition "
-              "and preparation of the frequency forecasts. The field distributions above use the original builds. "
-              "[Masked-frequency position replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
-              "2a087ff3f022a6f24d265d3f0ee80385a103e7b5/reports/ALGO08/v3/held-shrink-0019-ram.md)"]
+    lines += ["", "### Frequency correction on two held recordings", "",
+              "The correction moves a measured carrier frequency halfway toward a prediction from neighboring visits "
+              "when the two estimates agree within one frequency bin. The prediction excludes the target visit. "
+              "The replay adjusted 366 frequencies on DS30-0019 and 499 on DS30-0274, kept every detection and "
+              "arrival time, rebuilt the tracks and refitted the position. All distances below are survey errors.",
+              "", "| Recording | Calibration | ALGO08v3 | Original candidate | With correction |",
+              "|---|---|---:|---:|---:|", "| DS30-0019 | Fixed zero | 744 m | 435 m | 121 m |",
+              "| DS30-0019 | Fitted | 842 m | 375 m | 54 m |", "| DS30-0274 | Fixed zero | 172 m | 889 m | 719 m |",
+              "| DS30-0274 | Fitted | 206 m | 934 m | 752 m |", "",
+              "The correction improved both calibration arms on both recordings. DS30-0274 still had 546 m more "
+              "fitted error than ALGO08v3. Conditional RF RMS on the fitted solver's selected observations fell "
+              "from 174.73 to 171.91 Hz on DS30-0019 and from 130.24 to 127.08 Hz on DS30-0274. Across all "
+              "assigned observations on DS30-0274, fitted RF RMS rose from 152.65 to 153.20 Hz.", "",
+              "The corrected saved replays took 18.13 and 22.54 seconds, excluding acquisition and preparation of "
+              "the frequency forecasts. On DS30-0274 the unchanged saved control reproduced the original raw positions, "
+              "assignments, grid and path. Its wall time was 22.60 seconds, with different cache conditions. "
+              "The field distributions use the original builds. Both held recordings come from the same roof. "
+              "[DS30-0019 replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "2a087ff3f022a6f24d265d3f0ee80385a103e7b5/reports/ALGO08/v3/held-shrink-0019-ram.md) · "
+              "[DS30-0274 control and replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "d13e838d214bda451da743941d94b96b07e30874/reports/ALGO08/v3/held-shrink-0274.md)"]
     lines += ["", "### Does the receiver effect repeat?", "",
               "Both solvers processed the same two saved detector packets on each of three recordings. "
               "The table gives horizontal position error in km with fitted calibration. "
