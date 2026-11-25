@@ -10,7 +10,6 @@ from unittest.mock import patch
 import numpy as np
 
 from tools.pipeline_eval.variants import algo08_posterior_handoff as handoff
-from tools.pipeline_eval.variants import algo08_profiled_gamma as gamma
 
 
 EXPORT = """int *updates,double *returned_rates,int export_width,double *lower,int32_t *order,int *exported) {
@@ -23,6 +22,8 @@ STOCK_POSTERIOR_SHA256 = "5a6e5627844a07a3bf2291b248520949f8b10e41d0421b6d6dc0da
 
 
 def export_source(*, prefix_proof=False):
+    from tools.pipeline_eval.variants import algo08_profiled_gamma as gamma
+
     source, _ = gamma.profiled_source().split("\nint nb_profiled_gamma(", 1)
     header = Path(handoff.__file__).with_suffix(".h").read_text()
     source = handoff.replace(source, "/* All work belongs", header + "\n/* All work belongs")
