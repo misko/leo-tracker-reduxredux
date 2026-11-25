@@ -141,6 +141,8 @@ def test_closed_cell_checks_export_hash_and_terminal_state(score, tmp_path):
                 change=dict(edits=[], derived_native_sha256=native_pin, recipe_sha256="frozen-detector",
                             recipe=dict(sparse_native_sha256=native_pin, edit_sha256=score.digest([]))))
     pins = dict(plan=seal(root / "plan.json", plan), clock=seal(root / "clock.json", {"exit_code": 0}))
+    pins["isolation"] = seal(root / "worker-isolation.json", dict(inherited_descriptor=True,
+                             socket_denied=True, readonly_operands=True))
     scope = dict(stage_plan_sha256=pins["plan"], enabled=False, decision="complete", native_sha256=native_pin,
                  original_native_sha256=native_pin, waveform_reads=0, forecast_cache_reads=0,
                  feature_source_sha256=score.FEATURE, approved_track_config_sha256=score.CONFIG)
@@ -155,7 +157,8 @@ def test_closed_cell_checks_export_hash_and_terminal_state(score, tmp_path):
                   publication_witness_sha256=witness_pin, presentation_source_sha256=score.PRESENTATION,
                   observer_source_sha256=score.OBSERVER)
     path = root / "owner-residuals.json"
-    clock = dict(residuals_sha256=seal(path, export))
+    pins["residuals"] = seal(path, export)
+    clock = dict(residuals_sha256=pins["residuals"])
     pins["export_clock"] = seal(root / "owner-residual-export-clock.json", clock)
     assert score.read_cell(root, "ordinary", pins)["terminal"] == terminal
 
