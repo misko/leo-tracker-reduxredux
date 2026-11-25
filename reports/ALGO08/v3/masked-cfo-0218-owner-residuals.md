@@ -12,10 +12,14 @@ exports each row's measured CFO, residual and prediction in Hz. The
 sign is measured minus prediction under the original lifts. The
 published prediction is the Graph CFO minus that signed residual.
 
-The registered [primary entry](masked-cfo-0218-readiness.md) is unchanged.
-If the protocol owner authorizes matched supplemental collection before
-either cell launches, use the same prepared plans, isolation, shared
-lease and caps and substitute this optional entry for both roles.
+At 01:29 UTC on 2026-11-25 the field ledger had no attempt for either
+DS30-0218 role and no pair file. We selected the observer at commit
+`116a98cc26915e095d11d79de6cc0facc0c13171` for both saved roles
+before either field result was available. Use the original plans,
+isolation, shared lease and caps with the two entries below.
+The [registered position and timing comparisons](masked-cfo-0218-readiness.md)
+use their original verified-output boundary. Report the full observed
+exit times as well.
 
 ```bash
 python -IB reports/ALGO08/v3/masked_cfo_0218_owner_residuals.py ordinary CELL --pin PLAN_SHA --lease-fd FD
