@@ -158,7 +158,7 @@ def _figure(pairs, *, runtime):
         if runtime:
             for ax, metric, title in zip(axes[:2], ("elapsed_s", "cpu_s"), ("Wall time", "CPU time"), strict=True):
                 _plot_curves(ax, _runtime_series(subset, metric), mode="runtime")
-                ax.set(title=f"{title} through exit", xlabel="Seconds (log scale)", ylabel="Share of timed pairs")
+                ax.set(title=f"{title} per attempt", xlabel="Seconds (log scale)", ylabel="Share of timed pairs")
             for ax, metric, title in zip(axes[2:], ("elapsed_s", "cpu_s"), ("Wall speedup", "CPU speedup"), strict=True):
                 _plot_curves(ax, _order_series(subset, metric), mode="speedup")
                 ax.set(title=f"{title} by launch order", xlabel="ALGO08v3 / candidate (log scale)",
@@ -218,7 +218,7 @@ def _histogram_figure(pairs, *, runtime):
     from matplotlib.ticker import MaxNLocator
     from numpy import histogram
 
-    metrics = (("elapsed_s", "Wall time through exit"), ("cpu_s", "CPU time through exit")) if runtime else (
+    metrics = (("elapsed_s", "Wall time per attempt"), ("cpu_s", "CPU time per attempt")) if runtime else (
         ("c0", "Fixed c = 0"), ("fitted_c", "Fitted c"))
     figure = Figure(figsize=(10.2, 8.4), dpi=150, layout="constrained")
     figure.suptitle("DS30 runtime histograms" if runtime else "DS30 horizontal error histograms",

@@ -578,6 +578,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
              "## Runtime and position error histograms", "",
              "![Wall and CPU time histograms](runtime-histogram.png)", "",
              "The runtime histograms count all measured exits, including withheld and failed attempts. "
+             "Both clocks include the independent publication check whenever the run reached it. "
              "Each metric uses the same bin edges for both builds and cohorts.", "",
              "![Horizontal error histograms for fixed-zero and fitted calibration](position-error-histogram.png)", "",
              "The position histograms count scored fixes in shared bins. The legends report the assigned totals "

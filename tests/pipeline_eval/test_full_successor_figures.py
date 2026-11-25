@@ -122,6 +122,7 @@ def test_histograms_use_shared_edges_and_count_actual_samples(tmp_path, rows, ru
             assert [data.edges.tolist() for data in histograms] == [base_edges, base_edges]
             assert [sum(data.values) for data in histograms] == expected
         if runtime:
+            assert full.get_title() == subset.get_title() == ("Wall time per attempt", "CPU time per attempt")[metric]
             assert base_edges[0] > 0
             assert any("3 timed exits" in text.get_text() for text in full.get_legend().get_texts())
         else:
