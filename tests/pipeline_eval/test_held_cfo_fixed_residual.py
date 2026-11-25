@@ -61,3 +61,12 @@ def test_owner_overlap_separates_identity_role_and_observation_support(study):
     assert result["common_norad_changed"] == 0
     assert result["common_role_changed"] == 1
     assert result["edited_common"] == result["edited_added"] == result["edited_dropped"] == 1
+
+
+def test_predictive_rms_requires_same_published_and_retained_role_partition(study):
+    roster = {"curve": (1, "conditional"), "held": (1, "predictive")}
+    capture = dict(curves={"a": dict(ids=["curve"], norad=1)},
+                   predictive={"b": dict(ids=["held"], norad=1)}, fit=dict(latlon=[3, 2], rf_rms_hz=3.))
+    assert study.predictive_rms(roster, capture, (25/2)**.5, capture["fit"])["predictive_RMS_hz"] == pytest.approx(4.)
+    with pytest.raises(ValueError, match="role partition"):
+        study.predictive_rms(dict(roster, held=(1, "conditional")), capture, 4., capture["fit"])

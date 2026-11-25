@@ -109,6 +109,22 @@ def overlap(ordinary, derived, edited):
                 edited_added=len(added & edited), unedited_common=len(common - edited))
 
 
+def predictive_rms(roster, captured, manifest_rms, terminal_arm):
+    curve_owners = [(oid, arc["norad"], role) for role, key in
+                    (("conditional", "curves"), ("predictive", "predictive"))
+                    for arc in captured[key].values() for oid in arc["ids"]]
+    selected = {(oid, *label) for oid, label in roster.items()}
+    conditional = sum(role == "conditional" for _, role in roster.values())
+    fit = captured["fit"]
+    if (len(curve_owners) != len(selected) or set(curve_owners) != selected
+            or fit["latlon"] != terminal_arm["latlon"] or fit["rf_rms_hz"] != terminal_arm["rf_rms_hz"]
+            or conditional == len(selected)):
+        raise ValueError("The terminal conditional RMS is not bound to the published role partition")
+    predictive = len(selected) - conditional
+    square = (len(selected) * manifest_rms**2 - conditional * terminal_arm["rf_rms_hz"]**2) / predictive
+    return dict(conditional=conditional, predictive=predictive, predictive_RMS_hz=sqrt(square))
+
+
 def load_publication(root, receipt, witness_pin, native_pin):
     witness = read(root / "exact-named-raw-witness.json", witness_pin)
     terminal = read(root / "fast-scan-automatic-work" / receipt["run_id"] / "terminal.json",
@@ -162,7 +178,9 @@ def run_case(case):
         rosters = [owner_rows(witness, arm, winners) for witness, _ in (old, new)]
         used = rosters[0].keys() & delta.keys()
         all_rms = [witness["evidence"]["detail"]["arms"][arm]["residual_rms_hz"] for witness, _ in (old, new)]
-        fits = [witness["ports"]["history_risk"]["lean_final_fit"]["arms"][arm]["fit"] for witness, _ in (old, new)]
+        captured = [witness["ports"]["history_risk"]["lean_final_fit"]["arms"][arm] for witness, _ in (old, new)]
+        fits = [item["fit"] for item in captured]
+        terminal_arms = [terminal["arms"][arm] for _, terminal in (old, new)]
         arms[arm] = dict(
             owned_edits=len(used), edited_by_role=dict(Counter(rosters[0][oid][1] for oid in used)),
             exact_signed_residual_matches=0, unedited_ordinary_owned=len(rosters[0])-len(used),
@@ -170,7 +188,9 @@ def run_case(case):
             membership=overlap(*rosters, set(delta)),
             fixed=fixed_bound(len(rosters[0]), all_rms[0], (delta[oid] for oid in sorted(used))),
             rebuilt_all_owned_RMS_hz=all_rms,
-            rebuilt_conditional_RMS_hz=[terminal["arms"][arm]["rf_rms_hz"] for _, terminal in (old, new)],
+            rebuilt_conditional_RMS_hz=[row["rf_rms_hz"] for row in terminal_arms],
+            rebuilt_role_aggregates=[predictive_rms(*values) for values in
+                                     zip(rosters, captured, all_rms, terminal_arms, strict=True)],
             rebuilt_fit_changed_position=fits[0]["position"] != fits[1]["position"],
             rebuilt_fit_changed_receiver_coefficients=fits[0]["rf_nuisance"] != fits[1]["rf_nuisance"],
             rebuilt_fit_c_hz_per_ghz=[fit["rf_nuisance"][8] for fit in fits] if arm == "fitted_c" else [0., 0.],

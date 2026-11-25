@@ -28,11 +28,13 @@ These outer intervals use `‖r‖ = RMS × √N`, the exact edit-vector norm on
 
 Both calibration arms have the same incidence changes within each recording. Every shared ID retained its NORAD. The rebuilt endpoints and receiver coefficients changed in all four comparisons. The fitted coefficient moved from −416.4 to −486.6 Hz/GHz on DS30-0019 and −275.0 to −238.1 Hz/GHz on DS30-0274. The available rows cannot apportion the aggregate change among common, added, dropped or unedited owners. The table below uses the published refitted states and their own owner sets. [0019 saved comparison](held-shrink-0019-ram.md) · [0274 saved comparison](held-shrink-0274.md)
 
-| Recording | Calibration | Conditional RF RMS before → after (Hz) | All-owner RF RMS before → after (Hz) |
-|---|---|---:|---:|
-| DS30-0019 | `c = 0` | 174.592 → 171.841 | 196.480 → 196.559 |
-| DS30-0019 | Fitted `c` | 174.734 → 171.906 | 184.347 → 182.942 |
-| DS30-0274 | `c = 0` | 130.288 → 127.131 | 163.385 → 164.158 |
-| DS30-0274 | Fitted `c` | 130.241 → 127.082 | 152.646 → 153.197 |
+| Recording | Calibration | Conditional RF RMS before → after (Hz) | Predictive RF RMS before → after (Hz) | All-owner RF RMS before → after (Hz) |
+|---|---|---:|---:|---:|
+| DS30-0019 | `c = 0` | 174.592 → 171.841 | 303.917 → 318.034 | 196.480 → 196.559 |
+| DS30-0019 | Fitted `c` | 174.734 → 171.906 | 238.398 → 245.661 | 184.347 → 182.942 |
+| DS30-0274 | `c = 0` | 130.288 → 127.131 | 255.937 → 272.325 | 163.385 → 164.158 |
+| DS30-0274 | Fitted `c` | 130.241 → 127.082 | 220.472 → 235.604 | 152.646 → 153.197 |
 
-Three focused tests passed. This audit used metadata and arithmetic on CPU 3 with zero solver, Graph, waveform, TLE, survey or 0218 reads. [Tests](../../../tests/pipeline_eval/test_held_cfo_fixed_residual.py)
+The retained-fit witness matches the published owner IDs and roles, and its conditional RMS matches the terminal in all eight fits. That allows subtraction of conditional SSE from all-owner SSE to recover the predictive aggregate. Predictive RMS increased in all four comparisons. These aggregates still combine common and changed members and include refitting effects.
+
+Four focused tests passed. This audit used metadata and arithmetic on CPU 3 with zero solver, Graph, waveform, TLE, survey or 0218 reads. [Tests](../../../tests/pipeline_eval/test_held_cfo_fixed_residual.py)
