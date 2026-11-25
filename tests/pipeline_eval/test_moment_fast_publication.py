@@ -1,7 +1,8 @@
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import ds30_0280_moment_fast_publication as entry
 import exact_graph_execution
@@ -9,8 +10,44 @@ import moment_preserving_fast_graph as fast
 import pytest
 
 
+@contextmanager
+def reviewed_graph_imports(monkeypatch):
+    from empty_bootstrap import PAYLOAD
+
+    source = Path(exact_graph_execution.__file__).resolve().parent
+    helpers = tuple(Path(name).stem for name in exact_graph_execution.PINS)
+    previous = {name: sys.modules[name] for name in helpers if name in sys.modules}
+    with monkeypatch.context() as scope:
+        scope.syspath_prepend(str(PAYLOAD))
+        scope.syspath_prepend(str(source))
+        from tools.pipeline_eval.variants import experimental
+
+        # The full suite can already have imported this name from an archived
+        # worktree. Bind the actual installed wrapper for the fixture only.
+        module_name = experimental.__name__ + ".graph_path"
+        wrapper_path = PAYLOAD / fast.NATIVE_MODULE
+        wrapper_spec = spec_from_file_location(module_name, wrapper_path)
+        wrapper = module_from_spec(wrapper_spec)
+        scope.setitem(sys.modules, module_name, wrapper)
+        scope.setattr(experimental, "graph_path", wrapper, raising=False)
+        wrapper_spec.loader.exec_module(wrapper)
+        for name in helpers:
+            sys.modules.pop(name, None)
+        try:
+            yield
+        finally:
+            for name in helpers:
+                sys.modules.pop(name, None)
+            sys.modules.update(previous)
+
+
 @pytest.fixture
 def capsule_fixture(monkeypatch):
+    with reviewed_graph_imports(monkeypatch):
+        yield build_capsule_fixture(monkeypatch)
+
+
+def build_capsule_fixture(monkeypatch):
     from leo.analysis import graph_tracklets, polynomial_tracklets
     from leo.analysis.localization_v3 import tracks
     from reports.ALGO08.v3.held_cfo_features import DerivedCfo
@@ -97,6 +134,39 @@ def capsule_fixture(monkeypatch):
     fixture.native, fixture.config = native, config
     fixture.projected = projected
     return fixture
+
+
+def test_graph_fixture_temporarily_isolates_imports_from_a_foreign_checkout(monkeypatch, tmp_path):
+    from empty_bootstrap import PAYLOAD
+    from tools.pipeline_eval.variants import experimental
+
+    source = Path(exact_graph_execution.__file__).resolve().parent
+    foreign = {}
+    for filename in exact_graph_execution.PINS:
+        path = tmp_path/filename
+        path.write_bytes((source/filename).read_bytes())
+        module = ModuleType(path.stem)
+        module.__file__ = str(path)
+        monkeypatch.setitem(sys.modules, module.__name__, module)
+        foreign[module.__name__] = module
+    wrapper = ModuleType(experimental.__name__ + ".graph_path")
+    wrapper.__file__ = str(tmp_path/"graph_path.py")
+    monkeypatch.setitem(sys.modules, wrapper.__name__, wrapper)
+    monkeypatch.setattr(experimental, "graph_path", wrapper, raising=False)
+    monkeypatch.syspath_prepend(str(tmp_path))
+    previous_path = list(sys.path)
+
+    with pytest.raises(ValueError, match="did not load the reviewed source"):
+        with exact_graph_execution.graph_execution(enabled=True):
+            pass
+
+    with reviewed_graph_imports(monkeypatch), exact_graph_execution.graph_execution(enabled=True):
+        assert all(Path(sys.modules[name].__file__).parent == source for name in foreign)
+        assert Path(experimental.graph_path.__file__) == PAYLOAD / fast.NATIVE_MODULE
+
+    assert sys.path == previous_path
+    assert all(sys.modules[name] is module for name, module in foreign.items())
+    assert sys.modules[wrapper.__name__] is experimental.graph_path is wrapper
 
 
 def launch(monkeypatch, role):
