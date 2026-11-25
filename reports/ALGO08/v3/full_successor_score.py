@@ -832,11 +832,17 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "|---|---:|---:|",
               "| Original installed detections | 1.826 | 1.420 |",
               "| Original candidate detections | 4.472 | 4.040 |",
+              "| Add all 10 detections from the phase-guided waveform search | 4.259 | 3.997 |",
               "| Replace 284 closely matched short measurements | 4.196 | 3.847 |",
               "| Replace 72 short measurements that chose a different carrier | 3.942 | 3.779 |",
               "| Remove 161 candidate-only detections | 4.254 | 3.900 |",
               "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |",
               "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |", "",
+              "The phase-guided search accepted 10 of 117 proposed signals on six saved waveform members. "
+              "Six matched an installed measurement. Adding all ten before refitting reduced fitted error by "
+              "43 m. The two control phase estimates returned zero accepts. [Receiver and position evidence]"
+              "(https://github.com/misko/leo-tracker-reduxredux/blob/f8cc050e255facab30f9a3388afcf3a52a653f22/"
+              "reports/ALGO08/v3/ds30-0049-directed-position.md)", "",
               "Applying the two edits together recovered **940 m with fixed-zero calibration and 836 m with "
               "fitted calibration**. The joint gains exceeded the sums of the individual gains by 87 m and "
               "198 m. The joint fit retained 318 of 320 original observation assignments with matching "

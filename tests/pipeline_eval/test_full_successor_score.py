@@ -422,6 +422,9 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "3258963eb3aa9c134c0081ae4ab40287a9c16668" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown
+    directed = json.loads((receipts / "ds30-0049-directed-position-score.json").read_bytes())
+    km = [directed["arms"][arm]["counterfactual_m"] / 1000 for arm in ("c0", "fitted_c")]
+    assert f"| Add all 10 detections from the phase-guided waveform search | {km[0]:.3f} | {km[1]:.3f} |" in markdown
     assert "| Restore those 104 detections and replace the 72 disagreeing winners | 3.532 | 3.204 |" in markdown
     assert "ds30-0086-joint-recovery.md)" in markdown
     ownership = json.loads((receipts / "missed-owner-support.json").read_bytes())["cases"]
