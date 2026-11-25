@@ -1,9 +1,14 @@
 from copy import deepcopy
 from io import BytesIO
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
+from unittest.mock import patch
 
 from PIL import Image
 
+from reports.ALGO08.v3 import field_crossover_admission_watch, profiled_grid_0138
 from reports.ALGO08.v3.profiled_grid_0138_score import compare_image, compare_maps, qualified_map, routes_agree
 
 
@@ -51,3 +56,13 @@ class ProfiledGridPublicationTest(TestCase):
         self.assertEqual(result["changed_fraction"], .01)
         self.assertEqual(result["mean_absolute_channel"], .25)
         self.assertFalse(result["decoded_equal"])
+
+    def test_official_attempt_accounting_is_filtered_to_the_paid_window(self):
+        with TemporaryDirectory() as temp, patch.object(field_crossover_admission_watch, "CAMPAIGN", Path(temp)):
+            events = Path(temp)/"cases/DS30-0277/events"
+            events.mkdir(parents=True)
+            for stamp, state in ((1, "deferred_storage_busy"), (3, "deferred_shared_lease"),
+                                 (5, "deferred_storage_busy")):
+                (events/f"{stamp}-event.json").write_text(json.dumps({"state": state}))
+            actual = profiled_grid_0138.campaign_events("DS30-0277", 2, 4)
+        self.assertEqual([(row["unix_ns"], row["state"]) for row in actual], [(3, "deferred_shared_lease")])
