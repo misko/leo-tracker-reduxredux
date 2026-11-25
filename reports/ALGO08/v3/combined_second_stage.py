@@ -8,12 +8,13 @@ import resource
 import subprocess
 from dataclasses import replace
 from pathlib import Path
-from time import monotonic, sleep
+from time import monotonic, sleep, time_ns
 from unittest.mock import patch
 
 import guarded_cfo_0016_stage as copier
-from combined_second_original import CASE, NVME, RATE, cache, enrollment
+from combined_second_original import CAMPAIGN, CASE, NVME, RATE, cache, enrollment
 from combined_small_panel import DRIVER, DRIVER_PIN, LOCK, check, write
+from field_crossover_admission_watch import recent_deferral
 from guarded_stage_checkpoint import Extent, checked_local, staging_lock, verified_extents
 from guarded_stage_idle import IdleAdmission, IdleWindowExpired, QuietInterval, sample
 
@@ -22,6 +23,7 @@ CAUSAL_ROOT = Path("/dev/shm/leo-v3-0339-causal-original01")
 SOURCE = Path("/sys/dev/block/252:5/stat")
 RAID = Path("/sys/dev/block/9:127/stat")
 BLOCK = 1024**2
+MAX_GAP_NS = 12_000_000_000
 
 
 def official_active(pid):
@@ -34,9 +36,26 @@ def official_active(pid):
     return bool((proc / "task" / str(pid) / "children").read_text().strip())
 
 
-def guarded_sample(pid, now):
+class LiveGap:
+    """Use only the early part of a genuine published official retry window."""
+
+    def __init__(self, campaign=CAMPAIGN, *, clock=time_ns, observe=recent_deferral):
+        self.campaign, self.clock, self.observe = campaign, clock, observe
+        self.inode, self.event = None, None
+
+    def available(self):
+        current = (self.campaign / "rows.jsonl").stat().st_ino
+        now = self.clock()
+        if current != self.inode:
+            self.inode = current
+            self.event = self.observe(self.campaign, now - MAX_GAP_NS, now)
+        return self.event is not None and 0 <= now - self.event["unix_ns"] <= MAX_GAP_NS
+
+
+def guarded_sample(pid, now, gap=None):
     source, raid = sample(SOURCE, now), sample(RAID, now)
     busy = official_active(pid) or source.in_flight > 0 or raid.in_flight > 0
+    busy = busy or (gap is not None and not gap.available())
     return replace(
         source, in_flight=3 if busy else 0, weighted_ms=source.weighted_ms + raid.weighted_ms
     )
@@ -44,9 +63,10 @@ def guarded_sample(pid, now):
 
 def inspect_idle(pid):
     guard, admitted = QuietInterval(), 0
+    gap = LiveGap()
     states = []
     for _ in range(13):
-        state = guarded_sample(pid, monotonic)
+        state = guarded_sample(pid, monotonic, gap)
         states.append(state.__dict__)
         admitted += guard.observe(state)
         sleep(0.25)
@@ -119,7 +139,12 @@ def stage(pid, budget):
         and CAUSAL_ROOT.stat().st_dev != Path("/dev/shm").stat().st_dev
     ):
         raise ValueError("Require the direct local causal stage on the donor filesystem")
-    with staging_lock(ROOT / "copy.lock"), LOCK.open("rb") as lock:
+    with (
+        staging_lock(ROOT / "copy.lock"),
+        LOCK.open("rb") as lock,
+        patch.object(copier, "RATE", RATE),
+        patch.object(copier, "BLOCK", BLOCK),
+    ):
         start = monotonic()
         cpu0 = resource.getrusage(resource.RUSAGE_SELF)
         causal = CAUSAL_ROOT / "tle/archive"
@@ -127,12 +152,13 @@ def stage(pid, budget):
         pace = copier.Pacing(
             ROOT, book["new_backing_bytes"], 0, idle=True, device=SOURCE, deadline=start + budget
         )
+        gap = LiveGap()
         admission = IdleAdmission(
             SOURCE,
             start + budget,
             pace.record,
             now=monotonic,
-            observe=lambda _, now: guarded_sample(pid, now),
+            observe=lambda _, now: guarded_sample(pid, now, gap),
         )
         state = "window_expired"
         try:

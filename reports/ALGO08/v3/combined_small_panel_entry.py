@@ -6,6 +6,7 @@ import sys
 from collections import Counter
 from contextlib import ExitStack, contextmanager, nullcontext
 from importlib.util import module_from_spec, spec_from_file_location
+from inspect import unwrap
 from pathlib import Path
 from time import perf_counter_ns, process_time_ns
 from types import SimpleNamespace
@@ -47,7 +48,7 @@ def load_ports(boot, *, ordinary_grid=False):
         boot.checked(expected, STOCK_GRID_SOURCE)
         boot.checked(boot.PAYLOAD / "posterior-grid-handoff.so", STOCK_GRID_BINARY)
         if any(
-            Path(op.__code__.co_filename) != expected
+            Path(unwrap(op).__code__.co_filename) != expected
             for op in (handoff.grid_handoff, handoff.Capture.run)
         ):
             raise ValueError("Require the installed unmodified numerical grid function")

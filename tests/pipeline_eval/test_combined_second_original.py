@@ -55,6 +55,18 @@ def test_cache_only_stops_on_miss(modules, monkeypatch):
         stage.read_nowait(stream, 32)
 
 
+def test_copy_gap_expires_before_official_retry(modules, tmp_path):
+    _, stage, _ = modules
+    (tmp_path / "rows.jsonl").touch()
+    instant = [50_000_000_000]
+    gap = stage.LiveGap(
+        tmp_path, clock=lambda: instant[0], observe=lambda *_: {"unix_ns": 49_000_000_000}
+    )
+    assert gap.available()
+    instant[0] = 63_000_000_000
+    assert not gap.available()
+
+
 def test_ordinary_exporter_is_not_replaced(modules, monkeypatch):
     _, _, entry = modules
 
