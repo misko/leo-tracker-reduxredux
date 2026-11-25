@@ -135,3 +135,26 @@ def test_each_transaction_has_its_own_order_and_returns_prior_exit(experiment, t
     assert panel.authorized_order(tmp_path, ready, case, "charted") == 42
     with pytest.raises(ValueError, match="fresh transaction"):
         panel.authorized_order(tmp_path, ready, case, "trial")
+
+
+def test_short_gap_requires_exact_unstarted_successor(experiment):
+    panel, _ = experiment
+    common = dict(
+        case="DS30-0218",
+        admission_state="deferred_storage_busy",
+        verified_pair=False,
+        raw_identity_sha256="sha256:9b08c27dfd179fcfa112d19bc6c4b1f10b3efd3f948005a8a298dc9b927866c9",
+    )
+    stock = dict(common, algorithm="installed", outcome="complete", acquisition_verified=True)
+    successor = dict(
+        common,
+        algorithm="successor",
+        outcome="pending",
+        acquisition_verified=False,
+        attempt=None,
+        child_started_unix_ns=None,
+        attempt_result_sha256=None,
+    )
+    assert panel.official_0218_is_pending([stock, successor])
+    assert not panel.official_0218_is_pending([stock, dict(successor, child_started_unix_ns=42)])
+    assert not panel.official_0218_is_pending([stock, dict(successor, raw_identity_sha256="wrong")])
