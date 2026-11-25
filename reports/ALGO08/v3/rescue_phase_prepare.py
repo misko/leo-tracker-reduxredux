@@ -46,9 +46,7 @@ class PreparedFinePhase:
         self.size = len(phi),len(t)
         self.replicated_bytes = len(phi)*sum(state.shape[1]*state.shape[2]*state.dtype.itemsize for state in self.states)
 
-    def project(self, j, coordinates):
-        from leo.analysis.research.continuous_curve_fit import phase_frequency_from_states
-
+    def interpolate(self, j):
         index = self.index
         output = []
         for source in self.states:
@@ -57,10 +55,15 @@ class PreparedFinePhase:
             values[:,0] = self.cosine*x-self.sine*y
             values[:,1] = self.sine*x+self.cosine*y
             output.append(values)
-        return tuple(a.reshape(self.size) for a in phase_frequency_from_states(*output,*coordinates))
+        return output
+
+    def project(self, j, coordinates):
+        from leo.analysis.research.continuous_curve_fit import phase_frequency_from_states
+
+        return tuple(a.reshape(self.size) for a in phase_frequency_from_states(*self.interpolate(j), *coordinates))
 
 
-def exact_port(original):
+def exact_port(original, *, prepare=PreparedFinePhase):
     from leo.analysis.research import continuous_curve_fit as phase
 
     paths = ((Path(original.__code__.co_filename),FINE_PIN),(Path(phase.__file__),PHASE_PIN))
@@ -91,7 +94,7 @@ def exact_port(original):
         counts["avoided_logical_bank_bytes"] += prepared.replicated_bytes
 '''
     source = source[:source.index(begin)] + replacement + source[source.index(last):]
-    scope = dict(original.__globals__, original=original, _prepared=PreparedFinePhase, _paired=phase.paired_phase_frequency)
+    scope = dict(original.__globals__, original=original, _prepared=prepare, _paired=phase.paired_phase_frequency)
     exec(compile(source,original.__code__.co_filename,'exec'),scope)
     return scope[original.__name__]
 
