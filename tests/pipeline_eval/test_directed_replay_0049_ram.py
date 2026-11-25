@@ -89,3 +89,32 @@ def test_resident_source_and_zero_input_are_separate_predeclared_outcomes():
     assert not check.qualifications(clock,result,True,allow_code_io=False)["qualified"]
     assert not check.qualifications(clock,result,False,allow_code_io=True)["qualified"]
     assert not check.qualifications(dict(clock,elapsed_s=12.01),result,True,allow_code_io=True)["qualified"]
+
+
+def test_priority_gap_only_admits_the_latest_exact_0218_event_with_no_successor(monkeypatch,tmp_path):
+    monkeypatch.setattr(check,"CAMPAIGN",tmp_path)
+    monkeypatch.setattr(check,"controller_idle",lambda pid: None)
+    case = tmp_path/"cases/DS30-0218"
+    installed = case/"installed/attempt-000001/result.json"
+    installed.parent.mkdir(parents=True)
+    installed.write_text("{}")
+    pin = "sha256:"+check.replay.tag(installed)
+    common = dict(case="DS30-0218",admission_state="deferred_storage_busy",verified_pair=False)
+    rows = [dict(common, algorithm="installed",outcome="complete",attempt=str(installed.relative_to(tmp_path)),
+                 attempt_result_sha256=pin),
+            dict(common, algorithm="successor",outcome="pending",attempt=None,attempt_result_sha256=None)]
+    (tmp_path/"rows.jsonl").write_text("\n".join(map(json.dumps,rows)))
+    events = case/"events"
+    events.mkdir()
+    event_path = events/"1000-6.json"
+    event_path.write_text('{"state":"deferred_storage_busy"}')
+    event = dict(case="DS30-0218",event=str(event_path.relative_to(tmp_path)))
+    assert check.priority_deferral(123,event) == dict(installed=pin,successor="deferred_storage_busy")
+    with pytest.raises(ValueError,match="latest"):
+        check.priority_deferral(123,dict(event,case="DS30-0008"))
+    (events/"2000-6.json").touch()
+    with pytest.raises(ValueError,match="latest"):
+        check.priority_deferral(123,event)
+    (case/"successor").mkdir()
+    with pytest.raises(ValueError,match="has started"):
+        check.priority_deferral(123)
