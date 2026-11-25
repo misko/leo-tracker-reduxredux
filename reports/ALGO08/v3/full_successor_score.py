@@ -989,6 +989,12 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "worker incurred 242 major page faults and the modified worker incurred zero. "
               "[Complete map and matched timing](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "83c3f5a941c0630ae91f35f25f818bd11242adcf/reports/ALGO08/v3/profiled-grid-export-0138-pair.md)", "",
+              "On a simulated southern recording, the same exporter reproduced all eight PNGs with either "
+              "offered region. One fixed-calibration grid score changed by 0.01660 when the region contained "
+              "the receiver, exceeding the 0.005 limit. When the region excluded the receiver by 1 km, "
+              "both exporters returned the same false fix. [Matched grids and images](https://github.com/"
+              "misko/leo-tracker-reduxredux/blob/7fe7fdbc21f3113fdf6005d51523688d04654873/reports/ALGO08/v3/"
+              "profiled-grid-export-south.md)", "",
               "The two receivers agreed on 83,058 short-aperture peaks under the prespecified matching rule. "
               "A correction for when each receiver measured the carrier changed held disagreement from "
               "97.480 to 97.460 Hz RMS after subtracting the mean for each recording and radio. The same "

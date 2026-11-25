@@ -392,6 +392,11 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert f"Grid CPU time fell from {old:.3f} to {new:.3f} seconds" in markdown
     old, new = [c["internal_solve"]["cpu_s"] for c in cells]
     assert f"Whole-solve CPU time went from {old:.3f} to {new:.3f} seconds" in markdown
+    south = json.loads(gzip.decompress((receipts / "profiled-grid-export-south.json.gz").read_bytes()))
+    inside = south["offers"]["containing"]["readback"]
+    assert not inside["accept"] and south["offers"]["omitted"]["readback"]["accept"]
+    assert f"grid score changed by {inside['worst_nodes']['c0']['absolute_delta']:.5f}" in markdown
+    assert "both exporters returned the same false fix" in markdown
     complement = json.loads((receipts / "held-cfo-complement-score.json").read_bytes())
     for case, study in complement["cases"].items():
         scored = study["even_eligible"]
