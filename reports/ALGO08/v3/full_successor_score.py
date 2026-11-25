@@ -889,32 +889,41 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         rf = metadata["paired_rf_and_error"][arm]
         lines.append(f"| {label} | {rf['comparable']} | {rf['rf_lower_closer']} | {rf['rf_lower_farther']} | "
                      f"{rf['rf_higher_closer']} | {rf['rf_higher_farther']} | {rf['tied']} |")
-    lines += ["", "### Frequency correction on two held recordings", "",
+    lines += ["", "### Frequency correction on three held recordings", "",
               "The correction moves a measured carrier frequency halfway toward a prediction from neighboring visits "
               "when the two estimates agree within one frequency bin. The replay predicted odd visits "
               "after removing both receivers' measurements at those visits from the track fit. "
-              "The replay adjusted 366 frequencies on DS30-0019 and 499 on DS30-0274, kept every detection and "
+              "The replay adjusted 366 frequencies on DS30-0019, 499 on DS30-0274 and 530 on DS30-0218, kept every detection and "
               "arrival time, rebuilt the tracks and refitted the position. All distances below are survey errors.",
               "", "| Recording | Calibration | ALGO08v3 | Original candidate | With correction |",
               "|---|---|---:|---:|---:|", "| DS30-0019 | Fixed zero | 744 m | 435 m | 121 m |",
               "| DS30-0019 | Fitted | 842 m | 375 m | 54 m |", "| DS30-0274 | Fixed zero | 172 m | 889 m | 719 m |",
-              "| DS30-0274 | Fitted | 206 m | 934 m | 752 m |", "",
-              "The correction improved both calibration arms on both recordings. DS30-0274 still had 546 m more "
+              "| DS30-0274 | Fitted | 206 m | 934 m | 752 m |",
+              "| DS30-0218 | Fixed zero | 883 m | 1,057 m | 819 m |",
+              "| DS30-0218 | Fitted | 953 m | 1,125 m | 873 m |", "",
+              "The correction improved both calibration arms on all three recordings. DS30-0274 still had 546 m more "
               "fitted error than ALGO08v3. Conditional RF RMS on the fitted solver's selected observations fell "
               "from 174.73 to 171.91 Hz on DS30-0019 and from 130.24 to 127.08 Hz on DS30-0274. Across all "
               "assigned observations on DS30-0274, fitted RF RMS rose from 152.65 to 153.20 Hz.", "",
-              "The corrected saved replays took 18.13 and 22.54 seconds, excluding acquisition and preparation of "
+              "The corrected saved replays on DS30-0019 and DS30-0274 took 18.13 and 22.54 seconds, excluding acquisition and preparation of "
               "the frequency forecasts. Building and applying the forecasts to the unmodified candidate detections "
               "in a separate single-core measurement added 0.602 s on DS30-0019 and 0.781 s on DS30-0274. "
               "On DS30-0274 the unchanged saved control reproduced the original raw positions, "
               "assignments, grid and path. Its wall time was 22.60 seconds, with different cache conditions. "
-              "The field distributions use the original builds. Both held recordings come from the same roof. "
+              "The field distributions use the original builds. All three held recordings come from the same roof. "
               "[DS30-0019 replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "2a087ff3f022a6f24d265d3f0ee80385a103e7b5/reports/ALGO08/v3/held-shrink-0019-ram.md) · "
               "[DS30-0274 control and replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "d13e838d214bda451da743941d94b96b07e30874/reports/ALGO08/v3/held-shrink-0274.md) · "
               "[Forecast cost and exact input comparison](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "7f7371cafbfdb59aa5e1d625dd56b3a610e8ec26/reports/ALGO08/v3/held-cfo-features.md)", "",
+              "On DS30-0218 the survey was opened after the ordinary and corrected publications were sealed. "
+              "With the ordinary predictions and assignments held fixed, fitted-calibration frequency residual RMS "
+              "fell from 141.61 to 95.18 Hz on the 442 edited observations used by the original fit. "
+              "Refitting also changed which observations the solver used. The two saved replays took 22.876 "
+              "and 23.521 seconds through exit, respectively. [DS30-0218 paired replay and signed residuals]"
+              "(https://github.com/misko/leo-tracker-reduxredux/blob/2e599c41d749687452d31f79eecc73d231a0830d/"
+              "reports/ALGO08/v3/masked-cfo-0218-prospective.md)", "",
               "Applying the same rule to the even short visits gave mixed receiver results. Among edited "
               "measurements with an ALGO08v3 counterpart, agreement within 250 Hz and two arrival samples "
               "went from 237 to 235 of 249 on DS30-0019 and from 360 to 371 of 384 on DS30-0274. "
