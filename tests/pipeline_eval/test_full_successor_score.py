@@ -382,6 +382,10 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
         assert " | ".join(f"{v:.0f} m" for v in values) in markdown
     assert f"{masked['timing']['through_exit_wall_s']:.2f} and {other['half_blend_saved']['wall_s']:.2f} seconds" in markdown
     assert "held-shrink-0019-ram.md)" in markdown and "held-shrink-0274.md)" in markdown
+    feature = json.loads(gzip.decompress((receipts / "held-cfo-features-timing.json.gz").read_bytes()))
+    for row in feature["results"]:
+        result = row["result"]
+        assert f"{result['additional_feature']['wall_s']:.3f} s on {result['case']}" in markdown
     assert "3258963eb3aa9c134c0081ae4ab40287a9c16668" in markdown
     assert "met **1 of 2** wall-time targets" in markdown
     assert "| Restore all 104 installed detections on empty short lanes | 4.148 | 3.663 |" in markdown

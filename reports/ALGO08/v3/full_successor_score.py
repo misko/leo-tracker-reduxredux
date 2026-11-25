@@ -889,13 +889,17 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "from 174.73 to 171.91 Hz on DS30-0019 and from 130.24 to 127.08 Hz on DS30-0274. Across all "
               "assigned observations on DS30-0274, fitted RF RMS rose from 152.65 to 153.20 Hz.", "",
               "The corrected saved replays took 18.13 and 22.54 seconds, excluding acquisition and preparation of "
-              "the frequency forecasts. On DS30-0274 the unchanged saved control reproduced the original raw positions, "
+              "the frequency forecasts. Building and applying the forecasts to the unmodified candidate detections "
+              "in a separate single-core measurement added 0.602 s on DS30-0019 and 0.781 s on DS30-0274. "
+              "On DS30-0274 the unchanged saved control reproduced the original raw positions, "
               "assignments, grid and path. Its wall time was 22.60 seconds, with different cache conditions. "
               "The field distributions use the original builds. Both held recordings come from the same roof. "
               "[DS30-0019 replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "2a087ff3f022a6f24d265d3f0ee80385a103e7b5/reports/ALGO08/v3/held-shrink-0019-ram.md) · "
               "[DS30-0274 control and replay](https://github.com/misko/leo-tracker-reduxredux/blob/"
-              "d13e838d214bda451da743941d94b96b07e30874/reports/ALGO08/v3/held-shrink-0274.md)"]
+              "d13e838d214bda451da743941d94b96b07e30874/reports/ALGO08/v3/held-shrink-0274.md) · "
+              "[Forecast cost and exact input comparison](https://github.com/misko/leo-tracker-reduxredux/blob/"
+              "7f7371cafbfdb59aa5e1d625dd56b3a610e8ec26/reports/ALGO08/v3/held-cfo-features.md)"]
     lines += ["", "### Does the receiver effect repeat?", "",
               "Both solvers processed the same two saved detector packets on each of three recordings. "
               "The table gives horizontal position error in km with fitted calibration. "
