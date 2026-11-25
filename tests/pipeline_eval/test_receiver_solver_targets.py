@@ -2,7 +2,13 @@ from statistics import median
 
 import pytest
 
-from reports.ALGO08.v3.receiver_solver_targets import aperture_seconds, aperture_targets, design_point, targets
+from reports.ALGO08.v3.receiver_solver_targets import aperture_seconds, aperture_targets, design_point, held_clocks, targets
+
+
+@pytest.mark.parametrize("first,last", [(30, 31), (46, 45), (455, 456)])
+def test_held_range_excludes_training_recordings_and_out_of_enrollment_ranks(tmp_path, first, last):
+    with pytest.raises(ValueError, match="Held ranks"):
+        held_clocks(tmp_path, first_rank=first, last_rank=last)
 
 
 def test_even_panel_uses_the_two_middle_ratios_and_keeps_withheld_costs():

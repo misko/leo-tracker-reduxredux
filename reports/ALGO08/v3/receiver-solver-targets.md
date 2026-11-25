@@ -25,6 +25,8 @@ The next 16 gave the joint design more headroom. At the same assumed callback sp
 
 Run `python -m reports.ALGO08.v3.receiver_solver_targets` to reproduce the development table. With authorized access to the campaign's timing metadata, add `--check-next-16 /srv/postgres-nvme/leo-ds30-evaluation-20261124` to reproduce the second group. The calculation reads saved receipts and requires no waveform or orbit replay.
 
+The following eight enrolled originals (ranks 47–54) again left very little margin. The measured totals were 824.294 s for ALGO08v3 and 502.008 s for the candidate, of which 141.490 s went to native callbacks and 151.001 s to the solver. The same pre-existing 1.5× receiver and 1.4× solver assumptions project 2.002× summed and 2.032× median paired speedup, just 0.446 s under the summed half-time limit across eight recordings. The actual summed speedup on those inputs was 1.642×. With native callbacks at 1.5×, both timing gates require removing at least 28.28% of the measured solver time. Any extra work outside these scopes consumes the projected margin. Reproduce this group with `python -m reports.ALGO08.v3.receiver_solver_targets --check-pairs "$campaign_root" --ranks 47 54`.
+
 ## If the improvement applies only to the 8 ms callback
 
 The first 46 recordings spent 523.775 s on short primary calls and 237.120 s on full anchors. With a 1.4× faster whole solver and the measured full-anchor times, the short primary must be **1.718× faster** across these recordings. This means removing 41.79% of its measured wall time. The more demanding first 30 need a 48.27% reduction. A transformation affecting only a small part of the short callback must be priced against this boundary.

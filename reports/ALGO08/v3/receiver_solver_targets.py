@@ -61,9 +61,11 @@ def design_point(clocks):
                 excess_over_half_s=fsum(predicted) - .5 * fsum(baseline))
 
 
-def held_clocks(campaign, *, split_apertures=False):
+def held_clocks(campaign, *, split_apertures=False, first_rank=31, last_rank=46):
     from .field_speed_reachability import BUILD, PLAN, STOCK, checked, reconcile
 
+    if not 31 <= first_rank <= last_rank <= 455:
+        raise ValueError("Held ranks must be an inclusive range between 31 and 455")
     plan = json.loads(checked(campaign / "plan.json", PLAN))
     order = list(dict.fromkeys([*plan["smoke"], *(r["case"] for r in plan["cases"])]))
     # Relocation moved 0452's completion behind 0124 inside the development group.
@@ -79,7 +81,7 @@ def held_clocks(campaign, *, split_apertures=False):
     if len(lookup) != 910 or len(records) != len(lookup):
         raise ValueError("Expected one row per enrolled arm")
     result = []
-    for case in order[30:46]:
+    for case in order[first_rank - 1:last_rank]:
         stock, candidate = (lookup[case, role] for role in ("installed", "successor"))
         for row, pin in ((stock, STOCK), (candidate, BUILD)):
             if (row["verified_pair"] is not True or row["acquisition_verified"] is not True
@@ -150,14 +152,19 @@ def price_apertures(campaign):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--check-next-16", type=Path, metavar="CAMPAIGN")
+    mode.add_argument("--check-next-16", "--check-pairs", type=Path, metavar="CAMPAIGN")
     mode.add_argument("--price-apertures", type=Path, metavar="CAMPAIGN")
+    parser.add_argument("--ranks", nargs=2, type=int, metavar=("FIRST", "LAST"),
+                        help="Inclusive held enrollment ranks for --check-pairs, default 31 46")
     args = parser.parse_args()
+    if args.ranks and not args.check_next_16:
+        parser.error("--ranks requires --check-pairs")
     if args.price_apertures:
         print(json.dumps(price_apertures(args.price_apertures.resolve(strict=True)), indent=2))
         return
     if args.check_next_16:
-        cases = held_clocks(args.check_next_16.resolve(strict=True))
+        first_rank, last_rank = args.ranks or (31, 46)
+        cases = held_clocks(args.check_next_16.resolve(strict=True), first_rank=first_rank, last_rank=last_rank)
         clocks = [(r["installed_s"], r["candidate_s"], r["native_s"], r["solver_s"]) for r in cases]
         print(json.dumps(dict(cases=cases, design_point=design_point(clocks),
                               required_solver_reduction=targets(clocks, 1.5)), indent=2))
