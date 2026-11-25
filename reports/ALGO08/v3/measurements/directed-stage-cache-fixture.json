@@ -1,0 +1,113 @@
+{
+  "cases": {
+    "cold": {
+      "after": [
+        0,
+        256
+      ],
+      "before": [
+        0,
+        256
+      ],
+      "exact": false,
+      "passed": true,
+      "reader": {
+        "bytes": 0,
+        "charged_read_bytes": 0,
+        "files": [],
+        "metadata_reuses": 0,
+        "nowait_requests": 0,
+        "passive_preflight": {
+          "member.bin": {
+            "resident_pages": 0,
+            "total_pages": 256
+          }
+        },
+        "persistent_copy_bytes": 0,
+        "read_input_blocks": 0,
+        "refused_read": {
+          "attempted": false,
+          "condition": "initial_cache_census",
+          "file": "member.bin",
+          "offset": null,
+          "resident_pages": 0,
+          "total_pages": 256
+        },
+        "returned_bytes": 0
+      }
+    },
+    "mixed": {
+      "after": [
+        128,
+        256
+      ],
+      "before": [
+        128,
+        256
+      ],
+      "exact": false,
+      "passed": true,
+      "reader": {
+        "bytes": 0,
+        "charged_read_bytes": 0,
+        "files": [],
+        "metadata_reuses": 0,
+        "nowait_requests": 0,
+        "passive_preflight": {
+          "member.bin": {
+            "resident_pages": 128,
+            "total_pages": 256
+          }
+        },
+        "persistent_copy_bytes": 0,
+        "read_input_blocks": 0,
+        "refused_read": {
+          "attempted": false,
+          "condition": "initial_cache_census",
+          "file": "member.bin",
+          "offset": null,
+          "resident_pages": 128,
+          "total_pages": 256
+        },
+        "returned_bytes": 0
+      }
+    },
+    "warm": {
+      "after": [
+        256,
+        256
+      ],
+      "before": [
+        256,
+        256
+      ],
+      "exact": true,
+      "passed": true,
+      "reader": {
+        "bytes": 1048576,
+        "charged_read_bytes": 0,
+        "files": [
+          "member.bin"
+        ],
+        "metadata_reuses": 0,
+        "nowait_requests": 1,
+        "passive_preflight": {
+          "member.bin": {
+            "resident_pages": 256,
+            "total_pages": 256
+          }
+        },
+        "persistent_copy_bytes": 0,
+        "read_input_blocks": 0,
+        "refused_read": null,
+        "returned_bytes": 1048576
+      }
+    }
+  },
+  "cpu_affinity": [
+    3
+  ],
+  "file_bytes": 1048576,
+  "kernel": "7.0.0-31-generic",
+  "st_dev": 66311
+}

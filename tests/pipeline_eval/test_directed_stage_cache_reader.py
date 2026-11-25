@@ -1,3 +1,4 @@
+import ctypes
 import errno
 import json
 import os
@@ -37,15 +38,13 @@ def extents(directory):
 
 def mock_cached(monkeypatch):
     reads = []
-    def preadv(fd,buffers,offset,flags):
-        assert flags == check.RWF_NOWAIT
-        view, = buffers
+    def preadv(fd,view,offset):
         body = os.pread(fd,len(view),offset)
         view[:len(body)] = body
         reads.append((offset,len(body)))
         return len(body)
-    monkeypatch.setattr(check.os,"preadv",preadv)
-    monkeypatch.setattr(check,"thread_input_blocks",lambda:0)
+    monkeypatch.setattr(check,"preadv_nowait",preadv)
+    monkeypatch.setattr(check,"thread_io",lambda:(0,0))
     return reads
 
 
@@ -108,18 +107,18 @@ def test_signed_encoded_index_and_released_decoded_checks_remain_independent(cap
 def test_faults_abort_once_without_blocking_fallback(capture,monkeypatch,fault):
     ledger = extents(capture)
     calls = []
-    def preadv(fd,views,offset,flags):
-        calls.append(flags)
+    def preadv(fd,view,offset):
+        calls.append(offset)
         if isinstance(fault,int):
             raise OSError(fault,"fixture denial")
-        return len(views[0]) - int(fault=="short")
-    counters = iter((0,int(fault=="physical")))
-    monkeypatch.setattr(check.os,"preadv",preadv)
-    monkeypatch.setattr(check,"thread_input_blocks",lambda:next(counters))
+        return len(view) - int(fault=="short")
+    counters = iter(((0,0),(int(fault=="physical"),512*int(fault=="physical"))))
+    monkeypatch.setattr(check,"preadv_nowait",preadv)
+    monkeypatch.setattr(check,"thread_io",lambda:next(counters))
     with check.CacheReader(capture,ledger) as reader:
         with pytest.raises(check.CacheSourceUnavailable):
             reader.read(capture/"manifest.json",16<<20)
-        assert calls == [check.RWF_NOWAIT]
+        assert calls == [0]
         assert not reader.read_files
 
 
@@ -137,9 +136,9 @@ def test_path_and_metadata_reuse_fail_closed(capture,monkeypatch):
     name = next(name for name,extent in ledger.items() if extent.kind=="payload")
     alias = capture.parent/"copy"
     os.link(capture/name,alias)
-    with check.CacheReader(capture,ledger) as reader:
-        with pytest.raises(check.CacheSourceUnavailable,match="regular-file"):
-            reader.read(capture/name,1<<20)
+    with pytest.raises(check.CacheSourceUnavailable,match="regular-file"):
+        with check.CacheReader(capture,ledger):
+            pytest.fail("The hard-linked member passed preflight")
 
 
 def test_partial_scope_cannot_seal_as_a_completed_replay(capture,monkeypatch):
@@ -149,6 +148,63 @@ def test_partial_scope_cannot_seal_as_a_completed_replay(capture,monkeypatch):
         check.ordered_hashes(capture,ledger["manifest.json"].sha256,members=3,windows_per_member=2)
         with pytest.raises(check.CacheSourceUnavailable,match="incomplete"):
             reader.verify_complete()
+
+
+@pytest.mark.parametrize("present",(0,1))
+def test_cold_or_mixed_later_extent_refuses_before_any_data_syscall(capture,monkeypatch,present):
+    ledger = extents(capture)
+    calls = iter([(2,2),(present,2)])
+    reads = mock_cached(monkeypatch)
+    monkeypatch.setattr(check,"resident_pages",lambda *a:next(calls))
+    reader = check.CacheReader(capture,ledger)
+    with pytest.raises(check.CacheSourceUnavailable,match="before any data read"):
+        with reader:
+            pytest.fail("A later unavailable extent must prevent the first data read")
+    assert not reads and reader.dir_fd is None
+    assert reader.receipt()["refused_read"]["attempted"] is False
+
+
+def test_eviction_after_initial_census_refuses_before_progressing_to_syscall(capture,monkeypatch):
+    ledger = extents(capture)
+    reads = mock_cached(monkeypatch)
+    calls = iter([(2,2)]*len(ledger)+[(0,1)])
+    monkeypatch.setattr(check,"resident_pages",lambda *a:next(calls))
+    with check.CacheReader(capture,ledger) as reader:
+        with pytest.raises(check.CacheSourceUnavailable,match="before data call"):
+            reader.read(capture/"manifest.json",16<<20)
+        assert reader.receipt()["refused_read"]["condition"] == "pre_call_cache_census"
+    assert not reads
+
+
+def test_eagain_with_readahead_preserves_all_observed_charge_and_never_retries(capture,monkeypatch):
+    ledger = extents(capture)
+    calls = []
+    def preadv(fd,iovec,count,offset,flags):
+        calls.append(flags)
+        assert count == 1 and offset == 0 and ctypes.cast(iovec,ctypes.POINTER(check.IOVec))[0].size > 0
+        ctypes.set_errno(errno.EAGAIN)
+        return -1
+    io = iter(((11,5632),(267,136704)))
+    monkeypatch.setattr(check,"PREADV2",preadv)
+    monkeypatch.setattr(check,"thread_io",lambda:next(io))
+    with check.CacheReader(capture,ledger) as reader:
+        with pytest.raises(check.CacheSourceUnavailable,match="Detached read refused"):
+            reader.read(capture/"manifest.json",16<<20)
+    outcome = reader.receipt()
+    assert calls == [check.RWF_NOWAIT]
+    assert outcome["returned_bytes"] == 0
+    assert outcome["read_input_blocks"] == 256
+    assert outcome["charged_read_bytes"] == 131072
+    assert outcome["refused_read"]["condition"] == "incidental_read_charge"
+    assert outcome["refused_read"]["syscall_errno"] == errno.EAGAIN
+
+
+def test_score_refuses_real_read_charge_even_with_external_clean_marker(tmp_path,monkeypatch):
+    wave = dict(admitted=True,no_observed_source_read_charge=True,verified_prefix_bytes=0,
+                cache=dict(read_input_blocks=256,charged_read_bytes=131072,refused_read=None))
+    monkeypatch.setattr(case.book,"load",lambda *_:wave)
+    with pytest.raises(ValueError,match="no observed source read charge"):
+        case.score(tmp_path,{},"capture","plan","waveform")
 
 
 def test_requires_sealed_completed_original_custody_before_opening_a_prefix(tmp_path,monkeypatch):

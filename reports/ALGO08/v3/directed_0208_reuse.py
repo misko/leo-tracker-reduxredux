@@ -29,13 +29,18 @@ signed = frozen.arrival.signed
 
 
 def timed(start):
-    wall, cpu, blocks = start
+    wall, cpu, blocks, read_bytes = start
     return dict(wall_ns=perf_counter_ns()-wall,cpu_ns=process_time_ns()-cpu,
-                input_blocks=getrusage(RUSAGE_SELF).ru_inblock-blocks)
+                input_blocks=getrusage(RUSAGE_SELF).ru_inblock-blocks,read_bytes=process_read_bytes()-read_bytes)
+
+
+def process_read_bytes():
+    with open("/proc/self/io","rb") as stream:
+        return next(int(line.split(b":",1)[1]) for line in stream if line.startswith(b"read_bytes:"))
 
 
 def start_clock():
-    return perf_counter_ns(),process_time_ns(),getrusage(RUSAGE_SELF).ru_inblock
+    return perf_counter_ns(),process_time_ns(),getrusage(RUSAGE_SELF).ru_inblock,process_read_bytes()
 
 
 def source_pins():
@@ -202,7 +207,7 @@ def replay(root, roster, capture_pin, plan_pin, event, driver):
                                 clock=timed(clock),cache=reader.receipt(),plan_sha256=plan_pin))
             raise
     archive = root/"waveforms.json"
-    frozen.prefix.write(archive,dict(admitted=True,verified_prefix_bytes=reader.bytes,
+    frozen.prefix.write(archive,dict(admitted=True,no_observed_source_read_charge=True,verified_prefix_bytes=reader.bytes,
                         plan_sha256=plan_pin,cache=reader.receipt(),**measured))
     pin = frozen.tag(archive)
     frozen.prefix.write(root/"replay-clock.json",dict(**timed(clock),plan_sha256=plan_pin,waveform_sha256=pin))
@@ -212,6 +217,12 @@ def replay(root, roster, capture_pin, plan_pin, event, driver):
 def score(root, roster, capture_pin, plan_pin, waveform_pin):
     plan = book.load(root/"plan.json",plan_pin)
     wave = book.load(root/"waveforms.json",waveform_pin)
+    cache = wave["cache"]
+    if (wave["admitted"] is not True or wave["no_observed_source_read_charge"] is not True
+            or cache["read_input_blocks"] or cache["charged_read_bytes"] or cache["refused_read"] is not None
+            or not (wave["verified_prefix_bytes"] == cache["bytes"] == cache["returned_bytes"]
+                    == book.first_six_book(roster)["total_bytes"])):
+        raise ValueError("Require a complete waveform sweep with no observed source read charge")
     pair,pair_pin,case,original = authority(roster,capture_pin)
     if (plan["pair_sha256"] != pair_pin or plan["capture_sha256"] != capture_pin or wave["plan_sha256"] != plan_pin
             or plan["sources"] != source_pins()):
