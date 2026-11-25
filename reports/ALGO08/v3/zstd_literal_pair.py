@@ -35,6 +35,11 @@ class Work(ct.Structure):
                 ("pair_count", "different_tables", "singletons", "tables", "mixed_blocks", "history_bytes")]
 
 
+class OwnedWork(ct.Structure):
+    _fields_ = [(name, ct.c_size_t) for name in
+                ("spill_bytes", "seam_copy_bytes", "workspace_bytes", "mixed_zstd_context_bytes")]
+
+
 def build(output):
     if sys.byteorder != "little" or tuple(sha256(path.read_bytes()).hexdigest() for path in
                                          (STATIC, SHARED, Path("/usr/include/zstd.h"))) != (STATIC_PIN, SHARED_PIN, HEADER_PIN):
@@ -93,6 +98,13 @@ class Decoder:
         self.pair = candidate.literal_pair_frame
         self.pair.argtypes = (p, u, ct.POINTER(Literal), u, p, u, ct.POINTER(Work))
         self.pair.restype = ct.c_int
+        for name, result, args in (
+            ("open", p, (p, u, u, u)), ("read", ct.c_int, (p, p, u)), ("close", None, (p,)),
+            ("scratch", u, (p,)), ("finish", ct.c_int, (p, ct.POINTER(Work), ct.POINTER(OwnedWork))),
+        ):
+            function = getattr(candidate, f"literal_pair_owned_{name}")
+            function.argtypes, function.restype = args, result
+            setattr(self, f"owned_{name}", function)
 
     def verified(self, frame, receipt, *, paired=False):
         if (not isinstance(frame, bytes) or not 0 < receipt.decoded_bytes <= MAX_EXTENT

@@ -1,6 +1,7 @@
 """Qualify exact output on one of two pinned detached tmpfs members, without timing."""
 
 import argparse
+from contextlib import closing
 from hashlib import sha256
 import json
 import os
@@ -34,6 +35,8 @@ CASES = {
     ),
 }
 FILES = ("manifest.json", "iq-000000.ci16.zst", "windows-000000.jsonl")
+HISTORY_PIN = "sha256:368fc0c87c5a2bbc7e58a3d5062ab53271a070ae90df39da524e9c0b397ea473"
+HASHER_PIN = "sha256:559e49ee3b6ad7ceec969058c3676b563c2e7e7b9a43714042c310ff6fe5c053"
 
 
 def resident(paths):
@@ -59,30 +62,83 @@ def restrict_payloads(expected):
     sys.addaudithook(audit)
 
 
-def check(case, decoder, native_pin):
-    cpus = os.sched_getaffinity(0)
-    if len(cpus) != 1 or 2 in cpus or os.getpriority(os.PRIO_PROCESS, 0) < 15:
-        raise ValueError("Correctness only, using one nonbenchmark CPU at nice 15")
-    source, pins, expected_work = CASES[case]
-    paths = tuple(source / name for name in FILES)
-    before = resident(paths)
-    restrict_payloads(paths)
-    usage = getrusage(RUSAGE_SELF)
+def load_owned(decoder, history_path, hasher):
+    from .legacy_fused_map import FusedMember, load
+    from .zstd_literal_pair_owned import OwnedPorts
+
+    if (digest(history_path.read_bytes()), digest(hasher.read_bytes())) != (HISTORY_PIN, HASHER_PIN):
+        raise ValueError("The measured owned-window baseline artifacts changed")
+    ordinary = load(history_path)
+    return FusedMember, ordinary, OwnedPorts(decoder, ordinary), hasher
+
+
+def check_owned(reader, chunk, runtime):
+    FusedMember, ordinary, adapter, hasher = runtime
+    options = dict(owned_windows=True, build_maps=False)
+    with closing(FusedMember(reader, chunk, ordinary, hasher, **options)) as stock, closing(
+        FusedMember(reader, chunk, adapter, hasher, **options)
+    ) as fresh:
+        retained = None
+        for expected, actual in zip(stock.windows(), fresh.windows(), strict=True):
+            left = memoryview(expected.samples).cast("B")
+            right = memoryview(actual.samples).cast("B")
+            if expected.index != actual.index or left != right or not right.readonly:
+                raise ValueError("Matched owned-window receiver handoff changed")
+            if retained is None:
+                retained = actual
+        if not (fresh.eof and stock.eof and retained is not None and
+                digest(memoryview(retained.samples).cast("B")) == retained.index.iq_sha256):
+            raise ValueError("Member EOF or older owned-window lifetime changed")
+        return dict(**adapter.finished, control_capacity=stock.owned_capacity, paired_capacity=fresh.owned_capacity,
+                    ordered_window_pins_sha256=digest("\n".join(row.iq_sha256 for row in fresh.rows).encode()),
+                    owned_control_scratch=stock.scratch, initial_paired_workspace=fresh.scratch,
+                    control_history_pin=HISTORY_PIN, paired_hasher_pin=HASHER_PIN,
+                    decoded_bytes=chunk.uncompressed_bytes, encoded_bytes=chunk.compressed_bytes)
+
+
+def qualified_reader(case):
+    source, pins, _ = CASES[case]
     reader = ShortWindowReader(source)
     chunk = reader.manifest.chunks[0]
     if (chunk.chunk_index, chunk.first_sequence, chunk.window_count, chunk.payload_relative_path,
             chunk.index_relative_path) != (0, 0, 64, FILES[1], FILES[2]):
         raise ValueError("Only the first signed detached member is enrolled")
-    actual_pins = reader.manifest_sha256, chunk.compressed_sha256, chunk.index_sha256, chunk.uncompressed_sha256
-    if actual_pins != tuple("sha256:" + value for value in pins):
+    actual = reader.manifest_sha256, chunk.compressed_sha256, chunk.index_sha256, chunk.uncompressed_sha256
+    if actual != tuple("sha256:" + value for value in pins):
         raise ValueError("Detached manifest or member digests differ from the archived pins")
+    return reader, chunk, actual
+
+
+def check(case, decoder, native_pin, *, owned=None):
+    cpus = os.sched_getaffinity(0)
+    if len(cpus) != 1 or 2 in cpus or os.getpriority(os.PRIO_PROCESS, 0) < 15:
+        raise ValueError("Correctness only, using one nonbenchmark CPU at nice 15")
+    source, _, expected_work = CASES[case]
+    paths = tuple(source / name for name in FILES)
+    before = resident(paths)
+    restrict_payloads(paths)
+    runtime = load_owned(decoder, *owned) if owned is not None else None
+    usage = getrusage(RUSAGE_SELF)
+    reader, chunk, actual_pins = qualified_reader(case)
+    expected = {name: value for name, value in zip(("pair_count", "singletons", "mixed_blocks"), expected_work, strict=True)}
+    if runtime is not None:
+        stats = check_owned(reader, chunk, runtime)
+        if stats["route"] != "paired" or stats["emitted"] != 64 or any(stats[k] != v for k, v in expected.items()):
+            raise ValueError(f"The original owned-window comparison used a different route: {stats}")
+        final = getrusage(RUSAGE_SELF)
+        after = resident(paths)
+        return dict(case=case, source=str(source), pinned_original=list(actual_pins),
+                    native_candidate_sha256=native_pin, source_sha256=digest((HERE / "zstd_literal_pair.c").read_bytes()),
+                    adapter_sha256=digest((HERE / "zstd_literal_pair_owned.py").read_bytes()),
+                    same_all_owned_window_bytes=True, **stats, residency_before=before, residency_after=after,
+                    ru_inblock=final.ru_inblock-usage.ru_inblock, max_rss_kib=final.ru_maxrss,
+                    controlled_clock=False, affinity=sorted(cpus))
     rows = read_rows(reader, chunk)
     receipt = Authority(chunk.compressed_bytes, chunk.compressed_sha256, chunk.uncompressed_bytes,
                         chunk.uncompressed_sha256, tuple((row.payload_bytes, row.iq_sha256) for row in rows))
     encoded = reader._member(chunk.payload_relative_path, chunk.compressed_bytes, chunk.compressed_sha256)
     control, _ = decoder.verified(encoded, receipt)
     candidate, counts = decoder.verified(encoded, receipt, paired=True)
-    expected = {name: value for name, value in zip(("pair_count", "singletons", "mixed_blocks"), expected_work, strict=True)}
     if candidate != control or counts["route"] != "paired" or any(counts[k] != v for k, v in expected.items()):
         raise ValueError(f"Exact bytes or planned branch counts differ: {counts}")
     del control
@@ -116,5 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("case", choices=CASES)
     parser.add_argument("library", type=Path)
     parser.add_argument("native_pin")
+    parser.add_argument("--owned", nargs=2, type=Path, metavar=("STOCK_HISTORY", "SIGNED_HASHER"))
     args = parser.parse_args()
-    print(json.dumps(check(args.case, Decoder(args.library, args.native_pin), args.native_pin), sort_keys=True, indent=2))
+    value = check(args.case, Decoder(args.library, args.native_pin), args.native_pin, owned=args.owned)
+    print(json.dumps(value, sort_keys=True, indent=2))
