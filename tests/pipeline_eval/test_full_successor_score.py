@@ -240,6 +240,7 @@ def test_field_stages_follow_original_membership_and_defer_pairs_beyond_a_hole()
 
 
 def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
+    from reports.ALGO08.v3.ds30_repeatability import frozen_stage_order, score_neighbors
     assigned = roster()
     template, _ = matching_pair()
     rows = []
@@ -269,8 +270,16 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     prior = compare_centers(pairs, assigned, offer)
     write_report(pairs, tmp_path, {case: r["release_100"] for case, r in assigned.items()}, "c"*64,
                  renderer_revision="d"*40, position_moments=shared_position_moments(rows, assigned), prior=prior,
-                 capture_days=capture_day_sensitivity(pairs, assigned), pace=capture_pace(pairs, assigned))
+                 capture_days=capture_day_sensitivity(pairs, assigned), pace=capture_pace(pairs, assigned),
+                 nearby=score_neighbors(frozen_stage_order({case: (r["case_id"], r["physical_content"])
+                                                            for case, r in assigned.items()}), assigned, rows))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    for arm in ("c0", "fitted_c"):
+        nearby = report["nearby_scan_separations"][arm]
+        assert nearby["pairs"] == len(nearby["recordings"]) == 204
+        assert len({r[k] for r in nearby["recordings"] for k in ("first_enrolled", "second_enrolled")}) == 408
+        assert 0 < nearby["shared"] <= min(nearby["paired_fixes"].values()) <= 204
+    assert "Position repeatability on nearby recordings" in (tmp_path / "README.md").read_text()
     for role in ("installed", "successor"):
         for arm in ("c0", "fitted_c"):
             for metric in ("within_1km", "within_2km", "fixes"):

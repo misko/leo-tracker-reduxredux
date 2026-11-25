@@ -62,7 +62,7 @@ def roster(root=ROOT):
             raise ValueError("Unknown scheduled edge in the frozen DS30 recording name")
         assigned[case] = dict(case_id=original["case_id"], raw_authority=original["raw_authority_digest"],
                               physical_content=original["raw_recording"]["identity_sha256"],
-                              capture_span_s=(stop - start) / 1e9,
+                              capture_start_utc_ns=start, capture_span_s=(stop - start) / 1e9,
                               scheduled_edge=edge,
                               capture_day=datetime.fromtimestamp(original["captured_utc_ns"] // 10**9,
                                                                  timezone.utc).date().isoformat(),
@@ -432,7 +432,7 @@ def compare_centers(pairs, assigned, offer):
 
 
 def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision=None, position_moments=None,
-                 prior=None, capture_days=None, pace=None):
+                 prior=None, capture_days=None, pace=None, nearby=None):
     from reports.ALGO08.v3.accuracy_repair_budget import repair_budget
     from reports.ALGO08.v3.full_successor_figures import paired_speed_errors, render_distribution_figures
 
@@ -482,6 +482,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
         metadata["capture_day_sensitivity"] = capture_days
     if pace is not None:
         metadata["runtime_relative_to_observing_span"] = pace
+    if nearby is not None:
+        metadata["nearby_scan_separations"] = nearby
     if renderer_revision is not None:
         if len(renderer_revision) != 40 or any(c not in "0123456789abcdef" for c in renderer_revision):
             raise ValueError("Expected a full Git revision for the report renderer")
@@ -718,6 +720,21 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                 lines.append(f"| {labels[0]} | {labels[1]} | {n} | " + " | ".join(values) + " |")
         lines += ["", "This diagnostic uses the survey only after scoring. It measures repeatability at one "
                   "physical location and supplies no location correction to either build."]
+    if nearby is not None:
+        lines += ["", "### Position repeatability on nearby recordings", "",
+                  "The receiver stayed on the same roof. In frozen enrollment order, each recording was paired "
+                  "with the nearest unused earlier enrollee whose capture began within one hour. Each recording "
+                  "contributes to at most one pair. The medians use pairs where both builds fixed both recordings. "
+                  "A smaller separation means a more repeatable position. The survey-error plots measure accuracy.", "",
+                  "| Calibration | Recording pairs | Both scans fixed, v3 / candidate | Both builds fixed both scans | "
+                  "Median separation, v3 / candidate (km) | Candidate separation larger |",
+                  "|---|---:|---:|---:|---:|---:|"]
+        for arm, label in (("c0", "Fixed zero"), ("fitted_c", "Fitted")):
+            result = nearby[arm]
+            counts, km = result["paired_fixes"], result["median_separation_km"]
+            lines.append(f"| {label} | {result['pairs']} | {counts['installed']} / {counts['successor']} | "
+                         f"{result['shared']} | {number(km['installed'], 3)} / {number(km['successor'], 3)} | "
+                         f"{result['candidate_more_variable']} |")
     if prior is not None:
         a, b = (prior["fixes"]["fitted_c"][role] for role in BUILDS)
         lines += ["", f"The supplied search square was {prior['width_km']:g} km wide. Returning its center on "
@@ -974,6 +991,8 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
 
 
 if __name__ == "__main__":
+    from reports.ALGO08.v3.ds30_repeatability import score_neighbors
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("receipts", type=Path, help="Final checked per-recording worker export, JSON lines")
     parser.add_argument("output", type=Path)
@@ -988,6 +1007,7 @@ if __name__ == "__main__":
     assigned = roster()
     raw_rows = [json.loads(line) for line in path_bytes.splitlines() if line.strip()]
     actual_pairs = paired_rows(raw_rows, assigned)
+    order = frozen_stage_order({case: (r["case_id"], r["physical_content"]) for case, r in assigned.items()})
     prior = None
     if args.offered_region is not None:
         prior = compare_centers(actual_pairs, assigned, json.loads(checked(args.offered_region.read_bytes(), OFFER)))
@@ -995,4 +1015,5 @@ if __name__ == "__main__":
     write_report(actual_pairs, args.output, {case: r["release_100"] for case, r in assigned.items()},
                  export_sha256, renderer_revision=args.renderer_revision,
                  position_moments=shared_position_moments(raw_rows, assigned), prior=prior,
-                 capture_days=capture_day_sensitivity(actual_pairs, assigned), pace=capture_pace(actual_pairs, assigned))
+                 capture_days=capture_day_sensitivity(actual_pairs, assigned), pace=capture_pace(actual_pairs, assigned),
+                 nearby=score_neighbors(order, assigned, raw_rows))

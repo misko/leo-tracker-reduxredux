@@ -1,5 +1,15 @@
 # Position repeatability across nearby DS30 scans
 
+## First 53 verified recordings
+
+The frozen time rule paired 16 distinct recordings into eight pairs. ALGO08v3 returned positions on both scans in five pairs and the candidate in six. Both builds returned both positions in the same five pairs. Across these five, median fitted separation was 0.915 km for ALGO08v3 and 1.138 km for the candidate. The candidate moved farther in three pairs. At fixed-zero calibration the corresponding medians were 0.974 and 1.333 km, with a larger candidate separation in four pairs.
+
+The new pairs include a substantial improvement on 0262/0260, from 1.149 km to 0.186 km fitted separation, and a regression on 0430/0431, from 0.587 km to 1.138 km. The dataset observes a stationary receiver. These distances describe scatter between nearby scans. A stable offset from the surveyed position can yield a small separation. The final report applies the same frozen rule to all 204 prespecified recording pairs and discloses missing fixes before comparing separation.
+
+The SHA-256 of the combined export for this prefix is `25162345c1acf73846a59293b1e5fd3ca446e7c6b5039be62dd09eafa3cfd293`. Pass `--limit 53` to the command below to reproduce the eight case pairs.
+
+## First 37 verified recordings
+
 Only two pairs of nearby scans among the first 37 recordings have positions from both builds on both scans. The candidate's fitted position moved farther between scans in both pairs. The larger difference was on DS30-0183 and DS30-0185, recorded 50.5 minutes apart. ALGO08v3 moved 0.915 km between its two fixes and the candidate moved 1.529 km.
 
 | Scans | Start times apart | ALGO08v3 separation, fitted | Candidate separation, fitted |

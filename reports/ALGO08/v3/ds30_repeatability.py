@@ -9,13 +9,11 @@ choose pairs. It does not feed the reference or the previous fix to either solve
 """
 
 import argparse
-import gzip
 import json
 from pathlib import Path
 from statistics import median
 
-from .ds30_stage_progress import verified_measurements
-from .full_successor_score import ARMS, BUILDS, MANIFEST, ROOT, checked, distance_km, frozen_stage_order, roster
+from .full_successor_score import ARMS, BUILDS, distance_km, frozen_stage_order, roster
 
 
 HOUR_NS = 3_600_000_000_000
@@ -54,7 +52,16 @@ def compare(matches, positions, arm):
                 candidate_more_variable=sum(r["successor"] > r["installed"] for r in common), recordings=rows)
 
 
+def score_neighbors(order, assigned, verified_rows):
+    starts = {case: assigned[case]["capture_start_utc_ns"] for case in order}
+    matches = match_neighbors(order, assigned, starts)
+    positions = {(r["case"], r["algorithm"]): r["arms"] for r in verified_rows}
+    return {arm: compare(matches, positions, arm) for arm in ARMS}
+
+
 def evaluate(raw, seal, limit=None):
+    from .ds30_stage_progress import verified_measurements
+
     assigned = roster()
     verified = {a["case"] for a, _ in verified_measurements(raw, seal, assigned)}
     order = frozen_stage_order({case: (r["case_id"], r["physical_content"]) for case, r in assigned.items()})
@@ -63,14 +70,9 @@ def evaluate(raw, seal, limit=None):
         limit = prefix
     if not 0 <= limit <= prefix:
         raise ValueError("Requested cohort exceeds the verified enrollment prefix")
-    data = ROOT / "reports/2026_11_20_ds30_fast/dataset/manifest.json.gz"
-    source = json.loads(checked(gzip.decompress(data.read_bytes()), MANIFEST))
-    starts = {r["dataset_label"]: r["captured_utc_ns"] for r in source["members"]}
-    matches = match_neighbors(order[:limit], assigned, starts)
-    positions = {(r["case"], r["algorithm"]): r["arms"] for line in raw.splitlines()
-                 if (r := json.loads(line))["verified_pair"]}
+    verified_rows = (r for r in map(json.loads, raw.splitlines()) if r["verified_pair"])
     return dict(export_sha256=seal["combined_sha256"], prefix=limit, threshold_seconds=HOUR_NS / 1e9,
-                calibrations={arm: compare(matches, positions, arm) for arm in ARMS})
+                calibrations=score_neighbors(order[:limit], assigned, verified_rows))
 
 
 def main():
