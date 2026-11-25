@@ -473,6 +473,12 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
                     builds={r["algorithm"]: r["build_sha256"] for r in pairs[0]}, cohorts=summaries)
     metadata["paired_rf_and_error"] = {arm: paired_rf_and_error(pairs, arm) for arm in ARMS}
     metadata["per_recording_half_time_outcomes"] = half_time_outcomes(pairs)
+    # A perfect zero-cost selector can do no better on elapsed time than the
+    # faster recorded exit on each original, including withheld and failed exits.
+    fastest_choices = [(a, min((a, b), key=lambda row: row["elapsed_s"])) for a, b in pairs]
+    fastest_wall = paired_timing(fastest_choices, "elapsed_s")
+    fastest_wall["total_s"] = math.fsum(row["elapsed_s"] for _, row in fastest_choices)
+    metadata["fastest_whole_recording_choice"] = fastest_wall
     trial_order = frozen_stage_order({a["case"]: (a["case_id"], a["physical_content_sha256"]) for a, _ in pairs})
     metadata["field_stages"] = field_stage_history(pairs, trial_order)
     metadata["accuracy_repair_budget"] = [
@@ -582,6 +588,10 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "A failure contributes wall and CPU through exit. The per-recording data give the child-only and verifier clocks separately. The summed ratio divides total "
               "ALGO08v3 seconds by total candidate seconds. The paired measure is the reciprocal of the median candidate-to-ALGO08v3 time ratio. "
               "The second worker can benefit from pages cached by the first.", "",
+              f"Choosing the faster recorded exit on every recording would take {fastest_wall['total_s']:,.1f} seconds "
+              f"and yield at most {fastest_wall['summed_speedup']:.3f}× summed speedup from switching between "
+              "these two builds. This upper bound grants advance knowledge of both times, zero selection cost, "
+              "and allows a failed or withheld exit to win.", "",
               "| Run order | Wall seconds saved | CPU seconds saved | Change in remaining seconds |",
               "|---|---:|---:|---:|"]
     for name in ("All DS30 recordings", "ALGO08v3 ran first", "Candidate ran first"):

@@ -274,6 +274,10 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
                  nearby=score_neighbors(frozen_stage_order({case: (r["case_id"], r["physical_content"])
                                                             for case, r in assigned.items()}), assigned, rows))
     report = json.loads((tmp_path / "summary.json").read_bytes())
+    fastest = report["fastest_whole_recording_choice"]
+    assert fastest["pairs"] == 455 and fastest["total_s"] == 455
+    assert fastest["summed_speedup"] == pytest.approx(909 / 455)
+    assert "and yield at most 1.998× summed speedup" in (tmp_path / "README.md").read_text()
     for arm in ("c0", "fitted_c"):
         nearby = report["nearby_scan_separations"][arm]
         assert nearby["pairs"] == len(nearby["recordings"]) == 204
