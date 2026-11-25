@@ -101,7 +101,8 @@ def derive(stock, sparse):
     found = primary_hits(predictions, installed)
     counts = coverage["windows"]["primary"]
     if (len(empty), len(predictions), coverage["installed_positive_denominator"],
-            counts["carrier_only"], counts["interpolated"], len(found)) != (1105, 300, 104, 14, 11):
+            coverage["installed_positive_queries"], counts["carrier_only"], counts["interpolated"],
+            len(found)) != (1105, 300, 104, 22, 14, 11, 11):
         raise ValueError("The primary receiver audit differs from the frozen measured scope")
     packet, audit = splice(stock, sparse, found, proof["projection_sha256"])
     if (audit["original_winners"], audit["derived_winners"], audit["unchanged_lanes"]) != (600, 611, 1853):
