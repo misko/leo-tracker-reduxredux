@@ -31,3 +31,11 @@ a checkout import shadow from the metadata-only module. Moving that
 import into derivation fixed the installed runtime binding, with
 byte-identical derived detector output. Twenty-eight focused tests passed.
 [Preparation entry](arrival_primary_0049.py) · [Guarded admission](arrival_primary_0049_admission.py)
+
+The one authorized passive watch saw a fresh official DS30-0232 storage
+deferral after 23.827 seconds. The independent rolling quiet check then
+observed 18 outstanding operations on `/srv/bulk`, above the existing
+limit of two. Admission stopped before taking the lease. The ready
+packet and both archived controls remain sealed. The 11-winner packet has
+no measured position, RF, ownership, publication or processing time.
+[Admission receipt](measurements/ds30-0049-arrival-primary-admission.json)
