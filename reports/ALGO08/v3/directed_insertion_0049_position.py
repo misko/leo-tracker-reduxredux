@@ -28,6 +28,7 @@ SMOKE = "5d8aadf9b2d643d9ce16b20d5a5ebacdb4069ab0aabb454a14af0ab5fe922571"
 RESULT = dict(case="DS30-0049",changed=10,refs=48,acquired=0,waveform_reads=0,solver_runs=0)
 TIMEOUT = 15.
 WATCH = 55.
+READY = "position-ready-v2.json"
 
 
 def paths():
@@ -102,12 +103,19 @@ def isolated(*,smoke):
 
 
 def ready():
-    cue = ROOT/"position-ready.json"
+    cue = ROOT/READY
     if cue.exists() or (ROOT/"position-intent.json").exists():
         raise ValueError("This prepared position cell already has a readiness decision")
     for name in ("scratch","shm-root"):
-        (ROOT/name).mkdir(mode=0o700,exist_ok=False)
-    (ROOT/"backing-alias").symlink_to("/srv/bulk",target_is_directory=True)
+        path = ROOT/name
+        path.mkdir(mode=0o700,exist_ok=True)
+        if path.is_symlink():
+            raise ValueError("Expected a direct private scratch directory")
+    alias = ROOT/"backing-alias"
+    if not alias.is_symlink():
+        alias.symlink_to("/srv/bulk",target_is_directory=True)
+    if alias.readlink() != Path("/srv/bulk"):
+        raise ValueError("The outside-source denial probe changed")
     layout = paths()
     with (ROOT/"plan.json").open("rb") as descriptor:
         result = subprocess.run(command(layout,smoke=True),capture_output=True,text=True,timeout=8,
@@ -149,7 +157,7 @@ def charge(layout,fd,event,age,acquired):
 
 
 def admission(layout,event,pid):
-    from directed_replay_0049_ram import allowed_event,RETRY_NS
+    from reports.ALGO08.v3.directed_replay_0049_ram import allowed_event,RETRY_NS
 
     from contextlib import ExitStack
     with ExitStack() as stack:
@@ -172,12 +180,12 @@ def admission(layout,event,pid):
 
 
 def watch(pid,pin):
-    from directed_replay_0049_ram import CAMPAIGN,DRIVER,DRIVER_PIN,FRESH_NS
+    from reports.ALGO08.v3.directed_replay_0049_ram import CAMPAIGN,DRIVER,DRIVER_PIN,FRESH_NS
     from field_crossover_admission_watch import MOVED_TO,recent_deferral,replaced_export
 
     if (ROOT/"position-watch.json").exists() or (ROOT/"position-intent.json").exists():
         raise ValueError("The one authorized saved position watch has already been used")
-    proof = trial.document(ROOT/"position-ready.json",pin)
+    proof = trial.document(ROOT/READY,pin)
     layout = paths()
     if (proof["launcher"] != trial.identifier(Path(__file__)) or proof["protocol"] != trial.identifier(PROTOCOL)
             or trial.identifier(DRIVER) != DRIVER_PIN or proof["inputs"] != list(map(str,layout[0]))
