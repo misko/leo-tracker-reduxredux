@@ -13,6 +13,7 @@ import numpy as np
 from reports.ALGO08.v3.profiled_grid_export import (
     ILL_CONDITIONED, STOCK_PREFIX_REFUSAL, exported, handoff, profiled_exports, profiled_grid,
 )
+from reports.ALGO08.v3.profiled_grid_export_0008 import calibration
 
 
 class ProfiledPosteriorTest(TestCase):
@@ -128,3 +129,15 @@ class ProfiledPosteriorTest(TestCase):
                 self.assertIs(result, counts)
         self.assertEqual(calls, [("publication-port", "durable-asset.so", False),
                                  ("new.so", "digest", audit, "durable-asset.so")])
+
+    def test_radio_two_coefficients_distinguish_fitted_arm(self):
+        original = np.zeros((2, 243))
+        original[0, [0, 8]] = 1
+        original[1, 2] = 1
+        self.assertEqual(calibration(original)["arm"], "unclassified")
+        original[1, 8] = -1
+        self.assertEqual(calibration(original), dict(arm="fitted_c", radio2_rows=1, radio1_rows=1,
+                                                    radio2_nonzero_column8=1))
+        original[1, 1] = 1
+        with self.assertRaisesRegex(ValueError, "radio intercept"):
+            calibration(original)

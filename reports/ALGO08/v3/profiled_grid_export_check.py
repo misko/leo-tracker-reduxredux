@@ -69,11 +69,11 @@ def check_factor(cap, result, u, sigma, groups, powers):
     return float(np.max(np.abs(reconstructed-expect)))
 
 
-def operands(path, width):
-    with np.load(BytesIO(checked(path)), allow_pickle=False) as record:
+def operands(body, shape):
+    with np.load(BytesIO(body), allow_pickle=False) as record:
         args = tuple(record[k] for k in ("raw", "features", "sigma", "groups"))
         options = {k: record[k] for k in ("powers", "prior_groups", "prior_nu")}
-    if args[1].shape != (4122, width):
+    if args[1].shape != shape:
         raise ValueError("Changed saved likelihood layout")
     return args, options
 
@@ -139,7 +139,7 @@ def checks():
     for arm, name, width, status in inputs:
         if capture["samples"][name]["caller"] != "history_position":
             raise ValueError("Expected the authorized saved selected likelihood")
-        arms[arm] = (*operands(ROOT/name, width), status)
+        arms[arm] = (*operands(checked(ROOT/name), (4122, width)), status)
     return stock, arms
 
 
@@ -215,7 +215,7 @@ def audit_conditioning():
             bound.clear()
 
 
-def time_captures(binary, pin, lease_fd, admission_ns, *, proof):
+def time_captures(binary, pin, lease_fd, admission_ns, *, proof, physical=None):
     from .field_crossover_admission_watch import (
         CAMPAIGN, recent_deferral,
     )
@@ -235,7 +235,20 @@ def time_captures(binary, pin, lease_fd, admission_ns, *, proof):
     event = recent_deferral(CAMPAIGN, admission_ns-1, began)
     if event is None or event["unix_ns"] != admission_ns or not 0 <= began-admission_ns <= 5_000_000_000:
         raise ValueError("Prior official storage deferral was not visible to the child")
-    stock, cases = checks()
+    if physical is None:
+        stock, cases = checks()
+        original_pins = PINS
+        order = ("stock", "profiled", "proof") if proof else ("stock", "profiled")
+    else:
+        from . import profiled_grid_export_0008 as transfer
+
+        ready = transfer.authorized_result(*physical, pin)
+        args, options, arm, _ = transfer.inputs()
+        if arm != ready["calibration"]:
+            raise ValueError("Physical calibration evidence changed")
+        stock = ct.CDLL(str(POSTERIOR)).nb_run_posterior
+        cases, original_pins = {arm["arm"]: (args, options, "activated")}, transfer.PINS
+        order = ("stock", "proof")
     bound = handoff.native_bound.NativeBound(ORIGINAL)
     handoff.bind_export(stock, bound)
     try:
@@ -244,7 +257,6 @@ def time_captures(binary, pin, lease_fd, admission_ns, *, proof):
             invoke(stock, bound, args, options)
         loaded = process_time_ns()
         timings = {arm: [] for arm in cases}
-        order = ("stock", "profiled", "proof") if proof else ("stock", "profiled")
         for mode in (*order, *reversed(order)):
             audit = Counter()
             admitted = (nullcontext() if mode == "stock" else profiled_exports(
@@ -262,13 +274,15 @@ def time_captures(binary, pin, lease_fd, admission_ns, *, proof):
                         raise ValueError("Timed callback left the verified export or refusal path")
                     row.update(updates=int(result["precision_iterations"]), cache_hits=bound.counts["cache_hits"],
                                activity=dict(audit-previous_audit), context_entry_cpu_ns=binding)
+                    if mode == "proof":
+                        expected = "profiled_completed" if status == "activated" else "certified_stock_refusal"
+                        if row["activity"] != {"attempted": 1, expected: 1}:
+                            raise ValueError("Timed proof did not take the verified callback path")
                     timings[arm].append(row)
     finally:
         bound.clear()
-    if proof and any(row["activity"] != {"attempted": 1, "certified_stock_refusal": 1}
-                     for row in timings["fitted_c"] if row["mode"] == "proof"):
-        raise ValueError("Timed proof did not match the current refusal")
-    return dict(times=timings, original_inputs=PINS, native_sha256=pin, event=event,
+    return dict(times=timings, original_inputs=original_pins, native_sha256=pin, event=event,
+                physical_proof_sha256=physical[1] if physical else None,
                 numerical_setup_cpu_ns=loaded-clock_start, checker_cpu_ns=process_time_ns()-clock_start,
                 invocation="saved predictive capture, anticipated cache hits, no grid evaluation")
 
@@ -281,9 +295,11 @@ if __name__ == "__main__":
     parser.add_argument("--admission-ns", type=int)
     parser.add_argument("--audit-conditioning", action="store_true")
     parser.add_argument("--proof-prefix", action="store_true")
+    parser.add_argument("--physical-0008", nargs=2, metavar=("CORRECTNESS_JSON", "SHA256"))
     cli = parser.parse_args()
     if cli.timing_library:
-        report = time_captures(cli.timing_library, cli.sha256, cli.lease_fd, cli.admission_ns, proof=cli.proof_prefix)
+        report = time_captures(cli.timing_library, cli.sha256, cli.lease_fd, cli.admission_ns,
+                               proof=cli.proof_prefix, physical=cli.physical_0008)
     elif cli.audit_conditioning:
         report = audit_conditioning()
     else:
