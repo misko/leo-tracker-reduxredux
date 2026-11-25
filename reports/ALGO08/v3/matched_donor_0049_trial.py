@@ -10,6 +10,7 @@ from resource import RUSAGE_CHILDREN, getrusage
 from shutil import copyfile
 import subprocess
 import sys
+from contextlib import nullcontext
 from time import perf_counter_ns, process_time_ns, time_ns
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -159,7 +160,7 @@ def require_resident(paths):
 
 
 def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment=None, admission_path=None,
-           original_control=False):
+           original_control=False, observation_scope=None):
     case, stage, admission_pin, ref_count = (
         (CASE, STAGE, ADMISSION, 48) if enrollment is None else enrollment
     )
@@ -257,7 +258,8 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment
             print(json.dumps(dict(case=case, changed=len(change[experiment.ledger]), refs=len(refs),
                                   acquired=handoff.calls, waveform_reads=0, solver_runs=0)))
             return
-        receipt, _ = raw.publish_active(args, publication, spec, handoff)
+        with nullcontext() if observation_scope is None else observation_scope(native):
+            receipt, _ = raw.publish_active(args, publication, spec, handoff)
     published, = args.output.glob("fast-scan-automatic-work/*/detections.json")
     document(published, change["derived_native_sha256"])
     document(args.output/"fast-scan-inputs"/(session+".json"), input_pin)
