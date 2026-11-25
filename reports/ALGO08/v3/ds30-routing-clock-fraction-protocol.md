@@ -1,0 +1,5 @@
+# Frozen candidate wall-time fraction
+
+Use only the first-64 whole-record routing receipt with compressed SHA-256 `6958f0a428eeb70ca147aa19c595a834298f1e613ae0776a07e448f230406b10`. Keep installed wall clocks, both builds' measured outputs, original fix counts and both full error CDF constraints fixed. Scale every candidate wall clock by the same fraction. Give the perfect router free selection with foreknowledge and require half of the installed summed wall time.
+
+Find the largest feasible fraction by exact rational updates over whole-record masks. Recheck the archived certificates at zero and one. Require an exact feasible mask and matching dual upper bound at the boundary, and verify against enumeration on a small fixture. Calculate the conventional paired median of scaled ratios on that same route using exact arithmetic. If it already reaches half-time, the sharp summed bound also applies to both timing gates. Report the route, clocks, reduction and input pins. CPU3 with nice 15 and no field, orbit, acquisition or solver data beyond the frozen receipt.
