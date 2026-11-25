@@ -1,6 +1,12 @@
 # The next position-blind fast moment correction
 
-The four-case enrollment remains open in its frozen order. No recording has been selected. All four recording metadata rows are complete. The current blockers concern authenticated catalogue custody. Neither case errors nor fix status, RF agreement, projected edits or survey entered the check. No replay or numerical slot was launched. [Frozen protocol](ds30-next-moment-fast-enrollment-protocol.md) · [Initial check](measurements/ds30-next-moment-enrollment-initial.json) · [Latest check](measurements/ds30-next-moment-enrollment-status.json)
+**DS30-0036 is enrolled at execution rank 71.** Rank 70 reached official pair verification and the documented resident donor search could not establish its exact causal catalogue. The selector preserved that refusal and accepted 0036’s exact 47-body, 84,038,287-byte resident catalogue at cutoff 1794600616236961974 ns. The original accession and requested raw identities agree. The recorded donor split is 35 bodies from 0086, nine from 0049 and three from 0019. The enrolment sealed before either official 0036 role completed. [Sealed enrollment](measurements/ds30-next-moment-enrolled-0036.json)
+
+At the saved-replay readiness check, the official driver had recorded 12 storage deferrals on 0036. Neither acquisition role had verified or produced a process or result receipt. The ordinary and projected cost envelopes for this recording remain unmeasured, including whether both can fit the standard 24 s child cap. No saved stage or lease was created. The original 0036 decision and survey remain closed. Once both field roles verify, validate the available stage clocks before using the already prepared ordinary-to-corrected sequence. Use only the sealed 0036 enrollment. [Readiness disposition](measurements/ds30-0036-moment-replay-pending.json)
+
+## Initial census
+
+All four original recording metadata rows were complete when the protocol froze. Neither case errors nor fix status, RF agreement, projected edits or survey entered the checks. [Frozen protocol](ds30-next-moment-fast-enrollment-protocol.md) · [Initial check](measurements/ds30-next-moment-enrollment-initial.json) · [Pre-enrollment recheck](measurements/ds30-next-moment-enrollment-status.json)
 
 | Execution rank | Recording | Position-blind status |
 | ---: | --- | --- |
@@ -9,11 +15,11 @@ The four-case enrollment remains open in its frozen order. No recording has been
 | 72 | DS30-0381 | Original field request and archive authority pending. |
 | 73 | DS30-0370 | Original field request and archive authority pending. |
 
-No rank has been excluded. A rank whose official pair completes may be excluded when its authenticated local roster and the documented resident donor search give no complete match. The selector keeps any completed-custody exclusion in subsequent signed checks. The first qualifying rank seals the enrollment even if its official role pair is still pending. Later results cannot select another case. The checks use only the frozen original input audit, compact official request and role-verification metadata, and bounded names in documented tmpfs directories. They open no original backing archive, TLE bodies, detector results, waveforms or surveys.
+At that census no rank had been excluded. A rank whose official pair completes may be excluded when its authenticated local roster and the documented resident donor search give no complete match. The selector keeps any completed-custody exclusion in subsequent signed checks. The first qualifying rank seals the enrollment even if its official role pair is still pending. Later results cannot select another case. The checks use only the frozen original input audit, compact official request and role-verification metadata, and bounded names in documented tmpfs directories. They open no original backing archive, TLE bodies, detector results, waveforms or surveys.
 
 ## Recheck and later prepare
 
-Use a fresh ledger path when the official request, catalogue manifest or pair-verification metadata changes. `--rosters` can point to a local metadata directory containing an independently available exact `DS30-NNNN.json` basename-to-digest map. The map must match the authority’s original digest and cutoff. Leave that flag out if there is no such local map. Neither mode reads the original archive.
+The example below reproduces the historical transition from the last pending check to enrollment. Use the sealed enrollment directly for present readiness. During an ongoing census, `--rosters` can point to a local metadata directory containing an independently available exact `DS30-NNNN.json` basename-to-digest map. The map must match the authority’s original digest and cutoff. Neither mode reads the original archive.
 
 ```bash
 checkout=/srv/postgres-nvme/leo-ds30-research-worktrees/masked-cfo-next-two-entry
@@ -30,6 +36,8 @@ After a ledger seals one eligible recording and both official roles verify, prep
 ```bash
 release=/opt/leo-algo08/bdb869682a2ea63af4b198a920b763a4c6a78c4c
 run=/tmp/leo-ds30-next-moment-saved01
+enrolled_ledger="$here/measurements/ds30-next-moment-enrolled-0036.json"
+enrollment_pin=sha256:942e9affd9d80c57e651cb8824fb62b241d1f1ec1e260100e89f125c0e487be4
 launch=("${controller[@]}" env OMP_NUM_THREADS=1 OMP_THREAD_LIMIT=1 OPENBLAS_NUM_THREADS=1 \
   MKL_NUM_THREADS=1 BLIS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
   "$release/venv/bin/python" -IB "$here/ds30_next_moment_publication.py")
