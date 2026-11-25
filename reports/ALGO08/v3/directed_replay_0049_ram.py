@@ -31,6 +31,8 @@ DRIVER_PIN = "26b996e90e7ad4c467c551426a69e048d6078cf3c8087c741f9eef3c10f7df31"
 TIMEOUT = 12.0
 FRESH_NS = 2_000_000_000
 WATCH_SECONDS = 55
+RETRY_NS = 30_000_000_000
+PRIORITY = "DS30-0218"
 THREADS = ("BLIS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS","OMP_NUM_THREADS",
            "OMP_THREAD_LIMIT","OPENBLAS_NUM_THREADS")
 PROGRAM = ("reports/ALGO08/v3/directed_replay_0049_ram.py",) + tuple(
@@ -65,7 +67,11 @@ def resident(files):
         if not path.is_file() or path.resolve(strict=True) != path or stat.st_dev != tmp_device:
             raise ValueError(f"Expected a direct tmpfs waveform operand {path}")
         records[str(path)] = [stat.st_dev,stat.st_ino,stat.st_size]
-    result = subprocess.check_output(["/usr/bin/fincore","-bJ","-o","RES,SIZE,FILE",*records],text=True)
+    try:
+        result = subprocess.check_output(["/usr/bin/fincore","-bJ","-o","RES,SIZE,FILE",*records],
+                                         text=True,timeout=2)
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("The passive resident-page census exceeded two seconds") from error
     checked = {r["file"]:r for r in json.loads(result)["fincore"]}
     if checked.keys() != records.keys() or any(
             row["size"] != records[path][2] or row["res"] < row["size"] for path,row in checked.items()):
@@ -189,23 +195,39 @@ def inner(proof):
                          minor_faults=process.ru_minflt,major_faults=process.ru_majflt,peak_rss_kib=process.ru_maxrss))
 
 
-def invoke(root,plan,fd,*,proof):
+def invoke(root,plan,fd,*,proof,cancel=None):
     before, start = getrusage(RUSAGE_CHILDREN),monotonic()
+    cancelled = None
     with (root/"sockets.bpf").open("rb") as sc:
         modes = command(root,plan,3 if proof else 2,sc.fileno(),proof=proof)
         with subprocess.Popen(modes,stdin=fd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                               pass_fds=(sc.fileno(),),text=True,start_new_session=True) as child:
-            try:
-                stdout,stderr = child.communicate(timeout=max(0.,TIMEOUT-(monotonic()-start)))
-                code = child.returncode
-            except subprocess.TimeoutExpired:
-                os.killpg(child.pid,signal.SIGKILL)
-                stdout,stderr = child.communicate()
-                code = 124
+            while True:
+                remaining = TIMEOUT-(monotonic()-start)
+                try:
+                    if cancel is not None:
+                        cancel()
+                except (OSError,ValueError) as error:
+                    cancelled = str(error)
+                if cancelled is not None or remaining <= 0.:
+                    try:
+                        os.killpg(child.pid,signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    stdout,stderr = child.communicate()
+                    code = 125 if cancelled is not None else 124
+                    break
+                try:
+                    stdout,stderr = child.communicate(timeout=min(remaining,.05) if cancel else remaining)
+                    code = child.returncode
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
     after,end = getrusage(RUSAGE_CHILDREN),monotonic()
     clock = dict(exit_code=code,elapsed_s=end-start,wrapper_cpu_s=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime),
                  wrapper_input_blocks=after.ru_inblock-before.ru_inblock,
-                 wrapper_minor_faults=after.ru_minflt-before.ru_minflt,wrapper_major_faults=after.ru_majflt-before.ru_majflt)
+                 wrapper_minor_faults=after.ru_minflt-before.ru_minflt,wrapper_major_faults=after.ru_majflt-before.ru_majflt,
+                 cancelled_reason=cancelled)
     return clock,json.loads(stdout) if code == 0 else None,stderr
 
 
@@ -246,44 +268,86 @@ def ready(root):
                         residency=observations,filter_pin=replay.tag(root/"sockets.bpf"),proof=evidence,clock=clock))
 
 
+def controller_idle(pid):
+    process = Path("/proc")/str(pid)
+    argv = (process/"cmdline").read_bytes().split(b"\0")
+    if (not any(arg == os.fsencode(DRIVER) and argv[i+1] == b"run" for i,arg in enumerate(argv[:-1]))
+            or b"--watch" not in argv or (process/"task"/str(pid)/"children").read_text().split()):
+        raise ValueError("The original official retry controller must be live and idle")
+
+
 def allowed_event(event,pid):
     path = CAMPAIGN/event["event"]
     if (path.parent != CAMPAIGN/"cases"/event["case"]/"events"
             or int(path.name.split("-",1)[0]) != event["unix_ns"]
             or replay.prefix.read(path,event["event_sha256"])["state"] != "deferred_storage_busy"):
         raise ValueError("A fresh original official storage deferral is required")
-    process = Path("/proc")/str(pid)
-    argv = (process/"cmdline").read_bytes().split(b"\0")
-    if (not any(arg == os.fsencode(DRIVER) and argv[i+1] == b"run" for i,arg in enumerate(argv[:-1]))
-            or b"--watch" not in argv or (process/"task"/str(pid)/"children").read_text().split()):
-        raise ValueError("The original official retry controller must be live and idle")
+    controller_idle(pid)
     age = time_ns()-event["unix_ns"]
-    if not 0 <= age <= FRESH_NS or 30-age/1e9 <= TIMEOUT+2:
+    if not 0 <= age <= FRESH_NS or (RETRY_NS-age)/1e9 <= TIMEOUT+2:
         raise ValueError("The official deferral no longer contains the complete capped launch")
     return age
 
 
-def priority_clear():
-    """Require the higher-priority official case to remain unstarted."""
+def priority_rows():
     path = CAMPAIGN/"rows.jsonl"
     rows = [json.loads(line) for line in path.read_bytes().splitlines() if b'"DS30-0218"' in line]
     rows = [row for row in rows if row["case"] == "DS30-0218"]
-    if (len(rows) != 2 or {r["algorithm"] for r in rows} != {"installed","successor"}
-            or (CAMPAIGN/"cases/DS30-0218/pair.json").exists()
+    if len(rows) != 2 or {r["algorithm"] for r in rows} != {"installed","successor"}:
+        raise ValueError("The official DS30-0218 priorities could not be verified")
+    return {row["algorithm"]:row for row in rows}
+
+
+def priority_clear():
+    """Require the higher-priority official case to remain unstarted."""
+    rows = priority_rows()
+    if ((CAMPAIGN/"cases/DS30-0218/pair.json").exists()
             or any(row["outcome"] != "pending" or row["admission_state"] != "pending"
-                   or row["attempt"] is not None or row["verified_pair"] for row in rows)):
+                   or row["attempt"] is not None or row["verified_pair"] for row in rows.values())):
         raise ValueError("The priority DS30-0218 pair is underway or no longer pending")
 
 
-def watch(root,pid,ready_pin,*,allow_code_io=False,priority_released=False):
+def successor_unstarted(pid):
+    controller_idle(pid)
+    folder = CAMPAIGN/"cases"/PRIORITY
+    if (folder/"successor").exists() or (folder/"pair.json").exists():
+        raise ValueError("The priority DS30-0218 successor has started")
+
+
+def priority_deferral(pid,event=None):
+    successor_unstarted(pid)
+    rows = priority_rows()
+    installed, successor = rows["installed"], rows["successor"]
+    folder = CAMPAIGN/"cases"/PRIORITY
+    if (installed["outcome"] != "complete" or not installed["attempt"] or not installed["attempt_result_sha256"]
+            or successor["outcome"] != "pending" or successor["admission_state"] != "deferred_storage_busy"
+            or successor["attempt"] is not None or successor["attempt_result_sha256"] is not None
+            or installed["verified_pair"] or successor["verified_pair"]):
+        raise ValueError("DS30-0218 must have its installed arm complete and successor pending and deferred")
+    attempt = CAMPAIGN/installed["attempt"]
+    if not attempt.is_relative_to(folder/"installed") or not attempt.is_file():
+        raise ValueError("DS30-0218's completed installed attempt lacks its official result")
+    replay.prefix.read(attempt,installed["attempt_result_sha256"])
+    if event is not None:
+        events = sorted((folder/"events").glob("*.json"))
+        if event["case"] != PRIORITY or not events or events[-1] != CAMPAIGN/event["event"]:
+            raise ValueError("The event is not the latest official DS30-0218 deferral")
+    return dict(installed=installed["attempt_result_sha256"],successor=successor["admission_state"])
+
+
+def watch(root,pid,ready_pin,*,allow_code_io=False,priority_released=False,priority_gap=False):
     from .field_crossover_admission_watch import MOVED_TO,recent_deferral,replaced_export
 
-    if root.parent != Path("/dev/shm") or os.sched_getaffinity(0) != {3} or (root/"watch.json").exists():
+    watch_path = root/("watch-0218-gap.json" if priority_gap else "watch.json")
+    if (root.parent != Path("/dev/shm") or os.sched_getaffinity(0) != {3}
+            or watch_path.exists() or (root/"intent.json").exists() or (priority_released and priority_gap)):
         raise ValueError("Use the unused preflight on CPU3")
     state = replay.prefix.read(root/"ready.json",ready_pin)
     plan = replay.prefix.read(root/"plan.json",PLAN_PIN)
     try:
-        if not priority_released:
+        if priority_gap:
+            priority_deferral(pid)
+        elif not priority_released:
             priority_clear()
         if (state["plan_pin"] != PLAN_PIN or state["runtime"] != pins() or replay.tag(DRIVER) != DRIVER_PIN
                 or state["filter_pin"] != replay.tag(root/"sockets.bpf")
@@ -292,7 +356,7 @@ def watch(root,pid,ready_pin,*,allow_code_io=False,priority_released=False):
                 or resident(plan["original_source"]["files"]) != state["residency"]):
             raise ValueError("The separately sealed capsule, runtime, or page-resident source changed")
     except (OSError,ValueError) as error:
-        replay.prefix.write(root/"watch.json",dict(admitted=False,reason=str(error)))
+        replay.prefix.write(watch_path,dict(admitted=False,reason=str(error)))
         return
     libc = ctypes.CDLL(None,use_errno=True)
     libc.inotify_add_watch.argtypes = (ctypes.c_int,ctypes.c_char_p,ctypes.c_uint32)
@@ -311,12 +375,17 @@ def watch(root,pid,ready_pin,*,allow_code_io=False,priority_released=False):
             event = recent_deferral(CAMPAIGN,since,time_ns())
             if event is None or time_ns()-event["unix_ns"] > FRESH_NS:
                 continue
+            if priority_gap and event["case"] != PRIORITY:
+                continue
             result = admitted(root,plan,state,pid,event,allow_code_io=allow_code_io,
-                              priority_released=priority_released)
+                              priority_released=priority_released,priority_gap=priority_gap)
+            if result["admitted"]:
+                result["lease_release_upper_unix_ns"] = time_ns()
+                result["official_retry_no_earlier_than_ns"] = event["unix_ns"]+RETRY_NS
             break
     finally:
         os.close(handle)
-    replay.prefix.write(root/"watch.json",result)
+    replay.prefix.write(watch_path,result)
 
 
 def qualifications(clock,result,unchanged,*,allow_code_io):
@@ -329,25 +398,33 @@ def qualifications(clock,result,unchanged,*,allow_code_io):
                 qualified=resident_source and (allow_code_io or zero_blocks))
 
 
-def admitted(root,plan,state,pid,event,*,allow_code_io=False,priority_released=False):
+def admitted(root,plan,state,pid,event,*,allow_code_io=False,priority_released=False,priority_gap=False):
     with replay.LOCK.open("rb") as fd:
         try:
             fcntl.flock(fd,fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return dict(admitted=False,reason="operative-lease-held",field_event=event)
+        acquired = time_ns()
         try:
             if resident(plan["original_source"]["files"]) != state["residency"]:
                 raise ValueError("The original files changed after the RAM-only proof")
-            if not priority_released:
+            priority_state = None
+            if priority_gap:
+                priority_state = priority_deferral(pid,event)
+            elif not priority_released:
                 priority_clear()
             age = allowed_event(event,pid)
         except (OSError,ValueError) as error:
             return dict(admitted=False,reason=str(error),field_event=event)
         replay.prefix.write(root/"intent.json",dict(field_event=event,initial_age_ns=age,time_limit_s=TIMEOUT,
                             plan_pin=PLAN_PIN,source_sha256=plan["source_sha256"],
-                            allow_root_runtime_io=allow_code_io,priority_release_received=priority_released))
-        clock,result,error = invoke(root,plan,fd,proof=False)
-        outcome = dict(admitted=True,clock=clock,field_event=event,stderr=error)
+                            allow_root_runtime_io=allow_code_io,priority_release_received=priority_released,
+                            priority_deferral_gap=priority_gap,priority_state=priority_state,
+                            lease_acquired_unix_ns=acquired))
+        cancel = (lambda: successor_unstarted(pid)) if priority_gap else None
+        clock,result,error = invoke(root,plan,fd,proof=False,cancel=cancel)
+        outcome = dict(admitted=True,clock=clock,field_event=event,stderr=error,priority_deferral_gap=priority_gap,
+                       priority_release_received=priority_released,lease_acquired_unix_ns=acquired)
         if result is None:
             return outcome | dict(qualified=False,reason="capped-child-did-not-complete")
         try:
@@ -371,6 +448,7 @@ if __name__ == "__main__":
     parser.add_argument("--ready-pin")
     parser.add_argument("--allow-root-runtime-io",action="store_true")
     parser.add_argument("--priority-release-received",action="store_true")
+    parser.add_argument("--priority-deferral-gap",action="store_true")
     args = parser.parse_args()
     if args.action in ("proof","sweep"):
         print(json.dumps(inner(args.action=="proof"),allow_nan=False))
@@ -382,4 +460,4 @@ if __name__ == "__main__":
         parser.error("A watch requires the exact official PID and ready receipt pin")
     else:
         watch(args.root,args.pid,args.ready_pin,allow_code_io=args.allow_root_runtime_io,
-              priority_released=args.priority_release_received)
+              priority_released=args.priority_release_received,priority_gap=args.priority_deferral_gap)
