@@ -62,3 +62,18 @@ def test_unassigned_proposal_stays_in_mask_and_anchor_stays_outside(study):
     values, proof = study.project_tracks(data, edits)
     assert values == {"first": 1020., "last": 980., "unassigned": 1000.}
     assert proof["original_edits"] == 3 and proof["surviving_edits"] == 2 and proof["unassigned_edits"] == 1
+
+
+def test_forward_requires_both_verified_original_attempts(study):
+    forward = import_module("moment_preserving_cfo_forward")
+    tokens = {"installed": "sha256:" + "a"*64, "successor": "sha256:" + "b"*64}
+    pair = dict(state="observed_pair", chronological=True, verified_pair=True,
+                actual_order=["successor", "installed"], attempt_result_sha256=tokens)
+    entry = dict(case_id="expected raw session", assigned_rank=81)
+    rows = [dict(entry, case=forward.CASE, algorithm=name, outcome="complete", acquisition_verified=True,
+                 verified_pair=True, attempt_result_sha256=token) for name, token in tokens.items()]
+    assert forward.closed_roles(entry, pair, rows) == tokens
+    with pytest.raises(ValueError, match="Both original"):
+        forward.closed_roles(entry, pair, rows[1:])
+    with pytest.raises(ValueError, match="enrolled attempt"):
+        forward.closed_roles(entry, pair, [rows[0], dict(rows[1], case_id="other")])
