@@ -1,7 +1,7 @@
 """Enroll the next fixed half-shrink transfer cases without decoding outcomes."""
 
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
@@ -128,6 +128,7 @@ def roster_digest(names):
 
 def donor_inventory():
     receipts, pooled = {}, {}
+    sources = defaultdict(list)
     for case, (relative, fields, pin) in DONORS.items():
         path = RAM/relative
         if path.resolve(strict=True) != path or path.stat().st_dev != RAM.stat().st_dev:
@@ -137,11 +138,13 @@ def donor_inventory():
             document = document[key]
         names = catalogue_names(document)
         pooled.update(names)
+        for name in names:
+            sources[name].append(case)
         times = sorted(int(name.split("-", 1)[0]) for name in names)
         receipts[case] = dict(manifest=str(path), manifest_sha256="sha256:"+pin, names=len(times),
                               oldest_ns=times[0], newest_ns=times[-1],
                               manifest_roster_sha256=roster_digest(names))
-    return receipts, pooled
+    return receipts, pooled, sources
 
 
 def signed_suffixes(pooled, cutoff, expected):
@@ -179,7 +182,8 @@ def catalogue_authority(entry, pooled, historical):
                 historical_request_raw_authority_sha256=authority["raw_authority_sha256"],
                 matches_accession_digest=authority["raw_authority_sha256"] == entry["manifest_raw_authority_sha256"],
                 original_archive_path=str(archive_path), signed_archive_sha256=archive, exact_suffix_matches=len(matches),
-                matched_names=len(matches[0]) if len(matches) == 1 else None)
+                matched_names=len(matches[0]) if len(matches) == 1 else None,
+                exact_archive_names=matches[0] if len(matches) == 1 else [])
 
 
 def bulk_mount():
@@ -203,7 +207,7 @@ def main():
         raise ValueError("The combined export seal changed")
     export = checked(args.snapshot/"rows-with-relocations.jsonl", EXPORT)
     selected = select(plan, export)
-    donors, pooled = donor_inventory()
+    donors, pooled, sources = donor_inventory()
     times = sorted(int(name.split("-", 1)[0]) for name in pooled)
     planned = {entry["case"]: entry for entry in plan["cases"]}
     audit = json.loads(checked(ROOT/"reports/2026_11_21_ds30_full/input-audit.json", INPUT_AUDIT))["bindings"]
@@ -212,7 +216,10 @@ def main():
         case["temporal_donor_screen_only"] = dict(before_capture_label=sum(t < nominal for t in times),
                                                   at_or_after_capture_label=sum(t >= nominal for t in times),
                                                   newest_prior_donor_ns=max((t for t in times if t < nominal), default=None))
-        case["catalogue_custody"] = catalogue_authority(planned[case["case"]], pooled, audit[case["case"]])
+        custody = catalogue_authority(planned[case["case"]], pooled, audit[case["case"]])
+        custody["matching_donor_manifest_counts"] = dict(sorted(Counter(
+            donor for name in custody.get("exact_archive_names", ()) for donor in sources[name]).items()))
+        case["catalogue_custody"] = custody
     space = os.statvfs(RAM)
     print(json.dumps(dict(plan_sha256=PLAN, export_sha256=EXPORT, export_seal_sha256=SEAL,
                           ordinary_ledger_sha256=seal["ledger_snapshot_sha256"],
