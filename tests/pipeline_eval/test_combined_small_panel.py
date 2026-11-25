@@ -169,3 +169,21 @@ def test_native_meter_accounts_for_the_command_it_reaps(experiment):
     assert receipt["exit_code"] == 0 and receipt["minor_faults"] > 0
     assert receipt["cpu_s"] == receipt["user_cpu_s"] + receipt["system_cpu_s"]
     assert receipt["wall_s"] > 0 and receipt["cpu_s"] > 0
+
+
+def test_natural_scope_counts_only_bounded_original_pages(experiment):
+    panel, _ = experiment
+    root = Path("/dev/shm/known-staged-source")
+    member = str(root / "segment" / "iq-000001.ci16.zst")
+    state = dict(nonresident=[dict(file=member, size=25_003, res=20_480)])
+    assert panel.bounded_natural_source(state, root, page=4096)["nonresident_page_bytes"] == 8192
+    with pytest.raises(ValueError, match="extent bound"):
+        panel.bounded_natural_source(
+            dict(nonresident=[dict(file=member, size=8_388_609, res=0)]), root, page=4096
+        )
+    with pytest.raises(ValueError, match="compressed members"):
+        panel.bounded_natural_source(
+            dict(nonresident=[dict(file=str(root / "manifest.json"), size=1, res=0)]),
+            root,
+            page=4096,
+        )

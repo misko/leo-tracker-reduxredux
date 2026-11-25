@@ -308,6 +308,7 @@ def score(root, ready_pin, *, selection=None):
     results = {}
     deferred = {}
     conditioning = {}
+    boundaries = {}
     for case, inputs in ready["cases"].items():
         if selection is not None and case != selection:
             continue
@@ -324,6 +325,7 @@ def score(root, ready_pin, *, selection=None):
         seal = read(area / "case.json")
         if seal["ready_sha256"] != ready_pin or seal["order"] != CASES[case]["order"]:
             raise ValueError("Matched run differs from the prospective order")
+        boundaries[case] = seal
         results[case] = {
             role: json.loads(check(area / role / "verified.json", row["result_sha256"]))
             for role, row in seal["results"].items()
@@ -363,6 +365,7 @@ def score(root, ready_pin, *, selection=None):
                 results=results,
                 deferred=deferred,
                 conditioning=conditioning,
+                measured_boundaries=boundaries,
             ),
         )
     )

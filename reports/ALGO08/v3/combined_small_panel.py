@@ -32,6 +32,8 @@ CAP_SECONDS = {"DS30-0016": 17, "DS30-0107": 7}
 DRIVER = Path("/tmp/leo-v3-ds30-paired-evaluation/reports/ALGO08/v3/ds30_paired_evaluation.py")
 DRIVER_PIN = "26b996e90e7ad4c467c551426a69e048d6078cf3c8087c741f9eef3c10f7df31"
 FRESH_NS = 2_000_000_000
+NATURAL_CAP = 8 * 1024 * 1024
+FAILED_WARM_PIN = "c8a2c39eb13a3fcf113b8d1649cadb3700af885dd7604b5fd2b6d3f5178f4abe"
 CASES = {
     "DS30-0016": dict(
         order=["charted", "trial"],
@@ -211,6 +213,28 @@ def require_resident(paths):
     return found
 
 
+def bounded_natural_source(found, original, *, page):
+    if any(
+        not Path(row["file"]).is_relative_to(original) or not row["file"].endswith(".ci16.zst")
+        for row in found["nonresident"]
+    ):
+        raise ValueError("Natural admission allows only paged original compressed members")
+    missing = sum(
+        ((row["size"] + page - 1) // page) * page - row["res"] for row in found["nonresident"]
+    )
+    if not 0 <= missing <= NATURAL_CAP:
+        raise ValueError("The existing original exceeds the frozen 8 MiB nonresident extent bound")
+    return dict(found, nonresident_page_bytes=missing, allowance_bytes=NATURAL_CAP)
+
+
+def source_before(inputs, natural_swap):
+    if natural_swap:
+        return bounded_natural_source(
+            residency(inputs["files"]), Path(inputs["staged"]), page=os.sysconf("SC_PAGE_SIZE")
+        )
+    return require_resident(inputs["files"])
+
+
 def capsule(command, work, inputs):
     args = [
         "/usr/bin/bwrap",
@@ -316,8 +340,12 @@ def check_command(argv):
     return json.loads(result.stdout.splitlines()[-1])
 
 
-def protocol_pin():
-    return digest((HERE / "combined-small-panel-protocol.md").read_bytes())
+def protocol_pin(natural_swap=False):
+    body = (HERE / "combined-small-panel-protocol.md").read_bytes()
+    if natural_swap:
+        check(HERE / "measurements/combined-small-panel-0016-conditioning.json", FAILED_WARM_PIN)
+        body += (HERE / "combined-small-panel-natural-protocol.md").read_bytes()
+    return digest(body)
 
 
 def source_pins():
@@ -346,7 +374,7 @@ def controller_preflight():
     return sorted(child_usage())
 
 
-def prepare(root):
+def prepare(root, *, natural_swap=False):
     start = monotonic()
     controller_counters = controller_preflight()
     root.mkdir(mode=0o700)
@@ -401,9 +429,10 @@ def prepare(root):
         write(
             root / "ready.json",
             dict(
-                protocol_sha256=protocol_pin(),
+                protocol_sha256=protocol_pin(natural_swap),
                 sources=source_pins(),
                 caps=CAP_SECONDS,
+                natural_swap=natural_swap,
                 grid=str(GRID),
                 cases=cases,
                 controls=CASES,
@@ -418,7 +447,7 @@ def prepare(root):
 def verify_ready(root, pin):
     ready = json.loads(check(root / "ready.json", pin))
     if (
-        ready["protocol_sha256"] != protocol_pin()
+        ready["protocol_sha256"] != protocol_pin(ready.get("natural_swap", False))
         or ready["sources"] != source_pins()
         or ready["controls"] != CASES
         or ready["caps"] != CAP_SECONDS
@@ -440,7 +469,10 @@ def condition(root, pin):
     if priority != "idle":
         raise ValueError("Conditioning requires idle I/O")
     case = "DS30-0016"
-    inputs = verify_ready(root, pin)["cases"][case]
+    ready = verify_ready(root, pin)
+    if ready.get("natural_swap"):
+        raise ValueError("Natural sample access rules out a new conditioning attempt")
+    inputs = ready["cases"][case]
     if not inputs["residency"]["nonresident"]:
         raise ValueError("The passive original was already resident")
     before = residency(inputs["files"])
@@ -573,6 +605,7 @@ def launch_cell(
     from combined_small_panel_score import checked_publication
 
     inputs = ready["cases"][case]
+    natural_swap = ready.get("natural_swap", False)
     work = root / case / role
     argv = [
         "/usr/bin/taskset",
@@ -585,7 +618,7 @@ def launch_cell(
     ]
     with LOCK.open("rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        before = require_resident(inputs["files"])
+        before = source_before(inputs, natural_swap)
         driver_window(event, pid, last_finish, case, pending_0218=pending_0218)
         work.parent.mkdir(exist_ok=True)
         new_work(work)
@@ -598,6 +631,7 @@ def launch_cell(
                 event=event,
                 cap_s=CAP_SECONDS[case],
                 pending_0218=pending_0218,
+                natural_swap=natural_swap,
                 source_before=before,
                 previous_exit_unix_ns=last_finish,
             ),
@@ -607,7 +641,7 @@ def launch_cell(
         process["minor_faults"] = resource.getrusage(resource.RUSAGE_CHILDREN).ru_minflt - faults
         write(work / "process.json", process)
         after = residency(inputs["files"])
-    if process["exit_code"] or process["timed_out"] or after["nonresident"]:
+    if process["exit_code"] or process["timed_out"] or (after["nonresident"] and not natural_swap):
         raise ValueError(
             f"The paid {case} {role} failed exit or residency. Its receipt is retained"
         )
@@ -621,6 +655,7 @@ def launch_cell(
             process=process,
             source_before=before,
             source_after=after,
+            natural_swap=natural_swap,
         ),
     )
     order = CASES[case]["order"]
@@ -636,6 +671,7 @@ def launch_cell(
                 results=records,
                 order=order,
                 conditioning_sha256=conditioning,
+                natural_swap=natural_swap,
             ),
         )
     return dict(
@@ -658,11 +694,15 @@ def watch(root, pin, case, role, pid, *, pending_0218):
     if pending_0218 and case != "DS30-0107":
         raise ValueError("Only the registered short pair can fill the pending 0218 gap")
     ready = verify_ready(root, pin)
+    natural_swap = ready.get("natural_swap", False)
+    if natural_swap and (case != "DS30-0016" or pending_0218):
+        raise ValueError("Natural sample access was registered only for the normal 0016 admission")
     if ready["controller_counters"] != controller_preflight():
         raise ValueError("The independent controller's timing interface changed")
     last_finish = authorized_order(root, ready, case, role)
-    conditioning = conditioning_pin(root, ready["cases"][case], case, pin)
-    require_resident(ready["cases"][case]["files"])
+    inputs = ready["cases"][case]
+    conditioning = None if natural_swap else conditioning_pin(root, inputs, case, pin)
+    source_before(inputs, natural_swap)
     check(DRIVER, DRIVER_PIN)
     result = observe(
         lambda event: launch_cell(
@@ -692,6 +732,11 @@ def main():
     cli.add_argument("--role", choices=("charted", "trial"))
     cli.add_argument("--driver-pid", type=int)
     cli.add_argument("--pending-0218", action="store_true")
+    cli.add_argument(
+        "--natural-swap",
+        action="store_true",
+        help="prepare the fixed 0016 natural-access comparison",
+    )
     args = cli.parse_args()
     if (
         args.root != args.root.resolve()
@@ -701,7 +746,7 @@ def main():
     ):
         raise ValueError("Use a private panel output directory in tmpfs")
     if args.action == "prepare" and args.case is None and args.ready_pin is None:
-        prepare(args.root)
+        prepare(args.root, natural_swap=args.natural_swap)
     elif args.action == "condition" and args.case is None and args.ready_pin:
         condition(args.root, args.ready_pin)
     elif args.action == "watch" and all((args.case, args.role, args.ready_pin, args.driver_pid)):
