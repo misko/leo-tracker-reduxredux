@@ -354,6 +354,9 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     assert "| Solver failure | 1 | 0 | 0 | 1 |" in (tmp_path / "README.md").read_text()
     assert len(list(csv.DictReader((tmp_path / "recordings.csv").read_text().splitlines()))) == 910
     markdown = (tmp_path / "README.md").read_text()
+    histogram_section = markdown.split("## Runtime and position error histograms\n", 1)[1].split("\n## ", 1)[0]
+    for name in ("runtime-histogram.png", "position-error-histogram.png"):
+        assert histogram_section.count(f"]({name})") == markdown.count(f"]({name})") == 1
     assert "Recordings needing repair for 2×" in markdown and "| 100% | Unreachable | Unreachable |" in markdown
     assert "| 2026-11-13 | 44 |" in markdown
     receipts = Path(__file__).resolve().parents[2] / "reports/ALGO08/v3/measurements"

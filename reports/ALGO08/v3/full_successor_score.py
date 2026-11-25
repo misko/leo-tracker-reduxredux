@@ -575,10 +575,14 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
              "The 100-recording panels below use fresh paired measurements on the original release subset. "
              "[Frozen builds and benchmark protocol](https://github.com/misko/leo-tracker-reduxredux/blob/"
              "6e18e827eca1ae6caa78e65d2b0746c3b4f424b2/reports/ALGO08/v3/full-successor-field-protocol.md)", "",
-             "## Runtime", "", "![Runtime distributions and run order](runtime.png)", "",
+             "## Runtime and position error histograms", "",
              "![Wall and CPU time histograms](runtime-histogram.png)", "",
              "The runtime histograms count all measured exits, including withheld and failed attempts. "
              "Each metric uses the same bin edges for both builds and cohorts.", "",
+             "![Horizontal error histograms for fixed-zero and fitted calibration](position-error-histogram.png)", "",
+             "The position histograms count scored fixes in shared bins. The legends report the assigned totals "
+             "and the numbers withheld, failed or fixed without a scored reference.", "",
+             "## Runtime", "", "![Runtime distributions and run order](runtime.png)", "",
              "| Cohort | Pairs | Summed wall speedup | Median paired wall speedup | Summed CPU speedup |",
              "|---|---:|---:|---:|---:|"]
     for name, obj in summaries.items():
@@ -659,9 +663,6 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               f"summed and **{number(sensitivity['median_paired_speedup'])}×** median paired. These are hypothetical speedups.",
               "", "## Position error", "",
               "![Position errors with all assigned recordings in the denominator](position-error.png)", "",
-              "![Horizontal error histograms for fixed-zero and fitted calibration](position-error-histogram.png)", "",
-              "The position histograms count scored fixes in shared bins. The legends report the assigned totals "
-              "and the numbers withheld, failed or fixed without a scored reference.", "",
               "| Calibration | Build | Fixes | Within 1 km | Within 2 km | Median / P90 error among scored fixes (km) | Median RF RMS (Hz) |",
               "|---|---|---:|---:|---:|---:|---:|"]
     for arm in ARMS:
