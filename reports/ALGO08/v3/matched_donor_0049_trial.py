@@ -158,7 +158,8 @@ def require_resident(paths):
         raise ValueError("Require the complete already resident local causal operands")
 
 
-def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment=None, admission_path=None):
+def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment=None, admission_path=None,
+           original_control=False):
     case, stage, admission_pin, ref_count = (
         (CASE, STAGE, ADMISSION, 48) if enrollment is None else enrollment
     )
@@ -205,13 +206,19 @@ def worker(root, plan_pin, experiment, *, smoke=False, lease_fd=None, enrollment
     change = plan["change"]
     native = document(root/"derived-native.json", change["derived_native_sha256"])
     detector, recipe = change["recipe_sha256"], change["recipe"]
-    if (authority.canonical(recipe) != detector or plan["original_native_sha256"] != "sha256:"+admission["native_pin"]
+    if original_control:
+        if (change["derived_native_sha256"] != "sha256:"+admission["native_pin"]
+                or change[experiment.ledger] or detector != native["provenance"]["detector_sha256"]):
+            raise ValueError("The ordinary control must use the unchanged authentic sparse packet")
+    elif authority.canonical(recipe) != detector:
+        raise ValueError("The counterfactual receiver identity differs from its recipe")
+    if (plan["original_native_sha256"] != "sha256:"+admission["native_pin"]
             or recipe["sparse_native_sha256"] != plan["original_native_sha256"]
             or recipe.get("installed_native_sha256") != plan["installed_native_sha256"]
             or authority.canonical(change[experiment.ledger]) != recipe[experiment.ledger_digest]):
         raise ValueError("The derived packet's original measurements or recipe are no longer bound")
     boot.bind_native(native, session, input_pin, detector[7:], expected=change["derived_native_sha256"])
-    if detector in ("sha256:"+spec["detector_sha256"], "sha256:"+authority.SPARSE):
+    if not original_control and detector in ("sha256:"+spec["detector_sha256"], "sha256:"+authority.SPARSE):
         raise ValueError("Counterfactual must carry its own detector identity")
     inventory = chart.document(stage/"inventory.json", input_pin)
     chart.match_native(signed, native)

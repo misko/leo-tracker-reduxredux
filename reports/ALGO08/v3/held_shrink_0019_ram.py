@@ -36,6 +36,8 @@ THREADS = ("BLIS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS",
 TIMEOUT = 24
 ARTIFACTS = ("plan.json", "derived-native.json", "admission.json")
 PROOF = ROOT/"verified-isolation.json"
+MODE_ARGS = ()
+EXTRA_FILE_NAMES = ()
 
 
 def headroom():
@@ -111,7 +113,7 @@ def command(layout, mode):
     for path in (*inputs, *sources):
         options += ["--ro-bind", str(path), str(path)]
     options += ["--bind", str(OUTPUT), str(saved.ROOT)]
-    for name in ARTIFACTS:
+    for name in (*ARTIFACTS, *EXTRA_FILE_NAMES):
         options += ["--ro-bind", str(OUTPUT/name), str(saved.ROOT/name)]
     options += ["--remount-ro", "/dev/shm", "--remount-ro", "/", "--chdir", str(saved.ROOT)]
     environment = dict.fromkeys(THREADS, "1") | dict(
@@ -119,7 +121,7 @@ def command(layout, mode):
         MPLCONFIGDIR=str(saved.ROOT/"scratch"), XDG_CACHE_HOME=str(saved.ROOT/"scratch"))
     for name, value in environment.items():
         options += ["--setenv", name, value]
-    options += ["--", str(RELEASE/"venv/bin/python"), "-IB", str(Path(__file__).resolve()), mode]
+    options += ["--", str(RELEASE/"venv/bin/python"), "-IB", str(Path(__file__).resolve()), mode, *MODE_ARGS]
     return options
 
 
@@ -135,7 +137,7 @@ def isolation_probe():
         raise ValueError("An external data mount is visible inside the position capsule")
     denied = {}
     for path in ("/srv/bulk", "/mnt/qnap01", "/proc/1/root/srv/bulk",
-                 str(saved.ROOT/"backing-alias"), "/dev/shm/leo-v3-cfo-epoch-0019-saved01/native.json"):
+                 str(saved.ROOT/"backing-alias"), str(saved.STAGE/"native.json")):
         try:
             fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC)
         except OSError as error:
@@ -195,7 +197,7 @@ def prepare():
     (OUTPUT/"backing-alias").symlink_to("/srv/bulk", target_is_directory=True)
 
 
-def preflight():
+def preflight(*, changed=366, refs=47):
     layout = bindings()
     with (OUTPUT/"plan.json").open("rb") as descriptor:
         output = subprocess.run(command(layout, "sandbox-preflight"), text=True, capture_output=True,
@@ -205,7 +207,7 @@ def preflight():
     proof, smoke = map(json.loads, output.stdout.splitlines())
     if (proof["network_namespace"] == os.readlink("/proc/self/ns/net")
             or proof["mount_namespace"] == os.readlink("/proc/self/ns/mnt")
-            or smoke != dict(case=saved.CASE, changed=366, refs=47, acquired=0, waveform_reads=0, solver_runs=0)):
+            or smoke != dict(case=saved.CASE, changed=changed, refs=refs, acquired=0, waveform_reads=0, solver_runs=0)):
         raise ValueError("The protected path must pass the independent same-worker no-solve smoke")
     print(saved.trial.write(PROOF, dict(proof=proof, smoke=smoke, tmpfs_available_bytes=headroom(),
           plan=PLAN, paths=[str(p) for p in layout[0]], readonly_sources=[str(p) for p in layout[1]],
