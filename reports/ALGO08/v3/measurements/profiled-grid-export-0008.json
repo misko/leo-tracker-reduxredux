@@ -1,9 +1,31 @@
 {
-  "component_tests_passed": 6,
+  "component_tests_passed": 7,
+  "duration_ns_medians": {
+    "call_cpu_ns": {
+      "profiled": 6027802.0,
+      "saved": 7607298.5,
+      "stock": 13635100.5
+    },
+    "call_wall_ns": {
+      "profiled": 6028412.0,
+      "saved": 7607194.0,
+      "stock": 13635606.0
+    },
+    "capture_cpu_ns": {
+      "profiled": 4845131.0,
+      "saved": 7632319.5,
+      "stock": 12477450.5
+    },
+    "context_entry_cpu_ns": {
+      "profiled": 221999.0,
+      "saved": -220793.5,
+      "stock": 1205.5
+    }
+  },
   "ephemeris_opens": 0,
   "new_full_grids": 0,
   "new_solves": 0,
-  "new_timed_children": 0,
+  "new_timed_children": 1,
   "no_alternate_inputs": true,
   "physical_proof": {
     "calibration": {
@@ -56,6 +78,25 @@
   },
   "physical_proof_sha256": "de185a797f7aa4164db26c6ab4cbb933cbc08bd5d9262b4ab4d63c08fe7052d5",
   "predeclared_revision": "b9b5c3b2f",
+  "reopened_timing_admission": {
+    "admitted": {
+      "case": "DS30-0277",
+      "event": "cases/DS30-0277/events/01795570665559127658-e02eb1cfdfc54940abebe818a22cad75.json",
+      "event_sha256": "sha256:daaea6426a707d046e386bafc7753ebe2015c9da9685eeb2bee7ff5a4a2d5900",
+      "export_sha256": "sha256:2d85b8aa0157f04f713df6681633692e216802502ef29e42376d50a9b649b855",
+      "unix_ns": 1795570665559127658
+    },
+    "attempts": 1,
+    "cpu_s": 1.072044,
+    "elapsed_s": 1.212690302170813,
+    "exports": 1,
+    "input_blocks": 74088,
+    "major_faults": 73,
+    "returncode": 0,
+    "stderr": "",
+    "watching_from": 1795570645954642458
+  },
+  "reopened_timing_sha256": "3e05670e3267862d7a80b3f3033838cb5586f5adf02997415eb73b4242436566",
   "scope": "one already-serialized physical fitted-c history_position likelihood and a constructed validation slice",
   "timing_admission": {
     "attempts": 0,
@@ -64,6 +105,78 @@
     "watching_from": 1795570454678737645
   },
   "timing_admission_sha256": "c7c4035f71ce2ee8f1297c37a58d6b2a304b8c4c0e088cbaf0a5d3eb5b96a48a",
+  "verified_timing": {
+    "checker_cpu_ns": 87553947,
+    "event": {
+      "case": "DS30-0277",
+      "event": "cases/DS30-0277/events/01795570665559127658-e02eb1cfdfc54940abebe818a22cad75.json",
+      "event_sha256": "sha256:daaea6426a707d046e386bafc7753ebe2015c9da9685eeb2bee7ff5a4a2d5900",
+      "export_sha256": "sha256:2d85b8aa0157f04f713df6681633692e216802502ef29e42376d50a9b649b855",
+      "unix_ns": 1795570665559127658
+    },
+    "invocation": "saved predictive capture, anticipated cache hits, no grid evaluation",
+    "native_sha256": "8f65bd73d24ff04f6fded7ac414e06fb5dc08600d3a5c61f86203bb6dceff03f",
+    "numerical_setup_cpu_ns": 47393948,
+    "original_inputs": {
+      "capture.json": "9861025ec7b0ee0ddeadab2fc161d4b8f2261e0f0cae5395b23aa3fa15ec3996",
+      "history_position.py": "00e349de1a25ac62fb287f970a005737675b5f2e6d45273baa9c914e8a7918f0",
+      "marginal.py": "c80ac51249578e8a2c6c6a13a04aaa22a168353b2c758155858106b91507b609",
+      "native_bound.so": "c649042b2a5ddf7890177d84b302a19edcf7a662aea16c18cb177317ccba818b",
+      "posterior-grid-handoff.so": "5a6e5627844a07a3bf2291b248520949f8b10e41d0421b6d6dc0da2b19d430b5",
+      "sample-00.npz": "f3a614740f3b3c0618315604041e1d4d2bdadfa6c9902f7199a2c93331fce602"
+    },
+    "physical_proof_sha256": "de185a797f7aa4164db26c6ab4cbb933cbc08bd5d9262b4ab4d63c08fe7052d5",
+    "times": {
+      "fitted_c": [
+        {
+          "activity": {},
+          "cache_hits": 1,
+          "call_cpu_ns": 13852272,
+          "call_wall_ns": 13852663,
+          "capture_cpu_ns": 12682306,
+          "context_entry_cpu_ns": 898,
+          "mode": "stock",
+          "updates": 39
+        },
+        {
+          "activity": {
+            "attempted": 1,
+            "profiled_completed": 1
+          },
+          "cache_hits": 2,
+          "call_cpu_ns": 6151640,
+          "call_wall_ns": 6152159,
+          "capture_cpu_ns": 4890690,
+          "context_entry_cpu_ns": 255444,
+          "mode": "proof",
+          "updates": 13
+        },
+        {
+          "activity": {
+            "attempted": 1,
+            "profiled_completed": 1
+          },
+          "cache_hits": 3,
+          "call_cpu_ns": 5903964,
+          "call_wall_ns": 5904665,
+          "capture_cpu_ns": 4799572,
+          "context_entry_cpu_ns": 188554,
+          "mode": "proof",
+          "updates": 13
+        },
+        {
+          "activity": {},
+          "cache_hits": 4,
+          "call_cpu_ns": 13417929,
+          "call_wall_ns": 13418549,
+          "capture_cpu_ns": 12272595,
+          "context_entry_cpu_ns": 1513,
+          "mode": "stock",
+          "updates": 39
+        }
+      ]
+    }
+  },
   "watch_seconds": 55,
   "waveform_opens": 0
 }

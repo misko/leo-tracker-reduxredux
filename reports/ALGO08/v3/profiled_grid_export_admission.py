@@ -50,7 +50,7 @@ def launch(event, binary, pin, *, proof, physical):
                     major_faults=after.ru_majflt-before.ru_majflt, admitted=event)
 
 
-def watch(binary, pin, *, proof, physical):
+def watch(binary, pin, *, proof, physical, official_case=None):
     if not binary.is_file():
         raise ValueError("Prebuild the audited native binary before the watch")
     libc = ctypes.CDLL(None, use_errno=True)
@@ -68,7 +68,8 @@ def watch(binary, pin, *, proof, physical):
                 continue
             exports += 1
             event = recent_deferral(CAMPAIGN, started, time_ns())
-            if event is not None and time_ns()-event["unix_ns"] <= FRESH_NS:
+            if (event is not None and (official_case is None or event["case"] == official_case)
+                    and time_ns()-event["unix_ns"] <= FRESH_NS):
                 try:
                     return dict(launch(event, binary, pin, proof=proof, physical=physical), attempts=1, exports=exports,
                                 watching_from=started)
@@ -86,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument("sha256")
     parser.add_argument("--proof-prefix", action="store_true")
     parser.add_argument("--physical-0008", nargs=2, metavar=("CORRECTNESS_JSON", "SHA256"))
+    parser.add_argument("--official-case", help="Limit admission to a deferral of this original case")
     args = parser.parse_args()
-    print(json.dumps(watch(args.binary, args.sha256, proof=args.proof_prefix, physical=args.physical_0008),
-                     sort_keys=True))
+    print(json.dumps(watch(args.binary, args.sha256, proof=args.proof_prefix, physical=args.physical_0008,
+                           official_case=args.official_case), sort_keys=True))

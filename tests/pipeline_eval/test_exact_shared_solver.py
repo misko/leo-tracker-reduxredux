@@ -14,6 +14,7 @@ from reports.ALGO08.v3.profiled_grid_export import (
     ILL_CONDITIONED, STOCK_PREFIX_REFUSAL, exported, handoff, profiled_exports, profiled_grid,
 )
 from reports.ALGO08.v3.profiled_grid_export_0008 import calibration
+from reports.ALGO08.v3 import profiled_grid_export_admission as admission
 
 
 class ProfiledPosteriorTest(TestCase):
@@ -141,3 +142,21 @@ class ProfiledPosteriorTest(TestCase):
         original[1, 1] = 1
         with self.assertRaisesRegex(ValueError, "radio intercept"):
             calibration(original)
+
+    def test_the_watch_ignores_a_fresh_deferral_from_another_case(self):
+        events = [{"case": "DS30-0211", "unix_ns": 80}, {"case": "DS30-0277", "unix_ns": 90}]
+        library = SimpleNamespace(inotify_init1=lambda *_: 17, inotify_add_watch=lambda *_: 0)
+        with (TemporaryDirectory() as temp,
+              patch.object(admission.ctypes, "CDLL", return_value=library),
+              patch.object(admission.os, "read", return_value=b"notification"),
+              patch.object(admission.os, "close"),
+              patch.object(admission.select, "select", return_value=([17], [], [])),
+              patch.object(admission, "replaced_export", return_value=True),
+              patch.object(admission, "time_ns", return_value=100),
+              patch.object(admission, "recent_deferral", side_effect=events),
+              patch.object(admission, "launch", return_value={"returncode": 0}) as launch):
+            binary = Path(temp)/"ready.so"
+            binary.touch()
+            result = admission.watch(binary, "digest", proof=False, physical=None, official_case="DS30-0277")
+        launch.assert_called_once_with(events[1], binary, "digest", proof=False, physical=None)
+        self.assertEqual((result["exports"], result["attempts"]), (2, 1))
