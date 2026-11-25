@@ -17,7 +17,7 @@ HEADER = Path(__file__).with_suffix(".h")
 COUNTS = ("evaluations", "trials", "accepted", "rejected", "stock_replays")
 
 
-def build(output):
+def profiled_source():
     """Replace the convergence update while leaving the pinned posterior intact."""
     path = native_bound.SOURCE
     if native_bound.digest(path) != SOURCE_SHA256:
@@ -83,6 +83,11 @@ int nb_profiled_gamma(void *layout,void *pf,void *ps,void *pi,void *pc,
     return code;
 }
 """
+    return source
+
+
+def build(output):
+    source = profiled_source()
     output = Path(output)
     generated = output.with_suffix(".c")
     generated.write_text(source)
