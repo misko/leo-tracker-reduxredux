@@ -119,3 +119,19 @@ def test_mincore_keeps_a_read_only_sample_on_its_existing_pages(experiment, tmp_
     with resident.read_only_map(file) as (address, length):
         assert resident.missing(address, length) == []
     assert file.read_bytes() == before
+
+
+def test_each_transaction_has_its_own_order_and_returns_prior_exit(experiment, tmp_path):
+    panel, _ = experiment
+    ready = dict(cases={"DS30-0016": dict(residency=dict(nonresident=["missing"]))})
+    case = "DS30-0107"
+    with pytest.raises(ValueError, match="within-case order"):
+        panel.authorized_order(tmp_path, ready, case, "charted")
+    assert panel.authorized_order(tmp_path, ready, case, "trial") == 0
+    first = tmp_path / case / "trial"
+    first.mkdir(parents=True)
+    panel.write(first / "process.json", dict(finished_unix_ns=42))
+    panel.write(first / "verified.json", {})
+    assert panel.authorized_order(tmp_path, ready, case, "charted") == 42
+    with pytest.raises(ValueError, match="fresh transaction"):
+        panel.authorized_order(tmp_path, ready, case, "trial")
