@@ -1,12 +1,29 @@
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import ds30_0280_moment_fast_publication as entry
 import exact_graph_execution
 import moment_preserving_fast_graph as fast
 import pytest
+
+
+@contextmanager
+def reviewed_graph_imports(monkeypatch):
+    source = Path(exact_graph_execution.__file__).resolve().parent
+    helpers = tuple(Path(name).stem for name in exact_graph_execution.PINS)
+    previous = {name: sys.modules[name] for name in helpers if name in sys.modules}
+    with monkeypatch.context() as scope:
+        scope.syspath_prepend(str(source))
+        for name in helpers:
+            sys.modules.pop(name, None)
+        try:
+            yield
+        finally:
+            for name in helpers:
+                sys.modules.pop(name, None)
+            sys.modules.update(previous)
 
 
 @pytest.fixture
@@ -96,7 +113,32 @@ def capsule_fixture(monkeypatch):
     fixture.original_prepare, fixture.winners, fixture.values = prepare, rows, revised
     fixture.native, fixture.config = native, config
     fixture.projected = projected
-    return fixture
+    with reviewed_graph_imports(monkeypatch):
+        yield fixture
+
+
+def test_graph_fixture_temporarily_isolates_imports_from_a_foreign_checkout(monkeypatch, tmp_path):
+    source = Path(exact_graph_execution.__file__).resolve().parent
+    foreign = {}
+    for filename in exact_graph_execution.PINS:
+        path = tmp_path/filename
+        path.write_bytes((source/filename).read_bytes())
+        module = ModuleType(path.stem)
+        module.__file__ = str(path)
+        monkeypatch.setitem(sys.modules, module.__name__, module)
+        foreign[module.__name__] = module
+    monkeypatch.syspath_prepend(str(tmp_path))
+    previous_path = list(sys.path)
+
+    with pytest.raises(ValueError, match="did not load the reviewed source"):
+        with exact_graph_execution.graph_execution(enabled=True):
+            pass
+
+    with reviewed_graph_imports(monkeypatch), exact_graph_execution.graph_execution(enabled=True):
+        assert all(Path(sys.modules[name].__file__).parent == source for name in foreign)
+
+    assert sys.path == previous_path
+    assert all(sys.modules[name] is module for name, module in foreign.items())
 
 
 def launch(monkeypatch, role):
