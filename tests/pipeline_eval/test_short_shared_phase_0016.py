@@ -1,4 +1,6 @@
 from copy import deepcopy
+import gzip
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -59,3 +61,18 @@ def test_product_match_requires_roles_ordered_grid_and_pixel_identity():
     candidate["ordered_owners"]["c0"][0][-1] = "held_out"
     with pytest.raises(ValueError, match="ordered_owners"):
         experiment.science(baseline, candidate)
+
+
+def test_sealed_normal_publication_and_short_score_deltas():
+    receipt = experiment.PROTOCOL.parent / "measurements" / "short-shared-phase-0016.json.gz"
+    value = json.loads(gzip.decompress(receipt.read_bytes()))
+    control, candidate = (value["result"][role] for role in ("historical_control", "candidate"))
+    assert value["prelaunch"]["numeric_children"] == 0
+    assert value["trial"]["watch.json"]["attempts"] == 1
+    assert candidate["numeric_process"]["exit_code"] == 0
+    assert experiment.science(control, candidate) == value["result"]["science"]
+    assert value["result"]["packet"]["lanes"] == {"anchor": 186, "short": 1240}
+    assert len(value["changed_short_rows"]) == value["result"]["packet"]["changed_factor_rows"]["short"] == 407
+    for index, name in enumerate(value["short_score_columns"]):
+        drift = max(abs(row["baseline"][index] - row["trial"][index]) for row in value["changed_short_rows"])
+        assert drift == value["result"]["packet"]["score_drift"][name]
