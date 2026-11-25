@@ -1,0 +1,7 @@
+# DS30-0442 cache-only catalogue admission stopped on the first file
+
+Both official DS30-0442 roles had `verified_pair` and `acquisition_verified` set. The released `TleArchiveReader.list_snapshots` returned the exact enrolled **49-reference** causal roster at cutoff `1795193784451600218`, totaling **87,646,559 bytes** by file extent. Its basename-to-digest hash matched `sha256:be8f0436d8f85dfe32fd07f7613bd4128c08b62dd48cd9b58fdd5f9e7431e786`. The typed enumeration inspected only the single enrolled archive directory's metadata. [Authority pins and passive measurement](measurements/0442-cache-custody.json)
+
+The first exact 1,786,498-byte body had **zero resident bytes** in the privileged `fincore` check. The first attempt as `leo` returned a `cachestat` permission error and then printed 1,789,952 bytes as resident. That fallback value was unsuitable for admission. I repeated only the first file's passive check with sufficient privilege, stopped at the resulting miss, and left the other 48 cache states unmeasured. The first file alone precludes an exact current cache-only stage. [Probe outputs and exact file identity](measurements/0442-cache-custody.json)
+
+No `preadv2(RWF_NOWAIT)` or other body read was attempted. There was no fallback I/O, file copy, stage, scan, solver, or benchmark lease. The check opened no field results or survey and left DS30-0212's already-staged donor to its assigned custody process. The separate 0218 catalogue evidence does not change this admission. [0218 custody evidence](0218-causal-custody.md)
