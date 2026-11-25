@@ -4,6 +4,7 @@ from fractions import Fraction
 import gzip
 import json
 from pathlib import Path
+from statistics import median
 
 from .ds30_oracle_routing import checked, coverage, meets
 from .ds30_routing_first64 import certified_route, constraints, summary
@@ -26,6 +27,8 @@ def stages(row, short, reduction, scale):
     native = units("native_detector_s")
     solver = units("solver")
     short_wall = round(Fraction(str(short["short_wall"])) * scale)
+    if not 0 <= reduction <= 1 or short["short_cpu"] < 0:
+        raise ValueError("Expected a nonnegative callback time and a reduction between zero and one")
     if not (0 <= short_wall <= native <= acquisition and 0 <= solver and acquisition + solver <= units("actual_wall_s")):
         raise ValueError("The stage clocks must be nested within the measured attempt")
     short_cpu = Fraction(str(short["short_cpu"])) * scale
@@ -44,9 +47,11 @@ def bound(pairs, clocks, groups, scale):
     lower_time = baseline - proof["upper_gain"]
     if not 0 < lower_time <= result["total_units"]:
         raise ValueError("Invalid certified timing bound")
+    paired_ratio = median(Fraction(b if route & (1 << i) else a, a) for i, (a, b) in enumerate(clocks))
     return dict(feasible=result, proof=proof, lower_time_units=lower_time, upper_summed_speedup=baseline/lower_time,
                 exact_sum=lower_time == result["total_units"],
-                both_gates_met_by_witness=2*result["total_units"] <= baseline and result["median_paired_wall_ratio"] <= .5)
+                paired_ratio_exact=str(paired_ratio),
+                both_gates_met_by_witness=2*result["total_units"] <= baseline and 2*paired_ratio <= 1)
 
 
 def percent_bracket(evaluate):
