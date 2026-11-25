@@ -60,6 +60,27 @@ def test_ingress_filters_actual_released_rows_and_keeps_opportunities(monkeypatc
     assert native == before
 
 
+def test_one_shot_winners_retain_nonempty_released_graph_and_edits():
+    native = native_packet()
+    for probe in native["source"]["probes"]:
+        probe.update(edge="falling", channel=1, actual_rf_hz=11_925_000_000)
+        if probe["visit_index"] == 1:
+            probe["candidates"][-1][frozen.HERTZ] += 30
+    config = TrackConfig(min_points=4, points_per_coefficient=2, min_span_s=.5, max_degree=1)
+    winners, _ = winning_observations(native)
+    masked, _, _ = frozen.masked_stereo(native)
+    masked_winners, _ = winning_observations(masked)
+    retained, _, _ = ingress.bind_ingress(native, (row for row in winners))
+    assert retained == masked_winners
+
+    expected = frozen.derive(native, config)
+    actual = ingress.derive(native, config, (row for row in winners))
+    assert expected.masked_graph["tracks"] > 0 and expected.edits
+    assert actual == expected
+    assert frozen.apply_to_winners(native, (row for row in winners), actual) == frozen.apply_to_winners(
+        native, winners, expected)
+
+
 @pytest.mark.parametrize("field,new_value", [
     ("native_receiver_id", 2), ("receiver", 3), ("channel", 8), ("time_s", -.1),
     ("measured_cfo_hz", 999.), ("actual_rf_hz", 11_000_000_000.), ("fractional_margin", .3),

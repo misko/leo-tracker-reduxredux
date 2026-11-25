@@ -4,6 +4,8 @@
 
 Both paths reproduced the complete sidecar and consumed rows on each saved recording and in each timing order. DS30-0019 produced 366 edits among 4,996 ordinary winners, DS30-0274 produced 499 among 6,596. Complete corrected rows matched the earlier saved position workers. Contract tests also checked stereo and stream masking, original winner tie-break, empty input factors, ordering and rejection of missing, extra, duplicate and changed rows. The callable assumes the native packet has already passed the ordinary released evidence boundary.
 
+The follow-up consumes the supplied winners once and filters the rows kept in their validated insertion order. The regression uses a one-shot generator and requires the released masked Graph to produce tracks and CFO edits. The separate overlay accepts the original reusable rows or a fresh iterable. The timing and two saved-fixture receipts below remain bound to `28ea3205a`, the revision before this correction.
+
 ## One isolated comparison
 
 | Case | Order | A wall / CPU (s) | B wall / CPU (s) | Saved wall / CPU (s) |

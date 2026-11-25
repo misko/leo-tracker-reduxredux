@@ -18,7 +18,7 @@ ingress_order = itemgetter("receiver", "channel", "time_s", "observation_id")
 
 
 def bind_ingress(native, original_winners):
-    """Verify all ordinary rows against the signed probes and keep their released sort order."""
+    """Verify and filter the ordered ordinary rows, consuming their iterable once."""
     source, provenance = native["source"], native["provenance"]
     probes = iter(source["probes"])
     if not source["probes"]:
@@ -37,6 +37,7 @@ def bind_ingress(native, original_winners):
     session = source["session_id"]
     sequence, previous_counter = Counter(), {}
     visits, held, retained, retained_ids = [], {}, {}, set()
+    matched = 0
     for left, right in zip(probes, probes, strict=False):
         key = tuple(left[name] for name in STREAM)
         counter, visit = left["valid_start_counter"], left["visit_index"]
@@ -55,13 +56,14 @@ def bind_ingress(native, original_winners):
             if oid in held or oid in retained:
                 raise ValueError("Repeated signed stereo opportunity")
             factor = winner(row)
-            observation = supplied.pop(oid, None)
+            observation = supplied.get(oid)
             if factor is not None:
                 expected = (radio+1, radio, int(row["channel"]), time_s, float(factor[HERTZ]),
                             float(row["actual_rf_hz"]), float(factor["fractional_margin"]))
                 if (observation is None or ingress_values(observation) != expected
                         or not isfinite(expected[4])):
                     raise ValueError("Ordinary Graph row differs from the signed winning probe")
+                matched += 1
             elif observation is not None:
                 raise ValueError("Ordinary Graph row has no gated winning probe")
             lane = dict(id=oid, counter=counter, short=index % 8 != 0, row=row, lane=(*key, radio))
@@ -77,13 +79,17 @@ def bind_ingress(native, original_winners):
             or sorted(visits+excluded) != list(range(provenance["window_count"]))
             or len(visits) != provenance["processed_windows"]):
         raise ValueError("Admitted and excluded visits must partition the signed acquisition")
-    if supplied:
+    if matched != len(supplied):
         raise ValueError("Ordinary Graph rows have unknown signed observation IDs")
-    return [row for row in original_winners if row["observation_id"] in retained_ids], held, retained
+    return [row for oid, row in supplied.items() if oid in retained_ids], held, retained
 
 
 def derive(native, approved_graph_config, original_winners):
-    """Derive the frozen CFO sidecar from authenticated native data and ordinary winners."""
+    """Derive the frozen CFO sidecar from authenticated native data and ordered winners.
+
+    A one-shot winner iterable is consumed here. The separate overlay needs a
+    fresh iterable or the original reusable rows.
+    """
     if (native["source"]["sample_rate_hz"] != ADC
             or approved_graph_config.alias_spacing_hz != ALIAS):
         raise ValueError("The frozen rule requires its original ADC and Graph alias conventions")
