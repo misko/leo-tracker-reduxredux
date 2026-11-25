@@ -13,15 +13,16 @@ from .short_shared_integer_phase import CheckedReceiver, Event, compare, native_
 from .sparse8_native_profile import Factor, PILOTS, RELEASE, TRAINER, TRAIN_ROOT, checked
 
 
-def main(root):
+def main(root, *, unaudited=None):
     if os.sched_getaffinity(0) != {3} or os.nice(0) < 15:
         raise ValueError("Use low-priority CPU3 for synthetic checks")
     trainer = TRAIN_ROOT/"reports/ALGO08/single-core-2x/receiver_mixer_profile_trial.py"
     checked(trainer, TRAINER)
-    sys.path.insert(0, str(trainer.parent))
+    sys.path[:0] = [str(trainer.parent), str(TRAIN_ROOT)]
     train = runpy.run_path(str(trainer))
     waveform = train["waveform"]
     frames, maxima, counts = waveform.pulse_bank(), [0., 0.], Counter()
+    checked_unaudited_lanes = 0
     with ExitStack() as stack:
         radio = {}
         for index, (edge, record) in enumerate(train["compiler"].training_rows()):
@@ -30,12 +31,19 @@ def main(root):
                 paths = "installed", "exact", "shared"
                 pilot = ct.create_string_buffer(checked(RELEASE/"assets"/(edge+".f32"), PILOTS[edge]))
                 radio[edge] = {name: CheckedReceiver(root/(name+".so"), pilot, name != "installed") for name in paths}
+                if unaudited is not None:
+                    radio[edge]["unaudited"] = CheckedReceiver(unaudited, pilot, False)
                 for receiver in radio[edge].values():
                     stack.callback(receiver.close)
             for center in train["mixer_centers"](index):
                 for lane in (0, 1):
-                    stock, exact, shared = (receiver.checked_call(iq.ctypes.data, lane, center)
-                                            for receiver in radio[edge].values())
+                    stock, exact, shared = (radio[edge][name].checked_call(iq.ctypes.data, lane, center)
+                                            for name in paths)
+                    if unaudited is not None:
+                        live = radio[edge]["unaudited"].checked_call(iq.ctypes.data, lane, center)
+                        if native_bytes(live[0], Factor) != native_bytes(shared[0], Factor):
+                            raise ValueError("The unaudited replacement changed the experimental native result")
+                        checked_unaudited_lanes += 1
                     if native_bytes(stock[0], Factor) != native_bytes(exact[0], Factor):
                         raise ValueError("The rebuilt verifier differs from the released detector")
                     errors = compare(exact[0], shared[0], 4)
@@ -54,7 +62,10 @@ def main(root):
                       unusable=not guard(.15, .2, .2, float("inf"), 1e-6))
         if not all(checks.values()):
             raise ValueError("An unsafe spectrum passed the guard")
-    return dict(instrumented_training_counts=counts, max_native_continuous_errors=maxima, guard=checks)
+    evidence = dict(instrumented_training_counts=counts, max_native_continuous_errors=maxima, guard=checks)
+    if unaudited is not None:
+        evidence["unaudited_byte_equal_lanes"] = checked_unaudited_lanes
+    return evidence
 
 
 if __name__ == "__main__":
