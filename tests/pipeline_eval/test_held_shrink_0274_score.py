@@ -9,3 +9,9 @@ def test_ordinary_parity_rejects_a_missing_owner_or_changed_grid():
         score.require_parity(dict(expected, owners=[]), expected)
     with pytest.raises(ValueError, match="raw incumbent"):
         score.require_parity(dict(expected, grid=[0., 1.0001]), expected)
+
+
+def test_graph_parity_excludes_only_timing_details():
+    graph = dict(assigned=10, tracks=3, calls=1, edges=20, edge_lanes=4)
+    witness = {"ports": {"graph": {"graph": dict(graph, graph_cpu_ns=15)}}}
+    assert score.graph_identity(witness) == graph

@@ -19,12 +19,18 @@ def reference():
     terminal, evidence, numerical = verify_publication(original, receipt, WITNESS, "sha256:"+NATIVE, offer)
     if terminal["decision"] != "ok":
         raise ValueError("The original signed charted comparison must be complete")
-    return original, terminal, evidence, numerical, witness["source_sha256"]
+    return original, terminal, evidence, numerical, witness
 
 
 def require_parity(ordinary, raw):
-    if ordinary != raw:
-        raise ValueError("Ordinary saved science differs from the signed raw incumbent")
+    differences = sorted(key for key in ordinary.keys() | raw.keys() if ordinary.get(key) != raw.get(key))
+    if differences:
+        raise ValueError(f"Ordinary saved science differs from the signed raw incumbent: {differences}")
+
+
+def graph_identity(witness):
+    original = witness["ports"]["graph"]["graph"]
+    return {field: original[field] for field in ("assigned", "tracks", "calls", "edges", "edge_lanes")}
 
 
 def check_control():
@@ -44,15 +50,17 @@ def score(pin):
             or plan["cell"] != "ordinary" or seal["protocol"] != trial.protocol(EXPERIMENT)):
         raise ValueError("Expected an exit-zero ordinary saved control on the exact original detector")
     trial.start_runtime().load_runtime()
-    original, raw, raw_evidence, _, sources = reference()
+    original, raw, raw_evidence, _, raw_witness = reference()
     output = root/"substituted"
     terminal, evidence, verified = verify_publication(output, run["receipt"], run["witness"],
                                                      "sha256:"+NATIVE, raw["region"])
     witness = trial.document(output/"exact-named-raw-witness.json", run["witness"])
     require_parity(
         dict(terminal=terminal, sources=witness["source_sha256"], owners=evidence["owner_rows"],
+             graph=graph_identity(witness), scientific_recipe=witness["solver_recipe"],
              path=evidence["sidecars"]["path"], figures=evidence["images"], grid=scientific_grid(output)),
-        dict(terminal=raw, sources=sources, owners=raw_evidence["owner_rows"],
+        dict(terminal=raw, sources=raw_witness["source_sha256"], owners=raw_evidence["owner_rows"],
+             graph=graph_identity(raw_witness), scientific_recipe=raw_witness["solver_recipe"],
              path=raw_evidence["sidecars"]["path"], figures=raw_evidence["images"], grid=scientific_grid(original)),
     )
     print(trial.write(root/"ordinary-parity.json", dict(input=run["input"], original_witness=WITNESS,
