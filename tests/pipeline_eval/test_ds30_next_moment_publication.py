@@ -2,13 +2,16 @@ from contextlib import nullcontext
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from types import SimpleNamespace
+import sys
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
 import ds30_next_moment_custody as custody
 import ds30_next_moment_publication as entry
 import exact_graph_execution
+import ds30_0036_fast_graph_recovery as recovery
+from ds30_0036_local_preload import snapshot
 from test_moment_fast_publication import capsule_fixture
 
 
@@ -25,6 +28,36 @@ def test_exact_causal_digest_selects_only_signed_names():
     digest = custody.meta.roster_digest({b:"a"*64})
     assert custody.exact_window((a,b,c), 300, digest) == {b:"a"*64}
     assert custody.exact_window((a,b,c), 200, digest) is None
+
+
+def test_approved_saved_preload_copies_verified_immutable_bytes(tmp_path, monkeypatch):
+    monkeypatch.setattr(entry.held, "CAMPAIGN", tmp_path)
+    source = tmp_path/"signed.json"
+    source.write_bytes(b'{"authenticated":true}\n')
+    digest = entry.saved.identifier(source)
+    output = tmp_path/"resident.json"
+    copied = snapshot(source, output, source.stat().st_size, digest)
+    assert copied["sha256"] == digest and copied["logical_reads"] == 1
+    assert output.read_bytes() == source.read_bytes()
+    with pytest.raises(ValueError, match="official digest"):
+        snapshot(source, tmp_path/"wrong.json", source.stat().st_size, "0"*64)
+    assert not (tmp_path/"wrong.json").exists()
+
+
+def test_recovery_scopes_exact_graph_bytes_and_restores_conflicting_modules(tmp_path, monkeypatch):
+    prior = {}
+    for filename in recovery.GRAPH_HELPERS:
+        module = ModuleType(Path(filename).stem)
+        module.__file__ = str(tmp_path/filename)
+        monkeypatch.setitem(sys.modules,module.__name__,module)
+        prior[module.__name__] = module
+    with recovery.reviewed_helpers() as origins:
+        assert origins == {name:module.__file__ for name,module in prior.items()}
+        for name, module in prior.items():
+            loaded = sys.modules[name]
+            assert loaded is not module and Path(loaded.__file__).parent == recovery.HERE
+            assert entry.saved.identifier(Path(loaded.__file__)) == recovery.GRAPH_HELPERS[name+".py"]
+    assert all(sys.modules[name] is module for name,module in prior.items())
 
 
 def test_both_official_flags_and_matching_pins_are_required(tmp_path):

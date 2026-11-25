@@ -2,7 +2,7 @@
 
 **DS30-0036 is enrolled at execution rank 71.** Rank 70 reached official pair verification and the documented resident donor search could not establish its exact causal catalogue. The selector preserved that refusal and accepted 0036’s exact 47-body, 84,038,287-byte resident catalogue at cutoff 1794600616236961974 ns. The original accession and requested raw identities agree. The recorded donor split is 35 bodies from 0086, nine from 0049 and three from 0019. The enrolment sealed before either official 0036 role completed. [Sealed enrollment](measurements/ds30-next-moment-enrolled-0036.json)
 
-At the saved-replay readiness check, the official driver had recorded 12 storage deferrals on 0036. Neither acquisition role had verified or produced a process or result receipt. The ordinary and projected cost envelopes for this recording remain unmeasured, including whether both can fit the standard 24 s child cap. No saved stage or lease was created. The original 0036 decision and survey remain closed. Once both field roles verify, validate the available stage clocks before using the already prepared ordinary-to-corrected sequence. Use only the sealed 0036 enrollment. [Readiness disposition](measurements/ds30-0036-moment-replay-pending.json)
+At the initial saved-replay readiness check, the official driver had recorded 12 storage deferrals on 0036 and neither role had produced a process receipt. After the official pair verified, same-recording timing supported the original 24 s caps. The exact ordinary parity and corrected scientific publication subsequently sealed before scoring. [Initial readiness](measurements/ds30-0036-moment-replay-pending.json) · [Completed held result](ds30-0036-fast-moment-publication.md)
 
 ## Initial census
 
