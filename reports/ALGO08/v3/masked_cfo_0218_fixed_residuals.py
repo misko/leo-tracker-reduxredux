@@ -17,6 +17,7 @@ CASE = "DS30-0218"
 ARMS = ("c0", "fitted_c")
 ROLES = ("conditional", "predictive")
 MODES = ("ordinary", "corrected")
+PIN_FIELDS = {"plan", "clock", "observation", "receipt", "isolation", "residuals", "export_clock"}
 HERTZ = "fractional_tracking_cfo_hz"
 ADC = 10_000_000
 PERIOD = 1 / 4.4e-6
@@ -146,8 +147,9 @@ def read_cell(root, mode, pins):
     timing = read(root / "clock.json", pins["clock"])
     scope = read(root / "masked-cfo-observation-witness.json", pins["observation"])
     run = read(root / "receipt.json", pins["receipt"])
+    isolation = read(root / "worker-isolation.json", pins["isolation"])
     export_clock = read(root / "owner-residual-export-clock.json", pins["export_clock"])
-    export = read(root / "owner-residuals.json", export_clock["residuals_sha256"])
+    export = read(root / "owner-residuals.json", pins["residuals"])
     receipt = run["receipt"]
     native, decision = plan["original_native_sha256"], receipt["decision"]
     expected = dict(schema="leo.research.selected-owner-residuals.v1", role=mode, decision=decision,
@@ -156,6 +158,9 @@ def read_cell(root, mode, pins):
                     publication_witness_sha256=run["witness"], presentation_source_sha256=PRESENTATION,
                     observer_source_sha256=OBSERVER)
     if (timing["exit_code"] or plan["case"] != CASE or run["case"] != CASE or plan["probe"]
+            or any(isolation.get(key) is not True for key in
+                   ("inherited_descriptor", "socket_denied", "readonly_operands"))
+            or export_clock["residuals_sha256"] != pins["residuals"]
             or plan["enabled"] != (mode == "corrected") or plan["change"]["edits"]
             or plan["sources"].get("held_cfo_features.py") != FEATURE
             or plan["sources"].get("masked_cfo_saved.py") != OVERLAY
@@ -319,7 +324,7 @@ def run(root, authority, pin):
                            ("held_cfo_features.py", FEATURE), ("masked_cfo_saved.py", OVERLAY)):
         checked(HERE / name, expected)
     pins = read(authority, pin)
-    if set(pins) != set(MODES) or any(set(pins[mode]) != {"plan", "clock", "observation", "receipt", "export_clock"}
+    if set(pins) != set(MODES) or any(set(pins[mode]) != PIN_FIELDS
                                     or not all(re.fullmatch(r"[0-9a-f]{64}", v) for v in pins[mode].values()) for mode in MODES):
         raise ValueError("Require the predeclared two-role closed digest set")
     ordinary, corrected = (read_cell(root / mode, mode, pins[mode]) for mode in MODES)
