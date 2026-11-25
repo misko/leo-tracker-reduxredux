@@ -53,6 +53,10 @@ def launch(event, binary, pin, *, proof, physical):
 def watch(binary, pin, *, proof, physical, official_case=None):
     if not binary.is_file():
         raise ValueError("Prebuild the audited native binary before the watch")
+    return observe(lambda event: launch(event, binary, pin, proof=proof, physical=physical), official_case)
+
+
+def observe(admit, official_case, *, seconds=WATCH_SECONDS):
     libc = ctypes.CDLL(None, use_errno=True)
     fd = libc.inotify_init1(os.O_CLOEXEC | os.O_NONBLOCK)
     if fd < 0:
@@ -60,7 +64,7 @@ def watch(binary, pin, *, proof, physical, official_case=None):
     try:
         if libc.inotify_add_watch(fd, os.fsencode(CAMPAIGN), MOVED_TO) < 0:
             raise OSError(ctypes.get_errno(), "inotify_add_watch")
-        started, deadline = time_ns(), monotonic()+WATCH_SECONDS
+        started, deadline = time_ns(), monotonic()+seconds
         exports = 0
         while (remaining := deadline-monotonic()) > 0:
             readable, _, _ = select.select([fd], [], [], remaining)
@@ -71,8 +75,7 @@ def watch(binary, pin, *, proof, physical, official_case=None):
             if (event is not None and (official_case is None or event["case"] == official_case)
                     and time_ns()-event["unix_ns"] <= FRESH_NS):
                 try:
-                    return dict(launch(event, binary, pin, proof=proof, physical=physical), attempts=1, exports=exports,
-                                watching_from=started)
+                    return dict(admit(event), attempts=1, exports=exports, watching_from=started)
                 except (OSError, ValueError) as failure:
                     return dict(status="single_attempt_declined", reason=str(failure), candidate=event,
                                 attempts=1, exports=exports, watching_from=started)
