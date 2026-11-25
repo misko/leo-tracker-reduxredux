@@ -53,7 +53,9 @@ def status(root=CAMPAIGN):
         raise ValueError("The official export does not bind both original rank-65 roles")
     path = root/"cases"/CASE/"pair.json"
     pair = saved.document(path) if path.is_file() else None
-    verified = bool(pair and pair.get("verified_pair") and pair.get("state") == "observed_pair")
+    verified = bool(pair and pair.get("verified_pair") and pair.get("state") == "observed_pair"
+                    and all(pair["attempt_result_sha256"][row["algorithm"]] == row["attempt_result_sha256"]
+                            for row in rows))
     return dict(case=CASE, execution_rank=65, assigned_rank=case["assigned_rank"], physical_identity=IDENTITY,
                 event_path=str(path), verified_pair=verified,
                 roles={r["algorithm"]: {k:r.get(k) for k in ("outcome","admission_state","attempt","attempt_result_sha256")}
@@ -143,6 +145,10 @@ def prepare_field(root):
     case = CAMPAIGN/"cases"/CASE
     pair = saved.document(case/"pair.json")
     authority = saved.document(case/"authority.json", pair["authority_sha256"])
+    enrolled = enrollment(CAMPAIGN)
+    if (authority["recording"] != enrolled["recording"] or authority["window_count"] != enrolled["window_count"]
+            or authority["raw_authority_sha256"] != enrolled["manifest_raw_authority_sha256"]):
+        raise ValueError("Original field authority does not bind the frozen rank-65 recording")
     result_root = case/"successor"/f"attempt-{pair['generation']:06d}"
     result = saved.document(result_root/"result.json", pair["attempt_result_sha256"]["successor"])
     if result["raw_identity"] != authority or result["outcome"] not in ("complete","withheld") or result["process"]["exit_code"]:
