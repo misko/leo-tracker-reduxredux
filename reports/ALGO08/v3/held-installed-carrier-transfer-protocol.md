@@ -1,0 +1,5 @@
+# Retrospective installed-carrier check on DS30-0019 and DS30-0274
+
+Reuse the complete signed edit ledgers for the closed half-blend workers. Reproduce the authenticated original and edited native digests and check every changed and unchanged opportunity against the respective ledger. Match only the separately acquired complete installed packet in each original verified field pair. Report any missing artifact as unavailable and reject inconsistent authority or samples.
+
+Use the [DS30-0218 score](masked-cfo-0218-installed-agreement-protocol.md) unchanged. Include every actual nonzero edit, installed empties, and the exact frozen signed 250 Hz / 2-sample and 2,250 Hz / 6-sample windows. Keep the RF, radio, hardware epoch and detector winner rules. Retain alias-only matches separately. Summarize per recording, native receiver and ordinary owner arm. Report agreement with a same-capture measurement reference. Use CPU 3 for metadata arithmetic only, with no feature, Graph, receiver, orbit or position replay.
