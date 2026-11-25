@@ -1,8 +1,16 @@
 from copy import deepcopy
+from types import SimpleNamespace
 
 import pytest
 
 from reports.ALGO08.v3 import short_shared_phase_0016 as experiment
+
+
+def test_admission_preflights_the_controller_meter_in_its_own_process():
+    keys = ["cpu_s", "input_blocks"]
+    experiment.check_controller(SimpleNamespace(controller_preflight=lambda: keys), {"controller_counters": keys})
+    with pytest.raises(ValueError, match="meter counters"):
+        experiment.check_controller(SimpleNamespace(controller_preflight=lambda: []), {"controller_counters": keys})
 
 
 def test_new_detector_identity_is_derived_at_both_recipe_boundaries(monkeypatch):

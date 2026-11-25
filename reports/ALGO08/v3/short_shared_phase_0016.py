@@ -158,7 +158,7 @@ def prepare(root):
     dry = panel.check_command(worker_command(panel, root, work, inputs, pin, preflight=True))
     if dry != inputs["preflight"]["charted"] or dry["waveform_opens"] != 0:
         raise ValueError("Original inventory preflight differs")
-    panel.controller_preflight()
+    check_controller(panel, old)
     return panel.write(root/"ready.json", dict(input=inputs, charted_ready=OLD_READY_PIN, charted_build=panel.CONTROL,
                 preflight=dry, preflight_meter=json.loads((work/"numeric-process.json").read_bytes()),
                 before=panel.source_before(inputs, True), cap_s=panel.CAP_SECONDS[CASE], identities=identities,
@@ -169,6 +169,11 @@ def prepare(root):
 def assert_source(panel, inputs):
     if any(inputs[name] != value for name, value in panel.source_case(CASE).items()):
         raise ValueError("Original private sample custody changed")
+
+
+def check_controller(panel, old):
+    if panel.controller_preflight() != old["controller_counters"]:
+        raise ValueError("The original worker meter counters are unavailable in this controller")
 
 
 def exact(a, b):
@@ -293,6 +298,7 @@ def watch(root, pin, pid):
     from .profiled_grid_export_admission import observe
 
     panel, old = load_panel()
+    check_controller(panel, old)
     ready = json.loads(panel.check(root/"ready.json", pin))
     inputs = ready["input"]
     if (inputs != old["cases"][CASE] or ready["controller"] != callback.digest(Path(__file__).read_bytes())
