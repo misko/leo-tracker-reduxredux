@@ -1,7 +1,8 @@
+import json
 from types import SimpleNamespace
 
+import masked_cfo_0218 as held
 import masked_cfo_saved as saved
-from masked_cfo_0218 import causal_view
 import pytest
 
 
@@ -70,6 +71,46 @@ def test_causal_view_requires_complete_signed_digest_and_cutoff():
     files = {"1-aaaa.tle": None, "2-bbbb.tle": None, "9-cccc.tle": None}
     selected = {"1-aaaa.tle": "aaaa", "2-bbbb.tle": "bbbb"}
     expected = saved.signed.canonical(selected)
-    assert causal_view(files, 3, expected, {"2-bbbb.tle"}) == selected
+    assert held.causal_view(files, 3, expected, {"2-bbbb.tle"}) == selected
     with pytest.raises(ValueError, match="missing"):
-        causal_view(files, 2, expected, {"2-bbbb.tle"})
+        held.causal_view(files, 2, expected, {"2-bbbb.tle"})
+
+
+def test_campaign_offer_retains_original_bytes_and_matches_the_normalized_field_request(tmp_path):
+    offer = tmp_path / "offer.json"
+    body = b'{ "width_km":18, "center":[51, 12] }\n'
+    offer.write_bytes(body)
+    authority = {"region_sha256": saved.signed.tag(body)}
+    region = dict(center=[51., 12.], screen_center=[51., 12.], width_km=18.)
+    request = {"offered_region": region}
+    assert held.authenticated_offer(tmp_path, authority, request) == body
+    with pytest.raises(ValueError, match="original field request"):
+        held.authenticated_offer(tmp_path, authority, {"offered_region": dict(region, screen_center=[51., 13.])})
+    offer.write_bytes(body.rstrip())
+    with pytest.raises(ValueError, match="signed regional digest"):
+        held.authenticated_offer(tmp_path, authority, request)
+
+
+@pytest.mark.parametrize(("change", "verified"), [
+    ({}, True),
+    ({"verified_pair": False}, False),
+    ({"acquisition_verified": None}, False),
+    ({"attempt_result_sha256": "sha256:" + "f" * 64}, False),
+    ({"attempt_result_sha256": None}, False),
+])
+def test_official_status_requires_each_rows_verification_and_pair_pin(tmp_path, monkeypatch, change, verified):
+    admitted = dict(case=held.CASE, case_id="original", assigned_rank=63)
+    monkeypatch.setattr(held, "enrollment", lambda _: admitted)
+    case = tmp_path / "cases" / held.CASE
+    case.mkdir(parents=True)
+    pins = {arm: saved.signed.tag(arm.encode()) for arm in ("installed", "successor")}
+    pair = dict(verified_pair=True, state="observed_pair", attempt_result_sha256=pins)
+    (case / "pair.json").write_text(json.dumps(pair))
+    rows = [dict(admitted, algorithm=arm, verified_pair=True, acquisition_verified=True, attempt_result_sha256=pin)
+            for arm, pin in pins.items()]
+    rows[0].update(change)
+    (tmp_path / "rows.jsonl").write_text("\n".join(map(json.dumps, rows)))
+    status = held.status(tmp_path)
+    assert status["verified_pair"] is verified
+    assert status["pair_sha256"] == saved.signed.tag((case / "pair.json").read_bytes())
+    assert status["roles"]["installed"]["acquisition_verified"] is rows[0]["acquisition_verified"]

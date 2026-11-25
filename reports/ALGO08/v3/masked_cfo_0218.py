@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 from shutil import copyfile
 import sys
 from types import SimpleNamespace
@@ -27,6 +28,7 @@ DONORS = tuple(Path("/dev/shm")/name for name in (
     "leo-v3-cfo-epoch-0049-saved01",
 ))
 SCHEDULE = ["full", *(["short_primary"]*7)]
+ROW_FLAGS = ("verified_pair", "acquisition_verified")
 
 
 def experiment(*, probe):
@@ -52,13 +54,20 @@ def status(root=CAMPAIGN):
             row["case_id"] != case["case_id"] or row["assigned_rank"] != case["assigned_rank"] for row in rows):
         raise ValueError("The official export does not bind both original rank-65 roles")
     path = root/"cases"/CASE/"pair.json"
-    pair = saved.document(path) if path.is_file() else None
-    verified = bool(pair and pair.get("verified_pair") and pair.get("state") == "observed_pair"
-                    and all(pair["attempt_result_sha256"][row["algorithm"]] == row["attempt_result_sha256"]
-                            for row in rows))
+    pair_body = path.read_bytes() if path.is_file() else None
+    pair = json.loads(pair_body) if pair_body is not None else {}
+    attempts = pair.get("attempt_result_sha256", {})
+    verified = (pair.get("verified_pair") is True and pair.get("state") == "observed_pair"
+                and isinstance(attempts, dict)
+                and all(all(row.get(flag) is True for flag in ROW_FLAGS)
+                        and isinstance(pin := row.get("attempt_result_sha256"), str)
+                        and re.fullmatch(r"sha256:[0-9a-f]{64}", pin)
+                        and attempts.get(row["algorithm"]) == pin for row in rows))
     return dict(case=CASE, execution_rank=65, assigned_rank=case["assigned_rank"], physical_identity=IDENTITY,
                 event_path=str(path), verified_pair=verified,
-                roles={r["algorithm"]: {k:r.get(k) for k in ("outcome","admission_state","attempt","attempt_result_sha256")}
+                pair_sha256=signed.tag(pair_body) if pair_body is not None else None,
+                roles={r["algorithm"]: {k:r.get(k) for k in ("outcome","admission_state","attempt",
+                                                            "attempt_result_sha256", *ROW_FLAGS)}
                        for r in rows})
 
 
@@ -138,17 +147,32 @@ def prepare_probe(root):
                      enabled=True, probe=True)
 
 
+def authenticated_offer(campaign, authority, request):
+    from leo.contracts.algo08_region import Algo08Region
+
+    body = (campaign/"offer.json").read_bytes()
+    if signed.tag(body) != authority["region_sha256"]:
+        raise ValueError("The campaign offer differs from its signed regional digest")
+    if Algo08Region.parse(json.loads(body)).document() != request["offered_region"]:
+        raise ValueError("The campaign offer differs from the original field request")
+    return body
+
+
 def prepare_field(root):
     state = status()
     if not state["verified_pair"]:
         raise ValueError("The two original DS30-0218 results are not yet officially verified")
     case = CAMPAIGN/"cases"/CASE
-    pair = saved.document(case/"pair.json")
+    pair = saved.document(case/"pair.json", state["pair_sha256"])
     authority = saved.document(case/"authority.json", pair["authority_sha256"])
     enrolled = enrollment(CAMPAIGN)
     if (authority["recording"] != enrolled["recording"] or authority["window_count"] != enrolled["window_count"]
             or authority["raw_authority_sha256"] != enrolled["manifest_raw_authority_sha256"]):
         raise ValueError("Original field authority does not bind the frozen rank-65 recording")
+    request = saved.document(case/"input.json")
+    if request["authority"] != authority or request["authority_sha256"] != pair["authority_sha256"]:
+        raise ValueError("The original field request differs from the sealed paired authority")
+    offer = authenticated_offer(CAMPAIGN, authority, request)
     result_root = case/"successor"/f"attempt-{pair['generation']:06d}"
     result = saved.document(result_root/"result.json", pair["attempt_result_sha256"]["successor"])
     if result["raw_identity"] != authority or result["outcome"] not in ("complete","withheld") or result["process"]["exit_code"]:
@@ -166,10 +190,6 @@ def prepare_field(root):
     packet = saved.document(native, result["native_sha256"])
     checked_schedule(publication, packet)
     inventory = publication/"fast-scan-inputs"/(authority["session_id"]+".json")
-    request = saved.document(case/"input.json")
-    offer = KNOWN/"offer.json"
-    if saved.document(offer, authority["region_sha256"]) != request["offered_region"]:
-        raise ValueError("No exact signed local copy of the original offered region")
     saved.document(inventory, authority["inventory_sha256"])
     root.mkdir(mode=0o700)
     stage = root/"stage"
@@ -177,12 +197,14 @@ def prepare_field(root):
     out.mkdir(parents=True)
     for name in view:
         os.link(files[name], out/name)
-    for source, name in [(offer,"offer.json"), (inventory,"inventory.json"), (case/"authority.json","authority.json")]:
+    (stage/"offer.json").write_bytes(offer)
+    (stage/"offer.json").chmod(0o400)
+    for source, name in [(inventory,"inventory.json"), (case/"authority.json","authority.json")]:
         copyfile(source, stage/name)
         (stage/name).chmod(0o400)
     saved.write(stage/"catalogue.json", view)
     original = dict(raw_attempt_sha256=pair["attempt_result_sha256"]["successor"],
-                    verified_field_pair_sha256=saved.identifier(case/"pair.json"),
+                    verified_field_pair_sha256=state["pair_sha256"].removeprefix("sha256:"),
                     raw_outcome=result["outcome"], original_witness=saved.identifier(witness_path) if witness else None)
     return {name:make_cell(root/name, stage, CASE, native, result["native_sha256"], authority, len(view),
                            enabled=enabled, probe=False, original=original)

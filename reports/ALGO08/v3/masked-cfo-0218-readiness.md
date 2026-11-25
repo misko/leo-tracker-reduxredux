@@ -38,9 +38,12 @@ It checks every selected body before staging same-volume links.
 
 Run the following from this research checkout with the release Python.
 The status check reads the frozen campaign plan and its two current
-authoritative role rows. Preparation requires the verified pair
-receipt and matching attempt digests, including a genuine withhold
-where applicable. A failed or missing role remains visible in status.
+authoritative role rows. Preparation requires `verified_pair` and
+`acquisition_verified` on both rows, the verified pair receipt, and
+matching attempt digests, including a genuine withhold where applicable.
+A failed or missing role remains visible in status. The saved stage
+copies the exact campaign offer bytes after matching their signed regional
+digest and the normalized region in the original field request.
 
 ```bash
 python -IB reports/ALGO08/v3/masked_cfo_0218.py status
