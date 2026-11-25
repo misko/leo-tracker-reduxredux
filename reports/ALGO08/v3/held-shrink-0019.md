@@ -38,3 +38,15 @@ and donor forecast. The live driver sleeps 30 seconds after a storage
 deferral. The sole passive watch requires the original fresh-deferral,
 quiet storage and nonblocking lease gates and uses a hard 24-second
 saved-child cap. [Preparation and admission source](held_shrink_0019.py) · [Scientific verifier](held_shrink_0019_score.py)
+
+The single watch saw a fresh DS30-0445 official storage deferral after
+8.763 seconds. The independent rolling check then observed **17
+outstanding operations** on `/srv/bulk`, above the existing limit of two.
+Admission stopped before taking the lease. The frozen 366-edit packet
+remains ready, with no candidate clock, RF, position, ownership or media.
+The initial no-solve preflight exposed the shared worker's required
+installed donor pin, which was made optional only for a recipe with no
+installed donor. The prepared detector bytes stayed identical. An early
+launcher import check also identified a local watch-module shadow.
+The sparse checkout was narrowed to use the original pinned module
+before opening the sole watch. [Admission ledger](measurements/held-shrink-0019-admission.json)
