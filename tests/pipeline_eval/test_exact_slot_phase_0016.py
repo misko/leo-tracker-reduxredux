@@ -1,10 +1,13 @@
 from copy import deepcopy
+import gzip
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from reports.ALGO08.v3 import exact_slot_phase_0016 as study
+from reports.ALGO08.v3.anchor_exposure import enroll
 
 
 def test_build_accepts_disjoint_phase_and_snapshot_ports_only():
@@ -63,3 +66,30 @@ def test_only_three_sealed_indexes_can_receive_paid_preparation():
     typed[0]["res"] -= 4096
     with pytest.raises(ValueError, match="36,864"):
         study.preparation_scope(panel, inputs, {"nonresident": typed}, page=4096)
+
+
+def test_measured_seal_replays_ordered_receiver_and_complete_publication_gate():
+    receipt = study.HERE / "measurements/exact-slot-phase-0016.json.gz"
+    evidence = json.loads(gzip.decompress(receipt.read_bytes()))
+    files, packets = evidence["files"], evidence["native_packets"]
+    result = files["score.json"]
+    ordinary, combined = (result["publications"][role] for role in ("ordinary", "combined"))
+    measured = study.compare(ordinary, combined, packets["ordinary"], packets["combined"], enroll, result["identities"])
+    assert measured == {key: result[key] for key in ("packet", "science", "identities")}
+    assert measured["packet"]["changed_factor_rows"] == {"anchor": 0, "short": 407}
+    assert measured["science"]["owners"] == {"c0": 115, "fitted_c": 115}
+    assert len(measured["science"]["media"]) == 8
+    assert files["ready.json"]["eligibility"]["status"] == "refused"
+    assert files["index-preparation.json"]["status"] == "ready"
+    assert files["combined-startup-refusal/startup-refusal.json"]["status"] == "no_raw_child"
+    assert evidence["measured_pair_order"] == list(study.ORDER)
+    last = files["index-preparation.json"]["lease_and_preparation_completed_unix_ns"]
+    for role in study.ORDER:
+        launch, clock = (files[f"{role}/{name}.json"] for name in ("launch", "process"))
+        stamp = launch["event"]["unix_ns"]
+        assert last < stamp <= clock["started_unix_ns"] < stamp+2_000_000_000
+        assert clock["exit_code"] == 0 and not clock["timed_out"]
+        assert clock["finished_unix_ns"] < stamp+30_000_000_000
+        last = clock["finished_unix_ns"]
+        assert result["clocks"][role]["through_verified_wall_s"] == pytest.approx(
+            clock["elapsed_s"]+files[f"{role}/verify-process.json"]["wall_s"])
