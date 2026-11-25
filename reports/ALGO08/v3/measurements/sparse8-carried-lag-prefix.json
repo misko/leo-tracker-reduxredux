@@ -1,0 +1,113 @@
+{
+  "schema": "sparse8-carried-lag-prefix-v1",
+  "frozen_execution_commit": "bc41c47e6b3c8953a8ee3509bca132a14b3a218b",
+  "receiver_lineage": "c5b57b0602e81a6a85c14caf648eb12341f098d09915b4d3f705094ed309574c",
+  "arithmetic": {
+    "lag_offsets": [2, 4, 6, 11, 18, 28, 44, 74],
+    "float32_energies_per_lane": 37733,
+    "avx2_four_sample_blocks_per_lane": 9431,
+    "scalar_tails_per_lane": 9,
+    "observed_prefix_reload_operands_per_pgo_loop_control": 2,
+    "observed_prefix_reload_operands_per_pgo_loop_candidate": 0,
+    "forward_inverse_fft_pairs_retained": 8,
+    "deterministic_component_tests_passed": 9
+  },
+  "pgo": {
+    "archived_feedback_sha256": "478669aa2cdd57de93479c527b8582901f0be76b348ade716ffc03db62024398",
+    "archived_relocation_strict_errors": {"ordinary": 33, "carried": 38},
+    "fresh_build_manifest_path": "/tmp/leo-v3-sparse8-lag-prefix-fresh-pgo01/build.json",
+    "fresh_build_manifest_sha256": "7ea974a67dc60e66de03635d6b774e1c34583b10be2879d6dda5fb2000bda268",
+    "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "synthetic_training_per_arm": 32,
+    "identical_training_output_sha256": "a43fe596d806cf29079a1b909a993e6128d4ff0e96862ed6ccfdce01b60a14ec",
+    "control_library_sha256": "c5b57b0602e81a6a85c14caf648eb12341f098d09915b4d3f705094ed309574c",
+    "candidate_library_sha256": "6a15c9f451d5102454eebb5fcc77c06a065b42f76a0adbbe5943607881c0471d"
+  },
+  "passive_local_preflight": {
+    "DS30-0163": {
+      "custody_sha256": "f97a78dc990d406237a1c896c1c26d7ce04ce8162722a61b2d01c98ca8c5dd6e",
+      "bytes": 46400000,
+      "resident_pages": 11329,
+      "signed_short_lanes": 36,
+      "archived_positive_short_lanes": 10
+    },
+    "DS30-0419": {
+      "custody_sha256": "7c50973d2ccc1b16dd59c0019aafb90306b406a94f3f4144e306e339e71fb19c",
+      "bytes": 24000000,
+      "resident_pages": 5860,
+      "signed_short_lanes": 6,
+      "archived_positive_short_lanes": 4
+    }
+  },
+  "native_timing": {
+    "outcome": "readiness-window-expired",
+    "exit": 75,
+    "watch_limit_s": 180,
+    "child_limit_s": 12,
+    "guarded_children": 0,
+    "measured_lanes": 0,
+    "waveform_payloads_opened": 0,
+    "polls": {"no-fresh-field-sleep": 164, "rolling-storage-pressure": 13, "rolling-window-unavailable": 2, "storage-pressure": 1},
+    "last_fresh_rolling_refusal": {
+      "official_case": "DS30-0445",
+      "official_deferral_event_sha256": "4c894aafe5c169d6d5ebaa153b8ec5aee3c6781d48bca460e3b7ac931127a188",
+      "event_age_s": 3.171447789,
+      "gauss_lease_busy": false,
+      "bulk_in_flight": 0,
+      "output_in_flight": 0,
+      "bulk_rolling_queue_mean": 4.834832779393768,
+      "bulk_rolling_span_s": 2.018063590861857,
+      "bulk_rolling_full_stall_pct": 1.6486100909135049,
+      "bulk_rolling_queue_limit": 2
+    },
+    "watch_path": "/tmp/leo-v3-sparse8-lag-prefix-native01/watch.json",
+    "watch_sha256": "0f69bf512d863585c8d6fa72c5555b12b2d61a8aaeb54fec9f285db72bb7e0b5"
+  },
+  "ram_only_native_timing": {
+    "frozen_execution_commit": "ed80652d38fdb8b8b98d0e2ee4aa7d45c34a9579",
+    "output_root": "/tmp/leo-v3-sparse8-lag-prefix-ram01",
+    "artifacts_sha256": {
+      "proof.json": "a60d1f43d165a9dd9b30e219cf16464795ff631efd54154c90097e937d0b3383",
+      "watch.json": "e7710fbc78b229fbb6a6b0f63c97fab7b8857d7177b9166a2db7c155060a6540",
+      "native.json": "d880286a933d264ce1ba2d2800b863ac00066404146ec768c5c280026293e851",
+      "process.txt": "a8644401c3a677a45e9d514313c882824daa5758555c17ce92690d42700b1d29"
+    },
+    "isolation": {"backing_and_unstaged_path_denials": 6, "denied_socket_families": 3,
+                  "before_after_residency_identical": true, "readonly_inputs": true},
+    "admission": {"case": "DS30-0445", "deferral_sha256": "7a4506253638f808df8cf6e39250eeb53a68ed66fa4d6bc3f739f0d55c514481",
+                  "deferral_final_age_s": 0.275323823, "child_limit_s": 12, "next_retry_margin_s": 17.724676177,
+                  "research_nvme_rolling_queue_mean": 0.028967636476115725, "exit": 0},
+    "through_exit_wall_s_rounded": 1.59,
+    "measured_child_wall_s": 1.3815142484381795,
+    "measured_child_cpu_s": 1.230989838,
+    "measured_child_input_blocks": 30488,
+    "measured_child_major_faults": 1,
+    "outer_process_cpu_includes_nested_capsule": false,
+    "same_factor_and_original_window_digest_as_profile_sha256": "c050491c6628b3f76a364917d388878580269a4cc70e07fd0f6b9a5ee3cb157b",
+    "unique_lanes": 42,
+    "repeats": 6,
+    "exact_pairs": 252,
+    "positive_pairs": 84,
+    "empty_pairs": 168,
+    "combined_control_median_cpu_us": 786.5208928571428,
+    "balanced_and_order_split_median_savings_cpu_us": {
+      "combined": {"all": [10.159845, 36.500452, -15.881571],
+                   "positive": [12.319179, 83.267833, -55.572479], "empty": [10.421768, 16.390049, 3.880441]},
+      "DS30-0163": {"all": [9.686514, 35.465889, -13.306944],
+                   "positive": [14.181600, 84.594400, -57.674600], "empty": [9.907346, 16.797885, 3.219115]},
+      "DS30-0419": {"all": [12.461583, 48.975000, -28.404167],
+                   "positive": [11.264000, 68.813000, -54.911167], "empty": [15.951000, 9.920000, 23.973000]}
+    },
+    "savings_order": ["balanced", "control_first", "candidate_first"],
+    "whole_prefix_callback_cpu_ns_summed_across_six_balanced_repeats": {
+      "DS30-0163": {"control": 168859621, "candidate": 166368912},
+      "DS30-0419": {"control": 30609161, "candidate": 30160372},
+      "combined": {"control": 199468782, "candidate": 196529284}
+    },
+    "per_round_order_balanced_paired_savings_cpu_us": {
+      "DS30-0163": [15.679, 9.613, 9.689, 9.684, 15.025, 9.496],
+      "DS30-0419": [30.653, 0.555, 25.870, -1.609, 24.368, -5.039]
+    },
+    "component_tests_passed": 10
+  }
+}
