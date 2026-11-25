@@ -976,6 +976,12 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "This calculation holds all other measured costs and the current positions fixed. The first group "
               "has only 0.57 seconds of total margin. [Case-level timing budget](https://github.com/misko/"
               "leo-tracker-reduxredux/blob/73fe5a470c715022e864d8a3872c8f5aaa0b8b22/reports/ALGO08/v3/receiver-solver-targets.md)", "",
+              "On the first 62 pairs, the complete candidate position grids used 183.45 seconds of the "
+              "593.35 seconds that the candidate needed to save to halve total wall time. Even with zero-cost "
+              "grids and a 1.5× faster native receiver, the projected speedup was 1.962× summed and "
+              "2.029× at the paired median. [Per-recording grid clocks and calculation](https://github.com/"
+              "misko/leo-tracker-reduxredux/blob/2c156a5aea0b1688774ec05f5dea07df18eebfb9/reports/ALGO08/v3/"
+              "grid-time-ceiling-first62.md)", "",
               "The two receivers agreed on 83,058 short-aperture peaks under the prespecified matching rule. "
               "A correction for when each receiver measured the carrier changed held disagreement from "
               "97.480 to 97.460 Hz RMS after subtracting the mean for each recording and radio. The same "
