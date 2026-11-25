@@ -391,6 +391,8 @@ def test_sealed_rows_reach_figures_tables_and_machine_report(tmp_path):
     bound = grid["native_1p5_free_grid"]
     assert f"{bound['summed_speedup']:.3f}× summed and {bound['paired_median_speedup']:.3f}× at the paired median" in markdown
     pair = json.loads((receipts / "profiled-grid-export-0138-pair.json").read_bytes())["new_cells"]
+    routing = json.loads(gzip.decompress((receipts / "ds30-routing-first64.json.gz").read_bytes()))["result"]
+    assert f"limited summed speedup to {routing['strict']['summed_speedup']:.3f}×" in markdown
     cells = [pair[k] for k in ("ordinary", "profiled")]
     old, new = [c["receipt"]["grid_audit"]["exact"]["cpu_ns"] / 1e9 for c in cells]
     assert f"Grid CPU time fell from {old:.3f} to {new:.3f} seconds" in markdown

@@ -591,7 +591,11 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               f"Choosing the faster recorded exit on every recording would take {fastest_wall['total_s']:,.1f} seconds "
               f"and yield at most {fastest_wall['summed_speedup']:.3f}× summed speedup from switching between "
               "these two builds. This upper bound grants advance knowledge of both times, zero selection cost, "
-              "and allows a failed or withheld exit to win.", "",
+              "and allows a failed or withheld exit to win. On the first 64 pairs, requiring the selector to "
+              "preserve the fix count and the entire error distribution for both calibrations limited summed "
+              "speedup to 1.408×. [First 64 paired choices and exact bound](https://github.com/misko/"
+              "leo-tracker-reduxredux/blob/1eea99c6cb0cc144e7ca83597c4ee923fc9a295f/reports/ALGO08/v3/"
+              "ds30-routing-first64.md)", "",
               "| Run order | Wall seconds saved | CPU seconds saved | Change in remaining seconds |",
               "|---|---:|---:|---:|"]
     for name in ("All DS30 recordings", "ALGO08v3 ran first", "Candidate ran first"):
@@ -1000,7 +1004,7 @@ def write_report(pairs, output, enrollment, receipt_digest, *, renderer_revision
               "[Complete map and matched timing](https://github.com/misko/leo-tracker-reduxredux/blob/"
               "83c3f5a941c0630ae91f35f25f818bd11242adcf/reports/ALGO08/v3/profiled-grid-export-0138-pair.md)", "",
               "On a simulated southern recording, the same exporter reproduced all eight PNGs with either "
-              "offered region. One fixed-calibration grid score changed by 0.01660 when the region contained "
+              "offered region. One fixed-zero grid score changed by 0.01660 when the region contained "
               "the receiver, exceeding the 0.005 limit. When the region excluded the receiver by 1 km, "
               "both exporters returned the same false fix. [Matched grids and images](https://github.com/"
               "misko/leo-tracker-reduxredux/blob/7fe7fdbc21f3113fdf6005d51523688d04654873/reports/ALGO08/v3/"
