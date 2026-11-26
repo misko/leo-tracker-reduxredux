@@ -4,10 +4,16 @@ import json
 import os
 import subprocess
 import time
+from functools import partial
 from pathlib import Path
 from typing import Annotated
 
 import typer
+
+from leo.contracts.algo08v3 import VERSION as ALGO08V3_LABEL
+from leo.processing.algo08v3 import (
+    DEFAULT_ARCHIVE, DEFAULT_LAUNCHER, DEFAULT_PYTHON, DEFAULT_REGION, publish_algo08v3,
+)
 
 
 def register_fast_scan_commands(scanner):
@@ -39,17 +45,33 @@ def register_fast_scan_commands(scanner):
         typer.echo(json.dumps({k: v for k, v in report.items() if k != "points"}, indent=2))
 
 
-def process_automatic(recording, *, store, database_url, standard_command, glrt_lock,
-                      standard_mode='algo08v2', standard_reader=None, glrt_workers=8,
-                      algo08_command=None, algo08v2_command=None):
-    """Resume the existing GLRT queue, then the existing standard CLI pipeline."""
+def _select_v3_receipt(store, recording_id, receipt):
+    return store.update_automatic(recording_id, **receipt, state='complete', failure=None,
+        standard_algorithm=ALGO08V3_LABEL, standard_stages={'two_scan': True, 'compact_v5': True},
+        standard_terminal_sha256=receipt['terminal_sha256'])
+
+
+def process_automatic(recording, *, store, glrt_lock, database_url="", standard_command=(),
+                      standard_mode='algo08v3', standard_reader=None, glrt_workers=8,
+                      algo08_command=None, algo08v2_command=None, algo08v3_publish=publish_algo08v3):
+    """Publish analysis for a sealed recording and commit its automatic status."""
     if type(glrt_workers) is not int or not 1 <= glrt_workers <= 32:
         raise ValueError('GLRT workers must be an integer within 1..32')
-    from leo.processing.fast_scan import process_recording
-
     identifier = recording.name
     try:
         state = store.automatic_status(identifier) or {}
+        if standard_mode == 'algo08v3':
+            if state.get('state') == 'complete':
+                return state
+            # Reassign unfinished jobs from sealed IQ and clear any old result
+            # bindings before making the v3 assignment visible.
+            store.update_automatic(identifier, state='tracking', standard_algorithm=ALGO08V3_LABEL,
+                run_id=None, session_id=None, decision=None, terminal_sha256=None, region=None,
+                counts={}, window_count=None, execution_release=None, slice=None,
+                standard_terminal_sha256=None, standard_stages={}, failure=None)
+            with glrt_lock:
+                receipt = algo08v3_publish(recording, store=store)
+            return _select_v3_receipt(store, identifier, receipt)
         if standard_mode in ('algo08', 'algo08v2'):
             # Resume jobs assigned before the cutover using their original producer.
             incumbent = (state.get('standard_algorithm') == 'ALGO07' or
@@ -80,6 +102,8 @@ def process_automatic(recording, *, store, database_url, standard_command, glrt_
                     standard_algorithm=algorithm, standard_stages={'two_scan': True, 'compact_v5': True},
                     standard_terminal_sha256=receipt['terminal_sha256'])
         if not state.get("run_id"):
+            from leo.processing.fast_scan import process_recording
+
             with glrt_lock:
                 store.update_automatic(identifier, state="glrt", failure=None)
                 report = process_recording(recording, database_url=database_url,
@@ -211,7 +235,7 @@ def capture_health_by_id(roots):
     return health
 
 
-def watch_automatic(args):
+def watch_automatic(args, *, algo08v3_publish=publish_algo08v3):
     import fcntl
     import threading
     from concurrent.futures import ThreadPoolExecutor
@@ -221,6 +245,7 @@ def watch_automatic(args):
     from leo.acquisition.authority import LocalCaptureAuthority,RadioResource
 
     store = FastScanStore(args.bulk_root)
+    database_url = "" if args.standard_mode == "algo08v3" else os.environ["LEO_DATABASE_URL"]
     authority=(LocalCaptureAuthority(args.bulk_root/'control',(
         RadioResource(args.capture_serial,args.capture_serial,args.capture_uri),)) if args.capture_serial else None)
     reconciliation_at=0.
@@ -247,25 +272,69 @@ def watch_automatic(args):
                 for recording in discover_automatic(args.recording_root, store, args.staging_root):
                     if recording.name not in active:
                         active[recording.name] = pool.submit(process_automatic, recording,
-                            store=store, database_url=os.environ["LEO_DATABASE_URL"],
+                            store=store, database_url=database_url,
                             standard_command=[args.standard_python, args.standard_script],
                             glrt_lock=glrt_lock,standard_mode=args.standard_mode,glrt_workers=args.glrt_workers,
-                            algo08_command=[args.algo08_launcher], algo08v2_command=[args.algo08v2_launcher])
+                            algo08_command=[args.algo08_launcher], algo08v2_command=[args.algo08v2_launcher],
+                            algo08v3_publish=algo08v3_publish)
                 time.sleep(5)
 
 
-if __name__ == "__main__":
+def main(argv=None):
     import argparse
+    import math
 
     parser = argparse.ArgumentParser(description="Automatically analyze sealed fast scans; no RF.")
-    parser.add_argument("--recording-root", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--recording-root", type=Path)
+    source.add_argument("--replay", type=Path, help="Publish ALGO08v3 for one sealed recording.")
+    parser.add_argument("--select-replay", action="store_true",
+                        help="Select a sealed replay as the recording's automatic analysis.")
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--standard-python", default='')
     parser.add_argument("--standard-script", default='')
-    parser.add_argument('--standard-mode',choices=('algo08v2','algo08','algo07','legacy'),default='algo08v2')
+    parser.add_argument('--standard-mode',choices=('algo08v3','algo08v2','algo08','algo07','legacy'),default='algo08v3')
     parser.add_argument('--algo08-launcher',default='/opt/leo-algo08/081ab0265a9d37dbc2d3fb5b62a64d02970b67ed/run')
     parser.add_argument('--algo08v2-launcher',default='/opt/leo-algo08/current/run')
+    parser.add_argument('--algo08v3-launcher',type=Path,default=DEFAULT_LAUNCHER)
+    parser.add_argument('--algo08v3-python',type=Path,default=DEFAULT_PYTHON)
+    parser.add_argument('--algo08v3-region',type=Path,default=DEFAULT_REGION)
+    parser.add_argument('--algo08v3-archive',type=Path,default=DEFAULT_ARCHIVE)
+    parser.add_argument("--evaluation-reference", type=float, nargs=2, metavar=("LAT", "LON"),
+                        help="Attach a confirmed reference to the completed result for evaluation.")
     parser.add_argument('--glrt-workers',type=int,choices=range(1,33),default=8)
     parser.add_argument('--capture-serial');parser.add_argument('--capture-uri',default='ip:192.168.1.20')
     parser.add_argument('--staging-root',type=Path,action='append',default=[])
-    watch_automatic(parser.parse_args())
+    args = parser.parse_args(argv)
+    if args.select_replay and args.replay is None:
+        parser.error('--select-replay requires --replay')
+    reference = args.evaluation_reference
+    if reference is None and args.standard_mode == 'algo08v3':
+        station = [os.getenv(key) for key in ('ALGO08_EVALUATION_LATITUDE', 'ALGO08_EVALUATION_LONGITUDE')]
+        if any(value is not None for value in station):
+            try:
+                reference = list(map(float, station))
+            except (ValueError, TypeError):
+                parser.error('Station evaluation requires valid latitude and longitude coordinates')
+    if reference is not None and (not all(map(math.isfinite, reference))
+                                  or not -90 <= reference[0] <= 90 or not -180 <= reference[1] <= 180):
+        parser.error('Station evaluation coordinates are outside the geographic domain')
+    publish = partial(publish_algo08v3, launcher=args.algo08v3_launcher,
+                      launcher_python=args.algo08v3_python, region_file=args.algo08v3_region,
+                      archive=args.algo08v3_archive, evaluation_reference=reference)
+    if args.replay is not None:
+        from leo.storage.fast_scan import FastScanStore
+
+        if args.standard_mode != 'algo08v3':
+            parser.error('--replay publishes ALGO08v3')
+        store = FastScanStore(args.bulk_root)
+        receipt = publish(args.replay, store=store)
+        if args.select_replay:
+            _select_v3_receipt(store, args.replay.name, receipt)
+        print(json.dumps(receipt))
+    else:
+        watch_automatic(args, algo08v3_publish=publish)
+
+
+if __name__ == "__main__":
+    main()

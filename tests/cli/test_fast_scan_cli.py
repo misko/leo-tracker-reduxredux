@@ -216,7 +216,7 @@ def test_algo07_is_standard_and_does_not_launch_the_legacy_pipeline(monkeypatch,
     reader=Reader()
     for expected in ('tracking','complete'):
         result=cli.process_automatic(tmp_path/'recording',store=store,database_url='unused',
-            standard_command=[],glrt_lock=threading.Lock(),standard_reader=reader)
+            standard_command=[],glrt_lock=threading.Lock(),standard_reader=reader,standard_mode='algo07')
         assert result['state']==expected and result['standard_algorithm']=='ALGO07'
         reader.state='complete'
 
@@ -265,5 +265,96 @@ def test_new_recording_uses_algo08_release(monkeypatch, tmp_path, decision, assi
                                 session_id="fast-source", terminal_sha256="sha256:terminal")), "")
     monkeypatch.setattr(fast_scan.subprocess, "run", worker)
     result = fast_scan.process_automatic(tmp_path/"scan", store=store, database_url="", standard_command=[],
-                                         glrt_lock=Lock(), algo08_command=["v1/run"], algo08v2_command=["v2/run"])
+        glrt_lock=Lock(), standard_mode="algo08v2", algo08_command=["v1/run"], algo08v2_command=["v2/run"])
     assert (result["state"], result["decision"]) == ("complete", decision)
+
+
+@pytest.mark.parametrize("assigned", [None, "ALGO07", "ALGO08", "ALGO08v2", "ALGO08v3"])
+def test_automatic_default_analyzes_unfinished_recordings_only_with_v3(monkeypatch, tmp_path, assigned):
+    from threading import Lock
+
+    from leo.cli import fast_scan
+    from leo.storage.fast_scan import FastScanStore
+
+    recording = tmp_path / "scan"
+    store = FastScanStore(tmp_path)
+    if assigned:
+        store.update_automatic("scan", state="tracking", standard_algorithm=assigned,
+                               run_id="old", session_id="old-source", standard_terminal_sha256="old-terminal")
+
+    def legacy(*args, **kwargs):
+        pytest.fail("The v3 worker must never launch a previous algorithm")
+
+    monkeypatch.setattr(fast_scan.subprocess, "run", legacy)
+
+    def publish(path, *, store):
+        assert path == recording
+        status = store.automatic_status("scan")
+        assert status["standard_algorithm"] == "ALGO08v3"
+        assert status["run_id"] is status["session_id"] is status["standard_terminal_sha256"] is None
+        return {"run_id": "algo08-v3-new", "decision": "withheld", "terminal_sha256": "v3-terminal"}
+
+    completed = fast_scan.process_automatic(recording, store=store, glrt_lock=Lock(), algo08v3_publish=publish)
+    assert completed["state"] == "complete"
+    assert completed["standard_algorithm"] == "ALGO08v3"
+    assert completed["run_id"] == "algo08-v3-new"
+    assert completed["standard_terminal_sha256"] == "v3-terminal"
+    assert fast_scan.process_automatic(recording, store=store, glrt_lock=Lock(),
+                                       algo08v3_publish=legacy) == completed
+
+
+def test_replay_uses_v3_adapter_without_reassigning_history(monkeypatch, tmp_path, capsys):
+    from leo.cli import fast_scan
+    from leo.storage.fast_scan import FastScanStore
+
+    recording = tmp_path / "scan"
+    store = FastScanStore(tmp_path)
+    old_status = store.update_automatic("scan", state="complete", standard_algorithm="ALGO08v2",
+                                       run_id="algo08-v2-old")
+
+    def publish(path, *, store, region_file, **options):
+        assert path == recording
+        assert region_file == tmp_path / "custom-region.json"
+        assert store.root == tmp_path
+        return {"run_id": "algo08-v3-replay"}
+
+    monkeypatch.setattr(fast_scan, "publish_algo08v3", publish)
+    fast_scan.main(["--replay", str(recording), "--bulk-root", str(tmp_path),
+                    "--algo08v3-region", str(tmp_path / "custom-region.json")])
+    assert json.loads(capsys.readouterr().out) == {"run_id": "algo08-v3-replay"}
+    assert store.automatic_status("scan") == old_status
+
+
+def test_select_replay_commits_the_pointer_only_after_publish(monkeypatch, tmp_path, capsys):
+    from leo.cli import fast_scan
+    from leo.storage.fast_scan import FastScanStore
+
+    recording = tmp_path / "scan"
+    store = FastScanStore(tmp_path)
+    old_status = store.update_automatic("scan", state="complete", standard_algorithm="ALGO08v2",
+                                       run_id="algo08-v2-old")
+    arguments = ["--replay", str(recording), "--bulk-root", str(tmp_path), "--select-replay"]
+    monkeypatch.setenv("ALGO08_EVALUATION_LATITUDE", "37.8")
+    monkeypatch.setenv("ALGO08_EVALUATION_LONGITUDE", "-122.5")
+
+    def failed(*args, **kwargs):
+        raise RuntimeError("solver interrupted")
+
+    monkeypatch.setattr(fast_scan, "publish_algo08v3", failed)
+    with pytest.raises(RuntimeError, match="solver interrupted"):
+        fast_scan.main(arguments)
+    assert store.automatic_status("scan") == old_status
+
+    def publish(path, *, store, evaluation_reference, **options):
+        assert store.automatic_status("scan") == old_status
+        assert evaluation_reference == [37.8, -122.5]
+        return {"run_id": "algo08-v3-replay", "decision": "complete", "terminal_sha256": "sha256:sealed"}
+
+    monkeypatch.setattr(fast_scan, "publish_algo08v3", publish)
+    fast_scan.main(arguments)
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["run_id"] == "algo08-v3-replay"
+    result = store.automatic_status("scan")
+    assert result["run_id"] == receipt["run_id"]
+    assert result["standard_algorithm"] == "ALGO08v3"
+    assert result["standard_terminal_sha256"] == receipt["terminal_sha256"]

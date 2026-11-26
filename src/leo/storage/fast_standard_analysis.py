@@ -6,8 +6,11 @@ import os
 import tempfile
 from pathlib import Path
 
-from leo.contracts.fast_standard_analysis import validate, PLOTS, ALGO08V2, COMPACT_MODELS, standard_model
+from leo.contracts.fast_standard_analysis import (
+    ALGO08V3, COMPACT_MODELS, PLOTS, REGIONAL_MODELS, standard_model, validate,
+)
 from leo.contracts.algo08_region import Algo08Region
+from leo.contracts.algo08v3 import validate_release
 from leo.contracts.position_grid import binding as grid_binding, validate as validate_grid
 from leo.contracts.position_path import validate as validate_path
 from leo.storage.fast_scan import immutable_json, safe_id
@@ -57,8 +60,10 @@ class FastStandardAnalysisStore:
                 result = json.loads(withheld.read_bytes())
                 if result.get('model_version') != model or result.get('run_id') != run_id:
                     raise ValueError('Withholding receipt belongs to another run')
+                if model == ALGO08V3:
+                    validate_release(result.get('execution_release'))
                 return result
-            return dict(schema_version=3 if model == ALGO08V2 else (2 if model in COMPACT_MODELS else 1), run_id=run_id, model_version=model,
+            return dict(schema_version=3 if model in REGIONAL_MODELS else (2 if model in COMPACT_MODELS else 1), run_id=run_id, model_version=model,
                         state='pending', artifacts=[])
         result=validate(json.loads(path.read_text()), model=model)
         ref_path=self.base_folder(run_id)/'evaluation-reference.json'
@@ -175,8 +180,11 @@ class FastStandardAnalysisStore:
             raise ValueError("Expected a withheld ALGO08 decision and reason")
         if self.detail(run_id)['state'] == 'complete':
             raise ValueError("ALGO08 position already published")
-        if self.model(run_id) == ALGO08V2 and 'region' not in provenance:
-            raise ValueError("ALGO08v2 requires a search region")
+        model = self.model(run_id)
+        if model in REGIONAL_MODELS and 'region' not in provenance:
+            raise ValueError("A regional ALGO08 decision requires a search region")
+        if model == ALGO08V3:
+            validate_release(provenance.get('execution_release'))
         if 'region' in provenance:
             provenance['region'] = Algo08Region.parse(provenance['region']).document()
         value = dict(**provenance, schema_version=3 if 'region' in provenance else 2, model_version=self.model(run_id), run_id=run_id,
