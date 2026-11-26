@@ -133,3 +133,35 @@ it("discovers a newly recording scan without reopening the view", async () => {
   expect(screen.getByText("new-lower-scan")).toBeInTheDocument();
   expect(screen.getByText("42")).toBeInTheDocument();
 });
+
+it("waits for the assigned v3 run while the recording has a published v2 report", async () => {
+  vi.useFakeTimers();
+  const recording = "v3-default";
+  const v2 = "algo08-v2-old";
+  const v3 = "algo08-v3-new";
+  let published = false;
+  const report = { run_id: v3, recording_name: recording, window_count: 2,
+    counts: { processed: 2, skipped_fast_score: 0, invalid_capture: 0 },
+    policy: { mode: "two-scan", sample_rate_hz: 2500000 },
+    rf_mapping_authorities: ["recorded"], time_basis: "relative", channels: [] };
+  const fetch = vi.fn(async (url: string) => ({ ok: true, json: async () =>
+    url.endsWith("/automatic") ? { items: [{ recording_id: recording,
+      standard_algorithm: "ALGO08v3", state: published ? "complete" : "tracking",
+      ...(published ? { run_id: v3, decision: "withheld" } : {}) }] }
+      : url.includes("?") ? { items: [{ ...report, run_id: v2 }, ...(published ? [report] : [])] }
+      : url.endsWith("/standard-analysis") ? { schema_version: 3, model_version: "algo08-two-scan-compact-v5-v3",
+        state: "withheld", reason: "no_active_curvature", artifacts: [] }
+      : report }));
+  vi.stubGlobal("fetch", fetch);
+  await act(async () => { render(<FastScanView recordingId={recording} />); });
+  expect(screen.getByText("ALGO08v3 is processing the sealed recording.")).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: /Standard analysis/ })).not.toBeInTheDocument();
+  published = true;
+  await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+  expect(screen.getByRole("heading", { name: "Standard analysis · ALGO08v3" })).toBeInTheDocument();
+  expect(screen.getByText("Position withheld")).toBeInTheDocument();
+  expect(screen.getByText("Position withheld · no_active_curvature")).toBeInTheDocument();
+  expect(screen.getByText("2 visits: 2 processed, 0 skipped by fast score, 0 invalid.")).toBeInTheDocument();
+  expect(fetch.mock.calls.map(([url]) => url)).not.toContain("/api/v2/fast-scans/"+v2+"/standard-analysis");
+  expect(fetch.mock.calls.map(([url]) => url)).not.toContain("/api/v1/fast-scans/"+v3+"/orbits");
+});

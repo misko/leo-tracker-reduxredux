@@ -85,7 +85,12 @@ def test_missing_v6_calls_v5_public_lookup():
         reader.detail("../escape")
 
 
-def test_compact_run_has_no_legacy_graph_position(tmp_path):
+@pytest.mark.parametrize(("prefix", "label"), [
+    ("algo08-", "ALGO08"),
+    ("algo08-v2-", "ALGO08v2"),
+    ("algo08-v3-", "ALGO08v3"),
+])
+def test_compact_run_has_no_legacy_graph_position(tmp_path, prefix, label):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     from leo.api.graph_position import graph_position_router
@@ -93,7 +98,7 @@ def test_compact_run_has_no_legacy_graph_position(tmp_path):
     reader = GraphPositionLookupV6(tmp_path, MODEL_VERSION, lookup=object(), previous=object())
     app = FastAPI()
     app.include_router(graph_position_router(reader))
-    run_id = "algo08-" + "a" * 32
+    run_id = prefix + "a" * 32
     response = TestClient(app).get(f"/api/v2/fast-scans/{run_id}/graph-position")
     assert response.status_code == 200
     assert response.json() == {
@@ -104,5 +109,5 @@ def test_compact_run_has_no_legacy_graph_position(tmp_path):
         "selected": None,
         "position": None,
         "fallback": False,
-        "reason": "ALGO08 publishes its position in standard analysis.",
+        "reason": f"{label} publishes its position in standard analysis.",
     }

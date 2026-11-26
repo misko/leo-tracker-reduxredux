@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { GraphPositionPanel } from "./GraphPositionPanel";
-import { FastStandardAnalysis } from "./FastStandardAnalysis";
+import { FastStandardAnalysis, standardAlgorithm } from "./FastStandardAnalysis";
 
 type Point = { channel: number; receiver_id: number; visit: number; time_s: number | null;
   score: number | null; margin: number | null; cfo_hz: number | null };
@@ -20,7 +20,7 @@ async function read<T>(url: string, signal: AbortSignal): Promise<T> {
 }
 
 type Automatic = { recording_id: string; state: string; edge?: string; failure?: string; run_id?: string; standard_algorithm?: string;
-  captured_windows?: number; session_id?: string };
+  decision?: string; captured_windows?: number; session_id?: string };
 
 export function FastScanView({ renderTracking, recordingId }: {
   renderTracking?: (sessionId: string) => ReactNode; recordingId?: string;
@@ -35,12 +35,17 @@ export function FastScanView({ renderTracking, recordingId }: {
   const [orbits, setOrbits] = useState<{ name: string }[]>([]);
   const [orbitError, setOrbitError] = useState("");
   const selectedJob = automatic.find(job => job.recording_id === recordingId);
-  const selectedRun = recordingId ? selectedJob?.run_id ?? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
-  const compact = selectedRun.startsWith("algo08-") || ["ALGO08","ALGO08v2"].includes(selectedJob?.standard_algorithm ?? "");
+  const reportedRun = items.find(item => item.recording_name === recordingId)?.run_id ?? "";
+  const selectedRun = recordingId
+    ? selectedJob?.run_id ?? (selectedJob?.standard_algorithm ? "" : reportedRun)
+    : selected;
+  const algorithm = selectedRun ? standardAlgorithm(selectedRun) : selectedJob?.standard_algorithm;
+  const v3 = algorithm === "ALGO08v3";
+  const compact = v3 || algorithm === "ALGO08v2" || algorithm === "ALGO08";
   useEffect(() => {
     setOrbits([]);
     setOrbitError("");
-    if (!selectedRun) return;
+    if (!selectedRun || v3) return;
     const controller = new AbortController();
     const refresh = () => read<{ artifacts?: { name: string }[] }>(
       `/api/v1/fast-scans/${encodeURIComponent(selectedRun)}/orbits`, controller.signal)
@@ -53,7 +58,7 @@ export function FastScanView({ renderTracking, recordingId }: {
     void refresh();
     const timer = setInterval(() => void refresh(), 10000);
     return () => { controller.abort(); clearInterval(timer); };
-  }, [selectedRun]);
+  }, [selectedRun, v3]);
   useEffect(() => {
     const controller = new AbortController();
     let busy = false;
@@ -89,7 +94,9 @@ export function FastScanView({ renderTracking, recordingId }: {
   }, [selectedRun]);
   const current = report?.run_id === selectedRun ? report : null;
   const trackingId = current?.session_id ?? selectedJob?.session_id;
-  const state = selectedJob?.state === "complete" ? "Analysis complete" : selectedJob?.state ?? "Loading capture status…";
+  const state = selectedJob?.state === "complete"
+    ? selectedJob.decision === "withheld" ? "Position withheld" : "Analysis complete"
+    : selectedJob?.state ?? "Loading capture status…";
   return <section className="adaptive-detail" aria-label="Fast scan detail">
     <header className="recording-heading scanner-heading"><div>
       <p className="section-label">FAST EIGHT-CHANNEL CAPTURE</p>
@@ -115,24 +122,26 @@ export function FastScanView({ renderTracking, recordingId }: {
     {error && <p className="error-banner" role="alert">{error}</p>}
     <section className="scanner-results-panel adaptive-analysis" aria-label="Fast fractional analysis">
     <header><h3>Fractional GLRT and Doppler analysis</h3><strong>{current ? "Metrics published" : "Awaiting analysis"}</strong></header>
-    <p>Automatic analysis uses each selected 20 ms window on both receivers. A skipped window has no GLRT result.</p>
+    <p>{v3
+      ? "Two-scan pilot cancellation and selected fractional-score verification feed compact regional localization."
+      : "Automatic analysis uses each selected 20 ms window on both receivers. A skipped window has no GLRT result."}</p>
     {loading ? <p>Loading scans…</p> : recordingId && !selectedRun
       ? <p>GLRT results will appear automatically after this capture is sealed and analyzed.</p>
-      : !items.length && <p>No completed fast scans published.</p>}
+      : !recordingId && !items.length && <p>No completed fast scans published.</p>}
     {!recordingId && !!items.length && <label>Recording <select value={selected} onChange={e => setSelected(e.target.value)}>
-      {items.map(r => <option key={r.run_id} value={r.run_id}>{r.recording_name} · {r.policy.mode}</option>)}
+      {items.map(r => <option key={r.run_id} value={r.run_id}>{r.recording_name} · {r.run_id.startsWith("algo08-") ? standardAlgorithm(r.run_id) : r.policy.mode}</option>)}
     </select></label>}
     {selectedRun && !current && !error && <p>Loading results…</p>}
     {current && <>
       <p>{current.window_count.toLocaleString()} visits: {current.counts.processed.toLocaleString()} processed,
         {" "}{current.counts.skipped_fast_score.toLocaleString()} skipped by fast score,
         {" "}{current.counts.invalid_capture.toLocaleString()} invalid.</p>
-      <p>{compact ? "The two-scan detector cancels the first pilot and searches the residual. Verified carriers feed compact v5 positioning." : `Fast-score cutoff ${current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.`}</p>
+      {!v3 && <p>{compact ? "The two-scan detector cancels the first pilot and searches the residual. Verified carriers feed compact v5 positioning." : `Fast-score cutoff ${current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.`}</p>}
     </>}
     </section>
     {selectedRun && <FastStandardAnalysis runId={selectedRun} />}
-    {compact && !selectedRun && <p role="status">{selectedJob?.standard_algorithm} is processing the sealed recording.</p>}
-    <details className="scanner-results-panel"><summary>Historical and experimental analyses</summary>
+    {compact && !selectedRun && selectedJob?.state === "tracking" && <p role="status">{algorithm} is processing the sealed recording.</p>}
+    {!v3 && <details className="scanner-results-panel"><summary>Historical and experimental analyses</summary>
     <p>Historical tracking and positioning products for this recording.</p>
     {selectedRun && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">
       <h3>Selected satellite orbits and GLRT CFO</h3>
@@ -152,7 +161,7 @@ export function FastScanView({ renderTracking, recordingId }: {
       <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Tracking and positioning</h3></div></header>
       <p>Shared analysis artifacts will appear automatically after GLRT publishes its tracking input.</p>
     </section>}
-    </details>
+    </details>}
     {current && <details className="scanner-results-panel fast-diagnostics">
       <summary>Fast-score diagnostics and channel activity</summary>
       <p>Time: {current.time_basis}. These supplemental plots show the strongest saved candidate per window.</p>

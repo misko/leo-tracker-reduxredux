@@ -26,10 +26,11 @@ def test_digest_bound_artifact_and_pending_routes():
 
 
 def test_comparison_requires_one_acquisition_and_both_models():
-    from leo.contracts.fast_standard_analysis import ALGO08, ALGO08V2, MODEL, PLOTS
+    from leo.contracts.fast_standard_analysis import ALGO08, ALGO08V2, ALGO08V3, MODEL, PLOTS
     class Reader:
         def detail(self, rid):
-            return dict(run_id=rid, state='complete', model_version={'new':ALGO08,'v2':ALGO08V2}.get(rid, MODEL),
+            return dict(run_id=rid, state='complete',
+                        model_version={'new':ALGO08,'v2':ALGO08V2,'v3':ALGO08V3}.get(rid, MODEL),
                         session_id='other' if rid=='wrong' else 's',
                         artifacts=[dict(name=name, sha256='sha256:abc') for name in PLOTS])
     app=FastAPI()
@@ -41,5 +42,31 @@ def test_comparison_requires_one_acquisition_and_both_models():
     assert gallery.text.index('ALGO07 position') < gallery.text.index('ALGO08 position')
     v2=client.get('/api/v2/fast-scans/old/standard-analysis/compare/v2')
     assert v2.status_code==200 and v2.text.count('ALGO08v2 position')==1
+    v3=client.get('/api/v2/fast-scans/old/standard-analysis/compare/v3')
+    assert v3.status_code==200 and v3.text.count('ALGO08v3 position')==1
     assert client.get(base+'wrong').status_code==404
     assert client.get(base+'new').status_code==404
+
+
+def test_v3_pending_and_withheld_routes_preserve_model_and_release(tmp_path):
+    from leo.contracts.algo08v3 import EXECUTION_RELEASE
+    from leo.contracts.fast_standard_analysis import ALGO08V3
+    from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+
+    store = FastStandardAnalysisStore(tmp_path)
+    app = FastAPI()
+    app.include_router(standard_analysis_router(store))
+    client = TestClient(app)
+    run_id = "algo08-v3-" + "a" * 32
+    base = f"/api/v2/fast-scans/{run_id}/standard-analysis"
+    pending = client.get(base)
+    assert pending.status_code == 200
+    assert pending.json()["model_version"] == ALGO08V3
+    assert pending.json()["schema_version"] == 3
+    assert pending.json()["state"] == "pending"
+
+    region = dict(center=[37.85, -122.48], screen_center=[37.85, -122.48], width_km=18.)
+    withheld = store.withhold(run_id, "no_active_curvature", region=region,
+                             execution_release=EXECUTION_RELEASE)
+    assert client.get(base).json() == withheld
+    assert client.get(base + "/position.png").status_code == 404

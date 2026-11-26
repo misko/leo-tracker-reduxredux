@@ -2,6 +2,7 @@
 
 from leo.contracts.fast_graph_position_v5 import MODEL_VERSION as PREVIOUS_VERSION
 from leo.contracts.fast_graph_position_v6 import MODEL_VERSION
+from leo.contracts.fast_standard_analysis import COMPACT_MODELS, standard_label, standard_model
 from leo.storage.fast_graph_position_v6 import FastGraphPositionStoreV6
 from leo.storage.graph_position_view_v6 import completed_view
 from leo.storage.fast_scan import safe_id
@@ -21,7 +22,8 @@ class GraphPositionLookupV6:
 
     def detail(self, run_id):
         safe_id(run_id)
-        if run_id.startswith("algo08-"):
+        model = standard_model(run_id)
+        if model in COMPACT_MODELS:
             return dict(
                 run_id=run_id,
                 selected_model=MODEL_VERSION,
@@ -30,7 +32,7 @@ class GraphPositionLookupV6:
                 selected=None,
                 position=None,
                 fallback=False,
-                reason="ALGO08 publishes its position in standard analysis.",
+                reason=f"{standard_label(model)} publishes its position in standard analysis.",
             )
         terminal = self.lookup.completed_run(run_id)
         if terminal is not None:

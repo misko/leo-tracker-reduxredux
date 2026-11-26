@@ -5,15 +5,16 @@ import {FastStandardAnalysis} from "./FastStandardAnalysis";
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 const names=["ch1-4-all","ch5-8-all","ch1-4-unassociated","ch5-8-unassociated","ch1-4-residuals","ch5-8-residuals","track-rms","position"];
 
-it("reads v2 by its own model and rejects a v1 receipt under a v2 run",async()=>{
-  let model="algo08-two-scan-compact-v5-v2";
+it.each([2,3])("reads v%s by its own model and rejects a prior receipt",async(version)=>{
+  let model="algo08-two-scan-compact-v5-v"+version;
   vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({schema_version:3,
     model_version:model,state:"withheld",reason:"no_active_curvature",artifacts:[]})})));
-  const view=render(<FastStandardAnalysis runId="algo08-v2-first"/>);
+  const view=render(<FastStandardAnalysis runId={"algo08-v"+version+"-first"}/>);
   expect(await screen.findByText(/Position withheld/)).toBeInTheDocument();
-  model="algo08-two-scan-compact-v5-v1";
-  view.rerender(<FastStandardAnalysis runId="algo08-v2-second"/>);
+  model="algo08-two-scan-compact-v5-v"+(version-1);
+  view.rerender(<FastStandardAnalysis runId={"algo08-v"+version+"-second"}/>);
   expect(await screen.findByRole("alert")).toHaveTextContent("another algorithm");
+  expect(screen.queryByText(/Position withheld/)).not.toBeInTheDocument();
 });
 
 it("displays the declared search area even when the receiver withholds",async()=>{
@@ -57,6 +58,30 @@ it("renders the eight ALGO08 figures with their own algorithm identity",async()=
   expect(await screen.findByText("Complete · two-scan cancellation and compact v5")).toBeInTheDocument();
   expect(screen.getAllByRole("img")).toHaveLength(8);
   expect(screen.getByRole("link",{name:"Download standard ALGO08 result"})).toBeInTheDocument();
+});
+
+it("renders the v3 region, both calibration arms, release provenance and digest-bound figures",async()=>{
+  const model="algo08-two-scan-compact-v5-v3";
+  const run="algo08-v3-test";
+  const specification="sha256:"+"b".repeat(64);
+  const detector="c".repeat(64);
+  vi.stubGlobal("fetch",vi.fn(async()=>({ok:true,json:async()=>({...result,schema_version:3,
+    model_version:model,selected_model:model,
+    region:{center:[37.85,-122.48],width_km:18,screen_center:[37.85,-122.48]},
+    execution_release:{version:"ALGO08v3",frozen_specification:specification,detector_sha256:detector},
+  })})));
+  render(<FastStandardAnalysis runId={run}/>);
+  expect(await screen.findByText("Fitted c · default")).toBeInTheDocument();
+  expect(screen.getByText("c = 0 · control")).toBeInTheDocument();
+  expect(screen.getByText(/18 km square centered at 37.85, -122.48/)).toBeInTheDocument();
+  expect(screen.getByText(specification)).toBeInTheDocument();
+  expect(screen.getByText(detector)).toBeInTheDocument();
+  const figures=screen.getAllByRole("img");
+  expect(figures).toHaveLength(8);
+  for(const [index,image] of figures.entries()) expect(image).toHaveAttribute("src",
+    "/api/v2/fast-scans/"+run+"/standard-analysis/"+names[index]+".png?sha256=sha256%3A"+"a".repeat(64));
+  expect(screen.getByRole("link",{name:"Download standard ALGO08v3 result"})).toHaveAttribute(
+    "href","/api/v2/fast-scans/"+run+"/standard-analysis");
 });
 
 it("explains a withheld ALGO08 position",async()=>{

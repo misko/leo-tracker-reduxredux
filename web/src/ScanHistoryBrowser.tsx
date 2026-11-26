@@ -6,7 +6,8 @@ type Adaptive = { session_id: string; captured_at: string | null; recorded_at: s
   started_visits: number; terminal_state: string };
 type Page = { items: Adaptive[]; total: number; next_cursor: number | null; limit?: number };
 type Fast = { recording_id: string; state: string; edge?: string; captured_windows?: number;
-  updated_utc_ns: number; started_utc_ns?: number; failure?: string };
+  updated_utc_ns: number; started_utc_ns?: number; failure?: string;
+  standard_algorithm?: string; decision?: string };
 export type ScanSelection = { id: string; mode: "adaptive" | "fast" };
 type Row = ScanSelection & { time: number; timeLabel: string; description: string; state: string };
 
@@ -64,8 +65,8 @@ export function ScanHistoryBrowser({ selectedId, onSelect, loadAdaptive = loadCu
       id: c.recording_id, mode: "fast" as const,
       time: (c.started_utc_ns ?? c.updated_utc_ns) / 1e6,
       timeLabel: c.started_utc_ns ? "Capture requested" : "Analysis updated",
-      description: `fast · ${c.edge ?? "unknown"} edge · CH1–8 · 2.5 MS/s · ${(c.captured_windows ?? 0).toLocaleString()} paired RX visits`,
-      state: c.failure ? `${c.state}: ${c.failure}` : c.state === "complete" ? "analysis complete" : c.state,
+      description: `fast · ${c.edge ?? "unknown"} edge · CH1–8 · 2.5 MS/s · ${(c.captured_windows ?? 0).toLocaleString()} paired RX visits${c.standard_algorithm ? ` · ${c.standard_algorithm}` : ""}`,
+      state: c.failure ? `${c.state}: ${c.failure}` : c.state === "complete" ? (c.decision === "withheld" ? "position withheld" : "analysis complete") : c.state,
     }))),
   ].sort((a, b) => b.time - a.time || a.id.localeCompare(b.id));
   useEffect(() => {

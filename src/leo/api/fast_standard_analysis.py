@@ -1,4 +1,4 @@
-"""Read-only standard ALGO07 result and digest-bound figure routes."""
+"""Read-only standard fast-scan results and digest-bound figures."""
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import HTMLResponse
 from html import escape

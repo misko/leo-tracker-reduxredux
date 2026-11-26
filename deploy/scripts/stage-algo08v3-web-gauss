@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Stage the read-only API overlay and built WebUI. Activate separately.
+set -euo pipefail
+release=${1:?absolute release directory}
+api_source=${2:?absolute source directory of the qualified production API}
+[[ "$release" == /* && "$api_source" == /* ]]
+root=$(git rev-parse --show-toplevel)
+test -f "$api_source/leo/api/production_v6_lookup.py"
+test -s "$root/web/dist/index.html"
+test ! -e "$release/api"
+test ! -e "$release/web"
+install -d "$release/api" "$release/web"
+cp -a "$api_source" "$release/api/src"
+for path in api/{fast_standard_analysis,graph_position_lookup_v6}.py \
+    contracts/{algo08v3,fast_standard_analysis}.py storage/fast_standard_analysis.py; do
+    install -m 0644 "$root/src/leo/$path" "$release/api/src/leo/$path"
+done
+cp -a "$root/web/dist" "$release/web/dist"

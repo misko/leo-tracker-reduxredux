@@ -35,6 +35,15 @@ it("polls new recordings without changing the user's selection", async () => {
   expect(select).not.toHaveBeenCalled();
 });
 
+it("identifies the assigned fast algorithm and withheld position in scan history", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ items: [{
+    ...fast, state: "complete", standard_algorithm: "ALGO08v3", decision: "withheld",
+  }] }) })));
+  render(<ScanHistoryBrowser selectedId={fast.recording_id} onSelect={() => {}} loadAdaptive={async () => null} />);
+  expect(await screen.findByRole("button", { name: /fast-new.*ALGO08v3/ })).toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "position withheld" })).toBeInTheDocument();
+});
+
 it("keeps fast history available when adaptive history fails", async () => {
   vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: !url.includes("adaptive-sessions"), status: 503,
     json: async () => ({ items: [fast] }) })));

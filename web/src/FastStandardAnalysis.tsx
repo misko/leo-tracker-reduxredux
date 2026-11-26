@@ -6,7 +6,21 @@ type Analysis = { schema_version: number; state: string; model_version: string; 
   decision: string; reason?: string; glrt_points: number; arms: Record<"c0" | "fitted_c", Arm>;
   evaluation_reference?: { latitude_deg: number; longitude_deg: number } | null;
   region?: { center: [number, number]; width_km: number; screen_center: [number, number] };
+  execution_release?: { version: string; frozen_specification: string; detector_sha256: string };
   artifacts: {name: string; sha256: string}[] };
+const models = {
+  ALGO07: { version: "algo07-causal-guarded-reassociation-v1", schemas: [1] },
+  ALGO08: { version: "algo08-two-scan-compact-v5-v1", schemas: [2, 3] },
+  ALGO08v2: { version: "algo08-two-scan-compact-v5-v2", schemas: [3] },
+  ALGO08v3: { version: "algo08-two-scan-compact-v5-v3", schemas: [3] },
+};
+
+export function standardAlgorithm(runId: string): keyof typeof models {
+  if (runId.startsWith("algo08-v3-")) return "ALGO08v3";
+  if (runId.startsWith("algo08-v2-")) return "ALGO08v2";
+  return runId.startsWith("algo08-") ? "ALGO08" : "ALGO07";
+}
+
 const labels: Record<string,string> = {"ch1-4-all":"CH1–4 · GLRT, satellite owners and fitted orbital curves",
   "ch5-8-all":"CH5–8 · GLRT, satellite owners and fitted orbital curves",
   "ch1-4-unassociated":"CH1–4 · Unassociated GLRT and orbital curves",
@@ -15,24 +29,25 @@ const labels: Record<string,string> = {"ch1-4-all":"CH1–4 · GLRT, satellite o
   "track-rms":"RMS for every associated track", position:"Published positions · both calibration arms"};
 
 export function FastStandardAnalysis({runId}:{runId:string}) {
-  const compact=runId.startsWith("algo08-");
-  const v2=runId.startsWith("algo08-v2-");
-  const algorithm=v2?"ALGO08v2":compact?"ALGO08":"ALGO07";
-  const expectedModel=v2?"algo08-two-scan-compact-v5-v2":compact?"algo08-two-scan-compact-v5-v1":"algo07-causal-guarded-reassociation-v1";
-  const [data,setData]=useState<Analysis|null>(null);const [error,setError]=useState("");
+  const algorithm=standardAlgorithm(runId);
+  const compact=algorithm!=="ALGO07";
+  const model=models[algorithm];
+  const [result,setResult]=useState<{runId:string; data:Analysis}|null>(null);
+  const [error,setError]=useState("");
+  const data=result?.runId===runId ? result.data : null;
   const base=`/api/v2/fast-scans/${encodeURIComponent(runId)}/standard-analysis`;
   useEffect(()=>{
-    const controller=new AbortController();let busy=false;setData(null);setError("");
+    const controller=new AbortController();let busy=false;setError("");
     const refresh=async()=>{if(busy)return;busy=true;try{
       const response=await fetch(base,{signal:controller.signal});
       if(!response.ok)throw new Error(`Standard analysis unavailable (${response.status})`);
       const value=await response.json() as Analysis;
-      if(!(v2 ? [3] : compact ? [2,3] : [1]).includes(value.schema_version) || value.model_version!==expectedModel)throw new Error("Standard analysis belongs to another algorithm");
-      if(!controller.signal.aborted){setData(value);setError("");}
+      if(!model.schemas.includes(value.schema_version) || value.model_version!==model.version)throw new Error("Standard analysis belongs to another algorithm");
+      if(!controller.signal.aborted){setResult({runId,data:value});setError("");}
     }catch(e){if(!controller.signal.aborted)setError(String(e));}finally{busy=false;}};
     void refresh();const timer=setInterval(()=>void refresh(),10000);
     return()=>{controller.abort();clearInterval(timer);};
-  },[base,compact,v2,expectedModel]);
+  },[base,model,runId]);
   const complete=data?.state==="complete";
   return <section className="scanner-results-panel" aria-label={`Standard ${algorithm} analysis`}>
     <h3>Standard analysis · {algorithm}</h3>
@@ -40,6 +55,14 @@ export function FastStandardAnalysis({runId}:{runId:string}) {
       complete ? (compact ? "Complete · two-scan cancellation and compact v5" : `Complete · ${data.selected_model===data.model_version ? "guarded reassociation accepted" : `retained ${data.selected_model.split("-")[0].toUpperCase()} solution`}`) : `Awaiting ${algorithm} localization and its verified figures`}</p>
     {error && <p role="alert">{error}</p>}
     {data?.region && <p>Regional search · {data.region.width_km} km square centered at {data.region.center.join(", ")}°. Satellite screening center {data.region.screen_center.join(", ")}°. A returned position is conditional on this search area.</p>}
+    {data?.execution_release && <details>
+      <summary>Detector release</summary>
+      <dl style={{overflowWrap:"anywhere"}}>
+        <dt>Version</dt><dd>{data.execution_release.version}</dd>
+        <dt>Frozen specification</dt><dd><code>{data.execution_release.frozen_specification}</code></dd>
+        <dt>Detector SHA-256</dt><dd><code>{data.execution_release.detector_sha256}</code></dd>
+      </dl>
+    </details>}
     {complete && <>
       <table className="scanner-table"><thead><tr><th>Calibration</th><th>Published position</th><th>Evaluation error</th><th>GLRT associated</th><th>Tracks / satellites</th><th>Residual RMS</th></tr></thead>
         <tbody>{(["fitted_c","c0"] as const).map(arm=>{const a=data.arms[arm];return <tr key={arm}>
