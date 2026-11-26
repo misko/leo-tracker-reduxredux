@@ -1,12 +1,12 @@
 # ALGO08 · Gauss fast-scan positioning
 
-ALGO08v2 is the default Standard analysis for new Gauss fast scans. It reads sealed dual-antenna 10 MS/s I/Q, searches for a pilot, subtracts it, and searches the residual. A fractional GLRT verifies the carriers and a causal rule selects measurements across visits. Compact v5 associates those measurements with capture-era satellites and fits the receiver position in the configured 25 km region. It runs both fitted RF calibration and a fixed-zero control. The release includes the two orbit-support retries qualified on DS30. [Full DS30 comparison with the standalone algo07v5 benchmark](../2026_11_21_ds30_full/README.md)
+[ALGO08v3](v3/README.md) is the default for new Gauss fast scans. This page documents the earlier ALGO08v2 deployment. It reads sealed dual-antenna 10 MS/s I/Q, searches for a pilot, subtracts it, and searches the residual. A fractional GLRT verifies the carriers and a causal rule selects measurements across visits. Compact v5 associates those measurements with capture-era satellites and fits the receiver position in the configured 25 km region. It runs both fitted RF calibration and a fixed-zero control. The release includes the two orbit-support retries qualified on DS30. [Full DS30 comparison with the standalone algo07v5 benchmark](../2026_11_21_ds30_full/README.md)
 
 The [optimized two-scan triage report](ds30-optimized/README.md) compares the receiver promoted to ALGO08v2 with the previous deployed ALGO08v1 from sealed I/Q through position on 16 paired DS30 recordings. The replay tool defaults to four recordings on one worker.
 
 ## ALGO08v2 promotion
 
-Gauss uses release `bdb869682` for new fast scans. Its detector rebuilt to SHA-256 `f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809`, the exact library measured in the paired triage. The historical v1 launcher is `/opt/leo-algo08/081ab0265a9d37dbc2d3fb5b62a64d02970b67ed/run`.
+Gauss used release `bdb869682` for automatic ALGO08v2 analysis. Its detector rebuilt to SHA-256 `f37673f081cd0e8278695d72a51127219c0a6345c93ff43bac898348565fd809`, the exact library measured in the paired triage. The historical v1 launcher is `/opt/leo-algo08/081ab0265a9d37dbc2d3fb5b62a64d02970b67ed/run`.
 
 The promotion check replayed one archived positive recording, DS30-0016, under the service account with one low-priority pinned core and its frozen TLE archive. The receiver processed 713 of 808 windows and excluded 95 on capture quality. Fitted and fixed-zero coordinates both matched the saved benchmark exactly. The live API served the versioned position path, objective grid and all eight digest-verified PNGs. A historical v1 publication remained readable. [Gauss v2 result](http://gauss:8090/api/v2/fast-scans/algo08-v2-883a63295203d552291d028ab1a6e70a/standard-analysis) · [Ranked single-core experiments](single-core-directions.md)
 

@@ -1,6 +1,6 @@
 # ALGO08v3
 
-ALGO08v3 is the opt-in research release of the frozen two-scan receiver and compact v5 solver tested against deployed ALGO08v2. It is the baseline for the next single-core speed target. Gauss continues to use ALGO08v2 for automatic analysis.
+ALGO08v3 is the Gauss fast-scan production release of the frozen two-scan receiver and compact v5 solver tested against deployed ALGO08v2. It is the baseline for the next single-core speed target. Gauss uses ALGO08v3 for automatic analysis of new fast scans.
 
 The final 100-recording DS30 comparison measured **1.76× median paired elapsed speedup** and **1.79× summed elapsed speedup** over ALGO08v2. ALGO08v3 returned 92 fixes and ALGO08v2 returned 97. Three recordings were withheld by both builds, and five additional recordings hit an orbit-interpolation error in v3. Across the 92 shared fixes, the largest difference in fitted horizontal error was 2.58 m. The recordings all came from one roof. [Final report, histograms and recording-level results](ds30-100/README.md)
 
