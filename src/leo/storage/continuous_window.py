@@ -119,6 +119,7 @@ class ContinuousWindowWriter:
             radio=self.radio,
             receiver_ids=self.configuration.receiver_ids,
             chunk_windows=self.configuration.chunk_windows,
+            schema_version=1 if self.configuration.sample_rate_hz == 2_500_000 else 2,
         )
 
     def _seal(self, *, stop_reason: str, failure: str | None = None) -> None:
