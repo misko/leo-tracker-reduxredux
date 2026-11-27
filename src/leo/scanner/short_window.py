@@ -187,11 +187,14 @@ class ShortWindowAcquisition:
     validity_includes_guard: bool = False
     contiguous_with_previous: bool = False
     recall_skipped: bool = False
+    sample_rate_hz: int = SAMPLE_RATE_HZ
 
     def __post_init__(self) -> None:
         values = _ci16_samples(self.samples)
-        if values.shape[1] < 1 or len(values) > WINDOW_SAMPLES:
-            raise ValueError("acquisition must contain at most one 50,000-sample window")
+        if self.sample_rate_hz not in (1_250_000, 2_500_000, 5_000_000, 7_500_000, 10_000_000):
+            raise ValueError("unsupported native acquisition rate")
+        if values.shape[1] < 1 or len(values) > self.window_samples:
+            raise ValueError("acquisition must contain at most one 20 ms window")
         if self.requested_if_center_hz <= 0 or (
             self.actual_if_center_hz is not None and self.actual_if_center_hz <= 0
         ):
@@ -232,7 +235,11 @@ class ShortWindowAcquisition:
 
     @property
     def complete(self) -> bool:
-        return self.sample_count == WINDOW_SAMPLES
+        return self.sample_count == self.window_samples
+
+    @property
+    def window_samples(self) -> int:
+        return self.sample_rate_hz * WINDOW_MS // 1000
 
 
 class ShortWindowSource(Protocol):

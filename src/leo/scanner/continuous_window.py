@@ -25,9 +25,14 @@ class ContinuousWindowConfiguration:
     calibration_id: str = "uncalibrated"
     segment_windows: int = 512
     chunk_windows: int = 64
-    reserve_bytes: int = 335_544_320
+    reserve_bytes: int | None = None
 
     def __post_init__(self) -> None:
+        if (
+            self.sample_rate_hz not in (1_250_000, 2_500_000, 5_000_000, 7_500_000, 10_000_000)
+            or self.window_ms != 20
+        ):
+            raise ValueError("continuous capture requires a supported native rate and 20 ms")
         if len(self.targets) != 8 or self.receiver_ids not in ((0,), (0, 1)):
             raise ValueError(
                 "continuous ordered scanning requires eight targets and physical RX1[/RX2]"
@@ -36,6 +41,10 @@ class ContinuousWindowConfiguration:
             raise ValueError("continuous policy identity is immutable")
         if not 1 <= self.chunk_windows <= 256 or not 1 <= self.segment_windows <= 4096:
             raise ValueError("continuous recording segment/chunk bounds are invalid")
+        if self.reserve_bytes is None:
+            object.__setattr__(
+                self, "reserve_bytes", max(335_544_320, self.segment_windows * self.window_bytes)
+            )
         if self.reserve_bytes < self.segment_windows * self.window_bytes:
             raise ValueError("reserve must accommodate a complete uncompressed segment")
         # The existing type validates common geometry/calibration fields only;
@@ -45,7 +54,11 @@ class ContinuousWindowConfiguration:
 
     @property
     def window_bytes(self) -> int:
-        return 50_000 * len(self.receiver_ids) * 4
+        return self.window_samples * len(self.receiver_ids) * 4
+
+    @property
+    def window_samples(self) -> int:
+        return self.sample_rate_hz * self.window_ms // 1000
 
     def power_configuration(self) -> ShortWindowConfiguration:
         return ShortWindowConfiguration(
@@ -55,7 +68,7 @@ class ContinuousWindowConfiguration:
             gain_db=self.gain_db,
             threshold_dbfs=self.threshold_dbfs,
             transition_budget_ms=self.transition_budget_ms,
-            sample_rate_hz=self.sample_rate_hz,
+            sample_rate_hz=2_500_000,
             window_ms=self.window_ms,
             threshold_policy_id=self.threshold_policy_id,
             calibration_id=self.calibration_id,

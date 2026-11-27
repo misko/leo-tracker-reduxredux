@@ -59,15 +59,15 @@ class PpuContinuousWindowSource:
             seed=secrets.randbits(32) or 1,
             frequencies_hz=tuple(target.if_center_hz for target in configuration.targets),
             rx_mask=3 if len(configuration.receiver_ids) == 2 else 1,
+            source_rate_hz=configuration.sample_rate_hz,
             transition_budget_ms=configuration.transition_budget_ms,
             analysis_digest=hashlib.sha256(b"leo-continuous-iq-offline-glrt-v1").digest(),
         )
+
         def before_start(preparation):
             if self.before_start_hook is not None:
                 self.before_start_hook(preparation)
-            self._begin_clock = {
-                "realtime_ns": time.time_ns(), "monotonic_ns": time.monotonic_ns()
-            }
+            self._begin_clock = {"realtime_ns": time.time_ns(), "monotonic_ns": time.monotonic_ns()}
 
         self.owner = ContinuousRadioOwner.start(
             self.uri,
@@ -104,7 +104,7 @@ class PpuContinuousWindowSource:
         flags = () if complete else (f"provider_{record.result.name.lower()}",)
         if record.missing_samples_before:
             flags += ("provider_missing_samples",)
-        if complete and (len(samples) != 50_000 or record.valid_end - record.valid_start != 50_000):
+        if complete and len(samples) != self.configuration.window_samples:
             raise ValueError("continuous COMPLETE visit does not contain exact 20 ms IQ")
         minimum_guard = (
             self.configuration.transition_budget_ms * self.configuration.sample_rate_hz // 1000
@@ -137,6 +137,7 @@ class PpuContinuousWindowSource:
         )
         acquisition = ShortWindowAcquisition(
             samples=samples,
+            sample_rate_hz=self.configuration.sample_rate_hz,
             requested_if_center_hz=target.if_center_hz,
             actual_if_center_hz=record.frequency_hz,
             generation=record.generation,
@@ -147,8 +148,10 @@ class PpuContinuousWindowSource:
             else ValidityAuthority.UNKNOWN,
             host_final_sample_monotonic_ns=time.monotonic_ns(),
             quality_flags=flags,
-            tune_ms=(record.transition_after - record.transition_before) * 1000 / 2_500_000,
-            listen_ms=len(samples) * 1000 / 2_500_000,
+            tune_ms=(record.transition_after - record.transition_before)
+            * 1000
+            / self.configuration.sample_rate_hz,
+            listen_ms=len(samples) * 1000 / self.configuration.sample_rate_hz,
             discarded_samples=record.valid_start - record.transition_before,
             retune_receipt=json.dumps(receipt, sort_keys=True, separators=(",", ":")),
             validity_includes_guard=True,
